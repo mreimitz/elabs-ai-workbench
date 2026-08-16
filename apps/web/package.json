@@ -1,0 +1,47 @@
+{
+  "name": "@mcp-token-footprint/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "preview": "vite preview --host 127.0.0.1 --port 5173",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm --filter @mcp-token-footprint/shared build && vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "pnpm --filter @mcp-token-footprint/shared build && vitest run --coverage"
+  },
+  "dependencies": {
+    "@mcp-token-footprint/shared": "workspace:*",
+    "@xyflow/react": "^12.11.1",
+    "lucide-react": "^0.577.0",
+    "motion": "^12.42.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1"
+  },
+  "devDependencies": {
+    "@brand/ai": "file:../../vendor/brand/brand-ai-1.9.0.tgz",
+    "@brand/charts": "file:../../vendor/brand/brand-charts-1.9.0.tgz",
+    "@brand/data": "file:../../vendor/brand/brand-data-1.9.0.tgz",
+    "@brand/editor": "file:../../vendor/brand/brand-editor-1.9.0.tgz",
+    "@brand/flow": "file:../../vendor/brand/brand-flow-1.9.0.tgz",
+    "@brand/icons": "file:../../vendor/brand/brand-icons-1.9.0.tgz",
+    "@brand/tokens": "file:../../vendor/brand/brand-tokens-1.9.0.tgz",
+    "@brand/ui": "file:../../vendor/brand/brand-ui-1.9.0.tgz",
+    "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^2.1.9",
+    "jsdom": "^25.0.1",
+    "tailwindcss": "^4.0.0",
+    "tw-animate-css": "^1.0.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.1",
+    "vitest": "^2.1.9"
+  }
+}

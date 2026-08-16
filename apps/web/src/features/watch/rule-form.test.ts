@@ -1,0 +1,217 @@
+import { describe, expect, test } from "vitest";
+import type { WatchRule } from "@mcp-token-footprint/shared";
+import {
+  actionsFormToInput,
+  actionsToFormState,
+  bucketForWindow,
+  emptyActionFormState,
+  emptyRuleFormState,
+  ruleToDuplicateFormState,
+  ruleToFormState,
+  stripWebhookForDuplicate,
+  toWatchRuleInput,
+  toWatchRulePatch,
+  validateActions,
+} from "./rule-form";
+
+describe("bucketForWindow", () => {
+  test("1h -> hour", () => expect(bucketForWindow("1h")).toBe("hour"));
+  test("6h -> day", () => expect(bucketForWindow("6h")).toBe("day"));
+  test("24h -> day", () => expect(bucketForWindow("24h")).toBe("day"));
+  test("7d -> week", () => expect(bucketForWindow("7d")).toBe("week"));
+});
+
+describe("validateActions", () => {
+  test("rejects an all-disabled checklist", () => {
+    expect(validateActions(emptyActionFormState())).toEqual({
+      ok: false,
+      message: "Enable at least one action.",
+    });
+  });
+
+  test("rejects an enabled webhook with no URL", () => {
+    const state = emptyActionFormState();
+    state.webhook = { enabled: true, url: "", template: "", hasSavedSecret: false };
+    const result = validateActions(state);
+    expect(result.ok).toBe(false);
+  });
+
+  test("accepts an enabled webhook with a URL", () => {
+    const state = emptyActionFormState();
+    state.webhook = { enabled: true, url: "https://example.com/hook", template: "", hasSavedSecret: false };
+    expect(validateActions(state)).toEqual({ ok: true });
+  });
+
+  test("accepts a single enabled pin action", () => {
+    const state = emptyActionFormState();
+    state.pin = { enabled: true };
+    expect(validateActions(state)).toEqual({ ok: true });
+  });
+});
+
+describe("actionsFormToInput", () => {
+  test("builds only enabled actions, trims optional fields to omitted when blank", () => {
+    const state = emptyActionFormState();
+    state.pin = { enabled: true };
+    state.notify = { enabled: true, severity: "critical", template: "  " };
+    const out = actionsFormToInput(state);
+    expect(out).toEqual([
+      { type: "notify", severity: "critical" },
+      { type: "pin" },
+    ]);
+  });
+
+  test("includes a non-blank template", () => {
+    const state = emptyActionFormState();
+    state.notify = { enabled: true, severity: "info", template: "hello" };
+    expect(actionsFormToInput(state)).toEqual([{ type: "notify", severity: "info", template: "hello" }]);
+  });
+
+  test("webhook carries the plaintext url", () => {
+    const state = emptyActionFormState();
+    state.webhook = { enabled: true, url: " https://hooks.example/x ", template: "", hasSavedSecret: false };
+    expect(actionsFormToInput(state)).toEqual([{ type: "webhook", url: "https://hooks.example/x" }]);
+  });
+});
+
+describe("actionsToFormState / round-trip", () => {
+  test("a webhook action never carries its URL into the form (write-only)", () => {
+    const state = actionsToFormState([{ type: "webhook", secretRef: "ref-1", template: "tmpl" }]);
+    expect(state.webhook).toEqual({ enabled: true, url: "", template: "tmpl", hasSavedSecret: true });
+  });
+
+  test("projects every action type onto its own slot", () => {
+    const state = actionsToFormState([
+      { type: "pin" },
+      { type: "add_to_collection", collectionId: "col-1" },
+      { type: "promote_to_test", collectionId: "col-2" },
+      { type: "run_grader", graderId: "rouge1" },
+    ]);
+    expect(state.pin.enabled).toBe(true);
+    expect(state.add_to_collection).toEqual({ enabled: true, collectionId: "col-1" });
+    expect(state.promote_to_test).toEqual({ enabled: true, collectionId: "col-2" });
+    expect(state.run_grader).toEqual({ enabled: true, graderId: "rouge1" });
+    expect(state.notify.enabled).toBe(false);
+    expect(state.webhook.enabled).toBe(false);
+  });
+});
+
+describe("stripWebhookForDuplicate / ruleToDuplicateFormState", () => {
+  test("drops a saved webhook secret on duplicate, keeps the template", () => {
+    const state = actionsToFormState([{ type: "webhook", secretRef: "ref-1", template: "tmpl" }]);
+    const stripped = stripWebhookForDuplicate(state);
+    expect(stripped.webhook).toEqual({ enabled: false, url: "", template: "tmpl", hasSavedSecret: false });
+  });
+
+  test("ruleToDuplicateFormState prefixes the name and strips webhook", () => {
+    const rule: WatchRule = {
+      id: "rule-1",
+      name: "High error rate",
+      enabled: true,
+      trigger: "on_terminal",
+      filter: { outcome: ["error"] },
+      actions: [{ type: "webhook", secretRef: "ref-1" }],
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    };
+    const draft = ruleToDuplicateFormState(rule);
+    expect(draft.name).toBe("Copy of High error rate");
+    expect(draft.actions.webhook.enabled).toBe(false);
+    expect(draft.filter).toEqual({ outcome: ["error"] });
+  });
+});
+
+describe("ruleToFormState", () => {
+  test("samplePercent derives from `sample` (absent -> 100)", () => {
+    const base: WatchRule = {
+      id: "rule-1",
+      name: "n",
+      enabled: true,
+      trigger: "on_terminal",
+      filter: {},
+      actions: [{ type: "pin" }],
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    };
+    expect(ruleToFormState(base).samplePercent).toBe(100);
+    expect(ruleToFormState({ ...base, sample: 0.25 }).samplePercent).toBe(25);
+  });
+
+  test("windowed rule carries its window config; on_terminal rule gets a default draft window", () => {
+    const windowed: WatchRule = {
+      id: "rule-2",
+      name: "n",
+      enabled: true,
+      trigger: "windowed",
+      filter: {},
+      window: {
+        measure: "errorRate",
+        bucket: "hour",
+        window: "1h",
+        op: ">=",
+        threshold: 0.5,
+        cooldownMinutes: 30,
+      },
+      actions: [{ type: "notify", severity: "warning" }],
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    };
+    expect(ruleToFormState(windowed).window.threshold).toBe(0.5);
+    const onTerminal: WatchRule = { ...windowed, id: "rule-3", trigger: "on_terminal", window: undefined };
+    expect(ruleToFormState(onTerminal).window).toBeDefined();
+  });
+});
+
+describe("toWatchRuleInput", () => {
+  test("on_terminal at 100% omits `sample` and `window`", () => {
+    const state = emptyRuleFormState();
+    state.name = "  My rule  ";
+    state.actions.pin = { enabled: true };
+    const input = toWatchRuleInput(state);
+    expect(input.name).toBe("My rule");
+    expect(input.sample).toBeUndefined();
+    expect(input.window).toBeUndefined();
+    expect(input.trigger).toBe("on_terminal");
+  });
+
+  test("on_terminal below 100% includes a normalized `sample`", () => {
+    const state = emptyRuleFormState();
+    state.actions.pin = { enabled: true };
+    state.samplePercent = 10;
+    expect(toWatchRuleInput(state).sample).toBeCloseTo(0.1);
+  });
+
+  test("windowed includes a derived-bucket window and no sample", () => {
+    const state = emptyRuleFormState();
+    state.trigger = "windowed";
+    state.window = { ...state.window, window: "7d" };
+    state.actions.notify = { enabled: true, severity: "info", template: "" };
+    const input = toWatchRuleInput(state);
+    expect(input.window?.bucket).toBe("week");
+    expect(input.sample).toBeUndefined();
+  });
+});
+
+describe("toWatchRulePatch", () => {
+  test("omits `actions` when the Actions step was never touched (preserves the stored webhook secret)", () => {
+    const state = emptyRuleFormState();
+    state.name = "n";
+    const patch = toWatchRulePatch(state, false);
+    expect(patch.actions).toBeUndefined();
+  });
+
+  test("includes `actions` once the Actions step is touched", () => {
+    const state = emptyRuleFormState();
+    state.actions.pin = { enabled: true };
+    const patch = toWatchRulePatch(state, true);
+    expect(patch.actions).toEqual([{ type: "pin" }]);
+  });
+
+  test("windowed patch carries a derived-bucket window", () => {
+    const state = emptyRuleFormState();
+    state.trigger = "windowed";
+    state.window = { ...state.window, window: "6h" };
+    const patch = toWatchRulePatch(state, false);
+    expect(patch.window?.bucket).toBe("day");
+  });
+});

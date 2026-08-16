@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="320" viewBox="0 0 900 320">
+<rect width="900" height="320" fill="#f7f9fb"/>
+<rect x="30" y="30" width="840" height="260" rx="16" fill="#ffffff" stroke="#c7d0d9"/>
+<text x="55" y="70" font-size="26" font-family="Arial" font-weight="700" fill="#1f2d3d">Do: keep labels close to controls</text>
+<text x="95" y="155" font-size="23" font-family="Arial" fill="#1f2d3d">Region</text><rect x="220" y="125" width="470" height="50" rx="6" fill="white" stroke="#c7d0d9" stroke-width="2"/><text x="240" y="157" font-size="20" font-family="Arial" fill="#708090">Select region</text><text x="220" y="205" font-size="18" font-family="Arial" fill="#708090">Label and input are perceived as one unit.</text>
+</svg>

@@ -1,0 +1,273 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06-21",
+  "_README": "Copy this file to data/<group>/<provider>.json and fill it. Every factual field is a Provenanced object: {value, confidence, source_url, source_tier, as_of, derived?, notes?}. value+confidence are required. Use value:null with a notes reason for unknowns — never guess. Include 3 models. Remove this _README key when done. Validate against model-entry.schema.json.",
+  "provider": {
+    "id": "<slug>",
+    "name": "<Display Name>",
+    "group": "saas",
+    "homepage": "<url>",
+    "api_docs_url": "<tier-1 api docs url>",
+    "tokenizer_docs_url": null,
+    "native_mcp_support": {
+      "value": null,
+      "confidence": "low",
+      "source_url": null,
+      "source_tier": 1,
+      "notes": ""
+    },
+    "skills_concept": {
+      "value": null,
+      "confidence": "low",
+      "source_url": null,
+      "source_tier": 1,
+      "notes": "provider's skills analog and how it loads"
+    }
+  },
+  "models": [
+    {
+      "id": "<api-model-string-or-hf-repo>",
+      "display_name": "<e.g. Claude Opus 4.8>",
+      "family": "<e.g. Claude Opus>",
+      "release_date": { "value": null, "confidence": "low", "source_url": null, "source_tier": 1 },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": null,
+        "source_tier": 1
+      },
+      "modalities": ["text"],
+      "context": {
+        "context_window_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "true if one shared pool"
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "derived": false
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "note if param/beta-gated"
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "beta/extended window; null if none"
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "o200k_base | cl100k_base | claude | gemini | sentencepiece/BPE | <HF id>"
+        },
+        "tokenizer_public": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 2
+        },
+        "tokenizer_access": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 2,
+          "notes": "tiktoken | HF repo | countTokens API | closed"
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 2
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "chars_per_token_estimate": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 3
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "native_mcp": { "value": null, "confidence": "low", "source_url": null, "source_tier": 1 },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "API-enforced cap; null if none documented"
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "notes": "empirical degradation point"
+        },
+        "tool_definition_shape": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "openai_function | anthropic_tool | raw_mcp | gemini_declaration"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "tool JSON billed as input tokens"
+        },
+        "tool_search_deferral": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "tool_schema_limits_notes": null
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "skills_loading_model": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "always_on | progressive_disclosure | tool_triggered | n/a"
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": null,
+        "prompt_caching": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "memory_feature": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "tokens | characters | compute (self-host)"
+        },
+        "multimodal_billing_notes": null,
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1
+        }
+      },
+      "self_host": null,
+      "notes": "",
+      "sources": []
+    }
+  ]
+}

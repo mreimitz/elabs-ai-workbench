@@ -1,0 +1,45 @@
+# @brand/flow
+
+> Branded React Flow canvas, nodes, edges, controls, inspector.
+
+Import from `@brand/flow`. Part of brand-ui — see the root `llms.txt` for routing.
+
+## Components
+
+- Background
+- CanvasShell — Branded React Flow canvas wrapper with token-driven background + sane defaults.
+  - avoid: Hardcoding node/edge colors — use the flow-node/flow-edge tokens so the canvas matches the theme (incl. blueprint).
+  - avoid: Hiding the React Flow attribution without the appropriate license.
+  - avoid: Forgetting to import @xyflow/react/dist/style.css once in the consuming app.
+- Controls
+- FLOW_ALL_SIDE_HANDLES
+- FLOW_GROUP_NODE_TYPE
+- FlowButtonEdge
+- FlowEdge
+- FlowFloatingEdge
+- FlowGroupNode
+- FlowMiniMap
+- FlowNode — Branded custom React Flow node (title/subtitle/kind/icon/tone).
+  - avoid: Raw colors on the node — use flow-node tokens.
+- FlowPlaceholderNode
+- FlowSmartEdge
+- HANDLE_SIDES
+- HelperLines
+- InspectorPanel
+- Legend
+- MiniMap
+- Panel
+- Position
+- ReactFlow
+- ReactFlowProvider
+- ZoomControls
+
+## Hooks
+
+- useAutoLayout
+- useEdgesState
+- useFlowGroups
+- useFlowLayout
+- useHelperLines
+- useNodesState
+- useReactFlow

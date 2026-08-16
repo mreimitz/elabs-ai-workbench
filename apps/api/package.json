@@ -1,0 +1,51 @@
+{
+  "name": "@mcp-token-footprint/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-data.mjs",
+    "dev": "tsx watch --env-file-if-exists=.env.local --env-file-if-exists=.env src/index.ts",
+    "start": "node --env-file-if-exists=.env.local --env-file-if-exists=.env dist/index.js",
+    "test": "pnpm --filter @mcp-token-footprint/shared build && tsx --test test/*.test.ts",
+    "seed:sessions": "pnpm --filter @mcp-token-footprint/shared build && tsx scripts/seed-sessions.ts",
+    "test:coverage": "pnpm --filter @mcp-token-footprint/shared build && tsx --test --experimental-test-coverage test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.5",
+    "@ai-sdk/google": "^4.0.6",
+    "@ai-sdk/openai": "^4.0.5",
+    "@ai-sdk/openai-compatible": "^3.0.3",
+    "@anthropic-ai/claude-agent-sdk": "0.3.206",
+    "@fastify/multipart": "^10.0.0",
+    "@fastify/static": "^9.1.3",
+    "@joplin/turndown-plugin-gfm": "^1.0.67",
+    "@mcp-token-footprint/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "ai": "^7.0.11",
+    "better-sqlite3": "^12.11.1",
+    "defuddle": "^0.19.1",
+    "diff": "^9.0.0",
+    "fastify": "^5.1.0",
+    "fflate": "^0.8.2",
+    "js-tiktoken": "^1.0.21",
+    "jsdom": "^25.0.1",
+    "mammoth": "^1.12.0",
+    "nanoid": "^5.0.9",
+    "node-pty": "1.1.0",
+    "officeparser": "^7.4.0",
+    "turndown": "^7.2.4",
+    "unpdf": "^1.6.2",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "yaml": "^2.9.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.20.0",
+    "@types/turndown": "^5.0.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

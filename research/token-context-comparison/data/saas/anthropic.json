@@ -1,0 +1,1169 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06-21",
+  "provider": {
+    "id": "anthropic",
+    "name": "Anthropic",
+    "group": "saas",
+    "homepage": "https://www.anthropic.com",
+    "api_docs_url": "https://platform.claude.com/docs/en/intro",
+    "tokenizer_docs_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+    "native_mcp_support": {
+      "value": true,
+      "confidence": "high",
+      "source_url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "Anthropic created and maintains the MCP specification. The Claude API exposes a first-party MCP connector (beta header mcp-client-2025-11-20) allowing direct connection to remote MCP servers from the Messages API without a separate MCP client. Also supported on Claude Platform on AWS and Microsoft Foundry."
+    },
+    "skills_concept": {
+      "value": "Agent Skills — modular, filesystem-based capability bundles (SKILL.md + optional scripts/resources). Loaded via three-level progressive disclosure: Level 1 metadata (~100 tokens/skill) always in system prompt; Level 2 instructions (<5k tokens) loaded on demand when skill is triggered; Level 3 code/resources accessed via bash without entering context.",
+      "confidence": "high",
+      "source_url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "Progressive disclosure is documented explicitly: only name+description in system prompt at startup; full SKILL.md body and bundled files loaded only when triggered. This minimises constant context overhead. Available on Claude API, claude.ai, Claude Code, Claude Platform on AWS, and Microsoft Foundry."
+    }
+  },
+  "models": [
+    {
+      "id": "claude-opus-4-8",
+      "display_name": "Claude Opus 4.8",
+      "family": "Claude Opus",
+      "release_date": {
+        "value": "2026-05-28",
+        "confidence": "high",
+        "source_url": "https://www.anthropic.com/news/claude-opus-4-8",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "System card dated May 28 2026; Bedrock GA announced same day."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2026-01-01",
+        "confidence": "high",
+        "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Docs list reliable knowledge cutoff as Jan 2026 and training data cutoff as Jan 2026."
+      },
+      "modalities": ["text", "image", "pdf"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1000000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M token context window on Claude API, Bedrock, and Vertex AI. On Microsoft Foundry the window is 200k tokens. Standard pricing applies across the full 1M window (no surcharge for long context)."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Input + output draw from one shared pool. Context window = all text the model attends to including its own response."
+        },
+        "max_input_tokens": {
+          "value": 872000,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: context_window (1M) minus max_output (128k). Anthropic documents max_input via the Models API; no static hard number in prose docs. Practical limit slightly lower due to tool-use system prompt overhead."
+        },
+        "max_output_tokens_default": {
+          "value": 128000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "128k output tokens on synchronous Messages API."
+        },
+        "max_output_tokens_max": {
+          "value": 300000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "300k output via Message Batches API with beta header output-300k-2026-03-24. Standard sync API cap is 128k."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No separate extended context beta needed; 1M token window is the default GA window for Opus 4.8. The 1M window is fully included at standard per-token pricing."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Thinking budget tokens are a subset of max_tokens and are billed as output tokens. Previous turn thinking blocks are automatically stripped by the API and do not accumulate as input. Opus 4.8 supports adaptive thinking (always on)."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "claude",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Anthropic uses a proprietary BPE tokenizer. Opus 4.7 and later use a new tokenizer that may use up to 35% more tokens than models before Opus 4.7 for the same fixed text. This newer tokenizer applies to Opus 4.8. Not the same family as cl100k or o200k."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "Anthropic has not released the tokenizer weights. Exact counts require calling the count_tokens API endpoint."
+        },
+        "tokenizer_access": {
+          "value": "count_tokens API",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "POST /v1/messages/count_tokens. Accepts the same structured inputs as /v1/messages (system prompts, tools, images, PDFs). Free to call, subject to RPM rate limits per usage tier."
+        },
+        "count_tokens_method": {
+          "value": "POST /v1/messages/count_tokens with model='claude-opus-4-8'",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "Returns {input_tokens: N}. Counts include tool definitions, system prompts, images, PDFs. Count is an estimate; actual billed tokens may differ slightly. System-added tokens are counted but not billed. Always use model-specific endpoint since tokenizers differ across model generations."
+        },
+        "image_token_rule": {
+          "value": "ceil(width/28) x ceil(height/28) visual tokens per image; max 4784 tokens for Opus 4.8 (high-res, max 2576px long edge). Images billed at same input token rate.",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/vision",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Opus 4.7+ has high-resolution support: max 2576px long edge, up to 4784 visual tokens vs 1568 on older models. Images padded to next multiple of 28px on bottom/right."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio input is not supported on any current Claude model as of 2026-06-21. All models support text and image input."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Anthropic pricing FAQ states ~4 chars per token for English. Newer tokenizer (Opus 4.7+) produces ~35% more tokens for same text, implying ~3.5 chars/token for Opus 4.8. Use count_tokens API for accuracy; this rough estimate is for raw_json_rough fallback only."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MCP connector (beta header mcp-client-2025-11-20) supported on Claude API and Claude Platform on AWS. Not yet available on Amazon Bedrock or Vertex AI. Supports remote HTTP MCP servers (Streamable HTTP and SSE). Only tool calls supported from MCP spec (not prompts/resources)."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Claude can emit multiple tool_use blocks in a single assistant turn."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented API-enforced hard limit on number of tools per request (unlike OpenAI's 128-tool cap). Tool search doc explicitly documents up to 10,000 tools in a catalog when using defer_loading. Anthropic has not published a per-request numeric count cap in prose docs as of 2026-06-21."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Tool search docs note accuracy degrades past 30-50 tools without deferred loading. Anthropic engineering posts confirm the 30-50 tool cliff. Claude Desktop community reports ~100 tool limit in practice. With tool search / defer_loading the practical catalog can extend to thousands."
+        },
+        "tool_definition_shape": {
+          "value": "anthropic_tool",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tools defined as {name, description, input_schema (JSON Schema)} in the tools[] parameter. Tool name must match ^[a-zA-Z0-9_-]{1,64}$. Tool definitions are serialised into a special system prompt injected by the API. MCP tools surface via mcp_toolset objects and count identically as input tokens."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Explicitly documented: tool names, descriptions, and schemas in the tools parameter are billed as input tokens. Additionally, a tool-use system prompt is automatically injected: Opus 4.8 adds 290 tokens (auto/none tool choice) or 410 tokens (any/tool choice). Each tool definition's JSON also adds tokens proportional to its size."
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "defer_loading:true on any tool definition keeps it out of the context until Claude searches for and discovers it via the tool_search_tool. Two variants: regex (tool_search_tool_regex_20251119) and BM25 (tool_search_tool_bm25_20251119). Catalog up to 10,000 tools. Reduces context by >85% in multi-server setups. Compatible with prompt caching and strict mode. Supported on Haiku 4.5+, Sonnet 4.0+, Opus 4.0+."
+        },
+        "max_tool_name_len": {
+          "value": 64,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool name must match regex ^[a-zA-Z0-9_-]{1,64}$. Skill names have a separate 64-character limit."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented character or token cap on tool description length as of 2026-06-21. Anthropic's best-practices guidance recommends at least 3-4 sentences per description; long descriptions consume input tokens proportionally. Effectively bounded by the total request payload limit (32 MB) and context window."
+        },
+        "max_request_size": {
+          "value": 32,
+          "unit": "MB",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/api/overview#request-size-limits",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Direct Claude API (api.anthropic.com) enforces a 32 MB max request payload size. Partner platforms differ: Vertex AI limits to 30 MB, Amazon Bedrock to 20 MB. Tool definitions count toward this payload alongside message content — two separate ceilings apply (payload bytes and context window tokens)."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented per-tool-result byte or token cap as of 2026-06-21. Tool result content blocks (text, image, document) count as input tokens and are bounded by the 32 MB request limit and the model's context window. The handle-tool-calls doc notes that tool results often carry untrusted third-party content. Bloated results waste context and should be filtered at the application layer."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Parallel tool use is supported (Claude emits multiple tool_use blocks per turn) but no fixed numeric cap on simultaneous calls per turn is published. In practice bounded by the model's output token budget for that turn. disable_parallel_tool_use flag available to opt out."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/task-budgets",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No specific tool-use-per-turn numeric limit published in Anthropic docs as of 2026-06-21. The phrase 'Claude reached its tool-use limit for this turn' appears in community reports for claude.ai (consumer product client-side cap) but is not documented with a specific number in the API docs. The task budgets feature (beta) provides an advisory token budget across an agentic loop but is not a tool-call count cap. API users control turn termination via max_tokens and stop_reason."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://code.claude.com/docs/en/mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap on connected MCP servers in the Claude API (mcp_servers array). The MCP connector API enforces that each mcp_server_name must be referenced by exactly one MCPToolset, but allows multiple servers per request. Claude Code docs say it can connect to 'hundreds' of servers without publishing a fixed cap. Claude Desktop's cap is not published in official docs; community reports suggest ~100 tools aggregate (not server count) before selection accuracy degrades."
+        },
+        "max_total_tools": {
+          "value": 10000,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "AGGREGATE ceiling across ALL connected servers + built-in tools (NOT a per-server cap), and conditional on tool search / defer_loading. Documented maximum catalog size with defer_loading tool search: 10,000 tools. Without defer_loading the practical effective limit is ~30-50 tools before selection accuracy degrades (Tier-4 empirical). Claude Desktop aggregate tool display cap is reported at ~100 by community (Tier-4) but not documented officially."
+        },
+        "tool_schema_limits_notes": "Input JSON Schema for tools: supported schema keywords include type, properties, required, description, enum, anyOf, items, and most standard JSON Schema draft-07 keywords. The 'pattern' keyword is explicitly NOT supported when strict:true is used (returns 400 error). No documented maximum nesting depth, maximum properties count, or maximum total schema size. MCP toolset tools count identically to client tools as input tokens. Prompt caching can be applied to the tools parameter via cache_control on an mcp_toolset or individual tool definitions to cache repeated tool schemas at 0.1x input price after a cache write. The input_examples field (optional) adds ~20-200 tokens per tool. Strict mode (strict:true) enables schema-conformant tool calls and composes with defer_loading without grammar recompilation.",
+        "other_limits_notes": "MCP connector (API layer): only HTTP(S) URLs supported for mcp_servers (no local stdio). Each MCP server name must be referenced by exactly one MCPToolset; every declared server must be used. Only tool calls from the MCP spec supported (prompts and resources not yet supported). Tool search regex variant: max 200-character pattern; error codes include too_many_requests, invalid_pattern, pattern_too_long, unavailable. Files API: 500 MB per file, 500 GB per org; file-related API calls limited to ~100 RPM during beta. Request rate limits are tier-based (RPM + ITPM); cached input tokens do not count toward ITPM for most models. Task budgets (beta): advisory token budget spanning agentic loop; minimum 20,000 tokens; supported on Opus 4.8 and Opus 4.7 only (not Sonnet 4.6 or Haiku 4.5). Max request size 32 MB (direct API), 30 MB (Vertex AI), 20 MB (Bedrock).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "progressive_disclosure",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Level 1 metadata (~100 tokens per skill) always present in system prompt. Level 2 instructions (<5k tokens from SKILL.md body) loaded on demand via bash when skill is triggered. Level 3 bundled files/scripts loaded as needed via bash without entering context at all (only output enters context)."
+        },
+        "skills_context_cost_notes": "At startup: ~100 tokens per installed skill (name+description YAML frontmatter) injected into system prompt. When triggered: Claude reads SKILL.md via bash, adding up to ~5k tokens of instructions to the context window. Additional bundled files read individually as needed. Scripts run via bash — script code itself never enters context, only stdout/stderr output does. Net effect: a large skill library has minimal startup footprint; only active skills consume meaningful context.",
+        "system_prompt_overhead_notes": "Tool-use system prompt overhead per request: 290 tokens (tool_choice auto/none), 410 tokens (tool_choice any/tool) for Opus 4.8. Context-awareness tokens injected at turn start (budget tag ~10 tokens) plus system_warning after each tool call (~20 tokens). Not billed — system-added tokens are counted but not charged.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Two cache durations: 5-minute (1.25x write, 0.1x read) and 1-hour (2x write, 0.1x read). Cache reads = 10% of base input price. Can be applied to tools, system prompts, and conversation history via cache_control. Deferred tool definitions preserve the cached prefix since they are not in the system-prompt prefix. Cache invalidated by any change to the cached prefix content."
+        },
+        "memory_feature": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "First-party memory tool available as a server tool. Persists facts across sessions in a structured store; relevant facts are injected into context as input tokens at the start of sessions. Does not auto-grow context unboundedly; operator controls what is retrieved."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 5.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "output_per_mtok_usd": {
+          "value": 25.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.5,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache read (hit) price = 0.1x base input = $0.50/MTok. Cache write (5-min) = 1.25x = $6.25/MTok. Cache write (1-hr) = 2x = $10/MTok."
+        },
+        "batch_discount": {
+          "value": "50% off input and output",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Batch API: $2.50/MTok input, $12.50/MTok output. Batch and prompt caching discounts stack."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Images billed as input tokens at the visual-token rate (ceil(w/28)*ceil(h/28) tokens per image, max 4784 for Opus 4.8). No separate per-image fee. PDFs treated similarly. Audio not supported. Server tools may add per-use charges (e.g. web search $10/1k searches).",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Thinking/reasoning tokens (thinking budget) count against max_tokens and are billed at the output token rate ($25/MTok for Opus 4.8). Previous-turn thinking blocks are stripped before billing for subsequent turns."
+        }
+      },
+      "self_host": null,
+      "notes": "Opus 4.8 is Anthropic's most capable currently-GA Opus model (May 2026). The effort parameter defaults to high on all surfaces. Fast mode (research preview) available at 2.5x speed for $10/$50 per MTok. The newer tokenizer introduced with Opus 4.7 applies here and produces ~35% more tokens than pre-4.7 models for the same text. Adaptive thinking is always on. Extended thinking is not available (adaptive thinking supersedes it). Batch API supports up to 300k output tokens via output-300k-2026-03-24 beta header.",
+      "sources": [
+        "https://platform.claude.com/docs/en/about-claude/models/overview",
+        "https://platform.claude.com/docs/en/about-claude/pricing",
+        "https://www.anthropic.com/news/claude-opus-4-8",
+        "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+        "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+        "https://platform.claude.com/docs/en/build-with-claude/vision",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+        "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+        "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+        "https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8",
+        "https://platform.claude.com/docs/en/api/overview#request-size-limits",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+        "https://platform.claude.com/docs/en/build-with-claude/task-budgets"
+      ]
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "display_name": "Claude Sonnet 4.6",
+      "family": "Claude Sonnet",
+      "release_date": {
+        "value": "2026-02-17",
+        "confidence": "high",
+        "source_url": "https://www.anthropic.com/news/claude-sonnet-4-6",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2025-08-01",
+        "confidence": "high",
+        "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Reliable knowledge cutoff Aug 2025; training data cutoff Jan 2026."
+      },
+      "modalities": ["text", "image", "pdf"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1000000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M token context window. Sonnet 4.6 announcement stated 1M context in beta at launch; models overview confirms 1M GA window. Standard pricing across full 1M."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": 936000,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: context_window (1M) minus max_output (64k)."
+        },
+        "max_output_tokens_default": {
+          "value": 64000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_output_tokens_max": {
+          "value": 300000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "300k output via Message Batches API with beta header output-300k-2026-03-24. Standard sync API cap is 64k."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M is the default GA window; no separate extended-context beta needed."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Sonnet 4.6 supports both extended thinking and adaptive thinking. Thinking tokens are billed as output. Previous-turn thinking blocks stripped automatically."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "claude",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Uses same newer tokenizer family as Opus 4.7+ (introduced with Opus 4.7). ~35% more tokens than pre-4.7 models for the same text. Proprietary BPE, not cl100k or o200k."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "count_tokens API",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "POST /v1/messages/count_tokens with model='claude-sonnet-4-6'",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": "ceil(width/28) x ceil(height/28) visual tokens; max 1568 tokens for Sonnet 4.6 (standard res, max 1568px long edge). Images billed at same input token rate.",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/vision",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Sonnet 4.6 uses standard resolution (not high-res). Max 1568 visual tokens, 1568px long edge. Example: 1000x1000px = 1296 tokens at $3/MTok = ~$0.0039/image."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio input not supported."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Newer tokenizer (same family as Opus 4.7+). Rough estimate only; use count_tokens API."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MCP connector supported. Same capabilities as Opus 4.8."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented API-enforced hard limit. Same as Opus 4.8."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Same empirical degradation threshold as other Claude models: ~30-50 tools without deferred loading."
+        },
+        "tool_definition_shape": {
+          "value": "anthropic_tool",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool-use system prompt overhead for Sonnet 4.6: 497 tokens (auto/none) or 589 tokens (any/tool)."
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "defer_loading supported. Tool search tool compatible with Sonnet 4.0+."
+        },
+        "max_tool_name_len": {
+          "value": 64,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap. Same as Opus 4.8."
+        },
+        "max_request_size": {
+          "value": 32,
+          "unit": "MB",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/api/overview#request-size-limits",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Direct Claude API 32 MB limit applies to all models. Vertex AI: 30 MB, Bedrock: 20 MB."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented per-result cap. Bounded by 32 MB request limit and context window."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Supported, no fixed numeric cap published. disable_parallel_tool_use flag available."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/task-budgets",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented per-turn tool-call count limit in the API. Task budgets feature not supported on Sonnet 4.6. Client-side 'tool-use limit' message observed in claude.ai consumer UI but not documented in API docs."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap on mcp_servers array size per request. MCP connector validation requires each server referenced by exactly one MCPToolset."
+        },
+        "max_total_tools": {
+          "value": 10000,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "AGGREGATE ceiling across ALL connected servers + built-in tools (NOT a per-server cap), and conditional on tool search / defer_loading. Same 10,000-tool catalog limit with defer_loading as all Claude models supporting tool search."
+        },
+        "tool_schema_limits_notes": "Same as Opus 4.8. No documented maximum depth or total schema size for client tools. JSON Schema input_schema supported. 'pattern' keyword unsupported with strict:true. Prompt caching applicable to tool definitions.",
+        "other_limits_notes": "Same API-layer limits as Opus 4.8 (32 MB request, MCP HTTPS-only, tool-calls-only from MCP spec). Task budgets not available on Sonnet 4.6 (Opus 4.7+ only). Context-awareness feature active (token budget injected at conversation start and after each tool call via system_warning). Tool search rate limit error: too_many_requests code returned in tool_search_tool_result body.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "progressive_disclosure",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "Same three-level progressive disclosure as all Claude models. ~100 tokens per skill at startup; up to ~5k tokens when triggered. Sonnet 4.6 also features context-awareness: it receives token-budget information at conversation start, allowing it to manage context more effectively over long sessions.",
+        "system_prompt_overhead_notes": "Tool-use system prompt: 497 tokens (auto/none), 589 tokens (any/tool). Context-awareness system messages injected (budget tag + per-tool-call usage warning). Not billed.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache read = $0.30/MTok (0.1x base). Cache write 5-min = $3.75/MTok. Cache write 1-hr = $6/MTok."
+        },
+        "memory_feature": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 3.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "output_per_mtok_usd": {
+          "value": 15.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.3,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache read = 0.1x base input = $0.30/MTok."
+        },
+        "batch_discount": {
+          "value": "50% off input and output",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Batch API: $1.50/MTok input, $7.50/MTok output."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Images billed as input tokens. Standard resolution (max 1568 tokens/image). No audio.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "self_host": null,
+      "notes": "Sonnet 4.6 is Anthropic's current default model for Free and Pro claude.ai users (as of Feb 2026). Best combination of speed and intelligence; replaced Sonnet 4.5 as default. Supports both extended thinking and adaptive thinking. Context-awareness feature active (token budget injected into conversation). 1M window. Tool search GA announced alongside Sonnet 4.6.",
+      "sources": [
+        "https://platform.claude.com/docs/en/about-claude/models/overview",
+        "https://platform.claude.com/docs/en/about-claude/pricing",
+        "https://www.anthropic.com/news/claude-sonnet-4-6",
+        "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+        "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+        "https://platform.claude.com/docs/en/build-with-claude/vision",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+        "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+        "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+        "https://platform.claude.com/docs/en/api/overview#request-size-limits",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls"
+      ]
+    },
+    {
+      "id": "claude-haiku-4-5",
+      "display_name": "Claude Haiku 4.5",
+      "family": "Claude Haiku",
+      "release_date": {
+        "value": "2025-10-15",
+        "confidence": "high",
+        "source_url": "https://www.anthropic.com/news/claude-haiku-4-5",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2025-02-01",
+        "confidence": "high",
+        "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Reliable knowledge cutoff Feb 2025; training data cutoff Jul 2025."
+      },
+      "modalities": ["text", "image", "pdf"],
+      "context": {
+        "context_window_tokens": {
+          "value": 200000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Haiku 4.5 has a 200k token context window, not the 1M window of Opus 4.8 and Sonnet 4.6."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": 136000,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: 200k window minus 64k max output."
+        },
+        "max_output_tokens_default": {
+          "value": 64000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_output_tokens_max": {
+          "value": 64000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Haiku 4.5 not listed in the 300k batch output beta (only Opus 4.8, 4.7, 4.6, Sonnet 4.6). Max output is 64k on both sync and batch API."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No extended context option documented for Haiku 4.5; window is fixed at 200k."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Haiku 4.5 supports extended thinking (thinking budget within max_tokens). Does not support adaptive thinking. Thinking tokens billed as output."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "claude",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Proprietary BPE. Haiku 4.5 was released Oct 2025, before the new tokenizer introduced with Opus 4.7 (which applies to models from that generation onwards). The exact tokenizer generation for Haiku 4.5 is not explicitly documented; it may use the pre-4.7 tokenizer (~4 chars/token). Use count_tokens API for accuracy."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "count_tokens API",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "POST /v1/messages/count_tokens with model='claude-haiku-4-5'",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": "ceil(width/28) x ceil(height/28) visual tokens; max 1568 tokens (standard resolution, max 1568px long edge). Images billed at same input token rate.",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/vision",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Haiku 4.5 uses standard resolution (not high-res Opus 4.7+). Max 1568 visual tokens per image."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio input not supported."
+        },
+        "chars_per_token_estimate": {
+          "value": 4.0,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Haiku 4.5 predates the Opus 4.7+ tokenizer change. Pricing FAQ states ~4 chars/token for English. Rough estimate only; use count_tokens API."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MCP connector supported (all active Claude models)."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard limit."
+        },
+        "max_tools_practical": {
+          "value": 30,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Lower practical threshold than Opus due to smaller context window (200k). Recommend ~30 tools without deferred loading; tool search mitigates this."
+        },
+        "tool_definition_shape": {
+          "value": "anthropic_tool",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool-use system prompt overhead for Haiku 4.5: 496 tokens (auto/none) or 588 tokens (any/tool)."
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "defer_loading supported. Tool search compatible with Haiku 4.5+ per docs."
+        },
+        "max_tool_name_len": {
+          "value": 64,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap. Same as Opus 4.8. Proportionally more expensive on 200k window."
+        },
+        "max_request_size": {
+          "value": 32,
+          "unit": "MB",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/api/overview#request-size-limits",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Direct Claude API 32 MB limit applies to all models. Vertex AI: 30 MB, Bedrock: 20 MB."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented per-result cap. On 200k window, oversized tool results are especially costly as a % of available context."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Supported, no fixed numeric cap published. disable_parallel_tool_use flag available."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/task-budgets",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented per-turn tool-call count limit in the API. Task budgets not supported on Haiku 4.5."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap on mcp_servers per request."
+        },
+        "max_total_tools": {
+          "value": 10000,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "AGGREGATE ceiling across ALL connected servers + built-in tools (NOT a per-server cap), and conditional on tool search / defer_loading. Same 10,000-tool catalog limit with defer_loading. Especially important on 200k window where tool definitions consume higher % of context without deferral."
+        },
+        "tool_schema_limits_notes": "Same Anthropic tool schema shape. 200k window means tool definitions are proportionally more expensive as a % of window than on Opus/Sonnet. Strong case for using defer_loading to preserve context for actual work. 'pattern' keyword unsupported with strict:true.",
+        "other_limits_notes": "Same API-layer limits as Opus 4.8 (32 MB request, MCP HTTPS-only, tool-calls-only from MCP spec). Task budgets not available on Haiku 4.5. Context-awareness feature active (same as Sonnet 4.6). 200k window makes footprint management critical: a single multi-server MCP setup (~55k tool tokens) consumes 27.5% of the window vs. 5.5% on 1M models. Tool search with defer_loading is strongly recommended.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "progressive_disclosure",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "Same progressive disclosure model. On the 200k window, Level 1 skill metadata (~100 tokens/skill) takes a proportionally larger share than on 1M models. Level 2 instruction load (~5k tokens when triggered) is correspondingly more significant. Recommend limiting simultaneously-loaded skills to preserve headroom.",
+        "system_prompt_overhead_notes": "Tool-use system prompt: 496 tokens (auto/none), 588 tokens (any/tool). Context-awareness active (token budget injection). Not billed.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache read = $0.10/MTok (0.1x base). Cache write 5-min = $1.25/MTok. Cache write 1-hr = $2/MTok."
+        },
+        "memory_feature": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 1.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "output_per_mtok_usd": {
+          "value": 5.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.1,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache read = 0.1x base input = $0.10/MTok. Cache write 5-min = $1.25/MTok. Cache write 1-hr = $2/MTok."
+        },
+        "batch_discount": {
+          "value": "50% off input and output",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Batch API: $0.50/MTok input, $2.50/MTok output."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Images billed as input tokens. Standard resolution (max 1568 tokens/image). No audio.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "self_host": null,
+      "notes": "Haiku 4.5 is Anthropic's fastest, most cost-efficient model with near-frontier intelligence. Released Oct 2025. 200k context window (not 1M). Supports extended thinking but NOT adaptive thinking. The smallest practical context window among current GA Claude models makes tool/skill footprint management especially important. API model ID is claude-haiku-4-5 (alias) or claude-haiku-4-5-20251001 (pinned snapshot). Tokenizer generation may differ from Opus 4.7+ new tokenizer — use count_tokens with model='claude-haiku-4-5' for accuracy.",
+      "sources": [
+        "https://platform.claude.com/docs/en/about-claude/models/overview",
+        "https://platform.claude.com/docs/en/about-claude/pricing",
+        "https://www.anthropic.com/news/claude-haiku-4-5",
+        "https://platform.claude.com/docs/en/build-with-claude/context-windows",
+        "https://platform.claude.com/docs/en/build-with-claude/token-counting",
+        "https://platform.claude.com/docs/en/build-with-claude/vision",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool",
+        "https://platform.claude.com/docs/en/agents-and-tools/mcp-connector",
+        "https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview",
+        "https://platform.claude.com/docs/en/api/overview#request-size-limits",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/parallel-tool-use",
+        "https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls"
+      ]
+    }
+  ]
+}

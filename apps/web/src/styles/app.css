@@ -1,0 +1,352 @@
+/* Token system + Tailwind v4 entry. @brand/tokens/styles.css contains `@import "tailwindcss"`,
+   the 6 [data-theme] blocks, and the @theme bridge. */
+@import "@brand/tokens/styles.css";
+
+/* Tailwind v4 ignores node_modules when auto-detecting content, so explicitly point it at the
+   compiled @brand/* output whose className strings must generate utilities. */
+@source "../../node_modules/@brand/ui/dist";
+@source "../../node_modules/@brand/data/dist";
+@source "../../node_modules/@brand/icons/dist";
+@source "../../node_modules/@brand/charts/dist";
+@source "../../node_modules/@brand/ai/dist";
+@source "../../node_modules/@brand/flow/dist";
+@source "../../node_modules/@brand/editor/dist";
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* Finding 15 (WP 0.1) — antialiased root type. @brand ships the Inter @font-face but never sets
+     font-smoothing, so on WebKit/Blink the UI subpixel-renders heavier than the design intends and
+     on macOS reads noticeably bolder. One global rule, no color: crisp, uniform text in both themes.
+     Chosen over `class="antialiased"` in index.html so all root type rules live in one place. */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =====================================================================
+   DENSITY & TYPE SCALE — operator-dense, WITH real hierarchy (WP A0 / T1)
+   ---------------------------------------------------------------------
+   Goal: a dense, operator-grade surface that STILL has typographic
+   headroom — body ~14px, table ~12–14px, section headings ~16–18px, a page
+   headline (display/h1) ~24px, KPI numerals ~32px, and a distinct
+   headline-metric rung ABOVE h1 — line-height ~1.4 on body / tighter on
+   headings, tabular figures on numerics — that ALL @brand themes and EVERY
+   @brand/* component inherit with zero per-component edits.
+
+   T1 (design-remediation) REBUILT this scale for real hierarchy. The earlier
+   pass had compressed EVERYTHING between 11–22px: display(h1)=18px was only
+   ~1.38× the 13px body, and title(h3)=15px read the same as body. That is
+   what "the app has no typographic hierarchy" measured. The scale below keeps
+   the dense body but restores a >1.6× display:body ratio and a KPI numeral
+   rung well above h1 — locked by apps/web/src/guardrails/type-scale.guardrail.test.ts.
+   Restoring --text-kpi / --text-title / --text-display alone enlarges every
+   existing text-kpi / MetricCard KPI and every text-title card heading with
+   ZERO call-site edits — that is the systemic win; the raw Tailwind steps
+   (--text-2xl/-3xl/…) are moved in lockstep so @brand/* components that use
+   the raw steps directly grow with the roles.
+
+   HOW THIS REACHES EVERYTHING
+   - Density is driven by `[data-density]` on <html> (A1 wires the toggle
+     + persistence to these exact values). DEFAULT (attribute absent or
+     `comfortable`) is the upstream identity scale — pixel-stable. The
+     dense scale lives under `[data-density="compact"]` only.
+   - `--spacing`: @brand/tokens already ships density.css (imported by
+     styles.css) mapping `[data-density]` → `--spacing`. Tailwind v4
+     compiles every height/padding/gap/space utility (h-*, p*, gap-*,
+     space-*) to `calc(var(--spacing) * N)`, so one var rescales rows,
+     toolbars and sidebars across @brand/ui, @brand/data, @brand/charts…
+     We RE-DECLARE compact here (after the import) to push it past the
+     stock 0.222rem to the operator-dense target.
+   - Type: @brand/ui exposes the semantic type ROLES (`text-body`,
+     `text-title`, `text-kpi`, … consumed by Text/Heading/MetricCard) AND
+     uses the raw Tailwind steps (`text-sm` ×76, `text-xs` ×31, …)
+     directly. The upstream type scale is deliberately NOT density-aware,
+     so we override BOTH the `--text-<role>` role tokens and the raw
+     Tailwind `--text-<step>` tokens (size + companion `--line-height`)
+     under compact. Both are theme-INVARIANT (`@theme`, not per
+     [data-theme]) so every theme inherits identically.
+   - tabular-nums: KPI numerals already ship `tabular-nums` (the `kpi`
+     role = `text-kpi tabular-nums`); comparison/number columns should add
+     the `tabular-nums` utility at the call site. We do not force it
+     globally (it would harm prose), but the dense numerals keep it.
+
+   Raw px below are TYPE-SCALE values (rem), not colors — semantic tokens
+   only, no hex/rgb. Tailwind step keys (`--text-sm` etc.) are the v4
+   theme contract.
+   ===================================================================== */
+
+/* Compact = operator-dense. ~18% tighter than Tailwind's 0.25rem default
+   (vs the stock density.css 0.222rem) so padding-driven rows land ~36–40px
+   and toolbars/sidebars feel like a console, not a marketing page. The
+   `comfortable`/`spacious` levels keep their upstream density.css values. */
+[data-density="compact"] {
+  --spacing: 0.205rem;
+}
+
+/* Type scale, compact only. Default/comfortable inherits the upstream scale
+   untouched (no block here ⇒ identity render). */
+[data-density="compact"] {
+  /* Raw Tailwind steps — the bulk of @brand/* component text (text-sm/-xs
+     headers, labels, table cells, buttons). Dense body, but the top of the
+     ramp (text-2xl/-3xl) now carries real headline weight so raw-utility
+     headings move in lockstep with the semantic roles below. */
+  --text-xs: 0.75rem; /* 12px — micro labels / meta in tables (was 11px; 12 is the floor) */
+  --text-xs--line-height: 1rem; /* 16px */
+  --text-sm: 0.875rem; /* 14px — DEFAULT app/body & table text (was 13px) */
+  --text-sm--line-height: 1.25rem; /* 20px ~1.43 */
+  --text-base: 0.875rem; /* 14px — fold base down to body */
+  --text-base--line-height: 1.25rem;
+  --text-lg: 1rem; /* 16px — section headings (was 15px) */
+  --text-lg--line-height: 1.4rem; /* 22.4px */
+  --text-xl: 1.125rem; /* 18px — larger headings (was 16px) */
+  --text-xl--line-height: 1.5rem; /* 24px */
+  --text-2xl: 1.5rem; /* 24px — h1 rung (was 18px — this is the "text-2xl == 18px" defect) */
+  --text-2xl--line-height: 1.85rem; /* 29.6px ~1.23 */
+  --text-3xl: 2rem; /* 32px — headline-metric / KPI rung (was 22px) */
+  --text-3xl--line-height: 2.25rem; /* 36px ~1.13 */
+
+  /* Semantic type ROLES — Text / Heading / MetricCard. Mirror the steps
+     above so role-based and raw-utility text land at the same scale.
+     Ordering (strictly monotonic, locked by type-scale.guardrail.test.ts):
+     meta < caption < body < subtitle < title < display, and kpi ≥ display. */
+  --text-body: 0.875rem; /* 14px (was 13px) */
+  --text-body--line-height: 1.25rem; /* 20px ~1.43 */
+  --text-caption: 0.8125rem; /* 13px — table / supporting (was 12px) */
+  --text-caption--line-height: 1.1rem; /* 17.6px */
+  --text-meta: 0.75rem; /* 12px — eyebrow / timestamp (was 11px) */
+  --text-meta--line-height: 1rem; /* 16px */
+  --text-subtitle: 0.9375rem; /* 15px — sub-section (was 14px) */
+  --text-subtitle--line-height: 1.3rem; /* 20.8px */
+  --text-title: 1.125rem; /* 18px — section / card / dialog heading, h2/h3 (was 15px — read as body) */
+  --text-title--line-height: 1.5rem; /* 24px ~1.33 */
+  --text-display: 1.5rem; /* 24px — page / hero headline, h1 (was 18px) */
+  --text-display--line-height: 1.85rem; /* 29.6px ~1.23 */
+  --text-kpi: 2rem; /* 32px — executive metric numerals, the headline rung ABOVE h1 (was 22px) */
+  --text-kpi--line-height: 2.25rem; /* 36px ~1.13 */
+  --text-code: 0.8125rem; /* 13px — inline / block code (was 12px) */
+  --text-code--line-height: 1.25rem; /* 20px */
+}
+
+/* =====================================================================
+   PRINT — Server Export Report (HTML → Save as PDF)
+   ---------------------------------------------------------------------
+   The report renders as a full-bleed overlay (`.report-overlay`) over the
+   app; when it's open the app shell carries `.app-non-printable`. For print
+   we hide the shell, flatten the fixed overlay so its content paginates,
+   drop the on-screen toolbar (`.report-no-print`), keep token-driven badge
+   /chip colours (print-color-adjust), and add page-break hints. These are
+   LAYOUT-only rules (no colour literals) — all colour stays in @brand tokens.
+   ===================================================================== */
+@media print {
+  @page {
+    size: A4;
+    /* Top/bottom page margins — honoured when the print dialog's Margins = Default. Left/right are 0
+       here because the report bakes its OWN horizontal padding (`.report-content`), so the side
+       margins survive even when the user picks Margins = None (which zeroes the @page box). */
+    margin: 12mm 0;
+  }
+
+  html,
+  body,
+  #root {
+    height: auto;
+    background: var(--color-background, white);
+  }
+
+  /* Print ONLY the report: hide the shell chrome (sidebar + top bar). The report now renders INSIDE
+     the shell's `<main>` (not a fixed overlay), so we don't unmount the shell — we just drop its
+     chrome for print and let the content region flow (below). */
+  .app-non-printable {
+    display: none !important;
+  }
+
+  /* The shell clamps itself to the viewport on screen (`h-dvh overflow-hidden`, inner `overflow-y-auto`)
+     so `main` is the scroll container. For print that clamp would crop the report to one screen — so
+     release the height/overflow on the shell containers and the content region, letting the whole
+     report paginate across pages. Layout-only (no colour literals). */
+  .app-shell-root,
+  .app-shell-inset,
+  .app-shell-main {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  /* Flatten the fixed/scrolling overlay so the full document flows across pages. */
+  .report-overlay {
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* On-screen-only chrome (the Back / Print toolbar). */
+  .report-no-print {
+    display: none !important;
+  }
+
+  /* Keep token-backed badge / chip / surface colours in the PDF. */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ── A4 FIT ──────────────────────────────────────────────────────────
+     The screen layout is wider than an A4 column. Scale the rem base down so
+     the rem-driven @brand type/spacing all shrink together, keep content to
+     the page column, bake consistent horizontal page margins into the
+     content, and wrap long unbreakable strings (mono tool/tech names,
+     evidence values, source URLs) so nothing overflows the page width. */
+  html {
+    font-size: 12px; /* ~75% of the 16px base → everything rem-based shrinks to fit A4 */
+  }
+  .report-overlay {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  /* The report's own horizontal margin — repeats on EVERY page, independent of the dialog. */
+  .report-content {
+    max-width: 100% !important;
+    padding: 0 12mm !important;
+  }
+  .report-overlay * {
+    max-width: 100% !important;
+  }
+  .report-overlay table {
+    width: 100% !important;
+    table-layout: fixed; /* share the page column; never exceed it */
+  }
+  .report-overlay th,
+  .report-overlay td {
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .report-overlay .font-mono,
+  .report-overlay code,
+  .report-overlay a {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* ── PAGINATION ──────────────────────────────────────────────────────
+     Keep SMALL atomic blocks together (KPI tiles, a finding's per-model
+     block, table rows, a card header); let BIG cards/sections flow across
+     pages so every page fills evenly. No forced per-section page breaks —
+     those left ragged half-empty pages. Headers repeat across page splits. */
+  thead {
+    display: table-header-group;
+  }
+  tr {
+    break-inside: avoid;
+  }
+  .report-avoid-break {
+    break-inside: avoid;
+  }
+}
+
+/* ── Assistant dock: ChatShell edge fades on the sidebar surface ─────────────────────────────
+   The dock renders `@brand/ai` ChatShell (variant="bare") on the dock's `bg-sidebar` surface
+   (AppShell.tsx — the dock mirrors the left navigation sidebar). ChatShell's built-in transcript
+   edge fades are hardcoded `from-background`, which is a LIGHTER token than `--sidebar` in
+   qlik-dark — that painted a mismatched solid-looking band above the composer instead of a
+   seamless dissolve. ChatShell exposes no fade-color prop (raised as an upstream gap), so this
+   scoped, token-only override re-points the gradient start at the sidebar token. Verified live
+   in qlik-dark; both tokens are theme-defined so qlik-bright stays correct too. */
+aside[aria-label="Assistant"] .from-background {
+  --tw-gradient-from: var(--sidebar);
+}
+
+/* =====================================================================
+   TOKEN CONTRAST + SEMANTIC SPLIT — app-side override (WP 0.1 · D-IC1/D-IC2)
+   ---------------------------------------------------------------------
+   The one sanctioned raw-color exception in this plan (conventions §3): these
+   are new TOKEN VALUES, not raw color in a component, and they live in the
+   token entry file. This is an app-side, reversible override — the vendored
+   @brand/tokens themes.css is NOT edited. The upstream gap is recorded in
+   roadmap/interface-craft/upstream-gaps.md items 1–2; DELETE this block when
+   @brand/tokens ships tokens where every role⇄foreground pair clears 4.5:1 and
+   --success/--ring hold values distinct from --primary/--info.
+
+   WHY THIS WINS THE CASCADE: these `[data-theme="…"]` selectors carry the same
+   specificity (0,1,0) as the vendored ones inside the `@import`ed themes.css,
+   but appear LATER in source order (after the import is inlined), so they win.
+   The `@theme inline` bridge maps `--color-primary: var(--primary)` … so
+   `bg-primary`/`text-primary-foreground` resolve `var(--primary)` at runtime —
+   redefining the raw `--<role>` tokens here reaches every @brand/* utility.
+
+   Every value below was MEASURED (oklch→sRGB→WCAG), not eyeballed; the guard
+   is apps/web/src/styles/tokens-contrast.test.ts (runs in `pnpm test`). For the
+   contrast fixes only `L` moved (C and H preserved); the WP 4.3 FIX 4 --success
+   DISTINCTNESS retune is the one exception — it also shifts H (green→emerald) to
+   separate --success from --primary visually, while keeping its on-fill ≥ 4.5.
+
+   qlik-bright — four failing on-fill pairs (finding 1) + the split (finding 11):
+     --primary  0.553→0.515  (T1 green-contrast fix, keep C 0.143 / H 153). --primary is used
+                BOTH as fill (bg-primary + white ink) AND as text (text-primary — the active
+                server/skill rail item + links). @brand/tokens ships no --primary-text variant, so
+                the two share this token. The earlier 0.535 fixed the on-FILL pair (4.29→4.60) but
+                text-primary on the #f2f2f2 muted/rail surface still measured 4.29:1 — fails AA for
+                normal text (critique: "brand green #008442 on #f2f2f2 · 4.3:1", /servers + /skills).
+                L −0.020 more (hue/chroma untouched, so it stays Qlik green — #008442→#007e3d) takes
+                text-on-#f2f2f2 to 4.65:1 AND the on-fill pair UP to 4.98:1 (both clear AA; the
+                existing token-contrast guard only gets stronger). Long-term the clean split is an
+                upstream --primary-text token (like --success-text/--info-text) — recorded as a gap.
+     --info     0.600→0.550  (3.74 → 4.61 vs #fafafa ink; keep C 0.13  / H 245)
+     --success  → 0.48 0.15 166 — a deeper, bluer EMERALD success-green (WP 4.3
+                FIX 4 pushed it further from --primary: oklab dist 0.027 → 0.065;
+                was byte-identical to --primary), clears its on-fill pair at 5.45
+     --ring     → 0.62 0.16 250 — a distinct, brighter focus blue (was byte-
+                identical to --info)
+     --sidebar-primary / --sidebar-ring mirror --primary / --ring so the sidebar
+     active-item green + focus ring stay coherent with the fixed role tokens
+     (both were literal copies of the old, failing values).
+   ===================================================================== */
+[data-theme="qlik-bright"] {
+  /* T1: L 0.535 → 0.515 so text-primary clears AA (4.65:1) on the #f2f2f2 muted/rail surface, not
+     just the on-fill pair. C 0.143 / H 153 unchanged — same Qlik green (#008442 → #007e3d). */
+  --primary: oklch(0.515 0.143 153);
+  --info: oklch(0.55 0.13 245);
+  /* WP 4.3 FIX 4: pushed FURTHER from --primary. It was 0.51 0.15 150 — numerically distinct
+     (D-IC2 ✓) but only ~3° of hue and 0.025 L from --primary, so a success chip read as a near-twin
+     of the primary button (dist 0.027 in oklab). Now a deeper, bluer EMERALD (L −0.055 and H +13°
+     vs --primary): oklab distance 0.065 (~2.4× further), rgb(0,118,73) vs primary rgb(0,132,66).
+     On-fill pair (vs the near-white --success-foreground 0.985) = 5.45:1, well over AA. */
+  --success: oklch(0.48 0.15 166);
+  --ring: oklch(0.62 0.16 250);
+  --sidebar-primary: oklch(0.515 0.143 153); /* mirrors --primary (T1) so the sidebar active-item green stays coherent */
+  --sidebar-ring: oklch(0.62 0.16 250);
+  /* Hub composer floating-card elevation. The app ships NO `--shadow-*` tokens, so every Tailwind
+     `shadow-*` utility computes to a transparent no-op — the composer's "card" shadow is defined here,
+     per theme (same app-side token-override mechanism as the contrast fixes above). Bright: a soft dark
+     drop shadow over the near-white page. */
+  --composer-elevation: 0 4px 12px -2px oklch(0 0 0 / 0.22), 0 18px 44px -10px oklch(0 0 0 / 0.26);
+}
+
+/* qlik-dark — the one failing pair is fixed on the INK, not the fill: dark
+   already solves four of five roles with a dark foreground (--primary-foreground
+   is oklch(0.22 0.005 75), a warm near-black), so --destructive-foreground gets
+   the same treatment (white-on-#ef5f89 3.02 → dark-ink 5.50). The split gives
+   --success / --ring values distinct from --primary / --info (byte-identical
+   today); --sidebar-ring mirrors --ring. --primary and --info fills already
+   clear 4.5 here, so they are untouched. */
+[data-theme="qlik-dark"] {
+  --destructive-foreground: oklch(0.22 0.005 75);
+  /* WP 4.3 FIX 4: same emerald shift as qlik-bright (H 150 → 166), kept light for the dark theme so
+     the on-fill pair (vs the dark ink --success-foreground 0.22) stays huge at 9.87:1. oklab distance
+     from --primary rises 0.033 → 0.061; rgb(61,220,167) vs primary rgb(94,199,131) — visibly its own
+     mint-emerald, no longer a near-twin. */
+  --success: oklch(0.8 0.15 166);
+  --ring: oklch(0.74 0.16 250);
+  --sidebar-ring: oklch(0.74 0.16 250);
+  /* Hub composer elevation (see the qlik-bright block). A LIGHT glow reads weak on a dark ground, so
+     use a darker drop shadow BENEATH the card plus a hairline top inset highlight — the classic raised
+     dark-mode card cue — so the composer reads as a floating card here too. */
+  --composer-elevation:
+    0 4px 16px -2px oklch(0 0 0 / 0.6), 0 24px 56px -14px oklch(0 0 0 / 0.55),
+    inset 0 1px 0 0 oklch(1 0 0 / 0.07);
+}

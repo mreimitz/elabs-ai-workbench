@@ -1,0 +1,1177 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06-21",
+  "provider": {
+    "id": "xai",
+    "name": "xAI (Grok)",
+    "group": "saas",
+    "homepage": "https://x.ai",
+    "api_docs_url": "https://docs.x.ai/developers",
+    "tokenizer_docs_url": null,
+    "native_mcp_support": {
+      "value": true,
+      "confidence": "high",
+      "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "xAI supports Remote MCP Tools via the Responses API and native xAI SDK. Specify server_url and server_label; xAI manages the MCP server connection. Remote MCP tool invocations are billed token-based only (no per-call fee). Supports Streaming HTTP and SSE transports. Not supported on Chat Completions legacy API."
+    },
+    "skills_concept": {
+      "value": null,
+      "confidence": "high",
+      "source_url": "https://docs.x.ai/developers/models",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "xAI does not expose a formal 'skills' concept equivalent to Anthropic Agent Skills or OpenAI GPTs. The Grok Build product (https://docs.x.ai/build/features/skills-plugins-marketplaces) references 'Skills, Plugins, and Marketplaces' in the context of Grok Build (agentic coding CLI), but these are not API-level packaged skill bundles that inject context — they are user-facing Grok product features, not developer API primitives. No API-level skill injection or progressive-disclosure loading mechanism is documented."
+    }
+  },
+  "models": [
+    {
+      "id": "grok-4.3",
+      "display_name": "Grok 4.3",
+      "family": "Grok 4",
+      "release_date": {
+        "value": "2026-05-19",
+        "confidence": "medium",
+        "source_url": "https://docs.x.ai/developers/release-notes",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Release notes show Grok Build 0.1 on May 19. Grok 4.20 and Grok 4.20 Multi-agent launched March 10. Grok 4.3 appears as the current alias target of grok-4-latest, grok-3, grok-4 etc. Exact GA date not listed separately in release notes; model page updated May 29. Set to medium confidence."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2024-11-01",
+        "confidence": "high",
+        "source_url": "https://docs.x.ai/developers/models",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Models page states: 'The knowledge cut-off date of Grok 3 and Grok 4 is November, 2024.' Exact day not given; set to 2024-11-01 as month start."
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1000000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card states 'Context window: 1,000,000'. Higher-context pricing applies above 200K tokens."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "xAI docs do not explicitly state separate pools. OpenAI-compatible API convention (shared pool) is implied. Max output cap not documented separately; derived as shared pool. Medium confidence — not explicitly documented."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": false,
+          "notes": "No explicit max_input cap documented separately from the context window. Assumed to be window minus any required output headroom, but not stated."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No default max_output documented on the model card or in function-calling docs. The multi-agent model docs note 'max_tokens is not supported' for that variant; for grok-4.3 standard max_tokens parameter is accepted per OpenAI compatibility but no default value is published."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not explicitly documented. No explicit max-output limit published for grok-4.3. Likely bounded by context window (1M shared pool) but exact limit not published."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No extended/beta context beyond 1M documented. The methodology hint about 'Grok 4 Fast ~2M window' is NOT confirmed by current docs; all current chat models show 1M. grok-4-fast aliases now point to grok-4.3 per the model's alias list."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/advanced-api-usage/prompt-caching/usage-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Pricing docs explicitly state 'Reasoning tokens: Full completion token price.' Reasoning docs confirm reasoning_tokens appear in usage.completion_tokens_details.reasoning_tokens. Billed at output token rate."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "xai-grok",
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/release-notes",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "xAI has a Tokenizer Playground in the console (released Dec 2024 per release notes) but does not publicly name or release the tokenizer. No tiktoken base, no HF tokenizer repo identified. Labeled 'xai-grok' as a placeholder. The tokenizer is proprietary and closed."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/release-notes",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No public tokenizer library, HF repo, or tiktoken base found. Console playground exists for interactive exploration but no programmatic access documented. No count_tokens API endpoint found. Medium confidence because absence of documentation does not guarantee no internal release."
+        },
+        "tokenizer_access": {
+          "value": "closed",
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/release-notes",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Access is limited to the interactive console Tokenizer Playground (https://console.x.ai). No API endpoint, no library. Closed for programmatic local use."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No count_tokens API endpoint documented. Only option is the console Tokenizer Playground (interactive). For programmatic estimation, use raw_json_rough fallback or an approximate chars-per-token ratio."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "grok-4.3 supports image input (modalities: Text, Image). Pricing docs mention 'Image tokens: Visual content analysis (when applicable)' as billed but no tile/patch conversion rule is published (unlike OpenAI's tile formula). Undocumented."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models/grok-4.3",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "grok-4.3 does not support audio input. Audio is handled by separate Voice API models."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Standard rough estimate of ~4 chars/token for English text with BPE-style tokenizers. No xAI-specific ratio published. Use raw_json_rough profile."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Full function calling supported. Uses OpenAI-compatible tool format in both Chat Completions and Responses API."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Remote MCP Tools supported natively via Responses API and xAI SDK. Specify {type: 'mcp', server_url, server_label}. xAI manages the MCP connection server-side. Supports Streaming HTTP and SSE transports. Available November 2025 (GA)."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Parallel function calling enabled by default. Docs state: 'the model can request multiple tool calls in a single response.' Disable with parallel_tool_calls: false."
+        },
+        "max_tools_hard": {
+          "value": 200,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Function calling schema reference table (verified June 2026): 'name — Unique identifier (max 200 tools per request)'. Applies to custom function tools passed in the tools array. The 200 cap is the documented API hard limit per request across all tool types (function + built-in). Confirmed on the live docs page last updated June 17, 2026."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "xAI docs themselves advise using allowed_tools to filter MCP tools to avoid context overhead: 'Reduce context overhead by limiting tool definitions the model needs to consider.' No empirical degradation study specific to Grok published. General community consensus ~30-50 tools before accuracy cliff (Berkeley FCL, Tier 4). Set to 40 as mid-range estimate."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "xAI API is OpenAI-compatible. Function tools use {type: 'function', name, description, parameters} schema identical to OpenAI. Responses API also accepts OpenAI SDK directly via base_url override."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool definitions are injected into context and billed as input tokens. xAI docs for Remote MCP explicitly warn: 'all available tool definitions will be available to the model' and recommend using allowed_tools to 'Reduce context overhead.' Consistent with all OpenAI-compatible providers."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No tool search / deferred loading mechanism documented for xAI API. The allowed_tools parameter on Remote MCP can filter which tools are loaded, but this is a static list at request time, not progressive disclosure. No equivalent to Claude's ENABLE_TOOL_SEARCH or defer_loading found."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No character limit on tool/function names documented in xAI docs. The schema reference lists 'name' as a required string field with no length constraint stated. Remote MCP tools are namespaced as '{server_label}.{tool_name}' in tool call output, but no total name-length constraint stated. Unlike OpenAI's 64-char limit, xAI publishes no equivalent constraint."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on tool description length. The schema reference states 'description' is required ('What the tool does — helps the model decide when to use it') but specifies no character or token limit. Effectively bounded by the request's context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No maximum request payload size (bytes/MB) published in xAI docs. Not found in function-calling docs, API reference, rate-limits page, or FAQ. Effectively bounded by the 1M token context window for this model."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/tool-usage-details",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on tool result/output size. For server-side tools (web_search, MCP), tool outputs are consumed internally and not returned to the client by default. For client-side function tools, the result is returned as a string with no stated size limit — bounded by context window in practice."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on the number of parallel tool calls emitted in a single response. The docs state 'the model can request multiple tool calls in a single response' and 'process all of them before continuing' but give no numeric upper limit. Disable all parallel calling with parallel_tool_calls: false."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/tools/tool-usage-details",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "The max_turns parameter controls server-side agentic loop turns (each turn = one model reasoning + one or more tool calls + tool results cycle). If max_turns is not specified, 'the server applies a global default cap' (exact number undisclosed). When the agent reaches the limit it stops calling tools and returns a final response. max_turns only applies within a single request; client-side tool calls act as checkpoints that reset the counter. The global default cap value is not published."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on the number of simultaneous Remote MCP server connections per request. The Remote MCP docs show an example with 3 servers in a single request ('Multi-Server Support') with no stated limit: 'Enable multiple MCP servers simultaneously to create a rich ecosystem of specialized tools.' The only indirect constraint is that all tool definitions from all connected servers count toward the 200-tool hard limit and the context window."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No separate 'aggregate tools across servers' limit documented. The 200-tool per-request cap (from function calling docs) is the de-facto total ceiling when mixing function tools and MCP server tools in a single request."
+        },
+        "tool_schema_limits_notes": "Tool parameters root MUST be {\"type\": \"object\"}; a non-object root (scalar or array) causes a 400 error with the tool name identified in the error message. No documented depth, property count, or enum size limits beyond that constraint. Remote MCP tool names are namespaced as '{server_label}.{tool_name}' in responses (e.g., 'deepwiki.search_repository'). All tool definitions from connected MCP server(s) are injected into context automatically; use allowed_tools to filter. Max 200 tools per request hard limit applies to all tool types collectively. JSON Schema enums, anyOf, oneOf, $ref: not explicitly documented as unsupported but no examples use them; standard JSON Schema subset assumed.",
+        "other_limits_notes": "Remote MCP: only Streaming HTTP and SSE transports supported (no stdio/STDIO). The OpenAI Responses API require_approval and connector_id parameters are NOT supported on xAI. xAI manages the MCP server connection server-side — no client-local MCP proxy required. For Voice Agent API, Remote MCP tools are also supported. Built-in server-side tools (web_search, x_search, code_execution) are billed per-call ($5/1k) plus token-based charges. Rate limits: 1,800 RPM / 10M TPM (Tier 0 defaults for us-east-1); see https://docs.x.ai/developers/rate-limits for per-tier table. The max_turns agentic loop parameter has an undisclosed server-enforced global default cap. Context Compaction (May 2026) can compact long agentic sessions automatically.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No API-level skills concept for grok-4.3. The Grok Build product has a Skills/Plugins/Marketplaces section but those are user-facing Grok Build CLI features, not developer API primitives that inject packaged context bundles."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": "No fixed system-prompt overhead documented. System prompt tokens billed as input tokens at standard rate. Cached system prompt tokens billed at $0.20/1M (cached input rate).",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/advanced-api-usage/prompt-caching",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Prompt caching is automatic for consecutive requests sharing the same starting messages. Cached tokens billed at $0.20/1M (vs $1.25/1M standard input). Use x-grok-conv-id header or prompt_cache_key to maximize cache hits. Released May 2025."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/models",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No persistent memory feature documented for the API. Context Compaction (May 2026) allows shrinking long conversations but is not persistent memory. Grok consumer product may have memory features but not exposed in developer API."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 1.25,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard rate for requests up to 200K context. Higher context pricing applies above 200K (exact higher-context rate not published in scraped docs; model page notes 'We charge different rates for requests which exceed the 200K context window')."
+        },
+        "output_per_mtok_usd": {
+          "value": 2.5,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.2,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cached input (prompt caching) rate: $0.20/1M. Listed as 'Cached input' in pricing table."
+        },
+        "batch_discount": {
+          "value": "20%-50% off",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Batch API applies 20%-50% off standard rates on all token types (input, output, cached, reasoning). Exact model-specific rate requires toggling 'Show batch API pricing' on model detail page. Processed asynchronously, typically within 24 hours."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image tokens billed as input tokens at standard rate when images are included in messages. No published tile/patch formula — exact per-image token cost requires testing. xAI pricing docs list 'Image tokens: Visual content analysis (when applicable)' as a standard billed token type.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/advanced-api-usage/prompt-caching/usage-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Pricing docs: 'Reasoning tokens: Full completion token price.' Reasoning tokens tracked in completion_tokens_details.reasoning_tokens. Billed at $2.50/1M (same as output). Batch discount applies to reasoning tokens too."
+        }
+      },
+      "self_host": null,
+      "notes": "grok-4.3 is xAI's current flagship model as of 2026-06-21. It absorbs a large number of legacy aliases (grok-3, grok-4, grok-4-fast, grok-3-mini, etc.) per the model detail page. The 'Grok 4 Fast ~2M context' referenced in some aggregators is NOT confirmed in current docs — the grok-4-fast alias now points to grok-4.3 with a 1M context window. Configurable reasoning (none/low/medium/high effort). Rate limit: 1,800 RPM, 10M TPM (us-east-1).",
+      "sources": [
+        "https://docs.x.ai/developers/models",
+        "https://docs.x.ai/developers/models/grok-4.3",
+        "https://docs.x.ai/developers/pricing",
+        "https://docs.x.ai/developers/tools/function-calling",
+        "https://docs.x.ai/developers/tools/remote-mcp",
+        "https://docs.x.ai/developers/tools/tool-usage-details",
+        "https://docs.x.ai/developers/tools/advanced-usage",
+        "https://docs.x.ai/developers/model-capabilities/text/reasoning",
+        "https://docs.x.ai/developers/advanced-api-usage/prompt-caching",
+        "https://docs.x.ai/developers/advanced-api-usage/prompt-caching/usage-and-pricing",
+        "https://docs.x.ai/developers/rate-limits",
+        "https://docs.x.ai/developers/release-notes"
+      ]
+    },
+    {
+      "id": "grok-4.20-multi-agent-0309",
+      "display_name": "Grok 4.20 Multi-Agent",
+      "family": "Grok 4",
+      "release_date": {
+        "value": "2026-03-10",
+        "confidence": "high",
+        "source_url": "https://docs.x.ai/developers/release-notes",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Release notes: 'March 10: Grok 4.20 and Grok 4.20 Multi-agent are live.'"
+      },
+      "status": "preview",
+      "knowledge_cutoff": {
+        "value": "2024-11-01",
+        "confidence": "high",
+        "source_url": "https://docs.x.ai/developers/models",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Same family as Grok 4; models page states cutoff is November 2024 for Grok 3 and Grok 4."
+      },
+      "modalities": ["text"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1000000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Pricing table lists grok-4.20-multi-agent-0309 with Context: 1M. Same as grok-4.3."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Assumed shared pool per OpenAI-compatible convention; not explicitly stated."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": false,
+          "notes": "Not documented."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Multi-agent docs explicitly state 'max_tokens is not supported' for this model variant."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "max_tokens parameter not supported by this model variant per docs."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No extended context beyond 1M documented."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Multi-agent docs: 'All tokens consumed by both the leader agent and sub-agents are billed, including input tokens, output tokens, and reasoning tokens.' Reasoning effort parameter controls agent count (4 or 16 agents). All sub-agent reasoning billed at completion token price."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "xai-grok",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same closed proprietary tokenizer as grok-4.3. Not publicly released."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "closed",
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Console Tokenizer Playground only; no API."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No count_tokens API. Use console playground or raw_json_rough estimate."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "grok-4.20-multi-agent supports text only (no image modality listed in docs)."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No audio support for this model."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Same rough estimate as other Grok models."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Multi-agent docs: 'Client-side tools (function calling) and custom tools are not currently supported by the multi-agent model variant.' Only built-in server-side tools (web_search, x_search, code_execution) and Remote MCP tools are supported."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Remote MCP tools supported: 'We do support a set of built-in tools (e.g., web_search, x_search) and remote MCP tools.' Client-side function calling is NOT supported; only server-side/MCP tools work."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Multiple agents execute in parallel, each capable of invoking built-in tools independently. Sub-agent tool calls billed separately."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No explicit hard tool count limit documented for the multi-agent model. Only built-in server-side tools and Remote MCP tools are supported — custom function tools (which trigger the 200-cap) are not supported at all. The 200-tool limit from function-calling docs does not apply to this model variant. No separate documented limit on how many MCP tools can be loaded."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "No empirical data specific to multi-agent tool count degradation. Model uses server-side built-in tools only."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Uses OpenAI Responses API format: {type: 'web_search'}, {type: 'x_search'}, {type: 'mcp', server_url, server_label}. Client-side function calling shape (openai_function) is not supported for this model."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Remote MCP tool definitions injected into context and billed as input tokens. Built-in tools have per-call fees ($5/1k calls) plus token-based charges."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No deferred tool loading documented."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not applicable for built-in tools; Remote MCP tool names inherited from server — no documented cap."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented. Custom tool descriptions not applicable (function calling not supported). Remote MCP tool descriptions inherited from server."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No maximum request payload size published. Only Responses API supported (no Chat Completions)."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/tool-usage-details",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Server-side tool outputs (web_search, MCP) are consumed internally by agents and not returned to the client by default. Sub-agent state is encrypted. No documented output size cap."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Multiple sub-agents (4 or 16) can invoke tools in parallel simultaneously. No numeric cap stated for total concurrent tool calls across agents."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "max_turns parameter applies to server-side agentic loop turns. No specific default cap number documented for multi-agent variant. The model orchestrates internally across all sub-agents until a final answer is synthesized."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on simultaneous Remote MCP server connections. Multi-server example shows 3 simultaneous servers with no stated limit."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented. The 200-tool limit from function-calling does not apply here since function calling is unsupported. No separate aggregate limit stated for MCP tools on this model."
+        },
+        "tool_schema_limits_notes": "Client-side function calling (custom tools) not supported. Only built-in server-side tools and Remote MCP tools are available. Chat Completions API not supported — must use Responses API or xAI SDK. max_tokens parameter not supported. Reasoning effort controls agent count (low/medium=4 agents, high/xhigh=16 agents). Remote MCP tool names are namespaced as '{server_label}.{tool_name}' in output.",
+        "other_limits_notes": "Beta model. Sub-agent state encrypted — use use_encrypted_content=True for multi-turn context preservation. Built-in tool calls across all agents billed at $5/1k per tool type. Remote MCP tools: Streaming HTTP and SSE transports only. All sub-agent token consumption (input + output + reasoning) billed cumulatively — costs scale with agent count (4 vs 16). Rate limit same as grok-4.3: 1,800 RPM, 10M TPM (Tier 0).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": "System prompt tokens billed as input tokens. All sub-agent context also billed — multi-agent requests can use significantly more tokens than single-agent requests.",
+        "prompt_caching": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Prompt caching applicability for multi-agent model not explicitly documented. General caching docs apply to chat completions; multi-agent uses Responses API. Pricing table does show $0.20/1M cached rate for this model, suggesting caching is available."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No persistent memory. Multi-turn via previous_response_id only."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 1.25,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same rate as grok-4.3 per pricing table. All sub-agent input tokens billed at this rate. Multi-agent requests may consume significantly more total tokens."
+        },
+        "output_per_mtok_usd": {
+          "value": 2.5,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "All sub-agent output and reasoning tokens billed at this rate."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.2,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "batch_discount": {
+          "value": "20%-50% off",
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "General batch discount applies; applicability to multi-agent beta model not confirmed separately."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Text only. No image/audio for this model.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Docs: 'All tokens consumed by both the leader agent and sub-agents are billed, including input tokens, output tokens, and reasoning tokens.' Reasoning tokens billed at output rate ($2.50/1M)."
+        }
+      },
+      "self_host": null,
+      "notes": "Beta model. Multi-agent orchestrates 4 or 16 parallel agents for deep research. reasoning.effort controls agent count (low/medium=4, high/xhigh=16). Does NOT support client-side function calling — only built-in server-side tools and Remote MCP. Does not work with Chat Completions API; Responses API only. max_tokens parameter unsupported. Sub-agent state encrypted; use use_encrypted_content=true for multi-turn context preservation. Rate limit same as grok-4.3: 1,800 RPM, 10M TPM.",
+      "sources": [
+        "https://docs.x.ai/developers/models",
+        "https://docs.x.ai/developers/pricing",
+        "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+        "https://docs.x.ai/developers/tools/remote-mcp",
+        "https://docs.x.ai/developers/tools/tool-usage-details",
+        "https://docs.x.ai/developers/rate-limits",
+        "https://docs.x.ai/developers/release-notes"
+      ]
+    },
+    {
+      "id": "grok-build-0.1",
+      "display_name": "Grok Build 0.1",
+      "family": "Grok Build",
+      "release_date": {
+        "value": "2026-05-19",
+        "confidence": "high",
+        "source_url": "https://docs.x.ai/developers/release-notes",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Release notes: 'May 19: Grok Build 0.1 — xAI's fast coding model trained specifically for agentic coding, currently in early access.'"
+      },
+      "status": "preview",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Knowledge cutoff not documented for grok-build-0.1 on its model page or in the general models page which only states the Nov 2024 cutoff for Grok 3 and Grok 4 families."
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 256000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card states 'Context window: 256,000'. Higher context pricing above 200K tokens applies."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Assumed shared pool per OpenAI-compatible convention."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": false,
+          "notes": "Not documented."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented on model page."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No extended context beyond 256K documented."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card shows 'Reasoning: The model can think before responding.' Consistent with all Grok models billing reasoning tokens at completion token price."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "xai-grok",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same closed proprietary tokenizer family. No public release."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "closed",
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Console Tokenizer Playground only."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No programmatic count_tokens endpoint."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card lists Text, Image modalities. No image token conversion rule documented."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No audio support for this model."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Standard rough estimate."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card capability: 'Function calling: Connect the xAI model to external tools and systems.' Standard OpenAI-compatible function calling."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Remote MCP tools are supported across all xAI API models that use the Responses API. grok-build-0.1 uses standard API; no specific exclusion documented. Medium confidence because model-specific MCP confirmation not explicitly stated on model card."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Parallel tool calling is default behavior for all Grok models per function calling docs. No exception listed for grok-build-0.1."
+        },
+        "max_tools_hard": {
+          "value": 200,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same 200-tool hard limit per request documented for all models in function calling schema reference table. Verified from live docs (last updated June 17, 2026): 'name — Unique identifier (max 200 tools per request)'."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "General community estimate ~30-50 tools. Smaller 256K context means tool defs consume a larger percentage of the window than grok-4.3's 1M."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "OpenAI-compatible function calling format."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No deferred tool loading documented."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No character limit on tool/function names documented. Same constraint as grok-4.3: MCP tool names namespaced as '{server_label}.{tool_name}'. No documented cap on combined name length. xAI docs publish no equivalent to OpenAI's 64-char name limit."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on tool description length. Same as grok-4.3: required field, no character limit stated."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No maximum request payload size published. Bounded by the 256K token context window for this model."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/tool-usage-details",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on tool result size. Client-side function results returned as strings with no stated limit. Bounded by context window in practice."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented numeric cap on parallel tool calls per response. Same as grok-4.3: model 'can request multiple tool calls in a single response' with no stated upper limit."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/tools/tool-usage-details",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "max_turns parameter available for agentic loops (same as grok-4.3). Global server default cap applies when max_turns not set; exact default number not published. Applies to assistant/server-side turns within a single request; client-side tool calls reset the counter."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented cap on simultaneous Remote MCP server connections per request. Same as grok-4.3: multi-server examples show 3 concurrent without stated limit."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.x.ai/developers/tools/remote-mcp",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented separately. The 200-tool per-request cap is the de-facto aggregate ceiling when combining function tools and MCP server tools."
+        },
+        "tool_schema_limits_notes": "Same constraints as grok-4.3: 200 tools hard limit (per-request), parameters root must be {\"type\": \"object\"} or 400 error, OpenAI function schema, tool defs count as input tokens. 256K context window means larger tool sets consume a greater fraction of available context. Remote MCP tool names namespaced as '{server_label}.{tool_name}'.",
+        "other_limits_notes": "Early-access fast coding model (agentic coding workflows). 256K context window limits practical tool footprint relative to grok-4.3. Remote MCP: Streaming HTTP and SSE transports only. No require_approval or connector_id support on xAI's OpenAI Responses API compatibility layer. Rate limit: 1,800 RPM, 10M TPM. Context Compaction available for long sessions.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": "System prompt tokens billed as input at $1.00/1M. Cached system prompt at $0.20/1M.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Pricing table lists cached input at $0.20/1M for grok-build-0.1, confirming prompt caching is available."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No persistent memory. Context window only."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 1.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard rate for up to 200K context. Higher context pricing above 200K (exact rate not published in scraped docs)."
+        },
+        "output_per_mtok_usd": {
+          "value": 2.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.2,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "batch_discount": {
+          "value": "20%-50% off",
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "General batch discount; applicability to early-access model not confirmed separately."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.x.ai/developers/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image input billed as image tokens at standard input rate. No published tile formula.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.x.ai/developers/models/grok-build-0.1",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model supports reasoning ('The model can think before responding'). Consistent with platform-wide billing of reasoning tokens at output rate."
+        }
+      },
+      "self_host": null,
+      "notes": "Early-access fast coding model optimized for agentic coding workflows. 256K context (smaller than grok-4.3's 1M — tool footprint impact is proportionally larger). Previously had aliases grok-code-fast-1 and grok-code-fast. Reasoning supported. Rate limit: 1,800 RPM, 10M TPM. Lower price point than grok-4.3 ($1/$2 vs $1.25/$2.50 per 1M). Knowledge cutoff not explicitly published.",
+      "sources": [
+        "https://docs.x.ai/developers/models",
+        "https://docs.x.ai/developers/models/grok-build-0.1",
+        "https://docs.x.ai/developers/pricing",
+        "https://docs.x.ai/developers/tools/function-calling",
+        "https://docs.x.ai/developers/tools/remote-mcp",
+        "https://docs.x.ai/developers/tools/tool-usage-details",
+        "https://docs.x.ai/developers/tools/advanced-usage",
+        "https://docs.x.ai/developers/rate-limits",
+        "https://docs.x.ai/developers/release-notes"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Skill Registry work-package ledger",
+  "asOf": "2026-07-01",
+  "status": "planned",
+  "phases": [
+    {
+      "id": "phase-1",
+      "title": "Skill Registry & Inspector",
+      "workPackages": [
+        {
+          "id": "1.0",
+          "title": "Contract & deps",
+          "dependsOn": [],
+          "deliverables": [
+            "shared types+zod",
+            "api deps: @fastify/multipart, fflate, diff, (yaml?)"
+          ],
+          "dod": "shared builds; typecheck green"
+        },
+        {
+          "id": "1.1",
+          "title": "DB schema & repository",
+          "dependsOn": ["1.0"],
+          "deliverables": [
+            "skills/skill_versions/skill_blobs/skill_files/scenario_skills tables",
+            "repository + createVersion tx + blob GC + redaction"
+          ],
+          "dod": "unit tests for createVersion + redaction green"
+        },
+        {
+          "id": "1.2",
+          "title": "Manifest parse + token accounting",
+          "dependsOn": ["1.1"],
+          "deliverables": [
+            "parseSkillManifest + validation",
+            "L1/L2/L3 token subtotals via TokenCounter"
+          ],
+          "dod": "manifest + token unit tests green"
+        },
+        {
+          "id": "1.3",
+          "title": "Ingestion (upload) + routes",
+          "dependsOn": ["1.2"],
+          "deliverables": [
+            "ingest-service upload path",
+            "skill routes + registerSkillRoutes",
+            "apiUpload client"
+          ],
+          "dod": "upload/create/version/files API tests green"
+        },
+        {
+          "id": "1.4",
+          "title": "GitHub import + pull",
+          "dependsOn": ["1.3"],
+          "deliverables": [
+            "git-service probe/import/pull",
+            "PAT via SecretStore",
+            "change detection"
+          ],
+          "dod": "fixture-repo import + no-op/changed pull tests green"
+        },
+        {
+          "id": "1.5",
+          "title": "Diff engine + routes",
+          "dependsOn": ["1.3"],
+          "deliverables": [
+            "diff-service full-tree diff + token deltas + manifest diff",
+            "GET /diff, /diff/file"
+          ],
+          "dod": "rename/binary/rollup unit tests green"
+        },
+        {
+          "id": "1.6",
+          "title": "Web: nav + registry + wizard",
+          "dependsOn": ["1.3", "1.4"],
+          "deliverables": ["AppShell nav item", "SkillsView + SkillRail + SkillWizard"],
+          "dod": "register upload + github skill in-app; both themes; build green"
+        },
+        {
+          "id": "1.7",
+          "title": "Web: inspector (overview + files)",
+          "dependsOn": ["1.3"],
+          "deliverables": ["SkillInspector overview", "SkillFileExplorer FileTree + viewer"],
+          "dod": "explore multi-folder skill; both themes; green"
+        },
+        {
+          "id": "1.8",
+          "title": "Web: versions + diff",
+          "dependsOn": ["1.5", "1.7"],
+          "deliverables": ["Versions DataTable", "SkillDiffView delta strip + DiffEditor"],
+          "dod": "pull changed skill -> deep diff; both themes; green"
+        },
+        {
+          "id": "1.9",
+          "title": "Hardening & docs",
+          "dependsOn": ["1.6", "1.8"],
+          "deliverables": ["size/zip-bomb caps", "states + security surface", "docs update"],
+          "dod": "full gate green; docker manual pass"
+        }
+      ]
+    },
+    {
+      "id": "phase-2",
+      "title": "Scenario attachment",
+      "dependsOn": ["phase-1"],
+      "workPackages": [
+        {
+          "id": "2.1",
+          "title": "Contract + persistence",
+          "dependsOn": ["phase-1"],
+          "deliverables": [
+            "AllowedSkill + zod",
+            "scenario_skills table",
+            "replaceSkills/listSkills/hydrate"
+          ],
+          "dod": "repo tests green"
+        },
+        {
+          "id": "2.2",
+          "title": "Resolution + run-engine wiring",
+          "dependsOn": ["2.1"],
+          "deliverables": [
+            "resolveAllowedSkills",
+            "L1 inject + L2 eager toggle",
+            "optional read_skill_file bridge (decision-gated)"
+          ],
+          "dod": "run-engine skill-token tests green"
+        },
+        {
+          "id": "2.3",
+          "title": "Web scenario editor",
+          "dependsOn": ["2.2"],
+          "deliverables": [
+            "Allowed skills panel",
+            "AddSkillModal (latest/pinned + eager)",
+            "footprint includes skills"
+          ],
+          "dod": "attach latest+pinned, run, footprint; both themes; green"
+        }
+      ]
+    }
+  ],
+  "openDecisions": [
+    "Q1 run-engine fidelity (A metadata / B body / C bridge)",
+    "Q2 SKILL.md summary vs subscribe-to-updates",
+    "Q3 monorepo granularity (one skill per subpath)",
+    "Q4 yaml dep vs hand-parse",
+    "Q5 api deps sign-off",
+    "Q6 pinned-version-deleted behavior",
+    "Q7 in-app editing (deferred)",
+    "Q8 bare SKILL.md upload",
+    "Q9 side-menu placement"
+  ]
+}

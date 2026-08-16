@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mcp-token-footprint/research/skill-registry/skill-manifest.schema.json",
+  "title": "SkillManifest",
+  "description": "Parsed and validated SKILL.md YAML frontmatter, per the Agent Skills specification (agentskills.io/specification). Stored as skill_versions.manifest_json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "description"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Lowercase alphanumerics and single hyphens; no leading/trailing/consecutive hyphens. Must equal the skill directory name. Must not contain reserved words 'anthropic'/'claude' on Anthropic surfaces."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "description": "What the skill does AND when to use it. Level-1 (always-loaded) content."
+    },
+    "license": {
+      "type": "string",
+      "description": "License name or reference to a bundled license file."
+    },
+    "compatibility": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Environment requirements (intended product, packages, network access)."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Arbitrary string->string map. Convention: metadata.version holds the author's version string (there is no first-class version field in the spec).",
+      "additionalProperties": { "type": "string" }
+    },
+    "allowedTools": {
+      "type": "string",
+      "description": "Space-separated pre-approved tool list (experimental). Raw string as authored, e.g. 'Bash(git:*) Read'."
+    }
+  }
+}

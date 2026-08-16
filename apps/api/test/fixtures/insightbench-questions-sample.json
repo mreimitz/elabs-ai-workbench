@@ -1,0 +1,78 @@
+[
+  {
+    "app": "flag-1",
+    "category": "Incident Management",
+    "difficulty_level": 4,
+    "difficulty_description": "This analysis requires advanced data analysis skills due to the complex and multi-layered nature of the investigation needed to extract meaningful insights.",
+    "questions": [
+      {
+        "question": "What is the distribution of incidents across all categories?",
+        "qlik_question": "What is the distribution of incidents across all categories in the flag-1 app?",
+        "question_type": "descriptive",
+        "gt_insight": "hardware incidents is significantly higher than others",
+        "gt_insight_value": {
+          "x_val": "Hardware",
+          "y_val": 336
+        },
+        "gt_action": "With the Hardware category having the highest number of incidents, it could be beneficial to allocate more resources to the team handling this category.",
+        "gt_code": "df.groupby(\"category\").size().plot(kind=\"barh\")"
+      }
+    ]
+  },
+  {
+    "app": "flag-3",
+    "category": "Incident Management",
+    "difficulty_level": 2,
+    "difficulty_description": "This analysis requires basic data analysis skills.",
+    "questions": [
+      {
+        "question": "What is the distribution of incidents assigned to each human agent?",
+        "qlik_question": "What is the distribution of incidents assigned to each human agent in the flag-3 app?",
+        "question_type": "descriptive",
+        "gt_insight": "One agent is assigned significantly more incidents than others",
+        "gt_insight_value": {
+          "agent": "Fred Luddy",
+          "incidents_assigned": 385
+        },
+        "gt_action": "Investigate why one agent carries a disproportionate share of incidents and rebalance assignments.",
+        "gt_code": "df.groupby(\"assigned_to\").size().plot(kind=\"barh\")"
+      },
+      {
+        "question": "Is there a specific human agent who is assigned significantly more incidents than others?",
+        "qlik_question": "Is there a specific human agent who is assigned significantly more incidents than others in the flag-3 app?",
+        "question_type": "descriptive",
+        "gt_insight": "There is a specific agent Fred Luddy who is assigned significantly more incidents than others",
+        "gt_insight_value": {
+          "agent": "Fred Luddy",
+          "incidents_assigned": 385
+        },
+        "gt_action": "Review Fred Luddy's workload and redistribute incidents to balance the team.",
+        "gt_code": "incident_counts = df.groupby('assigned_to').size()\nincident_counts.idxmax()"
+      }
+    ]
+  },
+  {
+    "app": "flag-82",
+    "category": "Goal Management",
+    "difficulty_level": 2,
+    "difficulty_description": "This analysis requires basic data analysis skills.",
+    "questions": [
+      {
+        "question": "How does the success rate of goals met across different categories compare?",
+        "qlik_question": "How does the success rate of goals met across different categories compare in the flag-82 app?",
+        "question_type": "comparative",
+        "gt_insight": "There was no column percent_complete to conduct any analysis",
+        "gt_insight_value": {},
+        "gt_action": ""
+      },
+      {
+        "question": "How do cross-departmental tasks compare to non-cross-departmental tasks in terms of completion and target achievement percentages?",
+        "qlik_question": "How do cross-departmental tasks compare to non-cross-departmental tasks in terms of completion and target achievement percentages in the flag-82 app?",
+        "question_type": "diagnostic",
+        "gt_insight": "There was no column description to conduct any analysis",
+        "gt_insight_value": {},
+        "gt_action": ""
+      }
+    ]
+  }
+]

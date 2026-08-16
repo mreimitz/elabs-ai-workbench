@@ -1,0 +1,1251 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06-21",
+  "provider": {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "group": "open_weight",
+    "homepage": "https://www.deepseek.com/",
+    "api_docs_url": "https://api-docs.deepseek.com/",
+    "tokenizer_docs_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+    "native_mcp_support": {
+      "value": false,
+      "confidence": "high",
+      "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "The hosted DeepSeek API does not speak the MCP protocol natively. It offers OpenAI-compatible function calling (and an Anthropic-compatible API endpoint). MCP can be enabled at the serving-stack layer (e.g., SGLang MCP adapter) when self-hosting."
+    },
+    "skills_concept": {
+      "value": null,
+      "confidence": "high",
+      "source_url": "https://api-docs.deepseek.com/",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "DeepSeek has no first-party 'skills' or assistant-extension mechanism. The closest analog is the disk-based context caching (KV cache) which reduces the cost of repeated static prefixes such as tool definitions and system prompts. No persistent memory or packaged skill bundles exist."
+    }
+  },
+  "models": [
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Pro",
+      "display_name": "DeepSeek-V4-Pro",
+      "family": "DeepSeek-V4",
+      "release_date": {
+        "value": "2026-04-24",
+        "confidence": "high",
+        "source_url": "https://api-docs.deepseek.com/news/news260424",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Exact training cutoff not publicly documented in the technical report or model card as of 2026-06-21. Benchmarks suggest knowledge extends into early 2026."
+      },
+      "modalities": ["text"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1048576,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json: max_position_embeddings=1048576 (1M). Native config uses YaRN RoPE scaling with original_max_position_embeddings=65536 and factor=16."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard shared context pool: context_length=1M, max_output=384K. Input + output together consume the window."
+        },
+        "max_input_tokens": {
+          "value": 671744,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived as context_window (1048576) minus max_output (384K = 393216) = 655360. Exact max_input not separately documented; operator-configurable when self-hosting."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Default output cap not separately documented in the API; only a maximum of 384K is stated. Deployment default may be lower; unconfirmed."
+        },
+        "max_output_tokens_max": {
+          "value": 393216,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "384K tokens maximum output across both thinking and non-thinking modes per the official pricing/model details page (384*1024=393216). For Think Max mode, model card recommends setting context window to at least 384K."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M is the standard GA context; no separate beta/extended window documented."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Thinking/CoT tokens (reasoning_content) are billed as output tokens at the same output rate ($0.87/1M for V4-Pro). The 384K max_output cap covers both thinking and final response tokens combined."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "DeepSeek BPE (encoding_dsv4), vocab_size=129280",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json: vocab_size=129280. Uses a custom encoding pipeline (encoding_dsv4) rather than a standard Jinja chat template. Same tokenizer family as V3/V3.2 (vocab_size 129280 shared across all DeepSeek V3/V4 generations)."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (deepseek-ai/DeepSeek-V4-Pro) + encoding_dsv4 Python scripts in repo",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Official tokenizer zip also available at https://cdn.deepseek.com/api-docs/deepseek_v3_tokenizer.zip per token usage docs."
+        },
+        "count_tokens_method": {
+          "value": "transformers.AutoTokenizer.from_pretrained('deepseek-ai/DeepSeek-V4-Pro').encode(text) OR deepseek_tokenizer.zip offline tool",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "V4-Pro is text-only; no image modality documented."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No audio modality."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.3,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Official docs state ~1 English character ≈ 0.3 tokens (= ~3.3 chars/token). Use as rough estimate only; actual ratio varies by content."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Full OpenAI-compatible function calling with parallel tool calls, strict mode (beta), and tool use in both thinking and non-thinking modes."
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "The hosted API does not accept raw MCP messages. When self-hosting with SGLang, an MCP adapter can be layered on."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "API returns multiple tool_calls in a single response turn."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard limit on number of tools per request. Effective limit is the context window (tool defs count as input tokens)."
+        },
+        "max_tools_practical": {
+          "value": 30,
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "No DeepSeek-specific empirical degradation data found. Estimate based on general community consensus (~30-50 tools) from Berkeley FCL research. Treat as low-confidence."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "OpenAI-compatible format: {type: 'function', function: {name, description, parameters}} with optional strict mode. Also accepts Anthropic-format tools via the /anthropic endpoint."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/kv_cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool definitions are part of the prompt and billed as input tokens. They are eligible for disk KV-cache hits."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No progressive/deferred tool loading in the DeepSeek API. All tools must be in the request."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "tool_schema_limits_notes": "Strict mode (beta) supports a defined subset of JSON Schema types: object, string, number, integer, boolean, array, enum, anyOf, $ref/$def. minLength, maxLength, minItems, maxItems not supported in strict mode.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No skills/extension mechanism. No persistent memory or packaged capability bundles."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": "System prompts count as input tokens and are eligible for disk KV-cache. In multi-turn agentic workflows (e.g., Claude Code integration), reasoning_content from tool-call turns must be passed back and is billed as input.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/kv_cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Disk-based KV-cache (context caching) enabled by default for all users. Cache hits for V4-Pro: $0.003625/1M vs $0.435/1M cache-miss (>99% discount). Cache persists for hours to days and matches common prefixes automatically. Tool definitions and system prompts are prime caching candidates."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No persistent memory feature in the API."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.435,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache-miss (standard) input price. Self-hosting: cost is compute only (no per-token fee)."
+        },
+        "output_per_mtok_usd": {
+          "value": 0.87,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Thinking/CoT tokens billed at this same output rate."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.003625,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache hit (disk KV-cache) price for V4-Pro. >99% discount vs cache-miss."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No batch API discount documented as of 2026-06-21."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Hosted API bills per token. Self-hosted: compute cost only."
+        },
+        "multimodal_billing_notes": null,
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "reasoning_content (CoT/thinking) tokens count as output tokens and are billed at $0.87/1M. The 384K max_output cap includes thinking tokens."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Also available at ModelScope: https://modelscope.cn/models/deepseek-ai/DeepSeek-V4-Pro. Base model: deepseek-ai/DeepSeek-V4-Pro-Base."
+        },
+        "license": {
+          "value": "MIT",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "param_variants": {
+          "value": "1.6T total / 49B active (MoE). FP4+FP8 mixed precision instruct weights; FP8 base weights.",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MoE: 384 routed experts, 6 active per token, 1 shared expert. 61 hidden layers."
+        },
+        "native_context_config": {
+          "value": 1048576,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json max_position_embeddings=1048576 via YaRN RoPE scaling (factor=16, original=65536)."
+        },
+        "max_context_documented": {
+          "value": 1048576,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/news/news260424",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M is the documented maximum."
+        },
+        "serving_frameworks": {
+          "value": "vLLM, SGLang (recommended), Transformers HF pipeline, Docker Model Runner",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "HF model card provides ready-to-run commands for vLLM and SGLang. SGLang recommended for production due to MoE/long-context optimizations."
+        },
+        "framework_tool_calling_notes": "When served via vLLM/SGLang with OpenAI-compatible chat completions API, standard tool calling works out of the box with the openai_function shape. MCP protocol support requires an adapter layer (e.g., SGLang MCP bridge). In thinking mode with tool calls, reasoning_content must be passed back in subsequent turns."
+      },
+      "notes": "Preview release (April 2026). Currently the heaviest open-weight MoE at 1.6T total params. Achieves frontier-class coding/math performance (Codeforces 3206 in Think Max mode). Actively used in DeepSeek's own internal agentic workflows (Claude Code, OpenCode). The legacy model names deepseek-chat and deepseek-reasoner are deprecated and will be removed 2026-07-24; they currently route to deepseek-v4-flash.",
+      "sources": [
+        "https://api-docs.deepseek.com/news/news260424",
+        "https://api-docs.deepseek.com/quick_start/pricing",
+        "https://api-docs.deepseek.com/guides/tool_calls",
+        "https://api-docs.deepseek.com/guides/kv_cache",
+        "https://api-docs.deepseek.com/guides/thinking_mode",
+        "https://api-docs.deepseek.com/quick_start/token_usage",
+        "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+        "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro/blob/main/config.json"
+      ]
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "display_name": "DeepSeek-V4-Flash",
+      "family": "DeepSeek-V4",
+      "release_date": {
+        "value": "2026-04-24",
+        "confidence": "high",
+        "source_url": "https://api-docs.deepseek.com/news/news260424",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Not publicly documented in model card or technical report."
+      },
+      "modalities": ["text"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1048576,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json: max_position_embeddings=1048576. YaRN scaling with original_max_position_embeddings=65536, factor=16."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": 655360,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: 1048576 - 393216 (384K max output) = 655360."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Default output cap not separately documented."
+        },
+        "max_output_tokens_max": {
+          "value": 393216,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "384K max output same as V4-Pro; shared across thinking and non-thinking modes."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M is the standard GA context."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same as V4-Pro: CoT tokens billed as output at $0.28/1M."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "DeepSeek BPE (encoding_dsv4), vocab_size=129280",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Identical tokenizer family and vocab size to V4-Pro."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (deepseek-ai/DeepSeek-V4-Flash) + encoding_dsv4 Python scripts",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card notes to use deepseek-ai/DeepSeek-V4-Pro tokenizer for the Flash model as well (shared tokenizer)."
+        },
+        "count_tokens_method": {
+          "value": "transformers.AutoTokenizer.from_pretrained('deepseek-ai/DeepSeek-V4-Flash').encode(text) OR deepseek_tokenizer.zip offline tool",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Text-only model."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No audio modality."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.3,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same as V4-Pro: ~1 English char ≈ 0.3 tokens."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap."
+        },
+        "max_tools_practical": {
+          "value": 30,
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Estimate; no Flash-specific empirical data."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/kv_cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "tool_schema_limits_notes": "Same strict mode subset as V4-Pro.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": "Same caching behavior as V4-Pro; system prompts and tool definitions are eligible for disk KV-cache.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/kv_cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache hit for V4-Flash: $0.0028/1M vs $0.14/1M standard input — 98% discount."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.14,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache-miss input price. This is the cheapest frontier-class API price publicly available as of 2026-06-21."
+        },
+        "output_per_mtok_usd": {
+          "value": 0.28,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.0028,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Cache hit price for V4-Flash. ~98% discount vs cache-miss."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No batch API discount documented."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": null,
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Thinking tokens billed at $0.28/1M output rate. V4-Flash previously served as deepseek-reasoner (thinking mode) before V4 launch."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Also: deepseek-ai/DeepSeek-V4-Flash-Base. ModelScope mirror also available."
+        },
+        "license": {
+          "value": "MIT",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "param_variants": {
+          "value": "284B total / 13B active (MoE). FP4+FP8 mixed precision.",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MoE: 256 routed experts, 6 active per token, 1 shared expert. 43 hidden layers."
+        },
+        "native_context_config": {
+          "value": 1048576,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json max_position_embeddings=1048576."
+        },
+        "max_context_documented": {
+          "value": 1048576,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/news/news260424",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "serving_frameworks": {
+          "value": "vLLM, SGLang, Transformers HF pipeline, Ollama (quantized variants)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "framework_tool_calling_notes": "Same as V4-Pro: OpenAI-compatible tool calling works natively with vLLM/SGLang. Smaller model size makes V4-Flash more accessible for self-hosting (284B vs 1.6T)."
+      },
+      "notes": "The lightweight V4 variant. Previously the model backing deepseek-chat (non-thinking) and deepseek-reasoner (thinking) API aliases, both deprecated 2026-07-24. Significantly cheaper than V4-Pro at $0.14/$0.28 per 1M in/out. Flash-Max thinking mode achieves near-Pro reasoning with a larger token budget.",
+      "sources": [
+        "https://api-docs.deepseek.com/news/news260424",
+        "https://api-docs.deepseek.com/quick_start/pricing",
+        "https://api-docs.deepseek.com/guides/tool_calls",
+        "https://api-docs.deepseek.com/guides/kv_cache",
+        "https://api-docs.deepseek.com/guides/thinking_mode",
+        "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+        "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash/blob/main/config.json"
+      ]
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3.2",
+      "display_name": "DeepSeek-V3.2",
+      "family": "DeepSeek-V3",
+      "release_date": {
+        "value": "2025-12-01",
+        "confidence": "high",
+        "source_url": "https://api-docs.deepseek.com/news/news251201",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Not explicitly documented. Model trained on data through at least mid-2025 (achieved gold-medal on IMO/IOI 2025)."
+      },
+      "modalities": ["text"],
+      "context": {
+        "context_window_tokens": {
+          "value": 163840,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json: max_position_embeddings=163840 (160K). YaRN RoPE scaling with original_max_position_embeddings=4096, factor=40. This is the native self-hosted context. The hosted API previously capped deepseek-chat at 64K before V4 migration."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": false,
+          "notes": "Max output not separately documented for self-hosted V3.2. When on the hosted API (now deprecated in favor of V4), deepseek-chat was 64K context / 8K output."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not separately documented for self-hosted deployment."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not separately documented; deployment-configurable. The legacy hosted API had 8K (non-thinking) / 64K (thinking via deepseek-reasoner) output caps before V4 migration."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "163840 is the native max; no separate extended mode."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/thinking_mode",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "V3.2 introduced thinking-in-tool-use. CoT/reasoning_content tokens billed as output."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "DeepSeek BPE (encoding_dsv32), vocab_size=129280",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json: vocab_size=129280. Uses encoding_dsv32 Python scripts (different from V4's encoding_dsv4) for chat template encoding."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (deepseek-ai/DeepSeek-V3.2) + encoding_dsv32 Python scripts in repo",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "transformers.AutoTokenizer.from_pretrained('deepseek-ai/DeepSeek-V3.2').encode(text)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Text-only model."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "chars_per_token_estimate": {
+          "value": 3.3,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/quick_start/token_usage",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "First DeepSeek model to integrate thinking directly into tool-use. Supports tool calls in both thinking and non-thinking modes."
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard limit."
+        },
+        "max_tools_practical": {
+          "value": 30,
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Estimate based on general community consensus; no V3.2-specific data."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/kv_cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://api-docs.deepseek.com/guides/tool_calls",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "tool_schema_limits_notes": "V3.2-Speciale variant does NOT support tool calls per official docs.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": "System prompts count as input tokens eligible for disk KV-cache. A new 'developer' role is introduced for search-agent scenarios; not accepted by the official API.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/kv_cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Disk KV-cache applies to V3.2 when called via API. Self-hosted: cache behavior depends on serving framework."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "V3.2 is no longer directly available via the hosted API (replaced by V4). The legacy deepseek-chat/deepseek-reasoner aliases now route to V4-Flash. Hosted pricing for V3.2 as a distinct endpoint: not published. Self-hosting: compute cost only."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same as input: no separate hosted V3.2 pricing endpoint."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No hosted pricing endpoint for V3.2."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "billing_unit": {
+          "value": "compute",
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/quick_start/pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "For self-hosting (primary use case now), billing is compute cost only. No per-token fee for running your own weights."
+        },
+        "multimodal_billing_notes": null,
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://api-docs.deepseek.com/guides/thinking_mode",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "When hosted (e.g., via third-party providers), reasoning/CoT tokens count as output and are billed at output rate."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Also: deepseek-ai/DeepSeek-V3.2-Speciale (reasoning-optimized variant, no tool calls). Base model: deepseek-ai/DeepSeek-V3.2-Exp-Base."
+        },
+        "license": {
+          "value": "MIT",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "param_variants": {
+          "value": "671B total / 37B active (MoE). FP8 quantized weights.",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card benchmark table: V3.2-Base shows 671B total / 37B active. 256 routed experts, 8 active per token, 1 shared expert. 61 hidden layers."
+        },
+        "native_context_config": {
+          "value": 163840,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "config.json: max_position_embeddings=163840 (~160K)."
+        },
+        "max_context_documented": {
+          "value": 163840,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "160K native maximum; no documented extended mode."
+        },
+        "serving_frameworks": {
+          "value": "vLLM, SGLang, Transformers HF pipeline, Ollama (quantized variants)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same frameworks as V4. Refer to DeepSeek-V3.2-Exp GitHub for local running guide."
+        },
+        "framework_tool_calling_notes": "OpenAI-compatible tool calling supported in both thinking and non-thinking modes (first DeepSeek model with thinking-in-tool-use). V3.2-Speciale variant does NOT support tool calls. When using thinking mode with tools, reasoning_content must be passed back in subsequent API turns."
+      },
+      "notes": "Released 2025-12-01. Predecessor to V4. Still widely self-hosted due to 671B MoE architecture (smaller than V4-Pro's 1.6T). Notable: first DeepSeek model with reasoning integrated into tool-use. Context window is 160K (vs V4's 1M). No longer available as a distinct endpoint on the official hosted API — replaced by V4-Flash. Researchers evaluating lower-resource self-hosting should consider V4-Flash (284B) instead.",
+      "sources": [
+        "https://api-docs.deepseek.com/news/news251201",
+        "https://api-docs.deepseek.com/guides/tool_calls",
+        "https://api-docs.deepseek.com/guides/thinking_mode",
+        "https://api-docs.deepseek.com/guides/kv_cache",
+        "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+        "https://huggingface.co/deepseek-ai/DeepSeek-V3.2/blob/main/config.json",
+        "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro"
+      ]
+    }
+  ]
+}

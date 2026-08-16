@@ -1,0 +1,2 @@
+This asset is bundled but referenced by no section in SKILL.md, so the quality engine's
+`unused-asset` rule flags it.

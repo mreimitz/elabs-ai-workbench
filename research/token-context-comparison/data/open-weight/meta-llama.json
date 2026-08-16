@@ -1,0 +1,1278 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06-21",
+  "provider": {
+    "id": "meta-llama",
+    "name": "Meta Llama",
+    "group": "open_weight",
+    "homepage": "https://www.llama.com/",
+    "api_docs_url": "https://www.llama.com/docs/overview",
+    "tokenizer_docs_url": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+    "native_mcp_support": {
+      "value": false,
+      "confidence": "high",
+      "source_url": "https://www.llama.com/docs/overview",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "The Llama models themselves have no native MCP implementation. MCP access is provided by the serving stack (e.g., vLLM, SGLang, or agent frameworks like llama-stack). The model speaks the Llama chat-template tool format; MCP protocol bridging is done externally."
+    },
+    "skills_concept": {
+      "value": null,
+      "confidence": "high",
+      "source_url": "https://www.llama.com/docs/overview",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "Meta Llama has no first-party 'skills' concept equivalent to Anthropic Agent Skills or OpenAI GPTs. Agent frameworks such as llama-stack or LangChain can layer similar behavior on top, but this is not a built-in model/platform feature."
+    }
+  },
+  "models": [
+    {
+      "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
+      "display_name": "Llama 4 Scout (17B×16E)",
+      "family": "Llama 4",
+      "release_date": {
+        "value": "2025-04-05",
+        "confidence": "high",
+        "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2024-08",
+        "confidence": "high",
+        "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Both Scout and Maverick share the same August 2024 training data cutoff per the official model card table."
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 10485760,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "10M token context for the Instruct model. Base (pretrain) model context is 256K. The 10M context requires the iRoPE architecture (interleaved NoPE + chunked RoPE with attention temperature tuning). max_position_embeddings in config.json = 10485760, with rope_scaling original_max_position_embeddings=8192 and scale_factor=16.0."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard transformer architecture: input + output draw from one shared context window pool. Serving frameworks enforce max_model_len which is deployment-defined."
+        },
+        "max_input_tokens": {
+          "value": 10469376,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct/discussions/46",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: context_window (10485760) minus max_output (16384). Meta does not publish a separate max_input figure; the serving stack sets max_model_len. Max output of 16384 tokens confirmed by aggregator data."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No vendor-published default max_output. When self-hosted, max_new_tokens is set by the caller or serving framework config; common examples use 200-2048. Deployment-defined."
+        },
+        "max_output_tokens_max": {
+          "value": 16384,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://llm-stats.com/models/llama-4-scout",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "16384 tokens reported by multiple hosted inference providers (Groq, OpenRouter) and aggregators for Scout. Not documented in an official Meta spec; reflects observed cap at hosted API endpoints. Self-hosted deployments may configure higher values up to the full context window."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "The 10M context IS the documented maximum for Scout Instruct. No separate 'extended' mode. Reaching 10M requires multi-node deployment. On 8xH100 BF16, vLLM achieves ~1M; on 8xH200, ~3.6M. The full 10M requires more hardware or fp8/int4 quantization."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Llama 4 Scout is not a designated reasoning model (no chain-of-thought token budget). The tokenizer has <|reasoning_thinking_start|>/<|reasoning_thinking_end|> special tokens reserved for future use, but Scout does not expose a documented reasoning/thinking mode. N/A for standard inference."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "tiktoken BPE (O200K pattern, ~200K base tokens + 2048 special tokens)",
+          "confidence": "high",
+          "source_url": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Llama 4 uses tiktoken with the O200K_PATTERN regex (same pattern as OpenAI o200k_base). BPE file loaded via tiktoken.Encoding. Vocabulary: num_base_tokens ~200,000 plus 2,048 reserved special tokens. Distinct from Llama 2 (SentencePiece) and closer to Llama 3 (tiktoken 128K vocab). Llama 4 expanded to ~200K base tokens."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tokenizer weights ship with the model repo on HuggingFace (gated, requires license agreement). Once downloaded, the tokenizer can be run locally via HF AutoTokenizer or the official tokenizer.py."
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (meta-llama/Llama-4-Scout-17B-16E-Instruct) or official tokenizer.py",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('meta-llama/Llama-4-Scout-17B-16E-Instruct'); len(tok.encode(text))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "HF transformers v4.51.0+ required. Alternatively use the official tokenizer.py from meta-llama/llama-models. Repo is gated; HF account + license acceptance required."
+        },
+        "image_token_rule": {
+          "value": "Tile-based: each image split into tiles (~560×560px); each tile encodes to 1+tile_tokens patch tokens (exact count depends on image resolution and tile count). Special tokens <|image_start|>, <|patch|>, <|image_end|>, <|tile_x_separator|>, <|tile_y_separator|> frame the image tokens.",
+          "confidence": "medium",
+          "source_url": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Exact tokens-per-image depends on resolution and tile count. Meta tested up to 5 images reliably; vLLM recommends up to 10 with --limit-mm-per-prompt image=10. No published tokens-per-image table."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Llama 4 Scout does not support audio input. Supported input modalities: multilingual text and image only."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Rough estimate for English text based on tiktoken BPE behavior with ~200K vocab. Use actual tokenizer for precise counts."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.vllm.ai/en/latest/features/tool_calling/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Llama 4 Scout natively supports function/tool calling via its chat template format. Parallel tool calls are supported (improvement over Llama 3). vLLM uses --tool-call-parser llama4_pythonic with examples/tool_chat_template_llama4_pythonic.jinja."
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "The MODEL does not speak MCP protocol natively. MCP is a transport-layer protocol; the model generates function-call syntax in the Llama tool format. MCP integration is done by the serving/agent layer (e.g., llama-stack agent framework, or a custom MCP-to-tool-call bridge). Callers using an OpenAI-compatible endpoint from vLLM/SGLang can route MCP tool definitions as OpenAI function-calling JSON."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.vllm.ai/en/latest/features/tool_calling/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Llama 4 models support parallel tool calls (unlike Llama 3 which did not). Confirmed by vLLM tool calling documentation."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/model-cards-and-prompt-formats/llama4/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No hard API-enforced tool count limit documented for the model itself. The effective limit is set by the serving framework and the context window. Tool definitions are injected as input tokens and consume the context window."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "No published empirical degradation point for Llama 4 Scout specifically. Community consensus for large-context models typically sees degradation around 30-50 tools (Berkeley FCL). With a 10M context window, tool definition token consumption is much less of a concern; practical limit more likely governed by model attention accuracy on long tool lists."
+        },
+        "tool_definition_shape": {
+          "value": "llama4_pythonic (Llama chat-template tool format); OpenAI function JSON compatible when served via vLLM/SGLang OpenAI-compatible endpoint",
+          "confidence": "high",
+          "source_url": "https://docs.vllm.ai/en/latest/features/tool_calling/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Native format is the Llama chat-template tool-call syntax (pythonic style). When serving behind vLLM or SGLang with --enable-auto-tool-choice --tool-call-parser llama4_pythonic, the API surface is OpenAI function-call compatible, so MCP tool definitions serialized as OpenAI functions work directly."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool definitions are injected into the prompt as part of the system/user message and count as input tokens consumed from the context window."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No native deferred/lazy tool loading in the model or standard serving stack. Tool search/deferral is a feature of specific agent frameworks layered on top (e.g., llama-stack). The 10M context window makes tool footprint less critical than for smaller-window models."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented character or token limit on tool names. Deployment-defined."
+        },
+        "tool_schema_limits_notes": "No published per-tool schema size or nesting depth limits. Effective limit is context window consumption. Tool JSON definitions are serialized into the prompt and count as input tokens.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No first-party skills/extensions concept. Agent frameworks (llama-stack, LangChain, LlamaIndex) can implement skills-like patterns externally."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "No native skills. If agent frameworks inject skill instructions into the system prompt or as tool definitions, those tokens count as input tokens against the context window.",
+        "system_prompt_overhead_notes": "System prompt tokens count as input tokens against the 10M context window. Meta provides a recommended system prompt (~170 tokens in the Maverick model card example). No fixed platform-injected overhead — the operator controls the full prompt.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/latest/features/tool_calling/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Prompt/prefix caching is available via the serving stack (vLLM prefix caching, SGLang RadixAttention), not a model-native feature. vLLM's KV cache reuse can significantly reduce effective input token cost for repeated system prompts and tool definitions. Dependent on serving configuration."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No built-in persistent memory. External memory/RAG can be implemented via agent frameworks. The 10M context window makes in-context 'memory' practical for many use cases."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights — cost is self-hosted compute. No vendor per-token price. Tier-3 reference: hosted inference on Groq ~$0.11/M input, DeepInfra ~$0.08/M input (as of 2025-2026). Self-hosted GPU compute cost depends on hardware amortization."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights — cost is self-hosted compute. Tier-3 reference: hosted inference on Groq ~$0.34/M output, DeepInfra ~$0.30/M output (as of 2025-2026)."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No vendor caching price. Self-hosted prefix caching (vLLM) can reduce effective compute for repeated prefixes but there is no billed discount."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No vendor batch pricing. Self-hosted batched inference (vLLM continuous batching) improves throughput/GPU utilization but no token-price discount."
+        },
+        "billing_unit": {
+          "value": "compute",
+          "confidence": "high",
+          "source_url": "https://www.llama.com/models/llama-4/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights — billing is self-hosted GPU compute cost."
+        },
+        "multimodal_billing_notes": "Open weights / self-hosted compute. Image tokens (tile patches) consume input context window tokens; no separate per-image billing.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "N/A — open weights, no vendor billing. Scout does not have a documented reasoning/thinking mode."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Gated repository — requires HuggingFace account and Llama 4 Community License acceptance. Base model: meta-llama/Llama-4-Scout-17B-16E"
+        },
+        "license": {
+          "value": "Llama 4 Community License",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Custom commercial license (not Apache/MIT). Commercial use permitted. Organizations with >700M monthly active users must request a separate license from Meta. Full text: https://github.com/meta-llama/llama-models/blob/main/models/llama4/LICENSE"
+        },
+        "param_variants": {
+          "value": "17B active parameters / 109B total (MoE: 16 experts, 1 active per token). Released as BF16; on-the-fly int4 quantization supported (fits single H100 GPU).",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_context_config": {
+          "value": 10485760,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct/discussions/42",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "max_position_embeddings = 10485760 (10M) in config.json, per community discussion confirming Scout config. rope_scaling: original_max_position_embeddings=8192, scale_factor=16.0. Pretrain base model config is 262144 (256K)."
+        },
+        "max_context_documented": {
+          "value": 10485760,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "10M is the documented maximum for the Instruct model (achieved via iRoPE: interleaved NoPE layers + chunked RoPE + attention temperature tuning). Practically limited by GPU memory: 8xH100 achieves ~1M, 8xH200 ~3.6M, multi-node for full 10M."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (v0.8.3+, day-0 support), SGLang, TGI (HF, maintenance mode), HF Transformers (v4.51.0+), Ollama (community support), llama-stack",
+          "confidence": "high",
+          "source_url": "https://blog.vllm.ai/2025/04/05/llama4.html",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "vLLM is the recommended production serving engine. SGLang is competitive for shared-prefix workloads (RadixAttention). TGI officially supports it but is in maintenance mode. Ollama has community support. HF Transformers for research/local use."
+        },
+        "framework_tool_calling_notes": "Tool/function calling when self-hosted via vLLM: use --enable-auto-tool-choice --tool-call-parser llama4_pythonic with examples/tool_chat_template_llama4_pythonic.jinja. This exposes an OpenAI-compatible function-calling API. MCP tool definitions (serialized as OpenAI function JSON) work via this path. SGLang similarly supports OpenAI-compatible tool calling. The model does not speak MCP natively; the serving stack bridges MCP to the Llama tool format. vLLM prefix caching reduces repeated tool-definition input cost."
+      },
+      "notes": "Scout is the long-context champion of the Llama 4 herd. The 10M context window is architecturally achieved (iRoPE) but practically constrained by GPU memory; most deployments will target 1M–3.6M range per hardware. Multimodal (text+image). Tool calling via vLLM is production-ready with parallel tool call support. MCP is served via the agent/serving layer, not the model. Open weights with a custom commercial license (not permissive like Apache-2.0).",
+      "sources": [
+        "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct",
+        "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "https://huggingface.co/blog/llama4-release",
+        "https://blog.vllm.ai/2025/04/05/llama4.html",
+        "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+        "https://docs.vllm.ai/en/latest/features/tool_calling/",
+        "https://www.llama.com/models/llama-4/",
+        "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+        "https://llm-stats.com/models/llama-4-scout",
+        "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct/discussions/46",
+        "https://huggingface.co/meta-llama/Llama-4-Scout-17B-16E-Instruct/discussions/42"
+      ]
+    },
+    {
+      "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+      "display_name": "Llama 4 Maverick (17B×128E)",
+      "family": "Llama 4",
+      "release_date": {
+        "value": "2025-04-05",
+        "confidence": "high",
+        "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2024-08",
+        "confidence": "high",
+        "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "August 2024 training data cutoff per official model card table."
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1048576,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M token context for the Instruct model (1,048,576 = 2^20). Base pretrain context is 256K. HF blog: 'The Instruct models were fine-tuned to support much larger context lengths: 1M in the large 128 experts version (Maverick).' On 8xH100, vLLM achieves ~430K; on 8xH200, full 1M is achievable."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard shared pool architecture."
+        },
+        "max_input_tokens": {
+          "value": 1032192,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://llm-stats.com/models/llama-4-maverick",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: context_window (1048576) minus max_output (16384). Not separately documented by Meta."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No vendor-published default max_output. Deployment-defined by the serving stack."
+        },
+        "max_output_tokens_max": {
+          "value": 16384,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://openrouter.ai/meta-llama/llama-4-maverick",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "16384 tokens reported by hosted inference providers (Groq, OpenRouter). Not documented in an official Meta spec. Self-hosted deployments may configure higher values up to context window."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M is the documented maximum for Maverick Instruct. No further extended mode beyond this."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Maverick is not a designated reasoning model in GA. Reasoning special tokens are reserved in the tokenizer but not exposed in standard inference."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "tiktoken BPE (O200K pattern, ~200K base tokens + 2048 special tokens)",
+          "confidence": "high",
+          "source_url": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same tokenizer as Llama 4 Scout — all Llama 4 models share the same tokenizer. Uses tiktoken library with O200K_PATTERN, BPE model. See Scout entry for full details."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (meta-llama/Llama-4-Maverick-17B-128E-Instruct) or official tokenizer.py",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('meta-llama/Llama-4-Maverick-17B-128E-Instruct'); len(tok.encode(text))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "Gated repo requires HF account and license acceptance. Tokenizer is shared across all Llama 4 models — any Llama 4 tokenizer download can be used."
+        },
+        "image_token_rule": {
+          "value": "Tile-based (same as Scout): image split into tiles, each tile encoded as patch tokens with special framing tokens.",
+          "confidence": "medium",
+          "source_url": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same multimodal architecture as Scout. Tested for up to 5 images reliably. vLLM supports up to 10 images per request."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio not supported. Text and image only."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Rough estimate for English text with tiktoken BPE ~200K vocab. Same as Scout — shared tokenizer."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.vllm.ai/en/latest/features/tool_calling/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same tool-calling capability as Scout. vLLM recommends llama4_pythonic parser. Parallel tool calls supported."
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same as Scout — MCP is bridged via the serving layer, not native to the model."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.vllm.ai/en/latest/features/tool_calling/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/model-cards-and-prompt-formats/llama4/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No hard limit documented. Deployment-defined by context window consumption."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "No published empirical degradation point for Maverick specifically. Same general community guidance as Scout (~30-50 tools before accuracy drop, though Maverick's 1M context makes token footprint less constraining)."
+        },
+        "tool_definition_shape": {
+          "value": "llama4_pythonic (Llama chat-template tool format); OpenAI function JSON compatible when served via vLLM/SGLang OpenAI-compatible endpoint",
+          "confidence": "high",
+          "source_url": "https://docs.vllm.ai/en/latest/features/tool_calling/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No native deferral. Agent framework responsibility."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_schema_limits_notes": "No published schema size limits. Tool JSON injected as input tokens against context window.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "No native skills. External agent framework skill injections count as input tokens.",
+        "system_prompt_overhead_notes": "System prompt tokens count as input against the 1M context. No platform-injected overhead. Meta provides a reference system prompt (~170 tokens) in the model card.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://blog.premai.io/eploy-llama-4-with-vllm-scout-vs-maverick-setup-guide-2026/",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Same as Scout: prefix caching via vLLM (KV cache) or SGLang (RadixAttention) is available as a serving-stack feature. Not model-native."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights — cost is self-hosted compute. Tier-3 reference: hosted inference on Groq ~$0.50/M input, Fireworks/DeepInfra ~$0.15/M input (as of 2025-2026)."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights — cost is self-hosted compute. Tier-3 reference: Groq ~$0.77/M output, Fireworks/DeepInfra ~$0.60/M output."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No vendor caching price. Self-hosted prefix caching available via serving stack."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No vendor batch pricing. Self-hosted batched inference improves GPU utilization."
+        },
+        "billing_unit": {
+          "value": "compute",
+          "confidence": "high",
+          "source_url": "https://www.llama.com/models/llama-4/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights — billing is self-hosted GPU compute cost."
+        },
+        "multimodal_billing_notes": "Open weights. Image tiles consume input context window tokens. No separate per-image charge.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "N/A — open weights, no vendor billing. Maverick does not have a documented reasoning/thinking mode in GA."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Gated repo. Base model: meta-llama/Llama-4-Maverick-17B-128E. FP8 quantized weights also available: meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8"
+        },
+        "license": {
+          "value": "Llama 4 Community License",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same license as Scout. >700M MAU requires separate Meta license."
+        },
+        "param_variants": {
+          "value": "17B active parameters / 400B total (MoE: 128 experts, alternating MoE+dense layers). Released as BF16 and FP8 quantized. FP8 fits on single H100 DGX host (8xH100).",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Maverick uses 128 experts but with alternating MoE+dense layers (MoE applied in half the layers). Co-distilled from Llama 4 Behemoth."
+        },
+        "native_context_config": {
+          "value": 1048576,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M token context per HF blog table for Maverick Instruct. The config.json max_position_embeddings for Maverick is 1048576 based on the documented 1M context window. config.json exact value not directly verified from file; derived from documented context window."
+        },
+        "max_context_documented": {
+          "value": 1048576,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/blog/llama4-release",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1M is the documented maximum. On 8xH100, vLLM achieves ~430K practically; full 1M requires 8xH200 or multi-node."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (v0.8.3+, recommended), SGLang, TGI (maintenance mode), HF Transformers (v4.51.0+), llama-stack",
+          "confidence": "high",
+          "source_url": "https://blog.vllm.ai/2025/04/05/llama4.html",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "vLLM on 8xH100: Maverick at ~430K context; on 8xH200: full 1M. FP8 quantized checkpoint recommended for production deployment."
+        },
+        "framework_tool_calling_notes": "Same as Scout: vLLM with --enable-auto-tool-choice --tool-call-parser llama4_pythonic exposes OpenAI-compatible function-calling. MCP tool definitions serialized as OpenAI functions work via this path. SGLang is an alternative. vLLM prefix caching applies."
+      },
+      "notes": "Maverick is the capability-optimized model of the GA Llama 4 pair. Co-distilled from Behemoth. 1M token context, 400B total params (17B active). FP8 quantization makes it deployable on a single H100 DGX host. Stronger on benchmarks than Scout but more resource-intensive. Parallel tool calling supported.",
+      "sources": [
+        "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+        "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E-Instruct",
+        "https://huggingface.co/blog/llama4-release",
+        "https://blog.vllm.ai/2025/04/05/llama4.html",
+        "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+        "https://docs.vllm.ai/en/latest/features/tool_calling/",
+        "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+        "https://openrouter.ai/meta-llama/llama-4-maverick",
+        "https://tokencost.app/blog/llama-4-scout-vs-maverick-api-pricing"
+      ]
+    },
+    {
+      "id": "meta-llama/Llama-4-Behemoth-288B-16E",
+      "display_name": "Llama 4 Behemoth (288B×16E)",
+      "family": "Llama 4",
+      "release_date": {
+        "value": null,
+        "confidence": "high",
+        "source_url": "https://serenitiesai.com/articles/llama-4-behemoth-maverick-scout-review-2026",
+        "source_tier": 3,
+        "as_of": "2026-06-21",
+        "notes": "Announced April 5, 2025 alongside Scout and Maverick but weights have NOT been publicly released. Meta described it as 'still training' at launch. As of 2026-06-21, no public release date. Weights are not available on HuggingFace or llama.com downloads. Status: preview/announced-only."
+      },
+      "status": "preview",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": null,
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Not documented. Likely August 2024 in line with Scout and Maverick, but not confirmed since weights have not been released."
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No official context window specification published for Behemoth. Meta has not released technical details. Cannot be reliably inferred from Scout/Maverick given different architecture scale."
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented — weights unreleased."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented — weights unreleased, no deployment context."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not applicable — weights unreleased. The tokenizer has reasoning special tokens reserved."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "tiktoken BPE (O200K pattern, ~200K base tokens + 2048 special tokens)",
+          "confidence": "medium",
+          "source_url": "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Inferred from the shared Llama 4 tokenizer architecture; Meta publishes one tokenizer for the Llama 4 family. Not directly verified from a Behemoth config file (no weights released)."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Behemoth weights and tokenizer are not publicly released. The family tokenizer from Scout/Maverick is the same design and is available."
+        },
+        "tokenizer_access": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No public access. Use Scout or Maverick tokenizer as a proxy (same family tokenizer)."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "Not available. Use Llama 4 Scout tokenizer as a proxy for token counting since the family shares a tokenizer."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented. Likely same tile-based approach as Scout/Maverick per family architecture, but unconfirmed."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio not a documented modality for Llama 4."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Estimated from shared Llama 4 family tokenizer. Low confidence due to no direct Behemoth tokenizer access."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented for Behemoth specifically. Expected yes based on Llama 4 family design, but unconfirmed since weights unreleased."
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same family architecture — MCP is not native to Llama 4 models. Serving-layer concern."
+        },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Expected yes (Llama 4 family), unconfirmed."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not documented."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "No empirical data — weights unreleased."
+        },
+        "tool_definition_shape": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Expected llama4_pythonic format (family consistency), but unconfirmed."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard transformer behavior — expected true."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No native deferral expected. Consistent with family."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_schema_limits_notes": "Not documented. Weights unreleased.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Consistent with Llama 4 family — no native skills concept."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "medium",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "Not applicable — weights unreleased. Expected same pattern as Scout/Maverick.",
+        "system_prompt_overhead_notes": "Not documented.",
+        "prompt_caching": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Serving-stack dependent. Not applicable without public deployment."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.llama.com/docs/overview",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No built-in persistent memory — family-consistent."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights (when/if released) — cost is self-hosted compute. Currently unavailable."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Open weights (when/if released) — cost is self-hosted compute. Currently unavailable."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "N/A — not released."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "N/A — not released."
+        },
+        "billing_unit": {
+          "value": "compute",
+          "confidence": "medium",
+          "source_url": "https://www.llama.com/models/llama-4/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Planned as open weights — billing will be self-hosted compute cost if/when released."
+        },
+        "multimodal_billing_notes": "N/A — not released.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "N/A — not released."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/meta-llama",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Weights NOT publicly available as of 2026-06-21. No HuggingFace repository exists. Behemoth was announced at Llama 4 launch (April 5, 2025) as 'still training' and has not been released."
+        },
+        "license": {
+          "value": "Llama 4 Community License",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/meta-llama/Llama-4-Maverick-17B-128E",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Expected same license as Scout/Maverick when/if released. Not confirmed for Behemoth specifically."
+        },
+        "param_variants": {
+          "value": "288B active parameters / ~2T total (MoE: 16 experts). Architecture unconfirmed beyond Meta announcement.",
+          "confidence": "medium",
+          "source_url": "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Meta announced 288B active params and 16 experts at launch. ~2T total parameters widely reported. No config.json available for verification."
+        },
+        "native_context_config": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No config.json available — weights unreleased."
+        },
+        "max_context_documented": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not officially documented. Unreleased."
+        },
+        "serving_frameworks": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Not applicable — weights unavailable. Would require multi-node infrastructure at ~2T params. No serving framework has published Behemoth support."
+        },
+        "framework_tool_calling_notes": "Not applicable — weights not released. Self-hosting would require substantial multi-node GPU infrastructure."
+      },
+      "notes": "Behemoth is announced but unreleased as open weights as of 2026-06-21. Used internally as a teacher model for Scout and Maverick codistillation. Meta paused the release amid internal capability concerns. All fields beyond architecture basics are null/low-confidence due to no public weights. Included in this dataset as it was announced as part of the Llama 4 herd, but should NOT be used for production recommendations until weights are publicly available.",
+      "sources": [
+        "https://ai.meta.com/blog/llama-4-multimodal-intelligence/",
+        "https://huggingface.co/meta-llama",
+        "https://serenitiesai.com/articles/llama-4-behemoth-maverick-scout-review-2026",
+        "https://manifold.markets/ShankarSivarajan/when-will-llama-4-behemoth-weights",
+        "https://huggingface.co/blog/llama4-release",
+        "https://github.com/meta-llama/llama-models/blob/main/models/llama4/tokenizer.py"
+      ]
+    }
+  ]
+}

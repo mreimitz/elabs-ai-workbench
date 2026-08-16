@@ -1,0 +1,146 @@
+[
+  {
+    "idx": 0,
+    "type": "user_message",
+    "label": "User request",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 0,
+    "payload_json": { "text": "Here is quarterly_sales.csv — generate the report." }
+  },
+  {
+    "idx": 1,
+    "type": "llm_response",
+    "label": "Plan: read SKILL.md",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 0,
+    "payload_json": { "text": "I'll start by reading the skill instructions." }
+  },
+  {
+    "idx": 2,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 0,
+    "payload_json": { "skill": "data-report", "path": "SKILL.md" }
+  },
+  {
+    "idx": 3,
+    "type": "tool_result",
+    "label": "SKILL.md contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 0,
+    "payload_json": { "skill": "data-report", "path": "SKILL.md", "bytes": 1450 }
+  },
+  {
+    "idx": 4,
+    "type": "llm_response",
+    "label": "Gather inputs",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 1,
+    "payload_json": {
+      "text": "The input is CSV. Reading the format spec before generating anything."
+    }
+  },
+  {
+    "idx": 5,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 1,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md" }
+  },
+  {
+    "idx": 6,
+    "type": "tool_result",
+    "label": "format-spec.md contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 1,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md", "bytes": 320 }
+  },
+  {
+    "idx": 7,
+    "type": "llm_response",
+    "label": "Validate",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 2,
+    "payload_json": {
+      "text": "Running scripts/validate.py against the input before generating the report."
+    }
+  },
+  {
+    "idx": 8,
+    "type": "tool_call",
+    "label": "Bash: validate.py",
+    "status": "ok",
+    "tool_name": "Bash",
+    "turn_index": 2,
+    "payload_json": {
+      "command": "python3 scripts/validate.py quarterly_sales.csv",
+      "script": "scripts/validate.py"
+    }
+  },
+  {
+    "idx": 9,
+    "type": "tool_result",
+    "label": "validate.py result",
+    "status": "ok",
+    "tool_name": "Bash",
+    "turn_index": 2,
+    "payload_json": { "script": "scripts/validate.py", "exitCode": 0, "stdout": "", "stderr": "" }
+  },
+  {
+    "idx": 10,
+    "type": "llm_response",
+    "label": "Generate report",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 3,
+    "payload_json": { "text": "Validation passed. Reading the template before filling it in." }
+  },
+  {
+    "idx": 11,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 3,
+    "payload_json": { "skill": "data-report", "path": "assets/template.html" }
+  },
+  {
+    "idx": 12,
+    "type": "tool_result",
+    "label": "template.html contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 3,
+    "payload_json": { "skill": "data-report", "path": "assets/template.html", "bytes": 410 }
+  },
+  {
+    "idx": 13,
+    "type": "llm_response",
+    "label": "Verify output",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 4,
+    "payload_json": {
+      "text": "Every section from the format spec is present and no placeholders were left. Report complete."
+    }
+  },
+  {
+    "idx": 14,
+    "type": "context_event",
+    "label": "Final context checkpoint",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 4,
+    "payload_json": { "note": "run completed successfully" }
+  }
+]

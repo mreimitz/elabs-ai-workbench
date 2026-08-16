@@ -1,0 +1,37 @@
+filename,title,source,source_url,downloaded,error
+images/ant_layout_left_right.png,"Left-right layout: fixed nav, adaptive work area",Ant Design Layout,https://gw.alipayobjects.com/zos/rmsportal/vSqMhPolCtINKLvVVdLt.png,True,
+images/ant_layout_proximity_spacing.png,Vertical spacing scale and hierarchy,Ant Design Proximity,https://gw.alipayobjects.com/zos/rmsportal/goazWUHPXsGEDFIGsNlm.png,True,
+images/ant_navigation_top.png,Top navigation for simple structures,Ant Design Navigation,https://gw.alipayobjects.com/zos/rmsportal/pWbHrSnmicFxcgmWIFst.png,True,
+images/ant_navigation_side.png,Side navigation for operation-heavy apps,Ant Design Navigation,https://gw.alipayobjects.com/zos/rmsportal/VvajPSfjYcVNiNoxZFVH.png,True,
+images/ant_tabs_basic.png,Tabs switch content without page transition,Ant Design Navigation,https://gw.alipayobjects.com/zos/rmsportal/dPpWpAhQYzJOWMCeKqhe.png,True,
+images/ant_steps_horizontal.png,Steps expose progress through a workflow,Ant Design Navigation,https://gw.alipayobjects.com/zos/rmsportal/ugeAGDXQQYkZIbCAGlIP.png,True,
+images/ant_pagination_basic.png,Pagination shows position and remaining content,Ant Design Navigation,https://gw.alipayobjects.com/zos/rmsportal/MlxHpEgkFHhIVaxpaiYJ.png,True,
+images/ant_feedback_alert.png,Non-blocking alert feedback,Ant Design Feedback,https://gw.alipayobjects.com/zos/rmsportal/eviVRYTdxOxOfVENLnxq.png,True,
+images/ant_feedback_loading.png,Short loading feedback,Ant Design Feedback,https://gw.alipayobjects.com/zos/rmsportal/cHaaqZTvzgCZiYUnfNom.png,True,
+images/ant_feedback_progress.png,Progress feedback for long operations,Ant Design Feedback,https://gw.alipayobjects.com/zos/antfincdn/j6XiEx6UUV/676a18a1-bf60-4d93-8f94-55f1882dd13e.png,True,
+images/ant_feedback_input_error.png,Input error feedback in context,Ant Design Feedback,https://gw.alipayobjects.com/zos/rmsportal/CCeqqndHQgWnqVqvRptA.png,True,
+images/ant_data_entry_input.png,Input with label and focus,Ant Design Data Entry,https://gw.alipayobjects.com/zos/rmsportal/tlOeUNcdGkvWedJpiTSz.png,True,
+images/ant_data_entry_hint.png,Input hints reduce guessing,Ant Design Data Entry,https://gw.alipayobjects.com/zos/rmsportal/cggdJfFgvDlOwaFRylSk.png,True,
+images/ant_data_entry_search.png,Search narrows a large information pool,Ant Design Data Entry,https://gw.alipayobjects.com/zos/rmsportal/xLIltABSbmNgukJTZShA.png,True,
+images/ant_data_entry_radio.png,Radio for visible single choice comparison,Ant Design Data Entry,https://gw.alipayobjects.com/zos/rmsportal/mLZUWZmJZKiTmcGFzaOC.png,True,
+images/ant_data_entry_switch.png,Switch takes immediate effect,Ant Design Data Entry,https://gw.alipayobjects.com/zos/rmsportal/MsOFIDWorXeobBLkEwjS.png,True,
+images/ant_data_display_table.png,Table for structured comparison,Ant Design Data Display,https://gw.alipayobjects.com/zos/rmsportal/PetAXSByOolFbtmLazQz.png,True,
+images/ant_data_display_collapse.png,Collapse for progressive disclosure,Ant Design Data Display,https://gw.alipayobjects.com/zos/rmsportal/ypeOSafZJYqVJUHcJeef.png,True,
+images/ant_data_display_card_grid.png,Cards for equal lightweight objects,Ant Design Data Display,https://gw.alipayobjects.com/zos/rmsportal/xtIGZmqUHAovPPKjwyVT.png,True,
+images/ant_data_list_table.png,Data list as table for browsing/comparison,Ant Design Data List,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2AVrOkRbo_Uc4AAAAAAAAAAABkARQnAQ,True,
+images/ant_data_list_filter.png,Filter panel for refining lists,Ant Design Data List,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2AoECHSpfxwPAAAAAAAAAAAABkARQnAQ,True,
+images/ant_button_types.png,Button types and emphasis levels,Ant Design Buttons,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2AwsXrT7yQH2MAAAAAAAAAAABkARQnAQ,True,
+images/ant_button_primary_do.png,One primary button in a group,Ant Design Buttons,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2A3WUkT5pD1SUAAAAAAAAAAABkARQnAQ,True,
+images/ant_button_danger.png,Danger button warns about destructive action,Ant Design Buttons,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2AOvNaQJrmqVMAAAAAAAAAAABkARQnAQ,True,
+images/ant_button_placement.png,Button placement follows reading/workflow patterns,Ant Design Buttons,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2AB8D0RJnirLkAAAAAAAAAAABkARQnAQ,True,
+images/ant_button_footer.png,Footer actions separated from complex body content,Ant Design Buttons,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2AKGGWQLCBfm0AAAAAAAAAAABkARQnAQ,True,
+images/ant_button_label_modal.png,Action labels should describe result/consequence,Ant Design Buttons,https://gw.alipayobjects.com/mdn/rms_08e378/afts/img/A%2A33KsR66zTY8AAAAAAAAAAABkARQnAQ,True,
+images/ant_copywriting_concise.png,Concise copy example,Ant Design Copywriting,https://gw.alipayobjects.com/zos/antfincdn/Ik0zIDUblJ/85996a34-3add-481b-b164-fc82e0b10bba.png,True,
+images/clarity_form_label_grouping_do.svg,Labels close to their controls,Generated visual recreation based on Clarity Form guidance,https://core.clarity.design/images/angular-components/form/input-grouping-do.svg,recreated,source SVG endpoint not downloaded through tool; local recreation included
+images/clarity_form_label_grouping_dont.svg,Labels too far from controls,Generated visual recreation based on Clarity Form guidance,https://core.clarity.design/images/angular-components/form/input-grouping-dont.svg,recreated,source SVG endpoint not downloaded through tool; local recreation included
+images/clarity_form_error_do.svg,Accessible error indicator outside input,Generated visual recreation based on Clarity Form guidance,https://core.clarity.design/images/angular-components/form/error-do.svg,recreated,source SVG endpoint not downloaded through tool; local recreation included
+images/clarity_form_error_dont.svg,Avoid error icons inside input when they collide with input content,Generated visual recreation based on Clarity Form guidance,https://core.clarity.design/images/angular-components/form/error-dont.svg,recreated,source SVG endpoint not downloaded through tool; local recreation included
+images/clarity_modal_dismiss.png,Modal dismissal must be intentional,Clarity Modal,https://core.clarity.design/images/components/modal/dismissing.png,True,
+images/clarity_modal_stacking.png,Avoid stacked modals,Clarity Modal,https://core.clarity.design/images/components/modal/stacking.png,True,
+images/generated_concept_principles.png,Universal business-app design principles,Generated visual example,generated locally from extracted principles,generated,local synthesis diagram
+images/generated_ai_business_app_rules.png,Rule application for AI/business productivity apps,Generated visual example,generated locally from extracted principles,generated,local synthesis diagram

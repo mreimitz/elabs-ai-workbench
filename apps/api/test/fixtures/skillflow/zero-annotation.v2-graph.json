@@ -1,0 +1,172 @@
+{
+  "nodes": [
+    {
+      "id": "data-report",
+      "kind": "subroutine",
+      "source": "inferred",
+      "label": "Data Report",
+      "anchor": {
+        "headingPath": ["Data Report"],
+        "startLine": 6,
+        "endLine": 9
+      }
+    },
+    {
+      "id": "gather-inputs",
+      "kind": "gatekeeper",
+      "source": "inferred",
+      "label": "Gather inputs",
+      "anchor": {
+        "headingPath": ["Gather inputs"],
+        "startLine": 10,
+        "endLine": 18
+      }
+    },
+    {
+      "id": "validate-the-data",
+      "kind": "subroutine",
+      "source": "inferred",
+      "label": "Validate the data",
+      "anchor": {
+        "headingPath": ["Validate the data"],
+        "startLine": 19,
+        "endLine": 28
+      }
+    },
+    {
+      "id": "gate-validate-py",
+      "kind": "validation_gate",
+      "label": "validate.py",
+      "anchor": {
+        "headingPath": ["Validate the data"],
+        "startLine": 19,
+        "endLine": 28
+      },
+      "source": "inferred",
+      "script": "scripts/validate.py",
+      "expectation": "Run `scripts/validate.py` against the input file and check it exits 0 before continuing."
+    },
+    {
+      "id": "validate-the-data-loop",
+      "kind": "loop_guard",
+      "label": "Loop: Validate the data",
+      "anchor": {
+        "headingPath": ["Validate the data"],
+        "startLine": 19,
+        "endLine": 28
+      },
+      "source": "inferred",
+      "maxIterations": 3
+    },
+    {
+      "id": "generate-the-report",
+      "kind": "subroutine",
+      "source": "inferred",
+      "label": "Generate the report",
+      "anchor": {
+        "headingPath": ["Generate the report"],
+        "startLine": 29,
+        "endLine": 34
+      }
+    },
+    {
+      "id": "asset-template-html",
+      "kind": "asset",
+      "label": "template.html",
+      "anchor": {
+        "headingPath": ["Generate the report"],
+        "startLine": 29,
+        "endLine": 34
+      },
+      "source": "inferred",
+      "path": "assets/template.html",
+      "fileKind": "asset"
+    },
+    {
+      "id": "asset-format-spec-md",
+      "kind": "asset",
+      "label": "format-spec.md",
+      "anchor": {
+        "headingPath": ["Generate the report"],
+        "startLine": 29,
+        "endLine": 34
+      },
+      "source": "inferred",
+      "path": "reference/format-spec.md",
+      "fileKind": "reference"
+    },
+    {
+      "id": "verify-the-output",
+      "kind": "subroutine",
+      "source": "inferred",
+      "label": "Verify the output",
+      "anchor": {
+        "headingPath": ["Verify the output"],
+        "startLine": 35,
+        "endLine": 39
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-validate-the-data-gate-validate-py",
+      "from": "validate-the-data",
+      "to": "gate-validate-py"
+    },
+    {
+      "id": "e-validate-the-data-validate-the-data-loop",
+      "from": "validate-the-data",
+      "to": "validate-the-data-loop"
+    },
+    {
+      "id": "e-generate-the-report-asset-template-html",
+      "from": "generate-the-report",
+      "to": "asset-template-html"
+    },
+    {
+      "id": "e-generate-the-report-asset-format-spec-md",
+      "from": "generate-the-report",
+      "to": "asset-format-spec-md"
+    },
+    {
+      "id": "e-data-report-gather-inputs",
+      "from": "data-report",
+      "to": "gather-inputs"
+    },
+    {
+      "id": "e-gather-inputs-validate-the-data",
+      "from": "gather-inputs",
+      "to": "validate-the-data",
+      "condition": "the input is CSV",
+      "anchor": {
+        "headingPath": ["Gather inputs"],
+        "startLine": 10,
+        "endLine": 18
+      }
+    },
+    {
+      "id": "e-gather-inputs-validate-the-data-2",
+      "from": "gather-inputs",
+      "to": "validate-the-data",
+      "condition": "JSON",
+      "anchor": {
+        "headingPath": ["Gather inputs"],
+        "startLine": 10,
+        "endLine": 18
+      }
+    },
+    {
+      "id": "e-validate-the-data-generate-the-report",
+      "from": "validate-the-data",
+      "to": "generate-the-report"
+    },
+    {
+      "id": "e-generate-the-report-verify-the-output",
+      "from": "generate-the-report",
+      "to": "verify-the-output"
+    }
+  ],
+  "warnings": [
+    "gatekeeper \"Gather inputs\" branch targets are not resolvable to sections; routed to the next section with condition labels."
+  ]
+}

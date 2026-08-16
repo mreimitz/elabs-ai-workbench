@@ -1,0 +1,31 @@
+node_modules
+dist
+**/dist
+# Only the runtime SQLite dir at the project root — NOT nested data/ dirs (the model-comparison
+# dataset under research/.../data and the bundled apps/api/src/compatibility/data are versioned).
+/data
+.env
+.env.*
+!.env.example
+coverage
+*.log
+.DS_Store
+
+# Playwright e2e (#29) — generated report/output/cache dirs, never committed.
+test-results
+playwright-report
+.playwright
+
+# Filesystem / tooling artifacts (FUSE mounts, stray pnpm temp probes)
+.fuse_hidden*
+_tmp_*
+_unlinktest
+.wp-evidence/
+data-wt/
+
+# Vitest transpiled-config temp files
+vitest.config.ts.timestamp-*.mjs
+apps/*/vitest.config.ts.timestamp-*.mjs
+
+# Staged real-run payloads used as extraction fixtures (scratch — never committed)
+.qa-fixtures/

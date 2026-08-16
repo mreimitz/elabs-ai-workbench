@@ -1,0 +1,27 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.git
+.DS_Store
+.env
+.env.*
+# Only the root runtime SQLite dir — NOT nested data/ dirs. The bundled compatibility dataset under
+# apps/api/src/compatibility/data must be in the build context so the api `copy-data` build step works.
+/data
+coverage
+*.log
+
+# Playwright e2e (#29) — generated report/output/cache dirs + specs; not needed in the image.
+test-results
+playwright-report
+.playwright
+e2e/
+playwright.config.ts
+
+# Docs / planning / agent tooling — not needed in the build context (cuts context bloat).
+research/
+roadmap/
+docs/
+.claude/
+.github/

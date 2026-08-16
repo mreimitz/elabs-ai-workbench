@@ -1,0 +1,35 @@
+# CI & headless automation — work-package status ledger · **PRIORITY: HIGH**
+
+Living state for the **CI** plan, read and updated by `/next-wp ci`. A box is ticked **only**
+when the WP's Acceptance is met and the gate
+(`pnpm typecheck && pnpm test && pnpm build && pnpm lint`) is green.
+
+**Legend:** `[ ]` open · `[x]` done. Done lines record date + branch: `… — done <YYYY-MM-DD> ·
+wp/ci/<id>`.
+
+> Plan + kickoff decisions (D-C1–D-C3) in [`README.md`](./README.md). **Blocked-on notes:**
+> 2.1/2.2 need Benchmarks Phase 3 (`../benchmarks/STATUS.md`); 3.1 needs security-posture
+> Phase 1 (`../security-posture/STATUS.md`). Migration numbers: claim the next free
+> `user_version` at kickoff via the cross-workstream decision-log convention (Benchmarks holds
+> v13–v15).
+
+## Phase 1 — Tokens + CLI core
+- [ ] WP 1.1 — contract + service tokens: `api_tokens` (hashed, scoped), auth middleware, Settings UI
+- [ ] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output
+- [ ] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
+
+## Phase 2 — Suites & PR artifacts
+- [ ] WP 2.1 — `suite run` command: trigger, poll/stream, result summary
+- [ ] WP 2.2 — suite/grade assertions + baseline-delta PR-comment artifact
+- [ ] WP 2.3 — GitHub Actions packaging: workflow example + docs
+
+## Phase 3 — Posture integration
+- [ ] WP 3.1 — `no-new-security-findings` assertion
+
+## Decision log
+_Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 here._
+
+## Owner acceptance (owner-only)
+- [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
+      assertions → PR comment with deltas; a deliberate budget breach fails the check —
+      accepted: ____

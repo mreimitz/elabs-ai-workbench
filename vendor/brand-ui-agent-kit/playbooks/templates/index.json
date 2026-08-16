@@ -1,0 +1,66 @@
+[
+  {
+    "name": "ai-assistant",
+    "title": "Patterns/Templates/AI Assistant",
+    "description": "AI assistant template — the canonical full-screen AI assistant composition (app-shell + chat shell: Conversation + PromptInput). This story is the single source of truth: `pnpm gen:templates` derives the consumer template source (`docs/playbooks/templates/ai-assistant.tsx`) from it. Verify across all three themes with globals=theme:<slug>.",
+    "packages": ["@brand/ai", "@brand/icons", "@brand/ui"],
+    "sourceStory": "packages/ai/src/templates-ai-assistant.stories.tsx",
+    "file": "templates/ai-assistant.tsx"
+  },
+  {
+    "name": "dashboard",
+    "title": "Patterns/Templates/Dashboard",
+    "description": "Dashboard template — the canonical full-screen dashboard composition (app-shell + MetricGrid + MetricCard). This story is the single source of truth: `pnpm gen:templates` derives the consumer template source (`docs/playbooks/templates/dashboard.tsx`) from it. Verify across all three themes with globals=theme:<slug>.",
+    "packages": ["@brand/charts", "@brand/icons", "@brand/ui"],
+    "sourceStory": "packages/charts/src/templates-dashboard.stories.tsx",
+    "file": "templates/dashboard.tsx"
+  },
+  {
+    "name": "data-app",
+    "title": "Patterns/Templates/Data App",
+    "description": "Data app template — the canonical full-screen data-app composition (app-shell + DataTable with toolbar). This story is the single source of truth: `pnpm gen:templates` derives the consumer template source (`docs/playbooks/templates/data-app.tsx`) from it. Verify across all three themes with globals=theme:<slug>.",
+    "packages": ["@brand/data", "@brand/icons", "@brand/ui"],
+    "sourceStory": "packages/data/src/templates-data-app.stories.tsx",
+    "file": "templates/data-app.tsx"
+  },
+  {
+    "name": "flow-workspace",
+    "title": "Patterns/Templates/Flow Workspace",
+    "description": "Flow workspace template — the canonical full-screen flow-workspace composition (app-shell + branded React Flow canvas). This story is the single source of truth: `pnpm gen:templates` derives the consumer template source (`docs/playbooks/templates/flow-workspace.tsx`) from it. Remember `import \"@xyflow/react/dist/style.css\"` is wired in Storybook preview. Verify across all three themes with globals=theme:<slug>.",
+    "packages": ["@brand/flow", "@brand/icons", "@brand/ui"],
+    "sourceStory": "packages/flow/src/templates-flow-workspace.stories.tsx",
+    "file": "templates/flow-workspace.tsx"
+  },
+  {
+    "name": "marketing",
+    "title": "Patterns/Templates/Marketing",
+    "description": "Marketing landing template — the canonical full-screen presales/landing composition: sticky nav + Hero + StatsBand + FeatureGrid + UseCaseCard row + LogoStrip + CTASection + footer (the standard section order). This story is the single source of truth: `pnpm gen:templates` derives the consumer template source (`docs/playbooks/templates/marketing.tsx`) from it. Verify across all three themes with globals=theme:<slug> (qlik-bright | qlik-dark | blueprint). The marketing package ships no icons by design (sections take `icon?: ReactNode` from the consumer), so this story passes inline currentColor glyphs — the same way a consumer would hand in Lucide / @brand/icons.",
+    "packages": ["@brand/marketing", "@brand/ui"],
+    "sourceStory": "packages/marketing/src/templates-marketing.stories.tsx",
+    "file": "templates/marketing.tsx"
+  },
+  {
+    "name": "object-detail-hub",
+    "title": "Patterns/Templates/Object Detail Hub",
+    "description": "Object Detail Hub — the master-detail screen the library was missing. The single most common enterprise screen: a list of objects on the left drives a rich DETAIL HUB on the right. It demonstrates the structural choices the enterprise rulebook insists on, so an end-user copies the right anatomy instead of dumping everything on one page or stacking detail *below* the list: • SplitPanel master-detail (list drives detail — never detail below list). • A detail hub = sticky SectionHeader (identity + status) + a ButtonGroup toolbar + Tabs for the object's sections (Overview / Activity / Settings). • Descriptions for the object's attributes; a related list for its children. • A high-value task (Run) promoted to its own focused Dialog surface. • A real empty state (StatePanel kind=\"empty\") when nothing is selected. Compose-only from @brand/* primitives; semantic tokens only; reads in qlik-bright AND qlik-dark. Verify with globals=theme:<slug>.",
+    "packages": ["@brand/ui"],
+    "sourceStory": "packages/ui/src/templates-object-detail-hub.stories.tsx",
+    "file": "templates/object-detail-hub.tsx"
+  },
+  {
+    "name": "screen-states",
+    "title": "Patterns/Templates/Screen States",
+    "description": "Screen States — the full state grid the templates omit. `design-first` requires that empty, loading, error and first-run states are designed WITH the happy path, never retrofitted — yet every existing `Patterns/Templates/*` ships only a populated \"Ready\" variant. This scenario fixes that: ONE representative data screen (Customers), rendered across the complete state grid as separate stories, with the SAME chrome and the real state primitives wired in: • Ready     — populated Table (the happy path). • Loading   — Skeleton rows (never a bare spinner on a data screen). • Empty     — StatePanel kind=\"empty\" after a filter returns nothing. • Error     — StatePanel kind=\"error\" with a retry action (role=\"alert\"). • FirstRun  — onboarding empty: illustration slot + one sentence + one CTA. Compose-only from @brand/* primitives; semantic tokens only; reads in all three themes. Verify with globals=theme:<slug>.",
+    "packages": ["@brand/ui"],
+    "sourceStory": "packages/ui/src/templates-screen-states.stories.tsx",
+    "file": "templates/screen-states.tsx"
+  },
+  {
+    "name": "settings",
+    "title": "Patterns/Templates/Settings",
+    "description": "Settings template — the canonical full-screen settings composition (app-shell + Descriptions + Wizard). This story is the single source of truth: `pnpm gen:templates` derives the consumer template source (`docs/playbooks/templates/settings.tsx`) from it. Verify across all three themes with globals=theme:<slug>.",
+    "packages": ["@brand/ui"],
+    "sourceStory": "packages/ui/src/templates-settings.stories.tsx",
+    "file": "templates/settings.tsx"
+  }
+]

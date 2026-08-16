@@ -1,0 +1,211 @@
+[
+  {
+    "idx": 0,
+    "type": "user_message",
+    "label": "User request",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 0,
+    "payload_json": { "text": "Here is quarterly_sales.csv — generate the report." }
+  },
+  {
+    "idx": 1,
+    "type": "llm_response",
+    "label": "Plan: read SKILL.md",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 0,
+    "payload_json": { "text": "I'll start by reading the skill instructions." }
+  },
+  {
+    "idx": 2,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 0,
+    "payload_json": { "skill": "data-report", "path": "SKILL.md" }
+  },
+  {
+    "idx": 3,
+    "type": "tool_result",
+    "label": "SKILL.md contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 0,
+    "payload_json": { "skill": "data-report", "path": "SKILL.md", "bytes": 1450 }
+  },
+  {
+    "idx": 4,
+    "type": "llm_response",
+    "label": "Gather inputs",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 1,
+    "payload_json": {
+      "text": "The input is CSV. Reading the format spec before generating anything."
+    }
+  },
+  {
+    "idx": 5,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 1,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md" }
+  },
+  {
+    "idx": 6,
+    "type": "tool_result",
+    "label": "format-spec.md contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 1,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md", "bytes": 320 }
+  },
+  {
+    "idx": 7,
+    "type": "llm_response",
+    "label": "Validate",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 2,
+    "payload_json": {
+      "text": "Running scripts/validate.py against the input before generating the report."
+    }
+  },
+  {
+    "idx": 8,
+    "type": "tool_call",
+    "label": "Bash: validate.py",
+    "status": "ok",
+    "tool_name": "Bash",
+    "turn_index": 2,
+    "payload_json": {
+      "command": "python3 scripts/validate.py quarterly_sales.csv",
+      "script": "scripts/validate.py"
+    }
+  },
+  {
+    "idx": 9,
+    "type": "tool_result",
+    "label": "validate.py result",
+    "status": "error",
+    "tool_name": "Bash",
+    "turn_index": 2,
+    "payload_json": {
+      "script": "scripts/validate.py",
+      "exitCode": 1,
+      "stdout": "",
+      "stderr": "row 12: missing column 'region'"
+    }
+  },
+  {
+    "idx": 10,
+    "type": "llm_response",
+    "label": "Retry: re-check format spec",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 3,
+    "payload_json": {
+      "text": "Validation failed. Re-reading the format spec to see what I might be missing (attempt 1)."
+    }
+  },
+  {
+    "idx": 11,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 3,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md" }
+  },
+  {
+    "idx": 12,
+    "type": "tool_result",
+    "label": "format-spec.md contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 3,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md", "bytes": 320 }
+  },
+  {
+    "idx": 13,
+    "type": "llm_response",
+    "label": "Retry: re-check format spec",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 4,
+    "payload_json": {
+      "text": "Still unclear what's wrong. Re-reading the format spec again (attempt 2)."
+    }
+  },
+  {
+    "idx": 14,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 4,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md" }
+  },
+  {
+    "idx": 15,
+    "type": "tool_result",
+    "label": "format-spec.md contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 4,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md", "bytes": 320 }
+  },
+  {
+    "idx": 16,
+    "type": "llm_response",
+    "label": "Retry: re-check format spec",
+    "status": "ok",
+    "tool_name": null,
+    "turn_index": 5,
+    "payload_json": {
+      "text": "Re-reading the format spec once more (attempt 3) instead of moving on."
+    }
+  },
+  {
+    "idx": 17,
+    "type": "tool_call",
+    "label": "read_skill_file",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 5,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md" }
+  },
+  {
+    "idx": 18,
+    "type": "tool_result",
+    "label": "format-spec.md contents",
+    "status": "ok",
+    "tool_name": "read_skill_file",
+    "turn_index": 5,
+    "payload_json": { "skill": "data-report", "path": "reference/format-spec.md", "bytes": 320 }
+  },
+  {
+    "idx": 19,
+    "type": "llm_response",
+    "label": "Give up",
+    "status": "error",
+    "tool_name": null,
+    "turn_index": 6,
+    "payload_json": {
+      "text": "Validation still fails after 3 retries. Stopping and telling the user rather than guessing further. Note: assets/template.html was never read — the report was never generated."
+    }
+  },
+  {
+    "idx": 20,
+    "type": "context_event",
+    "label": "Final context checkpoint",
+    "status": "error",
+    "tool_name": null,
+    "turn_index": 6,
+    "payload_json": { "note": "run ended without producing a report; validation gate never passed" }
+  }
+]

@@ -1,0 +1,51 @@
+services:
+  mcp-token-footprint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Reap orphaned/zombie children (tini-style PID 1 init). The Assistant feature spawns the
+    # Claude Agent SDK's CLI subprocess per session (roadmap/assistant/); without a real init
+    # process, a killed/crashed SDK child can be left as a zombie under the Node PID 1.
+    init: true
+    ports:
+      # Bind to loopback only (127.0.0.1). This tool has no auth (single-owner local) and must
+      # stay off the network until planned team-server auth lands. Keep HOST=0.0.0.0 in the
+      # container — that's required for the port map to reach Node.
+      - "127.0.0.1:8080:8080"
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      HOST: "0.0.0.0"
+      DATA_DIR: /data
+      DATABASE_PATH: /data/app.sqlite
+      DEFAULT_TOKEN_PROFILE: generic_o200k
+      # Temporary mitigation (roadmap/hub-fixes/ WP 0.1, analysis.md RC1): the code default
+      # ("deferred") never promotes any MCP tool to callable, so no MCP tool is ever usable in a
+      # hub session. Force "eager" until WP 1.1 flips the code default to "auto" — then remove this
+      # override. Eager loads full tool definitions for every granted server, so scope sessions to
+      # ONE server (see user-guide/16-assistant-hub.md, "Scoped sessions + tool loading").
+      HUB_TOOL_LOADING_DEFAULT: eager
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    volumes:
+      # The one persistent data volume: app.sqlite (DATABASE_PATH), the generated MCP secret key,
+      # Assistant scratch/workspace dirs (/data/assistant/**), and the Assistant Hub's per-session
+      # materialized workspace tree (/data/hub/ws/<sessionId>/ — files.{list,read,write,edit},
+      # output-cap spill, workspace snapshots; retained per HUB_SESSION_RETENTION_DAYS, see
+      # .env.example / POST /api/maintenance/prune-hub). Uploaded hub file BYTES live in SQLite, not
+      # on this tree.
+      - mcp-token-footprint-data:/data
+
+volumes:
+  mcp-token-footprint-data:

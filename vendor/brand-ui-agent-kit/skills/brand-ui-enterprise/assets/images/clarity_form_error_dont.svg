@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="320" viewBox="0 0 900 320">
+<rect width="900" height="320" fill="#f7f9fb"/>
+<rect x="30" y="30" width="840" height="260" rx="16" fill="#ffffff" stroke="#c7d0d9"/>
+<text x="55" y="70" font-size="26" font-family="Arial" font-weight="700" fill="#1f2d3d">Don’t: place error icon where it collides</text>
+<rect x="130" y="135" width="520" height="50" rx="6" fill="white" stroke="#c9212d" stroke-width="3"/><circle cx="610" cy="160" r="16" fill="#c9212d"/><text x="606" y="168" font-size="22" font-family="Arial" fill="white">!</text><text x="130" y="220" font-size="24" font-family="Arial" fill="#c9212d">Error icon collides with input content</text><text x="130" y="95" font-size="22" font-family="Arial" fill="#1f2d3d">Email address</text>
+</svg>

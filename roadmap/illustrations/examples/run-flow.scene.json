@@ -1,0 +1,66 @@
+{
+  "$comment": "SceneSpec DRAFT — dogfood for WP 2.1 (roadmap/illustrations/01-system-design.md §4). Hand-rendered today by build-run-flow.py; once the scene engine exists this file becomes the source of truth. DISCOVERY for WP 2.1: the band grammar needs a `cycle` kind (a ring of stations with a travel direction, entry/exit gaps, and a lap counter) — the lane/hub grammar cannot express an execution loop.",
+  "version": 1,
+  "registryVersion": "0.1.0-draft",
+  "id": "run-flow",
+  "title": "Anatomy of a Run",
+  "summary": "A user prompt starts the run. The agent receives it, loads the shared Skill, drafts a plan, and discovers its MCP tools. Execution is a loop — decide, call a tool, observe, append to context — one turn per lap, growing the context each time, with every tools/call served by the same shared MCP server. After the final turn the grown context is summarized into an answer that returns to the user.",
+  "canvas": { "format": "hero_wide", "stage": "paper" },
+  "bands": [
+    { "id": "process", "kind": "lane" },
+    { "id": "loop", "kind": "cycle", "stations": 4, "direction": "cw", "counter": "turns" },
+    { "id": "shared", "kind": "hub" },
+    { "id": "notes", "kind": "annotations" }
+  ],
+  "nodes": [
+    { "id": "user", "component": "person", "band": "process", "seq": 1,
+      "title": "User prompt", "caption": "the run starts with a question" },
+    { "id": "agent", "component": "agent", "band": "process", "seq": 2, "facing": "upstream",
+      "title": "Agent receives", "caption": "and prepares: loads skill, plans, finds tools" },
+    { "id": "plan-card", "component": "plan-card", "band": "process", "attach": "agent",
+      "seq": 4, "title": "plans the execution" },
+    { "id": "loop-decide", "component": "station-decide", "band": "loop", "seq": 1, "title": "decide next step" },
+    { "id": "loop-call", "component": "station-tool-call", "band": "loop", "seq": 2, "title": "call a tool" },
+    { "id": "loop-observe", "component": "station-observe", "band": "loop", "seq": 3, "title": "observe the result" },
+    { "id": "loop-append", "component": "station-append", "band": "loop", "seq": 4, "title": "append to context" },
+    { "id": "context", "component": "context-stack", "band": "process", "attach": "loop-append",
+      "title": "context (t1 … tn)", "caption": "grows every turn", "state": "active" },
+    { "id": "summarize", "component": "summarizer", "band": "process", "seq": 7,
+      "title": "Summarize & answer", "caption": "the grown context, compressed" },
+    { "id": "answer", "component": "answer-card", "band": "process", "seq": 8, "title": "Answer" },
+    { "id": "hub-skill", "component": "skill", "band": "shared", "state": "active" },
+    { "id": "hub-mcp", "component": "mcp-server", "band": "shared" }
+  ],
+  "connectors": [
+    { "id": "c1", "from": "user.result-out", "to": "agent.context-in", "kind": "flow" },
+    { "id": "c2", "from": "hub-skill.top", "to": "agent.bottom", "kind": "read", "label": "loads the Skill", "phase": 3 },
+    { "id": "c3", "from": "agent.result-out", "to": "hub-mcp.bus", "kind": "read", "dashed": true,
+      "label": "finds its tools (tools/list)", "phase": 5 },
+    { "id": "c4", "from": "agent.result-out", "to": "loop.entry", "kind": "flow", "label": "plan in hand" },
+    { "id": "c5", "from": "loop-call.bottom", "to": "hub-mcp.bus", "kind": "write",
+      "label": "tools/call — every turn, same server" },
+    { "id": "c6", "from": "loop-append.bottom", "to": "context.top", "kind": "write" },
+    { "id": "c7", "from": "loop.exit", "to": "summarize.context-in", "kind": "flow", "label": "plan complete" },
+    { "id": "c8", "from": "summarize.result-out", "to": "answer.context-in", "kind": "flow" },
+    { "id": "c9", "from": "answer.top", "to": "user.top", "kind": "loop",
+      "label": "the answer returns — and the session is saved for replay" }
+  ],
+  "annotations": [
+    { "kind": "principle-card", "band": "notes", "align": "start", "title": "The turn principle",
+      "items": ["decide → act → observe → append", "the context is the memory of the run"] },
+    { "kind": "caption", "band": "shared",
+      "text": "one MCP server, one Skill — the same pair serves the prep phases and every tools/call inside the loop" }
+  ],
+  "steps": [
+    { "focus": ["user"], "connectors": ["c1"], "caption": "A user prompt starts the run." },
+    { "focus": ["agent"], "connectors": [], "caption": "The agent receives it with its environment: system prompt, guardrails, model." },
+    { "focus": ["agent", "hub-skill"], "connectors": ["c2"], "caption": "It loads the shared Skill — the current version, read-only and metered." },
+    { "focus": ["plan-card"], "connectors": [], "caption": "It drafts an execution plan." },
+    { "focus": ["agent", "hub-mcp"], "connectors": ["c3"], "caption": "It discovers the MCP tools it will need (tools/list)." },
+    { "focus": ["loop-decide", "loop-call", "loop-observe", "loop-append", "context"],
+      "connectors": ["c4", "c5", "c6"],
+      "caption": "Execution is a loop: decide, call a tool on the same MCP server, observe, append — the context grows every turn." },
+    { "focus": ["summarize", "answer"], "connectors": ["c7", "c8", "c9"],
+      "caption": "After the final turn the whole context is distilled into an answer, which returns to the user; the session is saved for replay." }
+  ]
+}

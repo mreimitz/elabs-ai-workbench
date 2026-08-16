@@ -1,0 +1,201 @@
+import { useEffect, useRef, useState } from "react";
+import type {
+  MetricsBucket,
+  RunMetricsSeries,
+  RunSummary,
+  ScanMetricsSeries,
+  Scenario,
+  ServerConfig,
+  Suite,
+  Test,
+} from "@mcp-token-footprint/shared";
+import { getErrorMessage } from "../../../lib/errors";
+import { getMostExpensiveRuns, getRunMetrics, getScanMetrics, listScenarios, listServers, listSuites, listTests } from "../../../lib/api";
+import { baseRunFilter, metricsWindow, resolveBucket, type TestingDashboardControls } from "./dashboard-url-state";
+
+// ── Catalog (servers/environments/suites/tests) — fetched ONCE, independent of the date/filter
+// controls. Feeds the filter bar's options + the leaderboard/expensive-runs labels. ─────────────
+
+export type TestingCatalog = {
+  loading: boolean;
+  error: string | null;
+  servers: ServerConfig[];
+  scenarios: Scenario[];
+  suites: Suite[];
+  tests: Test[];
+};
+
+export function useTestingCatalog(): TestingCatalog {
+  const [state, setState] = useState<TestingCatalog>({
+    loading: true,
+    error: null,
+    servers: [],
+    scenarios: [],
+    suites: [],
+    tests: [],
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([listServers(), listScenarios(), listSuites(), listTests()])
+      .then(([servers, scenarios, suites, tests]) => {
+        if (cancelled) return;
+        setState({ loading: false, error: null, servers, scenarios, suites, tests });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setState((prev) => ({ ...prev, loading: false, error: getErrorMessage(err) }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return state;
+}
+
+// ── Metrics (WP 2.2) — refetches whenever the URL-persisted controls change. ────────────────────
+
+export type TestingMetricsData = {
+  runsOverTime: RunMetricsSeries[];
+  guardrail: RunMetricsSeries[];
+  duration: RunMetricsSeries[];
+  tokens: RunMetricsSeries[];
+  cost: RunMetricsSeries[];
+  score: RunMetricsSeries[];
+  failingTests: RunMetricsSeries[];
+  failingServers: RunMetricsSeries[];
+  expensiveRuns: RunSummary[];
+  scans: ScanMetricsSeries[];
+};
+
+const EMPTY_METRICS_DATA: TestingMetricsData = {
+  runsOverTime: [],
+  guardrail: [],
+  duration: [],
+  tokens: [],
+  cost: [],
+  score: [],
+  failingTests: [],
+  failingServers: [],
+  expensiveRuns: [],
+  scans: [],
+};
+
+export type UseTestingMetricsResult = {
+  /** True until the FIRST fetch for the CURRENT mount settles (drives the full-panel skeleton). */
+  loading: boolean;
+  /** True while a REFETCH (controls changed after an initial success) is in flight — the panels keep
+   *  showing the last-good data rather than collapsing (loading-states rule: build up, don't flash). */
+  refetching: boolean;
+  error: string | null;
+  /** True once ANY fetch has ever succeeded — lets the caller tell "no data has EVER loaded, show a
+   *  full error/skeleton" from "a REFETCH failed, keep showing the last-good `data` + a small banner"
+   *  (an `error` alone doesn't distinguish those — `data` is never cleared on a refetch failure). */
+  loadedOnce: boolean;
+  data: TestingMetricsData;
+  bucket: MetricsBucket;
+  reload: () => void;
+};
+
+/**
+ * Fires every `GET /api/metrics/{runs,scans}` call the Testing dashboard's 8 panels + KPI header
+ * need for the current `controls`, in parallel. A `controls` change re-fires the whole batch; an
+ * in-flight batch is aborted if `controls` changes again before it resolves (last-write-wins, no
+ * stale-response overwrite — mirrors `AnalyticsPanel`'s report-fetch cancellation guard).
+ */
+export function useTestingMetrics(controls: TestingDashboardControls): UseTestingMetricsResult {
+  const [data, setData] = useState<TestingMetricsData>(EMPTY_METRICS_DATA);
+  const [loading, setLoading] = useState(true);
+  const [refetching, setRefetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loadedOnce, setLoadedOnce] = useState(false);
+  const [nonce, setNonce] = useState(0);
+  const loadedOnceRef = useRef(false);
+  const bucket = resolveBucket(controls);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const filter = baseRunFilter(controls);
+    const window = metricsWindow(controls);
+    const signal = controller.signal;
+
+    if (loadedOnceRef.current) setRefetching(true);
+    setError(null);
+
+    Promise.all([
+      getRunMetrics(
+        { filter, ...window, bucket, groupBy: controls.groupBy, measures: ["count", "errorRate"] },
+        signal,
+      ),
+      getRunMetrics(
+        { filter, ...window, bucket, groupBy: "stopReasonCode", measures: ["count"] },
+        signal,
+      ),
+      getRunMetrics(
+        { filter, ...window, bucket, measures: ["p50DurationMs", "p95DurationMs"] },
+        signal,
+      ),
+      getRunMetrics({ filter, ...window, bucket, measures: ["tokensIn", "tokensOut"] }, signal),
+      getRunMetrics({ filter, ...window, bucket, measures: ["costUsd", "questions"] }, signal),
+      getRunMetrics({ filter, ...window, bucket, measures: ["meanScore"] }, signal),
+      getRunMetrics(
+        { filter, ...window, bucket: "week", groupBy: "test", measures: ["count", "errorRate"] },
+        signal,
+      ),
+      getRunMetrics(
+        { filter, ...window, bucket: "week", groupBy: "server", measures: ["count", "errorRate"] },
+        signal,
+      ),
+      getMostExpensiveRuns({ ...filter, dateFrom: window.from, dateTo: window.to }, 8, signal),
+      getScanMetrics({ ...window, bucket }, signal),
+    ])
+      .then(
+        ([
+          runsOverTime,
+          guardrail,
+          duration,
+          tokens,
+          cost,
+          score,
+          failingTests,
+          failingServers,
+          expensiveRuns,
+          scans,
+        ]) => {
+          if (signal.aborted) return;
+          setData({
+            runsOverTime: runsOverTime.series,
+            guardrail: guardrail.series,
+            duration: duration.series,
+            tokens: tokens.series,
+            cost: cost.series,
+            score: score.series,
+            failingTests: failingTests.series,
+            failingServers: failingServers.series,
+            expensiveRuns,
+            scans: scans.servers,
+          });
+          loadedOnceRef.current = true;
+          setLoadedOnce(true);
+          setLoading(false);
+          setRefetching(false);
+        },
+      )
+      .catch((err) => {
+        if (signal.aborted) return;
+        setError(getErrorMessage(err));
+        setLoading(false);
+        setRefetching(false);
+      });
+
+    return () => {
+      controller.abort();
+    };
+    // `controls` is a fresh object per render from the caller (parsed from URLSearchParams each
+    // time) — depend on its serialized shape (not the object identity) so the effect only re-fires
+    // on an ACTUAL change, not every render.
+  }, [JSON.stringify(controls), bucket, nonce]);
+
+  return { loading, refetching, error, loadedOnce, data, bucket, reload: () => setNonce((n) => n + 1) };
+}

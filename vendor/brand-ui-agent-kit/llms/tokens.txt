@@ -1,0 +1,29 @@
+# @brand/tokens
+
+> Semantic CSS-variable themes + ThemeProvider/useTheme.
+
+Import from `@brand/tokens`. Part of brand-ui — see the root `llms.txt` for routing.
+
+## Components
+
+- DECORATION_LEVELS
+- DecorationProvider
+- DEFAULT_DECORATION_LEVEL
+- DEFAULT_DENSITY
+- DEFAULT_MOTION_PREFERENCE
+- DEFAULT_THEME
+- DENSITIES
+- DENSITY_META
+- MOTION_PREFERENCE_META
+- MOTION_PREFERENCES
+- THEME_META
+- ThemeProvider
+- THEMES
+
+## Hooks
+
+- useDecoration
+- useDensity
+- useMotionPreference
+- useReducedMotion
+- useTheme

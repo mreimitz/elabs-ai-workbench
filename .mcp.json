@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "brand-ui": {
+      "command": "node",
+      "args": ["./node_modules/@brand/cli/bin/brand-ui.mjs", "mcp"]
+    }
+  }
+}

@@ -1,0 +1,118 @@
+/*
+ * Skill IDE WP 9.3 (I10.5) — token-backed styling for the code-mode decorations (decorations.ts).
+ * Every colour is a semantic @brand/tokens CSS variable (--chart-1..5, --primary, --muted-foreground,
+ * --border) so the decorations read correctly in BOTH themes with no raw colour literal and no `dark:`
+ * override. Imported once by UnifiedEditor.tsx.
+ */
+
+/* 1) Kind gutter glyph per heading — a small token-coloured shape in the glyph margin. Colour = the
+      node kind (mirrors NODE_KIND_META's chart tokens); shape varies to aid at-a-glance distinction. */
+.skill-ci-gutter::before {
+  content: "";
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: auto;
+  border-radius: 2px;
+  background-color: var(--chart-1);
+}
+.skill-ci-gutter--entry_point::before {
+  background-color: var(--primary);
+  border-radius: 50%;
+}
+.skill-ci-gutter--subroutine::before {
+  background-color: var(--chart-1);
+  border-radius: 2px;
+}
+.skill-ci-gutter--gatekeeper::before {
+  background-color: var(--chart-2);
+  border-radius: 1px;
+  transform: rotate(45deg); /* diamond = a decision point */
+}
+.skill-ci-gutter--validation_gate::before {
+  background-color: var(--chart-4);
+  border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%; /* shield-ish */
+}
+.skill-ci-gutter--loop_guard::before {
+  background-color: var(--chart-5);
+  border-radius: 50%;
+}
+
+/* 2) Flow-extent rail — a left rail per /command flow lane, coloured by flow order. Whole-line
+      decoration, so the rail is continuous across the flow's line span. */
+.skill-ci-flow {
+  box-shadow: inset 2px 0 0 0 var(--border);
+}
+.skill-ci-flow--0 {
+  box-shadow: inset 2px 0 0 0 var(--chart-1);
+}
+.skill-ci-flow--1 {
+  box-shadow: inset 2px 0 0 0 var(--chart-2);
+}
+.skill-ci-flow--2 {
+  box-shadow: inset 2px 0 0 0 var(--chart-3);
+}
+.skill-ci-flow--3 {
+  box-shadow: inset 2px 0 0 0 var(--chart-4);
+}
+.skill-ci-flow--4 {
+  box-shadow: inset 2px 0 0 0 var(--chart-5);
+}
+
+/* 3) Annotation + breadcrumb line markers — a glyph in the margin + a dotted underline on the token. */
+.skill-ci-annotation::before,
+.skill-ci-breadcrumb::before {
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: auto;
+  border-radius: 1px;
+}
+.skill-ci-annotation::before {
+  background-color: var(--chart-4);
+}
+.skill-ci-breadcrumb::before {
+  background-color: var(--chart-2);
+  border-radius: 50%;
+}
+.skill-ci-annotation-text {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--chart-4);
+  text-underline-offset: 2px;
+}
+.skill-ci-breadcrumb-text {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--chart-2);
+  text-underline-offset: 2px;
+}
+
+/* 4) Asset + tool reference underlines — a token underline in the reference's own colour.
+      Tool refs (WP 7.5) have three states, all semantic-token colours so both themes read:
+        base                     — a NEUTRAL dashed underline (unbound skill: no scan to validate
+                                   against, so a toollike token is marked but not judged);
+        .skill-ci-tool-ref--known   — a resolved reference to a bound server's scanned tool;
+        .skill-ci-tool-ref--unknown — a toollike token the bound servers' scans do NOT expose
+                                   (warning wavy underline; also raised in the problems panel). */
+.skill-ci-asset-ref {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: var(--chart-3);
+  text-underline-offset: 3px;
+}
+.skill-ci-tool-ref {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-color: var(--muted-foreground);
+  text-underline-offset: 3px;
+}
+.skill-ci-tool-ref--known {
+  text-decoration-style: solid;
+  text-decoration-color: var(--primary);
+}
+.skill-ci-tool-ref--unknown {
+  text-decoration-style: wavy;
+  text-decoration-color: var(--warning-text);
+}

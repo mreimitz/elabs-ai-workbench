@@ -1,0 +1,1160 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06-21",
+  "provider": {
+    "id": "openai",
+    "name": "OpenAI (GPT)",
+    "group": "saas",
+    "homepage": "https://openai.com",
+    "api_docs_url": "https://developers.openai.com/api/docs",
+    "tokenizer_docs_url": "https://github.com/openai/tiktoken",
+    "native_mcp_support": {
+      "value": true,
+      "confidence": "high",
+      "source_url": "https://developers.openai.com/api/docs/guides/tools-connectors-mcp",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "Responses API supports remote MCP servers as a first-class tool type. Also available in Realtime API."
+    },
+    "skills_concept": {
+      "value": "Skills (Responses API / Codex) + GPTs/Assistants (ChatGPT product) + Agents SDK. Skills are reusable packaged capabilities uploaded and attached to hosted environments; injected via hidden system-prompt stub at runtime. GPTs are the ChatGPT-product analog.",
+      "confidence": "high",
+      "source_url": "https://developers.openai.com/api/docs/guides/tools-skills",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "Two distinct systems: (1) Skills in the raw API/Codex — uploadable instruction bundles invoked via tool_triggered mechanism; (2) GPTs/Assistants in the ChatGPT product — always-on per-conversation custom instructions."
+    }
+  },
+  "models": [
+    {
+      "id": "gpt-5.5",
+      "display_name": "GPT-5.5",
+      "family": "GPT-5.5",
+      "release_date": {
+        "value": "2026-04-24",
+        "confidence": "high",
+        "source_url": "https://community.openai.com/t/gpt-5-5-is-here-available-in-the-api-codex-and-chatgpt-today/1379630",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2025-12-01",
+        "confidence": "high",
+        "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1050000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1,050,000 token context window per model page. Prompts >272K input tokens billed at 2x input / 1.5x output."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Single shared pool: 1,050,000 total tokens; max output 128,000, so max input ~922,000."
+        },
+        "max_input_tokens": {
+          "value": 922000,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: 1,050,000 context_window - 128,000 max_output = 922,000. Not explicitly documented as a separate max input figure."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Default max_output not separately documented; model page only lists 128,000 as max output."
+        },
+        "max_output_tokens_max": {
+          "value": 128000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "128,000 max output tokens. Includes reasoning tokens for reasoning-enabled calls."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1,050,000 is the GA production window — no additional beta/extended mode documented."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model page shows 'Reasoning token support' and completion_tokens_details.reasoning_tokens is tracked. Reasoning effort parameter supported (none/low/medium/high/xhigh). Reasoning tokens billed as output."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "o200k_base",
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken/issues/464",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "GPT-5.x family uses o200k_base, consistent with GPT-4o and later. Confirmed by tiktoken MODEL_TO_ENCODING updates for gpt-5.x strings."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "tiktoken is open-source (MIT license) and publicly available on PyPI and GitHub."
+        },
+        "tokenizer_access": {
+          "value": "tiktoken",
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "import tiktoken; enc = tiktoken.encoding_for_model('gpt-5.5'); tokens = enc.encode(text). Alternatively use the Responses API with include=['usage'] before generating output.",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "Responses API token counting endpoint also available: set stream=False, include=['usage'] to get exact counts including tool definitions without estimation."
+        },
+        "image_token_rule": {
+          "value": "Low-res: fixed 85 tokens. High-res: 85 base + 170 per 512x512 tile. Input only (image output not supported for gpt-5.5).",
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/guides/images-vision",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard OpenAI image tiling formula; gpt-5.5 accepts image input but produces text output only."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio modality not supported for gpt-5.5 (model page: Audio — Not supported)."
+        },
+        "chars_per_token_estimate": {
+          "value": 4.0,
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Rough estimate for English prose with o200k_base tokenizer. Use tiktoken for exact counts."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model page confirms MCP: Supported via Responses API. Remote MCP servers connect as a tool type."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "parallel_tool_calls parameter supported; defaults to true for GPT-5.x models."
+        },
+        "max_tools_hard": {
+          "value": 128,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/assistants/deep-dive",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Assistants API deep-dive page explicitly states 'up to 128 tools' per assistant/request. Error message when exceeded: 'Expected an array with maximum length 128'. Applies to both Assistants API and Chat Completions / Responses API tool arrays. Consistent across GPT-4o and GPT-5 family."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "medium",
+          "source_url": "https://community.openai.com/t/gpt-5-4-deep-dive-pricing-context-limits-and-tool-search-explained/1375800",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Empirical degradation point. Community consensus and Berkeley FCL data suggest accuracy degrades past ~30-50 tools. OpenAI's own tool_search documentation suggests pairing it with large tool surfaces to defer rarely-used tools. Using 40 as practical midpoint."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "OpenAI function/tool JSON schema format: {type, function: {name, description, parameters, strict}}. Tool definitions injected into prompt and billed as input tokens."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/token-counting",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool definitions serialized into the request and billed as input tokens. Responses API token-counting endpoint can return exact counts including tools."
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/tools-tool-search",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "OpenAI Tool Search feature: defer large tool surfaces, group with namespaces, load only relevant functions at runtime. Supported on gpt-5.5, gpt-5.4, and gpt-5.4-mini. NOT supported on gpt-5.4-nano."
+        },
+        "max_tool_name_len": {
+          "value": 64,
+          "unit": "characters",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Function names must match ^[a-zA-Z0-9_-]+$ with max 64 characters. API returns 'string_above_max_length' / 'does not conform to required pattern' errors when violated. MCP tool names get namespaced by clients (e.g. 'server_toolname'), consuming chars from this budget. | pattern=^[a-zA-Z0-9_-]+$"
+        },
+        "max_tool_description_len": {
+          "value": 1024,
+          "unit": "characters",
+          "confidence": "medium",
+          "source_url": "https://community.openai.com/t/tool-calling-api-upgrade-1024-char-limit-is-limiting/951951",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "API enforces a 1024-character limit on tool/function description strings. Error: 'Expected a string with maximum length 1024'. Not explicitly stated in official docs page but consistently reported via API error responses. Workaround: move detail into the system prompt."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "as_of": "2026-06-21",
+          "notes": "No published per-request payload size cap for function calling / Responses API found in official docs. Responses API has a 50 MB cap for file inputs. The effective limit is the context window token count (tool defs count as input tokens). No separate byte-limit documented."
+        },
+        "max_tool_result_size": {
+          "value": "512KB",
+          "unit": "bytes",
+          "confidence": "low",
+          "source_url": "https://community.openai.com/t/submit-tool-output-in-function-call-size-limit/744943",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Community reports indicate a ~512KB limit on tool output (function result) submitted back to the model. Not explicitly documented in official API reference. Tool output tokens also count against the context window."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No fixed numeric cap on simultaneous tool calls per turn. parallel_tool_calls is a boolean (true/false) — when true, model may emit multiple tool calls in one turn but there is no documented max count. No numeric limit published."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": null,
+          "as_of": "2026-06-21",
+          "notes": "No API-enforced cap on tool-call/result cycles per turn. The Agents SDK defaults to 20 max_turns as a safety measure, but this is SDK-level, not API-enforced. Agentic loops run until the model returns a final message or context window is exhausted."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap on the number of remote MCP servers that can be connected. ChatGPT help doc confirms 'multiple first-party and third-party apps in a single prompt' are supported. The binding constraint is the 128-tool aggregate limit per request."
+        },
+        "max_total_tools": {
+          "value": 128,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/assistants/deep-dive",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same as max_tools_hard: 128 tools total per request regardless of how many MCP servers contribute tools. Tools from multiple connected servers all count toward this single 128-tool budget."
+        },
+        "tool_schema_limits_notes": "JSON Schema for parameters follows OpenAI's structured outputs subset. Strict mode (strict:true) enforces: (1) additionalProperties must be false on all objects; (2) all properties must be listed in 'required'; (3) max 100 object properties total; (4) max 5 nesting levels; (5) anyOf supported only for nullable types (anyOf: [{type: X}, {type: null}]); (6) $ref not supported in strict mode; (7) oneOf/allOf have problems in strict mode; (8) keywords pattern, minLength, minimum, format are accepted but NOT enforced by the model. Non-strict mode accepts a broader subset. No documented byte-size limit on total tool definition payload beyond the context window.",
+        "other_limits_notes": "Remote MCP (Responses API): tool definitions from MCP servers are fetched at request time, cached with the request, and billed as input tokens. allowed_tools parameter can filter which tools are exposed from a connected MCP server to reduce token overhead. ChatGPT MCP apps (Business/Enterprise): full MCP with write actions available in beta; no hard server-count cap documented but tools must fit within 128-tool budget. Deep research (ChatGPT product): MCP servers limited to read/fetch actions only. Rate limits: per-model RPM/TPM limits apply (see platform.openai.com/settings/limits); no tool-specific rate limits documented separately.",
+        "strict_function_schema": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/guides/function-calling",
+          "source_tier": 1,
+          "notes": "OpenAI strict mode (strict:true): enforces additionalProperties:false, all-required, max 100 properties, max 5 nesting, bans oneOf/$ref."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/tools-skills",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Skills are uploadable instruction bundles (files) attachable to hosted environments via Responses API. Model page confirms Skills: Supported."
+        },
+        "skills_loading_model": {
+          "value": "tool_triggered",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/tools-skills",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Service adds each skill's name, description, and path to the hidden system-prompt context so the model knows the skill exists; actual skill content is fetched/executed when the model triggers it. Not always-on full injection."
+        },
+        "skills_context_cost_notes": "Each skill's stub (name + description + path) is injected into the hidden system prompt and billed as input tokens. Full skill instructions are loaded on demand when model triggers the skill. Per the docs: 'Skill instructions are user prompt input (not system prompt input)' when executed.",
+        "system_prompt_overhead_notes": "Responses API has a hidden system-prompt prefix for enabled tools (MCP stubs, skill stubs). Exact token count not published; use the Responses API token-counting endpoint (include=['usage'], stream=False) to measure overhead per configuration.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/prompt-caching",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Automatic prompt caching enabled for all prompts >=1024 tokens. gpt-5.5 uses Extended Prompt Cache Retention (24h default) — in-memory is NOT supported for gpt-5.5. Tool definitions and system prompts are cacheable as static prefix. Cached input priced at $0.50/1M tokens (90% discount from standard $5.00/1M)."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/agents",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No persistent memory in the raw API for gpt-5.5. Memory is a ChatGPT product feature (not the API). Codex has 'Memories' via Chronicle but that is the Codex product, not raw API. Developers can implement memory via external storage + retrieval."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 5.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard processing, context <272K tokens. Prompts >272K: billed at 2x input for the full session."
+        },
+        "output_per_mtok_usd": {
+          "value": 30.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard processing. Prompts >272K: output billed at 1.5x output for the full session. Reasoning tokens billed as output."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.5,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "90% discount from standard input price. Extended cache retention (24h) is default for gpt-5.5."
+        },
+        "batch_discount": {
+          "value": "50% off input and output",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Batch API: 24-hour async processing at 50% discount on both input and output tokens."
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image inputs billed at standard text token rates using tile-based formula: 85 base tokens + 170 per 512x512 tile (high-res). Audio: not supported for this model.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "completion_tokens_details.reasoning_tokens is part of completion_tokens (output). Reasoning effort supports: none/low/medium (default)/high/xhigh."
+        }
+      },
+      "self_host": null,
+      "notes": "GPT-5.5 is OpenAI's newest frontier model (GA April 24, 2026). Snapshot: gpt-5.5-2026-04-23. Default prompt cache retention is 24h (extended); in-memory cache not supported. Context surcharge kicks in at >272K input tokens.",
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-5.5",
+        "https://openai.com/api/pricing/",
+        "https://openai.com/index/introducing-gpt-5-5/",
+        "https://developers.openai.com/api/docs/guides/prompt-caching",
+        "https://developers.openai.com/api/docs/guides/function-calling",
+        "https://developers.openai.com/api/docs/guides/tools-connectors-mcp",
+        "https://developers.openai.com/api/docs/guides/tools-skills",
+        "https://developers.openai.com/api/docs/guides/tools-tool-search",
+        "https://platform.openai.com/docs/assistants/deep-dive",
+        "https://developers.openai.com/api/docs/guides/structured-outputs",
+        "https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta",
+        "https://github.com/openai/tiktoken",
+        "https://github.com/openai/tiktoken/issues/464"
+      ]
+    },
+    {
+      "id": "gpt-5.4",
+      "display_name": "GPT-5.4",
+      "family": "GPT-5.4",
+      "release_date": {
+        "value": "2026-03-05",
+        "confidence": "high",
+        "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Derived from snapshot ID gpt-5.4-2026-03-05 listed on model page."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2025-08-31",
+        "confidence": "high",
+        "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 1050000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1,050,000 context window per model page. Prompts >272K input tokens billed at 2x input / 1.5x output for full session."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": 922000,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: 1,050,000 - 128,000 = 922,000."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Default max_output not separately documented."
+        },
+        "max_output_tokens_max": {
+          "value": 128000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "1,050,000 is the GA production window — no additional extended mode."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model page shows 'Reasoning token support'. reasoning_effort: none (default), low, medium, high, xhigh."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "o200k_base",
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken/issues/464",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "GPT-5.x uses o200k_base, consistent across the GPT-4o / GPT-5 family."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "tiktoken",
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "import tiktoken; enc = tiktoken.encoding_for_model('gpt-5.4'); tokens = enc.encode(text). Also: Responses API with include=['usage'] for exact server-side counts including tools.",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": "Low-res: 85 tokens fixed. High-res: 85 base + 170 per 512x512 tile. Input only.",
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/guides/images-vision",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio not supported for gpt-5.4 text model."
+        },
+        "chars_per_token_estimate": {
+          "value": 4.0,
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-06-21"
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MCP: Supported per model page."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": 128,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/assistants/deep-dive",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Assistants API deep-dive page explicitly states 'up to 128 tools'. Error when exceeded: 'Expected an array with maximum length 128'. Applies across Chat Completions / Responses API tool arrays. Consistent across GPT-4o and GPT-5 family."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "medium",
+          "source_url": "https://community.openai.com/t/gpt-5-4-deep-dive-pricing-context-limits-and-tool-search-explained/1375800",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Empirical; community and Berkeley FCL data. OpenAI recommends tool_search for large tool surfaces."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/token-counting",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/tools-tool-search",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool Search supported on gpt-5.4 per model page."
+        },
+        "max_tool_name_len": {
+          "value": 64,
+          "unit": "characters",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Function names must match ^[a-zA-Z0-9_-]+$ with max 64 chars. API error: 'string_above_max_length' / 'does not conform to required pattern'. MCP tool names get namespaced (e.g. 'server_toolname'), consuming chars from this budget. | pattern=^[a-zA-Z0-9_-]+$"
+        },
+        "max_tool_description_len": {
+          "value": 1024,
+          "unit": "characters",
+          "confidence": "medium",
+          "source_url": "https://community.openai.com/t/tool-calling-api-upgrade-1024-char-limit-is-limiting/951951",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "API enforces 1024-character cap on function/tool description. Error: 'Expected a string with maximum length 1024'. Not on an official docs page but consistently observed via API error responses."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "as_of": "2026-06-21",
+          "notes": "No published per-request payload byte limit for function calling / Responses API. Effective ceiling is the context window token count."
+        },
+        "max_tool_result_size": {
+          "value": "512KB",
+          "unit": "bytes",
+          "confidence": "low",
+          "source_url": "https://community.openai.com/t/submit-tool-output-in-function-call-size-limit/744943",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Community reports ~512KB limit on tool output submitted back. Not documented in official API reference."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No numeric cap. parallel_tool_calls is boolean; no documented max simultaneous calls per turn."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": null,
+          "as_of": "2026-06-21",
+          "notes": "No API-enforced cap on tool-call/result cycles per turn. Agents SDK defaults to 20 max_turns as SDK-level safety; not API-enforced."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap on connected MCP servers. Multiple apps can be invoked in a single prompt. Binding constraint is the 128-tool aggregate per request."
+        },
+        "max_total_tools": {
+          "value": 128,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/assistants/deep-dive",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "128 tools total per request across all connected MCP servers. Same as max_tools_hard."
+        },
+        "tool_schema_limits_notes": "JSON Schema for parameters follows OpenAI's structured outputs subset. Strict mode (strict:true) enforces: (1) additionalProperties must be false on all objects; (2) all properties must be in 'required'; (3) max 100 object properties total; (4) max 5 nesting levels; (5) anyOf supported only for nullable types; (6) $ref not supported in strict mode; (7) oneOf/allOf have issues in strict mode; (8) pattern/minLength/minimum/format accepted but NOT enforced. Non-strict mode accepts broader subset. No separate byte limit on tool definition payload.",
+        "other_limits_notes": "Remote MCP (Responses API): tool definitions fetched at request time, billed as input tokens. allowed_tools parameter filters which tools from an MCP server are exposed, reducing token overhead. ChatGPT MCP apps (Business/Enterprise beta): full MCP with write actions, no hard server-count cap documented. Deep research (ChatGPT product): MCP servers limited to read/fetch actions only. Rate limits: per-model RPM/TPM limits apply (platform.openai.com/settings/limits); no tool-specific rate limits documented separately.",
+        "strict_function_schema": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/guides/function-calling",
+          "source_tier": 1,
+          "notes": "OpenAI strict mode (strict:true): enforces additionalProperties:false, all-required, max 100 properties, max 5 nesting, bans oneOf/$ref."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Skills: Supported per model page."
+        },
+        "skills_loading_model": {
+          "value": "tool_triggered",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/tools-skills",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "Skill stubs (name + description + path) injected into hidden system prompt as input tokens. Full skill instructions loaded on demand when model triggers skill.",
+        "system_prompt_overhead_notes": "Hidden system prompt includes stubs for all enabled tools (MCP, skills). Exact token count not published; measure via Responses API token-counting with include=['usage'].",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/prompt-caching",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Automatic caching for prompts >=1024 tokens. gpt-5.4 uses Extended Prompt Cache Retention (up to 24h). Cached input: $0.25/1M tokens."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/agents",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No persistent memory in raw API. Memory is a ChatGPT product/Codex product feature, not raw gpt-5.4 API."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 2.5,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard processing <272K tokens. >272K: 2x input for full session."
+        },
+        "output_per_mtok_usd": {
+          "value": 15.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": ">272K prompts: 1.5x output for full session."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.25,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "batch_discount": {
+          "value": "50% off input and output",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image inputs billed at standard text token rates. Audio: not supported.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "self_host": null,
+      "notes": "GPT-5.4 is OpenAI's current default flagship model for the API as of 2026-06-21. Snapshot: gpt-5.4-2026-03-05. Context surcharge at >272K input tokens. Extended prompt cache (24h) supported.",
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-5.4",
+        "https://openai.com/api/pricing/",
+        "https://openai.com/index/introducing-gpt-5-4/",
+        "https://developers.openai.com/api/docs/guides/prompt-caching",
+        "https://developers.openai.com/api/docs/guides/function-calling",
+        "https://developers.openai.com/api/docs/guides/tools-connectors-mcp",
+        "https://developers.openai.com/api/docs/guides/tools-tool-search",
+        "https://platform.openai.com/docs/assistants/deep-dive",
+        "https://developers.openai.com/api/docs/guides/structured-outputs",
+        "https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta",
+        "https://github.com/openai/tiktoken",
+        "https://github.com/openai/tiktoken/issues/464"
+      ]
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "display_name": "GPT-5.4 mini",
+      "family": "GPT-5.4",
+      "release_date": {
+        "value": "2026-03-17",
+        "confidence": "high",
+        "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Derived from snapshot ID gpt-5.4-mini-2026-03-17."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2025-08-31",
+        "confidence": "high",
+        "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+        "source_tier": 1,
+        "as_of": "2026-06-21"
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 400000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "400,000 context window per model page."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": 272000,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: 400,000 - 128,000 = 272,000."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Default max_output not separately documented."
+        },
+        "max_output_tokens_max": {
+          "value": 128000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "400,000 is the GA production window — no additional extended mode documented."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Reasoning token support listed on model page."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "o200k_base",
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken/issues/464",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "tiktoken",
+          "confidence": "high",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "import tiktoken; enc = tiktoken.encoding_for_model('gpt-5.4-mini'); tokens = enc.encode(text). Also: Responses API with include=['usage'].",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/token-counting",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": "Low-res: 85 tokens. High-res: 85 base + 170 per 512x512 tile. Input only.",
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/guides/images-vision",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio not supported for gpt-5.4-mini."
+        },
+        "chars_per_token_estimate": {
+          "value": 4.0,
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/cookbook/examples/how_to_count_tokens_with_tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-06-21"
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MCP: Supported per model page."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": 128,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/assistants/deep-dive",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same 128-tool per request limit as all GPT-5.x models. Assistants API deep-dive explicitly states 'up to 128 tools'."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "medium",
+          "source_url": "https://community.openai.com/t/gpt-5-4-deep-dive-pricing-context-limits-and-tool-search-explained/1375800",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Same empirical estimate as gpt-5.4; mini models may degrade at lower tool counts."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/token-counting",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool Search: Supported per model page. Note: gpt-5.4-nano does NOT support tool search."
+        },
+        "max_tool_name_len": {
+          "value": 64,
+          "unit": "characters",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same 64-char constraint as all GPT models. Pattern: ^[a-zA-Z0-9_-]+$. | pattern=^[a-zA-Z0-9_-]+$"
+        },
+        "max_tool_description_len": {
+          "value": 1024,
+          "unit": "characters",
+          "confidence": "medium",
+          "source_url": "https://community.openai.com/t/tool-calling-api-upgrade-1024-char-limit-is-limiting/951951",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Same 1024-char description limit as gpt-5.4. API error when exceeded. Not on official docs page but consistently observed."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "as_of": "2026-06-21",
+          "notes": "No published per-request byte limit. Effective ceiling is context window token count."
+        },
+        "max_tool_result_size": {
+          "value": "512KB",
+          "unit": "bytes",
+          "confidence": "low",
+          "source_url": "https://community.openai.com/t/submit-tool-output-in-function-call-size-limit/744943",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Community-reported ~512KB limit on tool output submitted back. Not in official API reference."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://developers.openai.com/api/docs/guides/function-calling",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No numeric cap. parallel_tool_calls is boolean; no documented max simultaneous calls per turn."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": null,
+          "as_of": "2026-06-21",
+          "notes": "No API-enforced cap. Agents SDK defaults to 20 max_turns as SDK-level safety; not API-enforced."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap on connected MCP servers. Binding constraint is the 128-tool aggregate."
+        },
+        "max_total_tools": {
+          "value": 128,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/assistants/deep-dive",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "128 tools total per request across all connected MCP servers. Same as max_tools_hard."
+        },
+        "tool_schema_limits_notes": "Same JSON Schema rules as gpt-5.4. Strict mode: additionalProperties must be false on all objects, all properties in 'required', max 100 properties total, max 5 nesting levels, anyOf only for nullable types, no $ref in strict mode, oneOf/allOf have issues in strict mode. Keywords pattern/minLength/minimum/format not enforced by model.",
+        "other_limits_notes": "Same remote MCP and ChatGPT connector rules as gpt-5.4. allowed_tools parameter available for filtering MCP server tools. Rate limits: per-model RPM/TPM limits apply.",
+        "strict_function_schema": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://platform.openai.com/docs/guides/function-calling",
+          "source_tier": 1,
+          "notes": "OpenAI strict mode (strict:true): enforces additionalProperties:false, all-required, max 100 properties, max 5 nesting, bans oneOf/$ref."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Skills: Supported per model page."
+        },
+        "skills_loading_model": {
+          "value": "tool_triggered",
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/tools-skills",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "Same as gpt-5.4: skill stubs injected into hidden system prompt as input tokens; full skill loaded on trigger.",
+        "system_prompt_overhead_notes": "Hidden system prompt with tool/skill stubs. Measure via Responses API token-counting.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/prompt-caching",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Automatic caching >=1024 tokens. Extended retention (24h) supported. Cached input: $0.075/1M."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/guides/agents",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No persistent memory in raw API."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.75,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "output_per_mtok_usd": {
+          "value": 4.5,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.075,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "batch_discount": {
+          "value": "50% off input and output",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "billing_unit": {
+          "value": "tokens",
+          "confidence": "high",
+          "source_url": "https://openai.com/api/pricing/",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image inputs billed at standard text token rates. Audio: not supported.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "self_host": null,
+      "notes": "GPT-5.4 mini brings GPT-5.4 capabilities to a faster, more cost-efficient model for high-volume workloads. 400K context window vs 1.05M for gpt-5.4/gpt-5.5. Snapshot: gpt-5.4-mini-2026-03-17. Tool search supported; computer use supported; tool search NOT available on the smaller gpt-5.4-nano sibling.",
+      "sources": [
+        "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+        "https://openai.com/api/pricing/",
+        "https://developers.openai.com/api/docs/guides/prompt-caching",
+        "https://developers.openai.com/api/docs/guides/function-calling",
+        "https://developers.openai.com/api/docs/guides/tools-connectors-mcp",
+        "https://developers.openai.com/api/docs/guides/tools-tool-search",
+        "https://platform.openai.com/docs/assistants/deep-dive",
+        "https://developers.openai.com/api/docs/guides/structured-outputs",
+        "https://help.openai.com/en/articles/12584461-developer-mode-apps-and-full-mcp-connectors-in-chatgpt-beta",
+        "https://github.com/openai/tiktoken"
+      ]
+    }
+  ]
+}

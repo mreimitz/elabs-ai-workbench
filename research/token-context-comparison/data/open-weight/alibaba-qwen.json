@@ -1,0 +1,1226 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-06-21",
+  "provider": {
+    "id": "alibaba-qwen",
+    "name": "Alibaba (Qwen)",
+    "group": "open_weight",
+    "homepage": "https://qwen.ai",
+    "api_docs_url": "https://www.alibabacloud.com/help/en/model-studio/",
+    "tokenizer_docs_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+    "native_mcp_support": {
+      "value": true,
+      "confidence": "high",
+      "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "MCP is supported via Qwen-Agent framework. Model cards show explicit MCP configuration examples using mcpServers config in Qwen-Agent's function_list. Not a native model-protocol feature but rather framework-level support."
+    },
+    "skills_concept": {
+      "value": "Qwen-Agent plugin/tool system",
+      "confidence": "high",
+      "source_url": "https://github.com/QwenLM/Qwen-Agent",
+      "source_tier": 1,
+      "as_of": "2026-06-21",
+      "notes": "Qwen-Agent is the agentic framework for Qwen models. It supports a function_list for tools/plugins, MCP server configs, and built-in tools (web search, code interpreter). Skills are loaded per-agent invocation (always_on per agent session), injected into system prompt and tool definitions."
+    }
+  },
+  "models": [
+    {
+      "id": "Qwen/Qwen3.6-27B",
+      "display_name": "Qwen3.6-27B",
+      "family": "Qwen3.6",
+      "release_date": {
+        "value": "2026-04-22",
+        "confidence": "high",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Citation in model card states month=April, year=2026; HF collection updated Apr 22"
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://github.com/QwenLM/Qwen3/discussions/1093",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Qwen team has not published an exact knowledge cutoff for Qwen3.6. Community discussions for the Qwen3 series suggest late-2023/early-2024 for some data subsets; Qwen3.5 technical report (Feb 2026) does not state a cutoff date explicitly. Value left null."
+      },
+      "modalities": ["text", "image", "video"],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card states: 'Context Length: 262,144 natively'. Default serving context length. Shared input+output pool."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Standard transformer architecture; context window is a shared pool for input + output tokens combined."
+        },
+        "max_input_tokens": {
+          "value": 180224,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: context_window (262144) minus recommended max_output (81920). No hard vendor-published max_input cap; in practice the operator sets it via the serving framework."
+        },
+        "max_output_tokens_default": {
+          "value": 32768,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card Best Practices recommends max_tokens=32768 for most queries."
+        },
+        "max_output_tokens_max": {
+          "value": 81920,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card examples use max_tokens=81920 for complex problems; serving is set by operator via --max-model-len."
+        },
+        "extended_context": {
+          "value": 1010000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card states '262,144 natively and extensible up to 1,010,000 tokens' using YaRN RoPE scaling. Requires modifying rope_parameters in config.json or passing CLI overrides to vLLM/SGLang. Static YaRN may degrade short-text performance."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3.6 generates <think>...</think> reasoning blocks before the final response. These count toward output token budget and are billed as output tokens on DashScope."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3 tiktoken BPE (vocab ~151,643 tokens)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B/blob/main/tokenizer.json",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen models use tiktoken-based BPE tokenization. The Qwen3 series shares the same tokenizer; vocabulary is 151,643 regular tokens + special/control tokens. Token embedding dimension uses padded 248320."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (Qwen/Qwen3.6-27B) or tiktoken",
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 2,
+          "as_of": "2026-06-21",
+          "notes": "Can be loaded via HuggingFace transformers AutoTokenizer. Underlying tokenizer uses tiktoken library with a custom vocabulary file. tokenizer.json available in HF repo."
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.6-27B'); len(tok.encode(text))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": "Variable tile-based patching; number of tokens depends on image resolution and model's visual encoder tiling",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3.6 uses a vision encoder with tile-based patching. Exact per-pixel token count formula not published in model card; differs from Qwen-VL's documented tile formula. Use AutoProcessor to count multimodal tokens."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3.6-27B does not natively support audio input (text+image+video). Audio is handled by separate Qwen3-Omni / Qwen3.5-Omni models."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Rough estimate for English text using tiktoken BPE. Chinese text yields higher token density (~1.5 chars/token). Use AutoTokenizer for accuracy."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3.6 has strong function calling. vLLM/SGLang require --enable-auto-tool-choice --tool-call-parser qwen3_coder flag for structured tool output parsing."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen-Agent (the official agentic framework) accepts MCP server configs via mcpServers key in the function_list. MCP tool definitions are translated to Qwen function-call format and injected as input tokens."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3 series supports parallel/multi-tool calls in a single turn via the OpenAI-compatible chat completions API. Confirmed by Qwen-Agent framework behavior."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No hard API-enforced tool count cap documented for Qwen models. When self-hosted, the serving framework does not enforce a tool limit. Context window is the effective limit."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "No vendor-published empirical degradation point. Community consensus for capable models is ~30-50 tools before accuracy degrades; 40 is a conservative estimate. Qwen3.6's strong tool-use benchmarks (BFCL, MCPMark) suggest it may tolerate more than weaker models."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "DashScope and self-hosted endpoints both use OpenAI-compatible chat completions API format. Tool definitions follow the OpenAI function-calling JSON schema. Qwen-Agent also supports a native Qwen tool format internally, but the OpenAI-compatible API path is standard for integrations."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Tool definitions are serialized into the request and billed as input tokens. DashScope pricing page confirms: charged for input tokens and output tokens per request."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented tool-search or deferred-loading mechanism in vLLM/SGLang/Qwen-Agent equivalent to Claude's ENABLE_TOOL_SEARCH. Tools are injected in full at request time."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented character limit on tool names for Qwen models. Follows OpenAI function-call schema conventions."
+        },
+        "tool_schema_limits_notes": "No documented schema-depth or per-tool-definition size limits. Practical limit is total input token budget. Qwen3.6 MCPMark benchmark score of 37.0 indicates reasonable performance with standard tool schemas.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No formal 'skills' packaging system analogous to Claude Agent Skills. Qwen-Agent provides an agent framework with tools/plugins injected per session, but there is no skills marketplace or packaged skill format."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "No formal skills system. Tool definitions in Qwen-Agent are injected as input tokens at session start. MCP server tools are translated to OpenAI function format and count toward input budget.",
+        "system_prompt_overhead_notes": "System prompt is billed as input tokens. No fixed platform-injected system prompt overhead for self-hosted deployments. DashScope hosted API may inject a minimal system prompt; not documented.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "DashScope hosted API supports Context Caching (prefix caching) for eligible models. qwen3-max and qwen3.5-plus support context cache discount on input tokens. For self-hosted vLLM/SGLang, prefix KV caching is available natively and reduces recomputation."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No built-in persistent memory feature in Qwen3.6 model or DashScope API. Memory can be implemented externally via Qwen-Agent's memory modules, but these are not part of the model's context."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.14,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3.6-27B price not yet published on official Alibaba Cloud pricing page as of 2026-06-21. Third-party aggregator (pricepertoken.com, updated 2026-06-20) shows $0.14/M input for Qwen3.6-35B-A3B via Qwen API; the 27B dense model would likely be priced similarly or lower. Use as estimate only. Set to null for pure self-host compute."
+        },
+        "output_per_mtok_usd": {
+          "value": 0.9,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Same source and caveat as input price. Approximate for Qwen API hosted endpoint. Self-hosted: cost = compute only."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.05,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Cached input price per aggregator for Qwen3.6-35B-A3B. Official DashScope context-cache pricing for qwen3.5-plus in International mode shows ~60% reduction on input tokens for cached prefix."
+        },
+        "batch_discount": {
+          "value": "50% off input and output for Batch Invocation (async)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Alibaba Cloud Model Studio pricing page explicitly states: 'If a model supports Batch Invocation, both input and output tokens are charged at 50% of the real-time inference price.' Applies to qwen3-max and qwen3.5-plus; Qwen3.6 batch support not confirmed on pricing page."
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image and video tokens on DashScope are billed as input tokens based on the visual encoder's patch/tile output. Exact per-image token count depends on resolution; use AutoProcessor to calculate. DashScope billing for Qwen3.5-Omni models documents separate audio rates; Qwen3.6-27B image/video rates are not separately published.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "DashScope pricing for qwen3-max shows 'CoT + response' for output pricing, indicating reasoning tokens are billed at the same output rate as the final response. The <think>...</think> block tokens count toward output billing."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "license": {
+          "value": "Apache-2.0",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "HF model card shows 'License: apache-2.0'. Apache 2.0 permits commercial use and redistribution."
+        },
+        "param_variants": {
+          "value": "27B dense (single size in Qwen3.6 dense lineup as of 2026-06-21)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3.6 release includes Qwen3.6-27B (dense, 27B params) and Qwen3.6-35B-A3B (MoE, 35B total / 3B active). This entry covers the 27B dense model."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card states default context length 262,144 tokens. This is the max_position_embeddings in the model config."
+        },
+        "max_context_documented": {
+          "value": 1010000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "YaRN RoPE scaling extends context to 1,010,000 tokens. Requires modifying rope_parameters in config.json (rope_type: yarn, factor: 4.0) or passing CLI overrides. Use --max-model-len 1010000 with VLLM_ALLOW_LONG_MAX_MODEL_LEN=1."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (>=0.19.0), SGLang (>=0.5.10), KTransformers, HuggingFace Transformers, Ollama (via quantized GGUF)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "framework_tool_calling_notes": "vLLM: add --enable-auto-tool-choice --tool-call-parser qwen3_coder for structured tool output. SGLang: add --tool-call-parser qwen3_coder. Both expose an OpenAI-compatible /v1/chat/completions endpoint. Qwen-Agent (pip: qwen-agent) provides higher-level MCP integration, translating MCP tool configs to Qwen function-call format. Thinking mode (default on) generates <think> blocks before tool calls; reasoning tokens count toward output budget."
+      },
+      "notes": "Qwen3.6-27B is the flagship dense model of the Qwen3.6 series, released April 2026 as a successor to Qwen3.5-27B. Notable for strong agentic coding (SWE-bench Verified 77.2, Terminal-Bench 59.3), multimodal support (text/image/video), and a Thinking Preservation mechanism that retains reasoning context across turns for reduced overhead in multi-turn agentic sessions.",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.6-27B",
+        "https://qwen.ai/blog?id=qwen3.6-27b",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+        "https://github.com/QwenLM/Qwen-Agent"
+      ]
+    },
+    {
+      "id": "Qwen/Qwen3.6-35B-A3B",
+      "display_name": "Qwen3.6-35B-A3B",
+      "family": "Qwen3.6 MoE",
+      "release_date": {
+        "value": "2026-04-27",
+        "confidence": "high",
+        "source_url": "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+        "source_tier": 3,
+        "as_of": "2026-06-21",
+        "notes": "Release date 2026-04-27 per aggregator (pricepertoken.com, updated 2026-06-20). HF collection shows 'Updated 18 days ago' as of ~2026-06-21 which is consistent. Blog post at qwen.ai confirms April 2026."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://github.com/QwenLM/Qwen3/discussions/1093",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Same as Qwen3.6-27B — Qwen team has not published an exact cutoff date for the Qwen3.6 series."
+      },
+      "modalities": ["text", "image", "video"],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": 180224,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true,
+          "notes": "Derived: 262144 - 81920."
+        },
+        "max_output_tokens_default": {
+          "value": 32768,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_output_tokens_max": {
+          "value": 81920,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card examples use max_tokens=81920 for complex benchmarks."
+        },
+        "extended_context": {
+          "value": 1010000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same YaRN extension as Qwen3.6-27B: up to 1,010,000 tokens with rope_type: yarn, factor: 4.0 config change."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3 tiktoken BPE (vocab ~151,643 tokens)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same tokenizer as Qwen3.6-27B and all Qwen3/3.5/3.6 series models."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (Qwen/Qwen3.6-35B-A3B) or tiktoken",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.6-35B-A3B'); len(tok.encode(text))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": "Variable tile-based patching via vision encoder",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Same as Qwen3.6-27B. Use AutoProcessor for accurate multimodal token counts."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio not supported in Qwen3.6-35B-A3B."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 3,
+          "as_of": "2026-06-21"
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "MCP via Qwen-Agent. MCPMark benchmark score of 37.0 reported in model card."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "No documented hard cap."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21",
+          "notes": "Community consensus estimate."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_schema_limits_notes": "No documented limits. MCPMark benchmark uses GitHub MCP v0.30.3 (standard tool schema); score of 37.0 for this model.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "No formal skills system. Tools via Qwen-Agent are injected as input tokens.",
+        "system_prompt_overhead_notes": "System prompt billed as input tokens. No fixed platform overhead for self-hosted.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Context caching available on DashScope. For self-hosted vLLM/SGLang prefix KV caching applies."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.14,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+          "source_tier": 3,
+          "as_of": "2026-06-21",
+          "notes": "Per aggregator pricepertoken.com (updated 2026-06-20): $0.14/M input via Qwen API. Not yet on official Alibaba Cloud pricing page. Compare: qwen3.5-plus International = $0.40/M; this model is smaller/newer."
+        },
+        "output_per_mtok_usd": {
+          "value": 0.9,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+          "source_tier": 3,
+          "as_of": "2026-06-21"
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.05,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+          "source_tier": 3,
+          "as_of": "2026-06-21"
+        },
+        "batch_discount": {
+          "value": "50% off for eligible models on DashScope Batch Invocation",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen3.6-35B-A3B batch support on DashScope not explicitly confirmed on pricing page as of 2026-06-21. General batch policy is 50% off."
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image and video tokens billed as input tokens based on visual encoder output. Exact per-image formula not published.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "license": {
+          "value": "Apache-2.0",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "param_variants": {
+          "value": "35B total parameters, 3B active (MoE: 256 experts, 8 routed + 1 shared activated per token)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card: '35B in total and 3B activated'. MoE architecture with Gated DeltaNet + Gated Attention hybrid layers."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_context_documented": {
+          "value": 1010000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "YaRN extension same as Qwen3.6-27B."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (>=0.19.0), SGLang (>=0.5.10), KTransformers, HuggingFace Transformers, Ollama (via quantized GGUF)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "framework_tool_calling_notes": "Same as Qwen3.6-27B: --enable-auto-tool-choice --tool-call-parser qwen3_coder for vLLM/SGLang. MoE architecture means only 3B params are active per token, enabling efficient inference despite 35B total. DashScope hosted version is Qwen3.5-Flash (qwen3.5-flash model ID corresponds to Qwen3.5-35B-A3B according to HF model card note)."
+      },
+      "notes": "Qwen3.6-35B-A3B is the MoE companion to Qwen3.6-27B. 35B total / 3B active makes it very efficient to serve. Note: qwen3.5-flash on DashScope is documented as the hosted version of Qwen3.5-35B-A3B (per HF model card). Qwen3.6-35B-A3B's hosted API identity on DashScope is not explicitly confirmed as of 2026-06-21.",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+        "https://pricepertoken.com/pricing-page/model/qwen-qwen3.6-35b-a3b",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://github.com/QwenLM/Qwen-Agent"
+      ]
+    },
+    {
+      "id": "Qwen/Qwen3.5-35B-A3B",
+      "display_name": "Qwen3.5-35B-A3B",
+      "family": "Qwen3.5 MoE",
+      "release_date": {
+        "value": "2026-02-24",
+        "confidence": "high",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Citation in model card: month=February, year=2026. HF collection 'Qwen3.5 Collection' updated Mar 9 suggests initial release February 2026; aggregator (llm-stats.com) cites Feb 24, 2026."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://github.com/QwenLM/Qwen3/discussions/1093",
+        "source_tier": 1,
+        "as_of": "2026-06-21",
+        "notes": "Not officially published by Qwen team. Community suggests late-2023 to early-2024 for Qwen3.x series training data."
+      },
+      "modalities": ["text", "image", "video"],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card: 'Context Length: 262,144 natively'. DashScope hosted (qwen3.5-flash) extends to 1M by default per HF note."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_input_tokens": {
+          "value": 180224,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "derived": true
+        },
+        "max_output_tokens_default": {
+          "value": 32768,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_output_tokens_max": {
+          "value": 81920,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "extended_context": {
+          "value": 1010000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "YaRN extension same as Qwen3.6 series. DashScope hosted qwen3.5-flash supports 1M context by default."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3 tiktoken BPE (vocab ~151,643 tokens)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (Qwen/Qwen3.5-35B-A3B) or tiktoken",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.5-35B-A3B'); len(tok.encode(text))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 2,
+          "as_of": "2026-06-21"
+        },
+        "image_token_rule": {
+          "value": "Variable tile-based patching via vision encoder",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Audio not supported in Qwen3.5-35B-A3B."
+        },
+        "chars_per_token_estimate": {
+          "value": 3.5,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 3,
+          "as_of": "2026-06-21"
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "BFCL-V4 score of 67.3 in model card benchmarks confirms strong function-calling. TAU2-Bench score of 81.2 shows robust agentic behavior."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Qwen-Agent MCP support same as Qwen3.6 series."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 4,
+          "as_of": "2026-06-21"
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "tool_schema_limits_notes": "No documented limits. Search agent benchmarks (WideSearch, BrowseComp) use 256K context window with context-folding strategy.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "notes": "No vendor cap; description counts against context window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "Context-bound; tool results count against max_model_len."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Set by the agent host/framework, not the model."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "skills_context_cost_notes": "No formal skills system. Tools via Qwen-Agent injected as input tokens.",
+        "system_prompt_overhead_notes": "System prompt billed as input tokens. DashScope qwen3.5-flash (hosted version) may have a default context management note.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "qwen3.5-flash on DashScope International supports Context Cache discount and Batch Invocation 50% off."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": null,
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.1,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "DashScope International pricing for qwen3.5-flash (hosted version of Qwen3.5-35B-A3B per HF model card): $0.10/M input tokens for 0<Token<=1M. Source: Alibaba Cloud Model Studio pricing page (Last Updated: Apr 01, 2026)."
+        },
+        "output_per_mtok_usd": {
+          "value": 0.4,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "DashScope International qwen3.5-flash: $0.40/M output tokens."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "low",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "qwen3.5-flash supports Context Cache discount (badge shown on pricing page) but specific cached price not shown separately in the pricing table. Batch is 50% off: $0.05/$0.20."
+        },
+        "batch_discount": {
+          "value": "50% off for Batch Invocation (async); qwen3.5-flash supports batch",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "multimodal_billing_notes": "Image/video tokens billed as input tokens. Audio not supported for this model.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "license": {
+          "value": "Apache-2.0",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "param_variants": {
+          "value": "35B total parameters, 3B active (MoE: 256 experts, 8 routed + 1 shared); also available in 122B-A10B, 27B dense, 7B, 4B sizes in Qwen3.5 family",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "This entry covers the 35B-A3B MoE variant. The Qwen3.5 family spans from 0.6B to 397B-A17B."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21"
+        },
+        "max_context_documented": {
+          "value": 1010000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "YaRN rope scaling to 1,010,000. DashScope hosted qwen3.5-flash supports 1M context by default."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (main branch or >=nightly), SGLang (main branch), KTransformers, HuggingFace Transformers, Ollama (via quantized GGUF)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-06-21",
+          "notes": "Model card notes vLLM main branch required at time of Qwen3.5 release; vLLM stable release may lag behind."
+        },
+        "framework_tool_calling_notes": "Same setup as Qwen3.6: --enable-auto-tool-choice --tool-call-parser qwen3_coder for vLLM/SGLang. MoE architecture activates only 3B params per forward pass. Note: Qwen3.5 uses a /nothink soft switch that Qwen3.6 does not — send '/nothink' in user message to disable reasoning mode."
+      },
+      "notes": "Qwen3.5-35B-A3B (released Feb 2026) is the predecessor to Qwen3.6-35B-A3B. The hosted DashScope equivalent is qwen3.5-flash ($0.10/$0.40 per M tokens, one of the most cost-effective hosted options). Strong agentic benchmarks: BFCL-V4 67.3, TAU2-Bench 81.2, BrowseComp 61.0. Differs from Qwen3.6 in not having Thinking Preservation and using /think /nothink soft switching.",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+        "https://qwen.ai/blog?id=qwen3.5",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://github.com/QwenLM/Qwen-Agent",
+        "https://github.com/QwenLM/Qwen3/discussions/1093"
+      ]
+    }
+  ]
+}

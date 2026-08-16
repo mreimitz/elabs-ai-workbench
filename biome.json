@@ -1,0 +1,68 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "files": {
+    "ignore": [
+      "**/dist",
+      "**/node_modules",
+      "vendor/**",
+      "**/*.d.ts",
+      "**/.wp-evidence/**",
+      "**/data-wt/**",
+      "**/*.timestamp-*.mjs",
+      "**/playwright-report/**",
+      "**/test-results/**"
+    ]
+  },
+  "vcs": {
+    "enabled": false
+  },
+  "organizeImports": {
+    "enabled": false
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "noLabelWithoutControl": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useTemplate": "off",
+        "useImportType": "off",
+        "noUnusedTemplateLiteral": "off",
+        "useNumberNamespace": "off",
+        "useConst": "off"
+      },
+      "complexity": {
+        "useOptionalChain": "off",
+        "noUselessSwitchCase": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "off",
+        "noUnnecessaryContinue": "off"
+      },
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noImplicitAnyLet": "off",
+        "noAssignInExpressions": "off"
+      },
+      "performance": {
+        "noAccumulatingSpread": "off"
+      }
+    }
+  }
+}

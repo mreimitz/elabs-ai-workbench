@@ -1,0 +1,675 @@
+/*
+ * CognitiveRing.css — token-backed styling for the Assistant Hub's fresh-session welcome ring
+ * (CognitiveRing.tsx). Follows the same discipline as skills/design/code-intel/decorations.css:
+ * EVERY visible colour is a semantic @brand/tokens variable, resolved through a small scoped
+ * --ring-* accent layer, so the illustration reads correctly in BOTH themes (qlik-bright /
+ * qlik-dark) with no raw literal and no `dark:` override.
+ *
+ * The concept's identity is the Qlik brand green + cyan. The green maps 1:1 to the app's --primary
+ * (which IS the Qlik green). The cyan has no semantic @brand/tokens equivalent, so it is defined
+ * ONCE here as a scoped closed token (the pattern the planned packages/illustrations --illus-* layer
+ * will generalise). Alpha shades are composed with color-mix() over these tokens rather than baked
+ * as literals, so a theme change re-tints the whole ring for free.
+ *
+ * Mask gradients use var(--ring-ink) purely as an OPAQUE alpha stop (CSS gradient masks are
+ * alpha-based — the hue is irrelevant; only "opaque = show / transparent = hide" matters), so masks
+ * carry no raw color either.
+ *
+ * brand-ui-allow: --ring-cyan/--ring-cyan-soft are the Qlik brand cyan; no semantic @brand/tokens
+ * color matches it. Scoped to .cognitive-ring, documented, owner-approved for the welcome
+ * illustration (see the accent-palette decision in the build conversation).
+ */
+
+.cognitive-ring {
+  /* Scoped brand-accent layer — the only place raw accent values live, kept theme-safe. */
+  --ring-green: var(--primary); /* Qlik green === app --primary */
+  --ring-cyan: oklch(0.79 0.105 191); /* brand-ui-allow: Qlik brand cyan, no token equivalent */
+  --ring-cyan-soft: oklch(0.87 0.06 191); /* brand-ui-allow: Qlik brand cyan (soft) */
+  --ring-ink: var(--foreground); /* neutral structural lines, theme-aware */
+  --ring-muted: var(--muted-foreground);
+  --ring-surface: var(--card); /* the surface the dots "cut out" of */
+  --ring-line: color-mix(in srgb, var(--ring-ink) 12%, transparent);
+
+  /* Overridable by the component's `size` prop (inline --ring-size). */
+  --ring-size: clamp(160px, 40vmin, 240px);
+  --pointer-x: 0;
+  --pointer-y: 0;
+
+  position: relative;
+  width: var(--ring-size);
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  isolation: isolate;
+  border-radius: 50%;
+  transform: perspective(900px) rotateX(calc(var(--pointer-y) * -1.2deg))
+    rotateY(calc(var(--pointer-x) * 1.2deg));
+  transition: transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cognitive-ring::before {
+  content: "";
+  position: absolute;
+  inset: 11.5%;
+  z-index: -3;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--ring-cyan) 8%, transparent), transparent 56%),
+    repeating-radial-gradient(circle, transparent 0 28px, color-mix(in srgb, var(--ring-ink) 3.5%, transparent) 29px 30px);
+  opacity: 0.62;
+  filter: blur(0.2px);
+  animation: cr-field-breathe 5.4s ease-in-out infinite;
+}
+
+.cognitive-ring::after {
+  content: "";
+  position: absolute;
+  inset: 3%;
+  z-index: -4;
+  border-radius: 50%;
+  box-shadow: 0 0 44px color-mix(in srgb, var(--ring-cyan) 8%, transparent),
+    inset 0 0 34px color-mix(in srgb, var(--ring-cyan) 4%, transparent);
+  opacity: 0.4;
+  transition: opacity 240ms ease, box-shadow 240ms ease;
+}
+
+.cognitive-ring:hover::after {
+  opacity: 0.95;
+  box-shadow: 0 0 58px color-mix(in srgb, var(--ring-cyan) 18%, transparent),
+    inset 0 0 48px color-mix(in srgb, var(--ring-green) 8%, transparent);
+}
+
+.cognitive-ring .cr-layer,
+.cognitive-ring .cr-scanner,
+.cognitive-ring .cr-spokes,
+.cognitive-ring .cr-cardinals,
+.cognitive-ring .cr-nodes,
+.cognitive-ring .cr-packets,
+.cognitive-ring .cr-particles,
+.cognitive-ring .cr-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+/* Outer telemetry: segmented, machine-like, deliberately precise. */
+.cognitive-ring .cr-telemetry {
+  inset: 4.7%;
+  background: repeating-conic-gradient(
+    from 4deg,
+    color-mix(in srgb, var(--ring-ink) 48%, transparent) 0 1.05deg,
+    transparent 1.05deg 7.5deg,
+    color-mix(in srgb, var(--ring-cyan) 72%, transparent) 7.5deg 8.1deg,
+    transparent 8.1deg 15deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 85%, var(--ring-ink) 85.4% 86.4%, transparent 86.8%);
+  mask: radial-gradient(circle, transparent 0 85%, var(--ring-ink) 85.4% 86.4%, transparent 86.8%);
+  opacity: 0.68;
+  animation: cr-rotate-cw 53s linear infinite;
+}
+
+.cognitive-ring .cr-telemetry::before,
+.cognitive-ring .cr-telemetry::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.cognitive-ring .cr-telemetry::before {
+  background: conic-gradient(
+    from 20deg,
+    transparent 0 14%,
+    color-mix(in srgb, var(--ring-green) 95%, transparent) 14% 18%,
+    transparent 18% 39%,
+    color-mix(in srgb, var(--ring-cyan) 95%, transparent) 39% 43%,
+    transparent 43% 69%,
+    color-mix(in srgb, var(--ring-green) 75%, transparent) 69% 72%,
+    transparent 72% 100%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 83.2%, var(--ring-ink) 83.5% 84.45%, transparent 84.8%);
+  mask: radial-gradient(circle, transparent 0 83.2%, var(--ring-ink) 83.5% 84.45%, transparent 84.8%);
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--ring-cyan) 18%, transparent));
+  animation: cr-dash-drift 9s ease-in-out infinite alternate;
+}
+
+.cognitive-ring .cr-telemetry::after {
+  inset: 4.8%;
+  border: 1px solid color-mix(in srgb, var(--ring-ink) 10%, transparent);
+  border-top-color: color-mix(in srgb, var(--ring-cyan) 55%, transparent);
+  border-right-color: transparent;
+  transform: rotate(27deg);
+}
+
+/* Reasoning ring: slightly irregular, constrained by technical segmentation. */
+.cognitive-ring .cr-reasoning {
+  inset: 9.2%;
+  border-radius: 46% 54% 49% 51% / 52% 45% 55% 48%;
+  background: conic-gradient(
+    from 75deg,
+    transparent 0 4%,
+    var(--ring-green) 4% 8%,
+    transparent 8% 18%,
+    color-mix(in srgb, var(--ring-green) 35%, transparent) 18% 21%,
+    transparent 21% 46%,
+    var(--ring-green) 46% 52%,
+    transparent 52% 70%,
+    color-mix(in srgb, var(--ring-green) 68%, transparent) 70% 74%,
+    transparent 74% 100%
+  );
+  -webkit-mask: radial-gradient(ellipse, transparent 0 82.5%, var(--ring-ink) 83% 84.15%, transparent 84.7%);
+  mask: radial-gradient(ellipse, transparent 0 82.5%, var(--ring-ink) 83% 84.15%, transparent 84.7%);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--ring-green) 15%, transparent));
+  animation: cr-reason-orbit 27s linear infinite, cr-organic-calibration 7s ease-in-out infinite alternate;
+}
+
+.cognitive-ring .cr-reasoning::after {
+  content: "";
+  position: absolute;
+  inset: 5%;
+  border-radius: 53% 47% 51% 49% / 47% 53% 46% 54%;
+  border: 1.35px dashed color-mix(in srgb, var(--ring-green) 82%, transparent);
+  animation: cr-rotate-ccw 35s linear infinite;
+}
+
+/* Working memory: two asynchronous cyan tracks. */
+.cognitive-ring .cr-memory {
+  position: absolute;
+  inset: 13.7%;
+  border: 1.4px solid color-mix(in srgb, var(--ring-cyan) 78%, transparent);
+  border-left-color: color-mix(in srgb, var(--ring-cyan) 14%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--ring-cyan) 35%, transparent);
+  border-radius: 52% 48% 46% 54% / 48% 54% 46% 52%;
+  animation: cr-memory-loop 18s linear infinite,
+    cr-organic-calibration 9s ease-in-out -2s infinite alternate-reverse;
+  box-shadow: 0 0 5px color-mix(in srgb, var(--ring-cyan) 10%, transparent);
+}
+
+.cognitive-ring .cr-memory::before,
+.cognitive-ring .cr-memory::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.cognitive-ring .cr-memory::before {
+  inset: 4.4%;
+  background: conic-gradient(
+    from 180deg,
+    transparent 0 8%,
+    color-mix(in srgb, var(--ring-cyan) 95%, transparent) 8% 22%,
+    transparent 22% 42%,
+    color-mix(in srgb, var(--ring-cyan-soft) 78%, transparent) 42% 50%,
+    transparent 50% 73%,
+    color-mix(in srgb, var(--ring-cyan) 72%, transparent) 73% 91%,
+    transparent 91% 100%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 86%, var(--ring-ink) 86.4% 87%, transparent 87.4%);
+  mask: radial-gradient(circle, transparent 0 86%, var(--ring-ink) 86.4% 87%, transparent 87.4%);
+  animation: cr-rotate-cw 22s linear infinite;
+}
+
+.cognitive-ring .cr-memory::after {
+  inset: 10%;
+  border: 1px solid color-mix(in srgb, var(--ring-ink) 13%, transparent);
+  border-top-color: color-mix(in srgb, var(--ring-green) 44%, transparent);
+  border-left-color: transparent;
+  animation: cr-rotate-ccw 15s linear infinite;
+}
+
+/* Radial routing structure: information channels between processing layers. */
+.cognitive-ring .cr-spokes {
+  inset: 17%;
+  opacity: 0.44;
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--ring-ink) 25%, transparent) 0 0.25deg,
+    transparent 0.25deg 29.75deg,
+    color-mix(in srgb, var(--ring-cyan) 45%, transparent) 29.75deg 30deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 41%, var(--ring-ink) 42% 91%, transparent 92%);
+  mask: radial-gradient(circle, transparent 0 41%, var(--ring-ink) 42% 91%, transparent 92%);
+  animation: cr-spoke-phase 25s steps(12, end) infinite;
+}
+
+.cognitive-ring .cr-spokes::after {
+  content: "";
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 15deg,
+    color-mix(in srgb, var(--ring-green) 42%, transparent) 0 0.36deg,
+    transparent 0.36deg 59.64deg,
+    color-mix(in srgb, var(--ring-cyan) 45%, transparent) 59.64deg 60deg
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 30%, var(--ring-ink) 31% 82%, transparent 83%);
+  mask: radial-gradient(circle, transparent 0 30%, var(--ring-ink) 31% 82%, transparent 83%);
+  animation: cr-rotate-ccw 34s linear infinite;
+}
+
+.cognitive-ring .cr-scanner {
+  inset: 19.5%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 78%,
+    color-mix(in srgb, var(--ring-cyan) 2%, transparent) 81%,
+    color-mix(in srgb, var(--ring-cyan) 18%, transparent) 90%,
+    color-mix(in srgb, var(--ring-cyan) 58%, transparent) 99.2%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(circle, transparent 0 39%, var(--ring-ink) 42% 92%, transparent 94%);
+  mask: radial-gradient(circle, transparent 0 39%, var(--ring-ink) 42% 92%, transparent 94%);
+  opacity: 0.68;
+  animation: cr-rotate-cw 9.5s linear infinite;
+}
+
+.cognitive-ring .cr-cardinal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 13px;
+  height: 5px;
+  border-top: 1px solid color-mix(in srgb, var(--ring-ink) 48%, transparent);
+  border-left: 1px solid color-mix(in srgb, var(--ring-ink) 48%, transparent);
+  transform-origin: 0 0;
+  transform: rotate(var(--angle)) translateY(calc(var(--ring-size) * -0.434));
+  opacity: 0.62;
+}
+
+.cognitive-ring .cr-cardinal:nth-child(2n) {
+  width: 8px;
+  border-color: color-mix(in srgb, var(--ring-cyan) 72%, transparent);
+}
+
+.cognitive-ring .cr-node {
+  --radius: calc(var(--ring-size) * 0.365);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px;
+  border: 1px solid color-mix(in srgb, var(--ring-surface) 95%, transparent);
+  border-radius: 50%;
+  background: var(--node-color, var(--ring-cyan));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring-cyan) 12%, transparent),
+    0 0 9px color-mix(in srgb, var(--ring-cyan) 24%, transparent);
+  transform: rotate(var(--angle)) translateY(calc(var(--radius) * -1)) rotate(calc(var(--angle) * -1));
+  animation: cr-node-think 3.6s ease-in-out infinite var(--delay);
+}
+
+.cognitive-ring .cr-node:nth-child(3n) {
+  --node-color: var(--ring-green);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring-green) 10%, transparent),
+    0 0 9px color-mix(in srgb, var(--ring-green) 18%, transparent);
+}
+
+.cognitive-ring .cr-node::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  animation: cr-node-wave 3.6s ease-out infinite var(--delay);
+}
+
+.cognitive-ring .cr-packet-track {
+  position: absolute;
+  inset: var(--track-inset);
+  border-radius: 50%;
+  animation: var(--direction, cr-rotate-cw) var(--duration) linear infinite;
+}
+
+.cognitive-ring .cr-packet {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  width: var(--size, 5px);
+  height: var(--size, 5px);
+  margin-left: calc(var(--size, 5px) / -2);
+  border-radius: 999px;
+  background: var(--packet-color, var(--ring-cyan));
+  box-shadow: 0 0 8px var(--packet-color, var(--ring-cyan));
+  opacity: 0.82;
+  animation: cr-packet-blink 2.8s ease-in-out infinite var(--delay, 0s);
+}
+
+.cognitive-ring .cr-packet::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 60%;
+  width: 24px;
+  height: 1px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, var(--packet-color, var(--ring-cyan)));
+  opacity: 0.34;
+}
+
+/* Empty central area: a low-information cognitive lattice, not text. */
+.cognitive-ring .cr-core {
+  inset: 31.8%;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--ring-line);
+  background: radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--ring-surface) 94%, transparent) 0 26%,
+      color-mix(in srgb, var(--ring-cyan) 5.5%, transparent) 52%,
+      transparent 73%
+    ),
+    repeating-conic-gradient(
+      from 30deg,
+      color-mix(in srgb, var(--ring-ink) 10%, transparent) 0 0.45deg,
+      transparent 0.45deg 60deg
+    );
+  box-shadow: inset 0 0 24px color-mix(in srgb, var(--ring-cyan) 6%, transparent);
+  animation: cr-core-rotate 31s linear infinite;
+}
+
+.cognitive-ring .cr-core::before,
+.cognitive-ring .cr-core::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+}
+
+.cognitive-ring .cr-core::before {
+  inset: 16%;
+  border: 1px dashed color-mix(in srgb, var(--ring-cyan) 42%, transparent);
+  animation: cr-rotate-ccw 15s linear infinite;
+}
+
+.cognitive-ring .cr-core::after {
+  inset: 34%;
+  background: color-mix(in srgb, var(--ring-surface) 98%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ring-green) 38%, transparent);
+  box-shadow: 0 0 0 7px color-mix(in srgb, var(--ring-green) 3.5%, transparent),
+    0 0 20px color-mix(in srgb, var(--ring-cyan) 12%, transparent);
+  animation: cr-synthesis 3.6s ease-in-out infinite;
+}
+
+.cognitive-ring .cr-synapse {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin: -2.5px;
+  border-radius: 50%;
+  background: var(--synapse-color, var(--ring-cyan));
+  box-shadow: 0 0 7px var(--synapse-color, var(--ring-cyan));
+  transform: rotate(var(--angle)) translateY(-52px);
+  animation: cr-synapse-fire 3.6s ease-in-out infinite var(--delay);
+}
+
+.cognitive-ring .cr-synapse:nth-child(2n) {
+  --synapse-color: var(--ring-green);
+}
+
+.cognitive-ring .cr-particle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--particle-size, 3px) + 1.5px);
+  height: calc(var(--particle-size, 3px) + 1.5px);
+  margin: calc((var(--particle-size, 3px) + 1.5px) / -2);
+  border: 1px solid color-mix(in srgb, var(--ring-surface) 90%, transparent);
+  border-radius: 50%;
+  background: var(--particle-color, var(--ring-cyan));
+  box-shadow: 0 0 7px var(--particle-color, var(--ring-cyan)),
+    0 0 15px color-mix(in srgb, var(--particle-color, var(--ring-cyan)) 62%, transparent);
+  opacity: 0;
+  transform: rotate(var(--angle)) translateY(calc(var(--ring-size) * -0.405)) scale(0.2);
+  pointer-events: none;
+}
+
+.cognitive-ring:hover .cr-particle {
+  animation: cr-particle-burst var(--duration, 1.8s) cubic-bezier(0.16, 0.72, 0.28, 1) infinite
+    var(--delay, 0s);
+}
+
+.cognitive-ring .cr-sparks {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.cognitive-ring .cr-spark {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: calc(var(--size) + 1px);
+  height: calc(var(--size) + 1px);
+  border-radius: 50%;
+  pointer-events: none;
+  background: var(--spark-color);
+  border: 1px solid color-mix(in srgb, var(--ring-surface) 90%, transparent);
+  box-shadow: 0 0 8px var(--spark-color), 0 0 18px var(--spark-color);
+  animation: cr-cursor-spark 920ms ease-out forwards;
+}
+
+/* Interaction speed-ups — mirror the concept's "lean in when hovered". */
+.cognitive-ring:hover .cr-telemetry {
+  animation-duration: 25s;
+}
+.cognitive-ring:hover .cr-reasoning {
+  animation-duration: 12s, 5.3s;
+}
+.cognitive-ring:hover .cr-memory {
+  animation-duration: 10s, 6.7s;
+}
+.cognitive-ring:hover .cr-scanner {
+  animation-duration: 3.8s;
+  opacity: 0.92;
+}
+.cognitive-ring:hover .cr-packet-track {
+  animation-duration: calc(var(--duration) * 0.52);
+}
+.cognitive-ring:hover .cr-node {
+  animation-duration: 1.75s;
+}
+.cognitive-ring:hover .cr-core::after {
+  animation-duration: 1.8s;
+}
+
+/* Paused (the welcome ring after it has docked out of view) — stop every timeline so the
+ * illustration costs nothing once it has faded behind the conversation. */
+.cognitive-ring[data-paused="true"],
+.cognitive-ring[data-paused="true"] *,
+.cognitive-ring[data-paused="true"] *::before,
+.cognitive-ring[data-paused="true"] *::after {
+  animation-play-state: paused !important;
+}
+
+@keyframes cr-rotate-cw {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cr-rotate-ccw {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes cr-reason-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cr-memory-loop {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+@keyframes cr-organic-calibration {
+  0% {
+    border-radius: 46% 54% 49% 51% / 52% 45% 55% 48%;
+  }
+  45% {
+    border-radius: 53% 47% 54% 46% / 48% 56% 44% 52%;
+  }
+  100% {
+    border-radius: 49% 51% 45% 55% / 55% 47% 53% 45%;
+  }
+}
+@keyframes cr-field-breathe {
+  0%,
+  100% {
+    transform: scale(0.985);
+    opacity: 0.46;
+  }
+  50% {
+    transform: scale(1.018);
+    opacity: 0.72;
+  }
+}
+@keyframes cr-dash-drift {
+  0% {
+    transform: rotate(-4deg) scale(0.995);
+    opacity: 0.62;
+  }
+  100% {
+    transform: rotate(8deg) scale(1.01);
+    opacity: 0.95;
+  }
+}
+@keyframes cr-spoke-phase {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cr-node-think {
+  0%,
+  70%,
+  100% {
+    transform: rotate(var(--angle)) translateY(calc(var(--radius) * -1)) rotate(calc(var(--angle) * -1))
+      scale(0.75);
+    opacity: 0.45;
+  }
+  16% {
+    transform: rotate(var(--angle)) translateY(calc(var(--radius) * -1)) rotate(calc(var(--angle) * -1))
+      scale(1.35);
+    opacity: 1;
+  }
+  34% {
+    transform: rotate(var(--angle)) translateY(calc(var(--radius) * -1)) rotate(calc(var(--angle) * -1))
+      scale(0.9);
+    opacity: 0.72;
+  }
+}
+@keyframes cr-node-wave {
+  0%,
+  10% {
+    transform: scale(0.25);
+    opacity: 0;
+  }
+  28% {
+    opacity: 0.32;
+  }
+  58%,
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+@keyframes cr-packet-blink {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scale(0.74);
+  }
+  48% {
+    opacity: 1;
+    transform: scale(1.35);
+  }
+}
+@keyframes cr-core-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes cr-synthesis {
+  0%,
+  62%,
+  100% {
+    transform: scale(0.72);
+    opacity: 0.38;
+  }
+  72% {
+    transform: scale(1.16);
+    opacity: 0.9;
+  }
+  84% {
+    transform: scale(0.92);
+    opacity: 0.64;
+  }
+}
+@keyframes cr-synapse-fire {
+  0%,
+  66%,
+  100% {
+    opacity: 0.22;
+    transform: rotate(var(--angle)) translateY(-44px) scale(0.65);
+  }
+  76% {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateY(-56px) scale(1.3);
+  }
+  88% {
+    opacity: 0.46;
+    transform: rotate(var(--angle)) translateY(-50px) scale(0.8);
+  }
+}
+@keyframes cr-particle-burst {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateY(calc(var(--ring-size) * -0.36)) scale(0.2);
+  }
+  18% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 0.74;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(calc(var(--angle) + var(--drift, 5deg)))
+      translateY(calc(var(--ring-size) * -0.59)) scale(0);
+  }
+}
+@keyframes cr-cursor-spark {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  35% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0);
+  }
+}
+
+/* Reduced motion is a hard rule: drop the ambient animation, the parallax tilt, and the
+ * pointer-only flourishes (particles + sparks), keeping the ring as a calm static emblem. */
+@media (prefers-reduced-motion: reduce) {
+  .cognitive-ring,
+  .cognitive-ring *,
+  .cognitive-ring *::before,
+  .cognitive-ring *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .cognitive-ring {
+    transform: none;
+  }
+  .cognitive-ring .cr-particle,
+  .cognitive-ring .cr-spark {
+    display: none;
+  }
+}

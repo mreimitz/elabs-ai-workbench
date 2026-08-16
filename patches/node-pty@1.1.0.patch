@@ -1,0 +1,31 @@
+diff --git a/scripts/post-install.js b/scripts/post-install.js
+index 8dbac507ea9c64169ea500a0115816056c0bc309..7f6cae99c0effd2e5e805220cc04f283773273a4 100644
+--- a/scripts/post-install.js
++++ b/scripts/post-install.js
+@@ -77,4 +77,26 @@ if (os.platform() !== 'win32') {
+   }
+ }
+ 
++// mcp-token-footprint patch: the published prebuilds/<platform>-<arch>/spawn-helper binary
++// ships without the executable bit set (verified against the npm-registry tarball for
++// node-pty@1.1.0 — a packaging bug upstream, not a pnpm/local-store artifact). Without this,
++// UnixTerminal.spawn() fails at runtime with "posix_spawnp failed" even though `require('node-pty')`
++// and the install/build steps succeed cleanly. Restore the bit here so every install (local dev AND
++// Docker) self-heals; harmless no-op if the file already carries +x (e.g. a from-source build).
++console.log('\x1b[32m> Ensuring spawn-helper is executable...\x1b[0m');
++if (os.platform() === 'win32') {
++  console.log('  SKIPPED (not needed on Windows)');
++} else {
++  const spawnHelperCandidates = [
++    path.join(RELEASE_DIR, 'spawn-helper'),
++    path.join(__dirname, '..', 'prebuilds', `${os.platform()}-${os.arch()}`, 'spawn-helper')
++  ];
++  for (const helperPath of spawnHelperCandidates) {
++    if (fs.existsSync(helperPath)) {
++      fs.chmodSync(helperPath, 0o755);
++      console.log(`  chmod 0755 ${helperPath}`);
++    }
++  }
++}
++
+ process.exit(0);
