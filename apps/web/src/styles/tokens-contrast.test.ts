@@ -1,24 +1,31 @@
 /**
- * tokens-contrast.test.ts — WP 0.1 deliverable · findings 1 (contrast) + 11 (semantic split).
+ * tokens-contrast.test.ts — the app's WCAG gate on its EFFECTIVE color tokens.
  *
- * A deterministic, browser-free WCAG AA gate on the app's EFFECTIVE color tokens. It resolves each
- * `--<role>` / `--<role>-foreground` token the way the browser does — the vendored
- * `@elabs-ai/components-tokens` themes.css BASE, with this app's `apps/web/src/styles/app.css` override layered on
- * top (same specificity, later source order → the override wins the cascade) — then converts
- * oklch → sRGB → WCAG relative luminance and asserts:
+ * A deterministic, browser-free check. It resolves each token the way the browser does — the
+ * installed `@elabs-ai/components-tokens` PER-THEME stylesheet as the base, with this app's
+ * `apps/web/src/styles/app.css` override layered on top (same specificity, later source order → the
+ * override wins the cascade) — then converts oklch → sRGB → WCAG relative luminance and asserts:
  *
  *   1. all 5 role⇄foreground on-fill pairs (primary · success · info · destructive · warning) clear
- *      the AA 4.5:1 body-text threshold in BOTH `light` and `dark`, and
- *   2. the two semantic splits hold: `--success !== --primary` and `--ring !== --info` in both themes.
+ *      the AA 4.5:1 body-text threshold in BOTH `light` and `dark`;
+ *   2. the two semantic splits hold: `--success !== --primary` and `--ring !== --info`; and
+ *   3. the FOCUS RING clears the 3:1 non-text threshold (WCAG 2.4.7 / 1.4.11) against every surface
+ *      it can be drawn on, in both themes.
  *
- * WHY IT READS BOTH FILES (fails-red-then-green): with the app.css override REMOVED it reads only the
- * vendored base, where `light --primary` (4.29), `--success` (4.29), `--info` (3.74) and
- * `dark --destructive` (3.02) FAIL, and `--success === --primary` / `--ring === --info` are
- * byte-identical — so the test is red on the pre-fix tokens. With the WP 0.1 override present it is
- * green. When @elabs-ai/components-tokens ships the fix upstream (upstream-gaps.md items 1–2) the override block is
- * deleted and this test still passes against the un-overridden base.
+ * (3) is the load-bearing one post-v4. Upstream ships `--ring: var(--primary)` — the brand lime —
+ * which on `light` measures 1.30–1.42:1 and is invisible focus for a keyboard user. That is a
+ * documented, deliberate upstream tradeoff, so this app overrides `--ring` / `--sidebar-ring` in a
+ * `[data-theme="light"]` block (see app.css). This assertion is what stops that override being
+ * dropped in a future re-merge. `dark` is left on the upstream lime, which measures 12.46:1.
  *
- * The oklch→sRGB→WCAG math mirrors @elabs-ai/components-tokens' own color-contrast.ts (CSS Color 4 + WCAG 2.x);
+ * (1) and (2) are now satisfied by upstream on its own — v4 fixed the four AA failures and the
+ * role collapses this file was originally written against. They stay as regression gates.
+ *
+ * WHY IT READS THE PER-THEME FILES: since v4 theme CSS is opt-in and `styles.css` is engine-only,
+ * carrying no `[data-theme]` blocks. Reading `styles.css` here would resolve every token to
+ * `undefined`. It reads exactly the two stylesheets `app.css` imports.
+ *
+ * The oklch→sRGB→WCAG math mirrors the package's own color-contrast module (CSS Color 4 + WCAG 2.x);
  * it is inlined here because those helpers are not part of the package's public export surface.
  */
 import { readFileSync } from "node:fs";
@@ -27,7 +34,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// ── oklch → sRGB → WCAG (mirror of @elabs-ai/components-tokens/src/color-contrast.ts) ──────────────────────────
+// ── oklch → sRGB → WCAG (mirror of the tokens package's own color-contrast module) ──────────────
 
 interface Oklch {
   l: number;
@@ -85,14 +92,22 @@ function contrast(fg: string, bg: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-// ── Read the BASE (vendored themes.css) + the app OVERRIDE (app.css) and resolve the cascade ─────
+// ── Read the BASE (per-theme stylesheet) + the app OVERRIDE (app.css) and resolve the cascade ────
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
-/** `@elabs-ai/components-tokens/styles.css` exports-maps to `dist/themes.css`. */
-const themesCssPath = require.resolve("@elabs-ai/components-tokens/styles.css");
-const baseCss = readFileSync(themesCssPath, "utf8");
+/**
+ * Since v4, theme CSS is OPT-IN: `@elabs-ai/components-tokens/styles.css` is the ENGINE only and
+ * carries no `[data-theme]` blocks at all. Each theme ships as its own stylesheet, which the app
+ * imports explicitly in `app.css`. Read exactly the files `app.css` imports — reading `styles.css`
+ * here would silently resolve every token to `undefined` and pass nothing.
+ */
+const BASE_CSS_SPECIFIER: Record<string, string> = {
+  light: "@elabs-ai/components-tokens/themes/light.css",
+  dark: "@elabs-ai/components-tokens/themes/dark.css",
+};
+
 const appCss = readFileSync(join(__dirname, "app.css"), "utf8");
 
 /** Every `[data-theme="name"] { … }` block body in a stylesheet (there may be more than one). */
@@ -101,20 +116,47 @@ function themeBlockBodies(css: string, name: string): string[] {
   return [...css.matchAll(re)].map((m) => m[1] ?? "");
 }
 
-/** All `--token: oklch(...)` declarations in a block body → map (last write wins). */
+/**
+ * All custom-property declarations in a block body → map (last write wins).
+ *
+ * Captures ANY value, not just `oklch(...)`: v4 themes alias roles at the token layer
+ * (`--ring: var(--primary)`, `--sidebar-ring: var(--ring)`), so an oklch-only regex would drop
+ * exactly the tokens this file has to assert on. `deref` below resolves the indirection.
+ */
 function tokenMap(body: string): Record<string, string> {
   const map: Record<string, string> = {};
-  for (const m of body.matchAll(/(--[\w-]+):\s*(oklch\([^;]+\))\s*;/g)) {
+  for (const m of body.matchAll(/(--[\w-]+):\s*([^;]+);/g)) {
     if (m[1] && m[2]) map[m[1]] = m[2].trim();
   }
   return map;
 }
 
-/** Effective per-theme tokens: base themes.css, then every app.css override block layered on top. */
+/** Follow `var(--other)` aliases to the concrete value (bounded, so a cycle can't hang the run). */
+function deref(map: Record<string, string>, value: string | undefined): string | undefined {
+  let current = value;
+  for (let hops = 0; current?.startsWith("var(") && hops < 8; hops++) {
+    current = map[current.slice(4, -1).trim()];
+  }
+  return current;
+}
+
+/** Effective per-theme tokens: the theme stylesheet, then every app.css override block on top. */
 function resolveTheme(name: string): Record<string, string> {
+  const specifier = BASE_CSS_SPECIFIER[name];
+  if (!specifier) throw new Error(`No base stylesheet mapped for theme "${name}"`);
+  const baseCss = readFileSync(require.resolve(specifier), "utf8");
+
+  const raw: Record<string, string> = {};
+  for (const body of themeBlockBodies(baseCss, name)) Object.assign(raw, tokenMap(body));
+  for (const body of themeBlockBodies(appCss, name)) Object.assign(raw, tokenMap(body));
+
+  // Flatten aliases so callers always see a concrete color, and drop anything that isn't one
+  // (shadow ramps, numeric scalars) so a bad read fails loudly instead of comparing garbage.
   const effective: Record<string, string> = {};
-  for (const body of themeBlockBodies(baseCss, name)) Object.assign(effective, tokenMap(body));
-  for (const body of themeBlockBodies(appCss, name)) Object.assign(effective, tokenMap(body));
+  for (const key of Object.keys(raw)) {
+    const value = deref(raw, raw[key]);
+    if (value?.startsWith("oklch(")) effective[key] = value;
+  }
   return effective;
 }
 
@@ -136,7 +178,20 @@ function token(theme: string, name: string): string {
 
 // ── The gate ─────────────────────────────────────────────────────────────────────────────────────
 
-describe("app token contrast — WCAG AA on-fill pairs (both acme themes)", () => {
+/** WCAG 2.4.7 / 1.4.11 — a focus indicator is non-text UI; it needs 3:1 against adjacent color. */
+const NON_TEXT_AA = 3;
+
+/**
+ * The surfaces a focus ring can land on, split by which ring token governs them. The light theme
+ * puts a DARK sidebar rail inside a light content area, so one blue cannot serve both — which is
+ * exactly why the theme contract carries a separate `--sidebar-ring`.
+ */
+const RING_SURFACES: Record<string, readonly string[]> = {
+  "--ring": ["--background", "--card", "--muted", "--popover", "--accent", "--input", "--border"],
+  "--sidebar-ring": ["--sidebar", "--sidebar-accent", "--sidebar-border"],
+};
+
+describe("app token contrast — WCAG AA on-fill pairs (both themes)", () => {
   describe.each(THEMES)("%s", (theme) => {
     it.each(FILL_ROLES)("--%s ⇄ --%s-foreground ≥ 4.5:1", (role) => {
       const ratio = contrast(token(theme, `--${role}-foreground`), token(theme, `--${role}`));
@@ -148,7 +203,23 @@ describe("app token contrast — WCAG AA on-fill pairs (both acme themes)", () =
   });
 });
 
-describe("app token semantic split — distinct role values (both acme themes)", () => {
+describe("focus ring visibility — WCAG 2.4.7 / 1.4.11 non-text 3:1 (both themes)", () => {
+  describe.each(THEMES)("%s", (theme) => {
+    for (const [ringToken, surfaces] of Object.entries(RING_SURFACES)) {
+      it.each(surfaces)(`${ringToken} vs %s ≥ 3:1`, (surface) => {
+        const ratio = contrast(token(theme, ringToken), token(theme, surface));
+        expect(
+          ratio,
+          `${theme} ${ringToken} (${token(theme, ringToken)}) on ${surface} = ${ratio.toFixed(2)}:1 — ` +
+            "a keyboard user must be able to SEE focus. Upstream ships --ring: var(--primary) " +
+            "(brand lime), which fails this on light; app.css overrides it there.",
+        ).toBeGreaterThanOrEqual(NON_TEXT_AA);
+      });
+    }
+  });
+});
+
+describe("app token semantic split — distinct role values (both themes)", () => {
   it.each(THEMES)("%s: --success !== --primary", (theme) => {
     expect(
       token(theme, "--success"),

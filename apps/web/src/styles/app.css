@@ -267,87 +267,76 @@ aside[aria-label="Assistant"] .from-background {
 }
 
 /* =====================================================================
-   TOKEN CONTRAST + SEMANTIC SPLIT — app-side override (WP 0.1 · D-IC1/D-IC2)
+   APP-SIDE TOKEN OVERRIDES (post-v4)
    ---------------------------------------------------------------------
-   The one sanctioned raw-color exception in this plan (conventions §3): these
-   are new TOKEN VALUES, not raw color in a component, and they live in the
-   token entry file. This is an app-side, reversible override — the vendored
-   @elabs-ai/components-tokens themes.css is NOT edited. The upstream gap is recorded in
-   roadmap/interface-craft/upstream-gaps.md items 1–2; DELETE this block when
-   @elabs-ai/components-tokens ships tokens where every role⇄foreground pair clears 4.5:1 and
-   --success/--ring hold values distinct from --primary/--info.
+   The one sanctioned raw-color exception in this app (conventions §3): these are
+   new TOKEN VALUES, not raw color in a component, and they live in the token
+   entry file. App-side and reversible — the installed
+   @elabs-ai/components-tokens theme stylesheets are NOT edited.
 
    WHY THIS WINS THE CASCADE: these `[data-theme="…"]` selectors carry the same
-   specificity (0,1,0) as the vendored ones inside the `@import`ed themes.css,
-   but appear LATER in source order (after the import is inlined), so they win.
-   The `@theme inline` bridge maps `--color-primary: var(--primary)` … so
-   `bg-primary`/`text-primary-foreground` resolve `var(--primary)` at runtime —
-   redefining the raw `--<role>` tokens here reaches every @elabs-ai/components-* utility.
+   specificity (0,1,0) as the ones inside the `@import`ed theme stylesheets, but
+   appear LATER in source order (after the imports are inlined), so they win.
+   The `@theme inline` bridge maps `--color-ring: var(--ring)` … so `ring-ring`
+   resolves `var(--ring)` at runtime — redefining the raw `--<role>` tokens here
+   reaches every @elabs-ai/components-* utility.
 
-   Every value below was MEASURED (oklch→sRGB→WCAG), not eyeballed; the guard
-   is apps/web/src/styles/tokens-contrast.test.ts (runs in `pnpm test`). For the
-   contrast fixes only `L` moved (C and H preserved); the WP 4.3 FIX 4 --success
-   DISTINCTNESS retune is the one exception — it also shifts H (green→emerald) to
-   separate --success from --primary visually, while keeping its on-fill ≥ 4.5.
+   ── WHAT v4 FIXED UPSTREAM (this block used to carry it; now deleted) ────────
+   The pre-v4 block re-pointed --primary / --info / --success / --destructive-
+   foreground because the shipped themes failed WCAG AA on four role⇄foreground
+   pairs, and collapsed --success onto --primary / --ring onto --info. v4 ships
+   the fix: MEASURED on the installed themes, all five on-fill pairs now clear AA
+   in both themes (light 4.66–11.59, dark 4.60–11.59), --success is distinct from
+   --primary, and the AA text rung the old comment asked for upstream exists as
+   the new --primary-text token. Those overrides are therefore GONE — keeping them
+   would repaint v4's brand identity with the old palette.
 
-   light — four failing on-fill pairs (finding 1) + the split (finding 11):
-     --primary  0.553→0.515  (T1 green-contrast fix, keep C 0.143 / H 153). --primary is used
-                BOTH as fill (bg-primary + white ink) AND as text (text-primary — the active
-                server/skill rail item + links). @elabs-ai/components-tokens ships no --primary-text variant, so
-                the two share this token. The earlier 0.535 fixed the on-FILL pair (4.29→4.60) but
-                text-primary on the #f2f2f2 muted/rail surface still measured 4.29:1 — fails AA for
-                normal text (critique: "brand green #008442 on #f2f2f2 · 4.3:1", /servers + /skills).
-                L −0.020 more (hue/chroma untouched, so it stays the brand green — #008442→#007e3d) takes
-                text-on-#f2f2f2 to 4.65:1 AND the on-fill pair UP to 4.98:1 (both clear AA; the
-                existing token-contrast guard only gets stronger). Long-term the clean split is an
-                upstream --primary-text token (like --success-text/--info-text) — recorded as a gap.
-     --info     0.600→0.550  (3.74 → 4.61 vs #fafafa ink; keep C 0.13  / H 245)
-     --success  → 0.48 0.15 166 — a deeper, bluer EMERALD success-green (WP 4.3
-                FIX 4 pushed it further from --primary: oklab dist 0.027 → 0.065;
-                was byte-identical to --primary), clears its on-fill pair at 5.45
-     --ring     → 0.62 0.16 250 — a distinct, brighter focus blue (was byte-
-                identical to --info)
-     --sidebar-primary / --sidebar-ring mirror --primary / --ring so the sidebar
-     active-item green + focus ring stay coherent with the fixed role tokens
-     (both were literal copies of the old, failing values).
+   ── WHAT v4 BROKE, AND WE FIX HERE: the focus ring ──────────────────────────
+   v4 sets `--ring: var(--primary)` — the brand lime. That is a documented,
+   deliberate upstream tradeoff, and on the LIGHT theme it is unusable: MEASURED
+   at 1.36:1 vs --background, 1.42:1 vs --card, 1.30:1 vs --muted. WCAG 2.4.7 /
+   1.4.11 require 3:1 for a focus indicator, so a keyboard user cannot see focus
+   at all. This app has an explicit keyboard/visible-focus commitment
+   (.claude/rules/quality-gates.md), so light gets its own focus color.
+
+   It takes TWO tokens, not one, because the light theme puts a DARK sidebar rail
+   (--sidebar 0.3) inside a light content area (--background 0.985): no single
+   blue clears 3:1 against both. That is exactly what the --ring / --sidebar-ring
+   pair is for (upstream light has --sidebar-ring: var(--ring), so overriding
+   --ring alone would drag the rail's ring down with it).
+
+   Values swept and MEASURED (oklch→sRGB→WCAG), same H 250 / C 0.16 focus-blue
+   family the app already used, retuned to v4's surfaces:
+     --ring          0.52 0.16 250 — worst case 3.81:1, against --input; also
+                     3.4–5.7:1 vs --background/--card/--muted/--popover/--accent
+     --sidebar-ring  0.72 0.16 250 — worst case 4.02:1, against --sidebar-border;
+                     4.0–5.6:1 vs --sidebar / --sidebar-accent
+
+   DARK is deliberately left on the upstream lime ring: MEASURED at 12.46:1 vs
+   --background (10.3–13.2:1 across every surface), so it is both compliant and
+   the intended brand identity. Only light is out of spec, so only light is
+   overridden.
+
+   Guarded by apps/web/src/styles/tokens-contrast.test.ts and
+   apps/web/src/guardrails/token-contrast-identity.guardrail.test.ts, both of
+   which run in `pnpm test`.
    ===================================================================== */
 [data-theme="light"] {
-  /* T1: L 0.535 → 0.515 so text-primary clears AA (4.65:1) on the #f2f2f2 muted/rail surface, not
-     just the on-fill pair. C 0.143 / H 153 unchanged — same brand green (#008442 → #007e3d). */
-  --primary: oklch(0.515 0.143 153);
-  --info: oklch(0.55 0.13 245);
-  /* WP 4.3 FIX 4: pushed FURTHER from --primary. It was 0.51 0.15 150 — numerically distinct
-     (D-IC2 ✓) but only ~3° of hue and 0.025 L from --primary, so a success chip read as a near-twin
-     of the primary button (dist 0.027 in oklab). Now a deeper, bluer EMERALD (L −0.055 and H +13°
-     vs --primary): oklab distance 0.065 (~2.4× further), rgb(0,118,73) vs primary rgb(0,132,66).
-     On-fill pair (vs the near-white --success-foreground 0.985) = 5.45:1, well over AA. */
-  --success: oklch(0.48 0.15 166);
-  --ring: oklch(0.62 0.16 250);
-  --sidebar-primary: oklch(0.515 0.143 153); /* mirrors --primary (T1) so the sidebar active-item green stays coherent */
-  --sidebar-ring: oklch(0.62 0.16 250);
-  /* Hub composer floating-card elevation. The app ships NO `--shadow-*` tokens, so every Tailwind
-     `shadow-*` utility computes to a transparent no-op — the composer's "card" shadow is defined here,
-     per theme (same app-side token-override mechanism as the contrast fixes above). Bright: a soft dark
-     drop shadow over the near-white page. */
+  /* Focus ring — see the block comment. NOT cosmetic: upstream's lime ring measures
+     1.30–1.42:1 here, which is invisible focus for a keyboard user. */
+  --ring: oklch(0.52 0.16 250);
+  --sidebar-ring: oklch(0.72 0.16 250);
+  /* Hub composer floating-card elevation. The theme ships --shadow-color / --shadow-strength but no
+     ready-made elevation ramp, so the composer's "card" shadow is defined here, per theme (same
+     app-side token-override mechanism as the ring above). Light: a soft dark drop shadow over the
+     near-white page. */
   --composer-elevation: 0 4px 12px -2px oklch(0 0 0 / 0.22), 0 18px 44px -10px oklch(0 0 0 / 0.26);
 }
 
-/* dark — the one failing pair is fixed on the INK, not the fill: dark
-   already solves four of five roles with a dark foreground (--primary-foreground
-   is oklch(0.22 0.005 75), a warm near-black), so --destructive-foreground gets
-   the same treatment (white-on-#ef5f89 3.02 → dark-ink 5.50). The split gives
-   --success / --ring values distinct from --primary / --info (byte-identical
-   today); --sidebar-ring mirrors --ring. --primary and --info fills already
-   clear 4.5 here, so they are untouched. */
 [data-theme="dark"] {
-  --destructive-foreground: oklch(0.22 0.005 75);
-  /* WP 4.3 FIX 4: same emerald shift as light (H 150 → 166), kept light for the dark theme so
-     the on-fill pair (vs the dark ink --success-foreground 0.22) stays huge at 9.87:1. oklab distance
-     from --primary rises 0.033 → 0.061; rgb(61,220,167) vs primary rgb(94,199,131) — visibly its own
-     mint-emerald, no longer a near-twin. */
-  --success: oklch(0.8 0.15 166);
-  --ring: oklch(0.74 0.16 250);
-  --sidebar-ring: oklch(0.74 0.16 250);
+  /* No ring override here on purpose — upstream's lime ring measures 12.46:1 against the dark
+     ground and is the intended brand focus color. See the block comment. */
+
   /* Hub composer elevation (see the light block). A LIGHT glow reads weak on a dark ground, so
      use a darker drop shadow BENEATH the card plus a hairline top inset highlight — the classic raised
      dark-mode card cue — so the composer reads as a floating card here too. */
