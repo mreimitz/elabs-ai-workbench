@@ -262,9 +262,57 @@ body {
    seamless dissolve. ChatShell exposes no fade-color prop (raised as an upstream gap), so this
    scoped, token-only override re-points the gradient start at the sidebar token. Verified live
    in dark; both tokens are theme-defined so light stays correct too. */
-aside[aria-label="Assistant"] .from-background {
-  --tw-gradient-from: var(--sidebar);
+.assistant-dock-shell {
+  /* How far the transcript dissolves at each edge, and how far the composer is pulled up over it. */
+  --dock-fade-top: 1.5rem;
+  --dock-fade-bottom: 3rem;
 }
+
+/* 1 — Neutralize ChatShell's two built-in COLOR scrims. They are
+   `bg-gradient-to-{b,t} from-background to-transparent`, i.e. they fade to the token
+   `--background`. That is correct only when the shell sits ON `--background`; this dock sits on
+   `--sidebar`, so they painted a pale band across the top of the transcript and a second one above
+   the composer. Killing the paint (not the elements) leaves upstream's layout untouched. */
+.assistant-dock-shell [aria-hidden].bg-gradient-to-b.from-background,
+.assistant-dock-shell [aria-hidden].bg-gradient-to-t.from-background {
+  background: none;
+}
+
+/* 2 — Fade the transcript itself to REAL transparency with an alpha mask, so it dissolves into
+   whatever is behind it rather than into a colour. `:has()` anchors on upstream's own bottom scrim
+   so the selector tracks the transcript region without hard-coding its class soup.
+
+   The mask's black is a STENCIL, not a colour: a mask samples the alpha channel only and is never
+   painted, so this is not a themed value and has no token. It is the one raw colour in this file
+   that is deliberately not a token. */
+.assistant-dock-shell :has(> [aria-hidden].bg-gradient-to-t.from-background) {
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--dock-fade-top),
+    #000 calc(100% - var(--dock-fade-bottom)),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--dock-fade-top),
+    #000 calc(100% - var(--dock-fade-bottom)),
+    transparent 100%
+  );
+}
+
+/* 3 — Float the composer OVER the faded zone. Upstream renders it as a `shrink-0` sibling BELOW the
+   transcript, so the transcript's box stopped dead above it and text could never pass behind it.
+   Pulling it up by the fade distance (it is already `relative z-20`, so it paints on top) means the
+   last lines scroll under the composer and dissolve there. */
+.assistant-dock-shell > div > div.z-20 {
+  margin-top: calc(var(--dock-fade-bottom) * -1);
+}
+
+/* 4 — Room for the overlap is added at the call site instead of here: `ConversationContent` emits
+   no stable data-slot to hook, so `AssistantDock.tsx` passes the bottom padding on its own
+   className. Keeping it there means an upstream DOM change can't silently drop it. */
 
 /* =====================================================================
    APP-SIDE TOKEN OVERRIDES (post-v4)

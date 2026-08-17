@@ -436,7 +436,7 @@ export function AppShell({
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label={secondaryTitle}
-          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-sidebar md:block"
+          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-muted md:block"
         >
           {secondaryContent}
         </aside>
@@ -450,7 +450,7 @@ export function AppShell({
       <div className="flex min-h-0 flex-1">
         <aside
           aria-label={secondaryTitle}
-          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-sidebar md:block"
+          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-muted md:block"
         >
           {secondaryContent}
         </aside>

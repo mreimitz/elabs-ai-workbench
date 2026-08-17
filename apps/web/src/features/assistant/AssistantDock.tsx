@@ -624,7 +624,15 @@ function AssistantDockContent() {
         variant="bare"
         // `bg-transparent` overrides ChatShell's own `bg-background` so the dock renders on the SAME
         // `bg-sidebar` surface as the left navigation sidebar (the aside in `AppShell.tsx` owns it).
-        className="min-h-0 flex-1 bg-transparent"
+        //
+        // `assistant-dock-shell` is the styling hook for the transcript edge fades — see the block
+        // of the same name in `styles/app.css`. ChatShell's `bare` variant ships COLOR scrims
+        // (`from-background to-transparent`), which only dissolve correctly when the shell sits on
+        // `--background`; on this `--sidebar` ground they paint a visible pale band. The app.css
+        // block swaps them for an alpha mask (fades to real transparency on any ground) and floats
+        // the composer over the faded zone so the transcript dissolves BEHIND it. ChatShell exposes
+        // no fade-color/mask prop (verified with `brand-ui docs ChatShell`) — upstream gap.
+        className="assistant-dock-shell min-h-0 flex-1 bg-transparent"
         composer={
           <AssistantComposer
             composerKey={activeThreadId ?? "none"}
@@ -642,7 +650,10 @@ function AssistantDockContent() {
         }
       >
         <Conversation className="min-h-0 flex-1">
-          <ConversationContent className="flex min-w-0 flex-col gap-4 p-4">
+          {/* `pb-14` is the room the composer takes back: app.css pulls the composer up over the
+              transcript's faded tail (`--dock-fade-bottom`), so without this the last message could
+              never be scrolled clear of it. */}
+          <ConversationContent className="flex min-w-0 flex-col gap-4 p-4 pb-14">
             {stream.timeline.length === 0 ? (
               <PendingPanel hasThread={activeThreadId !== null} />
             ) : (
