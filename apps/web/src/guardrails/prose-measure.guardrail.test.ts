@@ -24,8 +24,13 @@ const webSrc = join(__dirname, ".."); // apps/web/src
 const repoRoot = join(__dirname, "..", "..", "..", ".."); // …/mcp-token-footprint
 const hookPath = join(repoRoot, ".claude", "hooks", "prose-measure.mjs");
 
-/** A measure cap: `max-w-[NNch]` or `max-w-prose`. */
-const MEASURE_CAP = /max-w-(\[[0-9]+ch\]|prose)/;
+/**
+ * A measure cap: an explicit `max-w-[NNch]` / `max-w-prose` class, OR the `measure` prop that
+ * `CardDescription` ships since v4 (it applies `max-w-prose` itself — `brand-ui docs
+ * CardDescription`). Composing the primitive's own prop is the preferred form; the class is still
+ * accepted for the containers that are not a `CardDescription`.
+ */
+const MEASURE_CAP = /max-w-(\[[0-9]+ch\]|prose)|\bmeasure\b/;
 
 // ── A. the four capped prose containers keep their cap ────────────────────────────────────────────
 

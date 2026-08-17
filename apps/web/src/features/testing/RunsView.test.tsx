@@ -262,7 +262,14 @@ describe("RunsView — Show-forks toggle (interface-craft WP 0.4 / finding 2)", 
 
     await screen.findByRole("button", { name: "Show forks" });
 
-    expect(container.querySelector(".overflow-x-auto")).not.toBeInTheDocument();
+    // Scoped to the APP's own chrome. Since v4 the library's `TabsList` carries `overflow-x-auto`
+    // itself (a scrollable tab strip), so a container-wide query would now match that shipped
+    // component rather than the hand-rolled scroller this test was written to keep out.
+    const libraryScrollers = [...container.querySelectorAll('[role="tablist"]')];
+    const appScrollers = [...container.querySelectorAll(".overflow-x-auto")].filter(
+      (el) => !libraryScrollers.some((list) => list === el || list.contains(el)),
+    );
+    expect(appScrollers, "the app must not hand-roll a horizontal scroller here").toHaveLength(0);
     expect(container.querySelector('[class*="scrollbar-width"]')).not.toBeInTheDocument();
   });
 });
