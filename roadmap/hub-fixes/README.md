@@ -95,5 +95,5 @@ without a decision note in this README.
 
 - A scoped session calls a real `acme-demo` tool end-to-end (RC1/RC3 fix proof).
 - A mission agent calls a real MCP tool and its live transcript streams in the expand modal.
-- Both-theme (`qlik-bright`/`qlik-dark`) walk of: rail Tools section, mission board grid, expand modal, clarify card.
+- Both-theme (`light`/`dark`) walk of: rail Tools section, mission board grid, expand modal, clarify card.
 - `web.search` behind a real provider key on at least one provider.

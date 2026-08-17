@@ -25,10 +25,10 @@ divergent mechanisms across ~124 icon buttons (~11% styled Radix `Tooltip`, ~16%
   operator, pass `disabledReason`. It is shown in the tooltip **and** wired to `aria-describedby`
   (via an always-present `sr-only` node), so it reaches screen readers even while the tooltip is
   closed. The tooltip still opens on a disabled control: the Radix trigger is a focusable/hoverable
-  wrapper `<span>`, not the disabled `<button>` (a disabled `@brand/ui` `Button` carries
+  wrapper `<span>`, not the disabled `<button>` (a disabled `@elabs-ai/components-ui` `Button` carries
   `pointer-events-none`, so hover falls through to the wrapper). Do not hand-roll this — use
   `IconButton`.
-- **Visible focus + `size="icon"`** come from the `@brand/ui` `Button` `IconButton` composes; the
+- **Visible focus + `size="icon"`** come from the `@elabs-ai/components-ui` `Button` `IconButton` composes; the
   focus ring is token-driven and reads in both themes. `className` stays layout-only.
 - The glyph itself is **decorative** — mark it `aria-hidden` at the call site. The accessible name
   comes from `label`, never from the icon.
@@ -47,6 +47,6 @@ sites (starting with the reused form kit — `ListEditor`, `KeyValueEditor`, `Ta
 site as a violation of a shipped conversion. New icon-only controls, however, use `IconButton` from
 the start.
 
-Related: [`brand-ui-only.md`](./brand-ui-only.md) (every visible element is `@brand/*`),
+Related: [`brand-ui-only.md`](./brand-ui-only.md) (every visible element is `@elabs-ai/components-*`),
 [`interaction-guidelines.md`](./interaction-guidelines.md) (form/a11y hygiene),
 [`styling-and-tokens.md`](./styling-and-tokens.md) (two themes, semantic tokens).

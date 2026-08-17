@@ -17,7 +17,7 @@ Wire configuration, document the feature, and confirm the new deps build in the 
   short "Testing" section pointing at `roadmap/testing/`. Update
   `roadmap/07-open-questions.md` with the resolved/again-open items (transport=SSE, pricing
   maintenance, multimodal attachments).
-- **Docker:** confirm `ai` + `@ai-sdk/*` and `@brand/charts` install and build inside the image;
+- **Docker:** confirm `ai` + `@ai-sdk/*` and `@elabs-ai/components-charts` install and build inside the image;
   ensure `ATTACHMENTS_DIR` lives on the persistent `/data` volume (alongside the DB + secret key);
   rebuild `docker compose up --build` and load `http://localhost:8080`.
 

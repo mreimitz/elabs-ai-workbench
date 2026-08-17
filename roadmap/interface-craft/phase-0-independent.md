@@ -13,7 +13,7 @@ here.** Each Acceptance item is a **number** produced against the running app in
   `--primary` and `--ring`/`--info`), 15 (LOW — font smoothing).
 - **Domain (contract):**
   - `apps/web/src/styles/app.css` — a per-theme token **override** block (append **after** the
-    `@import "@brand/tokens/styles.css"`; `[data-theme="qlik-bright"]` / `[data-theme="qlik-dark"]`
+    `@import "@elabs-ai/components-tokens/styles.css"`; `[data-theme="light"]` / `[data-theme="dark"]`
     blocks and/or a `@theme` block — whatever wins the cascade in both themes) **+** `antialiased` root
     rendering (finding 15).
   - `apps/web/index.html` — `<body>` may take `class="antialiased"` (either here **or** the `app.css`
@@ -26,9 +26,9 @@ here.** Each Acceptance item is a **number** produced against the running app in
 **The work.**
 - **Contrast (finding 1).** Fix the four failing on-fill pairs. **Adjust `L` first, preserve `C` and
   `H`, then re-measure — do not eyeball.**
-  - `qlik-bright`: `--primary` `#008947` (4.31) and `--info` `#2d86c8` (3.76) render against a near-white
+  - `light`: `--primary` `#008947` (4.31) and `--info` `#2d86c8` (3.76) render against a near-white
     `#fafafa` foreground → **darken their `L`** (keep C, H) until each pair clears **4.5:1**.
-  - `qlik-dark`: `--destructive` `#ef5f89` / `#fafafa` = 3.02. Dark already solves four of five by using a
+  - `dark`: `--destructive` `#ef5f89` / `#fafafa` = 3.02. Dark already solves four of five by using a
     **dark foreground** (`--primary-foreground` is `#1c1a18` there) — give `--destructive-foreground`
     the **same** dark treatment.
 - **Semantic split (finding 11 — tokens; D-IC2).** In the same override block, give `--success` a value

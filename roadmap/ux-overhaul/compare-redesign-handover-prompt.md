@@ -20,7 +20,7 @@ only sequences it). Outcomes, in priority order:
    a grown inner pane breaks the sticky and hides the h-scrollbar below the fold).
 4. A common **Result** section at the end of Flow: the final answer of every run aligned side by
    side (never buried in its turn), with an Expand → large modal showing all runs' full outputs in
-   side-by-side read-only `@brand/editor` Monaco `CodeEditor` panes.
+   side-by-side read-only `@elabs-ai/components-editor` Monaco `CodeEditor` panes.
 5. Summary reordered: verdict → what changed → matrix → charts → next-steps; dedup of caveat/export.
 
 ## Required reading (in this order, before any code)
@@ -30,19 +30,19 @@ only sequences it). Outcomes, in priority order:
    `quality-gates.md`, `interaction-guidelines.md`, `loading-states.md`.
 3. The feature source: `apps/web/src/features/testing/compare/` (all files),
    `apps/web/src/components/PageShell.tsx`, `PageHeader.tsx`.
-4. For step 9: `vendor/brand-ui-agent-kit/` + `pnpm exec brand-ui docs editor` (or the `@brand/editor`
+4. For step 9: `vendor/brand-ui-agent-kit/` + `pnpm exec brand-ui docs editor` (or the `@elabs-ai/components-editor`
    `.d.ts`) for the real `CodeEditor` API — **never guess a prop**. Monaco workers are already wired
-   via `@brand/editor/monaco-environment` in `apps/web/src/main.tsx`.
+   via `@elabs-ai/components-editor/monaco-environment` in `apps/web/src/main.tsx`.
 
 ## Hard rules (non-negotiable, enforce on every subagent)
 
-- Every visible element is a `@brand/*` component; semantic token utilities only (no raw colors,
+- Every visible element is a `@elabs-ai/components-*` component; semantic token utilities only (no raw colors,
   no `dark:`); `className` is layout-only. The `enforce-brand-ui` / `check-tokens` hooks will flag.
 - No new dependencies. No API/wire changes are needed for steps 1–9 — if a subagent thinks it needs
   one, stop and escalate to me/the owner.
 - Definition of done per WP: `pnpm typecheck && pnpm test && pnpm build && pnpm lint` green, PLUS a
   visual walk of the running app (`pnpm dev`, `http://localhost:8080`) in **both themes**
-  (`qlik-bright`, `qlik-dark`) on the reference URL:
+  (`light`, `dark`) on the reference URL:
   `/testing/runs/compare?ids=U1qOGPw1jrNm-fRXMCsKS,aflATerzm2e89u5-qfxVj&mode=flow`.
 - Honest reporting: subagents must lead with what they did NOT verify; "green" means the command was
   actually run. Web tests live next to sources (`*.test.ts`); extend them where logic changes
@@ -71,7 +71,7 @@ One WP per subagent, isolated worktree, rebase-and-gate before merge. Never let 
   S16 "identical title x/y" contract — options: route-local exception vs a new PageShell
   `header="toolbar"` variant. Ask the owner which.
 - D2: Step 8 hides the Metrics tab until it exists vs keeps it with a "soon" badge. Ask.
-- D3: Step 9, 2-run case — offer an optional Monaco diff toggle if `@brand/editor` exposes one? Ask
+- D3: Step 9, 2-run case — offer an optional Monaco diff toggle if `@elabs-ai/components-editor` exposes one? Ask
   (side-by-side is the committed default either way).
 
 **Wave 1 (parallel, sonnet):**
@@ -108,7 +108,7 @@ One WP per subagent, isolated worktree, rebase-and-gate before merge. Never let 
     collapsing. Also give the Result section an anchor so the verdict band can link to it later.
   - `flow/ResultCompareDialog.tsx`: largest dialog tier, title "Result — full outputs", one pane per
     run (2–3) side by side; pane header `RunLetterBadge` + `runChipLabel` + tokens; body a read-only
-    `@brand/editor` `CodeEditor`, language `markdown`, word-wrap, ~70vh, `brand-ui-allow` never
+    `@elabs-ai/components-editor` `CodeEditor`, language `markdown`, word-wrap, ~70vh, `brand-ui-allow` never
     needed (it's a library component). Confirm props via the agent kit / `.d.ts` first. Per D3,
     optionally a diff toggle for exactly 2 runs.
   - Acceptance: with the reference URL, A's and B's full reports render side by side in the modal;

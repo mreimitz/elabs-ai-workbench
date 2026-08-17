@@ -29,16 +29,16 @@ Measured live-rendered (`getComputedStyle` → oklch→sRGB→WCAG), all 5 role�
 
 | Pair | Review (before) | Now (rendered) | AA 4.5 |
 |---|---|---|---|
-| `qlik-bright --primary` | **4.31** ❌ | **4.60** | ✓ |
-| `qlik-bright --success` | **4.31** ❌ | **5.09** | ✓ |
-| `qlik-bright --info` | **3.76** ❌ | **4.61** | ✓ |
-| `qlik-bright --destructive` | 5.20 | 5.22 | ✓ |
-| `qlik-bright --warning` | 6.59 | 6.63 | ✓ |
-| `qlik-dark --destructive` | **3.02** ❌ | **5.50** | ✓ |
-| `qlik-dark --primary` | 8.24 | 8.24 | ✓ |
-| `qlik-dark --success` | 8.24 | 9.16 | ✓ |
-| `qlik-dark --info` | 6.58 | 6.55 | ✓ |
-| `qlik-dark --warning` | 8.40 | 8.36 | ✓ |
+| `light --primary` | **4.31** ❌ | **4.60** | ✓ |
+| `light --success` | **4.31** ❌ | **5.09** | ✓ |
+| `light --info` | **3.76** ❌ | **4.61** | ✓ |
+| `light --destructive` | 5.20 | 5.22 | ✓ |
+| `light --warning` | 6.59 | 6.63 | ✓ |
+| `dark --destructive` | **3.02** ❌ | **5.50** | ✓ |
+| `dark --primary` | 8.24 | 8.24 | ✓ |
+| `dark --success` | 8.24 | 9.16 | ✓ |
+| `dark --info` | 6.58 | 6.55 | ✓ |
+| `dark --warning` | 8.40 | 8.36 | ✓ |
 
 All **four failing pairs** now clear AA; no previously-passing pair regressed. (The dark
 `--destructive` badge — the review's worst case, "the app's least readable element" — is 3.02 → 5.50.)

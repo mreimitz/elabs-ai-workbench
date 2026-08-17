@@ -59,10 +59,10 @@ deviations · **NOT verified:**), commit.
 - **Ship the URL-pinned surfaces first.** Environment/Test starters depend on those pages exposing a
   pin (the plan's note) — if that pin isn't available, omit them and record it; don't hack a pin.
 - Verify APIs/paths against the code and the pinned SDK/registry before building — report drift; keep
-  everything `@brand/*` + semantic tokens, both themes.
+  everything `@elabs-ai/components-*` + semantic tokens, both themes.
 
 **Stop and ask me only if:** a locked decision (D-AS27–D-AS29) needs changing; a migration or new
-dependency seems unavoidable; a `@brand/*` gap forces raw UI; or a starter can only be finished with a
+dependency seems unavoidable; a `@elabs-ai/components-*` gap forces raw UI; or a starter can only be finished with a
 live token (owner-acceptance).
 
 When done, deliver the final report per execution-plan §9 and leave the R3 Owner-acceptance items in

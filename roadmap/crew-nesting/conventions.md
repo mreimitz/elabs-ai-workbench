@@ -15,7 +15,7 @@ A WP is done only when, from the repo root:
 is green (linting is **Biome**, `biome.json`; the root `.github/workflows/ci.yml` runs the same set
 on push + PR). Report completion honestly: "done" means you ran the gate. Lead with anything you did
 **not** verify (especially visual/UX claims, which must be checked against the running app at
-`http://localhost:8080` in **both** themes — `qlik-bright` + `qlik-dark` — never a mock).
+`http://localhost:8080` in **both** themes — `light` + `dark` — never a mock).
 
 ## Contract-first, additive-only (D-CN5)
 
@@ -81,8 +81,8 @@ web one is not the wire).
 ## UI (D-CN8)
 
 brand-ui only, both themes, semantic tokens (no raw color for a depth cue — reuse `crewAccentClasses`
-`--chart-1…5` and the token→token redirect pattern). Nested tree → `@brand/ui` `Tree`; nested graph →
-`@brand/flow` `FlowGroupNode` (parentId nesting). Icon-only controls → `components/IconButton.tsx`
+`--chart-1…5` and the token→token redirect pattern). Nested tree → `@elabs-ai/components-ui` `Tree`; nested graph →
+`@elabs-ai/components-flow` `FlowGroupNode` (parentId nesting). Icon-only controls → `components/IconButton.tsx`
 (label→tooltip==aria-label; no `title`). Sub-crew *profile* drill = route reuse
 (`/assistant/agents/crew/:crewId`); mission-board sub-mission drill = transient nested dialog. A new
 `<Route>` (only if a dedicated nested canvas is added) needs an `ASSISTANT_ROUTE_MANIFEST` entry.

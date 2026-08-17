@@ -3,8 +3,8 @@
 Execution of [`04-execution-plan.md`](./04-execution-plan.md) on branch **`ui-remediation`**.
 Quality gate (`pnpm typecheck && pnpm test && pnpm build`) green; `brand-ui audit apps/web/src` →
 0 issues. Live-verified against a running build (`pnpm start`) seeded with two real stdio MCP
-servers (`@modelcontextprotocol/server-everything`, `…/server-filesystem`) in **qlik-bright,
-qlik-dark, blueprint**.
+servers (`@modelcontextprotocol/server-everything`, `…/server-filesystem`) in **light,
+dark, blueprint**.
 
 ## Waves
 
@@ -16,11 +16,11 @@ qlik-dark, blueprint**.
     pinned bottom-left**; breadcrumb only at depth ≥2; `window.confirm` → controlled `AlertDialog`
     (both delete paths); theme + density controls on the Settings page.
   - **Orchestrator integration:** app ships **compact by default**; density wired through the
-    `@brand/tokens` `ThemeProvider` (`defaultDensity="compact"` + `useTheme().density/setDensity`) —
+    `@elabs-ai/components-tokens` `ThemeProvider` (`defaultDensity="compact"` + `useTheme().density/setDensity`) —
     the provider owns `data-density`, so the earlier hand-rolled attribute writer was removed.
 - **Wave 1 — screens (7 parallel)**: **B1** Dashboard de-slop (D1–D5) · **B2** Compare → one diff
   table (C1–C5) · **B3** Scans resizable split + searchable history (SC1–SC3,G6) · **B4** server-rail
-  calm-down (S2,S4,G6) · **C1** Servers smart layout — grouped findings, `@brand/charts` trend +
+  calm-down (S2,S4,G6) · **C1** Servers smart layout — grouped findings, `@elabs-ai/components-charts` trend +
   KPI sparklines, merged token-distribution, resizable + dense **sans** Tools table, collapsing KPI
   band (doc03 §1–2; S1,S3,S4,S5) · **C2** tool-detail — sticky header, Monaco raw/instructions with
   Expand, optimization above instructions, **run tab removed** (doc03 §3; `CodeBlock` retired) ·
@@ -30,8 +30,8 @@ qlik-dark, blueprint**.
 
 ## Correction to the audit's "6 themes" premise
 
-The vendored **`@brand/tokens` v1.5.0 ships only three themes** —
-`qlik-bright`, `qlik-dark`, `blueprint` (`THEMES` / `ThemeName`). There is **no** `light`, `dark`, or
+The vendored **`@elabs-ai/components-tokens` v1.5.0 ships only three themes** —
+`light`, `dark`, `blueprint` (`THEMES` / `ThemeName`). There is **no** `light`, `dark`, or
 `high-contrast` theme in this version. So:
 - **G4/SE1 "expose all 6 themes"** is satisfied by exposing all themes that exist (the Settings switcher
   lists all of `useTheme().themes`).

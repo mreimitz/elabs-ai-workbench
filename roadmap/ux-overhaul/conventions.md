@@ -26,7 +26,7 @@ slots).
   the live `data/`; the API writes to its DB). Ports are assigned per agent in your task prompt
   (8181, 8182, …). If you cannot run the app, say so in your report — the PM verifies on the
   integration branch instead. Do not claim visual results you did not see.
-- Check **both themes** (`qlik-bright`, `qlik-dark` — switch in Settings) for every visible
+- Check **both themes** (`light`, `dark` — switch in Settings) for every visible
   change, and **two widths** (≥1500px and ~1100px) for layout WPs.
 - Screenshot evidence: save to the worktree's `/.wp-evidence/<wp-id>/*.png` (git-ignored is fine;
   they're for the PM's review message, not for commit).
@@ -75,7 +75,7 @@ Counts color by VALUE: a zero renders neutral, never red/green.
 
 ## 5 · Component & code rules for this program
 
-- Every new visual element = `@brand/*` (check the real API: `pnpm exec brand-ui docs <Component>`
+- Every new visual element = `@elabs-ai/components-*` (check the real API: `pnpm exec brand-ui docs <Component>`
   or the brand-ui MCP server; never guess props). New shared compositions live in
   `apps/web/src/components/` (PascalCase) and are the ONLY sanctioned place for cross-feature UI.
 - Semantic tokens only; `className` = layout only; both themes always.

@@ -41,7 +41,7 @@ fakes); only two new runtime deps (`@anthropic-ai/claude-agent-sdk`, `node-pty`,
 never brand anything "Claude Code"; verify plan-cited APIs against the code and the pinned SDK
 `.d.ts` — report drift, don't guess.
 
-**Stop and ask me only if:** a `@brand/*` gap forces raw UI; a third runtime dependency seems
+**Stop and ask me only if:** a `@elabs-ai/components-*` gap forces raw UI; a third runtime dependency seems
 necessary; a locked decision needs changing; migrations must go beyond additive v19; or the
 live-token boundary (execution-plan §8) is the only way forward for a WP.
 

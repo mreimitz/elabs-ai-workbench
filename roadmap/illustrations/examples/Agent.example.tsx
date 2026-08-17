@@ -214,7 +214,7 @@ export default function Agent({ state = "idle", facing = "upstream", label, show
 
 /* ---------------------------------------------------------------- *
  * tokens.css excerpt (→ packages/illustrations/src/tokens.css)
- * The ONLY place --illus-* meets @brand/tokens (D-IL5):
+ * The ONLY place --illus-* meets @elabs-ai/components-tokens (D-IL5):
  *
  *   :root, [data-theme] {
  *     --illus-paper:          var(--background);

@@ -23,7 +23,7 @@ rules in [`../../../research/skill-registry/01-agent-skills-format.md`](../../..
   routes the scaffold tree through the **existing** `SkillIngestService.createVersion` path
   (manifest validation, caps, token footprint, blob store all apply unchanged).
 - `apps/web/src/features/skills/SkillWizard.tsx` *(modify)* — third source card ("Blank skill"),
-  step 2 = name/description form (existing `@brand/ui` Form primitives), review step shows the
+  step 2 = name/description form (existing `@elabs-ai/components-ui` Form primitives), review step shows the
   scaffold summary; on create, open the inspector as for other sources.
 - `apps/web/src/lib/api.ts` *(modify)* — create helper for the blank body (plain JSON, no
   multipart).
@@ -34,7 +34,7 @@ rules in [`../../../research/skill-registry/01-agent-skills-format.md`](../../..
 - [ ] `POST /api/skills` with `source:'blank'` creates a skill whose version 1 is a valid,
       manifest-clean `SKILL.md`; footprint/caps/GC behavior identical to upload ingestion.
 - [ ] Wizard shows three sources; blank flow round-trips end-to-end (create → inspector opens);
-      `@brand/*` only, both themes.
+      `@elabs-ai/components-*` only, both themes.
 - [ ] `skills.source_type` handling: reuse `'upload'` semantics for storage (`source_kind`)
       with `imported_from:'upload'` and `source_ref:'blank'` — **no** schema `CHECK` change, or, if
       a `'blank'` enum value is added, it lands via an additive migration; either way documented in

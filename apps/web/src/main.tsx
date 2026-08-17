@@ -23,26 +23,29 @@ import { App } from "./App";
 import { AssistantProvider } from "./features/assistant/assistant-context";
 import {
   ALLOWED_THEMES,
+  DEFAULT_ALLOWED_THEME,
   THEME_STORAGE_KEY,
   readThemePreference,
   resolveThemePreference,
 } from "./lib/theme";
 import "./styles/app.css";
 
-// @elabs-ai/components-tokens ships three themes (light, dark, blueprint), but this
-// app exposes only the two shipped themes (plus a "System" preference that resolves to
-// one of them). ThemeProvider has no allow-list prop and will re-apply any persisted
-// theme on mount — including a previously selected `blueprint`. Before the provider
-// mounts, resolve the app's PREFERENCE to a concrete allowed theme and write it into
-// the provider's storage key, so the correct theme paints on first frame (no flash
-// when "System" resolves to the opposite of the last-applied theme) and no disallowed
-// theme (`blueprint`) can survive. Wrapped in try/catch because localStorage can throw
-// (private mode / disabled storage). useThemePreference (mounted in App) then keeps the
-// theme in sync with the OS while the preference is "System".
+// The app offers the two reference themes plus a "System" preference that resolves to one of them.
+// The app's PREFERENCE (which can be "system") is the source of truth, and ThemeProvider re-applies
+// whatever is in its own storage key on mount — so before the provider mounts, resolve the
+// preference to a concrete theme and write it into that key. That way the correct theme paints on
+// the first frame, with no flash when "System" resolves to the opposite of the last-applied theme.
+// A stale persisted slug (e.g. a pre-v4 `qlik-bright`) is rejected by the provider anyway; this also
+// overwrites it so it can't linger. Wrapped in try/catch because localStorage can throw (private
+// mode / disabled storage). `useThemePreference` (mounted in App) then keeps the theme in sync with
+// the OS while the preference is "System".
+//
+// `allowedThemes` below is the provider-level belt to this braces: it narrows the provider's own
+// registry, so `ThemeSwitcher` and any other library surface offer only what this app ships.
 try {
   const resolved = resolveThemePreference(readThemePreference());
   const persisted = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (persisted !== resolved && (ALLOWED_THEMES as readonly string[]).includes(resolved)) {
+  if (persisted !== resolved) {
     window.localStorage.setItem(THEME_STORAGE_KEY, resolved);
   }
 } catch {
@@ -51,7 +54,11 @@ try {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="light" defaultDensity="compact">
+    <ThemeProvider
+      defaultTheme={DEFAULT_ALLOWED_THEME}
+      allowedThemes={ALLOWED_THEMES}
+      defaultDensity="compact"
+    >
       <TooltipProvider delayDuration={200}>
         <BrowserRouter>
           {/* Mounted inside the router (it derives the current envelope from `useLocation`) and near

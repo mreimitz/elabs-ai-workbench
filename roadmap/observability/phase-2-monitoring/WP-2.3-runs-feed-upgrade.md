@@ -10,7 +10,7 @@ from the dashboard land here), a column chooser, and a configurable preview cell
 
 ## Design
 
-- Filter bar (follow `TableToolbar` + `FilterBar` patterns from `@brand/data`): chips per active
+- Filter bar (follow `TableToolbar` + `FilterBar` patterns from `@elabs-ai/components-data`): chips per active
   RunFilter field; add-filter flow covering status/outcome/stopReasonCode/kind/model/server/
   environment/suite/skill/date/score/cost/duration/pinned/interactive/feedback. State ⇄ URL via
   the shared serialize helper — a dashboard drill-down URL must hydrate the bar exactly.

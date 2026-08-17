@@ -1,7 +1,7 @@
 # Compare Workspace — layout & design audit + redesign concept
 
 > 2026-07-11 · Audited live at `http://localhost:8080/testing/runs/compare?ids=…&mode=flow|summary|metrics`
-> (2 runs of `barc-taxi`, qlik-dark) with DOM measurements, all flow lenses, the step drawer, and the
+> (2 runs of `barc-taxi`, dark) with DOM measurements, all flow lenses, the step drawer, and the
 > source under `apps/web/src/features/testing/compare/`. Follow-up to audit §H / `roadmap/ux-overhaul/`.
 
 ## 0. The two headline problems, measured
@@ -138,10 +138,10 @@ frame in §3.2 and *earns* it.
      **Expand** affordance. A run with no final answer renders its terminal error state instead.
    - **Expand opens a large modal** (largest dialog tier) titled `Result — full outputs`: one pane
      per compared run (2–3), side by side; pane header = `RunLetterBadge` + `runChipLabel` + token
-     badge; pane body = the **`@brand/editor` Monaco `CodeEditor`**, read-only, `markdown`, word-wrap,
+     badge; pane body = the **`@elabs-ai/components-editor` Monaco `CodeEditor`**, read-only, `markdown`, word-wrap,
      ~70vh. Verify the exact `CodeEditor` props against the vendored `.d.ts` / `brand-ui docs editor`
-     (never guess); the Monaco worker wiring already exists (`@brand/editor/monaco-environment` in
-     `main.tsx`). If `@brand/editor` exposes a Monaco *diff* editor, the 2-run case may offer an
+     (never guess); the Monaco worker wiring already exists (`@elabs-ai/components-editor/monaco-environment` in
+     `main.tsx`). If `@elabs-ai/components-editor` exposes a Monaco *diff* editor, the 2-run case may offer an
      optional unified-diff toggle — side-by-side stays the default.
 
 ### 3.3 Summary mode (the "overview")
@@ -187,16 +187,16 @@ First matrix row lands ≈190px from the top (was ~695px).
 | 5 | Collapse-unchanged rows + `Changes only` toggle (pure `flow/collapse.ts` + tests; focus auto-expands) | `flow/collapse.ts`, `FlowLanes.tsx`, `FlowMode.tsx` | M | ✅ WP-4 `03e87c2` |
 | 6 | Summary reorder + dedupe (verdict+caveat chip→markers→matrix→[Δbars\|curves 2-col]→next-steps; single grading hint; export card removed — bar Export dropdown is canonical) | `SummaryMode.tsx`, `NextSteps.tsx`, `next-steps-derive.ts`, `DeltaMatrix.tsx`, `CompareWorkspace.tsx` | M | ✅ WP-5 `c9d1140` |
 | 7 | Cell interaction (whole-card stretched-overlay button, popover kept clickable) + 1-line density | `LaneCell.tsx` | S | ✅ WP-6 `4bebeb0` |
-| 8 | **Metrics tab kept with a `Soon` Badge + honest empty state** (D2); curve axes (fixed a `@brand/charts` XAxis duplicate-tick bug) + legend model/time; drawer content-first | `compare-runs.ts`, `MetricsMode.tsx`, `CompareBar.tsx`, `ContextCurves.tsx`, `StepDrawer.tsx`, `summary-derive.ts` | S | ✅ WP-6 `4bebeb0` |
-| 9 | **Result section + side-by-side output modal** (§3.2·7): aligned Result row per lane (`#compare-result`, excluded from collapse) + WorkbenchDialog with one read-only `@brand/editor` `CodeEditor` pane per run + **2-run `Side-by-side\|Diff` toggle** (D3, `DiffEditor`) | new `flow/ResultSection.tsx` + `flow/ResultCompareDialog.tsx` + `flow/result.ts`, `FlowLanes.tsx` wiring | M | ✅ WP-7 `55b7e89` |
+| 8 | **Metrics tab kept with a `Soon` Badge + honest empty state** (D2); curve axes (fixed a `@elabs-ai/components-charts` XAxis duplicate-tick bug) + legend model/time; drawer content-first | `compare-runs.ts`, `MetricsMode.tsx`, `CompareBar.tsx`, `ContextCurves.tsx`, `StepDrawer.tsx`, `summary-derive.ts` | S | ✅ WP-6 `4bebeb0` |
+| 9 | **Result section + side-by-side output modal** (§3.2·7): aligned Result row per lane (`#compare-result`, excluded from collapse) + WorkbenchDialog with one read-only `@elabs-ai/components-editor` `CodeEditor` pane per run + **2-run `Side-by-side\|Diff` toggle** (D3, `DiffEditor`) | new `flow/ResultSection.tsx` + `flow/ResultCompareDialog.tsx` + `flow/result.ts`, `FlowLanes.tsx` wiring | M | ✅ WP-7 `55b7e89` |
 
-**Delivered 2026-07-11** on branch `ux/compare-redesign` (off `ux/integration@7e4bb05`, isolated from concurrent work). All 9 steps done in 4 waves. Central gate green on the merged tree: `pnpm typecheck` + `pnpm test` (**1376 API + 673 web** vitest) + `pnpm build` + `pnpm lint`. Visually verified in **qlik-bright AND qlik-dark** against the running app (worktree build served against the real run DB) at the reference URL. Verified outcomes: run B side-by-side (`hOverflow=0`), sticky lane header engaged, pinned chrome **416px → 183px** (run identity at 183, first aligned row at 247), unchanged rows collapse (2122px → 1355/1071px), Summary reordered (first matrix row 508px → 315px), the Result modal renders both runs' full outputs in side-by-side Monaco panes + a 2-run diff view with **no console/worker errors**. A fresh read-only review (opus) rated it **shippable, no blocker** (brand/token/a11y/loading-states clean; collapse/focus/result logic unit-tested and correct; D1–D3 + §3.3 met). Two review follow-ups were applied (`99463eb`): PageShell now honors `headerVariant` in the default `scroll="content"` path too (byte-identical for existing routes — it was a silent trap for the run console), and the `DiffEditor` comment was corrected (it renders side-by-side, not inline-unified).
+**Delivered 2026-07-11** on branch `ux/compare-redesign` (off `ux/integration@7e4bb05`, isolated from concurrent work). All 9 steps done in 4 waves. Central gate green on the merged tree: `pnpm typecheck` + `pnpm test` (**1376 API + 673 web** vitest) + `pnpm build` + `pnpm lint`. Visually verified in **light AND dark** against the running app (worktree build served against the real run DB) at the reference URL. Verified outcomes: run B side-by-side (`hOverflow=0`), sticky lane header engaged, pinned chrome **416px → 183px** (run identity at 183, first aligned row at 247), unchanged rows collapse (2122px → 1355/1071px), Summary reordered (first matrix row 508px → 315px), the Result modal renders both runs' full outputs in side-by-side Monaco panes + a 2-run diff view with **no console/worker errors**. A fresh read-only review (opus) rated it **shippable, no blocker** (brand/token/a11y/loading-states clean; collapse/focus/result logic unit-tested and correct; D1–D3 + §3.3 met). Two review follow-ups were applied (`99463eb`): PageShell now honors `headerVariant` in the default `scroll="content"` path too (byte-identical for existing routes — it was a silent trap for the run console), and the `DiffEditor` comment was corrected (it renders side-by-side, not inline-unified).
 
-Residual polish (non-blocking, for owner acceptance): (1) **the bar Export dropdown omits the computed verdict section** the old per-run-card export included (the verdict is derived in `SummaryMode`, not the shell; the metric table exports fully) — a real but minor content regression, fixable by lifting `deriveVerdict` (a run-steps fetch) to the workspace; (2) first *aligned* flow row 247px vs the <200 aspiration (run identity is <200); (3) Summary matrix 315px vs <250 (the verdict card legitimately precedes it); (4) the caveat `⚠` chip shows both in the bar and inline beside the Summary verdict; (5) curve x-ticks read as "Jan N" turn-proxies (a `@brand/charts` XAxis limitation). Not auto-merged to `ux/integration` — left as a gated branch for the owner to merge (a live concurrent session is committing to `ux/integration`; the compare work touches only `apps/web/.../compare/*` + `PageShell.tsx`, zero file overlap → conflict-free `git merge ux/compare-redesign`).
+Residual polish (non-blocking, for owner acceptance): (1) **the bar Export dropdown omits the computed verdict section** the old per-run-card export included (the verdict is derived in `SummaryMode`, not the shell; the metric table exports fully) — a real but minor content regression, fixable by lifting `deriveVerdict` (a run-steps fetch) to the workspace; (2) first *aligned* flow row 247px vs the <200 aspiration (run identity is <200); (3) Summary matrix 315px vs <250 (the verdict card legitimately precedes it); (4) the caveat `⚠` chip shows both in the bar and inline beside the Summary verdict; (5) curve x-ticks read as "Jan N" turn-proxies (a `@elabs-ai/components-charts` XAxis limitation). Not auto-merged to `ux/integration` — left as a gated branch for the owner to merge (a live concurrent session is committing to `ux/integration`; the compare work touches only `apps/web/.../compare/*` + `PageShell.tsx`, zero file overlap → conflict-free `git merge ux/compare-redesign`).
 
 Steps 1–2 alone resolve both reported problems; steps 3–4 then cut ~330px of pinned chrome. Suggested acceptance: at 1280×800 / 100% zoom, both lanes fully visible, first flow row
 < 200px from top, lane headers stick at any depth, `pnpm typecheck && pnpm test && pnpm build && pnpm lint` green,
-verified in `qlik-bright` **and** `qlik-dark` against the running app.
+verified in `light` **and** `dark` against the running app.
 
 ### 4a. Owner decisions (2026-07-11) — locked before dispatch
 
@@ -209,7 +209,7 @@ verified in `qlik-bright` **and** `qlik-dark` against the running app.
   needed; `?mode=metrics` stays valid.
 - **D3 (step 9) → Add the optional 2-run diff toggle.** Side-by-side read-only `CodeEditor` panes are
   the committed default for 2–3 runs; when **exactly 2** runs are compared, offer a `Side-by-side | Diff`
-  toggle backed by `@brand/editor`'s `DiffEditor` (both `CodeEditor` and `DiffEditor` are exported).
+  toggle backed by `@elabs-ai/components-editor`'s `DiffEditor` (both `CodeEditor` and `DiffEditor` are exported).
 
 **Execution:** run on a dedicated worktree/branch `ux/compare-redesign` off `ux/integration`
 (isolated from the concurrent auto-rating churn), one WP per sub-agent, gate-green ship-alone commits,

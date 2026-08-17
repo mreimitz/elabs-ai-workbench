@@ -25,7 +25,7 @@ Decision #8 (full replayable artifact). Data from WP 1.6 (`GET /api/runs/:id` �
   function of `RunDetail` + `k` — no network.
 
 ## Gaps (UI §11)
-- A **range slider / scrubber** isn't in the listed `@brand/ui` set — compose a minimal,
+- A **range slider / scrubber** isn't in the listed `@elabs-ai/components-ui` set — compose a minimal,
   keyboard-accessible one in `apps/web/src/components/`, token-styled, and raise the gap.
 
 ## Acceptance

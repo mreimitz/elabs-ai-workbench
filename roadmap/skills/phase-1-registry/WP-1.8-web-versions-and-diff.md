@@ -29,7 +29,7 @@ to deep-link into the diff.
       renders a side-by-side `DiffEditor`; binary/added/removed handled.
 - [ ] "Pull latest" on a GitHub skill that changed lands on the Diff(prev→new); an uploaded v2 shows
       the same deep diff.
-- [ ] `@brand/*` + tokens; both themes; hooks clean; repo gate green.
+- [ ] `@elabs-ai/components-*` + tokens; both themes; hooks clean; repo gate green.
 - [ ] **Owner-verify (localhost:8080):** pull a changed GitHub skill → deep diff; two-theme walk.
 
 ## Notes

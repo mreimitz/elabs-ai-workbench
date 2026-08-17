@@ -1,6 +1,6 @@
 # 07 — Web UI plan (the enterprise-grade inspector)
 
-100% `@brand/*` (enforced by the `enforce-brand-ui` hook), two themes, semantic tokens, `useState` +
+100% `@elabs-ai/components-*` (enforced by the `enforce-brand-ui` hook), two themes, semantic tokens, `useState` +
 `localStorage`, `apiGet/Post/Put/Delete`. All primitives named below were verified present in the
 vendored kit ([`02`](./02-current-architecture-map.md)).
 
@@ -39,7 +39,7 @@ skills-api.ts         thin client wrappers (or fold into lib/api.ts).
 ## 3. Add-skill wizard (R2, R3) — `Dialog` + steps (pattern from `ServerWizard`)
 
 - **Step 1 — Source.** `ToggleGroup`: **Upload** vs **GitHub**.
-- **Step 2a — Upload.** A dropzone (compose from `@brand/ui` primitives + a native file input;
+- **Step 2a — Upload.** A dropzone (compose from `@elabs-ai/components-ui` primitives + a native file input;
   accept `.zip`, `SKILL.md`). Show picked filename + size. On next → `POST /api/skills` multipart.
 - **Step 2b — GitHub.** `Input` repo URL + `Input` ref (default `main`) + optional PAT field +
   "Discover skills" button → `POST /api/skills/probe`. Render `candidates[]` (each SKILL.md dir with
@@ -56,7 +56,7 @@ or any specific version. GitHub skills also show a **"Pull latest"** button (→
 new version, deep-link into the Diff tab prev→new). `Tabs`:
 
 ### Tab "Overview" (R7 — SKILL.md auto-surfaced)
-- **Rendered `SKILL.md`** as the primary content (via `@brand/editor` `MarkdownEditor` read-only /
+- **Rendered `SKILL.md`** as the primary content (via `@elabs-ai/components-editor` `MarkdownEditor` read-only /
   markdown render). This is the "automatically show the skill.md as a subscription/summary."
 - A `Descriptions` block of parsed frontmatter (name, description, license, compatibility,
   metadata.*, allowed-tools) with a validity `StatusBadge`.
@@ -66,14 +66,14 @@ new version, deep-link into the Diff tab prev→new). `Tabs`:
   [`06`](./06-ingestion-and-github.md)).
 
 ### Tab "Files" (R8) — `SkillFileExplorer`
-- `ResizablePanelGroup`: left = **`FileTree`** (`@brand/ai`) built from `GET …/files` (flat list →
+- `ResizablePanelGroup`: left = **`FileTree`** (`@elabs-ai/components-ai`) built from `GET …/files` (flat list →
   nested tree in a `useMemo`), folders collapsible, icons by `kind`; right = file viewer.
 - Text file → read-only **`CodeEditor`**/`CodeBlock` with language by extension + a token-count
   chip. Binary → a "binary — N bytes" panel with download/preview (`GET …/raw`). Markdown → rendered
   + raw toggle. `Breadcrumb` shows the current path.
 
 ### Tab "Versions"
-- `DataTable` (`@brand/data`) of versions: `seq`, label, source ref (short sha/filename),
+- `DataTable` (`@elabs-ai/components-data`) of versions: `seq`, label, source ref (short sha/filename),
   imported_from, date, total tokens, Δtokens vs previous. Row actions: "View", "Set as compare
   base/target". Selecting two rows enables **Compare** → Diff tab.
 
@@ -92,12 +92,12 @@ new version, deep-link into the Diff tab prev→new). `Tabs`:
 
 - `useState` for tab/selection/wizard; `localStorage` for `selected-skill` and last compare pair.
 - Async actions wrapped in `try/catch` → `pushToast('success'|'danger', …)`, matching `App.tsx`.
-- Verify every surface in **both** `qlik-bright` and `qlik-dark`; colors via semantic tokens only
+- Verify every surface in **both** `light` and `dark`; colors via semantic tokens only
   (`bg-card`, `text-muted-foreground`, `chart-*`, `success`, `destructive`) — the `check-tokens`
   hook warns on raw colors.
 - Empty/error/loading via `StatePanel`/`EmptyState`/`Skeleton`.
 
 ## 6. What we do **not** hand-roll
 
-File tree, code view, diff view, tables, panes, tabs, breadcrumbs, metrics — all `@brand/*`. If a
+File tree, code view, diff view, tables, panes, tabs, breadcrumbs, metrics — all `@elabs-ai/components-*`. If a
 gap appears (e.g. a dropzone), compose from primitives per `library-first.md`; don't add a UI dep.

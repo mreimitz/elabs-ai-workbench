@@ -40,13 +40,13 @@ Surface scripts and external-URL references in the inspector. Enforce size caps 
 ## New dependencies (owner-approved 2026-07-01, WP 1.0)
 `@fastify/multipart` (uploads), `fflate` (unzip + zip build), `diff`/jsdiff (line-count deltas),
 `yaml` (frontmatter). All MIT/BSD, pure-JS, no native compile. `git` used via CLI (no dep). No new
-**web** dependency — the inspector composes existing `@brand/*` (`FileTree`@ai, `DiffEditor`/
+**web** dependency — the inspector composes existing `@elabs-ai/components-*` (`FileTree`@ai, `DiffEditor`/
 `CodeEditor`@editor, `MarkdownEditor`@editor, `DataTable`@data, MetricCard@charts, Dialog/Tabs/
 ResizablePanelGroup/Badge/StatePanel@ui).
 
 ## UI rules
-`@brand/*` components only (enforced by `enforce-brand-ui` hook). Semantic oklch tokens, no raw
-colors (`check-tokens` hook). Two themes (`qlik-bright` default + `qlik-dark`) — every surface must
+`@elabs-ai/components-*` components only (enforced by `enforce-brand-ui` hook). Semantic oklch tokens, no raw
+colors (`check-tokens` hook). Two themes (`light` default + `dark`) — every surface must
 read correctly in both. `className` is layout-only; use component `variant`/`size` for looks. State
 is `useState` + `localStorage`; API via `apiGet/apiPost/apiPut/apiDelete` + an `apiUpload` helper for
 multipart. Feedback via `pushToast`.

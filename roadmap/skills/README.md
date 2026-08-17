@@ -64,5 +64,5 @@ Parallel batches honor **minimal file overlap** (see each WP's **Files**); WPs t
 ## Definition of done (every WP)
 
 `pnpm typecheck && pnpm test && pnpm build` green from the repo root, plus the WP's **Acceptance**
-checklist met. Contract-first, API runtime/secret boundary, `@brand/*`-only + two themes, kebab/Pascal
+checklist met. Contract-first, API runtime/secret boundary, `@elabs-ai/components-*`-only + two themes, kebab/Pascal
 naming — see [`conventions.md`](./conventions.md).

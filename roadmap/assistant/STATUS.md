@@ -53,7 +53,7 @@ Living state for the **Assistant** plan (embedded Claude agent chat), read and u
       WP 7.1); encrypted at rest via `SecretStore`; `getDecrypted()` INTERNAL-only w/ zero route callers.
       Fallback = anthropic-kind `provider_credentials` REFERENCE (400 on missing/non-anthropic); new
       migration **v21** + `assistant_settings` (1-row pointer, FK `ON DELETE SET NULL`) — additive,
-      forward-safe, 6 version-literal locks bumped 20→21. Settings `AssistantCard` all `@brand/*`; password
+      forward-safe, 6 version-literal locks bumped 20→21. Settings `AssistantCard` all `@elabs-ai/components-*`; password
       paste field (autoComplete off / spellCheck false / never prefilled); sign-out confirm; "powered by
       your Claude subscription", no "Claude Code" copy. Tests +11 API / +3 web. **Opus security review:
       SHIP** (token-leak surface defended in depth). Nits logged: (a) auth-URL raw `<code>` → could be
@@ -109,7 +109,7 @@ Living state for the **Assistant** plan (embedded Claude agent chat), read and u
       2026-07-10 · wp/assistant/1.3 (76e6c15). Additive AppShell dock props (resizable desktop split +
       mobile `Sheet` + TopNav toggle + ⌘J), hidden until signed in; `AssistantProvider` + the FROZEN public
       API `openAssistant({prompt?,entity?})` via `useAssistant()` (envelope derived from route); `AssistantDock`
-      from `@brand/ai` (`ChatShell`/`Conversation`/`Composer`/`AgentTimeline`/`Shimmer` — props verified vs
+      from `@elabs-ai/components-ai` (`ChatShell`/`Conversation`/`Composer`/`AgentTimeline`/`Shimmer` — props verified vs
       the `.d.ts`; `Reasoning*` deliberately unused — the v1 wire has no reasoning channel) mirroring
       `ConversationPane`/`ToolCallCard`; `use-assistant-stream` mirrors `use-run-stream` (seq dedup, replay,
       errors only on a genuine pre-terminal drop). The agent drove it via Playwright in BOTH themes (toggle
@@ -123,7 +123,7 @@ Living state for the **Assistant** plan (embedded Claude agent chat), read and u
       resize-drag, full keyboard-only walk, tool-call/permission cards with live data (owner-acceptance).
 - [x] WP 1.4 — page hooks v1 ("Analyze this run" / "Why did this fail?" / "Analyze recent runs") — done
       2026-07-10 · wp/assistant/1.4 (4cecb47). Pure helpers (`buildRunAnalyzeAction`/`isFailedRunPhase`/
-      `buildSkillAnalyzeRequest`) + `@brand/ui` Buttons in RunBar/RunConsole (run entity; fail-variant on
+      `buildSkillAnalyzeRequest`) + `@elabs-ai/components-ui` Buttons in RunBar/RunConsole (run entity; fail-variant on
       error/context_overflow/assertions_failed) and SkillInspector (skill entity), calling ONLY the public
       `openAssistant()` (no dock internals touched). Tests +16 web. **NOT verified:** both-theme visuals,
       live dock open with a token.
@@ -137,7 +137,7 @@ Living state for the **Assistant** plan (embedded Claude agent chat), read and u
       EXACTLY once across POST allow/deny · fail-closed timeout auto-deny (`ASSISTANT_PERMISSION_TIMEOUT_MS`
       300s) · stop/park/detach/delete/sign-out — no leak/zombie; double-POST → 404. `permission_request` +
       `permission_decision` persisted (auto-accept path too); replayed decisions render inert. Web:
-      `AssistantPermissionCard` (`@brand/*`; diff via `CodeSnippet`) + auto-accept `Switch`+badge ("deletes
+      `AssistantPermissionCard` (`@elabs-ai/components-*`; diff via `CodeSnippet`) + auto-accept `Switch`+badge ("deletes
       always ask"); composer blocked while pending, Stop still works. Tests +20 API / +9 web. **Opus
       (Phase-2) review: SHIP-WITH-NITS; orchestrator hardened the 2 latent classifier gaps before W6/W7 add
       real mutating tools:** delete detection is now case-insensitive + a destructive-synonym net
@@ -154,7 +154,7 @@ Living state for the **Assistant** plan (embedded Claude agent chat), read and u
       NEW immutable version (single tx; `{unchanged:true}` dedup). Native file tools classified
       (Read/Glob/Grep auto-allow; Edit/Write/MultiEdit gated auto-accept-eligible writes;
       `ASSISTANT_DISALLOWED_TOOLS` expanded — Bash/network/NotebookEdit/subagents/scheduling out). Workspace
-      survives idle park (keyed by threadId), cleaned on commit/delete. `AssistantDiffCard` (`@brand/*`,
+      survives idle park (keyed by threadId), cleaned on commit/delete. `AssistantDiffCard` (`@elabs-ai/components-*`,
       reuses `SkillDiffView`). E2E asserted (analyze→open→edit→approve→commit→new version + confinement +
       cleanup). Tests +26 API / +8 web. SDK drift documented (no `LS` tool → `Glob`). **Opus review: path
       traversal + createVersion immutability + confinement all CLEAN.** **NOT verified:** real agent editing
@@ -197,7 +197,7 @@ Living state for the **Assistant** plan (embedded Claude agent chat), read and u
 - [x] WP 3.2 — page hooks v2 — done 2026-07-10 · wp/assistant/3.2 (b07f2a4). 5 "Analyze…" hooks via the
       WP 1.4 template (suites feed → `suite_run`; compare → `compare` + both run ids in the prompt; scan →
       `scan`; server → `server`, shown when the last scan failed; compatibility → `scan`/`run`), each a pure
-      helper + a `@brand/ui` Button gated on `authConfigured`, calling ONLY the public `openAssistant()`.
+      helper + a `@elabs-ai/components-ui` Button gated on `authConfigured`, calling ONLY the public `openAssistant()`.
       Tests +21 web. **Opus review: SHIP with a nit** — the "insert as context" HELPERS (`insert-as-context.ts`)
       are built + unit-tested but their 2 row-action ENTRY POINTS (compare drill drawer + scan tool table) are
       **NOT wired** into the UI (reviewer: "acceptable partial" — pure, tested, no dead import). **➜ Open
@@ -288,13 +288,13 @@ No migration (scope derived · workspace events transient · live read off disk)
       done 2026-07-11 · wp/assistant/R1.4 (fa39106; merged 141fd4d). `assistant-context.tsx` exposes
       `activeAssistantThreadId`; new `use-live-skill-workspace.ts` (pure `reduceLiveWorkspaceFrame` + hook:
       GET-check for late subscribers, own SSE subscription, debounced refetch + `autoOpenNonce`);
-      `LiveSkillWorkspaceView.tsx` (@brand `Tree` + `@brand/editor` DiffEditor); `SkillInspector.tsx` writes
+      `LiveSkillWorkspaceView.tsx` (brand-ui `Tree` + `@elabs-ai/components-editor` DiffEditor); `SkillInspector.tsx` writes
       `?tab=files&file=…` + rebases via `handleDesignSaved` on commit. Real both-theme visual check (live mode
       via mocked endpoints — a real agent edit needs a token). Tests +23 web. No migration/dep/wire change.
       **NOT verified:** live agent-driven edit end-to-end. **➜ see S2 + N1/N2 in R1 follow-ups below.**
 - [x] R1.5 — dock **Scope chip** from the envelope + re-scope on navigation — done 2026-07-11 · wp/assistant/R1.5
       (8a4365d; merged f4ec310). Pure `assistant-scope-chip.ts` (`scopeChipCopy` over `deriveAssistantScope`;
-      scenario→"Environment"); `@brand/ui` Badge on its own dock-header row (moved there after a visual check
+      scenario→"Environment"); `@elabs-ai/components-ui` Badge on its own dock-header row (moved there after a visual check
       caught it crushing the switcher). Scoped→"Scope: <Kind> <id>", unscoped→"Read-only — open an entity to
       enable edits". Real both-theme visual check. Tests +16 web. **➜ see S1 in R1 follow-ups below.**
 - [x] R1 review — **opus Wave D holistic security review** — done 2026-07-11. **Scope lock HOLDS** (adversarially
@@ -417,7 +417,7 @@ Decisions **D-AS27–D-AS29**; plan [`refinement-03-session-starters.md`](./refi
 - [x] R3.2 — dock empty-state **starter chips** in `PendingPanel` — done 2026-07-11 · wp/assistant/R3.2
       (f0c94dc). `getAssistantStarters(envelope)` (`apps/web/src/lib/api.ts`) + `use-assistant-starters.ts`
       (keyed on the envelope PRIMITIVES, `active`-flag cleanup, fetch errors swallowed → `[]`) →
-      `PendingPanel` renders the returned starters as `@brand/ai` `Suggestions`/`Suggestion` chips (props
+      `PendingPanel` renders the returned starters as `@elabs-ai/components-ai` `Suggestions`/`Suggestion` chips (props
       verified vs the vendored `.d.ts` — a token-driven `Button`); click → `openAssistant({prompt:
       starter.prompt, entity})` — **prefill only, never sends** (entity = the current envelope's `{kind,id}`
       only when BOTH are pinned, else undefined; the full `prompt` is passed, not the short `label`).
@@ -439,7 +439,7 @@ Decisions **D-AS27–D-AS29**; plan [`refinement-03-session-starters.md`](./refi
       on the R3.2 tip, and the two new folding builders return plain strings (never `AssistantStarter`s) and
       are absent from the catalog/registry. Prefill-never-send, the fetch hook (primitive-keying + `active`
       cleanup + error-swallow), and the graceful fallback are confirmed + test-covered; chips are the real
-      `@brand/ai` `Suggestion`/`Suggestions`; the fold preserves every button's intent. Gate green on merged
+      `@elabs-ai/components-ai` `Suggestion`/`Suggestions`; the fold preserves every button's intent. Gate green on merged
       `ux/integration`: **API 1178→1306 · web 651 passed + 5 skipped · build · lint** (whole branch, incl.
       the concurrently-landed R1.2–R1.5 / R2 / auto-rating). One NIT logged in Open follow-ups. **Both-theme
       visual shots remain owner-acceptance** (see R3 Owner-acceptance below).
@@ -453,7 +453,7 @@ Decisions **D-AS27–D-AS29**; plan [`refinement-03-session-starters.md`](./refi
       (server "Adjust config", skill edits, collection "Organize") appear only on their in-scope page and
       go through the normal approval; read-only surfaces (run/scan/compare/compatibility) show analysis
       starters only.
-- [ ] Both themes (`qlik-bright` + `qlik-dark`) + keyboard: the chip row reads correctly and is
+- [ ] Both themes (`light` + `dark`) + keyboard: the chip row reads correctly and is
       reachable/focusable in the dock empty state.
 - [ ] (Deferred + recorded, NOT a defect) **Environment/Test** starters are authored but NOT emitted until
       `/testing/environments` publishes a `scenario`/`test` URL pin (coordinate with the R1.1 pin work);

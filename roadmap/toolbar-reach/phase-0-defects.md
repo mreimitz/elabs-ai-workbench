@@ -131,7 +131,7 @@ Row 1's only sibling is `LineageBanner`, which returns `null` for any ordinary r
   - co-located `*.test.tsx` if an assertion needs updating
 - **Depends:** — · **Size:** S · **parallel** · **Batch A** · **Model:** haiku, effort **low**.
 
-`lib/table.tsx:257-262` ships `shouldPaginate(rowCount, pageSize)` precisely to stop `@brand/data`
+`lib/table.tsx:257-262` ships `shouldPaginate(rowCount, pageSize)` precisely to stop `@elabs-ai/components-data`
 rendering "Page 1 of 1" with two disabled buttons (confirmed unconditional in `brand-data-1.9.0`). **2 of 8
 call sites use it** (`dashboard/ScansTab.tsx:518` ✅, `servers/ServersView.tsx:945` ✅). This WP fixes 5 of
 the remaining 6; **`EnvironmentsView.tsx:356` is excluded — WP 1.1 adds its guard while rebuilding the row.**

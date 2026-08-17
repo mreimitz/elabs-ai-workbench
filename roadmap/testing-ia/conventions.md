@@ -22,6 +22,6 @@ gate, security boundary). Additions specific to this workstream:
 - **Migration numbering** is claimed at kickoff via the cross-workstream decision-log
   convention (Benchmarks holds v13–v15; check sibling `roadmap/*/STATUS.md` decision logs for
   later claims before taking the next free `user_version`).
-- **UI discipline** per repo rules: `@brand/*` components only, semantic tokens, both themes
+- **UI discipline** per repo rules: `@elabs-ai/components-*` components only, semantic tokens, both themes
   verified by looking; forms per `.claude/rules/interaction-guidelines.md`; loading/streaming
   per `.claude/rules/loading-states.md` (the unified Runs feed is a streaming surface).

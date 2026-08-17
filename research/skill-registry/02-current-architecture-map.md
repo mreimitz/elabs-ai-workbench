@@ -68,7 +68,7 @@ apps/web/src/features/<domain>/*                   ← Rail (secondary nav) + Wi
 
 - `components/AppShell.tsx` — `ViewKey` union (lines ~41–51) + two nav groups: primary
   `NAV_ITEMS` ("MCP analyzer": dashboard/servers/scans/compare) and `TESTING_NAV_ITEMS` ("Testing":
-  scenarios/tests/runs/run-compare/compatibility). Sidebar is `@brand/ui`
+  scenarios/tests/runs/run-compare/compatibility). Sidebar is `@elabs-ai/components-ui`
   `Sidebar`/`SidebarMenu`/`SidebarMenuItem`. A **secondary rail** appears when a view passes
   `secondaryContent` (a right-hand `<aside class="w-72 …">`).
 - `App.tsx` — `const [activeView, setActiveView] = useState<ViewKey>("dashboard")`; conditional
@@ -84,17 +84,17 @@ apps/web/src/features/<domain>/*                   ← Rail (secondary nav) + Wi
 
 | Need | Component | Package |
 |---|---|---|
-| Folder/file explorer | `FileTree`, `FileTreeFolder`, `FileTreeFile`, `FileTreeName`, `FileTreeActions`, `FileTreeIcon` | `@brand/ai` |
-| Side-by-side code diff | `DiffEditor` (Monaco) | `@brand/editor` |
-| Code viewing | `CodeEditor` (read-only Monaco), `CodeBlock` (Shiki, read-only), `CodeWorkspace` | `@brand/editor` / `@brand/ai` |
-| Markdown render (SKILL.md) | `MarkdownEditor` + `@brand/editor/markdown` primitives | `@brand/editor` |
-| Split panes | `ResizablePanelGroup`/`ResizablePanel`/`ResizableHandle` | `@brand/ui` |
-| Tabs / breadcrumbs / scroll | `Tabs`, `Breadcrumb`, `ScrollArea` | `@brand/ui` |
-| Tables (versions, files) | `DataTable`, `SearchInput`, `FilterBar` + local `col()` helper | `@brand/data` |
-| Metrics / viz | `MetricCard`, existing `TokenViz` (`SegmentedBar`, `RankedTokenList`) | `@brand/charts` / app |
-| States | `StatePanel`, `EmptyState`, `Badge`, `StatusBadge`, `Descriptions`, `Alert` | `@brand/ui` |
+| Folder/file explorer | `FileTree`, `FileTreeFolder`, `FileTreeFile`, `FileTreeName`, `FileTreeActions`, `FileTreeIcon` | `@elabs-ai/components-ai` |
+| Side-by-side code diff | `DiffEditor` (Monaco) | `@elabs-ai/components-editor` |
+| Code viewing | `CodeEditor` (read-only Monaco), `CodeBlock` (Shiki, read-only), `CodeWorkspace` | `@elabs-ai/components-editor` / `@elabs-ai/components-ai` |
+| Markdown render (SKILL.md) | `MarkdownEditor` + `@elabs-ai/components-editor/markdown` primitives | `@elabs-ai/components-editor` |
+| Split panes | `ResizablePanelGroup`/`ResizablePanel`/`ResizableHandle` | `@elabs-ai/components-ui` |
+| Tabs / breadcrumbs / scroll | `Tabs`, `Breadcrumb`, `ScrollArea` | `@elabs-ai/components-ui` |
+| Tables (versions, files) | `DataTable`, `SearchInput`, `FilterBar` + local `col()` helper | `@elabs-ai/components-data` |
+| Metrics / viz | `MetricCard`, existing `TokenViz` (`SegmentedBar`, `RankedTokenList`) | `@elabs-ai/components-charts` / app |
+| States | `StatePanel`, `EmptyState`, `Badge`, `StatusBadge`, `Descriptions`, `Alert` | `@elabs-ai/components-ui` |
 
-Everything the "enterprise-grade inspector" needs already ships in the vendored `@brand/*` v1.6.0 —
+Everything the "enterprise-grade inspector" needs already ships in the vendored `@elabs-ai/components-*` v1.6.0 —
 **no new UI dependency required.** (New *API-side* deps are covered in [`06`](./06-ingestion-and-github.md).)
 
 ## Scenario attachment (Phase 2 template)

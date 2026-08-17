@@ -13,7 +13,7 @@ the live truth the stubs can't establish. Reference: `analysis.md` (RC1–RC7), 
 **How to run:** `docker compose up -d --build` → open `http://localhost:8080/`. Enter provider keys
 in **Settings → Providers**. The Assistant Hub is the nav item **Assistant** (`/assistant`); the
 dock is the right-hand "App assistant". Do each check in **both** themes (Settings → theme →
-`Qlik Bright`, then `Qlik Dark`) unless noted, and confirm keyboard reachability (Tab/Enter/Space,
+`Light`, then `Dark`) unless noted, and confirm keyboard reachability (Tab/Enter/Space,
 visible focus ring) on every new interactive control.
 
 ---
@@ -165,7 +165,7 @@ visible focus ring) on every new interactive control.
 
 ## 6 · Consolidated both-theme + keyboard visual walk
 
-Do a single pass in **Qlik Bright** then **Qlik Dark**, keyboard-only where possible, over every new
+Do a single pass in **Light** then **Dark**, keyboard-only where possible, over every new
 surface (each must be legible, focus-visible, and read correctly in both themes):
 
 - [ ] Rail **Tools/Context** section + per-server **connection chips** + **Retry** (WP1.2/1.3).

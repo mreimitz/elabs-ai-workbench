@@ -63,7 +63,7 @@ Strip position and content offset are **constant to the pixel** across every tab
 ### 4. Status sweep (S3) — **PASS (minor label polish outstanding)**
 - `grep -rn "stopped_guardrail\|assertions_failed\|context_overflow" apps/web/src` → **only** matches in `lib/status.ts` / `components/StatusBadge.tsx` as *mapping/handling* (comments + switch cases), **never** raw-rendered in JSX. No snake_case leaks. The malformed-value path returns a safe humanized neutral chip (closes the React #130 crash class).
 - Live: Runs feed renders Completed (green outline) / Aborted (gray) / Failed (red filled) / **"Completed · 1 error"** rollup — all through the shared `StatusBadge` (`shots/01-shell-runs-dark.png`); scan Failed badge on server/dashboard likewise; `ScanStatusBadge.tsx` is no longer imported anywhere.
-- **Minor residual:** three step-level chips pass the **raw lowercase wire value** as `StatusBadge` *children*, overriding the sentence-cased vocabulary label: `StepLog.tsx:217`, `PacketInspector.tsx:90/165`, `StepDrawer.tsx:109` render "ok"/"error"/"complete" instead of "Completed"/"Failed" (tone is correct; label is not sentence-cased, and two use `@brand/ui`'s StatusBadge rather than the app's). **Follow-up D** (polish, not a leak).
+- **Minor residual:** three step-level chips pass the **raw lowercase wire value** as `StatusBadge` *children*, overriding the sentence-cased vocabulary label: `StepLog.tsx:217`, `PacketInspector.tsx:90/165`, `StepDrawer.tsx:109` render "ok"/"error"/"complete" instead of "Completed"/"Failed" (tone is correct; label is not sentence-cased, and two use `@elabs-ai/components-ui`'s StatusBadge rather than the app's). **Follow-up D** (polish, not a leak).
 
 ### 5. Form sweep (S14/S19/S11/S12) — **PASS**
 - **Environment editor** (`shots/05-env-editor-{bright,dark}.png`): WideDialog, left-rail sections (Model/Guardrails/Servers & skills). **Model field disabled with reason "Pick a credential first…"** until a credential is chosen (S19 dependency) + "Custom model id" escape hatch. Temperature/Top P as **slider + input with a "Provider default" state** (S12). Reasoning effort as **segmented** Default/Low/Medium/High (S12). Max output tokens placeholder "Model default" (not 1). Token-profile chips + live footprint rail. Consequence-named "Create environment".
@@ -76,7 +76,7 @@ Strip position and content offset are **constant to the pixel** across every tab
 `responsive.mjs` measured `documentElement.scrollWidth` vs `innerWidth` at all three widths for Dashboard, Runs, server detail, Console, Compare workspace, Scans, Compatibility → **`ok` (no horizontal clip) at every width**. The known ~1100px master-detail sidebar sliver (STATUS S1/S2 carry-forward) is a within-panel limitation, not a page-level body clip — **confirmed, not re-litigated.**
 
 ### 7. Both themes — **PASS**
-Every screenshot captured in both `qlik-bright` and `qlik-dark`; all dark shots render correctly (`01-shell-*-dark`, `02-console-chat-dark`, `07-compat-dark`, `09-compare-summary-dark`, `05-env-editor-dark`). **Heatmap contrast re-checked in dark** (`shots/07-compat-dark.png`): amber and red cells render score + "N issues" in readable on-tint `-text` foregrounds (S5/CP1 holds in dark). Compare diff colors (green add / red remove) read correctly in dark (`09-compare-flow-dark.png`).
+Every screenshot captured in both `light` and `dark`; all dark shots render correctly (`01-shell-*-dark`, `02-console-chat-dark`, `07-compat-dark`, `09-compare-summary-dark`, `05-env-editor-dark`). **Heatmap contrast re-checked in dark** (`shots/07-compat-dark.png`): amber and red cells render score + "N issues" in readable on-tint `-text` foregrounds (S5/CP1 holds in dark). Compare diff colors (green add / red remove) read correctly in dark (`09-compare-flow-dark.png`).
 
 ### 8. Cross-link walk (S20) — **PASS (with the documented sub-element limitation)**
 High-value links are implemented and several verified live:
@@ -107,7 +107,7 @@ Each becomes a small follow-up WP the PM schedules before 5.2. None are P0.
 1. **A — Breadcrumb inconsistency (S16, item 1).** Depth-1 list roots (`/dashboard`, `/testing/runs`, `/scans`, `/compare/scans`, `/testing/collections`, `/skills` list) render **no** top-bar breadcrumb, while `/settings`, `/testing/environments`, `/testing/compatibility` render a `Home ›` crumb. The audit's bar is "top bar **always** carries the breadcrumb." Fix: apply one consistent rule — give every top-level root a `Home ›` (or brand-root) crumb like the three that already have it. File: `apps/web/src/App.tsx` `breadcrumbs` memo (lines ~659–710) + the `no-breadcrumb` list at line 74.
 2. **C — Compatibility has no page `<h1>` (S16 semantic).** `/testing/compatibility` renders its title as a non-h1 heading (`h1count=0`). Promote to `PageHeader`/`<h1>` so the heading outline + title semantics match every other route. (Appears new; small.)
 3. **B — Skills detail has no page `<h1>` (S16 semantic, KNOWN).** `SkillInspector.tsx` header uses `SectionHeader` (`<h2>`); the only `<h1>` is the markdown content. Already logged as the WP 5.1 carry-forward — swap the header to `PageHeader`. (Confirmed still open.)
-4. **D — Step-level status labels not sentence-cased (S3 polish).** `StepLog.tsx:217`, `PacketInspector.tsx:90/165`, `StepDrawer.tsx:109` pass the raw lowercase wire value ("ok"/"error"/"complete") as `StatusBadge` children, overriding the vocabulary label (and two use `@brand/ui`'s StatusBadge rather than the app's). Tone is correct; drop the `children` override so the sentence-cased label ("Completed"/"Failed"/"Running") shows.
+4. **D — Step-level status labels not sentence-cased (S3 polish).** `StepLog.tsx:217`, `PacketInspector.tsx:90/165`, `StepDrawer.tsx:109` pass the raw lowercase wire value ("ok"/"error"/"complete") as `StatusBadge` children, overriding the vocabulary label (and two use `@elabs-ai/components-ui`'s StatusBadge rather than the app's). Tone is correct; drop the `children` override so the sentence-cased label ("Completed"/"Failed"/"Running") shows.
 
 ---
 
@@ -117,7 +117,7 @@ Each becomes a small follow-up WP the PM schedules before 5.2. None are P0.
 - **~1100px master-detail sidebar sliver** (STATUS S1/S2): a within-panel clip at narrow widths; page-level body does not clip (item 6). Not re-litigated.
 - **SkillInspector `SectionHeader` (no page h1)** (STATUS WP 5.1 carry-forward): re-confirmed (Follow-up B above).
 - **Failed-scan Overview reads oddly** (STATUS owner note): with the latest scan failed, the server Overview shows Findings/Token-distribution/tab-counts of 0 while Scan-trend still shows the successful-scan growth — re-confirmed on `/servers/:id` (`shots/01-shell-servers-bright.png`). Pre-existing owner note.
-- **@brand gaps** (STATUS): `@brand/data` DataTable lacks native column-pinning + row-click; `@brand/ui` Combobox has no `disabled` prop (env editor uses a disabled-Input workaround, visible in the editor); ThemeSwitcher uncontrolled. Not re-tested; carried forward.
+- **brand-ui gaps** (STATUS): `@elabs-ai/components-data` DataTable lacks native column-pinning + row-click; `@elabs-ai/components-ui` Combobox has no `disabled` prop (env editor uses a disabled-Input workaround, visible in the editor); ThemeSwitcher uncontrolled. Not re-tested; carried forward.
 
 ## Owner-acceptance items (need a provider key / live owner walk — mirrors STATUS)
 
@@ -155,7 +155,7 @@ The committed `data/app.sqlite` is empty, so each sweep **seeded real content** 
 stdio echo-fixture server + real scan; the default "Local" collection auto-exists) rather than fabricate results.
 Evidence: `.wp-evidence/tb-batch1/` (17 PNGs) + `.wp-evidence/tb-final/` (35 PNGs), in the (now-removed) verify worktrees.
 
-**Verdict: PASS across all 10 migrated toolbar surfaces in BOTH themes (`qlik-bright` + `qlik-dark`).**
+**Verdict: PASS across all 10 migrated toolbar surfaces in BOTH themes (`light` + `dark`).**
 
 | # | View | Verdict | # | View | Verdict |
 |---|------|---------|---|------|---------|

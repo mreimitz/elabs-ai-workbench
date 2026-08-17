@@ -19,7 +19,7 @@ shows the status, live session or result in a box below."
   open-questions lists truncate with expand, not overflow).
 - Cards become selectable (button semantics, `aria-pressed`, keyboard reachable); selection state
   lives in `MissionBoard`; selected card gets the token-driven selected treatment.
-- Detail box below the grid: `@brand/ui` Tabs with **Status** (state, model, confidence, costs
+- Detail box below the grid: `@elabs-ai/components-ui` Tabs with **Status** (state, model, confidence, costs
   when WP 2.4 lands, timestamps) and **Report** (the full findings/open-questions render that
   currently lives inline). Grid cards themselves get more compact (summary line + badges) since
   depth moved to the detail box.

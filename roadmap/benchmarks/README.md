@@ -102,5 +102,5 @@ if `/next-wp` prefers; the ledger rules).
 
 `pnpm typecheck && pnpm test && pnpm build && pnpm lint` green from the repo root, plus the WP's
 Acceptance met. Contract-first, API runtime/secret boundary, grading-never-blocks-runs and
-never-execute invariants, `@brand/*` only + two themes — see
+never-execute invariants, `@elabs-ai/components-*` only + two themes — see
 [`conventions.md`](./conventions.md).

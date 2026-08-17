@@ -11,7 +11,7 @@ this file, the WP is wrong — fix the WP.
 - **TypeScript, ESM** (`"type":"module"`, `NodeNext`), strict + `noUncheckedIndexedAccess`. **Relative
   imports end in `.js`** (e.g. `import { x } from "./x.js"`) even for `.ts` sources.
 - **API:** Fastify 5, `better-sqlite3`, `@modelcontextprotocol/sdk` ^1.12, `zod` ^3.24, `pino`,
-  `nanoid`. **Web:** React 19, Vite 6, `lucide-react`, `@brand/*` (Tailwind v4).
+  `nanoid`. **Web:** React 19, Vite 6, `lucide-react`, `@elabs-ai/components-*` (Tailwind v4).
 - One SQLite file (`better-sqlite3`, synchronous). One Docker container, port 8080.
 
 ## The quality gate (definition of done)
@@ -80,16 +80,16 @@ Both ends type-check against one definition. Never define a wire shape in `api` 
 - API access via `apps/web/src/lib/api.ts` (`apiGet/apiPost/apiPut/apiDelete`). The SSE helper is
   added in WP 3.1.
 - **brand-ui only** (`.claude/rules/brand-ui-only.md`, enforced by the `enforce-brand-ui` hook):
-  every visible element is a `@brand/*` component; raw `<div>/<span>/<section>` for layout only.
+  every visible element is a `@elabs-ai/components-*` component; raw `<div>/<span>/<section>` for layout only.
   `className` is **layout only** — never recolor/retypeset; use a component's `variant`/`size`.
 - **Tokens only** (`.claude/rules/styling-and-tokens.md`): `bg-background`, `bg-card`, `bg-muted`,
   `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`/`text-primary-foreground`,
   the `destructive` token, `--chart-1..5`, `ring-ring`. **No raw hex/rgb, no palette colors.**
-  `tabular-nums` on comparing numbers. **Two themes** must read correctly: `qlik-bright` (default)
-  and `qlik-dark` — the app deliberately filters out `blueprint`/`light`/`dark`/`high-contrast` (see
+  `tabular-nums` on comparing numbers. **Two themes** must read correctly: `light` (default)
+  and `dark` — the two reference themes the library ships (see
   `.claude/rules/styling-and-tokens.md` "Themes (2)" + `apps/web/src/lib/theme.ts`); theme switching
   lives in **Settings**, not a top-nav switcher. Verify by looking (owner, at the running app).
-- When `@brand/*` lacks something, it's a real upstream gap: compose from primitives in
+- When `@elabs-ai/components-*` lacks something, it's a real upstream gap: compose from primitives in
   `apps/web/src/components/` or raise it; don't hand-roll. Reference: `vendor/brand-ui-agent-kit/`.
 
 ## Token counting
@@ -117,4 +117,4 @@ Feature web code under `apps/web/src/features/<area>/`.
 - [ ] Implement following the layering/patterns above and the existing sibling files cited in the WP.
 - [ ] Add/extend tests per the WP's **Acceptance**.
 - [ ] `pnpm typecheck && pnpm test && pnpm build`.
-- [ ] Self-review against `.claude/rules/*`; for UI, check both themes (`qlik-bright` + `qlik-dark`) in the running app.
+- [ ] Self-review against `.claude/rules/*`; for UI, check both themes (`light` + `dark`) in the running app.

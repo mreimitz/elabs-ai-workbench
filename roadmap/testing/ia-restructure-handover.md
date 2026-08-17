@@ -142,7 +142,7 @@ Cross-cutting Testing + Benchmarks data-model + IA change, medium-large blast ra
   collection and on a single test; consolidate the Testing nav in
   `apps/web/src/components/AppShell.tsx`. Scenarios' nav treatment depends on **Q4**.
 - **Contract-first discipline** applies (types/zod in `packages/shared` → API → web).
-- **Owner-gated flags:** any new runtime dep, `@brand/*` bump, weakening a hook/guardrail, or a
+- **Owner-gated flags:** any new runtime dep, `@elabs-ai/components-*` bump, weakening a hook/guardrail, or a
   breaking (non-additive) API change → STOP + ask. The git-decoupling touches the sync trust model
   — keep the PAT/SSRF/no-force-push discipline intact.
 

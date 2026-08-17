@@ -52,13 +52,13 @@ secrets — treat them like run payloads: store redacted, never echo credentials
 existing redaction discipline before persistence.
 
 ## UI rules
-`@brand/*` components only (enforced by `enforce-brand-ui` hook). The canvas is **`@brand/flow`**
+`@elabs-ai/components-*` components only (enforced by `enforce-brand-ui` hook). The canvas is **`@elabs-ai/components-flow`**
 (already vendored + wired as a `file:` dep — first feature to import it; add the matching
-`@source` line for `@brand/flow` dist in `apps/web/src/styles/app.css` when the first import
-lands). Conversation panes reuse the existing testing-console `@brand/ai` components; markdown
-editing reuses `@brand/editor`. Semantic oklch tokens only — trace verdicts use `FlowNode`
+`@source` line for `@elabs-ai/components-flow` dist in `apps/web/src/styles/app.css` when the first import
+lands). Conversation panes reuse the existing testing-console `@elabs-ai/components-ai` components; markdown
+editing reuses `@elabs-ai/components-editor`. Semantic oklch tokens only — trace verdicts use `FlowNode`
 `tone="success"/"destructive"` and semantic utilities, no raw colors (`check-tokens` hook). Two
-themes (`qlik-bright` + `qlik-dark`) — every canvas state (default, success, fracture, dimmed,
+themes (`light` + `dark`) — every canvas state (default, success, fracture, dimmed,
 selected) must read correctly in both. Design/Trace are `Tabs` values inside `SkillInspector`;
 state is `useState` + `localStorage`; API via the existing `apiGet/apiPost/…` helpers; feedback via
 `pushToast`.

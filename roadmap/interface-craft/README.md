@@ -91,7 +91,7 @@ relitigate them. Every number below is **measured** in the review (oklch→sRGB 
 ### D-IC1 — On-fill contrast is a gate, not a review item
 Every `--<role>` ⇄ `--<role>-foreground` pair clears **WCAG AA 4.5:1** in **both** themes, asserted by
 a test that runs in the gate (`tokens-contrast.test.ts`). **Measured today (fails):**
-`qlik-bright` `--primary` **4.31**, `--success` **4.31**, `--info` **3.76**; `qlik-dark`
+`light` `--primary` **4.31**, `--success` **4.31**, `--info` **3.76**; `dark`
 `--destructive` **3.02**. (Passing today, must stay passing: bright `--destructive` 5.20 / `--warning`
 6.59; dark `--primary`/`--success` 8.24, `--warning` 8.40, `--info` 6.58.) The dark `--destructive`
 failure is the worst case — it is the Failed/Unanswered badge, the app's own "real failure grabs the
@@ -152,12 +152,12 @@ visibly flatter than the real `Card` beside them.
 
 ## Vendor boundary — decided once
 
-Four fixes land in code that this repo **vendors** as `@brand/*` tarballs, which CLAUDE.md §9 requires
+Four fixes land in code that this repo **vendors** as `@elabs-ai/components-*` tarballs, which CLAUDE.md §9 requires
 owner approval to change: the failing token pairs (D-IC1/D-IC2), `CardTitle`'s missing `as`/`level`
 (D-IC5), `SelectTrigger`'s uncaptioned `[&>span]:line-clamp-1` (D-IC10), and `CardDescription`'s
 missing measure cap (D-IC9).
 
-**Decision (owner, 2026-07-25): fix app-side now, file upstream for the next `@brand/*` bump.**
+**Decision (owner, 2026-07-25): fix app-side now, file upstream for the next `@elabs-ai/components-*` bump.**
 Concretely —
 
 - **Tokens (D-IC1/2):** a `@theme` override block in `apps/web/src/styles/app.css`. `app.css` is
@@ -170,7 +170,7 @@ Concretely —
 
 Rationale: `app.css` and `components/` are app-owned, reversible, and outside every shipped
 toolbar-reach domain, so this plan does **not** block on a vendor release. **Do not bump the
-`@brand/*` version inside this plan.** Each override is recorded as an upstream issue in
+`@elabs-ai/components-*` version inside this plan.** Each override is recorded as an upstream issue in
 [`upstream-gaps.md`](./upstream-gaps.md) so it can be deleted when brand-ui ships the fix.
 
 ---

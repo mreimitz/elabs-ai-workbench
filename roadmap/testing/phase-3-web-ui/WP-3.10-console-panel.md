@@ -17,7 +17,7 @@ art: [`../references.md`](../references.md) → *MCP Inspector* (raw request/res
 - `apps/web/src/features/testing/ConsolePanel.tsx`
 
 ## Design (UI §3.1)
-- **Virtualized** append-only log (windowed list / `@brand/data` `DataTable` in single-column mode) —
+- **Virtualized** append-only log (windowed list / `@elabs-ai/components-data` `DataTable` in single-column mode) —
   **must stay smooth at 50+ events** (no per-row `getBoundingClientRect`; throttle to animation
   frames while streaming).
 - **Levels:** `All ▸ Errors ▸ Warnings ▸ Info ▸ Protocol`; severity via tokens

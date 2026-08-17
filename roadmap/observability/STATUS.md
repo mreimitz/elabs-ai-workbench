@@ -143,7 +143,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   1083/api 2077 · build) + typecheck green on main post-merge. Deep-link `?tab=` via
   `useSearchParams` (spec-permitted — the audit found NO existing tab-in-URL precedent; documented
   as a new convention). Correctness fix: since-last-visit state hoisted to the tab host (Radix
-  unmounts inactive panels → would reset the window). Test-only `vi.mock` of `@brand/charts`
+  unmounts inactive panels → would reset the window). Test-only `vi.mock` of `@elabs-ai/components-charts`
   `MetricGrid` (jsdom can't resolve the `@visx` deep path; mirrors the existing `RunConsole.test`
   precedent; production untouched, real build proves it). Byte-equivalence acceptance reinterpreted:
   `features/dashboard/` had ZERO pre-existing tests, so new smoke tests assert the moved cards/
@@ -198,12 +198,12 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   gap hit** — all 8 panels built from the existing 1.2/1.1 contract (the web-only constraint held;
   `shared`/`metrics.ts` untouched). **D-OB14 honesty test-enforced** (`metrics-derive.test.ts` +
   Tokens/Cost panel tests assert no blended/summed series ever renders). Accepted deviations:
-  (a) `@brand/charts` v1.6.0 exposes NO per-datapoint/legend `onClick` (verified via `.d.ts` + the
+  (a) `@elabs-ai/components-charts` v1.6.0 exposes NO per-datapoint/legend `onClick` (verified via `.d.ts` + the
   brand-ui MCP) → drill-down uses a keyboard-reachable paired `DrillList` (mirrors ScansTab's
   "Biggest movers" list) carrying the composed `RunFilter` URL, not a chart click; (b) capability
   class isn't a `RunFilter` dimension → Tokens/Cost panels show an honest non-interactive per-class
   legend + one panel-level "Open runs" drill; (c) live Radix-Select/DateRangePicker click
-  interaction is NOT unit-tested (pre-existing jsdom gap — nothing in the repo drives a `@brand`
+  interaction is NOT unit-tested (pre-existing jsdom gap — nothing in the repo drives a `@elabs-ai/components-*`
   Select through open+pick; URL↔state proven at the pure-fn + mount-with-params level instead).
   **⚠️ CROSS-WP GAP (follow-up candidate, not blocking):** the OPTIONAL per-grader `meanScore`
   selection — 1.2 design said "meanScore (+optional grader)", 2.2 design said "grader select
@@ -221,7 +221,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   green (typecheck · lint 901 · test api 2114/web 1160 · build) + typecheck on main post-merge. Adds
   `POST/DELETE /api/runs/:id/pin`, `POST /api/maintenance/prune-runs` (policy, **defaults OFF**,
   pinned NEVER pruned, deletes via the full run-delete path incl. WP1.3 FTS purge), a Settings
-  retention form (`@brand/ui`, a `text-xs`→`text-meta` violation fixed). **The WP1.1 `pinned`
+  retention form (`@elabs-ai/components-ui`, a `text-xs`→`text-meta` violation fixed). **The WP1.1 `pinned`
   placeholder is now LIVE + consistent across all 3 predicate copies** (`run-repository`
   `buildRunFilterWhere`, the `metrics.ts` replica, shared `matchesRunFilter`) — the SQL-vs-predicate
   cross-check test proves the `true` branch. Additive wire (`RunSummary.pinned`, prune-policy type).
@@ -266,8 +266,8 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   dashboard drill-downs hydrate byte-for-byte); FTS `q` snippets; saved views (client presets +
   WP1.4 CRUD, restoring columns+sort); pin toggle (WP1.6). Accepted deviations: (a) **feedback-chip
   RENDER deferred to WP2.5** (labeled placeholder, never reads `RunSummary.feedback` — the `feedback`
-  FILTER is fully wired); (b) column chooser composes `@brand` primitives (`DropdownMenu`+`Checkbox`+
-  `Select`) not `@brand/data` `ColumnPicker` (which binds a TanStack table the hand-built feed
+  FILTER is fully wired); (b) column chooser composes `@elabs-ai/components-*` primitives (`DropdownMenu`+`Checkbox`+
+  `Select`) not `@elabs-ai/components-data` `ColumnPicker` (which binds a TanStack table the hand-built feed
   doesn't use — a documented library-first gap, NOT a hand-rolled control); (c) suite member lists
   stay UNFILTERED by design (a suite row shows iff a member matches; drill-down preserved via an
   additive optional `visible` prop → `SuiteRunConsole`/`SuiteMembersTab` render byte-identically,
@@ -280,7 +280,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   `wp/observability/2.5` @ `286c050`; base `e260204`, main unmoved so no rebase). Web-only (no
   API/shared touched → WP1.5's separation test holds trivially). Gate re-verified green (typecheck ·
   lint 917 · test web 1263/api 2125 · build) + typecheck on main post-merge. Adds a tiny
-  `FeedbackControl` (`@brand/ui` `Toggle` thumbs + `Popover` note), run-level thumbs+note in `RunBar`
+  `FeedbackControl` (`@elabs-ai/components-ui` `Toggle` thumbs + `Popover` note), run-level thumbs+note in `RunBar`
   (editable live AND replay), per-turn thumbs in `ConversationPane` (ONE batched `listRunFeedback`
   per run, scoped to the real `llm_response` step id), feed chips (replacing the WP2.3 deferred
   placeholder in `RunPreviewRow`/`RunTableRow`), report-tab "Your feedback" line. **DELIBERATELY
@@ -323,7 +323,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   disjoint areas (3.2 = console cluster; 2.4 = feed lens + dashboard card), zero common files.
   **WP 3.2 (console tree)** MERGED (`aaa7448`, `wp/observability/3.2` @ `0b0d45c`; base `64d3036`,
   main unmoved so no rebase). Console-cluster-only; gate green (typecheck · lint 925 · test web
-  1316/api 2137 · build). Collapsible step tree (`@brand/ui` `Tree`; rating+tool_io collapsed by
+  1316/api 2137 · build). Collapsible step tree (`@elabs-ai/components-ui` `Tree`; rating+tool_io collapsed by
   default; FLAT runs byte-stable — separate early-return branch, flat DataTable untouched), nested
   RunGantt lanes, per-step economics chips (deltas from cumulative `stepKpis` + subtree rollups),
   hotspots strip (slowest/costliest/biggest-context-jump; duration-only when `tokens:'none'`). New
@@ -332,7 +332,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   HotspotsStrip + 3 optional props; the unified-sessions WP3.2 capability tile grid untouched) —
   **ZERO new `providerKind` forks** (grep-proof test, D-US4). Owner-acceptance a11y notes: Tree is
   NON-virtualized (jsdom can't measure — bounded `max-h` scroll; watch for runs with hundreds of
-  nodes), `@brand/ui` `Tree` row-click selects+toggles together (library behavior), composed-JSX
+  nodes), `@elabs-ai/components-ui` `Tree` row-click selects+toggles together (library behavior), composed-JSX
   rows get no explicit `aria-label` (verbose text-content fallback).
   **WP 2.4 (sessions lens)** MERGED (`ef21237`, `wp/observability/2.4` @ rebased `67caa01`; base
   `64d3036` → **rebased onto `aaa7448`** since 3.2 landed first — clean, disjoint). Web-only, no
@@ -399,13 +399,13 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   sources** (live in-memory step scan ALWAYS runs + a run-scoped WP1.3 FTS hit merged IN ADDITION for
   replay — never instead). Console-header search: highlight + prev/next (keyboard `n`/`p`) + count chip
   + Filtered-only/Show-all on the WP3.2 tree StepLog. Conversation·Steps·Turns lens switcher (segmented
-  `@brand` `ToggleGroup` driving the EXISTING `leftView` state — deliberate, no layout re-architecture;
+  `@elabs-ai/components-*` `ToggleGroup` driving the EXISTING `leftView` state — deliberate, no layout re-architecture;
   Trace/Analytics/Report stay reachable). Turns lens = per-turn summary cards (prompt/reply first lines +
   duration/tokensΔ/tool-count/feedback chips). URL-persisted `?lens=&find=`. **Bug caught+fixed:** first
   version auto-navigated to chat when a match existed, overwriting a `?lens=turns` deep link — fixed with
   an explicit-nav gate (nav only on n/p/button, never a passive side effect). `<mark>` highlight uses
   `bg-primary/20` semantic tokens (established pattern, not a raw color / hand-rolled component; verified
-  via brand-ui MCP that no `@brand` highlight component exists). Owner-acceptance: both-theme + keyboard
+  via brand-ui MCP that no `@elabs-ai/components-*` highlight component exists). Owner-acceptance: both-theme + keyboard
   walk (search nav, lens switch, Turns cards). **Phase 3 now 3/4 (only 3.3 fork-from-step remains).**
 
 - 2026-07-17 — **Batch 10: WP 4.3 (notification center) MERGED to main** (`d1cf312`,
@@ -415,7 +415,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   test api 2192/web 1424 · build) + typecheck on main post-merge. **Wired the inert WP4.1 `notify`
   sink** via the index.ts seam (`watchActionServices.notify = notifySink`; ZERO `watch/engine.ts`
   change; the only `actions.ts` edit is `export`ing `postWebhook`) — so WP4.2 windowed notifies also
-  land for free. Persistent bell in `AppShell` (composed from `@brand` `Popover`/`Badge`/`StatusBadge`
+  land for free. Persistent bell in `AppShell` (composed from `@elabs-ai/components-*` `Popover`/`Badge`/`StatusBadge`
   — the `NavNotifications` composite lacks severity/read/link/late, so library-first compose; unread
   badge, severity tone, "while you were away" late chip, deep-link + mark-read/read-all) fed by a
   DEDICATED no-replay `GET /api/notifications/stream` (no existing app-level stream to piggyback).
@@ -680,14 +680,14 @@ webhook test-fire 4.3, real fork 3.3, real digest 5.5) — none claimed by an ag
 - 2026-07-17 — **OWNER-ACCEPTANCE FINDING #2 FIXED: Testing dashboard crash ("Invalid time value")**
   (main `370c8c2`, `wp/observability/testing-crash-fix` @ `b6f5cde`; base `f8bc01e`, direct descendant).
   Opening `/dashboard?tab=testing` crashed the WHOLE tab into the error boundary. Root cause (WP2.2):
-  `@brand/charts` Line/Area/Composed/Scatter DEFAULT `xDataKey` to `"date"`, but `pivotToRows` carries
+  `@elabs-ai/components-charts` Line/Area/Composed/Scatter DEFAULT `xDataKey` to `"date"`, but `pivotToRows` carries
   the timestamp under `x` (a Date) with no `date` field — so `ScoreTrendPanel`/`ScansStripPanel`/
   `DurationPanel` (+ `CustomChartCanvas`'s line branch) read `row.date` → `undefined` →
   `new Date(undefined)` → Invalid Date → the axis' `toISOString()` threw. Fix: those charts now set
   `xDataKey="x"` (matching `RunsErrorRatePanel`, already correct); `pivotToRows` drops invalid-Date
   buckets (degrade, don't crash). Web-only, additive, no wire/DB/migration. Gate green (typecheck ·
   lint 1042 · test web 1643/api 2329 · build). **⚠️ GATE BLIND SPOT (systemic — see memory
-  [[chart-tests-mock-brand-charts-as-noop]]):** the existing panel suites mock `@brand/charts` as inert
+  [[chart-tests-mock-brand-charts-as-noop]]):** the existing panel suites mock `@elabs-ai/components-charts` as inert
   no-ops (jsdom can't render `@visx`), so a chart-PROP bug like a missing `xDataKey` passes
   typecheck/test/build and only crashes in a real browser. The new `time-axis-charts.test.tsx` uses a
   FAITHFUL stub (defaults `xDataKey` to `"date"` + runs `new Date(row[xDataKey]).toISOString()`) that
@@ -702,7 +702,7 @@ webhook test-fire 4.3, real fork 3.3, real digest 5.5) — none claimed by an ag
   `First/Last seen` dates wrapped char-by-char, occurrences-chart x-axis had overlapping duplicate
   labels). **Owner chose (via AskUserQuestion): full-width table + detail drawer** (match the runs
   feed). Delivered: `SplitPane` removed → `IssueTriageTable` is FULL-WIDTH; a row click opens
-  `IssueDetail` (reused verbatim) in a `@brand/ui` `Sheet` drawer (`side=right`; Radix focus-trap /
+  `IssueDetail` (reused verbatim) in a `@elabs-ai/components-ui` `Sheet` drawer (`side=right`; Radix focus-trap /
   Esc-close / focus-return), driven by the EXISTING `?issue=` deep-link (notification links preserved;
   stale id self-clears). Dates → `formatRelativeTime` + `whitespace-nowrap` + full timestamp on hover.
   Occurrences chart → a bucket-granularity-aware distinct tick label (hour for hour buckets, compact
@@ -712,15 +712,15 @@ webhook test-fire 4.3, real fork 3.3, real digest 5.5) — none claimed by an ag
   `ScansTab` uses, wrapper clips rather than overflowing the page. Owner: hard-refresh
   `/dashboard?tab=issues`; the table is full-width and a row opens a detail drawer. Owner-acceptance:
   both-theme + keyboard walk of the table + drawer + the fixed chart.
-- 2026-07-17 — **[cross-session note]** the concurrent (assistant-hub) session is mid **`@brand/*`
+- 2026-07-17 — **[cross-session note]** the concurrent (assistant-hub) session is mid **`@elabs-ai/components-*`
   v1.6.0→v1.9.0 upgrade** (memory [[brand-ui-v190-upgrade]], UNCOMMITTED at this point). All my
-  observability fixes forked from committed `main` (v1.6.0) and use only v1.6.0-compatible `@brand`
+  observability fixes forked from committed `main` (v1.6.0) and use only v1.6.0-compatible `@elabs-ai/components-*`
   APIs; the upgrade is reportedly fully additive (zero removed exports), so no conflict expected when
   it lands. Re-verify the gate on `main` after that upgrade commits.
 
 ## Owner-acceptance (pending — grows as WPs land)
 
-- Both-theme (`qlik-bright`/`qlik-dark`) + keyboard walks: Dashboard tabs, runs feed filter bar,
+- Both-theme (`light`/`dark`) + keyboard walks: Dashboard tabs, runs feed filter bar,
   rules UI, notification center, issues tab, review queue, pricing editor, sessions lens.
 - Live walks needing real credentials/tenants: judge-chain LLM clustering assist (5.2);
   assistant issue loop (5.4); webhook test-fire to a real Slack endpoint.

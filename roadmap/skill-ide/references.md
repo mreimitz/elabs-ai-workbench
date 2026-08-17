@@ -15,9 +15,9 @@ moved since, trust the code and update this file. Per-WP algorithmic notes live 
   (annotated section-level gates would be under-counted otherwise). Accessories sit in side
   columns at their owner's row (owner = first edge pointing at them, `buildOwnerMap`).
   Orphans fall back to the main-column tail; layout never throws.
-- Canvas: `SkillGraphCanvas.tsx` (277) wraps `@brand/flow`; node styling meta in
+- Canvas: `SkillGraphCanvas.tsx` (277) wraps `@elabs-ai/components-flow`; node styling meta in
   `node-kind-meta.tsx`; detail panel `NodeDetailPanel.tsx` (663) already embeds
-  `CodeEditor` from `@brand/editor` (read-only anchored excerpt + editable section body).
+  `CodeEditor` from `@elabs-ai/components-editor` (read-only anchored excerpt + editable section body).
 
 ## Edit-ops machinery (WP 2.1, 2.2, 3.2)
 
@@ -54,15 +54,15 @@ moved since, trust the code and update this file. Per-WP algorithmic notes live 
 
 ## Component library (WP 1.3, 3.2, 5.2, 7.2)
 
-- **`@brand/ui` ships `Tree`** (`TreeNode<T>` with `children`, `TreeProps` incl. `virtualize`,
+- **`@elabs-ai/components-ui` ships `Tree`** (`TreeNode<T>` with `children`, `TreeProps` incl. `virtualize`,
   async `loadChildren`, selection) **plus `useTreeKeyboard`** — the 3.2 file manager composes
   these; do NOT hand-roll a tree (library-first rule satisfied, no upstream gap).
-- **`@brand/editor` `CodeEditor`** props (from the `.d.ts`): `value/language`, `options`
+- **`@elabs-ai/components-editor` `CodeEditor`** props (from the `.d.ts`): `value/language`, `options`
   (raw Monaco construction options), `contextMenu: "brand" | "monaco" | "none"`, and
   **`onMount(editor, monacoApi)`** exposing the full `monaco` namespace + a ref to
   `IStandaloneCodeEditor`. Markers for WP 5.2 =
   `monacoApi.editor.setModelMarkers(editor.getModel(), "tool-validation", markers)`; clear on
-  unmount/re-validate. `@brand/editor/monaco-environment` is already imported once at
+  unmount/re-validate. `@elabs-ai/components-editor/monaco-environment` is already imported once at
   `apps/web/src/main.tsx:8` — do not import it again.
 - Skill inspector tab order today: overview · design · trace · files · versions · diff
   (`SkillInspector.tsx` ~line 366). Quality (4.3) inserts after trace.

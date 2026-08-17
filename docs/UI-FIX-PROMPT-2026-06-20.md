@@ -1,23 +1,25 @@
 # Coding-agent brief — rework the MCP Token Footprint UI
 
+> **Historical record.** This document reports what was observed on the date in its title, against the pre-v4 `@brand/*` design system, when the kit shipped six themes (`qlik-bright`, `qlik-dark`, `light`, `dark`, `blueprint`, `high-contrast`). The project now runs `@elabs-ai/components-*` v4, which ships exactly two — `light` (default) and `dark`. Theme names and counts below are preserved as observed and are NOT current. See [`.claude/rules/styling-and-tokens.md`](../.claude/rules/styling-and-tokens.md).
+
 _Hand this whole file to your coding agent. It is self-contained; companion detail lives in
 `UI-AUDIT-2026-06-20.md` (same repo)._
 
 ## Role & context
 
 You are working in **this repo** (`mcp-token-footprint`, a pnpm workspace; `apps/web` is the
-React 19 + Vite SPA built entirely on the **`@brand/*`** design system). **Read `CLAUDE.md` and
+React 19 + Vite SPA built entirely on the **`@elabs-ai/components-*`** design system). **Read `CLAUDE.md` and
 `.claude/rules/` first.** Hard constraints:
 
-- **brand-ui only.** Every visible element is a `@brand/*` component. **Semantic tokens only**
-  (no raw hex/rgb). Must read correctly in **qlik-bright and qlik-dark**.
+- **brand-ui only.** Every visible element is a `@elabs-ai/components-*` component. **Semantic tokens only**
+  (no raw hex/rgb). Must read correctly in **light and dark**.
 - **Never guess props.** Confirm each component's real API with `npx brand-ui docs <Component>`
   (or `npx brand-ui search <need>`) before using it. Available structural components include:
   `PageShell`, `SectionHeader`, `ButtonGroup` (+`ButtonGroupSeparator`), `Tabs`/`TabsList`/
   `TabsTrigger`/`TabsContent`, `SplitPanel` (`start`/`end`/`startSize`/`direction`),
   `ResizablePanelGroup`, `ScrollArea`, `Descriptions`/`DescriptionsItem`, `Dialog`,
   `AlertDialog`, `Tooltip`, `Badge`/`StatusBadge`, `StatePanel`, `ThemeSwitcher`,
-  `DataTable`/`SearchInput`/`FilterBar` (`@brand/data`), `MetricGrid`/`MetricCard` (`@brand/charts`).
+  `DataTable`/`SearchInput`/`FilterBar` (`@elabs-ai/components-data`), `MetricGrid`/`MetricCard` (`@elabs-ai/components-charts`).
 - **Use the installed skills:** `brand-ui` for composition + real props; **`brand-ui-audit`**
   for the final scored review. If the `qlabs-enterprise-ui` skill is available, load it — the
   references named below come from it; otherwise this brief is sufficient.
@@ -55,7 +57,7 @@ instruction that duplicates the detail and gives no signal to pick a tool.
 - Render the Tools tab as **`SplitPanel`** with the **detail getting the larger share**: list
   pane `startSize` ≈ `"380px"`, detail fills the rest. **Wrap each pane in its own `ScrollArea`**
   so they scroll independently.
-- **List = decision signal** (use `@brand/data` `DataTable` or a tight list): columns = tool
+- **List = decision signal** (use `@elabs-ai/components-data` `DataTable` or a tight list): columns = tool
   **name** (one line, `truncate` + `min-w-0`, full name in a `Tooltip`), **tokens**, a
   **detected-issues** `Badge`, and **share %**. **Remove** the full per-row instruction. Keep
   the filter box; add a count.

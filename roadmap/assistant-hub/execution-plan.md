@@ -137,7 +137,7 @@ the app's own TokenCounter** (budget tests fail the gate when a section bloats):
 `HUB_PROMPT_VERSION` stamped on every `assistant_message`; snapshot tests per mode; prompt text
 lives in versioned TS modules (no scattered string literals).
 
-### 1.9 `@brand/ai` component map (build vocabulary — the UI WPs compose these, they don't hand-roll)
+### 1.9 `@elabs-ai/components-ai` component map (build vocabulary — the UI WPs compose these, they don't hand-roll)
 
 | Feature | Components |
 |---|---|
@@ -150,7 +150,7 @@ lives in versioned TS modules (no scattered string literals).
 | Usage & context | `Context*` (input/output/cache/reasoning usage), `ContextPanel*` |
 | Branching | `MessageBranch*` (regenerate variants; `branch_created` events; sibling-variant selection) |
 
-Boundary rule from the playbook: `@brand/ai` is presentational — the app owns transport/runtime.
+Boundary rule from the playbook: `@elabs-ai/components-ai` is presentational — the app owns transport/runtime.
 ⚠ **The vendored agent kit (1.6.0) lags the live library** (owner recheck 2026-07-17): the live
 Storybook additionally ships `Charts/AutoChart` (LLM-tool-call-native `ChartSpec`, never-throws
 fallbacks — the R-GUI chart contract, wired to the chat stack via the `ai-chart` registry
@@ -160,7 +160,7 @@ provenance; WP3.5's review surface), `AI/Gallery`, `AI/InteractiveTerminal`, and
 verifies components against the running Storybook / `pnpm exec brand-ui`, never the tarball
 manifest alone.** Remaining upstream gaps (research doc 04 §5 — in-message forms with
 validation, model-emittable tables, part-grouping engine, message edit-in-place): compose from
-`@brand` primitives and raise upstream per `library-first.md`; WP2.6 owns the filing.
+`@elabs-ai/components-*` primitives and raise upstream per `library-first.md`; WP2.6 owns the filing.
 
 ### 1.10 Env (`config/env.ts` + `.env.example`)
 
@@ -182,7 +182,7 @@ tool/skill budget knobs: `HUB_TOOL_LOADING_DEFAULT` (`deferred`) ·
 MUST/SHOULD/[P2]) distilled from
 [`research/agentic-session-sota/`](../../research/agentic-session-sota/) docs 00–04 (04 adds
 declarative generative UI from Thesys OpenUI / CopilotKit / assistant-ui, incl. the §4
-system-prompt playbook WP0.3 implements and the `@brand/ai` upstream gap list WP2.6 files).
+system-prompt playbook WP0.3 implements and the `@elabs-ai/components-ai` upstream gap list WP2.6 files).
 **A WP's Acceptance includes its MUST-graded requirements per the annex's WP impact map**
 (the map governs; the `Req:` tags on WPs below are reminders). Highlights that sharpen §1:
 deferred-tool-loading + tool-search with live measured savings (R-MCP2), annotation-informed
@@ -361,12 +361,12 @@ Req: R-SES5, R-SES6 (branch UI), R-MCP8, R-SK3 (slash), R-UX10.
 Owns: NEW `apps/api/src/hub/genui/**` (catalog registry [zod] → prompt-catalog compiler +
 JSON-schema validator + bounded machine-hinted repair loop, `present`/`prompt_user` tool,
 two-tier action handling with dual-audience payloads, per-message UI-state persistence), NEW
-`apps/web/src/features/hub/genui/**` (allowlisted renderer over `@brand`-part-backed catalog
-components: **charts = `@brand/charts` `AutoChart` with `ChartSpec` adopted as the contract**
+`apps/web/src/features/hub/genui/**` (allowlisted renderer over `@elabs-ai/components-*`-part-backed catalog
+components: **charts = `@elabs-ai/components-charts` `AutoChart` with `ChartSpec` adopted as the contract**
 (+ the `ai-chart` registry-block composition), forms w/ declarative validation, tables,
 stat/KPI, media, layout; streaming-tolerant parent-first rendering; recovery card). Where a
 catalog component has no live-library counterpart (in-message forms, model-emittable tables —
-see research doc 04 §5, corrected against the live Storybook), **compose from `@brand`
+see research doc 04 §5, corrected against the live Storybook), **compose from `@elabs-ai/components-*`
 primitives and file the upstream gap** per `library-first.md`; never hand-roll.
 Req: **R-GUI1–8**.
 
@@ -408,7 +408,7 @@ spill target, and content-addressed workspace snapshots powering checkpoint rest
 Req: R-MCP7 (spill), R-MCP9, R-SES6.
 
 **WP3.5 — Artifact diff + review workflow** · Sonnet-class · L · deps: WP1.6
-Owns: review routes, version diff (@brand/editor diff view), review mode UI (anchored comments,
+Owns: review routes, version diff (@elabs-ai/components-editor diff view), review mode UI (anchored comments,
 accept/reject per suggestion → new version — rendered on **`AI/ChangeReview`**, the live
 library's hunk-by-hunk "AI-edit trust gate" with `ChangeProvenance` [author/model/run], not on
 `Commit*` improvisation), critic role wiring (review request spawns a critic agent per D-AH7
@@ -423,7 +423,7 @@ accept/reject → version lineage integrity.
 
 **WP4.1 — Usage telemetry** · Sonnet-class · M · deps: WP1.1 (+ missions data)
 Owns: `GET /api/hub/usage` aggregates, NEW web Usage view (spend by model/provider/mode/day,
-mission breakdowns — @brand/charts + the dataviz discipline), in-session `Context*` meters, and
+mission breakdowns — @elabs-ai/components-charts + the dataviz discipline), in-session `Context*` meters, and
 the **context inspector** (per-layer window breakdown with real token counts: prompt sections,
 eager vs deferred tool definitions, skill L1/L2/L3, memory, project, history — the flagship
 dogfood surface). Req: R-SES7, R-UX6 (plan-acceptance metric), R-UX8.

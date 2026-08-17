@@ -1,21 +1,48 @@
 # brand-ui — upstream issue list
 
-Every UI limitation this project hit that should be **standard functionality in `@brand/*`**, with the
-workaround we were forced to build locally. Compiled 2026-08-01 against **brand-ui v1.9.0** (vendored,
+> ## ⚠️ Point-in-time audit against v1.9.0 — partially superseded by v4.0.0
+>
+> This list was compiled on **2026-08-01 against brand-ui v1.9.0**, when the packages were still
+> private tarballs vendored under `vendor/brand/`. The project has since migrated to
+> **`@elabs-ai/components-*` v4.0.0** from public npm. Package names and theme slugs below have been
+> renamed for consistency (`@brand/x` → `@elabs-ai/components-x`, `qlik-bright`/`qlik-dark` →
+> `light`/`dark`), but **the findings themselves have not all been re-verified against v4.**
+>
+> **Verified CLOSED by v4** (re-measured during the migration, 2026-08-17):
+>
+> | Was | Now |
+> | --- | --- |
+> | Four role⇄foreground pairs failed WCAG AA, forcing an app-side contrast override | All five pairs clear AA in both themes (light 4.66–11.59, dark 4.60–11.59); the app override is deleted |
+> | `--success` byte-identical to `--primary`; `--ring` byte-identical to `--info` | Distinct in both themes |
+> | No `--primary-text` rung, so `--primary` had to serve as both fill and text | `--primary-text` ships (7.17:1 on light background) |
+> | `CardDescription` has no measure cap (gap #5 / D-IC9) | Ships a `measure` prop (`max-w-prose`); the local wrapper now just enables it |
+> | `CardDescription`'s `text-muted-foreground` merged away by the package's own tailwind-merge config | Fixed — the class survives |
+> | Three separate defenses needed to keep the `blueprint` theme unselectable | The `blueprint` theme and package are gone; `ThemeProvider` also gained an `allowedThemes` prop |
+>
+> **New in v4, and NOT a gap that was ever reported here — a regression to watch:** `--ring` now
+> aliases `--primary` (the brand lime), which on the light theme measures 1.30–1.42:1 and fails WCAG
+> 2.4.7 / 1.4.11. This is a documented, deliberate upstream tradeoff. This app overrides it; see
+> `.claude/rules/styling-and-tokens.md`.
+>
+> Every other item below should be treated as **v1.9.0-era and unconfirmed**. Re-check with
+> `pnpm exec brand-ui docs <Component>` before acting on it or re-filing it upstream.
+
+Every UI limitation this project hit that should be **standard functionality in `@elabs-ai/components-*`**, with the
+workaround we were forced to build locally. Compiled 2026-08-01 against **brand-ui v1.9.0** (then vendored under
 `vendor/brand/`) from: the app source (`apps/web/src/`), the recorded upstream-gap ledgers
 ([`roadmap/interface-craft/upstream-gaps.md`](../roadmap/interface-craft/upstream-gaps.md),
 [`roadmap/assistant-hub/brand-ui-upstream-prompt.md`](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)),
 the per-plan `STATUS.md` gap notes, and the two UI audits in [`/docs`](.).
 
 **Ground rule this project ran under:** `.claude/rules/brand-ui-only.md` — every visible element is a
-`@brand/*` component, no hand-rolling, no second kit. Every item below is therefore a place where that
+`@elabs-ai/components-*` component, no hand-rolling, no second kit. Every item below is therefore a place where that
 rule *couldn't* be honoured cleanly, or was honoured only by building a wrapper the library should own.
 
-**70 open issues** (originally 73; the 3 `@brand/flow` items were verified fixed upstream).
+**70 open issues** (originally 73; the 3 `@elabs-ai/components-flow` items were verified fixed upstream).
 
 **Rough scale of the workaround surface:** 40 local components in `apps/web/src/components/`
-(21 of them pure gap-fillers), a 900-line in-repo `@brand/ai` test double, a 352-line app-side token
-override sheet, and ~99 test files that mock a `@brand/*` package because it can't render.
+(21 of them pure gap-fillers), a 900-line in-repo `@elabs-ai/components-ai` test double, a 352-line app-side token
+override sheet, and ~99 test files that mock a `@elabs-ai/components-*` package because it can't render.
 
 Severity: **P0** = blocked or shipped a defect · **P1** = forced a durable local wrapper ·
 **P2** = friction/polish.
@@ -26,14 +53,14 @@ Severity: **P0** = blocked or shipped a defect · **P1** = forced a durable loca
 
 | § | Package | Issues |
 | --- | --- | --- |
-| [1](#1-brandai--the-ai-composer-and-message-surface) | `@brand/ai` | 14 |
-| [2](#2-branddata--datatable) | `@brand/data` | 7 |
-| [3](#3-brandcharts) | `@brand/charts` | 6 |
-| [4](#4-brandtokens--theming--type--density) | `@brand/tokens` | 7 |
-| [5](#5-brandui--app-chrome--layout-standards) | `@brand/ui` (chrome) | 9 |
-| [6](#6-brandui--component-api-seams) | `@brand/ui` (API seams) | 13 |
-| [7](#7-brandui--missing-form--input-primitives) | `@brand/ui` (forms) | 8 |
-| [8](#8-brandflow--all-fixed-upstream-do-not-file) | `@brand/flow` | ~~3~~ → **0** (fixed upstream) |
+| [1](#1-brandai--the-ai-composer-and-message-surface) | `@elabs-ai/components-ai` | 14 |
+| [2](#2-branddata--datatable) | `@elabs-ai/components-data` | 7 |
+| [3](#3-brandcharts) | `@elabs-ai/components-charts` | 6 |
+| [4](#4-brandtokens--theming--type--density) | `@elabs-ai/components-tokens` | 7 |
+| [5](#5-brandui--app-chrome--layout-standards) | `@elabs-ai/components-ui` (chrome) | 9 |
+| [6](#6-brandui--component-api-seams) | `@elabs-ai/components-ui` (API seams) | 13 |
+| [7](#7-brandui--missing-form--input-primitives) | `@elabs-ai/components-ui` (forms) | 8 |
+| [8](#8-brandflow--all-fixed-upstream-do-not-file) | `@elabs-ai/components-flow` | ~~3~~ → **0** (fixed upstream) |
 | [9](#9-build-packaging--testability) | build / DX | 6 |
 
 > **→ To hand this to a coding agent in the brand-ui repo, use
@@ -42,14 +69,14 @@ Severity: **P0** = blocked or shipped a defect · **P1** = forced a durable loca
 > that pack is the executable form.
 >
 > **Verification status (2026-08-01):** all code claims re-checked against v1.9.0 source. Three items
-> were found **stale and corrected**: the entire `@brand/flow` section (fixed upstream), TOK-4 (the
+> were found **stale and corrected**: the entire `@elabs-ai/components-flow` section (fixed upstream), TOK-4 (the
 > hierarchy defect was ours, not theirs), and DATA-7 (measured, not literal). AI-1 and DATA-5 were
 > sharpened. **Measured values** (contrast ratios, character/column counts) are from 2026-06/07 audits
 > and were **not** re-measured.
 
 ---
 
-# 1. `@brand/ai` — the AI composer and message surface
+# 1. `@elabs-ai/components-ai` — the AI composer and message surface
 
 This is the single worst-affected package. We shipped two production composers (the App-assistant dock
 and the full-page Assistant Hub) and had to bypass the library's own top-level wrapper for both.
@@ -91,7 +118,7 @@ It can't take the app's `IconButton` treatment (tooltip == `aria-label`), so the
 is the **one** icon-only control in the whole app still carrying a bare native `title` — invisible to
 assistive tech, ~1.5 s OS delay, unstyled.
 - **Evidence:** [`toolbar-reach/verification-report.md:158`](../roadmap/toolbar-reach/verification-report.md)
-- **Ask:** compose `PromptInputButton` from `@brand/ui` `Button` and give it a `label`-driven tooltip.
+- **Ask:** compose `PromptInputButton` from `@elabs-ai/components-ui` `Button` and give it a `label`-driven tooltip.
 
 ### AI-5 · `MessageBranch*` is uncontrolled — `defaultBranch` is read once, at mount — P1
 There is no controlled mode, so switching branches from outside the component is impossible; we remount
@@ -106,7 +133,7 @@ popup can only be done by reading the committed DOM back positionally after rend
 - **Ask:** spread consumer props last, or expose an explicit `id` prop per item.
 
 ### AI-7 · No mention-capable input — P1
-No `@`-mention/inline-chip editor exists anywhere in `@brand/*`, so we shipped an owner-approved
+No `@`-mention/inline-chip editor exists anywhere in `@elabs-ai/components-*`, so we shipped an owner-approved
 `contentEditable` **`brand-ui-allow` escape hatch** — the only one of its kind in the app.
 - **Evidence:** [`MentionEditor.tsx:523`](../apps/web/src/features/hub/MentionEditor.tsx#L523) (523 lines + a 190-line test)
 - **Ask:** a `MentionInput` / `PromptInputMention` primitive with a chip model and serialization.
@@ -118,7 +145,7 @@ An assistant that asks structured questions needs a form inside a message bubble
 - **Spec:** [`brand-ui-upstream-prompt.md` §A](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
 
 ### AI-9 · No model-emittable in-message `Table` — P1
-`@brand/data`'s `DataTable` is app chrome, not message content. There is no lightweight, never-throws,
+`@elabs-ai/components-data`'s `DataTable` is app chrome, not message content. There is no lightweight, never-throws,
 streaming-tolerant table for LLM output.
 - **Ask:** `MessageTable` + `TableSpec` (column formats, graceful truncation notice, never throws).
 - **Spec:** [`brand-ui-upstream-prompt.md` §B](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
@@ -140,7 +167,7 @@ streaming re-renders) is re-implemented per consumer.
 
 ---
 
-# 2. `@brand/data` — DataTable
+# 2. `@elabs-ai/components-data` — DataTable
 
 `DataTable` owns its entire `<table>`/`<thead>`/`<th>`/`<td>`/`<tr>` render and exposes almost no seams
 into it. Four of the six items below are the *same root cause*.
@@ -184,22 +211,22 @@ renders it (`:682`). The diagnosis exists upstream; the fix doesn't.
 
 ### DATA-6 · No row expansion — P1
 The unified Runs feed needs suite rows that expand to member runs. `DataTable` can't, so that entire
-view was rebuilt on raw `@brand/ui` `Table*` + `@brand/data` `SearchInput`/`FacetFilter` — losing
+view was rebuilt on raw `@elabs-ai/components-ui` `Table*` + `@elabs-ai/components-data` `SearchInput`/`FacetFilter` — losing
 virtualization and every `DataTable` affordance.
 - **Evidence:** [`testing-ia/STATUS.md:138`](../roadmap/testing-ia/STATUS.md)
 
-### DATA-7 · `FacetFilter` and `@brand/ui` form controls don't share a control height — P2
+### DATA-7 · `FacetFilter` and `@elabs-ai/components-ui` form controls don't share a control height — P2
 A guaranteed height/baseline mismatch on **every** mixed toolbar row. Residual of audit finding C-1
 ("three control heights, three top edges, 11 px of scatter, in the app's most-seen row"). ⚠️ **The
 `h-26`/`h-30` figures were *rendered* measurements, not literal classes — a grep of v1.9.0 source finds
 neither.** The misalignment is real; the cause may be padding/border/line-height. Re-measure before filing.
 - **Ask:** a shared, density-aware control-height token consumed by both packages.
 - **Evidence:** [`toolbar-reach/verification-report.md:62-64`](../roadmap/toolbar-reach/verification-report.md)
-- **Ask:** one shared control-height token across `@brand/ui` and `@brand/data`.
+- **Ask:** one shared control-height token across `@elabs-ai/components-ui` and `@elabs-ai/components-data`.
 
 ---
 
-# 3. `@brand/charts`
+# 3. `@elabs-ai/components-charts`
 
 ### CHART-1 · No per-datapoint or per-legend-item `onClick` — **charts cannot drill down** — P0
 Bar/Line/Area expose hover tooltips only. Every analytics chart in this app is a dead end as a click
@@ -233,24 +260,24 @@ Gantt was dropped.
 - **Ask:** a time-unit-agnostic scale (or at least sub-day units).
 
 ### CHART-5 · Charts cannot render under jsdom — P0 for correctness
-`@visx/*` doesn't resolve/render in jsdom, so **33 test files mock `@brand/charts` as a no-op**. The
+`@visx/*` doesn't resolve/render in jsdom, so **33 test files mock `@elabs-ai/components-charts` as a no-op**. The
 consequence is that chart-prop bugs pass the quality gate — we shipped a missing-`xDataKey` crash that
 every test was blind to.
-- **Evidence:** 33 files with `vi.mock("@brand/charts")`; `apps/web/src/features/servers/ServersView.vendor-assistant.test.tsx:28`
-- **Ask:** ship an official `@brand/charts/test` double, or an SSR-safe render path.
+- **Evidence:** 33 files with `vi.mock("@elabs-ai/components-charts")`; `apps/web/src/features/servers/ServersView.vendor-assistant.test.tsx:28`
+- **Ask:** ship an official `@elabs-ai/components-charts/test` double, or an SSR-safe render path.
 
 ### CHART-6 · `@visx/*` declares React 16–18 peers against a React-19 library — P2
 Every `pnpm install` prints peer warnings. Cosmetic but permanent.
 
 ---
 
-# 4. `@brand/tokens` — theming, type & density
+# 4. `@elabs-ai/components-tokens` — theming, type & density
 
 The app carries a **352-line `app.css`** that is overwhelmingly compensation for this package.
 
 ### TOK-1 · Role ⇄ foreground fill pairs fail WCAG AA — P0
-Five pairs measured below 4.5:1 at their rendered 11–13 px sizes: `qlik-bright` `--primary` 4.31,
-`--success` 4.31, `--info` 3.76; `qlik-dark` `--destructive` 3.02. Each theme was clearly tuned
+Five pairs measured below 4.5:1 at their rendered 11–13 px sizes: `light` `--primary` 4.31,
+`--success` 4.31, `--info` 3.76; `dark` `--destructive` 3.02. Each theme was clearly tuned
 independently with no shared on-fill check — dark had already solved four of five and simply never got
 the same treatment for `--destructive-foreground`.
 - **Evidence:** [`upstream-gaps.md §1`](../roadmap/interface-craft/upstream-gaps.md)
@@ -264,7 +291,7 @@ from an "Info"/"Running" chip; an action is indistinguishable from a success, by
 ### TOK-3 · **No `--shadow-*` tokens at all** — every Tailwind `shadow-*` utility is a transparent no-op — P0
 `getComputedStyle(:root).getPropertyValue('--shadow-2xl')` → `""`. In Tailwind v4 that resolves to
 `--tw-shadow: 0 0 #0000`, so `shadow-sm`/`-md`/`-lg`/`-xl`/`-2xl` **add a class and paint nothing**.
-Combined with near-identical surface fills (`qlik-bright` `--card` L1.0 vs `--background` L0.985 — a 1.5%
+Combined with near-identical surface fills (`light` `--card` L1.0 vs `--background` L0.985 — a 1.5%
 gap), a "card" reads as a flat outlined box. Discovered as a live defect: the Hub composer's card
 was invisible.
 - **Workaround:** a bespoke per-theme `--composer-elevation` token with a hand-tuned two-layer
@@ -291,19 +318,19 @@ density-aware (07 §E.4): compact tables want tighter spacing, same readable tex
 land at 36–40 px. — [`app.css:88`](../apps/web/src/styles/app.css#L88)
 
 ### TOK-6 · Inter ships with no font-smoothing rule — P2
-`@brand` ships the Inter `@font-face` but never sets `-webkit-font-smoothing`, so on WebKit/Blink the UI
+`@elabs-ai/components-*` ships the Inter `@font-face` but never sets `-webkit-font-smoothing`, so on WebKit/Blink the UI
 subpixel-renders noticeably bolder than designed. Every consumer must add the same global rule.
 - **Evidence:** [`app.css:22-27`](../apps/web/src/styles/app.css#L22-L27)
 
 ### TOK-7 · No way to restrict the exposed theme set — P2
-`THEMES`/`THEME_META` are all-or-nothing. To expose only `qlik-bright` + `qlik-dark` we filter the
+`THEMES`/`THEME_META` are all-or-nothing. To expose only `light` + `dark` we filter the
 switcher, guard `localStorage` pre-mount in `main.tsx`, **and** run a `useEffect` safety net in Settings
 to coerce a persisted `blueprint` back. Three defenses for one config need.
 - **Ask:** an `allowedThemes` option on `ThemeProvider`.
 
 ---
 
-# 5. `@brand/ui` — app chrome & layout standards
+# 5. `@elabs-ai/components-ui` — app chrome & layout standards
 
 > This section is the "**missing standardized toolbars**" item. It is the largest structural gap: the
 > library ships shell furniture but no *grammar* for what goes in a view, so every view invented its own
@@ -322,11 +349,11 @@ on the left, actions on the right*. The consequences we measured across ~40 rout
   (~200 lines of contract + docblock) that every view must now mount, plus a
   [`ResultCount`](../apps/web/src/components/ResultCount.tsx) primitive, plus a retired predecessor
   (`TableToolbar`) that had to be deleted because *two contracts for one row was itself the bug*.
-- **Ask:** a `ViewToolbar` in `@brand/ui` with `info` / status / filter-chip / results / actions slots,
+- **Ask:** a `ViewToolbar` in `@elabs-ai/components-ui` with `info` / status / filter-chip / results / actions slots,
   one height, and one filter-chip component.
 
 ### CHROME-2 · `PageShell` has no toolbar header variant and no scroll contract — P1
-`@brand/ui`'s `PageShell` has no `headerVariant="toolbar"` slot, so we maintain a **local `PageShell`**
+`@elabs-ai/components-ui`'s `PageShell` has no `headerVariant="toolbar"` slot, so we maintain a **local `PageShell`**
 that every feature view imports instead. Two views accidentally imported the real one and silently lost
 their toolbar — exactly the kind of drift a library should make impossible.
 - **Evidence:** [`ux-overhaul/STATUS.md:284-290`](../roadmap/ux-overhaul/STATUS.md), [`components/PageShell.tsx`](../apps/web/src/components/PageShell.tsx)
@@ -375,14 +402,14 @@ single column, so narrow-width behaviour is hand-built per surface.
 ### CHROME-9 · `Toaster` spreads `...props` **after** its own `toastOptions` — P1
 Passing `toastOptions` therefore **replaces the library's wholesale**, so every consumer must re-declare
 `description`/`action`/`cancel` from scratch. Compounding it: sonner's `richColors` palette is hardcoded
-and theme-agnostic — its error plate measured **4.35:1 in `qlik-bright` (below AA)** — so `richColors`
+and theme-agnostic — its error plate measured **4.35:1 in `light` (below AA)** — so `richColors`
 had to be dropped and all four toast types re-mapped onto semantic tokens by hand.
 - **Evidence:** [`main.tsx:70-100`](../apps/web/src/main.tsx#L70-L100)
 - **Ask:** merge `toastOptions` instead of replacing, and make the type plates token-driven.
 
 ---
 
-# 6. `@brand/ui` — component API seams
+# 6. `@elabs-ai/components-ui` — component API seams
 
 A recurring shape: the component renders the right thing but exposes no seam to fix its semantics.
 
@@ -469,7 +496,7 @@ to AT), ~89 `aria-label`-only with **nothing on hover** (audit D-7).
 
 ---
 
-# 7. `@brand/ui` — missing form & input primitives
+# 7. `@elabs-ai/components-ui` — missing form & input primitives
 
 The library covers `Input`/`Select`/`Checkbox`/`Switch`/`Textarea` and stops. Everything a real
 configuration UI needs above that we built. All six live in
@@ -485,7 +512,7 @@ configuration UI needs above that we built. All six live in
 | **FORM-6** | `SegmentedField` — label + segmented control with **sticky** selection (Radix `ToggleGroup` emits `""` when you click the active segment, silently clearing it) | dropdowns for ordered 3-value scales | [`SegmentedField.tsx`](../apps/web/src/components/form/SegmentedField.tsx) |
 
 ### FORM-7 · No free-text-plus-suggestions input — P1
-No `@brand` equivalent of a `<datalist>`-backed input (a valid custom value *plus* a suggestion roster).
+No `@elabs-ai/components-*` equivalent of a `<datalist>`-backed input (a valid custom value *plus* a suggestion roster).
 Forced a `brand-ui-allow` native `<datalist>`.
 - **Evidence:** [`RuleEditorDialog.tsx:606-618`](../apps/web/src/features/watch/RuleEditorDialog.tsx#L606-L618)
 
@@ -498,7 +525,7 @@ is left to consumers. — [`FieldRow.tsx`](../apps/web/src/components/FieldRow.t
 
 ---
 
-# 8. `@brand/flow` — ✅ ALL FIXED UPSTREAM (do not file)
+# 8. `@elabs-ai/components-flow` — ✅ ALL FIXED UPSTREAM (do not file)
 
 > **Re-verified against v1.9.0 source on 2026-08-01: all three prior gaps are closed.** They were
 > recorded against v1.6.0 and fixed in the interim. **Our app still carries the workarounds — they are
@@ -518,21 +545,21 @@ components.
 
 # 9. Build, packaging & testability
 
-### DX-1 · **99 test files mock a `@brand/*` package** — P0
-33 mock `@brand/charts`; 66 mock `@brand/ai` / `@brand/flow` / `@brand/editor`. We maintain a
-**900-line hand-written `@brand/ai` test double** in-repo
+### DX-1 · **99 test files mock a `@elabs-ai/components-*` package** — P0
+33 mock `@elabs-ai/components-charts`; 66 mock `@elabs-ai/components-ai` / `@elabs-ai/components-flow` / `@elabs-ai/components-editor`. We maintain a
+**900-line hand-written `@elabs-ai/components-ai` test double** in-repo
 ([`brand-ai-mock.tsx`](../apps/web/src/features/hub/test-support/brand-ai-mock.tsx)) that has to
 faithfully reproduce library internals — including its *uncontrolled* `MessageBranch` semantics — or
 tests lie. This mock is a permanent maintenance liability that will silently drift on every version bump.
-- **Ask:** ship official test doubles (`@brand/ai/test`, `@brand/charts/test`) as part of the package.
+- **Ask:** ship official test doubles (`@elabs-ai/components-ai/test`, `@elabs-ai/components-charts/test`) as part of the package.
 
 ### DX-2 · Components need undocumented jsdom polyfills — P1
 Radix `Dialog` reads `matchMedia` + `ResizeObserver`; cmdk touches `ResizeObserver` +
 `Element.scrollIntoView`. None ship a documented test setup, so every consumer rediscovers them.
 - **Evidence:** [`vitest.setup.ts:5-17`](../apps/web/vitest.setup.ts#L5-L17)
-- **Ask:** publish a `@brand/ui/test-setup` entry.
+- **Ask:** publish a `@elabs-ai/components-ui/test-setup` entry.
 
-### DX-3 · `@brand/editor`'s `?worker` imports break Vite's dev prebundle — P1
+### DX-3 · `@elabs-ai/components-editor`'s `?worker` imports break Vite's dev prebundle — P1
 `pnpm dev` fails outright; we verify visual work through Docker or `vite preview` of a production build
 instead. Losing HMR on a UI project is a significant tax.
 
@@ -543,12 +570,12 @@ machine, and the parallel workspace build gets SIGTERMed under load (we run
 - **Ask:** finer-grained entry points so a consumer that only wants `CodeEditor` doesn't pull Milkdown + Mermaid.
 
 ### DX-5 · No published packages — P2
-`@brand/*` is consumed as **release tarballs in `vendor/`** wired via `file:`. Every upgrade is a manual
+`@elabs-ai/components-*` is consumed as **release tarballs in `vendor/`** wired via `file:`. Every upgrade is a manual
 `gh release download` + re-pin + reinstall, and there is no semver range or changelog diff to review.
 
 ### DX-6 · Vendored source is the only reliable API reference — P2
 Several findings above were only resolvable by reading `vendor/brand/*.tgz` contents or
-`node_modules/@brand/*/src/`. `.d.ts` + manifest describe the surface but not behaviour (hardcoded
+`node_modules/@elabs-ai/components-*/src/`. `.d.ts` + manifest describe the surface but not behaviour (hardcoded
 children, prop-spread order, internal DOM structure) — which is exactly where these bugs live.
 
 ---
@@ -558,9 +585,9 @@ children, prop-spread order, internal DOM structure) — which is exactly where 
 Recorded so they aren't re-filed. From
 [`interface-craft/conventions.md §6`](../roadmap/interface-craft/conventions.md): raising `active:scale`,
 icon-size normalization, concentric radius, `text-base sm:text-sm`, logical-property conversion. Also
-**not** gaps: `@brand/ui` `Tree` for file explorers (correct, use it), `Charts/AutoChart` and
+**not** gaps: `@elabs-ai/components-ui` `Tree` for file explorers (correct, use it), `Charts/AutoChart` and
 `AI/ChangeReview` (the two components explicitly cited as the *quality bar* the AI-8…AI-14 asks should
-match), and `@brand/tokens`' `-text` on-tint tokens (verified to exist and pass).
+match), and `@elabs-ai/components-tokens`' `-text` on-tint tokens (verified to exist and pass).
 
 ---
 

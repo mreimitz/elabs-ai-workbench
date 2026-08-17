@@ -66,7 +66,7 @@ layout-shaped placeholders, streaming builds up, errors only at terminal states
 `category`/`difficulty`/`tags` × scenario; scatter points `{testId, scenarioId, meanScore,
 meanTokens, meanCostUsd, reps}`), `GET /api/reports/suite-run/:id/{json,markdown}` (reports
 family extension). Web: analytics tabs on the suite-run console — breakdown charts
-(`@brand/charts`), the **quality×cost scatter** (X tokens|cost toggle, Y = grade dimension
+(`@elabs-ai/components-charts`), the **quality×cost scatter** (X tokens|cost toggle, Y = grade dimension
 selector incl. process graders, color by scenario, point → cell drill-through), CSV-free honest
 empty states when no grades exist.
 

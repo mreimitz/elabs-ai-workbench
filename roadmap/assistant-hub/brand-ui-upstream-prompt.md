@@ -20,10 +20,10 @@ parts — "generative UI") needs a small set of **model-emittable, message-body 
 the library does not have yet. The design bar is set by two components you already ship — treat
 them as the canonical precedents and match their quality and API style:
 
-- **`Charts/AutoChart`** (`@brand/charts`): spec-driven ("The serializable chart specification
+- **`Charts/AutoChart`** (`@elabs-ai/components-charts`): spec-driven ("The serializable chart specification
   produced by an LLM tool-call"), **never throws** (unsupported/empty → `ChartFallback`),
   intentionally bare (no frame; consumers wrap), typed formatting hints.
-- **`AI/ChangeReview`** (`@brand/ai`): compound component with lifted state, controlled AND
+- **`AI/ChangeReview`** (`@elabs-ai/components-ai`): compound component with lifted state, controlled AND
   uncontrolled modes, provenance object, per-part override renderers.
 
 ## Step 0 — Dedupe gate (mandatory, before any component work)
@@ -46,7 +46,7 @@ Record the dedupe verdict per item in your report.
    (`…Fallback`) with a short reason — mirror `ChartFallback` semantics.
 4. **Streaming-tolerant.** Props may arrive as partial parses mid-stream; render progressively
    (missing fields → skeleton/omitted, never a crash, never `null` holes in lists).
-5. **Tokens only.** No raw colors/styles; everything from `@brand/tokens`; correct in ALL
+5. **Tokens only.** No raw colors/styles; everything from `@elabs-ai/components-tokens`; correct in ALL
    shipped themes. Specs must not carry style-bearing props (the model never chooses look).
 6. **Compound + lifted state, controlled and uncontrolled** — the `ChangeReview` pattern.
 7. **A11y is part of Acceptance:** keyboard operability, labels/roles, focus management,
@@ -55,7 +55,7 @@ Record the dedupe verdict per item in your report.
    empty · fallback · controlled · dark theme), docs page, exported types + zod schema, tests
    per repo convention, manifest regeneration. Honest reporting: state what you did NOT verify.
 9. **Package placement:** lightweight message-body parts belong in `packages/ai`. If a
-   component needs a sibling package (`@brand/data`, `@brand/charts`), follow the `ai-chart`
+   component needs a sibling package (`@elabs-ai/components-data`, `@elabs-ai/components-charts`), follow the `ai-chart`
    precedent: primitive in its home package + the cross-package composition as a **registry
    block** (packages must not cross-import siblings).
 
@@ -80,7 +80,7 @@ The model emits a form inside a chat message; the user fills it; the app gets st
   `formState = { formName, values }`; `submitLabel`; `disabled` / `submitted` /
   `submitting` states (a submitted form renders inert with its values visible — messages are a
   historical record); Enter submits from single-line fields; never nest a form in a form.
-- Compose existing `@brand/ui` inputs; do not re-invent field primitives.
+- Compose existing `@elabs-ai/components-ui` inputs; do not re-invent field primitives.
 
 ### B — `MessageTable` (model-emittable data table) · HIGH
 
@@ -93,7 +93,7 @@ The model emits a form inside a chat message; the user fills it; the app gets st
   reference-harness rule of truncating huge tables gracefully); optional per-cell render
   override for consumer composition (like `ChangeReview.renderHunk`).
 - Keep it lightweight in `packages/ai` — this is message content, not the app-chrome
-  `@brand/data` `DataTable`. If reuse of `@brand/data` internals is compelling, do it as a
+  `@elabs-ai/components-data` `DataTable`. If reuse of `@elabs-ai/components-data` internals is compelling, do it as a
   registry block instead (rule 9).
 
 ### C — Part-grouping engine (`GroupedParts` + `groupPartByType`) · MEDIUM

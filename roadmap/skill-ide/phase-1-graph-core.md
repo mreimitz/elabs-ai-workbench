@@ -74,7 +74,7 @@ kind). Extend it, don't replace it:
   (previous band's max row + one `ROW_HEIGHT` gap). The `entry_point` node renders at the band
   head (row 0, main column). Same graph → same positions must keep holding.
 - **Lane labels:** a non-interactive label element per band (flow label + command token), not a
-  graph node — if `@brand/flow` lacks a group/background primitive, absolutely position a styled
+  graph node — if `@elabs-ai/components-flow` lacks a group/background primitive, absolutely position a styled
   div behind the canvas layer; do not invent a new node kind for it.
 - **Flow picker:** toolbar `Select` — "All flows" + one entry per flow. Filtering hides
   nodes/edges of other flows; a **cross-flow edge renders only when both endpoints are

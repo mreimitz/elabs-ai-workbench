@@ -16,7 +16,7 @@ citations, session modes from quick chat to fully orchestrated multi-agent **mis
 (propose → approve → run → synthesize, with live mission control), a versioned **artifact canvas**
 with a review workflow, a real per-session **file workspace**, uploads, **memory** (profile,
 preferences, projects with pinned context), and enterprise **cost telemetry + audit** — all built
-on the **full `@brand/ai` component set** and the app's existing multi-provider inference,
+on the **full `@elabs-ai/components-ai` component set** and the app's existing multi-provider inference,
 MCP-bridge, skills, token-metering and pricing infrastructure.
 
 It is deliberately **not** part of the test & benchmark areas where runs live, and it is **not**
@@ -46,7 +46,7 @@ Two sentences the whole workstream must honor:
   (`queued`/`waiting_input`/`stopping`), `stopReasonCode`, capability manifest, `SessionClock`
   (stall/wait budgets), cursor-resumable SSE. Its ledger shows all WPs ticked — the shared modules
   exist **today**; the Hub adopts them instead of inventing a contract.
-- **`@brand/ai` ships purpose-built components** for nearly every planned feature (see the
+- **`@elabs-ai/components-ai` ships purpose-built components** for nearly every planned feature (see the
   component map in [`execution-plan.md`](./execution-plan.md) §1.9): `InlineCitation*`/`Sources`,
   `Plan*`, `ApprovalCard*`, `Agent*`/`AgentTimeline`, `Queue*`, `Node`/`Edge`/`Canvas`,
   `Artifact*`, `FileTree`/`ProducedAssetTree`, `MessageBranch`, `ModelSelector`, `Context*`,
@@ -101,7 +101,7 @@ Five waves — full WP detail, file ownership, dependency graph and the orchestr
 - **Wave 2 — Harness depth:** role library + Agents view, saved crews + advanced topologies
   (pipeline/debate/best-of-N with a mission graph), autonomy dial + hard budgets + steering,
   skills-for-hub, composer power features (slash commands, regenerate/branch, voice input),
-  **declarative generative UI** (model-composed forms/tables/charts from a curated `@brand`-part
+  **declarative generative UI** (model-composed forms/tables/charts from a curated `@elabs-ai/components-*`-part
   catalog — R-GUI1–8, WP2.6) → review.
 - **Wave 3 — Knowledge, files & review:** projects + pinned context, memory + Memory view,
   summaries/compaction, uploads + workspace + file tools, artifact diff + review workflow → review.
@@ -155,7 +155,7 @@ Five waves — full WP detail, file ownership, dependency graph and the orchestr
 - Research evidence: [`research/agentic-session-sota/`](../../research/agentic-session-sota/)
   (00 Fable-session anatomy · 01 MCP tool handling · 02 skills · 03 interaction & feedback ·
   04 generative UI / Agent2UI — Thesys OpenUI · CopilotKit · assistant-ui, with the
-  system-prompt playbook and the `@brand/ai` gap list)
+  system-prompt playbook and the `@elabs-ai/components-ai` gap list)
 - Context this builds on: [`roadmap/unified-sessions/`](../unified-sessions/) (session contract),
   [`roadmap/claude-subscription/`](../claude-subscription/) (subscription executor patterns),
   [`roadmap/assistant/`](../assistant/) (the dock — what this is NOT),

@@ -64,8 +64,8 @@ single streamed sentence. Gate green.
 **Steps:** find the cell background/text styling (likely raw opacity tints). Define paired
 fg/bg per state using existing semantic tokens (e.g. text stays `text-foreground` on soft tinted
 backgrounds, or use the tokens' state colors at proper strength) — NO raw hex (check-tokens hook).
-If `@brand/tokens` lacks a usable on-state pair, choose token-based tints that pass ~4.5:1 in both
+If `@elabs-ai/components-tokens` lacks a usable on-state pair, choose token-based tints that pass ~4.5:1 in both
 themes and file the upstream gap in your report (library-first rule).
-**Acceptance:** score + "N issues" legible on every cell color in qlik-bright AND qlik-dark
+**Acceptance:** score + "N issues" legible on every cell color in light AND dark
 (screenshots of both, Server×Model and Tool×Model views). Gate green.
 **Size:** S–M.

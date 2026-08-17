@@ -65,7 +65,7 @@ diff (satisfies R6).
 ### Per-file line diff
 
 For a **modified text file**, the actual line-level diff is rendered by **Monaco `DiffEditor`**
-(`@brand/editor`) in the browser, given `original` (A's blob text) and `modified` (B's blob text).
+(`@elabs-ai/components-editor`) in the browser, given `original` (A's blob text) and `modified` (B's blob text).
 The API just serves both file contents (`GET …/diff/file?from&to&path`). No server-side diff library
 is needed for the *visual* diff.
 

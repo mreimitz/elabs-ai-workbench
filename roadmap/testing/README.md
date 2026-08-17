@@ -9,7 +9,7 @@ human) to implement a single WP without needing the rest of the conversation.
 
 1. [`../09-testing.md`](../09-testing.md) — **scope**: the 16 locked product decisions.
 2. [`../10-testing-ui-concept.md`](../10-testing-ui-concept.md) — **UI concept**: wireframes
-   + `@brand` component mapping. Phase 3 WPs reference its sections directly.
+   + `@elabs-ai/components-*` component mapping. Phase 3 WPs reference its sections directly.
 3. [`conventions.md`](./conventions.md) — **shared rules** every WP assumes (repo patterns,
    contract-first flow, security boundary, definition of done, how to work a WP). Each WP file stays
    focused by relying on this.
@@ -30,7 +30,7 @@ Each WP is `WP-<phase>.<n>`. Size: S ≈ ≤1 day, M ≈ 2–4 days, L ≈ ≥1 
 ### Phase 0 — Foundations (`phase-0-foundations/`)
 | WP | Goal | Size | Depends |
 | -- | ---- | ---- | ------- |
-| [0.1](./phase-0-foundations/WP-0.1-vendor-brand-charts.md) | Vendor `@brand/charts` (owner-confirmed) | S | — |
+| [0.1](./phase-0-foundations/WP-0.1-vendor-brand-charts.md) | Vendor `@elabs-ai/components-charts` (owner-confirmed) | S | — |
 | [0.2](./phase-0-foundations/WP-0.2-backend-dependencies.md) | Add AI SDK + provider adapters | S | — |
 | [0.3](./phase-0-foundations/WP-0.3-shared-contract.md) | Shared types + zod + constants | M | — |
 | [0.4](./phase-0-foundations/WP-0.4-database-schema.md) | New SQLite tables + row mappers | M | 0.3 |

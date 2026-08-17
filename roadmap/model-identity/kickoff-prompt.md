@@ -1,7 +1,7 @@
 # Continuation prompt — `model-identity`
 
 Paste everything below the line into a fresh session started in
-`/Users/czq/Documents/DEV/qlabs/qlabs-ai-benchmark/mcp-token-footprint`.
+`/Users/czq/Documents/DEV/elabs/elabs-ai-workbench`.
 
 ---
 
@@ -135,7 +135,7 @@ directly. Either way:
 
 - **Contract-first**: wire changes go in `packages/shared` (types + zod) first, then api, then web.
   **Additive only** — `model` stays required and byte-identical; `/api` stays versionless.
-- **brand-ui only**: every visible element is a `@brand/*` component; no raw interactive HTML; no raw
+- **brand-ui only**: every visible element is a `@elabs-ai/components-*` component; no raw interactive HTML; no raw
   colors; `className` is layout-only. Verify props against `vendor/brand-ui-agent-kit/` or the `.d.ts`
   — never guess. New UI must read in **both** themes.
 - **Frozen**: never touch `ASSISTANT_ENTITY_KINDS` / `SCOPE_WRITE_TOOLS` / `deriveAssistantScope`

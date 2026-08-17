@@ -234,7 +234,7 @@
 <body>
 <div class="wrap">
   <h1>Skill Registry &amp; Inspector — UI mockups</h1>
-  <p class="lead">Static mockups of the planned screens, laid out to match the app's <b>@brand/*</b> shell (left nav, secondary rail, tabbed inspector) and the two exposed themes. These visualize <code>07-ui-plan.md</code> and <code>08-scenario-attachment.md</code> — they are illustrative HTML, not the real components.</p>
+  <p class="lead">Static mockups of the planned screens, laid out to match the app's <b>@elabs-ai/components-*</b> shell (left nav, secondary rail, tabbed inspector) and the two exposed themes. These visualize <code>07-ui-plan.md</code> and <code>08-scenario-attachment.md</code> — they are illustrative HTML, not the real components.</p>
   <div class="legend">
     <span><b>Registry</b> = new "Skills" side-menu peer to MCP Servers</span>
     <span><b>Inspector tabs</b> = Overview · Files · Versions · Diff</span>
@@ -245,7 +245,7 @@
   <!-- ============================================================ 1 -->
   <div class="caption"><span class="n">1</span><div><h2>Skills registry + Inspector (Overview tab)</h2><p>New "Skills" nav item · searchable SkillRail · rendered SKILL.md auto-surfaced · token-footprint metrics · security strip.</p></div></div>
   <div class="frame">
-    <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">localhost:8080/#skills</span><span class="spacer"></span><span class="themechip">theme · qlik-bright</span></div>
+    <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">localhost:8080/#skills</span><span class="spacer"></span><span class="themechip">theme · light</span></div>
     <div class="shell">
       <!-- sidebar -->
       <div class="sidebar">
@@ -385,7 +385,7 @@ with pdfplumber.open("doc.pdf") as pdf:
   </div>
 
   <!-- ============================================================ 3 -->
-  <div class="caption"><span class="n">3</span><div><h2>Inspector — Files tab (full folder explorer)</h2><p><b>FileTree</b> (@brand/ai) over the whole version tree + read-only code viewer. Every subfolder inspectable; per-file token counts; binary files flagged.</p></div></div>
+  <div class="caption"><span class="n">3</span><div><h2>Inspector — Files tab (full folder explorer)</h2><p><b>FileTree</b> (@elabs-ai/components-ai) over the whole version tree + read-only code viewer. Every subfolder inspectable; per-file token counts; binary files flagged.</p></div></div>
   <div class="frame">
     <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">localhost:8080/#skills/pdf-processing/files</span><span class="spacer"></span><span class="themechip">Files · v5</span></div>
     <div class="shell one">
@@ -554,9 +554,9 @@ with pdfplumber.open("doc.pdf") as pdf:
   </div>
 
   <!-- ============================================================ 7 -->
-  <div class="caption"><span class="n">7</span><div><h2>Two-theme support — Diff tab in qlik-dark</h2><p>Every surface reads correctly in both exposed themes (semantic tokens only). Same Diff screen, dark theme.</p></div></div>
+  <div class="caption"><span class="n">7</span><div><h2>Two-theme support — Diff tab in dark</h2><p>Every surface reads correctly in both exposed themes (semantic tokens only). Same Diff screen, dark theme.</p></div></div>
   <div class="frame theme-dark" style="background:var(--card)">
-    <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">localhost:8080/#skills/pdf-processing/diff</span><span class="spacer"></span><span class="themechip">theme · qlik-dark</span></div>
+    <div class="titlebar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">localhost:8080/#skills/pdf-processing/diff</span><span class="spacer"></span><span class="themechip">theme · dark</span></div>
     <div class="shell one">
       <div class="main">
         <div class="mainhead"><div><div class="title">What changed</div><div class="sub"><span class="mono">v4</span> → <span class="mono">v5</span></div></div><span class="spacer"></span><span class="select">from <b>v4</b> ▾</span><span class="select">to <b>v5</b> ▾</span></div>
@@ -593,7 +593,7 @@ with pdfplumber.open("doc.pdf") as pdf:
     </div>
   </div>
 
-  <p class="foot-note" style="margin-top:30px">Illustrative mockups for <code>research/skill-registry/</code>. Real implementation composes these from <b>@brand/*</b> components (Sidebar, Tabs, DataTable, FileTree, DiffEditor, MetricCard, Badge, Dialog, Wizard) with semantic oklch tokens — no hand-rolled UI.</p>
+  <p class="foot-note" style="margin-top:30px">Illustrative mockups for <code>research/skill-registry/</code>. Real implementation composes these from <b>@elabs-ai/components-*</b> components (Sidebar, Tabs, DataTable, FileTree, DiffEditor, MetricCard, Badge, Dialog, Wizard) with semantic oklch tokens — no hand-rolled UI.</p>
 </div>
 </body>
 </html>

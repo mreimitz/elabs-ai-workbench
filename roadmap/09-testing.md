@@ -198,15 +198,15 @@ GET                 /api/runs/compare?ids=…   # same test across scenarios (th
 
 A new **Testing** area in the `AppShell` nav (new `ViewKey`s in `App.tsx` — no router):
 **Scenarios**, **Tests**, **Runs** (history), the **Run console** (the locked two-pane view), and
-**Compare** (the test × scenario matrix). All composed from `@brand/*` per `brand-ui-only.md`.
+**Compare** (the test × scenario matrix). All composed from `@elabs-ai/components-*` per `brand-ui-only.md`.
 
 **Likely component gaps to raise upstream** (don't hand-roll — `library-first.md`):
 
-- a **timeline / area chart** for the context window — `@brand/charts` exists upstream but is **not
-  vendored**; either vendor it (owner-gated) or compose a constrained view from `@brand/ui`
+- a **timeline / area chart** for the context window — `@elabs-ai/components-charts` exists upstream but is **not
+  vendored**; either vendor it (owner-gated) or compose a constrained view from `@elabs-ai/components-ui`
   primitives as `TokenViz` does today;
 - a **resizable split-pane** for the console;
-- a **streaming log list** for the debug pane (virtualized; `@brand/data` `DataTable` may suffice);
+- a **streaming log list** for the debug pane (virtualized; `@elabs-ai/components-data` `DataTable` may suffice);
 - **attachment upload** affordance.
 
 ## 11. Proposed phasing
@@ -232,4 +232,4 @@ A new **Testing** area in the `AppShell` nav (new `ViewKey`s in `App.tsx` — no
 6. **Spend-cap pricing** — where the per-model pricing table comes from and how it's kept current. (§5)
 7. **Ollama** — native Ollama provider vs its OpenAI-compatible endpoint. (§5)
 8. **New backend dependencies** — `ai` + `@ai-sdk/*` are owner-approved in principle (decision #10);
-   confirm exact packages/versions. UI stays 100% `@brand/*` (this rule is unaffected).
+   confirm exact packages/versions. UI stays 100% `@elabs-ai/components-*` (this rule is unaffected).

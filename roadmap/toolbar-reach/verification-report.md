@@ -4,8 +4,8 @@
 **Branch:** `ui/toolbar-reach` (cut from `main`; `main` never touched, nothing pushed) — 61 commits, all 23 WPs merged.
 **Verifier:** PM-as-owner (this session). Structural verification from validated agent reports + PM diff review on
 every merge; **live measured-geometry** pass driven with Playwright + system Chrome against a fresh build of
-`ui/toolbar-reach` served on `:8085`, at the audit's **1515×811** viewport, in **both** `qlik-bright` and
-`qlik-dark`.
+`ui/toolbar-reach` served on `:8085`, at the audit's **1515×811** viewport, in **both** `light` and
+`dark`.
 **Source of findings:** [`/docs/UI-UX-AUDIT-2026-07-25.md`](../../docs/UI-UX-AUDIT-2026-07-25.md) (29 findings
 A-1…D-10 + 3 retractions).
 
@@ -44,8 +44,8 @@ the view toolbar's own controls are measured.
 ### B-2 · Environments — ONE row (WP 1.1) — **PASS, measured, both themes**
 | Theme | Controls (label · top/height) | Verdict |
 | --- | --- | --- |
-| `qlik-bright` | `Search environments…` 57/30 · `New environment` 57/30 | **tops={57} heights={30} — IDENTICAL ✅** |
-| `qlik-dark` | same | **IDENTICAL ✅** |
+| `light` | `Search environments…` 57/30 · `New environment` 57/30 | **tops={57} heights={30} — IDENTICAL ✅** |
+| `dark` | same | **IDENTICAL ✅** |
 
 The audit's B-2 was *two stacked bands* (a near-empty top `ViewToolbar` + a second in-table `TableToolbar`).
 It is now one row; the search input and the primary action share **one top (57) and one height (30)**.
@@ -59,9 +59,9 @@ Geometry is theme-stable.
 
 The diagnosed cause — `SelectField`'s label-above stack pushing Suite/Group-by **+9px** to top=126 — is
 **eliminated**: they now sit at top=120, aligned with the date range. The **11px scatter collapses to 1px.**
-The residual 1px top / 4px height is **exactly the vendored floor** flagged in the plan: `@brand/data`'s
-`FacetFilter` renders at `h-26` while `@brand/ui`'s `Select`/`DatePicker` render at `h-30` — not fixable
-without touching vendored `@brand/*` (owner-gated; upstream item §6). The plan's job (kill the label-above
+The residual 1px top / 4px height is **exactly the vendored floor** flagged in the plan: `@elabs-ai/components-data`'s
+`FacetFilter` renders at `h-26` while `@elabs-ai/components-ui`'s `Select`/`DatePicker` render at `h-30` — not fixable
+without touching vendored `@elabs-ai/components-*` (owner-gated; upstream item §6). The plan's job (kill the label-above
 cause) is measurably done.
 
 ### B-1 · Agents & Crews — no visible in-page H1 (WP 1.2 / D-TB8) — **PASS, measured**
@@ -129,7 +129,7 @@ Each was **demonstrated to fail on the injected pre-fix pattern**, then reverted
 2. a test failing if `SelectField` is imported by a `*Toolbar*`/`*Filter*` module (D-TB9);
 3. `.claude/hooks/no-title-on-icon-button.mjs` (registered in `settings.json`) rejecting `title=` on a
    text-less `<Button>`/`<IconButton>` — verified it does **not** false-positive on component `title` props,
-   text-bearing buttons, `@brand/ai` `PromptInputButton`, the `brand-ui-allow` escape hatch, or non-web/test files;
+   text-bearing buttons, `@elabs-ai/components-ai` `PromptInputButton`, the `brand-ui-allow` escape hatch, or non-web/test files;
 4. a test asserting `PageHeader` + `TableToolbar` are gone and unimported (D-TB6/D-TB8).
 
 ---
@@ -148,15 +148,15 @@ Each was **demonstrated to fail on the injected pre-fix pattern**, then reverted
 
 ---
 
-## 6. Carry-forward for the owner / upstream `@brand/*` (NOT signed off)
+## 6. Carry-forward for the owner / upstream `@elabs-ai/components-*` (NOT signed off)
 - **IconButton-in-Dialog Escape hazard** — a modal that auto-focuses an `IconButton` opens its tooltip, which
   eats the first Escape (one instance fixed in 3.1). Now that `IconButton` is everywhere, a live modal sweep or
   a primitive-level fix is warranted. Owner call.
-- **`@brand/data` `FacetFilter` `h-26` vs `@brand/ui` `h-30`** — the ~1px/4px residual on every mixed toolbar
+- **`@elabs-ai/components-data` `FacetFilter` `h-26` vs `@elabs-ai/components-ui` `h-30`** — the ~1px/4px residual on every mixed toolbar
   row (measured in C-1). The plan removed the diagnosed label-above cause; this is the vendored floor. Upstream
-  `@brand` report.
-- **`Composer.tsx:541` `SpeechInput`** keeps a bare native `title` — a `@brand/ai` `PromptInputButton`, not a
-  `<Button>`, so outside Phase 3 + the 4.1 hook. Upstream `@brand/ai` fix.
+  `@elabs-ai/components-*` report.
+- **`Composer.tsx:541` `SpeechInput`** keeps a bare native `title` — a `@elabs-ai/components-ai` `PromptInputButton`, not a
+  `<Button>`, so outside Phase 3 + the 4.1 hook. Upstream `@elabs-ai/components-ai` fix.
 - **Likely dead code:** `agents/CrewEditor.tsx` / `CrewLibraryPanel.tsx`.
 - **Minor:** `/skills → "Skills › Skills"` crumb redundancy (one-line collapse if wanted); `/testing/environments`
   sits in the "Setup" sidebar group (pre-existing); editing a suite from the embedded Runs tab round-trips to

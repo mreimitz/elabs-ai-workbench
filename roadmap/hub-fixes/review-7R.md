@@ -190,11 +190,11 @@ allowlist validator (WP3.2).
   label alone (no URL). *Probe:* the 7 new `SourcesPanel.test.tsx` "safeHref hostile-scheme
   confinement" tests. This was the one genuinely UNTESTED rendering-safety edge — now locked.
 - **Hostile markdown structure (chips in table cells, headings, lists).** WP3.1 weaves `[n]` via a
-  Streamdown `components` override and re-points tables at `@brand/ui Table*`. *Evidence:*
+  Streamdown `components` override and re-points tables at `@elabs-ai/components-ui Table*`. *Evidence:*
   `SourcesPanel.test.tsx:97` (table/th/td render real Table structure with woven cells),
   `ConversationPane.citations.test.tsx:224-254`.
 - **Markdown BODY sanitization (script tags / `javascript:` links inside the answer text)** is
-  delegated to **Streamdown** (`@brand/ai`'s `MessageResponse`), the vendored renderer
+  delegated to **Streamdown** (`@elabs-ai/components-ai`'s `MessageResponse`), the vendored renderer
   purpose-built for untrusted LLM output. WP3.1 did not change that boundary; the app's own
   contribution (citation title/snippet/url weaving) is escaped/`safeHref`-guarded and tested. This is
   a **library trust boundary** (documented, not a defect); jsdom cannot render Streamdown, so its
@@ -289,7 +289,7 @@ These are honestly deferred to `owner-acceptance-walk.md` (never faked here):
   budget enforcement / live HITL approval round-trip in the board).
 - `web.search` behind a real provider key on one provider (billing + native-tool behavior).
 - Streamdown's markdown-body sanitization rendered live (jsdom can't render it).
-- Both-theme (`qlik-bright` + `qlik-dark`) + keyboard walks of every new surface (rail chips,
+- Both-theme (`light` + `dark`) + keyboard walks of every new surface (rail chips,
   board grid, approval queue, spend bar, expand modal, clarify card, Auto/mode chips, plan-card
   grants, topology graph vs live timestamps).
 - Migration v51 applying cleanly on an existing deployed DB.

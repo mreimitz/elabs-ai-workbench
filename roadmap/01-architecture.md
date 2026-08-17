@@ -4,7 +4,7 @@
 > and [`../.claude/rules/architecture.md`](../.claude/rules/architecture.md); in-flight status lives
 > in [`testing/STATUS.md`](./testing/STATUS.md) / [`skills/STATUS.md`](./skills/STATUS.md). Notably
 > the web app now uses `react-router-dom` (real URL routing, not local view-switch state) and runs on
-> the vendored upstream `@brand/*` design system (the local `packages/brand-ui` adapter was removed).
+> the vendored upstream `@elabs-ai/components-*` design system (the local `packages/brand-ui` adapter was removed).
 
 ## System Shape
 

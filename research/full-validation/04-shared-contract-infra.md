@@ -86,7 +86,7 @@ dependency tree) and systemic (the hand-mirrored zod↔TS split, version/changel
 - **Category:** Docker / image size
 - **Files:** `Dockerfile:49` (`pnpm install --frozen-lockfile --prod` — unfiltered, whole workspace), `Dockerfile:77` (`COPY --from=prod-deps /app/node_modules ./node_modules`); `apps/web/package.json` `dependencies` (`react`, `react-dom`, `react-router-dom`, `lucide-react ^0.577.0`, `@xyflow/react ^12.3.6`)
 - **Evidence:** the Dockerfile comment (lines 29–34) correctly notes the web **dev** toolchain is excluded, but the web's `dependencies` are still prod-installed and land in the hoisted `/app/node_modules` copied into the runtime image — dead weight, since `apps/web/dist` is static and served by `@fastify/static`.
-- **Recommendation:** `pnpm install --prod --filter @mcp-token-footprint/api...` in the `prod-deps` stage (or move the web's deps to `devDependencies`, matching how `@brand/*` is already handled).
+- **Recommendation:** `pnpm install --prod --filter @mcp-token-footprint/api...` in the `prod-deps` stage (or move the web's deps to `devDependencies`, matching how `@elabs-ai/components-*` is already handled).
 
 ### M5 — zod + all schema-construction code is bundled into the browser SPA
 - **Category:** Web bundle / contract packaging

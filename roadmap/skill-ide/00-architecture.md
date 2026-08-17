@@ -24,7 +24,7 @@ compile down to the SAME edit-op vocabulary and round-trip engine (D5) — new o
 (`add_command`, `rename_command`, `delete_command`, `set_keywords`, `connect_asset`,
 `disconnect_asset`) are anchored text edits like all others. Byte-exactness, stale-anchor 409,
 and new-immutable-version semantics are unchanged. Drag-to-connect uses React Flow's connection
-API (via `@brand/flow`'s underlying engine) but the drop only STAGES an op — nothing mutates
+API (via `@elabs-ai/components-flow`'s underlying engine) but the drop only STAGES an op — nothing mutates
 until Save.
 
 ### I3 — Folders and files are tree-level edit ops, versions stay immutable
@@ -73,7 +73,7 @@ deep links; resolution is a normal edit.
 
 ### I8 — Everything else inherits SkillFlow
 Contract-first in `packages/shared`, additive-only; never-execute invariant (D4) untouched — the
-quality engine, validation, and publisher never run skill content; `@brand/*`-only UI, two
+quality engine, validation, and publisher never run skill content; `@elabs-ai/components-*`-only UI, two
 themes; deterministic engines stamped with versions; ledger discipline via
 [`STATUS.md`](./STATUS.md); the SkillFlow conventions file applies verbatim.
 

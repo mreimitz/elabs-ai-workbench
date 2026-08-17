@@ -312,7 +312,7 @@ html = (f'<!doctype html><html><head><meta charset="utf-8"><title>Anatomy of a R
         f'<style>body{{margin:0;background:#888;padding:24px;display:grid;gap:24px}}'
         f'.panel{{border-radius:14px;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.25)}}'
         f'.bright{{{css_vars("bright")}}}.dark{{{css_vars("dark")}}}</style></head><body>'
-        f'<div class="panel bright">{svg.replace("{THEME}", "qlik-bright")}</div>'
-        f'<div class="panel dark">{svg.replace("{THEME}", "qlik-dark")}</div></body></html>')
+        f'<div class="panel bright">{svg.replace("{THEME}", "light")}</div>'
+        f'<div class="panel dark">{svg.replace("{THEME}", "dark")}</div></body></html>')
 (out / "run-flow-preview.html").write_text(html)
 print("ok")

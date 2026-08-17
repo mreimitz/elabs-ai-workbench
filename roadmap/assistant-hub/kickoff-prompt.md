@@ -24,7 +24,7 @@ review, memory + projects, usage telemetry + audit.
 4. `roadmap/assistant-hub/STATUS.md` — the authoritative ledger (what's open/done/blocked).
 5. `CLAUDE.md` + `.claude/rules/*` — repo rules (brand-ui only, contract-first, runtime/secret
    boundary, quality gates).
-6. `vendor/brand-ui-agent-kit/llms/ai.txt` + `playbooks/ai-assistant.md` — the `@brand/ai`
+6. `vendor/brand-ui-agent-kit/llms/ai.txt` + `playbooks/ai-assistant.md` — the `@elabs-ai/components-ai`
    component vocabulary every UI WP composes from.
 
 **Hard gates before implementing (D-AH16):**

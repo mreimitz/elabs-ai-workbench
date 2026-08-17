@@ -4,7 +4,7 @@
 **Depends:** WP 5.3.
 
 ## Goal
-A `@brand/*`-only compatibility view: Server×Model and Tool×Model green/amber/red grids with a
+A `@elabs-ai/components-*`-only compatibility view: Server×Model and Tool×Model green/amber/red grids with a
 cited drill-down, so "which model can host this server, and where it breaks" is legible at a glance.
 
 ## Deliverables
@@ -13,7 +13,7 @@ cited drill-down, so "which model can host this server, and where it breaks" is 
   - View toggle Server×Model / Tool×Model; roll-up toggle (worst-tool default / average-tool);
     optional host-client selector (Cursor/Claude Desktop/VS Code/…) for the client-layer tests.
   - The grid: cells coloured by band (use `--chart`/semantic tokens, not raw colour); `tabular-nums`
-    scores; both themes (`qlik-bright`/`qlik-dark`).
+    scores; both themes (`light`/`dark`).
   - Cell drill-down (`Sheet`/`Dialog`): per failing/warning test — user-facing name, `failure_mode`,
     filled rationale, **evidence chips** (value + source link + confidence = "verified vs estimated"),
     and the recommendation. Dedupe recommendations across failing tests.

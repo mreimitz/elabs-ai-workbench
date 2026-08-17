@@ -69,7 +69,7 @@ green integration branch ready for my owner-acceptance walk.
 - The view renders: breadcrumb → ONE toolbar row → content. No in-page H1/description.
 - No identity, metric, or action stated twice on the screen (D-TB1/D-TB4).
 - No assistant buttons outside the dock (D-TB3).
-- Both themes (`qlik-bright` default + `qlik-dark`) verified against the RUNNING app on the
+- Both themes (`light` default + `dark`) verified against the RUNNING app on the
   agent's assigned port — screenshots into `.wp-evidence/tb-<id>/`, never a mock.
 - Keyboard: every remaining toolbar control reachable with visible focus.
 - Gate green; existing tests updated honestly (assertions on removed headers/buttons are

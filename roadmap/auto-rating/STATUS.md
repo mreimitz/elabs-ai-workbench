@@ -330,7 +330,7 @@ _Entries: date · decision · rationale._
   (3) **Report redesign (owner feedback 2026-07-12):** new Outcome-judge and Trajectory-judge cards
   in the report body (score, reasoning, cited steps, donut); a new `scoreTone()` helper maps score
   thresholds to a tone (`<0.6` danger, `0.6–<0.8` warning, `≥0.8` success), applied to
-  `ScoreReadout`, `GradeChip`, and `GradePanel` tiles; `@brand/charts` `RingChart` donuts on the
+  `ScoreReadout`, `GradeChip`, and `GradePanel` tiles; `@elabs-ai/components-charts` `RingChart` donuts on the
   score cards (score text left, donut right); a `RadarChart` on the run-rating card when ≥3 graded
   axes are present (chip fallback below that).
   **Known follow-ups (noted, not fixed this session):** the `SkillUsageRun` projection doesn't

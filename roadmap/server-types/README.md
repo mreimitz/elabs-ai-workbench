@@ -62,7 +62,7 @@ Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp server-types`).
 | `packages/shared` | New `SERVER_TYPE_STATUSES` const, `ServerType*` types + zod schemas; additive `typeId` on `ServerConfigInput`/`ServerConfig`/update schema. |
 | `apps/api/src/server-types/` (new) | Repository + routes: list (with `memberCount`) / create / get / update / delete; 409 duplicate name, 400 unknown status, 404 unknown id. |
 | `apps/api/src/servers/` | `create`/`update` accept + validate `typeId` (400 on unknown); `toPublicServer` surfaces `typeId`. INSERT/UPDATE column lists + `ServerRow`. |
-| `apps/web/features/servers/` | `ServerRail` grouping + filter; wizard/edit type picker; toolbar + profile badges; Manage-types dialog (all `@brand/*`, both themes). |
+| `apps/web/features/servers/` | `ServerRail` grouping + filter; wizard/edit type picker; toolbar + profile badges; Manage-types dialog (all `@elabs-ai/components-*`, both themes). |
 | `apps/api/src/skills/` (+ skillflow tool validation) | `resolveBindings()` learns type names; binding wire gains additive `typeId?`/`resolvedVia?`; representative-server selection (D-ST3). `skill_server_bindings` unchanged structurally. |
 | Testing / environments | Read-only benefit first (type/status shown in server pickers); attach-by-type is a Phase 4 option, not required. |
 | Compare / compatibility / reports | No contract change; type surfaces as a filter/label. Type-level aggregate compare is explicitly out of scope (compare stays pairwise scan-vs-scan). |
@@ -93,7 +93,7 @@ Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp server-types`).
   model are untouched.
 - Wire changes are **additive-only**; every existing response stays byte-compatible.
 - Skill binding **never guesses**: type resolution is deterministic (D-ST3) or `null`.
-- New UI is `@brand/*` only and reads correctly in **both themes**.
+- New UI is `@elabs-ai/components-*` only and reads correctly in **both themes**.
 - Gate: `pnpm typecheck && pnpm test && pnpm build && pnpm lint` green per WP.
 
 ## WP index

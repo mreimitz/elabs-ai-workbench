@@ -17,14 +17,14 @@ request/response inspection — the prior art we extend).
 > packet inspector becomes the shared **Inspector drawer**
 > ([`../../12-testing-inspector-devtools.md`](../../12-testing-inspector-devtools.md) §3.2, §3.5). The
 > streaming **Console** stream splits out to **WP 3.10**. The waterfall + Timeline spans target the
-> forthcoming `@brand/charts` **Gantt** (interim: a composed time-lane à la `TokenViz`).
+> forthcoming `@elabs-ai/components-charts` **Gantt** (interim: a composed time-lane à la `TokenViz`).
 
 ## Files (new)
 - `apps/web/src/features/testing/StepLog.tsx`
 - `apps/web/src/features/testing/PacketInspector.tsx`
 
 ## Design — step log (UI §4 Zone C)
-- **Virtualized** `@brand/data` `DataTable` of `RunStep`s in order. Columns: `#`, type icon
+- **Virtualized** `@elabs-ai/components-data` `DataTable` of `RunStep`s in order. Columns: `#`, type icon
   (`llm.req`/`llm.resp`/`tool.call`/`tool.result`/`context.event`), label (model or tool), status,
   tokens ↑/↓, duration, and a **cost-weight** cell (a thin `Progress` tinted by relative cost — the
   Braintrust "weight by cost" idea).

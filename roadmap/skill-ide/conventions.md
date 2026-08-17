@@ -4,7 +4,7 @@ The [SkillFlow conventions](../skillflow/conventions.md) apply **verbatim** to e
 work package: quality gate (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`),
 contract-first in `packages/shared` (WP 1.1 owns the contract; later WPs additive-only),
 never-execute invariant, deterministic/versioned engines, storage immutability, round-trip
-byte-exactness, ingestion caps, `@brand/*`-only UI with two themes, kebab/Pascal naming,
+byte-exactness, ingestion caps, `@elabs-ai/components-*`-only UI with two themes, kebab/Pascal naming,
 fixture-driven tests in `apps/api/test/`, honest reporting.
 
 Additions specific to this plan:

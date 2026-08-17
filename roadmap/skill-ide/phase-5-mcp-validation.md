@@ -67,5 +67,5 @@ via `onMount(editor, monacoApi)` — set markers with
 `monacoApi.editor.setModelMarkers(editor.getModel(), "tool-validation", markers)`
 (severity `Warning`, marker range from the diagnostic's anchored line, message = diagnostic +
 top candidates); clear by setting `[]` for the same owner on re-validate/unmount.
-`@brand/editor/monaco-environment` is already imported once in `main.tsx` — never import it a
+`@elabs-ai/components-editor/monaco-environment` is already imported once in `main.tsx` — never import it a
 second time. Canvas badges reuse the node subtitle/`Badge` pattern from `node-kind-meta.tsx`.

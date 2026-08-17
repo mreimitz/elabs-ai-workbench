@@ -4,7 +4,7 @@
 > (run-console UI). This doc **reframes the right pane** of the Run Console (`10` §4–§5) as a
 > **panelized, Chrome-DevTools-style Inspector**. It is the deep "what can we learn from DevTools"
 > analysis the owner asked for, wired into the UI-design step. No production code; wireframes are
-> schematic; everything maps to `@brand/*` and the six themes.
+> schematic; everything maps to `@elabs-ai/components-*` and the six themes.
 
 ---
 
@@ -88,13 +88,13 @@ that opens from any panel. The conversation stays on the left exactly as in `10`
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **KPI strip** = `MetricGrid` of compact `MetricCard`s (`@brand/charts`, now vendored), `tabular-nums`,
+- **KPI strip** = `MetricGrid` of compact `MetricCard`s (`@elabs-ai/components-charts`, now vendored), `tabular-nums`,
   context % first (Klipfolio "critical metric upper-left"). It survives panel switches so the budget
   is always in view.
-- **Panel tabs** = `Tabs`/`TabsList` (`@brand/ui`). One shared **toolbar** to the right hosts the
+- **Panel tabs** = `Tabs`/`TabsList` (`@elabs-ai/components-ui`). One shared **toolbar** to the right hosts the
   global search, *preserve-log*, and *clear* — same place on every panel (DevTools consistency).
 - **Drawer** = a bottom (wide) / side (narrow) region toggled with `Esc`/`⌃`, not a modal — so you
-  keep the panel context. Built from `Collapsible` + `Tabs` (both now in `@brand/ui`).
+  keep the panel context. Built from `Collapsible` + `Tabs` (both now in `@elabs-ai/components-ui`).
 
 > **Reconciliation with `10`.** Nothing is lost: `10` Zone A (KPI rail) → the KPI strip; Zone B
 > (context chart) → a track in **Timeline**; Zone C (step log) → **Network**; §5 packet inspector →
@@ -133,7 +133,7 @@ DevTools steals: **level filter** (`All ▸ Errors ▸ Warnings ▸ Info ▸ Pro
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-`@brand`: a **virtualized list** (`@brand/data` `DataTable` in single-column "log" mode, or a
+`@elabs-ai/components-*`: a **virtualized list** (`@elabs-ai/components-data` `DataTable` in single-column "log" mode, or a
 windowed list), `Badge`/`StatusBadge` for levels, `SearchInput` + `FilterBar`/`FacetFilter` for the
 command bar, `CodeBlock` for an expanded raw frame, token-styled severity (`text-destructive-text`,
 `text-warning`, `text-muted-foreground`). `[open ↗]` selects the packet → drawer + Network/Timeline.
@@ -162,8 +162,8 @@ Columns (DevTools Network parity): `#`, **type** icon (`llm.req`/`llm.resp`/`too
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Component:** `@brand/data` `DataTable` (virtualized) for the columns; the **waterfall lane is a
-  Gantt**. The **next `@brand/charts` ships a proper Gantt** (per owner) — design the lane to *that*
+- **Component:** `@elabs-ai/components-data` `DataTable` (virtualized) for the columns; the **waterfall lane is a
+  Gantt**. The **next `@elabs-ai/components-charts` ships a proper Gantt** (per owner) — design the lane to *that*
   component's API. **Interim (charts 1.0.0 has no Gantt):** a thin token-styled lane composed like
   `TokenViz` — a positioned `<div>`/`Progress` segment per row (`left = startMs/totalMs`,
   `width = durMs/totalMs`), tinted by cost via `--chart-1..5`. Swap to the upstream `Gantt` when it
@@ -179,10 +179,10 @@ DevTools **Performance** = a flame chart of spans over time + a summary. Ours fu
 
 1. **Spans track (Gantt/flame):** each **turn** is a lane; **tool calls** are spans within it
    (start+duration), shallow nesting for retries. Click a span → drawer (same selection as Network).
-   Uses the forthcoming `@brand/charts` **Gantt**; interim = the composed lane from §3.2.
+   Uses the forthcoming `@elabs-ai/components-charts` **Gantt**; interim = the composed lane from §3.2.
 2. **Context-window track (the centerpiece, from `10` §4 Zone B):** a **stacked area** — system /
    tool-defs / history / tool-results / output — with a **limit line** at the model max and the
-   **overflow marker**. Now buildable with `@brand/charts` **`AreaChart`** (stacked) +
+   **overflow marker**. Now buildable with `@elabs-ai/components-charts` **`AreaChart`** (stacked) +
    **`LiveLineChart`** for the streaming case (gap from `10` is **resolved** — charts is vendored).
 3. **Token-rate track:** tokens ↑/↓ per step as `LiveLine`/`BarChart`, so spikes (a 4k tool result)
    are visible against time. Optional **`SankeyChart`** view — token *flow* from system→history→
@@ -199,7 +199,7 @@ DevTools **Performance** = a flame chart of spans over time + a summary. Ours fu
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-`@brand`: `@brand/charts` `AreaChart` / `LiveLineChart` / `ComposedChart` / `BarChart` /
+`@elabs-ai/components-*`: `@elabs-ai/components-charts` `AreaChart` / `LiveLineChart` / `ComposedChart` / `BarChart` /
 `SankeyChart`, `ChartLegend`, `ChartTooltip`; series **only** from `--chart-1..5`; a shared playhead
 for replay (WP 3.7). Throttle to animation frames while streaming.
 
@@ -234,8 +234,8 @@ Two sections (left tree, right preview — DevTools' Application layout):
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
 
-`@brand`: `Tree`/`TreeNode` (`@brand/ui`) or `SplitPanel` (tree | preview), `Descriptions` for
-metadata, `CodeEditor` (`@brand/editor`) for payload preview, `Badge` for mime/size, `Button asChild`
+`@elabs-ai/components-*`: `Tree`/`TreeNode` (`@elabs-ai/components-ui`) or `SplitPanel` (tree | preview), `Descriptions` for
+metadata, `CodeEditor` (`@elabs-ai/components-editor`) for payload preview, `Badge` for mime/size, `Button asChild`
 for download. Untrusted output is **never HTML-injected** — preview as code/text/image only
 (`mcp-and-security.md`).
 
@@ -271,21 +271,21 @@ tokens) · `Tokens` (per-lens vs provider-actual incl. cached/reasoning) · **`T
 
 ## 5. Component mapping & gap status (updated)
 
-| Inspector surface | `@brand` component(s) | Status vs. `10` |
+| Inspector surface | `@elabs-ai/components-*` component(s) | Status vs. `10` |
 | --- | --- | --- |
-| KPI strip | `MetricGrid` / `MetricCard` (`@brand/charts`) | **charts vendored** — upgrade from the `@brand/ui` `MetricCard` stand-in |
+| KPI strip | `MetricGrid` / `MetricCard` (`@elabs-ai/components-charts`) | **charts vendored** — upgrade from the `@elabs-ai/components-ui` `MetricCard` stand-in |
 | Panel tabs + toolbar | `Tabs`, `SearchInput`, `FilterBar`, `FacetFilter`, `ColumnPicker` | available |
 | Console stream | `DataTable` (log mode) / windowed list, `Badge`/`StatusBadge`, `CodeBlock` | available (virtualize) |
 | Network table | `DataTable` (virtualized) | available |
-| **Network waterfall / Timeline spans** | **`@brand/charts` Gantt (next release)** | **interim:** composed time-lane (TokenViz pattern); swap to upstream Gantt |
-| Context-window stacked area | `@brand/charts` `AreaChart` / `LiveLineChart` / `ComposedChart` | **gap from `10` §4/§11 resolved** (charts vendored) |
+| **Network waterfall / Timeline spans** | **`@elabs-ai/components-charts` Gantt (next release)** | **interim:** composed time-lane (TokenViz pattern); swap to upstream Gantt |
+| Context-window stacked area | `@elabs-ai/components-charts` `AreaChart` / `LiveLineChart` / `ComposedChart` | **gap from `10` §4/§11 resolved** (charts vendored) |
 | Token-rate / flow | `BarChart`, `LiveLine`, `SankeyChart`, `ChartLegend`, `ChartTooltip` | available |
-| Application tree + preview | `Tree`/`TreeNode` or `SplitPanel`, `CodeEditor`, `Descriptions`, `Button asChild` | available (`@brand/editor` vendored) |
+| Application tree + preview | `Tree`/`TreeNode` or `SplitPanel`, `CodeEditor`, `Descriptions`, `Button asChild` | available (`@elabs-ai/components-editor` vendored) |
 | Inspector drawer | `Collapsible` + `Tabs` + `Descriptions` + `CodeEditor`/`CodeBlock` + `TokenViz` | **`Collapsible` resolves `10` §11 #4** |
-| Two-pane / panel splits | `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` | **gap from `10` §11 #2 resolved** (in `@brand/ui`) |
+| Two-pane / panel splits | `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` | **gap from `10` §11 #2 resolved** (in `@elabs-ai/components-ui`) |
 | Replay scrubber | range slider | **still a gap** (`10` §11 #3) — raise upstream |
 
-**Net:** vendoring `@brand/charts`/`editor` + the `@brand/ui` `Resizable*`/`Collapsible` close **most**
+**Net:** vendoring `@elabs-ai/components-charts`/`editor` + the `@elabs-ai/components-ui` `Resizable*`/`Collapsible` close **most**
 of `10`'s gaps. Remaining true gaps: the **Gantt** (coming next charts release — design to it) and the
 **range slider/scrubber** (raise upstream; replay-only).
 
@@ -293,8 +293,9 @@ of `10`'s gaps. Remaining true gaps: the **Gantt** (coming next charts release �
 
 ## 6. Themes, accessibility, performance
 
-- **Six themes.** All chart series come from `--chart-1..5`; verify the stacked area + waterfall tint
-  read in `high-contrast` and `blueprint` (low-contrast fills fail there). Panels/headers on `bg-muted`,
+- **Two themes** (`light`, `dark`). All chart series come from `--chart-1..12`; verify the stacked
+  area + waterfall tint read in BOTH (low-contrast fills can fail). (Written when the kit shipped
+  six; `blueprint` / `high-contrast` no longer exist.) Panels/headers on `bg-muted`,
   surfaces on `bg-card`, no raw colors (`styling-and-tokens.md`).
 - **A11y.** Tabs + drawer keyboard-reachable; the log/table arrow-navigable; charts get text/`Descriptions`
   fallbacks for the numbers; icon-only controls carry `aria-label`.
@@ -310,16 +311,16 @@ This reframing **re-scopes**, it doesn't restart — the data model (`RunStep`/`
 `ContextSnapshot`) and SSE transport are unchanged.
 
 - **WP 3.3 (console shell)** — add the **panel tab strip** + **drawer** to the right pane; the
-  resizable split now uses `@brand/ui` `ResizablePanelGroup` (gap closed).
+  resizable split now uses `@elabs-ai/components-ui` `ResizablePanelGroup` (gap closed).
 - **WP 3.5 (KPI + chart)** — becomes the **persistent KPI strip** + the **Timeline** panel; build the
-  context chart on `@brand/charts` `AreaChart`/`LiveLineChart` (no longer blocked).
+  context chart on `@elabs-ai/components-charts` `AreaChart`/`LiveLineChart` (no longer blocked).
 - **WP 3.6 (step log + inspector)** — becomes the **Network** panel (table **+ waterfall**) + the
   **Inspector drawer**; add the **Console** panel here or split to a new WP (below).
 - **NEW WP 3.9 — Application panel (responses & artifacts):** the responses tree + artifact
   preview/download. New surface; depends on run persistence (WP 1.6) capturing artifacts.
 - **NEW WP 3.10 — Console panel:** the streaming event log with levels/preserve/clear and the raw
   JSON-RPC frame view.
-- **WP 0.1 (vendor `@brand/charts`)** — **done** (charts 1.0.0 vendored). Track the **Gantt** in the
+- **WP 0.1 (vendor `@elabs-ai/components-charts`)** — **done** (charts 1.0.0 vendored). Track the **Gantt** in the
   next charts release for the waterfall/Timeline spans.
 
 ---
@@ -332,7 +333,7 @@ This reframing **re-scopes**, it doesn't restart — the data model (`RunStep`/`
    collapse to one? Recommend keep both; they answer different questions.
 3. **Artifact capture scope** — only MCP `resources` + tool-written files, or also "synthesize a
    download" from any structured response? Start with resources + explicit file outputs.
-4. **Gantt dependency** — gate the waterfall/Timeline polish on the next `@brand/charts`, or ship the
+4. **Gantt dependency** — gate the waterfall/Timeline polish on the next `@elabs-ai/components-charts`, or ship the
    interim composed lane first? Recommend interim lane now, swap on release (no API churn for callers).
 5. **Drawer placement** — bottom (DevTools default, good for wide) vs. right side (better on narrow).
    Propose bottom on wide, side/inline on narrow (<900px), mirroring `10` §12.3.

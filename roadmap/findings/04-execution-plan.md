@@ -12,7 +12,7 @@ same file.
 
 **Repo ground truth:** pnpm workspaces; web = `apps/web` (React 19 + Vite, view switching via
 `activeView` in `App.tsx`, **no router**); **brand-ui-only is a hard rule** (every visible element is a
-`@brand/*` component; semantic oklch tokens only; no raw hex/rgb); quality gate =
+`@elabs-ai/components-*` component; semantic oklch tokens only; no raw hex/rgb); quality gate =
 `pnpm typecheck && pnpm test && pnpm build`. Component APIs: confirm with the vendored CLI
 `pnpm exec brand-ui search|docs|info <name>` before using a prop. App runs at `http://127.0.0.1:8080`
 (reference) / Vite `:5173` (dev, HMR).
@@ -27,16 +27,16 @@ same file.
 2. **Keep public surfaces stable.** Do not rename/Remove a component's exported name or its props if
    another agent imports it (noted per agent). Internal refactors only.
 3. **brand-ui-only + tokens.** No raw hex/rgb, no `window.confirm/alert`, no off-token font sizes. Route
-   text through `@brand` `Text` variants + the density tokens from Wave 0. Confirm props via
+   text through `@elabs-ai/components-*` `Text` variants + the density tokens from Wave 0. Confirm props via
    `pnpm exec brand-ui docs <Component>`.
 4. **One worktree per subagent.** Branch from the current wave's integration branch into your own git
    worktree (`git worktree add ../wt-<agent> <branch>`); never share a working tree. (If your Task/Agent
    tool supports `isolation: "worktree"`, use it.)
 5. **Definition of done (per subagent):** `pnpm typecheck && pnpm test && pnpm build` green **and** you
-   visually verified your screen **in `qlik-bright` and `qlik-dark`** against the running app with
+   visually verified your screen **in `light` and `dark`** against the running app with
    agent-browser (screenshot + DOM check). **Report honestly what you did NOT verify.**
-6. **No new runtime deps.** Compose from `@brand/*` (incl. the already-vendored `@brand/charts` and
-   `@brand/editor`). If a component seems missing, raise it — don't hand-roll or add a library.
+6. **No new runtime deps.** Compose from `@elabs-ai/components-*` (incl. the already-vendored `@elabs-ai/components-charts` and
+   `@elabs-ai/components-editor`). If a component seems missing, raise it — don't hand-roll or add a library.
 7. **Contract-first.** If a change touches the wire (`packages/shared` types/zod), change shared first.
    (Most of this work is web-only.)
 
@@ -76,7 +76,7 @@ that, every screen lives in its own file and can be rebuilt in parallel with zer
 ### Wave 0 — Foundation
 
 **A0 — Density & type tokens**  · closes **G1**, density half of **#3**, doc03 §5 type scale · fix-plan **P0.3**
-- Add a compact density/type scale at the **token layer** (`@brand/tokens` overrides + Tailwind v4
+- Add a compact density/type scale at the **token layer** (`@elabs-ai/components-tokens` overrides + Tailwind v4
   `@theme`): UI/body ~13px, table ~12–13px, section headings ~14–15px, KPI numerals ~20–24px (not 36),
   row height ~36–40px, line-height ~1.4, `tabular-nums` on numeric utilities. Must read in all six themes.
 - Implement a **`data-density="comfortable|compact"`** switch on `<html>` that the token CSS responds to
@@ -132,7 +132,7 @@ that, every screen lives in its own file and can be rebuilt in parallel with zer
 - **Overview → two columns + charts:** group `Attention` findings by **type** (count + Σ recoverable;
   expand to tools) via a new `groupFindings()` in `lib/optimize.ts`; **Findings (~60%)** beside a merged
   **Token-distribution** card (server stacked bar + per-tool **stacked** rows + one bottom legend, ~40%);
-  **Server profile → ½ width** beside a **`@brand/charts`** scan-trend; **KPI sparklines**; hide
+  **Server profile → ½ width** beside a **`@elabs-ai/components-charts`** scan-trend; **KPI sparklines**; hide
   Recoverable at 0; auth badge `none`→`No auth`.
 - **Tools tab:** replace `SplitPanel` with `ResizablePanelGroup`/`ResizableHandle` (default ~32/68,
   draggable); tool list → dense **sans** `DataTable` + cost-weight `Progress` cell; `scrollbar-gutter:
@@ -144,7 +144,7 @@ that, every screen lives in its own file and can be rebuilt in parallel with zer
 
 **C2 — Tool detail panel**  · closes doc03 **§3 (3.1–3.7)**, **§5** fonts
 - Sticky header + `TabsList`; Breakdown order **Token budget → Optimization → Instructions**; instructions
-  clamp + **Expand** `Dialog` via `@brand/editor` `CodeEditor` (read-only); **Raw** tab → `@brand/editor`
+  clamp + **Expand** `Dialog` via `@elabs-ai/components-editor` `CodeEditor` (read-only); **Raw** tab → `@elabs-ai/components-editor`
   `CodeEditor` (`json`, `readOnly`, `folding`) + Expand modal (retire `CodeBlock` here); one quiet chip row
   under the title; route text through `Text` + density tokens; **delete the `run` tab**.
 - **Owns:** `features/scans/ToolDetailPanel.tsx`, and `components/CodeBlock.tsx` *only if it becomes unused*
@@ -235,7 +235,7 @@ Rules: brand-ui-only + semantic tokens; confirm props via `pnpm exec brand-ui do
        no window.confirm; keep listed exports/props stable.
 Work in your own git worktree off branch <wave-branch>.
 Done = `pnpm typecheck && pnpm test && pnpm build` green AND you visually verified your screen at
-       http://127.0.0.1:8080 in qlik-bright AND qlik-dark with agent-browser (screenshot + DOM check).
+       http://127.0.0.1:8080 in light AND dark with agent-browser (screenshot + DOM check).
 Report: what you changed, screenshots, and explicitly what you did NOT verify.
 ```
 
@@ -273,7 +273,7 @@ If a finding isn't in this table, it isn't done — add it before closing the wa
    finishes (gate + visual), merge to `ui-remediation`; re-run gate after each merge.
 4. **Wave 2:** launch Z1 on the merged branch; integration, six-theme/a11y, `brand-ui-audit`, final
    density tuning; gate green.
-5. Final: full visual sweep of all five views + tool detail + run modal in qlik-bright & qlik-dark; tick
+5. Final: full visual sweep of all five views + tool detail + run modal in light & dark; tick
    the §6 coverage table; report what was and wasn't visually verified.
 ```
 Parallelism summary: Wave 0 = 2 agents ∥ · Wave 1 = up to 7 agents ∥ · Wave 2 = 1 agent (serial).

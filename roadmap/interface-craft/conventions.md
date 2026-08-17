@@ -31,8 +31,8 @@ All four green — **plus** any **WP-specific tests** the spec names. This is th
 
 **This is the defining rule of this plan.** The review's methods are the bar, and they are
 reproducible. A WP is not done until its Acceptance **numbers** are produced against the **running app**
-at `http://127.0.0.1:8080` (or the built app on a spare port), in **BOTH** `qlik-bright` **and**
-`qlik-dark`. Never a mock, never a component in isolation, never "looks fine."
+at `http://127.0.0.1:8080` (or the built app on a spare port), in **BOTH** `light` **and**
+`dark`. Never a mock, never a component in isolation, never "looks fine."
 
 | Claim | Method | Report |
 |---|---|---|
@@ -41,7 +41,7 @@ at `http://127.0.0.1:8080` (or the built app on a spare port), in **BOTH** `qlik
 | **Overflow / measure** | `clientWidth` vs `scrollWidth`; characters-per-line from a character-width probe | both numbers (e.g. Runs row `scrollWidth 498 → 0` hidden; callout `190ch → 66ch`) |
 
 How to run the probes: build the branch, serve it, drive Chrome headless (CDP) — see the memory note
-"Run app & verify visually" (`pnpm dev` breaks on `@brand/editor ?worker` prebundle; use the Docker
+"Run app & verify visually" (`pnpm dev` breaks on `@elabs-ai/components-editor ?worker` prebundle; use the Docker
 `:8080` image or a `vite preview` of the build, CDP-headless-Chrome for the DOM queries/screenshots).
 The committed `data/app.sqlite` is essentially empty — a WP whose acceptance needs content **seeds its
 own** (upload a `SKILL.md`, create a stdio echo-fixture server + scan, the default "Local" collection
@@ -61,18 +61,18 @@ For any structural a11y claim that a browser DOM query can't settle (does a give
   a signal the spec is wrong — report it.
 - **API runtime / secret boundary.** Only `apps/api` spawns MCP processes / reads secrets. No WP here
   crosses it.
-- **`@brand/*`-only + semantic tokens.** Every visible element is a `@brand/*` component (or a
-  `lucide-react`/`@brand/icons` glyph). No raw `#hex`/`rgb()`/`hsl()`, no palette colours, no
+- **`@elabs-ai/components-*`-only + semantic tokens.** Every visible element is a `@elabs-ai/components-*` component (or a
+  `lucide-react`/`@elabs-ai/components-icons` glyph). No raw `#hex`/`rgb()`/`hsl()`, no palette colours, no
   `*-black`/`*-white`. `className` is layout-only. The `enforce-brand-ui` and `check-tokens` hooks are
   active. **The one sanctioned exception in this plan** is the D-IC1/D-IC2 **token override block** in
   `apps/web/src/styles/app.css` (WP 0.1): it defines new *token values*, it is not raw color in a
   component, and it lives in the token entry file. New app wrappers (`SectionCardTitle`, the
-  title-carrying select, the measure-capped description) **compose** `@brand` parts — verify props
+  title-carrying select, the measure-capped description) **compose** `@elabs-ai/components-*` parts — verify props
   against the vendored kit / `.d.ts` / the brand-ui MCP server (`mcp__brand-ui__docs`/`search`/`tokens`),
   never guess.
-- **Do not bump the `@brand/*` version.** Vendor fixes land app-side (README "Vendor boundary");
+- **Do not bump the `@elabs-ai/components-*` version.** Vendor fixes land app-side (README "Vendor boundary");
   record each in [`upstream-gaps.md`](./upstream-gaps.md).
-- **Two themes only** — `qlik-bright` (default) + `qlik-dark`. New UI reads correctly in both. Don't
+- **Two themes only** — `light` (default) + `dark`. New UI reads correctly in both. Don't
   reach for `dark:` overrides; tokens cover both.
 - **Naming:** TS files kebab-case; React components PascalCase; tests co-located as `name.test.ts(x)`.
 - **Loading/streaming discipline** (`.claude/rules/loading-states.md`): `loading` = no content yet;

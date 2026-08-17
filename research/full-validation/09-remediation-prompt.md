@@ -23,12 +23,12 @@ the worktree, and own the final gate.
   wrote it.
 - **Contract-first:** any wire change goes in `packages/shared` (types + zod) first, then API, then
   web. Additive `/api` only.
-- **brand-ui only** for any web UI: every visible element is a `@brand/*` component, semantic tokens
+- **brand-ui only** for any web UI: every visible element is a `@elabs-ai/components-*` component, semantic tokens
   only, no raw colors, no `dark:`. The `enforce-brand-ui` and `check-tokens` hooks will fight you if
   you break this.
 - **Runtime boundary:** only `apps/api` touches MCP, secrets, or the DB; the browser gets redacted
   data. Never move secret/MCP logic into `apps/web`.
-- **No new runtime dependencies** without flagging it to me. No `@brand/*` version bump.
+- **No new runtime dependencies** without flagging it to me. No `@elabs-ai/components-*` version bump.
 - **Honest reporting:** each sub-agent leads its report with what it did NOT verify (especially
   anything visual/live — there's no provider key or the vendor tenant available, so those paths are
   read-and-reason, not executed).
@@ -95,7 +95,7 @@ noted so you can serialize just those.
 - **WT-F · Web bundle splitting** *(High-value perf; web-only, disjoint from A–E)*
   Fixes: `03-web-review.md` H1 + M1, confirmed by the ~9.3 MB single-chunk measurement in
   `08-quality-gate.md`.
-  - Introduce `React.lazy` + `Suspense` for the heavy routes (Monaco/`@brand/editor`, React Flow,
+  - Introduce `React.lazy` + `Suspense` for the heavy routes (Monaco/`@elabs-ai/components-editor`, React Flow,
     charts, Mermaid) in `apps/web/src/App.tsx`; ensure the unreachable Skill Design/Trace surfaces
     aren't eagerly bundled.
   - Verify with `pnpm --filter web build` that the main chunk shrinks and no route errors; keep the

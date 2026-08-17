@@ -47,5 +47,5 @@ cram a genuinely place-like surface (a comparison, a console, a report) into a d
 it was quicker to wire up.
 
 Related: [`architecture.md`](./architecture.md) (routing is `react-router-dom` v7 in
-`apps/web/src/App.tsx`), [`brand-ui-only.md`](./brand-ui-only.md) (dialogs are `@brand/ui`
+`apps/web/src/App.tsx`), [`brand-ui-only.md`](./brand-ui-only.md) (dialogs are `@elabs-ai/components-ui`
 `Dialog`/`Sheet`, never hand-rolled).

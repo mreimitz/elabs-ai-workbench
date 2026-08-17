@@ -40,7 +40,7 @@ Then VALIDATE each returned WP yourself before ticking:
   2. Acceptance met (STATUS.md line + README decisions).
   3. Gate green: pnpm typecheck && pnpm test && pnpm build && pnpm lint (see gotchas for how).
   4. Boundaries: wire changes in packages/shared FIRST; no secret leaves the API; visible UI is
-     @brand/* only and reads correctly in BOTH themes (qlik-bright + qlik-dark).
+     @elabs-ai/components-* only and reads correctly in BOTH themes (light + dark).
   5. Tick the STATUS.md box (— done <date> · wp/claude-subscription/<id>) and merge; else bounce
      the subagent back with the specific gap.
 

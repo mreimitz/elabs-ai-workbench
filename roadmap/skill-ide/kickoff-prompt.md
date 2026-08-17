@@ -25,7 +25,7 @@ not stop after one wave.
 5. `roadmap/skill-ide/STATUS.md` — the ledger. Read the four done-lines carefully (they record
    deviations + follow-ups you inherit). Only you write this file.
 6. `roadmap/skill-ide/references.md` — the **code-reality index** (verified APIs, constants,
-   fixtures, `@brand` component facts). Trust it, and update it if the code has moved.
+   fixtures, `@elabs-ai/components-*` component facts). Trust it, and update it if the code has moved.
 7. Every `roadmap/skill-ide/phase-*.md` — WP specs; the open WPs carry **Implementation notes
    (verified 2026-07-04)** written to unblock you. Follow them.
 8. `.claude/rules/` — all bind you (brand-ui-only, quality-gates, mcp-and-security,
@@ -41,7 +41,7 @@ not stop after one wave.
   rationale).
 - **STOP and ask the owner** (Manuel) — do not proceed — when a change would: add any
   dependency (including layout/graph/YAML/markdown libs — `yaml` is already present, hand-rolled
-  layout is a locked choice), touch `vendor/brand/*` or bump `@brand/*`, weaken a
+  layout is a locked choice), touch `vendor/brand/*` or bump `@elabs-ai/components-*`, weaken a
   hook/guardrail/secret rule, contradict an I-decision or D-decision, break additive-only
   contracts, or re-add anything the owner removed (e.g. the `blueprint` theme).
 - You may split/merge/resequence WPs when execution reveals a better cut — update README +
@@ -116,7 +116,7 @@ the WP's Acceptance demonstrably met, and the ledger line ticked in house style:
   `servers`), providers/markers disposed on unmount, `SKILL.md` guards, no force-push path,
   PAT absent from responses and logs.
 - UI WPs: verify against the **running app** (`pnpm dev` → :5173/:8080) in **both themes**
-  (`qlik-bright`, `qlik-dark`), keyboard reachable, honest empty/loading/error states per the
+  (`light`, `dark`), keyboard reachable, honest empty/loading/error states per the
   loading-states rule. Playwright smoke screenshots where the acceptance says so
   (`pnpm test:e2e` exists; e2e is evidence, not part of the 4-command gate). Never claim visual
   correctness you didn't look at — say so in the ledger line, first.
@@ -130,7 +130,7 @@ the WP's Acceptance demonstrably met, and the ledger line ticked in house style:
 
 ## 6. Working agreements (hard)
 
-- Contract-first, additive-only; `@brand/*` components only, semantic tokens only, `className`
+- Contract-first, additive-only; `@elabs-ai/components-*` components only, semantic tokens only, `className`
   = layout only; visible focus; both themes.
 - Never-execute invariant: nothing you build runs skill content or opens MCP connections from
   analyzers/validators/projector paths. The ONE sanctioned executor is WP 8.5's user-initiated

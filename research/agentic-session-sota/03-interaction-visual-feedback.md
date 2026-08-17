@@ -24,11 +24,11 @@ Normative requirements: `roadmap/assistant-hub/requirements.md` (R-UX*, R-SES*).
   telemetry with token/cost breakdowns. The Unified-Sessions contract already covers the Hub's
   equivalents (cursor SSE resume, capabilities, clock).
 
-## 2. AI Elements ↔ `@brand/ai` (the build vocabulary is confirmed)
+## 2. AI Elements ↔ `@elabs-ai/components-ai` (the build vocabulary is confirmed)
 
-AI Elements (~50 components) and the vendored `@brand/ai` (see `vendor/brand-ui-agent-kit/llms/ai.txt`)
+AI Elements (~50 components) and the vendored `@elabs-ai/components-ai` (see `vendor/brand-ui-agent-kit/llms/ai.txt`)
 carry the same catalog — every planned surface has a purpose-built component: `Conversation`,
-`Message` (+ branching — `MessageBranch*` in `@brand/ai`), `PromptInput*` (+ `PromptInputCommand`
+`Message` (+ branching — `MessageBranch*` in `@elabs-ai/components-ai`), `PromptInput*` (+ `PromptInputCommand`
 slash menu, attachments, `SpeechInput`), `Reasoning`, `ChainOfThought`, `Sources`,
 `InlineCitation`, `Suggestion`, **`Task`**, **`Plan`**, **`Queue`**, **`Checkpoint`**,
 **`Context`** (usage display), **`Confirmation`**/`ApprovalCard`, `Tool`, `ModelSelector`,

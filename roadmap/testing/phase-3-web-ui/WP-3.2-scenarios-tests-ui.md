@@ -18,8 +18,8 @@ footprint reuses existing scan/token data — the app's core strength.
 - *(provider credentials UI: extend `features/settings/SettingsView.tsx` or a small `ProvidersView`)*
 
 ## Design — components (brand-ui only)
-- Lists: `@brand/data` `DataTable` (scenarios, tests) with `SearchInput`.
-- Editors: `@brand/ui` form primitives (`Field`, `Select`, `Switch`, `Textarea`, `NumberInput`),
+- Lists: `@elabs-ai/components-data` `DataTable` (scenarios, tests) with `SearchInput`.
+- Editors: `@elabs-ai/components-ui` form primitives (`Field`, `Select`, `Switch`, `Textarea`, `NumberInput`),
   `Dialog`/`Sheet` or a dedicated view. Use the existing `SelectField` composition where it fits.
 - **AllowListPicker:** server checkboxes (`Switch`/`Checkbox`) → expand to per-tool toggles; beside it
   a live **footprint** panel (reuse `components/TokenViz.tsx` / `MetricCard`) summing the selected
@@ -39,7 +39,7 @@ footprint reuses existing scan/token data — the app's core strength.
 - Create a provider credential (key shown only as `hasKey` afterward), a scenario (provider/model/
   params/allow-list/guardrails/profiles), and a test (prompt/attachments/override).
 - Toggling a tool changes the live footprint number immediately.
-- Renders correctly in both themes (qlik-bright, qlik-dark); keyboard-navigable; visible focus.
+- Renders correctly in both themes (light, dark); keyboard-navigable; visible focus.
 - Gate: typecheck + build green; manual check at `http://localhost:8080`.
 
 ## Notes

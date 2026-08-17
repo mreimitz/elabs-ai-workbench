@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qlabs/mcp-token-footprint/token-context-comparison/model-entry.schema.json",
+  "$id": "https://elabs-ai/mcp-token-footprint/token-context-comparison/model-entry.schema.json",
   "title": "Provider model-comparison entry",
   "description": "One provider's metadata plus its latest models, profiled on the seven comparison axes. See 01-information-structure.md.",
   "type": "object",

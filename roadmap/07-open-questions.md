@@ -30,7 +30,7 @@ None for the MVP implementation. The supplied request defines the scope, non-goa
 
 ## Brand UI Fallback Process
 
-1. Attempt to download the exact GitHub release `mreimitz/qlabs-components@v1.0.0`.
+1. Attempt to download the exact GitHub release `mreimitz/elabs-components@v1.0.0`.
 2. Include `Authorization: Bearer $GH_TOKEN` or `Authorization: Bearer $GITHUB_TOKEN` when present.
 3. Extract release source or assets into `packages/brand-ui`.
 4. If inaccessible, document the failed fetch and keep a temporary adapter in `packages/brand-ui/src`.

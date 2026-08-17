@@ -147,8 +147,8 @@ use unguarded there).
       sub-crew rendering (not "(deleted role)").
 - [ ] `CrewProfileModal.test.tsx` mocks `listHubCrews` and proves Save is blocked on a cycle-creating
       member.
-- [ ] Every new element is `@brand/ui`/`lucide-react` only (no raw interactive HTML); reads correctly
-      in both `qlik-bright` and `qlik-dark` (visual check — not automatable).
+- [ ] Every new element is `@elabs-ai/components-ui`/`lucide-react` only (no raw interactive HTML); reads correctly
+      in both `light` and `dark` (visual check — not automatable).
 - [ ] Gate green (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`).
 
 ## Notes

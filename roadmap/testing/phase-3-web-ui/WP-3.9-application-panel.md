@@ -18,10 +18,10 @@ owner asked specifically for "documents which have been created and downloaded."
 - `apps/web/src/features/testing/ArtifactPreview.tsx`
 
 ## Design (UI §3.4)
-- **Layout:** `SplitPanel` — left a `Tree`/`TreeNode` (`@brand/ui`) of **Responses** (grouped by
+- **Layout:** `SplitPanel` — left a `Tree`/`TreeNode` (`@elabs-ai/components-ui`) of **Responses** (grouped by
   turn/tool) and **Artifacts**; right a preview pane.
 - **Responses:** each `llm.resp` / `tool.result` payload; preview structured JSON in the read-only
-  `CodeEditor` (`@brand/editor`, folding/search/copy — the manual-playground viewer), prose/markdown
+  `CodeEditor` (`@elabs-ai/components-editor`, folding/search/copy — the manual-playground viewer), prose/markdown
   as `Text`.
 - **Artifacts:** name, kind (`mime`), size, producing tool/step; **Preview** by type
   (`CodeEditor` / image / markdown) and **Download** (`<a download>` via `Button asChild`). Cross-link

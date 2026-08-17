@@ -7,14 +7,14 @@ Audit `apps/web/src` against @.claude/rules/library-first.md and
 
 Flag:
 - **Raw color literals** in `.ts`/`.tsx` — `#hex`, `rgb()/rgba()/hsl()/hsla()`. (Color belongs in
-  the oklch tokens shipped by `@brand/tokens`, never in component code.)
-- **Bespoke UI that duplicates a `@brand/*` export** — hand-rolled buttons/inputs/tables/dialogs/
-  badges/panels instead of the library component. Check exports via the vendored `@brand/*` `.d.ts`
+  the oklch tokens shipped by `@elabs-ai/components-tokens`, never in component code.)
+- **Bespoke UI that duplicates a `@elabs-ai/components-*` export** — hand-rolled buttons/inputs/tables/dialogs/
+  badges/panels instead of the library component. Check exports via `pnpm exec brand-ui docs <Component>` or the `.d.ts`
   or `pnpm exec brand-ui <info|search|docs>` first.
 - **`className` used to recolor/re-typeset** a library component (layout-only is fine).
 - **A second styling system** sneaking in (Tailwind utilities, inline `style={{color/background}}`,
   CSS-in-JS).
-- **Hardcoded theme assumptions** that break in `qlik-dark`.
+- **Hardcoded theme assumptions** that break in `dark`.
 
 Suggested starting grep (raw colors in app code):
 

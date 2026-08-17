@@ -17,11 +17,11 @@ Docs:
 - [`02-skills-handling.md`](./02-skills-handling.md) — Agent Skills spec + how harnesses load,
   budget, trigger, invoke and meter skills; interop landscape.
 - [`03-interaction-visual-feedback.md`](./03-interaction-visual-feedback.md) — AI SDK 7 parts
-  model, AI Elements ↔ `@brand/ai`, AG-UI, and the interaction patterns worth stealing
+  model, AI Elements ↔ `@elabs-ai/components-ai`, AG-UI, and the interaction patterns worth stealing
   (Perplexity, ChatGPT, Cursor, Devin, Smashing's agentic-UX patterns).
 - [`04-genui-agent2ui.md`](./04-genui-agent2ui.md) — generative UI / Agent2UI deep dive
   (Thesys OpenUI · CopilotKit · assistant-ui): the model→UI pipelines, the **system-prompt
-  playbook** (16 rules, verbatim-sourced), the `@brand/ai` capability-gap list
+  playbook** (16 rules, verbatim-sourced), the `@elabs-ai/components-ai` capability-gap list
   (raise-upstream vs hub-engine), and what the Hub adopts (R-GUI1–8, WP2.6).
 
 **Normative output:** the requirement catalog distilled from these docs lives at

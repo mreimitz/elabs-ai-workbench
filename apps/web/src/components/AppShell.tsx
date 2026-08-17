@@ -544,7 +544,7 @@ export function AppShell({
           <NotificationBell />
           {/* F0/ST2: the theme control lives here — reachable in two clicks from ANY route.
               Driven by the app's theme PREFERENCE (the single source `useThemePreference` owns),
-              so it stays in lockstep with the Settings mirror and `blueprint` is never offered. */}
+              so it stays in lockstep with the Settings mirror and only shipped themes are offered. */}
           <ThemeMenu preference={themePreference} onPreferenceChange={onThemePreferenceChange} />
           {/* The Assistant dock toggle — rendered ONLY once the feature is reachable (D-AS:
               invisible until an auth source is configured). ⌘J/Ctrl+J is wired globally by
@@ -994,7 +994,7 @@ function themePreferenceLabel(preference: ThemePreference): string {
  * It's a thin view over `useThemePreference` (lifted to App), NOT the uncontrolled `@elabs-ai/components-ui`
  * ThemeSwitcher: the app's single source of truth is the preference key that `main.tsx` re-applies
  * on boot, so driving the switch through that keeps the Settings mirror in sync, persists across
- * reload, and guarantees `blueprint` is never reachable.
+ * reload, and keeps the offered set to what the app actually ships.
  */
 function ThemeMenu({
   preference,

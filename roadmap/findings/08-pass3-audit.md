@@ -41,7 +41,7 @@ Contract-first (`packages/shared` → `apps/api` → `apps/web`), additive only:
   `definitionDelta` false, `sameServer:true`, `annotationsTokens` present; cross-server
   everything↔everything-2 → 13 exact, no def change, `sameServer:false`; cross-server
   everything↔filesystem @ 0.2 → 0 matched / 13 / 14.
-- **Browser (qlik-bright + qlik-dark):** cross-server shows Tool · **Match** · Before · After · Δ ·
+- **Browser (light + dark):** cross-server shows Tool · **Match** · Before · After · Δ ·
   Change · **Definition**, fuzzy select **visible**, the new **Very loose · 0.2** preset present and
   re-fetches. Same-server (everything o200k↔cl100k) drops the **Match** column, **hides** the Fuzzy
   select (verified: 0 occurrences in the DOM), shows the cross-profile Alert, 13 matched / Δ +77, and
@@ -61,7 +61,7 @@ The server-delete confirm button (`App.tsx` AlertDialog) was **already coded** `
 `oklch(0.7 0.16 150)` (green), **no `bg-destructive`**. Findings/06–07 had listed this as "open
 polish, code looks done"; the live pass shows the code was *inert*.
 
-**Root cause (verified against the vendored source):** `@brand/ui`'s `AlertDialogAction` hardcodes
+**Root cause (verified against the vendored source):** `@elabs-ai/components-ui`'s `AlertDialogAction` hardcodes
 `className: cn(buttonVariants(), className)` — i.e. it injects the **primary** button classes. With
 `asChild` + a child `<Button variant="destructive">`, that primary `className` flows into the child,
 and `tailwind-merge` (inside `Button`'s own `cn(buttonVariants({variant}), className)`) resolves the
@@ -70,7 +70,7 @@ and `tailwind-merge` (inside `Button`'s own `cn(buttonVariants({variant}), class
 **Fix (lane `ui/confirm-fix`):** put the variant on `AlertDialogAction`'s **own** `className`
 (`className={buttonVariants({ variant: "destructive" })}`), which merges *last* and wins — the same
 shape `AlertDialogCancel` uses internally for its `outline` variant. `buttonVariants` is a first-class
-`@brand/ui` export (token-based, no raw colors); the static audit count is unchanged by the edit.
+`@elabs-ai/components-ui` export (token-based, no raw colors); the static audit count is unchanged by the edit.
 
 **Re-verified live (both themes):** `bg-destructive`, no `bg-primary`; computed **`oklch(0.58 0.22 27)`
 (bright)** / **`oklch(0.62 0.2 25)` (dark)** — red, white text legible, with **Cancel focused** as the

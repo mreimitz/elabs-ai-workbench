@@ -30,7 +30,7 @@ the only scroll container (`flex-1 min-h-0 overflow-y-auto`), gutter token (32px
 workbench`).
 **New files (domain):** `apps/web/src/components/PageShell.tsx`, `PageHeader.tsx`, plus
 minimal wiring in `apps/web/src/App.tsx` ONLY if the frame must mount at the layout level (hot
-file — keep to a wrapper swap). Build on `@brand/ui` AppShell/PageShell/Breadcrumb primitives —
+file — keep to a wrapper swap). Build on `@elabs-ai/components-ui` AppShell/PageShell/Breadcrumb primitives —
 check their real APIs first (`pnpm exec brand-ui docs PageShell Breadcrumb AppShell`).
 **Reference adoption:** Settings page (simple, document-archetype w/ sticky header exception) AND
 Environments page (catalog archetype) — two archetypes proven.
@@ -79,7 +79,7 @@ discard-changes pattern) · full-screen `WorkbenchDialog` (playground-style). Se
 "Advanced" collapsible group, and consequence-labeled primary button are part of the kit.
 **New files (domain):** `apps/web/src/components/dialogs/` (new folder: `ConfirmDialog.tsx`,
 `FormDialog.tsx`, `WideDialog.tsx`, `WorkbenchDialog.tsx`, `DialogSection.tsx` + tests). Build on
-`@brand/ui` Dialog/Sheet/Wizard — real props via brand-ui docs.
+`@elabs-ai/components-ui` Dialog/Sheet/Wizard — real props via brand-ui docs.
 **Reference adoption:** none (Phase 2 migrates the big modals) — instead ship a Storybook-style
 demo route? NO — out of scope; prove via unit tests + one temporary usage behind the Skills
 "Delete" confirm (already exists; upgrade it to `ConfirmDialog`).
@@ -95,7 +95,7 @@ suffix) · `KeyValueEditor` (add/remove rows, optional secret masking) · `ListE
 per row → array) · `TagInput` (chips from comma/Enter) · `SegmentedField` (label + segmented
 control + help slot) · `useDependentField` (disabled-with-reason until prerequisite set).
 **New files (domain):** `apps/web/src/components/form/` (new folder, one file per primitive +
-tests). Compose from `@brand/ui` (Slider if it exists — CHECK via brand-ui docs; if @brand lacks a
+tests). Compose from `@elabs-ai/components-ui` (Slider if it exists — CHECK via brand-ui docs; if brand-ui lacks a
 Slider, report the upstream gap and build the keyboard-accessible fallback from primitives per
 library-first.md escape rules, flagged for owner).
 **Reference adoption:** none required; exhaustive unit tests instead (bounds clamping, step

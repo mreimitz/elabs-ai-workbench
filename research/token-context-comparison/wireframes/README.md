@@ -1,7 +1,7 @@
 # Wireframes — test results view
 
 Clickable HTML prototypes for displaying the compatibility test results. Open the `.html` files in a
-browser. They are **wireframes** (plain HTML/CSS, neutral palette) — to be rebuilt with `@brand/*`
+browser. They are **wireframes** (plain HTML/CSS, neutral palette) — to be rebuilt with `@elabs-ai/components-*`
 components for production.
 
 ## Prototypes
@@ -26,7 +26,7 @@ Re-run after the catalog or dataset changes.
 
 ## Note on the `RevisionTimeline` component
 
-`@brand/data` `RevisionTimeline` (the storybook template) is a **git-history** component — it models
+`@elabs-ai/components-data` `RevisionTimeline` (the storybook template) is a **git-history** component — it models
 commits (lanes, SHAs, churn, day-grouping) with a **selection rail**, not an inline expand-to-detail
 list. Its *vertical-timeline visual* is the right template and is what this wireframe emulates. For
 the production build, two clean options:

@@ -325,7 +325,7 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
   (Phase-5 UX) — self-consistent with the locked manifest (vendor `tokens:"estimated"`, `contextWindow:false`
   keeps context hidden); one-line revert (`tokens:"none"`) if the owner prefers hidden. **WP3.R adjudicates:**
   WP3.1 left 8 out-of-fence, test-locked surfaces (RunTableRow/CompareBar/FlowLanes/TestGroupRow/SkillUsageTab/
-  SkillTraceView/ReportTab/compare-runs) + StepLog on the legacy `@brand/ui` closed-enum bridge — decide if
+  SkillTraceView/ReportTab/compare-runs) + StepLog on the legacy `@elabs-ai/components-ui` closed-enum bridge — decide if
   app-wide D-US5 conformance is in-scope (→ WP3.6 sweep) or acceptable.
 - 2026-07-16 — Dispatched **WP3.3** (session affordances → `feat/unified-sessions-wp3.3`, Sonnet, off
   `acb55d1`) — End-session (`/end`+confirm), live phase chips (Queued/Waiting/Stopping via extending

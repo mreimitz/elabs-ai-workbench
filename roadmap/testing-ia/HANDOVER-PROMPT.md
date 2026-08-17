@@ -44,7 +44,7 @@ your validated merges.
 
 Brief each agent exactly: read `roadmap/testing-ia/conventions.md` + your one WP spec;
 implement **only that WP**; contract-first (`packages/shared` first when the spec says so);
-brand-ui components only, semantic tokens, both themes (`qlik-bright`, `qlik-dark`); small
+brand-ui components only, semantic tokens, both themes (`light`, `dark`); small
 reviewable commits; run the full gate from the repo root
 (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`); self-review against your
 Acceptance list; report back branch, files changed, gate output, per-Acceptance pass/fail, and
@@ -64,7 +64,7 @@ anything you could not verify. Agents never touch `STATUS.md` and never mark the
   themes), never a mock.
 
 ## Hard stops — ask me before proceeding
-Any new runtime or UI dependency; any `@brand/*` version change; any breaking (non-additive)
+Any new runtime or UI dependency; any `@elabs-ai/components-*` version change; any breaking (non-additive)
 API change; weakening any hook/guardrail or the git-sync trust model (PAT write-only/encrypted,
 SSRF guards, no force-push); deleting or gutting a failing test to get green.
 

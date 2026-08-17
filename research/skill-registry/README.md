@@ -46,7 +46,7 @@ attachment) not built yet · **Owner:** m.reimitz
    skill credentials are encrypted with the existing `SecretStore`.
 8. [`07-ui-plan.md`](./07-ui-plan.md) — the **Skills** side-menu item, `SkillsView` + `SkillRail`,
    the add-skill wizard, and the **enterprise-grade inspector** (rendered `SKILL.md` + `FileTree`
-   explorer + `DiffEditor` full-tree diff + version picker), composed entirely from `@brand/*`.
+   explorer + `DiffEditor` full-tree diff + version picker), composed entirely from `@elabs-ai/components-*`.
 9. [`08-scenario-attachment.md`](./08-scenario-attachment.md) — Phase 2: `scenario_skills`,
    `AllowedSkill`, the `AddSkillModal` picker, run-engine wiring, and the token-footprint accounting
    for an attached skill.
@@ -70,5 +70,5 @@ cost*, every version and every file also carries a **token footprint** (Level 1 
 `SKILL.md` body / Level 3 resources) computed with the existing `TokenCounter` — so the inspector
 answers "what does this skill cost the model, and what changed," not merely "what files are in it."
 The whole thing reuses the MCP-server subsystem's shape: same `nanoid` IDs, same repo/service/route
-layering, same `SecretStore` encryption, same `@brand/*`-only UI, same scenario join-table
+layering, same `SecretStore` encryption, same `@elabs-ai/components-*`-only UI, same scenario join-table
 attachment pattern.

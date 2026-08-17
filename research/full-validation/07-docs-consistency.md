@@ -128,7 +128,7 @@ root — the docs' "root" phrasing is fine but worth knowing).
   `CodeBlock`, `TokenViz`)"; same in `.claude/rules/library-first.md` ("the one sanctioned 'bring
   your own' is … `components/CodeBlock.tsx`").
 - Reality: no `CodeBlock.tsx` anywhere in `apps/web/src` (glob + grep). `SelectField.tsx` and
-  `TokenViz.tsx` exist; read-only code display is now `@brand/editor`'s Monaco `CodeEditor` and
+  `TokenViz.tsx` exist; read-only code display is now `@elabs-ai/components-editor`'s Monaco `CodeEditor` and
   `features/testing/CodeSnippet.tsx`.
 - Fix: drop `CodeBlock` from both docs (and update library-first.md's "sanctioned bring-your-own"
   paragraph to name the current mechanism).

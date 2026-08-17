@@ -69,7 +69,7 @@ parallel worktrees (entities are independent files) · 2.x sequential · 3.x/4.x
 
 - **WP 3.1 — Step player.** `steps[]` semantics (focus sets → highlight/dim), caption
   `aria-live` region, keyboard `←/→`/`Esc`, `prefers-reduced-motion`, step progress dots
-  (`@brand/ui` chrome).
+  (`@elabs-ai/components-ui` chrome).
 - **WP 3.2 — Embedded explainers.** `ProcessExplainer` entry point (Dialog/Sheet); three
   authored in-repo specs: *how a scan works* (Servers view), *how a run executes* (run
   console), *the skill feedback loop* (Skills view). Both-theme + keyboard walk noted for
@@ -93,4 +93,4 @@ parallel worktrees (entities are independent files) · 2.x sequential · 3.x/4.x
 ## Out of scope (explicit)
 
 Canvas/drag-drop authoring (future, would emit the same spec), PNG server rasterization,
-upstreaming to `@brand/*`, any third theme, animation beyond the step player + dash motion.
+upstreaming to `@elabs-ai/components-*`, any third theme, animation beyond the step player + dash motion.

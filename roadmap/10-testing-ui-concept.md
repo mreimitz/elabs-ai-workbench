@@ -1,7 +1,7 @@
 # 10 Testing — UI Concept (run console)
 
 > **Status:** design concept. Companion to `09-testing.md` (scope). This is a written concept
-> with wireframes, mapped to the `@brand/*` design system and the six themes. No production code.
+> with wireframes, mapped to the `@elabs-ai/components-*` design system and the six themes. No production code.
 > Wireframes are schematic — they show structure and hierarchy, not final pixels.
 
 ## 0. What we're designing
@@ -78,7 +78,7 @@ A `● LOCKED` badge signals the config is frozen. In **replay**, the Stop contr
 
 ## 3. Left pane — conversation
 
-A clean, dense chat column. Components from `@brand/ui` (no hand-rolled bubbles).
+A clean, dense chat column. Components from `@elabs-ai/components-ui` (no hand-rolled bubbles).
 
 - **User turn** — `Card` (muted surface), text, and attachment chips (`Badge` with a file glyph).
 - **Assistant turn** — streamed `Text`; a collapsible **Thinking** disclosure (muted, token-count
@@ -156,15 +156,15 @@ tokens
                     tool-result ┘   ● now
 ```
 
-> **Component gap:** `@brand/charts` exists upstream but **is not vendored** (`dependencies.md`).
+> **Component gap:** `@elabs-ai/components-charts` exists upstream but **is not vendored** (`dependencies.md`).
 > This chart, the KPI sparklines, and the compare overlays (§8) all need it. Resolve by vendoring
-> `@brand/charts` (owner-gated) or, if it can't render a streaming stacked-area cleanly, compose a
+> `@elabs-ai/components-charts` (owner-gated) or, if it can't render a streaming stacked-area cleanly, compose a
 > constrained renderer the way `TokenViz` is built from `Progress`/`MetricCard`. **Raise upstream —
 > do not hand-roll a charting lib.**
 
 ### Zone C — Step / packet log ("inspect every package")
 
-A **virtualized** `DataTable` (`@brand/data`) of every step in order. Columns: `#`, type (icon for
+A **virtualized** `DataTable` (`@elabs-ai/components-data`) of every step in order. Columns: `#`, type (icon for
 `llm.req` / `llm.resp` / `tool.call` / `tool.result` / `context.event`), label (model or tool),
 status, tokens (↑/↓), duration, and a **cost-weight** bar cell (a thin `Progress` tinted by relative
 cost — the "weight by cost" principle). A `FilterBar` + `FacetFilter` filter by type / server /
@@ -245,7 +245,7 @@ report (reusing existing report routes).
 run-bar (replay):   ◀ Runs   Test … · Scenario …   ⏮ ⏯ ⏭  ├──────●────────┤ step 18/47   [ Export ▾ ]
 ```
 
-> **Component gap:** a **range slider / scrubber** isn't in the listed `@brand/ui` set, and neither
+> **Component gap:** a **range slider / scrubber** isn't in the listed `@elabs-ai/components-ui` set, and neither
 > is a **resizable split-pane**. Both are small, reusable primitives — raise upstream rather than
 > bolting on ad-hoc.
 
@@ -267,18 +267,18 @@ plus an **overlay** of each run's context curve (small multiples or a single ove
 
 ## 9. Component & token mapping
 
-| Surface | `@brand` component(s) | Notes |
+| Surface | `@elabs-ai/components-*` component(s) | Notes |
 | --- | --- | --- |
 | Run-bar identity / status | `StatusBadge`, `Badge`, `Text` | `● LOCKED` = `StatusBadge` |
 | Guardrail meters | `Progress` ×3 | destructive token when tripped |
 | Stop / launch / export | `Button` (`destructive`, `default`) | Stop confirms if mid-stream |
 | Two-pane split | `div` + flex + resizer | **gap:** no split-pane primitive |
 | Conversation turns | `Card`, `Heading`/`Text` | no bespoke bubbles |
-| Thinking disclosure | collapsible (`Button` + region) | confirm if `@brand` ships Collapsible/Accordion |
+| Thinking disclosure | collapsible (`Button` + region) | confirm if `@elabs-ai/components-*` ships Collapsible/Accordion |
 | Tool-call card | `Card` + `StatusBadge` + `Badge` + `CodeBlock` + `Button` | cross-links to packet |
 | Composer | `Textarea` + `Button` | disabled note in automated mode |
 | KPI rail | `MetricCard` / `TokenViz` | `tabular-nums` |
-| Context chart, sparklines, overlays | **`@brand/charts`** | **gap: not vendored** — vendor or compose |
+| Context chart, sparklines, overlays | **`@elabs-ai/components-charts`** | **gap: not vendored** — vendor or compose |
 | Step/packet log | `DataTable`, `FilterBar`, `FacetFilter`, `SearchInput`, `ColumnPicker` | virtualized; cost-weight via `Progress` cell |
 | Event rail on timeline | `Timeline*` | injections / native-ctx / overflow |
 | Packet inspector | `Sheet` + `Tabs` + `Descriptions` + `CodeBlock` + `TokenViz` | read-only payloads |
@@ -294,9 +294,10 @@ No raw hex/rgb, no palette colors — per `styling-and-tokens.md`.
 
 ## 10. Theming & accessibility
 
-- **Six themes**: `qlik-bright` (default), `qlik-dark`, `light`, `dark`, `blueprint`,
-  `high-contrast`. Chart series **must** come from `--chart-1..5` (defined per theme) — verify the
-  stacked-area reads in `high-contrast` and `blueprint`, where low-contrast fills fail.
+- **Two themes**: `light` (default) and `dark` — the reference themes the library ships. (This
+  document was written when the kit shipped six; that set shrank to two, and `blueprint` /
+  `high-contrast` no longer exist.) Chart series **must** come from `--chart-1..12` (defined per
+  theme) — verify the stacked-area reads in BOTH themes, where low-contrast fills can fail.
 - **Keyboard**: every control reachable; visible focus (`ring-ring`); the log is arrow-navigable and
   the inspector opens on Enter. No `div`-as-button.
 - **Density without noise**: the right rail is information-dense, so lean on whitespace, `tabular-nums`,
@@ -306,20 +307,20 @@ No raw hex/rgb, no palette colors — per `styling-and-tokens.md`.
 
 ## 11. Component gaps to raise upstream (library-first)
 
-> **Update (2026-06-20):** most of these gaps are now **closed** — `@brand/charts` and `@brand/editor`
-> are vendored, and `@brand/ui` ships `ResizablePanelGroup` (split-pane) and `Collapsible`
+> **Update (2026-06-20):** most of these gaps are now **closed** — `@elabs-ai/components-charts` and `@elabs-ai/components-editor`
+> are vendored, and `@elabs-ai/components-ui` ships `ResizablePanelGroup` (split-pane) and `Collapsible`
 > (disclosure). Remaining true gaps: a **Gantt** for the Network waterfall / Timeline spans (coming
-> in the next `@brand/charts` release — design to it; interim composed lane) and the **range slider /
+> in the next `@elabs-ai/components-charts` release — design to it; interim composed lane) and the **range slider /
 > scrubber** for replay. See [`12-testing-inspector-devtools.md`](./12-testing-inspector-devtools.md) §5.
 
-1. **`@brand/charts`** — the context-window stacked-area + limit line + event markers, KPI sparklines,
+1. **`@elabs-ai/components-charts`** — the context-window stacked-area + limit line + event markers, KPI sparklines,
    and compare overlays. The largest gap; gates the centerpiece. Vendor it or compose a constrained
    renderer (owner-gated). **→ resolved: vendored (`AreaChart`/`LiveLineChart`/`ComposedChart`/`MetricGrid`).**
 2. **Resizable split-pane** — the console's core layout.
 3. **Range slider / timeline scrubber** — replay.
 4. **Collapsible / disclosure** — Thinking sections and expandable rows (confirm it isn't already in
-   `@brand/ui`).
-5. **Cost-weighted row treatment** — compose from `Progress`; promote to a `@brand/data` cell variant
+   `@elabs-ai/components-ui`).
+5. **Cost-weighted row treatment** — compose from `Progress`; promote to a `@elabs-ai/components-data` cell variant
    if it proves reusable.
 
 ## 12. Open questions for this UI

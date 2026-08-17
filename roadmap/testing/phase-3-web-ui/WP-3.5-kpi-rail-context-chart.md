@@ -10,12 +10,12 @@ centerpiece.
 UI concept [`../10-…ui-concept.md`](../../10-testing-ui-concept.md) **§4 Zone A** (KPI rail wireframe)
 and **§4 Zone B** (context-window chart wireframe). Data model:
 [`../references.md`](../references.md) → *Braintrust — token usage* (utilization %, composition,
-per-step) and *Klipfolio* (critical metric upper-left, 5–10 KPIs). Chart lib = `@brand/charts`
+per-step) and *Klipfolio* (critical metric upper-left, 5–10 KPIs). Chart lib = `@elabs-ai/components-charts`
 (WP 0.1). Events `kpi` + `step.context` from WP 1.4/2.2.
 
 > **Reframed (doc 12):** this becomes the persistent **KPI strip** + the **Timeline** panel
 > ([`../../12-testing-inspector-devtools.md`](../../12-testing-inspector-devtools.md) §2, §3.3).
-> `@brand/charts` is now **vendored** — build the KPI strip on `MetricGrid` and the context chart on
+> `@elabs-ai/components-charts` is now **vendored** — build the KPI strip on `MetricGrid` and the context chart on
 > `AreaChart`/`LiveLineChart`/`ComposedChart` (no fallback needed).
 
 ## Files (new)
@@ -39,14 +39,14 @@ affordance when an estimator lens diverges (WP 1.4).
   the model speaks (set up by WP 3.3 pre-run).
 
 ## Gaps / fallback (UI §11)
-If `@brand/charts` can't cleanly render a streaming stacked-area + limit line, compose a constrained
-renderer from `@brand/ui` `Progress`/primitives the way `TokenViz` is built — record the decision
+If `@elabs-ai/components-charts` can't cleanly render a streaming stacked-area + limit line, compose a constrained
+renderer from `@elabs-ai/components-ui` `Progress`/primitives the way `TokenViz` is built — record the decision
 here. Throttle updates to animation frames during streaming (`.claude/rules/interaction-guidelines.md`).
 
 ## Acceptance
 - Counters tick live during a run; Context % matches the chart total / limit.
 - The chart fills per turn, shows composition + the limit line, marks overflow, and starts from the
   turn-0 footprint baseline.
-- Reads correctly in `high-contrast` and `blueprint` (where low-contrast fills fail); `tabular-nums`
+- Reads correctly in BOTH `light` and `dark` (where low-contrast fills can fail); `tabular-nums`
   everywhere.
 - Gate: typecheck + build green; manual check at `http://localhost:8080`.

@@ -26,7 +26,7 @@ the live footprint.
       tokens alongside servers.
 - [ ] Saving persists `allowedSkills`; reopening restores them; pinning a specific version works and a
       later attempt to delete that version is blocked (surfaced honestly).
-- [ ] `@brand/*` + tokens only; both themes correct; hooks clean; repo gate green.
+- [ ] `@elabs-ai/components-*` + tokens only; both themes correct; hooks clean; repo gate green.
 - [ ] **Owner-verify (localhost:8080):** attach latest + pinned, run a scenario, see the footprint +
       the disclosure-tool reads in the run console; two-theme walk.
 

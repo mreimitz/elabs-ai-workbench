@@ -68,7 +68,7 @@ are **shared hot files** — see `orchestration.md` §Hot-file protocol.
 
 ## Out of scope (do NOT let sub-agents drift here)
 
-New runtime dependencies (owner-gated), `@brand/*` version bumps, API breaking changes (additive
+New runtime dependencies (owner-gated), `@elabs-ai/components-*` version bumps, API breaking changes (additive
 only), the roadmap/ci · security-posture · advisor · team-server programs, dark/bright theme
 token redesign (we *consume* tokens; upstream token gaps get reported, not hacked), and anything
 in `apps/api` beyond the explicitly-listed additive endpoints in Phase 3/4 WPs.

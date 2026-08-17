@@ -1,6 +1,6 @@
 # Loading, streaming & placeholders
 
-Mirrors the upstream brand-ui **loading-states** convention (new in `@brand/*` v1.6.0). It is
+Mirrors the upstream brand-ui **loading-states** convention (new in `@elabs-ai/components-*` v1.6.0). It is
 **purely additive** — existing `loading` props (DataTable, Gantt) and chart `status="loading"` are
 the canonical APIs; nothing was renamed. This is the streaming-heavy surface of the app (the run
 console / SSE conversation), so get the two signals right.
@@ -10,11 +10,11 @@ console / SSE conversation), so get the two signals right.
 - **`loading` — "no content yet."** Before the first byte. Render a **layout-shaped placeholder**
   (a `Skeleton` sized like the eventual content, or `StatePanel kind="loading"` for a full view),
   never a spinner that collapses the layout. Reserve image space with `AspectRatio` so bytes
-  arriving cause **no CLS**. (`@brand/ui`: `LoadingState`/`StatePanel`/`Skeleton`/`Spinner`;
-  `@brand/data` `DataTable` has `loading`+`loadingRows`; `@brand/ai` `Gallery` has `loading`+`expectedCount`.)
+  arriving cause **no CLS**. (`@elabs-ai/components-ui`: `LoadingState`/`StatePanel`/`Skeleton`/`Spinner`;
+  `@elabs-ai/components-data` `DataTable` has `loading`+`loadingRows`; `@elabs-ai/components-ai` `Gallery` has `loading`+`expectedCount`.)
 - **`isStreaming` — "partial content arriving."** Tokens/rows are streaming in. **Build the content
   up** as it arrives and **suppress transient artifacts** (don't fold a half-filled table, don't
-  flash a half-parsed error). (`@brand/ai` `Reasoning isStreaming`, `Shimmer`.)
+  flash a half-parsed error). (`@elabs-ai/components-ai` `Reasoning isStreaming`, `Shimmer`.)
 
 ## Errors fire only on a TERMINAL, settled failure
 

@@ -2,7 +2,7 @@
 
 Phased remediation for the findings in [`01-ui-audit-findings.md`](./01-ui-audit-findings.md). Ordered by
 **leverage ÷ effort**. Each item lists the finding IDs it closes, the files to touch, the exact
-`@brand/*` components, and an acceptance check. Effort: **S** ≈ <½ day · **M** ≈ ½–1 day · **L** ≈ 1–2 days.
+`@elabs-ai/components-*` components, and an acceptance check. Effort: **S** ≈ <½ day · **M** ≈ ½–1 day · **L** ≈ 1–2 days.
 
 Guiding principle: **the strong surfaces are the template.** Almost every fix is "make this screen look
 like the Server hub / Scan detail / Run console you already shipped," plus one global density pass.
@@ -25,13 +25,13 @@ like the Server hub / Scan detail / Run console you already shipped," plus one g
   modal-opens-a-page; no duplicated theme/profile affordances.
 
 ### P0.2 — Replace `window.confirm` with `AlertDialog`  · closes **G5** · issue #2 · effort **S**
-- `App.tsx:324` `confirmDeleteServer` → controlled `@brand/ui` `AlertDialog` (title "Delete <server>?",
+- `App.tsx:324` `confirmDeleteServer` → controlled `@elabs-ai/components-ui` `AlertDialog` (title "Delete <server>?",
   destructive confirm, cancel). Reuse for any other native confirms.
 - **Accept:** delete flows through a themed `AlertDialog`; closes on Esc/overlay; no `window.confirm`
   remains in `apps/web/src` (grep clean).
 
 ### P0.3 — Compact density + type token pass  · closes **G1, D5, C5** · issue #3 · effort **M**
-- In the token layer (`@brand/tokens` overrides + Tailwind v4 `@theme`): UI/body ~13px, table ~12–13px,
+- In the token layer (`@elabs-ai/components-tokens` overrides + Tailwind v4 `@theme`): UI/body ~13px, table ~12–13px,
   section headings ~14–15px, KPI numerals ~20–24px, **row height ~36–40px**, line-height ~1.4,
   `tabular-nums` on numeric columns/KPIs. Add a **density** state (comfortable/compact) if you want it
   user-switchable (P0.1 exposes it).
@@ -88,7 +88,7 @@ like the Server hub / Scan detail / Run console you already shipped," plus one g
 - Two-column grid: **Findings (~60%)** | **Token distribution (~40%)** — merge Footprint composition + Top
   contributors into one card: server stacked bar on top, per-tool **stacked** rows below
   (Name/Desc/Schema/Annot), one shared legend pinned to the bottom.
-- **Server profile → ½ width** (`Descriptions columns={2}`) beside a **`@brand/charts` scan-trend** (last
+- **Server profile → ½ width** (`Descriptions columns={2}`) beside a **`@elabs-ai/components-charts` scan-trend** (last
   5–10 scans: total-tokens line + Δ-vs-prev + added/removed; row → Compare).
 - **KPI sparklines** (`MetricCard` + micro-chart) across recent scans; hide "Recoverable" at 0.
 - **Accept:** no full-width half-empty cards; ≥1 chart on Overview; findings grouped by type.
@@ -107,8 +107,8 @@ like the Server hub / Scan detail / Run console you already shipped," plus one g
   content scrolls.
 - Breakdown order → **Token budget → Optimization → Instructions** (move `ToolDetailPanel.tsx:97-117`
   above `:87-95`).
-- Instructions: clamp ~4–6 lines + **Expand** `Dialog` rendering `@brand/editor` `CodeEditor` (read-only).
-- **Raw** tab → `@brand/editor` `CodeEditor` (`json`, `readOnly`, `folding`) + **Expand** modal; retire
+- Instructions: clamp ~4–6 lines + **Expand** `Dialog` rendering `@elabs-ai/components-editor` `CodeEditor` (read-only).
+- **Raw** tab → `@elabs-ai/components-editor` `CodeEditor` (`json`, `readOnly`, `folding`) + **Expand** modal; retire
   `CodeBlock` here (the result panel already uses `CodeEditor`).
 - One quiet metadata chip row under the title (behavior chips + share%); route text through `Text` + the
   density tokens (kill ad-hoc `text-sm`/mono).
@@ -172,5 +172,5 @@ to kill the two card-grid screens.
 
 ## Definition of done (per the repo's own gate)
 `pnpm typecheck && pnpm test && pnpm build` green, **and** the changed screens verified **against the
-running app** in qlik-bright + qlik-dark (the repo rule: visual claims are checked live, not on a mock).
+running app** in light + dark (the repo rule: visual claims are checked live, not on a mock).
 Route a scored pass through `brand-ui-audit` with register = *product/professional*.

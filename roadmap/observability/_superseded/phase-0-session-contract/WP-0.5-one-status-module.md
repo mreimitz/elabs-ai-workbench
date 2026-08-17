@@ -21,7 +21,7 @@ mixing both). One derivation `(status, outcome, stopReasonCode, ratingState, las
   in the module.
 - Adopt in: `RunBar.tsx`, runs list (`deriveStatusView` callers), `StepLog.tsx`,
   `SuiteRunConsole.tsx`, suite member rows, and the app-local `components/StatusBadge.tsx`
-  (which becomes the single rendering component or is deleted if `@brand/ui` badge + module
+  (which becomes the single rendering component or is deleted if `@elabs-ai/components-ui` badge + module
   covers it — implementer decides, records it).
 - Word/tone changes later must be one-file edits: the table is data, not scattered logic.
 

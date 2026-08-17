@@ -6,7 +6,7 @@
 
 ### D-IL1 — Purpose: explanatory illustration, not diagramming
 The system produces **staged explanatory scenes** of app processes and entities. It is not a
-charting library (`@brand/charts`), not an interactive canvas for user data (`@brand/flow`),
+charting library (`@elabs-ai/components-charts`), not an interactive canvas for user data (`@elabs-ai/components-flow`),
 and not the flat marketing-hero style. If a feature needs users to *edit* diagrams of their
 own data, that is a different workstream.
 
@@ -24,12 +24,12 @@ Components are React components rendering inline SVG. Peer dep `react`; workspac
 ### D-IL4 — Location: `packages/illustrations`
 A workspace package `@mcp-token-footprint/illustrations`, wired like `packages/shared`
 (exports with `types → src`, `default → dist`; own `build`/`typecheck`/`test`). Only
-`apps/web` consumes it. It may graduate upstream to `@brand/*` later; that is an owner call
+`apps/web` consumes it. It may graduate upstream to `@elabs-ai/components-*` later; that is an owner call
 and out of scope here.
 
 ### D-IL5 — Color: the `--illus-*` indirection layer, no literals ever
 Components consume only the closed `--illus-*` token set; exactly one file
-(`src/tokens.css`) binds those to `@brand/tokens` semantic variables (the mapping table in
+(`src/tokens.css`) binds those to `@elabs-ai/components-tokens` semantic variables (the mapping table in
 research §3.4). Face shading is derived via `color-mix(in oklch, …)`, never hand-picked.
 No color literal anywhere in the package (`check-tokens` already polices `packages/*/src`).
 A missing semantic token is raised upstream per `library-first.md`, not hardcoded around.
@@ -87,9 +87,9 @@ view is added there, both sides re-validating, per the established safety bounda
 ### D-IL14 — Boundaries with existing rules
 Illustrations are **content graphics**, not UI controls — they don't violate
 `brand-ui-only.md`; all surrounding chrome (gallery, dialogs, buttons, toolbars) is
-`@brand/*`. The repo-root `illustrations/` folder is an **export output** only; the package
+`@elabs-ai/components-*`. The repo-root `illustrations/` folder is an **export output** only; the package
 is the source of truth. `apps/api` never imports the illustrations package (runtime boundary
-unchanged). Both themes (`qlik-bright`, `qlik-dark`) must render correctly — verified by
+unchanged). Both themes (`light`, `dark`) must render correctly — verified by
 looking, in the gallery; `blueprint` is not re-added.
 
 ### D-IL15 — Drafting calibration (owner reference, 2026-07-12)

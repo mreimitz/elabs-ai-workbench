@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://qlabs/mcp-token-footprint/token-context-comparison/test-catalog.schema.json",
+  "$id": "https://elabs-ai/mcp-token-footprint/token-context-comparison/test-catalog.schema.json",
   "title": "MCP model-compatibility test catalog",
   "description": "Machine-readable definitions of the compatibility tests run against an MCP server / tool / live session per LLM model. See 03-compatibility-test-suite.md.",
   "type": "object",

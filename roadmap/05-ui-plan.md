@@ -47,5 +47,5 @@ Default token profile, app version, database path, Docker mode, and data directo
 - connection failures shown in UI
 - no fake scan results
 - no placeholder screens in the final deliverable
-- the vendor Light and Qlik Dark are the only selectable themes
+- Light and Dark are the only selectable themes
 - the vendor brand mark remains the sidebar app icon and favicon

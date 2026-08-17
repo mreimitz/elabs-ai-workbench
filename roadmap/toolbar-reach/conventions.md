@@ -29,7 +29,7 @@ All four green — plus any **WP-specific tests** the spec names. This is the sa
 
 Any WP touching a toolbar, a filter row, or a status/count readout makes a **visual claim**, and a visual
 claim is only valid against the **running app** at `http://127.0.0.1:8080` (or the built app on a spare
-port), in **BOTH** `qlik-bright` **and** `qlik-dark` — **never a mock, never a screenshot of a component
+port), in **BOTH** `light` **and** `dark` — **never a mock, never a screenshot of a component
 in isolation.**
 
 **Toolbar geometry is measured, not eyeballed.** For any row a WP touches, the acceptance evidence is the
@@ -58,12 +58,12 @@ the default "Local" collection auto-exists) — it never fabricates a rendered r
 - **API runtime / secret boundary.** Only `apps/api` spawns MCP processes, makes MCP HTTP calls, or reads
   decrypted secrets. The web UI receives redacted configs. No WP here should need to cross it; if one
   seems to, that is a signal the spec is wrong — report it.
-- **`@brand/*`-only + semantic tokens.** Every visible element is a `@brand/*` component (or a
-  `lucide-react`/`@brand/icons` glyph). No raw `#hex`/`rgb()`/`hsl()`, no palette colours (`text-gray-500`),
+- **`@elabs-ai/components-*`-only + semantic tokens.** Every visible element is a `@elabs-ai/components-*` component (or a
+  `lucide-react`/`@elabs-ai/components-icons` glyph). No raw `#hex`/`rgb()`/`hsl()`, no palette colours (`text-gray-500`),
   no `*-black`/`*-white`. `className` is layout-only — use a component's `variant`/`size` for looks. The
-  `enforce-brand-ui` and `check-tokens` hooks are active. New primitives (`IconButton`) compose `@brand`
+  `enforce-brand-ui` and `check-tokens` hooks are active. New primitives (`IconButton`) compose `@elabs-ai/components-*`
   parts; verify props against the vendored kit / `.d.ts` / the brand-ui MCP server, never guess.
-- **Two themes only** — `qlik-bright` (default) + `qlik-dark`. New UI must read correctly in both. Don't
+- **Two themes only** — `light` (default) + `dark`. New UI must read correctly in both. Don't
   reach for `dark:` overrides; tokens cover both.
 - **Naming:** TS files kebab-case; React components PascalCase; tests co-located as `name.test.ts(x)`.
 - **Loading/streaming discipline** (`.claude/rules/loading-states.md`): `loading` = no content yet;

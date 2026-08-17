@@ -127,5 +127,5 @@ proceed unchanged.
 ## Definition of done (every WP)
 
 `pnpm typecheck && pnpm test && pnpm build && pnpm lint` green from the repo root, plus the WP's
-Acceptance met. Contract-first, API runtime/secret boundary, never-execute invariant, `@brand/*`
+Acceptance met. Contract-first, API runtime/secret boundary, never-execute invariant, `@elabs-ai/components-*`
 only + two themes — see [`conventions.md`](./conventions.md).

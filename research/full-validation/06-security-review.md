@@ -33,7 +33,7 @@ The critical shift for team-server: today the operator is the only actor and is 
 2. **Skill/zip ingestion:** `skills/ingest-service.ts`, `caps.ts`, `git-service.ts`, `routes.ts`, `repository.ts` file-serving, `assistant/workspace.ts`, `collections/git-sync.ts`.
 3. **Injection:** all 19 `*/repository.ts` + `db/*` for SQL; `mcp/client.ts` + `assistant/session-driver.ts` + `spawn-env.ts` + all `child_process` uses for command injection; report/static/skill-file routes for path traversal & header injection.
 4. **SSRF:** probe endpoint, streamable-HTTP MCP, `servers/asset-proxy.ts`, `vendor-detect.ts`, `vendor-assistant-probe.ts`, GitHub import, collections git sync.
-5. **Web XSS & storage:** full `apps/web/src` sweep for `dangerouslySetInnerHTML`/`innerHTML`/etc.; markdown pipeline (Streamdown/`@brand/ai`), Mermaid config, SKILL.md rendering, skill file viewer/SVG, `href` construction, all `localStorage` keys, provider-key write-only invariant.
+5. **Web XSS & storage:** full `apps/web/src` sweep for `dangerouslySetInnerHTML`/`innerHTML`/etc.; markdown pipeline (Streamdown/`@elabs-ai/components-ai`), Mermaid config, SKILL.md rendering, skill file viewer/SVG, `href` construction, all `localStorage` keys, provider-key write-only invariant.
 6. **Transport/container:** `index.ts` CORS/auth/rate-limit/error-handler/static, `Dockerfile`, `docker-compose.yml`, dependency versions.
 7. **Logging:** tool-playground call route, MCP client `callTool`, runs engine, Fastify logger config, the vendor assistant debug lines.
 
@@ -237,7 +237,7 @@ When the env flag is set, up to 20 000 chars of upstream **response bodies** are
 <MessageResponse>{renderedBody}</MessageResponse>
 ```
 
-`renderedBody` is the SKILL.md body of an uploaded/GitHub-imported skill — fully attacker-controllable and may contain raw HTML (`<script>`, `<img onerror>`, `javascript:` links) and `mermaid` fences. **Currently safe:** Streamdown v2.5.0's default pipeline is `rehype-raw → rehype-sanitize → harden`, and `rehype-sanitize` strips scripts/handlers/`javascript:`; Mermaid runs at `securityLevel:"strict"`. The caveat: the app pins none of this and the harden step is configured wide-open (`allowedProtocols:["*"]`, `allowDataImages:true`). The only barrier is a stage inside a **vendored** `@brand/ai` + a transitive `streamdown` pin. A future bump that reorders/drops that stage silently turns this into a stored-XSS sink triggered by opening a hostile skill.
+`renderedBody` is the SKILL.md body of an uploaded/GitHub-imported skill — fully attacker-controllable and may contain raw HTML (`<script>`, `<img onerror>`, `javascript:` links) and `mermaid` fences. **Currently safe:** Streamdown v2.5.0's default pipeline is `rehype-raw → rehype-sanitize → harden`, and `rehype-sanitize` strips scripts/handlers/`javascript:`; Mermaid runs at `securityLevel:"strict"`. The caveat: the app pins none of this and the harden step is configured wide-open (`allowedProtocols:["*"]`, `allowDataImages:true`). The only barrier is a stage inside a **vendored** `@elabs-ai/components-ai` + a transitive `streamdown` pin. A future bump that reorders/drops that stage silently turns this into a stored-XSS sink triggered by opening a hostile skill.
 
 **Fix:** add a regression test rendering a `<script>`/`<img onerror>`/`javascript:` SKILL.md through `MessageResponse` and asserting inertness; consider passing explicit `allowedImagePrefixes`/`allowedLinkPrefixes` and `allowDataImages:false` so the posture doesn't depend on library internals.
 

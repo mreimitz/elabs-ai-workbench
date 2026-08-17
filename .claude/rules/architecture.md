@@ -28,10 +28,10 @@ MCP servers
 - **`packages/shared`** — the API contract: `types.ts`, `schemas.ts` (zod), `constants.ts`.
   Both `web` and `api` import from here. **This is the single source of truth for wire shapes.**
 
-UI comes from the vendored **`@brand/*`** design system (see `dependencies.md`,
+UI comes from the vendored **`@elabs-ai/components-*`** design system (see `dependencies.md`,
 `styling-and-tokens.md`, `library-first.md`); the old `packages/brand-ui` adapter is removed.
 
-Dependency direction: `web -> shared`, `web -> @brand/*`, `api -> shared`. Never `shared -> api/web`,
+Dependency direction: `web -> shared`, `web -> @elabs-ai/components-*`, `api -> shared`. Never `shared -> api/web`,
 never `web -> api` source imports (talk over HTTP only).
 
 ## Runtime boundary (do not cross)

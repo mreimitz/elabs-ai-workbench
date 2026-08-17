@@ -42,7 +42,7 @@ A small `useRunStream(runId)` hook accumulates events into console state (messag
 status) and returns a cleanup.
 
 ## Acceptance
-- New nav entries switch views; render in both themes (qlik-bright, qlik-dark).
+- New nav entries switch views; render in both themes (light, dark).
 - A dev harness starts a run and logs an ordered `RunEvent` stream; `EventSource` closes on unmount
   (no leak).
 - Gate: typecheck + build green.

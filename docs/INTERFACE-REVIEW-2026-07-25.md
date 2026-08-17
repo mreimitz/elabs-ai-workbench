@@ -17,9 +17,9 @@ Mode: full · Scope: the running application at http://127.0.0.1:8080, all nav-r
 off-nav consoles, in both shipped themes.
 
 Stack and conventions: React 19 + Vite 6, react-router-dom v7. Styling is Tailwind v4 with semantic oklch
-tokens from `@brand/tokens`; all UI comes from the vendored `@brand/*` design system (brand-ui 1.9.0,
+tokens from `@elabs-ai/components-tokens`; all UI comes from the vendored `@elabs-ai/components-*` design system (brand-ui 1.9.0,
 Radix + CVA) under a hard "no raw color, no hand-rolled interactive HTML" rule enforced by
-`.claude/hooks/`. Two themes (qlik-bright default, qlik-dark), and the app ships `data-density="compact"`
+`.claude/hooks/`. Two themes (light default, dark), and the app ships `data-density="compact"`
 by default (`main.tsx:54`), which replaces the upstream type scale wholesale (`styles/app.css:74-111`).
 Fixes below are expressed in that system.
 
@@ -42,12 +42,12 @@ surfaces, suite-run console with live data, OAuth flows — all need credentials
 ### 1 · HIGH · Colors
 **Location:** `vendor/brand/brand-tokens-1.9.0 → themes.css:595,612,619` (bright) and `:755,768,772`
 (dark); rendered on `StatusBadge.tsx:25-28` and every filled `Button`.
-**Before:** Measured on-fill pairs. qlik-bright: `--primary` `#008947` / `#fafafa` = **4.31:1**;
-`--success` (identical token) = **4.31:1**; `--info` `#2d86c8` / `#fafafa` = **3.76:1**. qlik-dark:
+**Before:** Measured on-fill pairs. light: `--primary` `#008947` / `#fafafa` = **4.31:1**;
+`--success` (identical token) = **4.31:1**; `--info` `#2d86c8` / `#fafafa` = **3.76:1**. dark:
 `--destructive` `#ef5f89` / `#fafafa` = **3.02:1**.
 **After:** Give each failing fill a foreground with ≥4.5:1. Dark already solves this for four of five —
 `--primary-foreground` is `#1c1a18` there; apply the same treatment to `--destructive-foreground` in
-qlik-dark. In bright, darken `--primary`/`--info` lightness (keep C and H) until the pair clears 4.5,
+dark. In bright, darken `--primary`/`--info` lightness (keep C and H) until the pair clears 4.5,
 then re-run `themes-contrast.test.ts`.
 **Why:** WCAG 1.4.3 AA needs 4.5:1 for normal text; all these render at 11–13px. Each theme fails a
 different pair, which is what independent tuning without a shared on-fill check produces. The dark failure
@@ -236,13 +236,13 @@ domain is otherwise disciplined.
 
 ### 15 · LOW · Typography
 **Location:** `apps/web/index.html:9` (`<body>` has no class); `apps/web/src/styles/app.css:15-23`.
-**Before:** `-webkit-font-smoothing` is absent from the entire app and every `@brand/*` package. Verified
+**Before:** `-webkit-font-smoothing` is absent from the entire app and every `@elabs-ai/components-*` package. Verified
 at runtime: `getComputedStyle(document.body).webkitFontSmoothing === "auto"`. Independently confirmed from
 the build — Tailwind's `.antialiased` rule is never emitted into the bundle.
 **After:** Add `antialiased` to `<body>` in `index.html`, or `-webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;` to the existing body rule in `app.css:19`.
 **Why:** Font smoothing on the root. On macOS all text renders heavier than intended — most visible at the
-app's 13px compact body size on qlik-dark. Highest leverage-to-effort item in the review: one line, zero
+app's 13px compact body size on dark. Highest leverage-to-effort item in the review: one line, zero
 risk, affects every glyph.
 
 ## Considered but Rejected
@@ -272,7 +272,7 @@ risk, affects every glyph.
 | Prose measure | Character-width probe against rendered container widths at 1600px | Compatibility callout = 190 ch/line at 13px |
 | Font smoothing | `getComputedStyle(document.body).webkitFontSmoothing` | "auto" — antialiasing not applied |
 | Truncation recovery | Live scan for clipped/clamped text lacking title/aria-label/tooltip | Confirmed on the Runs Environment column (`the vendor assistant — ontime-assistant`, `max-w-[12rem]`, no recovery) |
-| Both themes rendered | Full walk in qlik-bright and qlik-dark | No unthemed surface, no raw color, no broken token — dark is independently tuned, not a mechanical inversion |
+| Both themes rendered | Full walk in light and dark | No unthemed surface, no raw color, no broken token — dark is independently tuned, not a mechanical inversion |
 
 **Not verified — stated rather than converted into findings:**
 

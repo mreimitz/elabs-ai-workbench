@@ -103,7 +103,7 @@ Living state for the **claude-subscription** plan, read and updated by
       console rail, Runs feed, Compare, suite report), reusing the `estimatedTokens` marker; both themes
       — done 2026-07-13 · wp/claude-subscription/3.1 · **read-path fix**: migration **v29** adds
       `runs.cost_basis` (persist at finalize → `toRunSummary`), so Runs feed + Compare carry `costBasis`;
-      `SubscriptionCostMarker` (`@brand` Badge+Tooltip, both-theme by construction) on rail/feed/Compare/
+      `SubscriptionCostMarker` (`@elabs-ai/components-*` Badge+Tooltip, both-theme by construction) on rail/feed/Compare/
       suite report. Both-theme + keyboard visual walk = owner-acceptance.
 - [x] WP 3.2 — JSON + Markdown reports carry `costBasis`/`meteringEstimated` + footnote
       — done 2026-07-13 · wp/claude-subscription/3.2 · JSON run report `statistics.costBasis`

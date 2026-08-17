@@ -70,7 +70,7 @@ auto-upgrade-retention-on-interesting is the model; a rule action in O4 sets the
 
 **O2.1 Testing dashboard (time axis at last).** New route (Q-OB1: `/observability` vs a tab on
 the existing Dashboard): date-range + global filter bar + group-by, then panels driven by O1.1,
-all `@brand/charts`: runs & error rate over time; guardrail stops by `stopReasonCode`; duration
+all `@elabs-ai/components-charts`: runs & error rate over time; guardrail stops by `stopReasonCode`; duration
 p50/p95; tokens & cost by model/server/skill; score trend per grader; top failing tests/servers;
 "most expensive" leaderboard. Every datapoint click-throughs to the runs feed with the O1.3
 filter pre-applied (LangSmith drill-down parity). Prebuilt-first (their six-section prebuilt

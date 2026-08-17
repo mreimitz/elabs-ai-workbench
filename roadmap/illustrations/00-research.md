@@ -17,7 +17,7 @@ shapes, no reuse, no theme awareness, no way to keep it consistent as the app gr
 
 1. a **component library** of illustration assets for the app's core entities (LLMs, agents,
    MCP servers, skills, runs, suites, files, …) in one recognizable visual language,
-2. **colors derived from the live theme** (`qlik-bright` / `qlik-dark`) so every asset renders
+2. **colors derived from the live theme** (`light` / `dark`) so every asset renders
    correctly in both, automatically, forever,
 3. an **asset repository** in the app to browse what exists,
 4. a **growth process** so new components are added the same way every time, and
@@ -26,7 +26,7 @@ shapes, no reuse, no theme awareness, no way to keep it consistent as the app gr
    walkthroughs of the app's own internals.
 
 This is *explanatory* graphics — staged scenes that tell a process story — not charting
-(that's `@brand/charts`) and not user-data diagramming (that's `@brand/flow`).
+(that's `@elabs-ai/components-charts`) and not user-data diagramming (that's `@elabs-ai/components-flow`).
 
 ## 2. Deconstructing the reference image (what the style *is*)
 
@@ -101,9 +101,9 @@ faces** so depth survives print/export and low-quality screens. Derived, never h
 --illus-face-right: color-mix(in oklch, var(--illus-surface), var(--illus-ink) 24%);
 ```
 
-Because `@brand/tokens` colors are **oklch** (perceptually even), mixing toward the ink color
-produces consistent, theme-correct shading in *both* themes: in `qlik-bright` faces darken;
-in `qlik-dark` (light ink on dark surface) they lighten — which is exactly how physical
+Because `@elabs-ai/components-tokens` colors are **oklch** (perceptually even), mixing toward the ink color
+produces consistent, theme-correct shading in *both* themes: in `light` faces darken;
+in `dark` (light ink on dark surface) they lighten — which is exactly how physical
 lighting should flip on a dark stage. The exact mix percentages are tuned once, per theme if
 needed, inside `tokens.css` to hit the ratio targets; a dev-mode assertion in the gallery
 measures resolved face lightness and warns when adjacent faces fall under the 20% separation
@@ -114,11 +114,11 @@ PNG/SVG *export* path resolves computed values, so exports never depend on brows
 ### 3.4 Color: derivation, not palette
 
 **No component ever contains a color literal.** Components consume a small closed set of
-`--illus-*` custom properties; a single mapping file binds those to `@brand/tokens` semantic
+`--illus-*` custom properties; a single mapping file binds those to `@elabs-ai/components-tokens` semantic
 variables. This indirection is the entire "derive from the current theme" logic — and it means
 a future third theme gets the whole illustration library for free.
 
-| Illustration token | Bound to (`@brand/tokens`) | Role |
+| Illustration token | Bound to (`@elabs-ai/components-tokens`) | Role |
 | --- | --- | --- |
 | `--illus-paper` | `--background` | drafting-paper stage |
 | `--illus-grid` | `--grid-line` (fallback `--canvas-grid`) | paper grid |
@@ -203,7 +203,7 @@ the growth process (§7 there) is how it extends. This doc only fixes the *tiers
   committed to the owner's 3D blueprint look).
 - **unDraw-style single-var theming**: proves CSS-var recoloring works at scale; we generalize
   from 1 accent var to a ~14-token semantic layer.
-- **The app's own `@brand` system**: `ThemeProvider`/`data-theme` switching, oklch semantic
+- **The app's own `@elabs-ai/components-*` system**: `ThemeProvider`/`data-theme` switching, oklch semantic
   tokens, the two-theme discipline, `check-tokens` enforcement (which **already covers
   `packages/*/src`** — the hook filters on `/src/` + `.tsx?`, so the new package is born
   policed). The illustration layer is deliberately shaped like a miniature of that system.
@@ -240,7 +240,7 @@ the growth process (§7 there) is how it extends. This doc only fixes the *tiers
 | Risk | Mitigation |
 | --- | --- |
 | **Visual drift** — components added over time stop looking like one family | Primitives-first (components compose `IsoPlatform`/`IsoHousing`/… rather than drawing freehand); quantized footprints; contribution checklist; golden screenshots in both themes (visual-regression WP). |
-| **Scope creep into a diagram editor** | Non-goal locked in decisions: scenes are *authored explanations*, not a user diagramming feature. `@brand/flow` remains the interactive-canvas tool. |
+| **Scope creep into a diagram editor** | Non-goal locked in decisions: scenes are *authored explanations*, not a user diagramming feature. `@elabs-ai/components-flow` remains the interactive-canvas tool. |
 | **Accent overuse / off-ratio scenes** | Primitives default neutral; scene renderer counts accent-bearing elements and warns in dev; checklist gate. |
 | **Token gaps** (e.g. no dedicated illustration tokens upstream) | The `--illus-*` mapping file is the single place that absorbs gaps; a real gap is raised upstream per `library-first.md`, not hardcoded around. |
 | **Isometric legibility at small sizes** | S footprint defines the minimum; labels screen-aligned; gallery previews at real embed sizes. |
@@ -250,7 +250,7 @@ the growth process (§7 there) is how it extends. This doc only fixes the *tiers
 ## 9. What "done" looks like (acceptance narrative)
 
 The owner opens **Illustrations** in the app and browses the asset repository: every core
-entity rendered live, switchable between `qlik-bright`/`qlik-dark`, each with its ports,
+entity rendered live, switchable between `light`/`dark`, each with its ports,
 variants, and states documented. They paste a scene spec (or ask the Assistant: *"visualize
 how a suite run flows through the orchestrator into grading"*) and get the composed scene in
 the app's own visual language — the Self-Learning Agentic Loop reference rebuilt as a spec is

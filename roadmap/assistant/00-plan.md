@@ -151,8 +151,8 @@ edits; **deletes always ask**, even with auto-accept on. Every decision is persi
 
 ### 3.5 Web (`apps/web/src/features/assistant/`)
 
-- **`AssistantDock`** — built from `@brand/ai` (`ChatShell`, `Conversation*`, `Composer`,
-  `Reasoning*`, `MessageResponse`, `Shimmer`) + `@brand/ui`, exactly like the run console
+- **`AssistantDock`** — built from `@elabs-ai/components-ai` (`ChatShell`, `Conversation*`, `Composer`,
+  `Reasoning*`, `MessageResponse`, `Shimmer`) + `@elabs-ai/components-ui`, exactly like the run console
   (`ConversationPane.tsx` is the styling/behavior reference). Header: thread switcher (recent +
   threads pinned to the current entity), model picker, auth-source indicator, auto-accept toggle,
   stop. Body: streaming transcript, tool-call cards (`AgentStep`/`ToolDetails` pattern),
@@ -221,7 +221,7 @@ DELETE /api/assistant/auth        (sign out)  GET    /api/assistant/threads/:id/
 ## 5. Dependencies & Docker
 
 - **`apps/api` deps:** `@anthropic-ai/claude-agent-sdk` (bundles the CLI binary; pin exact,
-  updates owner-gated like `@brand/*`), `node-pty` (native — builds in the existing
+  updates owner-gated like `@elabs-ai/components-*`), `node-pty` (native — builds in the existing
   `deps`/`prod-deps` stages which carry `python3 make g++`; the runtime stage only copies
   `node_modules`, so **never install at runtime**).
 - **Dockerfile/compose:** `USER node` can already spawn children (stdio MCP servers do);

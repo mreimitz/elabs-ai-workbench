@@ -105,7 +105,7 @@ it back. **Add a real theme `Select` to the General pane** — options **System 
 same `ThemeProvider`/`useTheme` the top-bar control uses so it switches the live theme — **keep the top-bar
 shortcut** (two entry points, one preference). Update the `SettingsView.tsx:550` comment (which currently
 asserts "theme stays SOLELY in the top bar (WP 6.7)") to record the D-5 supersession. Do **not** re-add the
-filtered-out `blueprint` theme — the switcher exposes only `qlik-bright`/`qlik-dark` (+ System), per
+filtered-out `blueprint` theme — the switcher exposes only `light`/`dark` (+ System), per
 `lib/theme.ts` `ALLOWED_THEMES`.
 
 ### Acceptance (checklist)

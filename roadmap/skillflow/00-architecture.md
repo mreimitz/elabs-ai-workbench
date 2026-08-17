@@ -90,11 +90,11 @@ each gatekeeper decision, turning misrouting detection into exact matching;
 - All wire shapes land in `packages/shared` first (types + zod), additive `/api` routes only.
 - Gate expectations (Phase 5) unify with the reserved `tests.assertions_json` column rather than
   inventing a second assertion format.
-- UI is `@brand/*` only. The canvas is the already-vendored **`@brand/flow`** v1.6.0
+- UI is `@elabs-ai/components-*` only. The canvas is the already-vendored **`@elabs-ai/components-flow`** v1.6.0
   (`CanvasShell`, `FlowNode` with `tone: default|accent|success|warning|destructive`, `FlowEdge`,
   `InspectorPanel`, `Legend`, `ZoomControls`) — installed today with zero imports; SkillFlow is the
   feature that wires it in. Conversation rendering beside the trace reuses the existing
-  `@brand/ai` testing-console components; markdown/code editing reuses `@brand/editor`.
+  `@elabs-ai/components-ai` testing-console components; markdown/code editing reuses `@elabs-ai/components-editor`.
 
 ## The three schemas everything hangs off (WP 1.0)
 
@@ -132,7 +132,7 @@ Same canvas as Design, plus: `tone="success"` on nodes/edges that executed as de
 never-visited nodes, execution-count badges, exit-code chips on gates, expected-vs-actual route
 markers on gatekeepers, and traversal counts on trace edges. A run picker lists runs whose scenario
 had this skill attached (via `run_skills`); a side pane renders the conversation turns
-(`@brand/ai`) synced to node selection — click a fracture, see the exact turns that produced it.
+(`@elabs-ai/components-ai`) synced to node selection — click a fracture, see the exact turns that produced it.
 
 ## Explicit non-goals
 

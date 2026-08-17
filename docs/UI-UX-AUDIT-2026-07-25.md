@@ -1,7 +1,7 @@
 # UI / UX audit — AI Workbench (MCP Token Footprint)
 
 **Date:** 2026-07-25
-**Build reviewed:** running instance at `http://127.0.0.1:8080`, `qlik-bright` + `qlik-dark`, viewport 1515×811, `data-density="compact"`
+**Build reviewed:** running instance at `http://127.0.0.1:8080`, `light` + `dark`, viewport 1515×811, `data-density="compact"`
 **Method:** browser walk of every nav-reachable route plus the off-nav consoles, geometry measured in the live DOM, then every finding cross-checked against `apps/web/src` before it was written down.
 **Scope requested:** (1) navigation & workflow inconsistency, (2) purpose-built page/view design, (3) toolbars — especially unorganized and misaligned ones, (4) general productivity-application practice: tooltips, layout, descriptions.
 
@@ -288,7 +288,7 @@ Also: `not bound to a repository` renders in the **monospace** face. Code font f
 
 ## C-8 · Single-page pagination — **S3**
 
-`lib/table.tsx:257-262` ships `shouldPaginate()` specifically to stop `@brand/data` rendering "Page 1 of 1" with two disabled buttons. I confirmed the underlying behaviour in the vendored `brand-data-1.9.0` bundle: `renderPagination()` is unconditional once `enablePagination` is set.
+`lib/table.tsx:257-262` ships `shouldPaginate()` specifically to stop `@elabs-ai/components-data` rendering "Page 1 of 1" with two disabled buttons. I confirmed the underlying behaviour in the vendored `brand-data-1.9.0` bundle: `renderPagination()` is unconditional once `enablePagination` is set.
 
 **2 of 8 call sites use it.**
 
@@ -416,7 +416,7 @@ Agent cards clamp descriptions at ~2 lines with an ellipsis and no tooltip or ex
 Worth stating plainly, because a findings list distorts the picture:
 
 - **`StatusBadge` + `lib/status`** is a genuine single source of truth. Nobody hand-rolls chip classes anywhere in the codebase.
-- **Both themes hold up.** I walked the app in `qlik-dark` and found no contrast failure, no unthemed surface, no raw colour.
+- **Both themes hold up.** I walked the app in `dark` and found no contrast failure, no unthemed surface, no raw colour.
 - **Accessible naming is near-perfect** — 123 of 124 icon-only buttons named. That is rare.
 - **The run launcher wizard** is the best-designed flow in the app: three steps, honest descriptions, state carried in the step rail, cost cap surfaced before you commit.
 - **Sessions and Audit toolbars** are exactly right — one row, all label-in-control, count badge, primary action right-pinned. They are the template for everything in section C.

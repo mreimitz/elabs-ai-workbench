@@ -34,7 +34,7 @@ implement work packages yourself.
 - Hard invariants for every subagent prompt: additive-only changes to `packages/shared` and the
   DB schema; grading byte-identity (`assistantText`) untouched; Assistant dock and compatibility
   runner untouched (D-US10); no real the vendor tenant is ever contacted from tests (stub fetch only);
-  UI uses `@brand/*` components only per `.claude/rules/`.
+  UI uses `@elabs-ai/components-*` components only per `.claude/rules/`.
 
 **Start now:** determine the current wave from STATUS.md (fresh start = Wave 1 + the Wave-4 facade
 lane in parallel), spawn the wave's unblocked WPs concurrently with their kickoff prompts per

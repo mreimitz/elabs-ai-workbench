@@ -23,7 +23,7 @@ in the composer today.
   additively with `mode`, mirroring WP 1.2's pattern; update the `ComposerCommands.tsx:60-64`
   comment that documented the omission).
 - Autonomy chip gains the label prefix `Autonomy:` and a tooltip describing the three levels.
-- Keep it small: no redesign; tokens + existing `@brand/ui` menu primitives.
+- Keep it small: no redesign; tokens + existing `@elabs-ai/components-ui` menu primitives.
 
 ## Files (exclusive)
 

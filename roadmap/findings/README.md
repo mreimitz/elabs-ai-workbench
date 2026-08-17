@@ -1,5 +1,7 @@
 # UI Audit — MCP Token Footprint
 
+> **Historical record.** This document reports what was observed on the date in its title, against the pre-v4 `@brand/*` design system, when the kit shipped six themes (`qlik-bright`, `qlik-dark`, `light`, `dark`, `blueprint`, `high-contrast`). The project now runs `@elabs-ai/components-*` v4, which ships exactly two — `light` (default) and `dark`. Theme names and counts below are preserved as observed and are NOT current. See [`.claude/rules/styling-and-tokens.md`](../../.claude/rules/styling-and-tokens.md).
+
 Enterprise-grade UI/UX evaluation of the running app at `http://127.0.0.1:8080/`, conducted with the
 `brand-ui-enterprise` judgment framework and live browser inspection (visual + programmatic) of every
 view, tab, modal, and flow.
@@ -9,8 +11,8 @@ view, tab, modal, and flow.
   Settings) + Run console + Add-server wizard + Quick-settings modal. The planned agent **testing
   run-console** (roadmap docs 10/12, `testing/STATUS.md`) is **not built yet** and is *not* judged here.
 - **Method:** agent-browser navigation + screenshots (`_screens/`) at 1440×900, computed-style/DOM
-  probing, cross-theme checks (qlik-bright, qlik-dark, blueprint, high-contrast), and source
-  cross-reference in `apps/web/src` to name exact `@brand/*` fixes.
+  probing, cross-theme checks (light, dark, blueprint, high-contrast), and source
+  cross-reference in `apps/web/src` to name exact `@elabs-ai/components-*` fixes.
 - **Docs:** this README (verdict + plan), [`01-ui-audit-findings.md`](./01-ui-audit-findings.md)
   (every finding, with evidence + the rubric + the fix), [`02-prioritized-fix-plan.md`](./02-prioritized-fix-plan.md)
   (phased, actionable work items), and [`03-servers-deep-dive.md`](./03-servers-deep-dive.md)
@@ -23,7 +25,7 @@ view, tab, modal, and flow.
 The **shell is right**; the **content register is wrong in places**. This is a professional operator
 tool (per `CLAUDE.md` and the roadmap: *"calm, dense, operator-grade"*), and the app already proves it
 can hit that bar — it reaches for the right primitives (`Tabs`, `SplitPanel`, `MetricCard`, `DataTable`,
-`@brand/editor`). But on the **Servers** view those right components are composed into a layout that
+`@elabs-ai/components-editor`). But on the **Servers** view those right components are composed into a layout that
 isn't smart — full-width cards with 80% whitespace, no charts, a non-resizable split, a non-sticky detail
 header, off-brand mono fonts, a pointless tab, and a run modal with an inert splitter. The genuinely
 solid surfaces are narrower than pass 1 implied: the **Scan-detail `DataTable`** and the **Add-server
@@ -36,8 +38,8 @@ settings dialog from a settings button to reach the settings page.
 
 **Good news:** still not a ground-up rebuild. The fixes are (1) a density/type-token pass, (2) a copy +
 IA cleanup, (3) replacing two card-grid screens (Dashboard, Compare) with patterns the app already uses,
-and (4) a **Servers re-layout** — two-column Overview with charts (`@brand/charts` is already vendored), a
-resizable split, a sticky detail header, `@brand/editor` for instructions + raw JSON, grouped findings,
+and (4) a **Servers re-layout** — two-column Overview with charts (`@elabs-ai/components-charts` is already vendored), a
+resizable split, a sticky detail header, `@elabs-ai/components-editor` for instructions + raw JSON, grouped findings,
 and the run-modal fixes in [`03-servers-deep-dive.md`](./03-servers-deep-dive.md). Most of it is
 composition + tokens, not new capability.
 
@@ -70,7 +72,7 @@ composition + tokens, not new capability.
 | **Run console** (Tool playground) | Large `Dialog`, params-left / result-right, `ResizablePanelGroup`, measures request/response token cost — textbook "promote a high-value task to its own surface" | `_screens/06-run-console.png` |
 | **Scan detail** | Dense, sortable `DataTable` (Tool/Total/Schema/Desc/Bytes/Share) + `MetricCard`s + Markdown/JSON export | `_screens/09-scan-detail.png` |
 | **Add-server wizard** | 3-step `Wizard` (Connection → Authentication → Review), transport toggle, test-before-save | `_screens/12-add-server-wizard.png` |
-| **Theming** | Token-driven; qlik-bright / qlik-dark / blueprint render cleanly | `_screens/02-dashboard-dark.png`, `_screens/13-servers-blueprint.png` |
+| **Theming** | Token-driven; light / dark / blueprint render cleanly | `_screens/02-dashboard-dark.png`, `_screens/13-servers-blueprint.png` |
 
 ---
 
@@ -82,10 +84,10 @@ composition + tokens, not new capability.
 | **Medium** | 8 | KPI-wall trimming; insight→action; list treatments unified to `DataTable`; oversized empty states; server-rail noise; Scans search/filter; redundant breadcrumb; cross-server compare gap |
 | **Low** | 6 | Decorative pills/buttons; duplicate badges/labels; "none" auth label; high-contrast theme differentiation; section-subtitle filler; KPI-at-zero hiding |
 
-Full detail, evidence, and the exact `@brand/*` fix for each: [`01-ui-audit-findings.md`](./01-ui-audit-findings.md).
+Full detail, evidence, and the exact `@elabs-ai/components-*` fix for each: [`01-ui-audit-findings.md`](./01-ui-audit-findings.md).
 The **Servers** Overview / Tools / detail-panel / run-modal re-audit adds ~20 more findings (≈3 High / 11
 Medium / 6 Low) — grouped findings, charts on Overview, resizable split, sticky detail header,
-`@brand/editor` for instructions + raw JSON, optimization placement, Run-tab removal, run-modal splitter /
+`@elabs-ai/components-editor` for instructions + raw JSON, optimization placement, Run-tab removal, run-modal splitter /
 param-order / footer: [`03-servers-deep-dive.md`](./03-servers-deep-dive.md).
 
 ---
@@ -96,7 +98,7 @@ param-order / footer: [`03-servers-deep-dive.md`](./03-servers-deep-dive.md).
 1. Rebuild Settings/Theme IA — delete the Quick-settings modal, pin **Settings** (and About) to the
    **bottom of the left nav**, move the full **6-theme** switcher + a density toggle onto the Settings
    page, keep exactly one theme control. *(Issue #6)*
-2. Replace `window.confirm()` delete with `@brand/ui` `AlertDialog` (destructive). *(Issue #2)*
+2. Replace `window.confirm()` delete with `@elabs-ai/components-ui` `AlertDialog` (destructive). *(Issue #2)*
 3. Introduce a **denser type + spacing token scale** (UI text ~13px, table ~12–13px, KPI ~20–24px not
    36px, row height ~36–40px, line-height ~1.4). *(Issue #3)*
 4. Strip consumer **copy**: remove page/section descriptive subtitles; show the breadcrumb only on real
@@ -110,9 +112,9 @@ param-order / footer: [`03-servers-deep-dive.md`](./03-servers-deep-dive.md).
 7. **Scans:** `SplitPanel`, add `SearchInput` + `FilterBar` to the history, shrink the empty detail. *(Issues #1, #2)*
 
 **P1.5 — Servers smart-layout redesign (doc 03 — the part you called out)**
-7a. **Overview → two columns + charts:** group findings by *type* (count + recoverable each); Findings (~60%) beside a merged Token-distribution card (stacked bar + per-tool stacked rows + one bottom legend, ~40%); Server profile to ½ width beside a `@brand/charts` scan-trend; KPI sparklines; collapse the KPI band to a strip on Tools/Scans.
+7a. **Overview → two columns + charts:** group findings by *type* (count + recoverable each); Findings (~60%) beside a merged Token-distribution card (stacked bar + per-tool stacked rows + one bottom legend, ~40%); Server profile to ½ width beside a `@elabs-ai/components-charts` scan-trend; KPI sparklines; collapse the KPI band to a strip on Tools/Scans.
 7b. **Tools tab:** `ResizablePanelGroup` (resizable, default ~32/68) instead of the static `SplitPanel`; replace the mono ghost-button list with a dense **sans** `DataTable` + cost-weight bars; reserve a scrollbar gutter.
-7c. **Tool detail:** sticky header + tabs; **Optimization directly under Token budget**; instructions clamped + Expand modal via `@brand/editor`; Raw tab on `@brand/editor` (folding + Expand), retire `CodeBlock`; tidy the chip row; **remove the redundant Run tab**.
+7c. **Tool detail:** sticky header + tabs; **Optimization directly under Token budget**; instructions clamped + Expand modal via `@elabs-ai/components-editor`; Raw tab on `@elabs-ai/components-editor` (folding + Expand), retire `CodeBlock`; tidy the chip row; **remove the redundant Run tab**.
 7d. **Run modal:** make the splitter actually drag + default **⅓ ∶ ⅔**; sort params required→optional; balance the footer; drop the redundant button label.
 
 **P2 — consistency + polish**

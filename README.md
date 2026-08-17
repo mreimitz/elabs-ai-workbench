@@ -157,11 +157,11 @@ directory you can browse, reuse, and cost-track.
 
 ### Two themes
 
-The whole app is built on the upstream `@brand/*` design system and reads correctly in **Qlik Bright**
-and **Qlik Dark**, with a **System** option that follows your OS preference. Switch it in Settings or
+The whole app is built on the upstream `@elabs-ai/components-*` design system and reads correctly in **Light**
+and **Dark**, with a **System** option that follows your OS preference. Switch it in Settings or
 the top bar.
 
-![The dashboard in Qlik Dark.](docs/screenshots/dashboard-dark.png)
+![The dashboard in Dark.](docs/screenshots/dashboard-dark.png)
 
 ---
 
@@ -218,7 +218,7 @@ A **pnpm TypeScript monorepo** (ESM, strict mode):
 apps/
   api/       Fastify 5 API — SQLite (better-sqlite3), MCP client, token counting,
              scan/run orchestration, OAuth, reports; serves the web build in production
-  web/       React 19 + Vite SPA — react-router-dom v7, the @brand/* design system
+  web/       React 19 + Vite SPA — react-router-dom v7, the @elabs-ai/components-* design system
 packages/
   shared/    the API contract — types.ts, schemas.ts (zod), constants.ts
 ```
@@ -266,12 +266,18 @@ planned** lives in:
 
 ## The design system
 
-The UI is built entirely on the upstream **`@brand/*`** design system (brand-ui) at **v1.9.0** —
-every visible element is a `@brand/*` component, styled with Tailwind v4 + semantic oklch tokens (no
-raw colors). The packages aren't on npm; they're vendored as GitHub Release tarballs under
-[`vendor/brand/`](vendor/brand/) and consumed via `file:` dependencies, pinned by `sha512` in
-`pnpm-lock.yaml`. See [`vendor/brand/PROVENANCE.md`](vendor/brand/PROVENANCE.md) and the
-[UI rules](.claude/rules/brand-ui-only.md).
+The UI is built entirely on the upstream **`@elabs-ai/components-*`** design system (brand-ui) at
+**`^4.0.0`** — every visible element is a `@elabs-ai/components-*` component, styled with Tailwind v4
++ semantic oklch tokens (no raw colors). The packages are **public on npmjs.org**, so `pnpm install`
+needs no registry configuration and no token. Every package ships in lockstep at the same version.
+
+Two themes are exposed, **`light`** (default) and **`dark`**; theme CSS is opt-in per theme, imported
+in `apps/web/src/styles/app.css`. For the real component API use the CLI —
+`pnpm exec brand-ui docs <Component>` — which is also wired as an MCP server in
+[`.mcp.json`](.mcp.json); a generated snapshot lives at
+[`docs/brand-ui-context.md`](docs/brand-ui-context.md). See the
+[UI rules](.claude/rules/brand-ui-only.md), [dependency rules](.claude/rules/dependencies.md) and
+[styling & tokens](.claude/rules/styling-and-tokens.md).
 
 ---
 

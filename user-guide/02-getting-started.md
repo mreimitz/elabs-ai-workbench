@@ -93,7 +93,7 @@ Assistant → MCP → Skills → Testing → Setup.
 
 - **Search** — opens a command palette so you can jump to any screen or action by typing. This
   is the fastest way to get around.
-- **Theme** — switch between **Qlik Bright** (light), **Qlik Dark** (dark), and **System**
+- **Theme** — switch between **Light**, **Dark**, and **System**
   (follow your operating system's setting).
 - **App assistant** (⌘J) — opens a side dock with a built-in AI helper that understands the page
   you're on and can act on your data with your approval (see [App assistant](./12-assistant.md)).

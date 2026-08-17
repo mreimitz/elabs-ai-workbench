@@ -41,8 +41,8 @@ generic global suggestions on /assistant/agents because the Hub is in none of th
   * Reference the route manifest in the rule/gate — never the non-existent *-analyze.ts builders; fix
     those stale comments in assistant-starters.ts while you're there.
   * No DB migration; no new runtime dependency.
-  * Any visible change: verify by looking in BOTH themes (qlik-bright + qlik-dark) on the running app
-    (Docker :8080 — `pnpm dev` breaks on @brand/editor ?worker).
+  * Any visible change: verify by looking in BOTH themes (light + dark) on the running app
+    (Docker :8080 — `pnpm dev` breaks on @elabs-ai/components-editor ?worker).
 - Gate before every tick: `pnpm typecheck && pnpm test && pnpm build && pnpm lint` green.
 
 ## Model tiers

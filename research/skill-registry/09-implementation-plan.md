@@ -104,5 +104,5 @@ Phase 1 is ~8 backend + 3 web WPs; the backend (1.0–1.5) is the bulk and is hi
   fail loudly; PAT never leaves the API.
 - **Run-engine fidelity for skills** — the A/B/C choice affects how "realistic" attached-skill runs
   are; ship A first, gate C on your call.
-- **Monaco/DiffEditor bundle weight** — already a web dep (`@brand/editor` used by
+- **Monaco/DiffEditor bundle weight** — already a web dep (`@elabs-ai/components-editor` used by
   `ArtifactPreview`), so no new cost.

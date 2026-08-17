@@ -169,14 +169,14 @@ Radix `Tooltip` (~14, styled/fast), bare `title` (~20, ~1.5s OS delay, not in `a
 `aria-label`-only (~89, **nothing on hover**). Unlike C-1/B-2 there is **no written rule** to point at —
 this is a gap to close. The primitive is *the only reliable way to keep ~124 call sites honest*.
 
-**Ship `IconButton` — make the wrong thing impossible.** Compose it from `@brand/ui` `Button` +
+**Ship `IconButton` — make the wrong thing impossible.** Compose it from `@elabs-ai/components-ui` `Button` +
 `Tooltip`/`TooltipTrigger`/`TooltipContent`:
 - **One `label` prop** produces **both** the tooltip text **and** the `aria-label` — they cannot diverge.
 - An optional **`disabledReason` prop**: when disabled, the reason is shown in the tooltip **and** wired to
   `aria-describedby` (so it reaches assistive tech, closing D-6/D-7#4). (A disabled Radix trigger doesn't
   fire hover — wrap so the tooltip still shows on a disabled control, e.g. a focusable/hoverable wrapper;
-  verify the `@brand/ui` Tooltip disabled-trigger pattern against the kit/`.d.ts`, don't guess.)
-- Takes an icon child (a `lucide-react`/`@brand/icons` glyph) + the usual `Button` `variant`/`size`/`onClick`
+  verify the `@elabs-ai/components-ui` Tooltip disabled-trigger pattern against the kit/`.d.ts`, don't guess.)
+- Takes an icon child (a `lucide-react`/`@elabs-ai/components-icons` glyph) + the usual `Button` `variant`/`size`/`onClick`
   props. **No `title` escape hatch** — the prop does not exist on `IconButton`.
 - Visible focus ring (inherited from `Button`); `size="icon"` default.
 
@@ -186,7 +186,7 @@ disabled controls expose their reason via the tooltip + `aria-describedby`; enfo
 deriving both from one `label`. Add the one-line pointer to `CLAUDE.md` §10's rules map (the rules index).
 
 ### Acceptance (checklist)
-- [ ] `IconButton` exists and renders a `@brand/ui` `Button` (icon child) with an `aria-label` **and** a
+- [ ] `IconButton` exists and renders a `@elabs-ai/components-ui` `Button` (icon child) with an `aria-label` **and** a
       Radix `Tooltip` whose content **equals** the `aria-label`, both derived from a single `label` prop.
       There is **no** `title` prop.
 - [ ] `disabledReason` renders in the tooltip and is referenced by `aria-describedby`; the tooltip shows

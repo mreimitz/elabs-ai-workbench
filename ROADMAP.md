@@ -5,7 +5,7 @@
 > (capability table) and the authoritative in-flight ledgers
 > [`roadmap/testing/STATUS.md`](./roadmap/testing/STATUS.md) /
 > [`roadmap/skills/STATUS.md`](./roadmap/skills/STATUS.md).** Note e.g. that the app now runs
-> directly on the vendored upstream `@brand/*` design system — the "local `packages/brand-ui`
+> directly on the vendored upstream `@elabs-ai/components-*` design system — the "local `packages/brand-ui`
 > adapter" mentioned below was removed — and that the tool playground, runtime accounting,
 > cross-server compare, resource/prompt footprint, Testing console, and Skills registry are built.
 
@@ -19,7 +19,7 @@ individual tools through schema-generated forms.
 ## Phase 1 — Startup-footprint MVP (largely shipped)
 
 1. Project scaffold and planning documents.
-2. Brand UI adapter wiring (local `packages/brand-ui`; upstream `@brand/*` is a later migration).
+2. Brand UI adapter wiring (local `packages/brand-ui`; upstream `@elabs-ai/components-*` is a later migration).
 3. Backend API, SQLite, schema init, and server CRUD.
 4. MCP stdio + streamable-HTTP connection, `initialize`, `tools/list`, and connection testing.
 5. Token counting profiles and normalized tool breakdowns.

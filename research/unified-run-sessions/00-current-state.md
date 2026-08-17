@@ -65,7 +65,7 @@ and suite consoles map `stopped`→`skipped` tone while single runs map it to `d
 free-form `stopReason` ("turn"/"token"/"cost") and silently returns nothing for
 `maxRunDurationMs (1800000ms) reached` (RunBar.tsx:133-140) — the most common guardrail stop is the
 one it can't classify. The app-local `components/StatusBadge.tsx` that status.ts declares as "the
-only place this table is rendered" is imported by **nobody** — every surface uses `@brand/ui`'s
+only place this table is rendered" is imported by **nobody** — every surface uses `@elabs-ai/components-ui`'s
 badge directly.
 
 ### 3.3 Per-kind UI forks are scattered, keyed on `providerKind`, and fragile

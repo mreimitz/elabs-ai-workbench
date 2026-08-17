@@ -27,7 +27,7 @@ must be green from the repo root.
    `context_overflow` is recorded and marked on the chart (not a crash).
 7. **Replay:** reopen the run; scrub; confirm panes reconstruct per step; export JSON + Markdown.
 8. **Compare:** run the same test on a second scenario; confirm the matrix + curve overlay.
-9. **Themes:** spot-check both (qlik-bright, qlik-dark).
+9. **Themes:** spot-check both (light, dark).
 
 ## Acceptance / reporting
 - Gate green; the walkthrough completes with screenshots/notes.

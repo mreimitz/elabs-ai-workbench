@@ -9,7 +9,7 @@ Add the **Skills** nav section (order MCP → Skills → Testing), the `SkillsVi
 ## Why / references
 [`../../research/skill-registry/07-ui-plan.md`](../../research/skill-registry/07-ui-plan.md) §1–§3,
 mockups `#1`,`#2`. Mirror `features/servers/{ServerRail,ServerWizard}.tsx` + `AppShell.tsx` nav
-groups. `@brand/*` only, two themes.
+groups. `@elabs-ai/components-*` only, two themes.
 
 ## Files
 - `apps/web/src/components/AppShell.tsx` *(modify)* — `ViewKey += "skills"`; new `SKILL_NAV_ITEMS`
@@ -26,7 +26,7 @@ groups. `@brand/*` only, two themes.
 - [ ] Add-skill wizard: **Upload** (drop `.zip` or `SKILL.md` → `POST /api/skills` multipart) and
       **GitHub** (repo+ref+PAT → `POST /probe` → pick a discovered subpath → create) both register a
       skill and select it, with success/error toasts.
-- [ ] All UI is `@brand/*` + semantic tokens; reads correctly in `qlik-bright` and `qlik-dark`;
+- [ ] All UI is `@elabs-ai/components-*` + semantic tokens; reads correctly in `light` and `dark`;
       `enforce-brand-ui`/`check-tokens` hooks clean.
 - [ ] Repo gate green. **Owner-verify (cite localhost:8080):** live register-upload + register-GitHub
       round trips + two-theme walk.

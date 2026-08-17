@@ -15,8 +15,8 @@ known price can't be run, which keeps cost accounting honest.
 
 Switch the app's theme between:
 
-- **Qlik Bright** — light.
-- **Qlik Dark** — dark.
+- **Light** — the default, a near-white surface set.
+- **Dark** — a warm charcoal surface set.
 - **System** — follow your operating system's light/dark setting automatically.
 
 You can change the theme here or from the theme control in the top bar.

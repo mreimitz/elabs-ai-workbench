@@ -4,13 +4,13 @@ Follow-on to [`05-remediation-status.md`](./05-remediation-status.md). Branch **
 (off `ui-remediation`). Quality gate (`pnpm typecheck && pnpm test && pnpm build`) **green**;
 `brand-ui audit apps/web/src` → **0 issues**. Live-verified against a running build (`pnpm start`,
 port 8099) seeded with two real stdio MCP servers (`@modelcontextprotocol/server-everything`,
-`…/server-filesystem`) in **qlik-bright + qlik-dark**.
+`…/server-filesystem`) in **light + dark**.
 
 ## Lanes
 
-- **D1 — themes → two (owner decision).** The app now exposes **only `qlik-bright` (default) and
-  `qlik-dark`**; the shipped `blueprint` theme is filtered out of the Settings switcher, and any
-  previously-persisted `blueprint` is coerced back to `qlik-bright`. New `apps/web/src/lib/theme.ts`
+- **D1 — themes → two (owner decision).** The app now exposes **only `light` (default) and
+  `dark`**; the shipped `blueprint` theme is filtered out of the Settings switcher, and any
+  previously-persisted `blueprint` is coerced back to `light`. New `apps/web/src/lib/theme.ts`
   (`ALLOWED_THEMES`, `isAllowedTheme`, storage-key constant) + a pre-mount localStorage guard in
   `main.tsx` + a `useEffect` safety net in `SettingsView.tsx`. Stale "6 themes" copy corrected in
   `CLAUDE.md`, `.claude/rules/styling-and-tokens.md`, `.claude/rules/brand-ui-only.md`.
@@ -18,7 +18,7 @@ port 8099) seeded with two real stdio MCP servers (`@modelcontextprotocol/server
   `ResizableHandle`s (Servers Tools / Scans / Run modal); fixed `aria-current` from boolean →
   `"true" | undefined` on the server-rail and Tools-list rows (was emitting `aria-current="false"`
   on every inactive row). Verified-already-correct: no `outline-none` without a paired
-  `focus-visible:ring`; `@brand/ui` Button/Dialog focus rings intact; no `div`-as-button; Radix
+  `focus-visible:ring`; `@elabs-ai/components-ui` Button/Dialog focus rings intact; no `div`-as-button; Radix
   Dialog/AlertDialog/Sheet keep default Esc/overlay dismissal.
 
 ## Live verification — the two items the remediation only code-reviewed are now exercised
@@ -33,7 +33,7 @@ port 8099) seeded with two real stdio MCP servers (`@modelcontextprotocol/server
   without deleting**, overlay-click intentionally does *not* dismiss (correct for a destructive
   confirm), **Delete** removes it from the UI and from `GET /api/servers`.
 - **Theme restriction ✅** — switcher shows exactly the two the vendor themes; setting
-  `localStorage brand-ui-theme=blueprint` + reload resolves to `qlik-bright` and the bad value is
+  `localStorage brand-ui-theme=blueprint` + reload resolves to `light` and the bad value is
   sanitized.
 - **Cross-theme focus + contrast ✅** — visible green focus ring on dense rows / Compare table /
   Tools table in **both** themes; no broken/unstyled views; resizable handles reachable

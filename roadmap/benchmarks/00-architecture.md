@@ -185,7 +185,7 @@ API families (versionless, additive): `grading/` (`GET /api/runs/:id/grades`,
 (CRUD + `POST /api/collections/:id/sync`, conflict resolution, `POST /api/collections/import/insightbench`).
 Contract-first: every shape lands in `packages/shared` (types + zod) before API before web.
 
-## UI surface (routes, `@brand/*` only, both themes)
+## UI surface (routes, `@elabs-ai/components-*` only, both themes)
 
 - Run console: **Grade panel** (per-grader score cards, judge reasoning, re-grade action) +
   grade chips in runs list and run compare.

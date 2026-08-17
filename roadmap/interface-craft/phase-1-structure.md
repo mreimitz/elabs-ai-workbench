@@ -28,7 +28,7 @@ Semantic structure the visual layer already implies: headings, live regions, foc
 **The work.** `CardTitle` renders `<div className="text-title leading-none">` — never a heading — so the
 busiest screens return exactly one heading each (the `sr-only` h1 that WP 1.2/PageHeader removal left).
 Ship a wrapper and apply it where a card titles a **genuine section**:
-- `apps/web/src/components/SectionCardTitle.tsx` — a thin wrapper over the `@brand/ui` card title that
+- `apps/web/src/components/SectionCardTitle.tsx` — a thin wrapper over the `@elabs-ai/components-ui` card title that
   renders a real `h2`/`h3` (level via an `as`/`level` prop) **carrying the `text-title` visual** (same
   look as `CardTitle`). Records upstream gap #3 (already in [`upstream-gaps.md`](./upstream-gaps.md)).
 - Apply it to the section-titling cards on the Dashboard Scans tab (`ScansTab.tsx` — the five sections:

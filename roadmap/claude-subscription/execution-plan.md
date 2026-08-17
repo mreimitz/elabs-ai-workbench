@@ -70,7 +70,7 @@ Batch F  [parallel ×3]  3.1 UI | 3.2 reports | 3.3 auto-rating      sonnet ×3
 3. **Gate** — `pnpm typecheck && pnpm test && pnpm build && pnpm lint` green (run per operational
    notes below — build serialized, tests via the workspace `test` script).
 4. **Boundaries** — no secret leaves the API; wire changes landed in `packages/shared` first; UI uses
-   `@brand/*` only; both themes read correctly for any visible change.
+   `@elabs-ai/components-*` only; both themes read correctly for any visible change.
 5. **Tick or bounce** — on pass, tick the box in `STATUS.md` with
    `— done <date> · wp/claude-subscription/<id>` and merge; on fail, send the subagent back with the
    specific gap (do **not** fix silently unless it's a trivial merge conflict).

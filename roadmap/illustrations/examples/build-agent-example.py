@@ -8,7 +8,7 @@ Draws the `agent` entity component once (true-iso math per D-IL15), emits:
   - agent-bright.png / agent-dark.png : rasterized with token values resolved
                           numerically (cairosvg can't do CSS vars/color-mix)
 
-Stand-in token values approximate @brand/tokens qlik-bright / qlik-dark; in the real
+Stand-in token values approximate @elabs-ai/components-tokens light / dark; in the real
 package tokens.css binds --illus-* to the live theme variables instead.
 """
 
@@ -238,8 +238,8 @@ body{{margin:0;font-family:Inter,system-ui,sans-serif;background:#888;padding:24
 .bright{{{css_vars('bright')}}}
 .dark{{{css_vars('dark')}}}
 </style></head><body>
-<div class="panel bright">{svg.replace("{THEME}", "qlik-bright")}</div>
-<div class="panel dark">{svg.replace("{THEME}", "qlik-dark")}</div>
+<div class="panel bright">{svg.replace("{THEME}", "light")}</div>
+<div class="panel dark">{svg.replace("{THEME}", "dark")}</div>
 </body></html>"""
 (out / "agent-preview.html").write_text(html)
 print("ok", [p.name for p in out.iterdir()])

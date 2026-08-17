@@ -45,7 +45,7 @@ those were discarded after manual checks.
 | Duplicated lines (all formats) | 294 clones · 4 843 lines · **3.36%** (24 771 tokens, 3.50%) | Real, but 74 clones / ~2 000 lines are inside the **generated** `apps/api/src/compatibility/data/all-models.json`; TS/TSX-only duplication ≈ **2.2%** |
 | Unused files | knip: 2 | **2 verified dead** (§3.1) |
 | Unused exports | knip: 115 (+311 unused exported types) | **~12 verified dead**; the majority are *exported-but-only-used-in-own-module* (removable `export` keyword) or *test-only* exports (§3.2, §7) |
-| Unused dependencies | depcheck/knip: `pino`, `tsx` (api); `@vitest/coverage-v8`, `jsdom`, `tailwindcss`, `tw-animate-css` (web); `@brand/cli` (root) | **1 verified: `pino`** — all others are false positives (§5) |
+| Unused dependencies | depcheck/knip: `pino`, `tsx` (api); `@vitest/coverage-v8`, `jsdom`, `tailwindcss`, `tw-animate-css` (web); `@elabs-ai/components-cli` (root) | **1 verified: `pino`** — all others are false positives (§5) |
 | TODO/FIXME/HACK | 1 | 1 (tracked, references WP 1.1) |
 | Suppression comments | 15 `eslint-disable` + 3 `biome-ignore` + 2 `@ts-expect-error` | The 15 `eslint-disable` are **inert** (no ESLint in the repo; Biome's `useExhaustiveDependencies` is `"off"`) |
 | `console.log` left in src | 0 `console.log`; 1 **ungated debug `console.error` marked "REMOVE"** | 1 real leftover (§3.3) |
@@ -151,12 +151,12 @@ Raw report: jscpd JSON was written to the sandbox at `/tmp/analysis/jscpd/jscpd-
 | Package | Flagged by | Why it's needed |
 | --- | --- | --- |
 | `tsx` (api devDep) | knip+depcheck | `dev`/`test`/`test:coverage` scripts run `tsx …` (binary usage). |
-| `tailwindcss` (web devDep) | knip+depcheck | `@import "tailwindcss"` lives inside the vendored `@brand/tokens/styles.css` and resolves from the app's `node_modules` via `@tailwindcss/vite`. |
-| `tw-animate-css` (web devDep) | knip+depcheck | `@import "tw-animate-css"` inside `@brand/tokens` `themes.css:26`. |
+| `tailwindcss` (web devDep) | knip+depcheck | `@import "tailwindcss"` lives inside the vendored `@elabs-ai/components-tokens/styles.css` and resolves from the app's `node_modules` via `@tailwindcss/vite`. |
+| `tw-animate-css` (web devDep) | knip+depcheck | `@import "tw-animate-css"` inside `@elabs-ai/components-tokens` `themes.css:26`. |
 | `jsdom` (web devDep) | knip+depcheck | `vitest.config.ts` `environment: "jsdom"`. |
 | `@vitest/coverage-v8` (web devDep) | knip+depcheck | `test:coverage` script (`vitest run --coverage`). |
 | `@vitejs/plugin-react`, `@tailwindcss/vite` (web devDeps) | knip only | Used in `vite.config.ts`; knip's vite plugin had to be disabled in the sandbox (native lightningcss), so it never saw the config. |
-| `@brand/cli` (root devDep) | knip | Used as `pnpm exec brand-ui …` and as the brand-ui MCP server registered in `.mcp.json` — invisible to static analysis. |
+| `@elabs-ai/components-cli` (root devDep) | knip | Used as `pnpm exec brand-ui …` and as the brand-ui MCP server registered in `.mcp.json` — invisible to static analysis. |
 
 `packages/shared`: depcheck reported no issues. The web `Missing dependencies:
 ./vitest.config.ts.timestamp-…mjs` line is a Vite temp-file artifact, not real.

@@ -1,7 +1,7 @@
 # Servers view — deep dive (the "smart layout" re-audit)
 
 This doc corrects an under-call in the first pass. I graded the Servers view on **structural**
-correctness — it reaches for `Tabs`, `SplitPanel`, `MetricCard`, `Descriptions`, `@brand/editor` — and
+correctness — it reaches for `Tabs`, `SplitPanel`, `MetricCard`, `Descriptions`, `@elabs-ai/components-editor` — and
 called it "the best surface." That was the wrong bar. The brief was a **smart layout**, and on
 information-design + interaction the Servers view has real problems. The right components are present;
 their **composition, density, and interaction** are not. Below: every issue (Manuel's list + the ones I
@@ -47,9 +47,9 @@ short rows; the right ~50% is whitespace.
 **Observed:** Composition is a single `SegmentedBar` (`:276`, a thin stacked bar from `TokenViz`); KPIs
 are flat numbers; there is no trend, no per-tool distribution, no savings visualization.
 **Why it's wrong:** this is a **token-cost analytics** product; the roadmap explicitly vendored
-`@brand/charts` (`AreaChart`/`LiveLineChart`/`ComposedChart`/`MetricGrid` — `testing/STATUS.md` WP 0.1)
+`@elabs-ai/components-charts` (`AreaChart`/`LiveLineChart`/`ComposedChart`/`MetricGrid` — `testing/STATUS.md` WP 0.1)
 precisely so surfaces like this show cost, trend, and saving potential graphically.
-**Fix:** use `@brand/charts`: a **scan-over-time trend** (total tokens across the last N scans), a
+**Fix:** use `@elabs-ai/components-charts`: a **scan-over-time trend** (total tokens across the last N scans), a
 **savings/recoverable** visualization, and sparklines on the KPIs (§1.6). Keep `tabular-nums` for exact
 values next to the chart.
 
@@ -141,7 +141,7 @@ value · value) with a height transition (`<200ms`, `motion-reduce` safe). Full 
 ### 3.1 🟠 Off-brand fonts throughout
 **Observed:** tool name `font-mono text-base` (`:41`); instruction box raw `text-sm leading-relaxed`
 (`:92`); param table raw `text-sm`/`text-xs` (`:138-148`). A mix of mono + ad-hoc Tailwind text sizes
-rather than `@brand` `Text` variants / type tokens.
+rather than `@elabs-ai/components-*` `Text` variants / type tokens.
 **Fix:** route all text through `Text` variants + the new density type tokens (see fix-plan P0.3); reserve
 mono for true identifiers only.
 
@@ -165,7 +165,7 @@ variants); don't interleave them with the description and the tab bar.
 **Observed (`:87-95`):** the full `tool.description` is dumped into a `bg-muted` div with no clamp, no
 "show more", no editor. Long descriptions blow out the card height.
 **Fix:** clamp to ~4-6 lines with an **Expand** affordance that opens the full text in a `Dialog`; render
-it with `@brand/editor` `CodeEditor` in **read-only view mode** (markdown/plaintext) so long instructions
+it with `@elabs-ai/components-editor` `CodeEditor` in **read-only view mode** (markdown/plaintext) so long instructions
 get scroll + wrap, matching how the result JSON is already rendered.
 
 ### 3.5 🟠 Optimization is buried at the bottom of Breakdown
@@ -183,8 +183,8 @@ console"** button — which does exactly what the **Run** button in the panel he
 ### 3.7 🟠 Raw tab overflows and uses the plain CodeBlock, not the Monaco editor
 **Observed (`:184-188`):** two `CodeBlock`s (`components/CodeBlock.tsx`, a `ScrollArea` + `<pre>`) for
 input schema + tool JSON; they overflow the card and don't pad on the right. Meanwhile the **run modal
-result already uses `@brand/editor` `CodeEditor`** (`ToolPlayground.tsx:277`) with folding.
-**Fix:** render the Raw tab with `@brand/editor` `CodeEditor` (`language:"json"`, `readOnly`, `folding`)
+result already uses `@elabs-ai/components-editor` `CodeEditor`** (`ToolPlayground.tsx:277`) with folding.
+**Fix:** render the Raw tab with `@elabs-ai/components-editor` `CodeEditor` (`language:"json"`, `readOnly`, `folding`)
 — collapsible/expandable JSON nodes — plus an **Expand** button opening a larger editor in a `Dialog`.
 Reuse the component the result panel already uses; retire `CodeBlock` here.
 
@@ -229,9 +229,9 @@ enough.
 - **Ad-hoc Tailwind text** (`text-sm`/`text-xs`/`leading-relaxed`) instead of `Text` variants is the
   "off-brand fonts everywhere" the user sees — it bypasses the type scale and won't move when the density
   tokens (fix-plan P0.3) change.
-- **`@brand/editor` is already a dependency and already used** (result panel). Reusing it for Instructions
+- **`@elabs-ai/components-editor` is already a dependency and already used** (result panel). Reusing it for Instructions
   (3.4) and Raw (3.7) is low-cost and on-brand.
-- **`@brand/charts` is vendored** (`testing/STATUS.md` WP 0.1) and currently unused on these screens — the
+- **`@elabs-ai/components-charts` is vendored** (`testing/STATUS.md` WP 0.1) and currently unused on these screens — the
   Overview is where it should first appear (1.3, 1.6, 1.7).
 
 ---

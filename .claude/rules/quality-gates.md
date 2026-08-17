@@ -22,7 +22,7 @@ push + PR. The `/quality` command runs the gate and reports honestly.
 - [ ] Visible UI uses the component library (`brand-ui`); no ad-hoc colored markup. New primitives
       added to the library, not the app (see `library-first.md`).
 - [ ] No raw color literals in `.tsx` (the `check-tokens` hook is a nudge, not a guarantee).
-- [ ] Renders correctly in **both** themes (`qlik-bright`, `qlik-dark`) — verified by looking.
+- [ ] Renders correctly in **both** themes (`light`, `dark`) — verified by looking.
 - [ ] MCP/connection/scan failures surface in the UI (toast/error boundary); no fake results.
 - [ ] Secrets stay server-side and out of git (see `mcp-and-security.md`); only `.env.example`
       is committed.

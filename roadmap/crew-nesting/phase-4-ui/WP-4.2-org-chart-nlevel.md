@@ -72,15 +72,15 @@ caller can still detect "unresolved" separately if needed for a placeholder row.
 - `resolveCrewAgents(crewId, crewsById, rolesById)` → the closure's `agentIds` mapped to roles,
   unresolved ids dropped (feeds `scopedCrewMembers`/CrewCard's disambiguation, below).
 
-This file has no React/`@brand` dependency — unit-testable in isolation, same posture as
+This file has no React/`@elabs-ai/components-*` dependency — unit-testable in isolation, same posture as
 `org-model.ts`/`crew-layout.ts`.
 
-### 2. `OrgRail.tsx` — generalize the bespoke tree to N levels (extend, not migrate to `@brand/ui` `Tree`)
+### 2. `OrgRail.tsx` — generalize the bespoke tree to N levels (extend, not migrate to `@elabs-ai/components-ui` `Tree`)
 
-**Decision: extend the existing bespoke `BranchRow`/`AgentRow` recursively, adopting `@brand/ui`'s
+**Decision: extend the existing bespoke `BranchRow`/`AgentRow` recursively, adopting `@elabs-ai/components-ui`'s
 exported `useTreeKeyboard` hook for keyboard parity, rather than migrating onto the `Tree`
 component wholesale.** Reason (verified against `Tree`'s source,
-`@brand/ui/src/components/tree/tree.tsx`): `Tree`'s row `onClick` **always** both selects *and*
+`@elabs-ai/components-ui/src/components/tree/tree.tsx`): `Tree`'s row `onClick` **always** both selects *and*
 toggles expand together (`handleRowClick`: `setActiveId → handleSelect → if (expandable)
 toggleExpanded()`) — only the chevron sub-span calls `stopPropagation`. Today's rail deliberately
 keeps select (scope change) and expand independent (a crew row can be scoped without expanding, and
@@ -201,7 +201,7 @@ No raw color anywhere. Nesting depth cue and every crew tint reuse `crewAccentCl
 (`../lib/hub-ux.ts`, `--chart-1…5`) exactly as today. The cyclic/missing placeholders use
 `Badge variant="warning"`/`"outline"` (token-backed) + `AlertTriangle` (`lucide-react`), not a new
 color. Any new icon-only control uses `IconButton` (label → tooltip == `aria-label`, no `title`).
-Verify both `qlik-bright` and `qlik-dark` for the new nested-group borders and placeholder badges.
+Verify both `light` and `dark` for the new nested-group borders and placeholder badges.
 
 ## Files
 
@@ -264,8 +264,8 @@ Verify both `qlik-bright` and `qlik-dark` for the new nested-group borders and p
 - [ ] `buildCrewMemberLayout`'s existing behavior/signature is unchanged; `CrewTopologyGraph.tsx`
       and its existing test remain untouched and green (regression guard for the out-of-scope
       neighbor that shares `crew-layout.ts`).
-- [ ] No raw color introduced; nesting/placeholder treatments read correctly in both `qlik-bright`
-      and `qlik-dark` (verified by looking); every new icon-only control uses `IconButton`.
+- [ ] No raw color introduced; nesting/placeholder treatments read correctly in both `light`
+      and `dark` (verified by looking); every new icon-only control uses `IconButton`.
 - [ ] Gate green (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`).
 
 ## Notes
@@ -276,7 +276,7 @@ Verify both `qlik-bright` and `qlik-dark` for the new nested-group borders and p
   (`apps/web/src/features/hub/{MissionBoard,topology-graph,TopologyGraph,MissionAgentNode,
   MissionPlanCard,MissionExpandDialog,AgentTranscript}.*`). Safe to batch with `{3.2, 4.1, 4.3}` per
   `STATUS.md`'s parallel window.
-- **Rejected alternative:** a full migration onto `@brand/ui` `Tree` was considered and rejected —
+- **Rejected alternative:** a full migration onto `@elabs-ai/components-ui` `Tree` was considered and rejected —
   `Tree`'s row click conflates select+expand (verified in its source), which would regress today's
   independent select/expand UX and would require re-hosting drag/drop + the inline "+" + "⋯ move"
   menu into `Tree`'s `label: ReactNode` slot with manual `stopPropagation` on every inner control.

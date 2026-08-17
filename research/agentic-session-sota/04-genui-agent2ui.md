@@ -2,7 +2,7 @@
 
 Researched 2026-07-17 (repos cloned/verified at that day's main: CopilotKit v1.63.1,
 assistant-ui `@assistant-ui/react` 0.14.27, `thesysdev/openui` via npm `@openuidev/*`; docs
-sites live-fetched). Owner brief: **don't copy components — identify gaps in `@brand/ai`, and
+sites live-fetched). Owner brief: **don't copy components — identify gaps in `@elabs-ai/components-ai`, and
 above all learn how these systems PROMPT the model so UI output comes out correctly.**
 Normative output: the **R-GUI** group in [`roadmap/assistant-hub/requirements.md`](../../roadmap/assistant-hub/requirements.md).
 
@@ -14,7 +14,7 @@ Normative output: the **R-GUI** group in [`roadmap/assistant-hub/requirements.md
 > UI is invented elsewhere (an MCP server) and you sandbox it."
 
 The Hub's plan already covers **Controlled** (tool-call rendering, R-UX1). What this research
-adds is a bounded **Declarative** capability over a curated `@brand`-part catalog (R-GUI).
+adds is a bounded **Declarative** capability over a curated `@elabs-ai/components-*`-part catalog (R-GUI).
 **Open-Ended** (LLM-written sandboxed HTML — CopilotKit's `generateSandboxedUi`; MCP Apps
 iframes) stays **[P2]** — consistent with the A2UI non-goal and the MCP-Apps deferral.
 
@@ -192,7 +192,7 @@ Sixteen rules, each observed in ≥1 system and consistent across all three:
 16. **Never prompt for chain-of-thought structure — derive the trace client-side** from
     adjacent parts + a tool prompt/inform/trace classification (assistant-ui).
 
-## 5. `@brand/ai` gap analysis (capability-level; cross-validated; NOT a to-copy list)
+## 5. `@elabs-ai/components-ai` gap analysis (capability-level; cross-validated; NOT a to-copy list)
 
 > **Correction (owner recheck, 2026-07-17, against the LIVE brand-ui Storybook at
 > localhost:6006 — 227 titles, 10 packages incl. `maps`):** the vendored agent kit (1.6.0
@@ -206,7 +206,7 @@ Sixteen rules, each observed in ≥1 system and consistent across all three:
 
 | Capability | What exists (live Storybook, verified) | Hub consumer |
 |---|---|---|
-| **Charts as model-emittable content** | `@brand/charts` **`AutoChart`** — `spec` prop documented as "**The serializable chart specification produced by an LLM tool-call**"; Core-7 types (line/bar grouped+stacked/donut/scatter/radar/funnel, inference from data), `valueFormat` hints, **never throws** (unsupported type / empty data → `ChartFallback`), plus the copy-owned **`ai-chart` registry block** composing it with `@brand/ai` Conversation/Message/Tool (packages can't cross-import siblings; registry blocks can — see brand-ui `research/ai-charts/01-ai-chart-integration-plan.md`) | R-GUI1 catalog adopts **ChartSpec as-is** as its chart contract; AutoChart's fallback semantics already match R-GUI4 |
+| **Charts as model-emittable content** | `@elabs-ai/components-charts` **`AutoChart`** — `spec` prop documented as "**The serializable chart specification produced by an LLM tool-call**"; Core-7 types (line/bar grouped+stacked/donut/scatter/radar/funnel, inference from data), `valueFormat` hints, **never throws** (unsupported type / empty data → `ChartFallback`), plus the copy-owned **`ai-chart` registry block** composing it with `@elabs-ai/components-ai` Conversation/Message/Tool (packages can't cross-import siblings; registry blocks can — see brand-ui `research/ai-charts/01-ai-chart-integration-plan.md`) | R-GUI1 catalog adopts **ChartSpec as-is** as its chart contract; AutoChart's fallback semantics already match R-GUI4 |
 | **Review workflow (accept/reject changes)** | `AI/ChangeReview` — "**AI-edit trust gate**": hunk-by-hunk approve/reject (`ChangeHunk[]`, controlled `approved` set, approve/reject-all, custom hunk renderers) with **`ChangeProvenance`** (author, model, timestamp, run note) | WP3.5 artifact review + workspace-edit approvals render on this, not on `Commit*` improvisation |
 
 **Still-open upstream candidates — raise per `library-first.md` (compose-from-primitives
@@ -215,7 +215,7 @@ fallback until then); re-verify against the live Storybook before filing:**
 | Gap | Evidence | Hub urgency |
 |---|---|---|
 | Model-emittable **in-message forms** with declarative validation + submit → structured formState | all three | HIGH (R-GUI catalog; MCP elicitation R-MCP4 shares the form renderer) |
-| **Tables as model-emittable message content** (typed columns, component cells; `@brand/data` DataTable is app-chrome, not a catalog part) | Thesys, A2UI | HIGH (R-GUI catalog) |
+| **Tables as model-emittable message content** (typed columns, component cells; `@elabs-ai/components-data` DataTable is app-chrome, not a catalog part) | Thesys, A2UI | HIGH (R-GUI catalog) |
 | **Part-grouping engine** — derive collapsible trace groups from adjacent parts (status roll-up, stable keys) | assistant-ui | MEDIUM (R-GUI7; ChainOfThought renders, doesn't derive) |
 | **Message edit-in-place** (edit-composer mode; `MessageBranch` exists, edit UX doesn't) | assistant-ui | MEDIUM (pairs with R-SES3/branching) |
 | **Per-message feedback** (thumbs + submitted state) | assistant-ui, CopilotKit | LOW (observability workstream owns human feedback — link, don't duplicate) |
@@ -231,19 +231,19 @@ model-visible vs UI-visible result channels (`modelContent`/`artifact`); suggest
 
 **Deliberately NOT adopted (stays [P2]/non-goal):** Open-ended sandboxed HTML generation
 (CopilotKit `generateSandboxedUi`) and MCP Apps embedding (already P2); adopting A2UI/OpenUI
-Lang as an external wire format (we compile our own catalog over `@brand` parts — same
+Lang as an external wire format (we compile our own catalog over `@elabs-ai/components-*` parts — same
 technique, our vocabulary); channel surfaces (Slack/Teams bots); agentic textarea autocomplete
 (CopilotKit killed theirs); enterprise memories/learning loops (D-AH11 already scoped memory).
 
 ## 6. What the Hub adopts → R-GUI1–8 (+ prompt playbook into WP0.3)
 
-A bounded **Declarative GenUI capability**: a curated, versioned catalog of `@brand`-part-backed
+A bounded **Declarative GenUI capability**: a curated, versioned catalog of `@elabs-ai/components-*`-part-backed
 components (forms, tables, charts, stat/KPI, media, layout) compiled into the prompt + validator
 from one registry; emitted via a flat silent `present` tool; streamed parent-first with typed
 partial-args; validated against the allowlist with a bounded, machine-hinted repair loop;
 interactive via the two-tier model (client-side state ops + dual-audience to-assistant actions);
 per-message UI state event-sourced; traces derived, never prompted; themed exclusively by
-`@brand/tokens`. Full normative text: `roadmap/assistant-hub/requirements.md` §R-GUI; owning WP:
+`@elabs-ai/components-tokens`. Full normative text: `roadmap/assistant-hub/requirements.md` §R-GUI; owning WP:
 **WP2.6** (+ WP0.1 contract, WP0.3 prompt sections).
 
 Primary sources: github.com/thesysdev/openui (+ openui.com docs/blogs, npm `@openuidev/*`

@@ -35,7 +35,7 @@
 - [x] WP2.2 Directory tab (agent/crew cards, interactions, quick-create) — Sonnet
 - [x] WP2.3 Agent profile modal (8 sections; Access w/ per-tool scan costs; no new shared) — Opus
 - [x] WP2.4 Crew profile modal (color picker, members, topology/memory slots) — Sonnet
-- [x] WP2.5 Org chart tab (@brand/flow, topology-true edges + reusable CrewTopologyGraph) — Opus
+- [x] WP2.5 Org chart tab (@elabs-ai/components-flow, topology-true edges + reusable CrewTopologyGraph) — Opus
 - [x] WP2.6 Usage tab (group-by, drill, URL state; resolved rolling-vs-lifetime) — Sonnet
 - [x] WP2.7 Memory surfaces (ScopedMemoryList, ProfileMemoryDialog, EffectiveMemoryStack + shared type) — Sonnet
 - [x] WP2.8-integ wiring (tab slots + quick-create + Topology + Memory + SessionsView URL filter) — Opus
@@ -98,7 +98,7 @@
   handlers on the canvas wrapper (`OrgChartTab.tsx`) sync selection on node focus (→ inspector, mirrors mouse click)
   and open the focused node's profile on Enter/Space (mirrors the mouse double-click), resolving the node id from
   React Flow's stable `.react-flow__node[data-id]` DOM (no canvas geometry, so it's unit-testable — jsdom can't
-  render `@brand/flow`); `nodesFocusable` set explicit; inspector empty-prompt updated to name the Enter affordance.
+  render `@elabs-ai/components-flow`); `nodesFocusable` set explicit; inspector empty-prompt updated to name the Enter affordance.
   New pure exports `orgNodeIdFromEventTarget` + `isOrgNodeActivateKey` with tests asserting model/nav (agent→agent
   profile, crew→crew profile, lane→nowhere), not geometry. SkillFlow untouched. (b) Tri-state Access Checkbox
   indeterminate GLYPH — DOCUMENTED as a brand-ui gap (aria `mixed` correct; the "N / M tools" badge disambiguates;
@@ -142,7 +142,7 @@
   `CREW_COLORS`/`CREW_COLOR_KEYS`/`crewAccentClasses()` (chart-1…5 accents via `var(--chart-N)`);
   `canvasGridBackgroundStyle()` (1px dots/14px cell/`var(--canvas-grid)`); choreography `CHOREOGRAPHY_DURATION_MS=240`,
   `choreographyTransitionClass()` (transform + `motion-reduce:transition-none`). `--canvas-grid` + `--chart-1…5`
-  verified present in `@brand/tokens` (all 4 themes). Blockers: none.
+  verified present in `@elabs-ai/components-tokens` (all 4 themes). Blockers: none.
 - 2026-07-18 — **WAVE 0 MERGED → `feat/assistant-hub-ux` @ `26abe21`.** Authoritative integration gate
   (serial, unloaded): `pnpm typecheck` green · `pnpm test` = web 1976 pass/5 skip + **api 2765/2765** ·
   `pnpm lint` clean · `pnpm build` all packages ✓. No `.R` review for Wave 0 (unblockers). **Wave 1 opening.**
@@ -257,7 +257,7 @@
   vendored source: 8 props, no aria passthrough) → added a non-clobbering `role="group" aria-label="Session
   switcher"` wrapper in `SessionSwitcher.tsx` (+ regression test); both raised as upstream asks in the walk's Gaps
   appendix. (D) **Static a11y sweep** of the hub surfaces: NO raw colors (crew accents `--chart-1…5` + dot grid
-  `--canvas-grid` are token-backed oklch, present in qlik-bright + qlik-dark); NO div-as-button (AgentCard is a
+  `--canvas-grid` are token-backed oklch, present in light + dark); NO div-as-button (AgentCard is a
   documented `role="button"` w/ tabIndex+onKeyDown+aria-label; all other clickables are Button/RadioGroup/
   Checkbox+Label); forms use FieldRow/Label + `id` association, autocomplete, ellipsis placeholders. One LOW note
   routed: AgentCard `role="button"` activates on Enter only, not Space (pre-existing; Directory was WP2.R PASS).

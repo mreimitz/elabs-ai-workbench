@@ -19,7 +19,7 @@ card wireframe). SOTA chat patterns: [`../references.md`](../references.md) → 
 - **Messages:** user turns in a muted `Card` with attachment `Badge` chips; assistant turns stream
   `Text` from `RunEvent {delta, channel:"text"}`.
 - **Thinking:** `RunEvent {delta, channel:"reasoning"}` into a collapsible disclosure (muted) with a
-  token-count `Badge`. (Confirm `@brand/ui` Collapsible/Accordion; else compose a `Button`-toggled
+  token-count `Badge`. (Confirm `@elabs-ai/components-ui` Collapsible/Accordion; else compose a `Button`-toggled
   region — UI §11 gap.)
 - **Tool-call card (the composite, UI §3):** header = tool name + server `Badge` + `StatusBadge`
   (pending/running/ok/error) + duration + token chip; expands to args + result via

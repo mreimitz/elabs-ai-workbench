@@ -29,7 +29,7 @@ relevant to the page you're on. Clicking one prefills the composer via the exist
   surface on Environment/Collection pages where those writes are in scope — never on a skill/run page
   (they'd be denied by R1).
 - **Web render.** The dock's `PendingPanel` fetches starters for the current envelope
-  (entityKind/entityId/tab) and renders them as `@brand/*` chips; click → `openAssistant({prompt,
+  (entityKind/entityId/tab) and renders them as `@elabs-ai/components-*` chips; click → `openAssistant({prompt,
   entity})`. Refetch when the page/entity changes. Both themes; graceful empty/loading (no chips →
   today's plain empty state). The 7 existing `*-analyze.ts` page-hook buttons stay (they live outside
   the dock); their prompts are folded into the catalog as the seed so wording stays in one place.

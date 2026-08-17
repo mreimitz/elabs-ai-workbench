@@ -36,7 +36,7 @@ wireframe), **§6** (pre-run), **§7** (lifecycle + replay). Component/token map
   (`ErrorState`), `completed`. Surface via `toast` + inline, never silently.
 
 ## Gaps (UI §11)
-- **Resizable split-pane** isn't in the listed `@brand/ui` set. Compose minimally (a draggable divider
+- **Resizable split-pane** isn't in the listed `@elabs-ai/components-ui` set. Compose minimally (a draggable divider
   with `bg-border`, keyboard-resizable) in `apps/web/src/components/`, and raise the gap with the
   owner — don't hand-roll a heavy lib.
 

@@ -189,8 +189,8 @@ falls through silently.) Carries `label`, `shortLabel`, `logoProvider` and `bill
 
 ### D-MI7 — One picker: `HubModelPicker`
 
-Replaces four implementations across nine call sites. Composes **only** verified `@brand/*` parts
-(`@brand/ai` `ModelSelector*`, `@brand/ui` `Badge`/`Text`/`Skeleton`/`Alert`/`Tooltip`, `@brand/data`
+Replaces four implementations across nine call sites. Composes **only** verified `@elabs-ai/components-*` parts
+(`@elabs-ai/components-ai` `ModelSelector*`, `@elabs-ai/components-ui` `Badge`/`Text`/`Skeleton`/`Alert`/`Tooltip`, `@elabs-ai/components-data`
 `SearchInput`). A row shows: logo · display name · raw model id · billing badge · credential label
 **when its kind has >1 credential**. Grouping is per **credential** when a kind has several,
 otherwise per **kind**, in a deterministic `kind`-then-`label` order — never `updated_at DESC`.

@@ -12,7 +12,7 @@ judge visual correctness.
    credential configured (Settings → Providers) so `/assistant` doesn't show the "not configured"
    empty state.
 2. For **every** surface below, repeat the same two passes:
-   - **Both themes** — switch to `qlik-bright`, then `qlik-dark` (Settings → theme, or the
+   - **Both themes** — switch to `light`, then `dark` (Settings → theme, or the
      `ThemeSwitcher`), and confirm the surface reads correctly in both: text contrast, badge/status
      colors, focus rings, chart/graph colors (`TopologyGraph`, `UsageView` charts), and no raw-color
      bleed-through.
@@ -74,7 +74,7 @@ judge visual correctness.
 ## 6. Usage + context inspector (`/assistant/usage`, `SessionContextPanel`)
 
 - [ ] Both themes: the Usage view's charts (spend by model/provider/mode/day, mission breakdowns)
-      read correctly — check the `@brand/charts` series colors against both theme backgrounds.
+      read correctly — check the `@elabs-ai/components-charts` series colors against both theme backgrounds.
 - [ ] Both themes: the per-session **context inspector** (`SessionContextPanel`) — the per-layer
       window breakdown (prompt sections, eager vs deferred tool defs, skill L1/L2/L3, memory,
       project, history) — is legible, including its own token/percentage numbers.

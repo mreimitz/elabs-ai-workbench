@@ -33,7 +33,7 @@ read-only viewer).
 - [ ] Files tab shows the full tree incl. subfolders with per-file token chips; text files render in a
       read-only viewer, binary files show size + download, markdown toggles rendered/raw; breadcrumb
       tracks the path.
-- [ ] `@brand/*` + tokens only; both themes correct; hooks clean; repo gate green.
+- [ ] `@elabs-ai/components-*` + tokens only; both themes correct; hooks clean; repo gate green.
 - [ ] **Owner-verify (localhost:8080):** explore a real multi-folder skill; two-theme walk.
 
 ## Notes

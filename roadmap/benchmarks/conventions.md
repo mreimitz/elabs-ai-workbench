@@ -2,7 +2,7 @@
 
 The [`testing`](../testing/conventions.md) and [`skillflow`](../skillflow/conventions.md)
 conventions apply verbatim (contract-first in `packages/shared`, runtime/secret boundary,
-`@brand/*`-only UI in both themes, honest reporting, gate =
+`@elabs-ai/components-*`-only UI in both themes, honest reporting, gate =
 `pnpm typecheck && pnpm test && pnpm build && pnpm lint`). Additions specific to this workstream:
 
 ## Grading invariants

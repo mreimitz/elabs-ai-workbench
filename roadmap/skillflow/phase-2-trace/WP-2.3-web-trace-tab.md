@@ -9,8 +9,8 @@ fractures, dimmed on never-visited, with counts/chips/route markers, and a conve
 to node selection.
 
 ## Why / references
-D1 (same canvas, same inspector), `@brand/flow` `FlowNode.tone` (`success`/`destructive`) is the
-native mechanism for the overlay; conversation rendering reuses the testing console's `@brand/ai`
+D1 (same canvas, same inspector), `@elabs-ai/components-flow` `FlowNode.tone` (`success`/`destructive`) is the
+native mechanism for the overlay; conversation rendering reuses the testing console's `@elabs-ai/components-ai`
 patterns (`ConversationPane` precedents in `apps/web/src/features/testing/`).
 
 ## Files

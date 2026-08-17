@@ -131,7 +131,7 @@ async function createMemory(
 
 test("POST /api/hub/memory creates a user-authored row that is active immediately; GET list/detail reflect it", async () => {
   const h = await makeApp();
-  const memory = await createMemory(h, { kind: "profile", content: "Works on the qlabs team." });
+  const memory = await createMemory(h, { kind: "profile", content: "Works on the elabs team." });
   assert.equal(memory.kind, "profile");
   assert.equal(memory.source, "user");
   assert.equal(memory.status, "active"); // D-AH11 — a user-authored row needs no accept step

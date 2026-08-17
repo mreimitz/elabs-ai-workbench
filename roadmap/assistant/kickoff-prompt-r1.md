@@ -60,10 +60,10 @@ conflicts), run the full gate, dispatch a reviewer subagent on the wave diff, fi
   `skills_commit_workspace` approval (no auto-commit per edit); the live Files view is the review
   surface. The bundled skill-creator is **read-only, never executed**.
 - Verify plan-cited APIs/paths against the code and the pinned SDK `.d.ts` before building — report
-  drift, don't guess. Everything stays `@brand/*` + semantic tokens, both themes.
+  drift, don't guess. Everything stays `@elabs-ai/components-*` + semantic tokens, both themes.
 
 **Stop and ask me only if:** a locked decision (D-AS19–D-AS23) needs changing; a migration or a new
-runtime dependency seems unavoidable; a `@brand/*` gap forces raw UI; or a WP can only be finished
+runtime dependency seems unavoidable; a `@elabs-ai/components-*` gap forces raw UI; or a WP can only be finished
 with a live Claude token (execution-plan §8 — that's owner-acceptance, not yours to run).
 
 When Wave D is done (or blocked), deliver the final report per execution-plan §9 and leave the R1

@@ -27,7 +27,7 @@ You are the **orchestrator**. Sub-agents implement; you select, validate, integr
   `.claude/rules/quality-gates.md`. Linting is **Biome** (`pnpm lint`); the root
   `.github/workflows/ci.yml` runs the same set.
 - Obey the repo rules: contract-first (shared types/zod first), the API runtime/secret boundary,
-  `brand-ui` only + semantic tokens + the **two themes** (`qlik-bright`, `qlik-dark`), kebab/PascalCase naming.
+  `brand-ui` only + semantic tokens + the **two themes** (`light`, `dark`), kebab/PascalCase naming.
 
 `references/plan-layout.md` defines the exact folder shape a plan must have. `references/status-ledger.md`
 defines the ledger format and how to parse and update it. Read them if the plan's structure is unfamiliar.

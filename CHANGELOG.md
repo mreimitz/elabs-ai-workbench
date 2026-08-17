@@ -4,6 +4,48 @@ All notable changes to MCP Token Footprint. This project is single-owner and ver
 authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the `roadmap/*/STATUS.md`
 ledgers. Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — design system migrated to `@elabs-ai/components-*` v4.0.0
+
+The UI design system moved off the private, vendored `@brand/*` tarballs (v1.9.0) onto the **public
+npm `@elabs-ai/components-*` packages at `^4.0.0`**. Install is now anonymous — no `.npmrc` scope
+line, no `_authToken`, no CI token, no `vendor/brand/` tarballs, no `file:` dependencies.
+
+**Renames.** 1,233 import specifiers / `@source` paths across 458 source files; every theme slug
+(`qlik-bright` → `light`, `qlik-dark` → `dark`) in code, tests, e2e and screenshot scripts; and the
+same sweep across 191 markdown files. `THEME_META` → `BUILT_IN_THEME_META` (the only import in the
+app with no 1:1 new name — all 358 other named imports resolved unchanged). Theme labels are now
+"Light"/"Dark", so the command-palette entry reads "Switch to Light theme".
+
+**Theme CSS is opt-in.** `@elabs-ai/components-tokens/styles.css` is the engine only and carries no
+`[data-theme]` blocks; `app.css` now imports `themes/light.css` and `themes/dark.css` explicitly.
+Both token-contrast gates were repointed at the per-theme stylesheets and taught to follow `var()`
+aliases.
+
+**Accessibility — deliberate app-side override.** v4 sets `--ring: var(--primary)` (the brand lime),
+which on the light theme measures 1.30–1.42:1 and fails WCAG 2.4.7 / 1.4.11 — keyboard focus is
+effectively invisible. The app overrides `--ring` (`oklch(0.52 0.16 250)`, worst case 3.81:1) and
+`--sidebar-ring` (`oklch(0.72 0.16 250)`, worst case 4.02:1) in a `[data-theme="light"]` block, with
+a new 3:1 non-text regression gate over every surface a ring can be drawn on. `dark` keeps the
+upstream ring (12.46:1). Conversely, v4 fixed the four AA failures and two role collapses the app
+used to patch locally, so those overrides were deleted.
+
+**Peers the app now owns:** `monaco-editor` `^0.55.1` and `ai` `^6.0.0` became peers in v4 and are
+direct deps of `apps/web`; `@xyflow/react` and `tailwindcss` already were.
+
+**Other v4 behaviour changes**, each decided and recorded at its call site: BentoGrid's cursor glow
+is opt-in (not re-enabled — the skill overview is a dense operator surface); the decoration dial
+narrowed to backgrounds and chart fills (a no-op for the app's one consumer); `CardDescription`
+ships a `measure` prop, so the local `ProseCardDescription` wrapper now composes it instead of
+hand-rolling a `max-w-[68ch]` class; `TabsList` gained `overflow-x-auto`, so a RunsView assertion was
+scoped to the app's own chrome. The `blueprint` package and theme are gone (never a dependency here).
+
+**Docs.** `vendor/brand-ui-agent-kit/` (pinned to v1.9.0, and therefore actively misleading) was
+deleted in favour of the CLI + MCP server as ground truth, plus a generated snapshot at
+`docs/brand-ui-context.md`. `docs/BRAND-UI-PORTABLE-SETUP-PROMPT.md` was rewritten for the public-npm
+model; `docs/BRAND-UI-UPSTREAM-ISSUES.md` carries a superseded banner listing which gaps v4 closed.
+
+Gate green: typecheck · 3,105 API + 3,094 web tests · build · Biome lint.
+
 ## Unreleased (0.3.0) — RC & feature convergence wave
 
 Significant feature completion across multiple workstreams: the UX overhaul consolidated into main

@@ -1,7 +1,7 @@
 # One-row toolbar standard — audit & plan · 2026-07-11
 
 **Status: PLANNED (report only — owner decision 2026-07-11; no code changed yet).**
-Source: owner visual walk of the running app (http://localhost:8080/, qlik-dark) after the
+Source: owner visual walk of the running app (http://localhost:8080/, dark) after the
 run-console header redesign of the same day. The run console (`RunBar.tsx`) is the built
 reference implementation of this standard; this doc extends it to every other view.
 

@@ -13,7 +13,7 @@ packages/illustrations/                      @mcp-token-footprint/illustrations
 ├── package.json          type:module; exports "." / "./registry" / "./scene" / "./tokens.css"
 │                         types → ./src/*.ts, default → ./dist/*.js; build/typecheck/test scripts
 ├── src/
-│   ├── tokens.css        the --illus-* mapping layer (the ONLY file that references @brand vars)
+│   ├── tokens.css        the --illus-* mapping layer (the ONLY file that references brand-ui vars)
 │   ├── primitives/       IsoPlatform, IsoHousing, GlyphFrame, ConstructionGhost, PaperStage,
 │   │                     StationHeader, Connector, CalloutCard, PrincipleCard, iso-math.ts
 │   ├── entities/         one file per entity: McpServer.tsx, Skill.tsx, Agent.tsx, …
@@ -193,7 +193,7 @@ grid of registry entries rendered **live** (real components, current theme — f
 Settings theme re-skins the whole gallery, which *is* the acceptance test for token
 derivation). Detail view per component: sizes/variants/states matrix, port map overlay, the
 registry entry, a copy-paste scene-spec snippet. A second tab lists **saved scenes**.
-All UI chrome is `@brand/*` (the illustrations themselves are content, not controls).
+All UI chrome is `@elabs-ai/components-*` (the illustrations themselves are content, not controls).
 
 ### 5.2 Explain mode (in-app process documentation)
 
@@ -207,7 +207,7 @@ depths without a second illustration; (2) **phased opacity** — steps already v
 to an intermediate dim (100% current / ~60% visited / ~30% unvisited) so the player reads as
 progress through a process, not a slideshow. Cutaway variants are declared in the registry
 like any variant; components without one simply ignore the request.
-Embedded at real surfaces via a lightweight `ProcessExplainer` entry point (a `@brand/ui`
+Embedded at real surfaces via a lightweight `ProcessExplainer` entry point (a `@elabs-ai/components-ui`
 Dialog/Sheet hosting the scene): first candidates — *how a scan works* (Servers), *how a run
 executes* (Testing runs), *the skill feedback loop* (Skills), matching the owner's stated
 "explain app-internal processes" mode. Specs for these ship as **authored files in the repo**
@@ -267,9 +267,9 @@ through this process, keeping the grammar coherent.
 
 ## 7. Non-goals
 
-- **Not a user-facing diagram editor** (that would be `@brand/flow` territory; a canvas
+- **Not a user-facing diagram editor** (that would be `@elabs-ai/components-flow` territory; a canvas
   *authoring* mode may layer on later but always emits the scene spec).
-- **Not charting** (`@brand/charts`) and **not the marketing hero style** (the flat
+- **Not charting** (`@elabs-ai/components-charts`) and **not the marketing hero style** (the flat
   product-UI-theater language stays separate).
 - **No third theme** and no re-adding `blueprint`; the system adapts to whatever the app's
   theme list is.

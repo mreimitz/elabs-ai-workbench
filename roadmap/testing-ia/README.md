@@ -109,7 +109,7 @@ the same file. Recommended batches:
   `/testing/suites/:suiteId` never break.
 - **Git-sync trust model intact** — PAT write-only/encrypted, SSRF guards, no force-push;
   unbound collections get an honest 400, not a silent no-op.
-- **brand-ui only, semantic tokens, both themes** (`qlik-bright`, `qlik-dark`) — per repo rules.
+- **brand-ui only, semantic tokens, both themes** (`light`, `dark`) — per repo rules.
 
 ## Definition of done (every WP)
 

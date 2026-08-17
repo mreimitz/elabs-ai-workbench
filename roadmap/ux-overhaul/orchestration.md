@@ -70,7 +70,7 @@ FILE DOMAIN (writes allowed ONLY here): <explicit list from the WP spec>
 HOT FILES you may touch, minimally: <list or "none">
 DO: <the WP's Steps, verbatim>
 ACCEPTANCE: <the WP's Acceptance list, verbatim — each item must be individually true>
-DO NOT: edit STATUS.md · add dependencies · touch files outside the domain · restyle @brand
+DO NOT: edit STATUS.md · add dependencies · touch files outside the domain · restyle brand-ui
   components · fix adjacent defects (report them instead) · claim unverified visuals.
 VERIFY: gate (all four commands, paste outputs) + visual protocol per conventions.md §2
   (themes/widths listed in the WP). Evidence → .wp-evidence/<id>/.

@@ -145,7 +145,7 @@ not decoration.
 - **R-SK8 (MUST)** Version pinning: auto-latest or pinned per attachment (scenario-attachment
   parity), provenance shown, one click to the registry inspector's version diff.
 
-## R-UX — Interaction & visual feedback (evidence: research doc 03; components: `@brand/ai`)
+## R-UX — Interaction & visual feedback (evidence: research doc 03; components: `@elabs-ai/components-ai`)
 
 - **R-UX1 (MUST)** Canonical tool state machine rendered inline: `input-streaming →
   input-available → (approval-requested → approval-responded) → output-available | output-error
@@ -191,14 +191,14 @@ not decoration.
 
 ## R-GUI — Declarative generative UI (evidence: research doc 04 — Thesys OpenUI · CopilotKit · assistant-ui)
 
-Bounded to CopilotKit's "Declarative" tier: the model composes **our** curated `@brand`-part
+Bounded to CopilotKit's "Declarative" tier: the model composes **our** curated `@elabs-ai/components-*`-part
 catalog inside a message; it never writes HTML/JS (Open-Ended stays [P2]) and never chooses
 styles (brand-ui-only).
 
 - **R-GUI1 (MUST)** One registry compiles everything: the GenUI catalog (forms, tables,
-  **charts via `@brand/charts` `AutoChart` — its `ChartSpec` is already "the serializable chart
+  **charts via `@elabs-ai/components-charts` `AutoChart` — its `ChartSpec` is already "the serializable chart
   specification produced by an LLM tool-call" and is adopted as-is**, stat/KPI, media, layout —
-  each backed by `@brand` parts, verified against the LIVE Storybook, not the vendored kit) is
+  each backed by `@elabs-ai/components-*` parts, verified against the LIVE Storybook, not the vendored kit) is
   defined once (zod) and compiles
   BOTH the prompt catalog (compact one-line typed signatures grouped with usage notes /
   anti-patterns) AND the runtime validator + JSON schema — regenerated together so prompt and
@@ -233,7 +233,7 @@ styles (brand-ui-only).
   classified prompt / inform / trace (`display: inline|standalone`; approval + elicitation
   always standalone) so HITL cards never fold into the thinking accordion.
 - **R-GUI8 (MUST)** Tokens only: GenUI output carries no colors/styles — components render
-  exclusively through `@brand/tokens` (the model picks structure and data, never look) —
+  exclusively through `@elabs-ai/components-tokens` (the model picks structure and data, never look) —
   enforced by schema (no style-bearing props) + the `check-tokens` discipline.
 
 ## Deferred [P2] register (do not build in v1; revisit post-ship)
@@ -245,7 +245,7 @@ betas as accelerators behind the Hub's own compaction · sampling/roots (depreca
 "session insights" retro card · OS push · scheduled sessions · **open-ended sandboxed generated
 UI** (LLM-written HTML/JS à la CopilotKit `generateSandboxedUi`) · **hosted artifact share
 links** · selection/quote toolbar · external GenUI wire formats (A2UI/OpenUI Lang adoption —
-we compile our own `@brand` catalog with the same techniques).
+we compile our own `@elabs-ai/components-*` catalog with the same techniques).
 
 ## WP impact map (authoritative binding; WP text tags are reminders, this table governs)
 

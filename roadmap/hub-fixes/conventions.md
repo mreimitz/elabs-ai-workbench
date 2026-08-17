@@ -10,7 +10,7 @@
 
 - **Contract-first, additive-only:** any wire/DB change starts in `packages/shared/src/{types,schemas}.ts` (types + zod together). Never break existing event/e2e replay shapes; `HubEvent` grows by union extension only.
 - **Runtime/secret boundary:** secrets stay server-side (`apps/api`), never in shared or web, never in git. Provider keys resolve through the existing credential seams only.
-- **brand-ui only:** web UI uses `@brand/*` components + semantic tokens; both themes (`qlik-bright`, `qlik-dark`) must hold. No raw hex, no ad-hoc CSS beyond token-driven classes. See `.claude/rules/*`.
+- **brand-ui only:** web UI uses `@elabs-ai/components-*` components + semantic tokens; both themes (`light`, `dark`) must hold. No raw hex, no ad-hoc CSS beyond token-driven classes. See `.claude/rules/*`.
 - **Naming:** kebab-case files, PascalCase components; tests colocated (`*.test.ts` / `*.test.tsx`).
 - **DB:** migrations bump the next free `user_version` (check `apps/api/src/db/database.ts` head at claim time; v50 was the last known here). This workstream expects **no new migration** unless a WP says so explicitly.
 

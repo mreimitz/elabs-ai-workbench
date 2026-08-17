@@ -53,10 +53,10 @@ A faithful mirror of the existing `ScanService.callTool` / `POST /api/servers/:i
   `{department:Engineering, name:Ada}` → message *"Please promote Ada to the head of the Engineering
   team."* (args interpolated), 33/44 tok. Missing-required-args → the server's `-32602` surfaces as
   `isError` + `errorMessage` (not swallowed).
-- **Web (qlik-bright):** Resources tab → **Read** opens the dialog, auto-reads, shows the JSON contents +
+- **Web (light):** Resources tab → **Read** opens the dialog, auto-reads, shows the JSON contents +
   KPI footer (16 sent / 398 received / 414 round-trip / 1,480 ms). Prompts tab → **Get** on `simple-prompt`
   → "This prompt takes no arguments." + messages + KPIs (19/41/60/905 ms).
-- **Web (qlik-dark):** `completable-prompt` Get → the required `department`/`name` form (badges + help
+- **Web (dark):** `completable-prompt` Get → the required `department`/`name` form (badges + help
   text + focus ring) renders cleanly; filling Engineering/Ada and getting shows the interpolated message +
   KPIs (33/44/77/895 ms). Both themes read correctly with visible focus.
 - **Template opt-out:** the Resources tab shows **7 Read buttons** for 9 resources (the 2 templates have none).

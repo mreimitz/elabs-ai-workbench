@@ -135,8 +135,8 @@ _Entries: date · decision · rationale._
   emitted `suiteRunId`/`repetition`, so `/api/runs` couldn't nest members. Fixed 2026-07-05 ·
   `fix/testing-ia/runs-table`: (1) mapper now emits `suiteRunId`/`repetition` (members nest);
   (2) RunsView rebuilt as a **sortable / searchable / facet-filtered** table (composed from
-  `@brand/ui Table*` — DataTable has no row-expansion — + `@brand/data` SearchInput/FacetFilter +
-  `@brand/ui DateRangePicker` on the right) with **expandable suite rows** (KPI rail + member runs
+  `@elabs-ai/components-ui Table*` — DataTable has no row-expansion — + `@elabs-ai/components-data` SearchInput/FacetFilter +
+  `@elabs-ai/components-ui DateRangePicker` on the right) with **expandable suite rows** (KPI rail + member runs
   drilling to the run console), Group-by None/Type/Day, Compare-selected + live streaming retained.
   Gate green (727 tests on the combined tree w/ concurrent skill-ide). Live two-theme walk = owner.
 

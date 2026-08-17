@@ -145,7 +145,7 @@ breakdown (S20 slice — route exists: server detail Tools tab with selection).
 ## WP 2.10 — Settings + top-bar ThemeSwitcher (ST1–ST4, F0/F2)
 **Domain:** `apps/web/src/features/settings/SettingsView.tsx` (verified), `apps/web/src/lib/theme.ts`
 (verified), the top-bar component (locate: `Grep "Refresh" apps/web/src` for the global top bar).
-**Fixes:** ThemeSwitcher (`@brand/ui` component — confirm it respects the 2-theme+System filter in
+**Fixes:** ThemeSwitcher (`@elabs-ai/components-ui` component — confirm it respects the 2-theme+System filter in
 `lib/theme.ts`; keep blueprint filtered OUT) into the top-bar slot; demote/scope the global
 Refresh (F0); Settings keeps a mirror segmented theme control, System first (ST2); "applies
 immediately" microcopy vs explicit-save cards (ST1); default-judge Model input → same

@@ -4,7 +4,7 @@
 
 ## Objective
 Make the Design tab an editor: select a node → edit its fields/section body in the detail panel
-(`@brand/editor` for markdown), add/remove/reorder nodes and edge conditions, accumulate edit ops
+(`@elabs-ai/components-editor` for markdown), add/remove/reorder nodes and edge conditions, accumulate edit ops
 locally, review the resulting `SKILL.md` diff, and save — creating a new immutable version through
 WP 4.1.
 
@@ -36,9 +36,9 @@ skills plan).
       diff touches only that section (untouched-bytes property visible in the UI diff).
 - [ ] Stale-anchor 409 (version changed underneath) surfaces as a clear conflict message with a
       reload path; unsaved-changes warned; no mutation without explicit save.
-- [ ] `@brand/*` only, both themes, keyboard-reachable; repo gate green.
+- [ ] `@elabs-ai/components-*` only, both themes, keyboard-reachable; repo gate green.
 
 ## Notes
 ⚠ OWNER-VERIFY: the Phase-4 owner acceptance item (visual edit → prose-preserving diff). Do not
-add a canvas drag-to-draw-edges interaction in this WP unless it falls out of `@brand/flow` for
+add a canvas drag-to-draw-edges interaction in this WP unless it falls out of `@elabs-ai/components-flow` for
 free — panel-driven ops are the contract; raise canvas-native editing as an upstream discussion.

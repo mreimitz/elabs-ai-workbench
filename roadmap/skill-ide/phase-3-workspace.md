@@ -44,10 +44,10 @@ guards; both themes; gate green + smoke screenshots.
 
 **Implementation notes (verified 2026-07-04 — see also [`references.md`](./references.md)):**
 
-- **`@brand/ui` ships `Tree`** (`TreeNode<T>`, `TreeProps` with selection + `virtualize` +
+- **`@elabs-ai/components-ui` ships `Tree`** (`TreeNode<T>`, `TreeProps` with selection + `virtualize` +
   async `loadChildren`) **and `useTreeKeyboard`** — compose these for the folder tree. Do NOT
   hand-roll a tree; this is not an upstream gap.
-- Text editing = `CodeEditor` from `@brand/editor` (already used in `NodeDetailPanel`), language
+- Text editing = `CodeEditor` from `@elabs-ai/components-editor` (already used in `NodeDetailPanel`), language
   inferred from extension; binary detection comes from the API's file metadata (`isBinary` runs
   server-side — don't re-detect client-side).
 - Folder rename/move = a client-composed batch of `rename_file` ops (one per contained file) —

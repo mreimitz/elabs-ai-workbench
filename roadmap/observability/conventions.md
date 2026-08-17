@@ -18,8 +18,8 @@ No WP is ticked without it. Co-locate tests as `name.test.ts` next to sources; A
 - **Runtime/secret boundary:** only the API touches DB, MCP, child processes, secrets. Webhook
   URLs and any credentials go through the encrypted secret store; never into the web bundle,
   never returned by the API.
-- **brand-ui only:** every visible element from `@brand/*`; Tailwind v4 semantic tokens, no raw
-  colors (`check-tokens` hook); both themes `qlik-bright` + `qlik-dark` must read correctly;
+- **brand-ui only:** every visible element from `@elabs-ai/components-*`; Tailwind v4 semantic tokens, no raw
+  colors (`check-tokens` hook); both themes `light` + `dark` must read correctly;
   loading-states rule (`.claude/rules/loading-states.md`) for every streaming/async surface.
 - **Naming:** TS files kebab-case, React components PascalCase.
 - **No new runtime dependency without owner approval.** SQLite FTS5 ships inside better-sqlite3
@@ -80,7 +80,7 @@ No WP is ticked without it. Co-locate tests as `name.test.ts` next to sources; A
 
 Follow the established shells: `PageShell`/`PageHeader` + scroll contract, `TabPanel` for tabs,
 `StatusBadge`/`lib/status` vocabulary (the single module unified-sessions WP3.1 ships), the 4-tier dialog system,
-`components/form/*` for forms, `TableToolbar` + `lib/table` for tables, `@brand/charts` for all
+`components/form/*` for forms, `TableToolbar` + `lib/table` for tables, `@elabs-ai/components-charts` for all
 charts (follow `AnalyticsPanel.tsx` chart panel framing; series colors `var(--chart-1..5)`).
 Dashboard tabs follow the existing Dashboard card grammar. Every chart/table datapoint that
 represents runs deep-links to the runs feed with the equivalent `RunFilter` applied.

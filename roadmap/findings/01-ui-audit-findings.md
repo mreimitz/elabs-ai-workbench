@@ -1,7 +1,7 @@
 # UI Audit — Detailed Findings
 
 Each finding: **what was observed** (with evidence), **why it's wrong** (rubric), **the fix** (exact
-`@brand/*` component / token). Screens are in [`_screens/`](./_screens). IDs are referenced by the fix
+`@elabs-ai/components-*` component / token). Screens are in [`_screens/`](./_screens). IDs are referenced by the fix
 plan in [`02-prioritized-fix-plan.md`](./02-prioritized-fix-plan.md).
 
 Severity: 🔴 High · 🟠 Medium · 🟡 Low. Issue numbers refer to Manuel's six examples (see README).
@@ -21,7 +21,7 @@ rows is tuned for a marketing page. Density is the product here, not a defect to
 **Fix:** add a **compact density scale** to the token layer (don't hand-tune per component): UI/body
 text ~13px, table text ~12–13px, section headings ~14–15px, KPI numerals ~20–24px (not 36px),
 table/list row height ~36–40px, line-height ~1.4, `tabular-nums` on every comparing number. Apply via
-`@brand/tokens` + Tailwind v4 token overrides so all six themes inherit it. Pair with `brand-ui-theme`.
+`@elabs-ai/components-tokens` + Tailwind v4 token overrides so all six themes inherit it. Pair with `brand-ui-theme`.
 
 ### G2 🔴 Consumer-register copy on every screen — *issue #5*
 **Observed:** every page title carries an explanatory subtitle ("Identify which MCP servers and tool
@@ -72,7 +72,7 @@ theme switcher; `shell-and-navigation.md`.)
 **Why it's wrong:** the repo's hard rule is brand-ui-only; a native browser confirm is unthemed, breaks
 the six-theme look, ignores focus/keyboard conventions, and is exactly the "smart component selection"
 gap Manuel called out.
-**Fix:** `@brand/ui` `AlertDialog` with a `destructive` confirm action and the server name in the body.
+**Fix:** `@elabs-ai/components-ui` `AlertDialog` with a `destructive` confirm action and the server name in the body.
 
 ### G6 🟠 Two different treatments for "a list of things" — *issue #2*
 **Observed:** Scan history (ScansView) and the Server registry (ServerRail) are hand-styled
@@ -255,7 +255,7 @@ reachable anywhere in the UI.
 - **Run console** — correct large-Dialog + `ResizablePanelGroup` + token cost; keep
   (`_screens/06-run-console.png`).
 - **Scan-detail table** — dense, sortable, exportable; this is the density target for the rest of the app.
-- **qlik-bright / qlik-dark / blueprint** — render correctly; theming tokens are sound.
+- **light / dark / blueprint** — render correctly; theming tokens are sound.
 - **Toaster / error boundary** — present and wired (`main.tsx`, `ErrorBoundary.tsx`).
 
 ## H. Open items to verify during fixes (not asserted as defects)

@@ -155,7 +155,7 @@ Already-compliant real surfaces get straight rows: `/servers/:serverId`→server
 - **No DB migration; no new runtime dependency** (D-AO6).
 - The rule and gate reference the **manifest** only — never the non-existent `*-analyze.ts` builders.
 - Gate green each WP (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`); any visible change
-  verified by looking, in **both** themes (`qlik-bright` + `qlik-dark`).
+  verified by looking, in **both** themes (`light` + `dark`).
 
 ## Definition of done (every WP)
 Gate green from repo root + the WP's Acceptance met; ledger discipline per [`STATUS.md`](./STATUS.md).

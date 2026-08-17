@@ -231,7 +231,7 @@ existing flat `plan.agents.map` (L283-296) renders one of two row shapes dependi
       new lookup prop.
 - [ ] Every LEAF agent node, at any nesting depth, still streams through the single existing
       `AgentTranscript` component — no second streaming implementation introduced.
-- [ ] brand-ui only; both themes (`qlik-bright`/`qlik-dark`) checked by inspection for the new
+- [ ] brand-ui only; both themes (`light`/`dark`) checked by inspection for the new
       sub-crew badge/card, the cascading budget line, and the nested dialog; the new "Open sub-crew
       board" button is a labeled `Button` (not an icon-only control, so D-TB5's `IconButton` rule
       doesn't newly apply here — verify no icon-only control was added without it).

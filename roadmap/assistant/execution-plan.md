@@ -21,10 +21,10 @@
    worktree before handback. Never delete/skip a failing test to get green — fix forward.
 2. **Honest reporting.** Your final report leads with what you did NOT verify (visual/both-themes,
    anything needing a real Claude token). Never fabricate results. "Done" = you ran the gate.
-3. **brand-ui only** (`.claude/rules/brand-ui-only.md`): every visible element from `@brand/*`;
+3. **brand-ui only** (`.claude/rules/brand-ui-only.md`): every visible element from `@elabs-ai/components-*`;
    check real props via `pnpm exec brand-ui docs <Component>` or the vendored `.d.ts` /
    `vendor/brand-ui-agent-kit/` — never guess. Semantic tokens only; both themes
-   (`qlik-bright`, `qlik-dark`) must read correctly.
+   (`light`, `dark`) must read correctly.
 4. **Contract-first** (`.claude/rules/architecture.md`): wire changes land in `packages/shared`
    (types + zod + constants) before API/web. Additive-only on existing endpoints.
 5. **Secrets discipline** (`.claude/rules/mcp-and-security.md`): the Claude token / API keys are
@@ -249,8 +249,8 @@ events persisted settled-only.
   TopNav `end`: dock toggle button; global shortcut ⌘J/Ctrl+J.
 - `apps/web/src/features/assistant/`: `AssistantProvider` (open/close, `openAssistant({prompt?,
   entity?})` public API, current-envelope derivation from `useLocation`/route params),
-  `AssistantDock` composed from `@brand/ai` (`ChatShell`, `Conversation*`, `Composer`,
-  `Reasoning*`, `MessageResponse`, `Shimmer`) + `@brand/ui` — **style/behavior reference:
+  `AssistantDock` composed from `@elabs-ai/components-ai` (`ChatShell`, `Conversation*`, `Composer`,
+  `Reasoning*`, `MessageResponse`, `Shimmer`) + `@elabs-ai/components-ui` — **style/behavior reference:
   `features/testing/ConversationPane.tsx` + `ToolCallCard.tsx` + `ChatMarkdown.tsx`**; header:
   thread switcher (recent + pinned-to-current-entity via `GET /threads?entity=`), model picker
   (`/api/assistant/models`), auth-source indicator, stop button; signed-out → EmptyState pointing
@@ -371,7 +371,7 @@ restart-resume, limit-fallback with a real account).
   failure; second red → next model up (haiku→sonnet→opus); still red → orchestrator implements.
 - **Never** paper over: no deleted tests, no skipped gates, no `@ts-expect-error` without a
   logged reason. A real defect that can't be fixed in-wave → ledger note + owner flag.
-- Anything requiring the owner (live token, real subscription, @brand component gap, a third
+- Anything requiring the owner (live token, real subscription, brand-ui component gap, a third
   dependency, decision changes) → STOP that thread of work, record in STATUS.md
   Owner-acceptance/notes, continue the rest.
 

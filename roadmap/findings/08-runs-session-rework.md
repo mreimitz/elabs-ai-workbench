@@ -10,7 +10,7 @@ The owner reported six problems with the run-session console (Testing → Runs �
 6. **Export** is a poor small overview — it must be a complete session-log dump.
 
 This document is the deep root-cause analysis (Part A), the remediation plan as worktree-isolated tasks
-(Part B), and the `@brand/ai` component map for the conversation rebuild (Part C). Evidence is
+(Part B), and the `@elabs-ai/components-ai` component map for the conversation rebuild (Part C). Evidence is
 file:line; every claim below was traced first-hand and adversarially re-verified (8 confirmed, the rest
 sharpened — see notes).
 
@@ -87,10 +87,10 @@ visible reworks then run in parallel worktrees off it. All tasks end on the gate
 additive `timeline` model in `use-run-stream` (typed timeline items) that Wave 3 consumes. Existing panes keep compiling.
 
 ### Wave 3 (parallel, off Foundation)
-- **C1 — Conversation timeline** rebuilt as flat `@brand/ai` sibling blocks (Part C). Renders the
+- **C1 — Conversation timeline** rebuilt as flat `@elabs-ai/components-ai` sibling blocks (Part C). Renders the
   `timeline`: `UserMessage` per user turn; per assistant turn `Reasoning` → tool blocks
   (`AgentTimeline`/`AgentStep` or `Tool`) → `AgentMessage emphasis="answer"`; in-flight via `Shimmer`.
-  Preserves the cross-pane `Inspect` (composed `@brand/ui` Button). Keeps `ChatShell`/`Composer`.
+  Preserves the cross-pane `Inspect` (composed `@elabs-ai/components-ui` Button). Keeps `ChatShell`/`Composer`.
 - **C2 — Statistics** `KpiRail` + `ContextChart`: consume the unified turn count; one "Turn" definition
   everywhere (KpiRail value, sparklines, chart columns, RunRow, report); handle the overflow
   `context_event` distinctly so it isn't a phantom column.
@@ -102,7 +102,7 @@ additive `timeline` model in `use-run-stream` (typed timeline items) that Wave 3
 
 ---
 
-## Part C — `@brand/ai` component map (reference: `patterns-scenarios-agentic-ai-workspace`)
+## Part C — `@elabs-ai/components-ai` component map (reference: `patterns-scenarios-agentic-ai-workspace`)
 
 The reference sequences a turn as a **flat series of sibling blocks** inside `ConversationContent` — not
 one wrapping card. Map:
@@ -114,15 +114,15 @@ one wrapping card. Map:
 | `Thinking` Collapsible | `Reasoning` > `ReasoningTrigger` + `ReasoningContent` | `duration?`, `isStreaming?`; append token Badge |
 | single `AssistantTurn` Card | **flatten** → `Reasoning`, then `AgentTimeline`/`Tool` blocks, then `AgentMessage emphasis="answer"` | `MessageResponse` (markdown) for prose; `Shimmer` for in-flight |
 | stacked `ToolCallCard`s | `AgentTimeline` > `AgentStep` (status spine) and/or `Tool` > `ToolHeader`+`ToolContent`>`ToolDetails`>`ToolInput`/`ToolOutput`; `ToolResultCard` for artifacts | 7-state `status`; put tok/ms in the `summary` slot |
-| `Inspect ↗` button | composed `@brand/ui` Button (`ExternalLink`) inside the step/tool | no `@brand/ai` equivalent; keep lifted `selectedStepId` |
-| `Composer` | keep `@brand/ai` `Composer`; optional `Suggestions` | already canonical |
+| `Inspect ↗` button | composed `@elabs-ai/components-ui` Button (`ExternalLink`) inside the step/tool | no `@elabs-ai/components-ai` equivalent; keep lifted `selectedStepId` |
+| `Composer` | keep `@elabs-ai/components-ai` `Composer`; optional `Suggestions` | already canonical |
 | `ApplicationPanel` browser | `ContextPanel`/`ProducedAssetTree`/`AssetPreview` for assets; keep `SplitPanel`+`Tree`+`CodeEditor` for raw redacted-JSON | per-step JSON stays on read-only Monaco |
 
 **Gaps (hand-compose):** cross-pane inspect; per-step token/duration chips (via `summary` slot or
-`Badge`); arbitrary redacted-JSON preview (keep `@brand/editor` `CodeEditor`); terminal/error notices
+`Badge`); arbitrary redacted-JSON preview (keep `@elabs-ai/components-editor` `CodeEditor`); terminal/error notices
 (`Alert`/`ErrorState`); automated-mode lock note.
 
-Reference & key stories (theme `qlik-bright`): `patterns-scenarios-agentic-ai-workspace--default`,
+Reference & key stories (theme `light`): `patterns-scenarios-agentic-ai-workspace--default`,
 `ai-agenttimeline--default`, `ai-tool--default`, `ai-reasoning--default`, `ai-message--final-answer`,
 `ai-toolresultcard--default`, `ai-composer--default`, `ai-contextpanel--detail-view`.
 
@@ -135,7 +135,7 @@ Reference & key stories (theme `qlik-bright`): `patterns-scenarios-agentic-ai-wo
   failures, `toolCallId` correlation, `user_message` steps, the `timeline` model, AND the
   engine-authored **`turnIndex`** (steps + deltas) so turn grouping is deterministic despite the
   post-drain `llm_response` (the key robustness fix). Green.
-- [x] **C1 Conversation** — flat `@brand/ai` timeline (`UserMessage`/`Reasoning`/`AgentTimeline`+
+- [x] **C1 Conversation** — flat `@elabs-ai/components-ai` timeline (`UserMessage`/`Reasoning`/`AgentTimeline`+
   `AgentStep`/`Tool*`/`AgentMessage`), cross-pane Inspect preserved.
 - [x] **C2 Statistics** — KPI turns == chart columns by construction; columns labelled by real
   `turnIndex`; overflow `context_event` is a distinct "Overflow" column.
@@ -150,7 +150,7 @@ Reference & key stories (theme `qlik-bright`): `patterns-scenarios-agentic-ai-wo
 - [~] **Visual verify** (both themes, against a real/seeded run) — see verification note below.
 
 > **Verification note.** Code gate is green (`typecheck` + `test` 166/166 + `build`), and every
-> `@brand/ai` composition was checked against its Storybook story in both themes. The behavior path is
+> `@elabs-ai/components-ai` composition was checked against its Storybook story in both themes. The behavior path is
 > also covered by the API tests (run-persistence / accounting / agent-loop / run-report /
 > run-kpi-by-step). The fully-assembled multi-turn pane is being visually confirmed by seeding a
 > realistic finished run into the local SQLite (driven through the REAL engine + persistence, so the UI

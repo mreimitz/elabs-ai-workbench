@@ -62,11 +62,11 @@ branch · sha · what · deviations · **NOT verified:**), commit.
   still parks. Preserve the SSE stream across park/resume (it's thread-level, not session-level).
 - **Entity scoping uses the existing server filter** (`listThreads`/`?entity=kind:id`) — don't
   reinvent it; the fix is creating threads pinned + pointing the switcher at the filtered list.
-- Everything stays `@brand/*` + semantic tokens, both themes; verify APIs/paths against the code and
+- Everything stays `@elabs-ai/components-*` + semantic tokens, both themes; verify APIs/paths against the code and
   the pinned SDK `.d.ts` before building — report drift, don't guess.
 
 **Stop and ask me only if:** a locked decision (D-AS24–D-AS26) needs changing; a migration or new
-runtime dependency seems unavoidable; a `@brand/*` gap forces raw UI; or a WP can only be finished
+runtime dependency seems unavoidable; a `@elabs-ai/components-*` gap forces raw UI; or a WP can only be finished
 with a live Claude token (owner-acceptance, not yours to run).
 
 When Wave B is done, deliver the final report per execution-plan §9 and leave the R2 Owner-acceptance

@@ -40,7 +40,7 @@ each tab has a real empty state. The Δ `MetricCard` + cross-profile `Alert` sta
 - **API:** `everything` ↔ `everything-2` (cross-server) → **9 resources matched (basis exact, uri
   identity)**, **4 prompts matched (exact name)**, Δ 0 (identical surfaces), no matcher-field leak.
   `everything` ↔ `filesystem` → 9 resources / 4 prompts **onlyInA** (filesystem exposes none).
-- **Web (qlik-bright + qlik-dark):** the Compare view shows Tools (13) / Resources (9) / Prompts (4)
+- **Web (light + dark):** the Compare view shows Tools (13) / Resources (9) / Prompts (4)
   tabs; the Resources tab renders the diff (Resource · Match `Exact 100.0%` · Before · After · Δ ·
   Change), Template/Resource badges, 0 added / 0 removed / 9 matched; the Prompts tab the same with 4
   matched. Both themes read cleanly with the Match column + fuzzy select (cross-server).

@@ -1,7 +1,7 @@
 # Web package review — `apps/web/src/**`
 
 **Date:** 2026-07-11 · **Reviewer:** production-readiness code review (automated deep pass)
-**Target:** `apps/web` (React 19 + Vite 6, `react-router-dom` v7, `@brand/*` design system, Tailwind v4 semantic tokens; state = `useState` + `localStorage` + `fetch` via `lib/api.ts`)
+**Target:** `apps/web` (React 19 + Vite 6, `react-router-dom` v7, `@elabs-ai/components-*` design system, Tailwind v4 semantic tokens; state = `useState` + `localStorage` + `fetch` via `lib/api.ts`)
 
 ## Scope & method
 
@@ -29,10 +29,10 @@ By category: perf 10 · bug 12 · dead-code 11 · duplication 15 · hardcoded 4 
 ## High
 
 ### H1 · perf — Zero code-splitting: Monaco, React Flow, and charts all ship in the eager bundle
-- **Files:** `apps/web/src/App.tsx:29-63` (every route component statically imported), `apps/web/src/main.tsx:8` (`import "@brand/editor/monaco-environment";`) and `:13` (`import "@xyflow/react/dist/style.css";`)
+- **Files:** `apps/web/src/App.tsx:29-63` (every route component statically imported), `apps/web/src/main.tsx:8` (`import "@elabs-ai/components-editor/monaco-environment";`) and `:13` (`import "@xyflow/react/dist/style.css";`)
 - **Evidence:** grep for `React.lazy|lazy(|Suspense` across `apps/web/src` → no matches.
-- Every view — including the Skill Design surface (`UnifiedEditor.tsx`, `SkillGraphCanvas.tsx` → `@brand/editor`/Monaco + `@brand/flow`/`@xyflow/react`), `components/ToolRunner.tsx` (Monaco), and the chart-heavy analytics — is loaded on first paint of `/dashboard`. `CLAUDE.md` already notes the build is memory-hungry (`NODE_OPTIONS=--max-old-space-size=3400`); users pay that cost as initial-load bytes.
-- **Recommendation:** wrap heavy leaf routes in `React.lazy` + a `<Suspense>` boundary in the `<Routes>` block; move the Monaco environment import from `main.tsx` to first editor mount; add `build.rollupOptions.output.manualChunks` for `@brand/editor`, `@xyflow`, `@brand/charts`. Compounds with M1 (the parked Design/Trace surface is bundled despite being unreachable).
+- Every view — including the Skill Design surface (`UnifiedEditor.tsx`, `SkillGraphCanvas.tsx` → `@elabs-ai/components-editor`/Monaco + `@elabs-ai/components-flow`/`@xyflow/react`), `components/ToolRunner.tsx` (Monaco), and the chart-heavy analytics — is loaded on first paint of `/dashboard`. `CLAUDE.md` already notes the build is memory-hungry (`NODE_OPTIONS=--max-old-space-size=3400`); users pay that cost as initial-load bytes.
+- **Recommendation:** wrap heavy leaf routes in `React.lazy` + a `<Suspense>` boundary in the `<Routes>` block; move the Monaco environment import from `main.tsx` to first editor mount; add `build.rollupOptions.output.manualChunks` for `@elabs-ai/components-editor`, `@xyflow`, `@elabs-ai/components-charts`. Compounds with M1 (the parked Design/Trace surface is bundled despite being unreachable).
 
 ### H2 · bug — Choosing `generic_estimate` as the default token profile is silently lost on reload
 - **Files:** `apps/web/src/App.tsx:1142-1144` vs `apps/web/src/features/settings/SettingsView.tsx:482`
@@ -201,7 +201,7 @@ By category: perf 10 · bug 12 · dead-code 11 · duplication 15 · hardcoded 4 
 ### L13 · bug (minor) — `SuiteEditor` variants list keyed by index
 - `suites/SuiteEditor.tsx:635` `key={index}` on a middle-removable list; `variant.label` (required unique at submit) is a stable key.
 
-### L14 · convention — Raw `<label>` where `@brand` `Label` is the house component
+### L14 · convention — Raw `<label>` where `@elabs-ai/components-*` `Label` is the house component
 - `run-launcher/RunLauncher.tsx:716,794`, `suites/SuiteEditor.tsx:572`, `compare/CompareBar.tsx:490`, `compare/FlowMode.tsx:134`, `reports/ServerReportDialog.tsx:305,320`, `compare/CompareView.tsx:943`. Not on the forbidden-element list and implicit association works — consistency only.
 
 ### L15 · dead-code — Unused destructured prop in `SummaryMode`

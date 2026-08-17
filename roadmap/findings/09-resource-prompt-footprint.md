@@ -70,7 +70,7 @@ capability ⇒ 0 bytes). This is exactly why the merge bar is *live verification
   with 0 resources/0 prompts (14 tools, 2403 tok — matches Round 3).
 - **Migration:** pointed the build at the **Round-3 legacy DB** — it booted clean (9 columns + 2 tables
   added), and an old tools-only scan read back with `resources:[]`/`prompts:[]`/zeroed summaries.
-- **Web (qlik-bright + qlik-dark):** Scans Tools/Resources/Prompts tabs; Servers Resources/Prompts tabs
+- **Web (light + dark):** Scans Tools/Resources/Prompts tabs; Servers Resources/Prompts tabs
   (a pre-feature scan correctly shows `(0)` + empty state); Dashboard footprint = **5,875** ("Tools +
   resources + prompts") and "Resources & prompts **9 / 4 · 546 tokens**". Type badges, MIME, tokens, and
   share all read cleanly with visible focus in both themes.

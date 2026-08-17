@@ -42,8 +42,8 @@ Also correct `roadmap/ux-overhaul/verification-report.md:176`, which currently s
 ### `conventions.md` must state
 
 - Gate per WP: `pnpm typecheck && pnpm test && pnpm build && pnpm lint` from the repo root, plus WP-specific tests.
-- **Visual claims require the running app at `http://127.0.0.1:8080`, in BOTH `qlik-bright` and `qlik-dark`, never a mock.** Any WP touching a toolbar must report measured geometry: the top edge and height of every control in the row must be identical. The auditor's method — read the row's children in the live DOM and compare `getBoundingClientRect()` — is the acceptance evidence. "Looks aligned" is not a pass.
-- Repo rules still bind: contract-first (`packages/shared` types + zod before API before web), the API runtime/secret boundary, `@brand/*`-only + semantic tokens, kebab-case files / PascalCase components, co-located `*.test.ts`.
+- **Visual claims require the running app at `http://127.0.0.1:8080`, in BOTH `light` and `dark`, never a mock.** Any WP touching a toolbar must report measured geometry: the top edge and height of every control in the row must be identical. The auditor's method — read the row's children in the live DOM and compare `getBoundingClientRect()` — is the acceptance evidence. "Looks aligned" is not a pass.
+- Repo rules still bind: contract-first (`packages/shared` types + zod before API before web), the API runtime/secret boundary, `@elabs-ai/components-*`-only + semantic tokens, kebab-case files / PascalCase components, co-located `*.test.ts`.
 - A sub-agent **never** edits `STATUS.md`. Only you do.
 - A sub-agent that finds its WP spec is wrong reports that back rather than improvising. The audit was written from verified source, but source moves.
 

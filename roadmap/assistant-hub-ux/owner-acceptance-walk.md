@@ -19,7 +19,7 @@ UX rebuild (Waves 0–3, decisions D-HUX1…16). For every surface it lists **wh
 
 1. Run the app the way the reference instance runs — Docker on **http://localhost:8080/**
    (`docker compose up --build`), or a `vite preview` of `pnpm build` (a bare `pnpm dev` trips the
-   `@brand/editor` worker prebundle — use the build). The dot-grid canvas, choreography, and meta
+   `@elabs-ai/components-editor` worker prebundle — use the build). The dot-grid canvas, choreography, and meta
    rail only read correctly in a real browser, not a test renderer.
 2. Have ready, for the 🔑/🔌 steps: **a provider key** (entered in Settings → Providers; the
    `claude_subscription` path too if you want to exercise it) and **at least one registered MCP
@@ -30,9 +30,9 @@ UX rebuild (Waves 0–3, decisions D-HUX1…16). For every surface it lists **wh
 
 | Variant | How to drive it | Applies to |
 |---|---|---|
-| **Theme: Qlik Bright ↔ Qlik Dark** | The theme switcher (System · Bright · Dark) lives in the **top bar**, not Settings. Toggle it and re-look at the SAME surface. Do every section in **both** themes. | Every surface. Watch: crew accents, the dot grid, status badges, dashed/`--border` outlines, muted text. |
+| **Theme: Light ↔ Dark** | The theme switcher (System · Bright · Dark) lives in the **top bar**, not Settings. Toggle it and re-look at the SAME surface. Do every section in **both** themes. | Every surface. Watch: crew accents, the dot grid, status badges, dashed/`--border` outlines, muted text. |
 | **Keyboard-only** | Put the mouse down. `Tab`/`Shift+Tab` to move, `Enter`/`Space` to activate, `Esc` to close overlays, arrow keys inside menus/tabs. Every step must be reachable with a **visible focus ring**. | Every interactive surface. |
-| **Reduced-motion** | Turn on the OS setting (macOS: System Settings → Accessibility → Display → **Reduce motion**), reload. The hub reads `prefers-reduced-motion` live (`@brand/tokens` `useReducedMotion`). | The first-prompt choreography (§1) primarily; nothing else should animate meaningfully. |
+| **Reduced-motion** | Turn on the OS setting (macOS: System Settings → Accessibility → Display → **Reduce motion**), reload. The hub reads `prefers-reduced-motion` live (`@elabs-ai/components-tokens` `useReducedMotion`). | The first-prompt choreography (§1) primarily; nothing else should animate meaningfully. |
 | **Decoration-minimal** | There is **no live density toggle in Settings yet** (the dot grid is gated in code by `ChatCanvas`'s local `DecorationProvider`; `decorationLevel={0}` removes the grid — a future density setting will surface it). So the decoration check here is: confirm the grid is **purely decorative** — it never reduces text legibility in either theme, and removing it (were the setting present) would leave the transcript fully intact. Flag if the grid ever competes with text. | The workspace transcript (§1). |
 
 ---
@@ -240,14 +240,14 @@ Open from Directory (double-click / ⋯) or the org chart (double-click / `Enter
 
 ## Appendix — brand-ui gaps (documented, not owner-blocking; upstream to raise)
 
-These are genuine `@brand/*` limitations found in WP4.2. Each has a safe in-app affordance; the real
-fix is upstream in `@brand/ui`.
+These are genuine `@elabs-ai/components-*` limitations found in WP4.2. Each has a safe in-app affordance; the real
+fix is upstream in `@elabs-ai/components-ui`.
 
 1. **Tri-state `Checkbox` indeterminate glyph** (Access master checkbox, `AccessSection.tsx`).
    `checked="indeterminate"` renders the correct `aria-checked="mixed"`, but the **glyph is visually
    identical to the checked state** — brand-ui's `Checkbox` draws no distinct "mixed" mark.
    *In-app affordance:* the **"N / M tools" badge** beside the checkbox disambiguates the state.
-   *Upstream ask:* a distinct indeterminate glyph (e.g. a dash) in `@brand/ui` `Checkbox`.
+   *Upstream ask:* a distinct indeterminate glyph (e.g. a dash) in `@elabs-ai/components-ui` `Checkbox`.
 
 2. **`Combobox` has no trigger purpose-label passthrough** (session switcher, `SessionSwitcher.tsx`).
    The trigger's accessible **name is the selected value** (the session title — so the earlier
@@ -258,7 +258,7 @@ fix is upstream in `@brand/ui`.
    *In-app affordance:* the switcher is wrapped in a `role="group"` labelled **"Session switcher"** so
    AT can announce the purpose as context while the trigger keeps the live title.
    *Upstream ask:* an `aria-label` / `aria-labelledby` (or `triggerProps`) passthrough on
-   `@brand/ui` `Combobox`.
+   `@elabs-ai/components-ui` `Combobox`.
 
 ---
 
@@ -282,7 +282,7 @@ fix is upstream in `@brand/ui`.
 - [ ] §6 Audit: toolbar grammar, sticky day groups, links, retry.
 - [ ] §7 Memory: `/assistant/memory` redirect + effective stack + most-specific-wins.
 - [ ] §8 Nav 6→4, exactly one active item, full redirect matrix.
-- [ ] **Every** surface re-checked in **Qlik Dark**, driven **keyboard-only**, with **reduced-motion**
+- [ ] **Every** surface re-checked in **Dark**, driven **keyboard-only**, with **reduced-motion**
       on, and the dot grid confirmed non-competing (decoration).
 - [ ] 🔑🔌 the six credentialed items above.
 

@@ -12,7 +12,7 @@ Create the requested monorepo folders, package manifests, Docker files, and road
 
 ## Phase 1: Brand UI Import
 
-Attempt to download the `v1.0.0` release from `mreimitz/qlabs-components`. Use `GH_TOKEN` or `GITHUB_TOKEN` if present. Extract the release into `packages/brand-ui` and record the result.
+Attempt to download the `v1.0.0` release from `mreimitz/elabs-components`. Use `GH_TOKEN` or `GITHUB_TOKEN` if present. Extract the release into `packages/brand-ui` and record the result.
 
 If inaccessible, keep a temporary adapter with TODO comments and document the replacement process.
 

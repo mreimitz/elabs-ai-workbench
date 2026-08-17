@@ -42,7 +42,7 @@ subagents, validation, and an honest hand-off. The mission is the **entire works
   `roadmap/benchmarks/STATUS.md` (date + one line + rationale).
 - **STOP and ask the owner** (Manuel) — do not proceed — when a change would: add any runtime
   dependency (ajv is explicitly owner-gated; ROUGE-1 and the JSON-Schema subset checker are
-  in-house by decision), touch `vendor/brand/*` or bump `@brand/*`, add a non-`@brand` UI
+  in-house by decision), touch `vendor/brand/*` or bump `@elabs-ai/components-*`, add a non-`@elabs-ai/components-*` UI
   dependency, weaken any hook/guardrail/secret rule, contradict a B-decision or a
   `conventions.md` invariant, or require a breaking (non-additive) API change.
 - You may split/merge/resequence WPs if execution reveals a better cut — update the README WP
@@ -94,7 +94,7 @@ house style:
   `cost_usd`; tool_hygiene never opens an MCP session; no force-push code path; PAT absent from
   responses AND captured logs; suite cap soft-stops; deleting a suite keeps child runs.
 - UI WPs: validate against the **running app** (`pnpm dev` → http://127.0.0.1:5173 /
-  http://127.0.0.1:8080) in **both themes** (`qlik-bright`, `qlik-dark`), keyboard-reachable,
+  http://127.0.0.1:8080) in **both themes** (`light`, `dark`), keyboard-reachable,
   real empty/loading/error states per the loading-states rule. Never claim visual correctness
   you didn't look at — if you couldn't verify, say so in the ledger line, first.
 - **After W6 — end-to-end validation walk** (record results honestly under `## E2E validation`
@@ -112,7 +112,7 @@ house style:
 - Secrets: PATs and judge credentials go through the existing encrypted stores; never in
   responses, logs, git, or exported files. Never commit `.env*`/keys — hooks enforce this;
   don't fight or weaken them.
-- UI: `@brand/*` components only, semantic tokens only, `className` = layout only. Check real
+- UI: `@elabs-ai/components-*` components only, semantic tokens only, `className` = layout only. Check real
   props via `pnpm exec brand-ui <info|search|docs>` or the vendored `.d.ts` — never guess.
 - Never-execute invariant: graders, judges, clustering, and sync never execute skill content,
   `referenceLogic`, or MCP tools. `tool_hygiene` reads persisted scans only.

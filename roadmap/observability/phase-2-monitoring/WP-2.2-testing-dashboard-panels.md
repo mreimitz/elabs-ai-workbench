@@ -13,7 +13,7 @@ datapoint drills down to the runs feed with the equivalent RunFilter applied.
 - Global controls (top of the Testing tab): date range presets (24h / 7d / 30d / custom),
   a RunFilter subset bar (providerKind, server, environment, suite, model), group-by select
   (model | server | suite | providerKind). URL-persisted.
-- Prebuilt panels (all `@brand/charts`, following `AnalyticsPanel.tsx` framing; `var(--chart-*)`
+- Prebuilt panels (all `@elabs-ai/components-charts`, following `AnalyticsPanel.tsx` framing; `var(--chart-*)`
   series):
   1. Runs & error rate over time (count bars + error-rate line)
   2. Guardrail stops by `stopReasonCode` (stacked)

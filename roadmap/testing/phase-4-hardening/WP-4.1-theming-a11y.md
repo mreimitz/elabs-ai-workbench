@@ -3,7 +3,7 @@
 **Phase:** 4 · **Size:** M · **Depends on:** Phase 3
 
 ## Objective
-Make every new surface read correctly in both themes (qlik-bright, qlik-dark) and meet the repo's a11y bar, with the log
+Make every new surface read correctly in both themes (light, dark) and meet the repo's a11y bar, with the log
 verified stable under load.
 
 ## Why / references
@@ -12,9 +12,9 @@ verified stable under load.
 [`../10-…ui-concept.md`](../../10-testing-ui-concept.md) §10.
 
 ## Scope / checklist
-- **Themes:** verify `qlik-bright`, `qlik-dark`, `light`, `dark`, `blueprint`, `high-contrast` by
+- **Themes:** verify `light` and `dark` by
   looking at the running app. Special attention: the context chart's `--chart-1..5` fills and the
-  overflow/destructive markers in `high-contrast` and `blueprint`. No raw colors anywhere
+  overflow/destructive markers in BOTH themes. No raw colors anywhere
   (`check-tokens` clean).
 - **Keyboard:** the step log is arrow-navigable; the inspector opens on Enter; the scrubber is
   keyboard-operable; composer send on ⌘/Ctrl+Enter. Visible focus (`ring-ring`) on every control;
@@ -27,7 +27,7 @@ verified stable under load.
   carry `min-w-0`; every list has a real empty state (`EmptyState`).
 
 ## Acceptance
-- A reviewer walks both themes (qlik-bright, qlik-dark) for every Testing surface with zero raw-color/contrast issues.
+- A reviewer walks both themes (light, dark) for every Testing surface with zero raw-color/contrast issues.
 - Keyboard-only operation of a full run + inspect + replay works.
 - The 50+ step stress test is smooth.
 - Gate: typecheck + build green.

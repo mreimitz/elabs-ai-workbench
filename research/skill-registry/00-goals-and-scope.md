@@ -67,7 +67,7 @@ diff badges). This keeps the feature on-brand and avoids reinventing accounting.
 - **Contract-first:** types + zod in `packages/shared` first, then API, then web.
 - **Runtime boundary:** only `apps/api` touches the network, the filesystem, `git`, and decrypted
   secrets. The web UI receives redacted data only.
-- **`@brand/*`-only UI**, two themes (`qlik-bright` / `qlik-dark`), semantic tokens, no raw colors
+- **`@elabs-ai/components-*`-only UI**, two themes (`light` / `dark`), semantic tokens, no raw colors
   (enforced by hooks).
 - **pnpm workspace, ESM, strict TS**, `better-sqlite3`, Fastify 5, `nanoid`, additive `/api` routes.
 - **Quality gate:** `pnpm typecheck && pnpm test && pnpm build` must stay green.
