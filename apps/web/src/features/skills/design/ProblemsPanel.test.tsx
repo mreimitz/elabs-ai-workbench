@@ -60,7 +60,7 @@ const graph: SkillGraph = {
 
 // A REAL live unknown-tool warning (the same formatter UnifiedEditor uses) — line 12 falls inside
 // the subroutine's anchor span, so the classifier pins it to node "n-search" + line 12.
-const warning = formatUnknownToolWarning({ name: "qlik_serach", line: 12, count: 1 });
+const warning = formatUnknownToolWarning({ name: "acme_serach", line: 12, count: 1 });
 
 const onGoToNode = vi.fn();
 const onGoToLine = vi.fn();

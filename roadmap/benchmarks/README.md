@@ -6,8 +6,8 @@ Locked decisions: [`00-architecture.md`](./00-architecture.md) (B1–B15).
 Shared rules: [`conventions.md`](./conventions.md). Living state: [`STATUS.md`](./STATUS.md).
 
 Owner directive (2026-07-04): adopt the quality-measurement concept from the
-`insights-bench-qlik` prototype (see
-[`../research/insights-bench-qlik-assessment.md`](../research/insights-bench-qlik-assessment.md)) —
+`insights-bench` prototype (see
+[`../research/insights-bench-assessment.md`](../research/insights-bench-assessment.md)) —
 enhance the Test entity for much richer tests, add parallel mass-runs of multiple tests, and
 import/export/**two-way sync** tests with folders of GitHub repos.
 

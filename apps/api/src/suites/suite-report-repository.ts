@@ -131,6 +131,5 @@ function emptyReportFallback(suiteRunId: string): SuiteReport {
     judgeProvenance: { judgeProviderId: null, judgeModel: null },
     ratingVersion: 0,
     generatedAt: "",
-    skippedMembers: [],
   };
 }

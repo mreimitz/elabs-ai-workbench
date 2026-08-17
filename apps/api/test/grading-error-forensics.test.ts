@@ -177,9 +177,9 @@ test("inventory: a failed tool call is enriched with the sent arguments + exact 
     runId: "run-x",
     index: 1,
     type: "tool_call",
-    label: "qlik_get_app",
+    label: "acme_get_app",
     status: "running",
-    toolName: "qlik_get_app",
+    toolName: "acme_get_app",
     serverId: "srv-a",
     profileTokens: {},
     payload: { toolCallId: "call-1", args: { appId: "", fields: ["sales"] } },
@@ -189,9 +189,9 @@ test("inventory: a failed tool call is enriched with the sent arguments + exact 
     runId: "run-x",
     index: 2,
     type: "tool_result",
-    label: "qlik_get_app",
+    label: "acme_get_app",
     status: "error",
-    toolName: "qlik_get_app",
+    toolName: "acme_get_app",
     serverId: "srv-a",
     profileTokens: {},
     payload: { toolCallId: "call-1", error: "invalid arguments: 'appId' must be a non-empty string" },
@@ -201,7 +201,7 @@ test("inventory: a failed tool call is enriched with the sent arguments + exact 
   const inventory = extractErrorInventory(run);
   const tool = inventory.find((f) => f.category === "failed_tool_call");
   assert.ok(tool, "the failed tool_result step produces a failed_tool_call finding");
-  assert.equal(tool?.toolName, "qlik_get_app");
+  assert.equal(tool?.toolName, "acme_get_app");
   assert.equal(
     tool?.sentArguments,
     JSON.stringify({ appId: "", fields: ["sales"] }),

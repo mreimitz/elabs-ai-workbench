@@ -468,7 +468,7 @@ function scopedMissionSession(
 test("spawn: a scoped parent narrows a planned agent's grants to the intersection (D-HF5)", async () => {
   const repo = openRepo();
   const session = scopedMissionSession(repo, "auto", {
-    servers: { qlik: ["search", "list_apps"] },
+    servers: { acme: ["search", "list_apps"] },
     builtins: ["memory.save"],
   });
   const { sink, events } = collectSink();
@@ -479,9 +479,9 @@ test("spawn: a scoped parent narrows a planned agent's grants to the intersectio
       plannedAgent({
         key: "a",
         toolGrants: {
-          // "all" on qlik is bounded DOWN to the parent's own list; "files" is outside the parent's
+          // "all" on acme is bounded DOWN to the parent's own list; "files" is outside the parent's
           // scope entirely; "artifacts.create" is a built-in outside the parent's scope.
-          servers: { qlik: "all", files: ["read_file"] },
+          servers: { acme: "all", files: ["read_file"] },
           builtins: ["memory.save", "artifacts.create"],
         },
       }),
@@ -500,13 +500,13 @@ test("spawn: a scoped parent narrows a planned agent's grants to the intersectio
   const child = repo.listMissionAgentSessions(mission.id)[0]!;
   assert.deepEqual(
     child.toolScope,
-    { servers: { qlik: ["search", "list_apps"] }, builtins: ["memory.save"] },
+    { servers: { acme: ["search", "list_apps"] }, builtins: ["memory.save"] },
     "the child's persisted scope is plan grants ∩ parent scope, not the raw plan grants WP2.1 passed through",
   );
 
   // The role prompt tells the agent about its EFFECTIVE access, never the raw crew-role promise.
   assert.equal(inputs.length, 1, "the agent ran");
-  assert.match(inputs[0]!.roleTemplate!.agentToolSignatures, /qlik: search, list_apps/);
+  assert.match(inputs[0]!.roleTemplate!.agentToolSignatures, /acme: search, list_apps/);
   assert.equal(
     inputs[0]!.roleTemplate!.agentToolSignatures.includes("files"),
     false,
@@ -519,14 +519,14 @@ test("spawn: a scoped parent narrows a planned agent's grants to the intersectio
   assert.ok(spawned, "an agent_spawned event was emitted");
   assert.match(spawned!.brief ?? "", /reduced by the session's own tool scope/);
   assert.match(spawned!.brief ?? "", /removed access to files/);
-  assert.match(spawned!.brief ?? "", /narrowed the tools granted on qlik/);
+  assert.match(spawned!.brief ?? "", /narrowed the tools granted on acme/);
   assert.match(spawned!.brief ?? "", /removed built-ins artifacts\.create/);
 });
 
 test("negative: a plan grant to a server OUTSIDE the parent's scope can never be resolved by the child (D-HF5)", async () => {
   const repo = openRepo();
   // The parent session is scoped to ONE server only.
-  const session = scopedMissionSession(repo, "auto", { servers: { "qlik-mreimitz": "all" }, builtins: [] });
+  const session = scopedMissionSession(repo, "auto", { servers: { "acme-demo": "all" }, builtins: [] });
   const { sink } = collectSink();
   // A crew role's own Access tab grants a DIFFERENT server, entirely outside the parent's scope.
   const plan: HubMissionPlan = {
@@ -983,7 +983,7 @@ test("buildPlannerServerCatalog projects the reachable MCP catalog into compact,
 
 test("buildMissionPlannerPrompt injects the grantable-server catalog + a least-privilege contract (RC2.4)", () => {
   const catalog: HubPlannerServerCatalog = [
-    { id: "qlik-mreimitz", name: "Qlik", toolCount: 42, capability: "e.g. search, list_apps, get_measure" },
+    { id: "acme-demo", name: "Acme", toolCount: 42, capability: "e.g. search, list_apps, get_measure" },
     { id: "files", name: "Files", toolCount: 3, capability: "e.g. read_file" },
   ];
   const withCatalog = buildMissionPlannerPrompt({
@@ -999,7 +999,7 @@ test("buildMissionPlannerPrompt injects the grantable-server catalog + a least-p
   assert.match(withCatalog, /never invent a server id or name/);
   assert.match(withCatalog, /Grant least privilege/);
   assert.match(withCatalog, /use `"all"` only for a broad analyst role/);
-  assert.match(withCatalog, /- `qlik-mreimitz` \(Qlik\) · 42 tools — e\.g\. search, list_apps, get_measure/);
+  assert.match(withCatalog, /- `acme-demo` \(Acme\) · 42 tools — e\.g\. search, list_apps, get_measure/);
   assert.match(withCatalog, /- `files` \(Files\) · 3 tools — e\.g\. read_file/);
   // Backward compatible: no catalog ⇒ the section is absent (the pre-WP2.2 planner prompt is unchanged).
   const without = buildMissionPlannerPrompt({
@@ -1087,9 +1087,9 @@ test("Part B: proposePlan injects the reachable catalog into the planner prompt 
 
   const catalog = new Map<string, HubMcpServerCatalog>([
     [
-      "qlik-mreimitz",
+      "acme-demo",
       {
-        serverName: "Qlik",
+        serverName: "Acme",
         tools: [
           { name: "search", raw: {} },
           { name: "get_measure", raw: {} },
@@ -1106,7 +1106,7 @@ test("Part B: proposePlan injects the reachable catalog into the planner prompt 
   let sawCatalogSection = false;
   const planner: HubPlanner = async ({ systemPrompt }) => {
     sawCatalogSection =
-      systemPrompt.includes("## Grantable MCP servers") && systemPrompt.includes("`qlik-mreimitz`");
+      systemPrompt.includes("## Grantable MCP servers") && systemPrompt.includes("`acme-demo`");
     return {
       topology: "parallel",
       autonomy: "always_ask",
@@ -1115,7 +1115,7 @@ test("Part B: proposePlan injects the reachable catalog into the planner prompt 
           key: "analyst",
           name: "Data analyst",
           toolGrants: sawCatalogSection
-            ? { servers: { "qlik-mreimitz": ["search", "get_measure"] }, builtins: [] }
+            ? { servers: { "acme-demo": ["search", "get_measure"] }, builtins: [] }
             : { servers: {}, builtins: [] },
         }),
       ],
@@ -1134,17 +1134,17 @@ test("Part B: proposePlan injects the reachable catalog into the planner prompt 
 
   const mission = await service.proposePlan({
     sessionId: session.id,
-    text: "What are our top measures in Qlik?",
+    text: "What are our top measures in Acme?",
     sink,
   });
 
   assert.ok(
     sawCatalogSection,
-    "the planner's system prompt carried the Grantable MCP servers section naming qlik-mreimitz",
+    "the planner's system prompt carried the Grantable MCP servers section naming acme-demo",
   );
   assert.deepEqual(
     mission.plan.agents[0]?.toolGrants.servers,
-    { "qlik-mreimitz": ["search", "get_measure"] },
+    { "acme-demo": ["search", "get_measure"] },
     "the stub plan's non-empty, REAL grants survive the initial clampPlanToBudgets (not stripped as unknown)",
   );
 });

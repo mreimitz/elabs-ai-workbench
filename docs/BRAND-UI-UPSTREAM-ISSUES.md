@@ -236,7 +236,7 @@ Gantt was dropped.
 `@visx/*` doesn't resolve/render in jsdom, so **33 test files mock `@brand/charts` as a no-op**. The
 consequence is that chart-prop bugs pass the quality gate — we shipped a missing-`xDataKey` crash that
 every test was blind to.
-- **Evidence:** 33 files with `vi.mock("@brand/charts")`; `apps/web/src/features/servers/ServersView.qlik-answers.test.tsx:28`
+- **Evidence:** 33 files with `vi.mock("@brand/charts")`; `apps/web/src/features/servers/ServersView.vendor-assistant.test.tsx:28`
 - **Ask:** ship an official `@brand/charts/test` double, or an SSR-safe render path.
 
 ### CHART-6 · `@visx/*` declares React 16–18 peers against a React-19 library — P2

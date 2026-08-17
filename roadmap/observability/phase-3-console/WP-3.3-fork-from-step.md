@@ -14,7 +14,7 @@ lineage-linked, previewed for cost, excluded from suite aggregates.
 - API: `POST /api/runs/:id/rerun {fromStepId?, overrides?: {prompt?, model?, temperature?,
   skillVersionId?}}` →
   1. Validates: source run terminal; not a suite member (409, D-OB18); overrides against the
-     environment (model must resolve for the same provider kind; `qlik_answers` supports
+     environment (model must resolve for the same provider kind; `vendor_assistant` supports
      whole-run rerun only — capabilities decide, clear 422 otherwise).
   2. Reconstructs the conversation prefix up to `fromStepId` from persisted steps (byte-exact
      messages; the same replay-derivation discipline existing report/legacy projections use)
@@ -40,7 +40,7 @@ lineage-linked, previewed for cost, excluded from suite aggregates.
 - `packages/shared/src/{types,schemas}.ts` (rerun wire, lineage fields — additive)
 - `apps/web/src/features/testing/` fork dialog + lineage banner + feed "show forks" chip;
   Compare pre-seed wiring; `apps/web/src/lib/api.ts`
-- Tests: prefix byte-identity, override validation matrix, suite-member 409, qlik 422 for
+- Tests: prefix byte-identity, override validation matrix, suite-member 409, vendor 422 for
   mid-run, lineage persisted + filtered, estimate-preview invoked
 
 ## Acceptance

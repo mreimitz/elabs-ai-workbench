@@ -388,6 +388,6 @@ type ThemeCommand = {
 /** The three theme preferences as runnable commands (System first — matches THEME_PREFERENCE_ORDER). */
 const THEME_COMMANDS: ThemeCommand[] = [
   { preference: "system", label: "Use system theme", icon: Monitor, keywords: ["system", "auto", "os"] },
-  { preference: "qlik-bright", label: "Switch to Bright theme", icon: Sun, keywords: ["light", "bright", "qlik"] },
-  { preference: "qlik-dark", label: "Switch to Dark theme", icon: Moon, keywords: ["dark", "night", "qlik"] },
+  { preference: "qlik-bright", label: "Switch to Bright theme", icon: Sun, keywords: ["light", "bright", "acme"] },
+  { preference: "qlik-dark", label: "Switch to Dark theme", icon: Moon, keywords: ["dark", "night", "acme"] },
 ];

@@ -65,8 +65,8 @@ export class ProviderService {
     const kind = this.repository.get(id).kind;
     const models =
       kind === "claude_subscription"
-        ? await listAvailableModels({ kind: "claude_subscription" }, fetch, subscriptionModels)
-        : await listAvailableModels(this.repository.getDecrypted(id), fetch, subscriptionModels);
+        ? await listAvailableModels({ kind: "claude_subscription" }, subscriptionModels)
+        : await listAvailableModels(this.repository.getDecrypted(id), subscriptionModels);
     this.modelCache.set(id, { models, expiresAt: Date.now() + MODEL_CACHE_TTL_MS });
     return models;
   }

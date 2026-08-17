@@ -39,9 +39,11 @@ function credential(overrides: Partial<ProviderCredential> = {}): ProviderCreden
 }
 
 describe("HUB_ELIGIBLE_PROVIDER_KINDS", () => {
-  test("excludes qlik_answers (a hub non-goal, D-AH4)", () => {
-    expect(HUB_ELIGIBLE_PROVIDER_KINDS).not.toContain("qlik_answers");
+  // Every live ProviderKind is hub-eligible today; the list stays the one declaration point a future
+  // non-eligible kind would be excluded from (see `apps/api/src/hub/capabilities.ts`).
+  test("covers the AI-SDK kinds plus claude_subscription", () => {
     expect(HUB_ELIGIBLE_PROVIDER_KINDS).toContain("claude_subscription");
+    expect(HUB_ELIGIBLE_PROVIDER_KINDS).toContain("anthropic");
   });
 });
 
@@ -54,10 +56,9 @@ describe("modelSelectorLogoProvider", () => {
 });
 
 describe("useHubModelRoster", () => {
-  test("filters to hub-eligible credentials, fetches + merges + dedupes their live model rosters", async () => {
+  test("fetches + merges + dedupes every eligible credential's live model roster", async () => {
     vi.mocked(api.listProviders).mockResolvedValue([
       credential({ id: "c1", kind: "anthropic" }),
-      credential({ id: "c2", kind: "qlik_answers" }), // never a hub model — must be filtered out
       credential({ id: "c3", kind: "openai" }),
     ]);
     vi.mocked(api.listProviderModels).mockImplementation(async (id: string) => {
@@ -73,7 +74,7 @@ describe("useHubModelRoster", () => {
       if (id === "c3") {
         return { source: "provider", models: [{ id: "gpt-5" }] };
       }
-      throw new Error("qlik_answers should never be queried for hub models");
+      throw new Error(`unexpected credential queried for hub models: ${id}`);
     });
 
     const { result } = renderHook(() => useHubModelRoster());
@@ -84,7 +85,7 @@ describe("useHubModelRoster", () => {
     expect(result.current.models.map((m) => m.modelId).sort()).toEqual(
       ["claude-opus-4-6", "claude-sonnet-5", "gpt-5"].sort(),
     );
-    expect(api.listProviderModels).toHaveBeenCalledTimes(2); // never called for the qlik_answers credential
+    expect(api.listProviderModels).toHaveBeenCalledTimes(2);
   });
 
   // WP4.3 — capability-gating verification (D-US4 discipline): `google`/`openai_compatible`/`ollama`
@@ -202,10 +203,8 @@ describe("useHubModelRoster", () => {
     expect(result.current.models).toHaveLength(1);
   });
 
-  test("no hub-eligible credential at all -> hasCredential false, empty roster, no crash", async () => {
-    vi.mocked(api.listProviders).mockResolvedValue([
-      credential({ id: "c1", kind: "qlik_answers" }),
-    ]);
+  test("no credential at all -> hasCredential false, empty roster, no crash", async () => {
+    vi.mocked(api.listProviders).mockResolvedValue([]);
 
     const { result } = renderHook(() => useHubModelRoster());
     await waitFor(() => expect(result.current.loading).toBe(false));

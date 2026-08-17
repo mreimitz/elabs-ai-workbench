@@ -3,8 +3,8 @@
 // Proves (acceptance):
 //   1. Bucketing (hour/day/week, UTC-safe), every groupBy dimension, every measure, and RunFilter
 //      composition — each against seeded fixtures.
-//   2. Capability split (D-OB14): a MIXED fixture (API engine + subscription + qlik) yields SEPARATE
-//      labelled token/cost series; NO blended sum anywhere.
+//   2. Capability split (D-OB14): a MIXED fixture (API engine + subscription + an unmetered backend)
+//      yields SEPARATE labelled token/cost series; NO blended sum anywhere.
 //   3. meanScore equals the suite-analytics selection (collectChildData + PRIMARY_GRADER_PRIORITY).
 //   4. Determinism: repeated calls are byte-identical (no caching layer).
 
@@ -20,7 +20,6 @@ import { collectChildData } from "../src/suites/orchestrator.js";
 import { RunRepository } from "../src/testing/run-repository.js";
 import {
   ENGINE_SESSION_CAPABILITIES,
-  QLIK_ANSWERS_SESSION_CAPABILITIES,
   SUBSCRIPTION_SESSION_CAPABILITIES,
 } from "../src/testing/session-capabilities.js";
 
@@ -32,7 +31,14 @@ afterEach(() => {
 const NOW = "2026-06-01T00:00:00.000Z";
 const ENGINE_CAPS = JSON.stringify(ENGINE_SESSION_CAPABILITIES);
 const SUB_CAPS = JSON.stringify(SUBSCRIPTION_SESSION_CAPABILITIES);
-const QLIK_CAPS = JSON.stringify(QLIK_ANSWERS_SESSION_CAPABILITIES);
+// A backend that measures NEITHER tokens nor cost — the second token class + third cost class the
+// capability-split assertions need. Hand-written (not a static manifest) precisely because the split
+// must key off the run's PERSISTED capabilities_json, never its providerKind (D-OB14/D-US4).
+const UNMETERED_CAPS = JSON.stringify({
+  ...ENGINE_SESSION_CAPABILITIES,
+  tokens: "none",
+  costBasis: "none",
+});
 
 function createDatabase(): AppDatabase {
   const db = new Database(":memory:");
@@ -65,7 +71,7 @@ function baseGraph(db: AppDatabase): void {
   provider.run({ id: "prov-ant", kind: "anthropic", label: "Claude", now: NOW });
   provider.run({ id: "prov-oai", kind: "openai", label: "OpenAI", now: NOW });
   provider.run({ id: "prov-sub", kind: "claude_subscription", label: "Claude (sub)", now: NOW });
-  provider.run({ id: "prov-qlik", kind: "qlik_answers", label: "Qlik", now: NOW });
+  provider.run({ id: "prov-loc", kind: "ollama", label: "Local", now: NOW });
 
   const server = db.prepare(
     "INSERT INTO mcp_servers (id, name, transport, command, created_at, updated_at) VALUES (@id, @name, 'stdio', 'x', @now, @now)",
@@ -79,7 +85,7 @@ function baseGraph(db: AppDatabase): void {
   scenario.run({ id: "scn-ant", name: "A", providerId: "prov-ant", model: "claude-sonnet-4", now: NOW });
   scenario.run({ id: "scn-oai", name: "O", providerId: "prov-oai", model: "gpt-5", now: NOW });
   scenario.run({ id: "scn-sub", name: "S", providerId: "prov-sub", model: "claude-opus", now: NOW });
-  scenario.run({ id: "scn-qlik", name: "Q", providerId: "prov-qlik", model: "assistant-x", now: NOW });
+  scenario.run({ id: "scn-loc", name: "L", providerId: "prov-loc", model: "llama-3", now: NOW });
 
   const ss = db.prepare(
     "INSERT INTO scenario_servers (scenario_id, server_id) VALUES (@scenarioId, @serverId)",
@@ -132,10 +138,11 @@ const MIXED: RunSeed[] = [
   // Day 2026-07-02
   { id: "rA2", scenarioId: "scn-ant", testId: "t-1", status: "stopped", outcome: "stopped_guardrail", startedAt: "2026-07-02T08:00:00.000Z", tokensIn: 50, tokensOut: 50, costUsd: 0.05, activeDurationMs: 2000 },
   { id: "rS1", scenarioId: "scn-sub", testId: "t-2", status: "completed", outcome: "completed", startedAt: "2026-07-02T12:00:00.000Z", tokensIn: 400, tokensOut: 600, costUsd: 1.23, activeDurationMs: 8000, capabilitiesJson: SUB_CAPS },
-  { id: "rQ1", scenarioId: "scn-qlik", testId: "t-1", status: "completed", outcome: "completed", startedAt: "2026-07-02T18:00:00.000Z", tokensIn: 20, tokensOut: 30, costUsd: 0, turns: 2, activeDurationMs: 3000, capabilitiesJson: QLIK_CAPS },
-  // Day 2026-07-03 — a LEGACY qlik run (NULL capabilities_json → static-manifest fallback) + a run with
-  // no active duration (total-duration fallback, MARKED).
-  { id: "rLegacy", scenarioId: "scn-qlik", testId: "t-1", status: "completed", outcome: "completed", startedAt: "2026-07-03T10:00:00.000Z", tokensIn: 10, tokensOut: 5, costUsd: 0, turns: 1, activeDurationMs: 4000, capabilitiesJson: null },
+  { id: "rQ1", scenarioId: "scn-loc", testId: "t-1", status: "completed", outcome: "completed", startedAt: "2026-07-02T18:00:00.000Z", tokensIn: 20, tokensOut: 30, costUsd: 0, turns: 2, activeDurationMs: 3000, capabilitiesJson: UNMETERED_CAPS },
+  // Day 2026-07-03 — a LEGACY run (NULL capabilities_json → static-manifest fallback for its kind, i.e.
+  // the engine manifest ⇒ exact/api_exact) + a run with no active duration (total-duration fallback,
+  // MARKED).
+  { id: "rLegacy", scenarioId: "scn-loc", testId: "t-1", status: "completed", outcome: "completed", startedAt: "2026-07-03T10:00:00.000Z", tokensIn: 10, tokensOut: 5, costUsd: 0, turns: 1, activeDurationMs: 4000, capabilitiesJson: null },
   { id: "rNoDur", scenarioId: "scn-ant", testId: "t-1", status: "completed", outcome: "completed", startedAt: "2026-07-03T20:00:00.000Z", tokensIn: 5, tokensOut: 5, costUsd: 0, activeDurationMs: null, totalDurationMs: 7000 },
 ];
 
@@ -249,51 +256,45 @@ test("tokensIn / tokensOut split into one series per tokens class (exact vs esti
   seedMixed(db);
   const res = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["tokensIn", "tokensOut"] });
 
-  // exact = engine + subscription runs; estimated = qlik + legacy-qlik. NEVER summed together.
+  // exact = engine + subscription + legacy (static-manifest fallback); none = the unmetered backend.
+  // NEVER summed together.
   assert.deepEqual(pointMap(series(res, "tokensIn", null, "exact")), {
     "2026-07-01T00:00:00.000Z": 400, // rA1(100) + rO1(300)
     "2026-07-02T00:00:00.000Z": 450, // rA2(50) + rS1(400)
-    "2026-07-03T00:00:00.000Z": 5, // rNoDur(5)
+    "2026-07-03T00:00:00.000Z": 15, // rLegacy(10) + rNoDur(5)
   });
-  assert.deepEqual(pointMap(series(res, "tokensIn", null, "estimated")), {
-    "2026-07-02T00:00:00.000Z": 20, // rQ1
-    "2026-07-03T00:00:00.000Z": 10, // rLegacy (NULL caps → static qlik manifest → estimated)
+  assert.deepEqual(pointMap(series(res, "tokensIn", null, "none")), {
+    "2026-07-02T00:00:00.000Z": 20, // rQ1 (persisted caps say tokens:none)
   });
   assert.deepEqual(pointMap(series(res, "tokensOut", null, "exact")), {
     "2026-07-01T00:00:00.000Z": 300,
     "2026-07-02T00:00:00.000Z": 650,
-    "2026-07-03T00:00:00.000Z": 5,
+    "2026-07-03T00:00:00.000Z": 10,
   });
 
   // HONESTY GUARD: no token/cost series ever carries a null capability class (would be a blended sum).
   for (const s of res.series) {
-    if (["tokensIn", "tokensOut", "costUsd", "questions"].includes(s.measure)) {
+    if (["tokensIn", "tokensOut", "costUsd"].includes(s.measure)) {
       assert.notEqual(s.capabilityClass, null, `${s.measure} must be capability-labelled`);
     }
   }
 });
 
-test("costUsd splits into api_exact / subscription_reference / questions; questions measure = Σ turns", () => {
+test("costUsd splits into api_exact / subscription_reference / none", () => {
   const db = createDatabase();
   seedMixed(db);
-  const res = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["costUsd", "questions"] });
+  const res = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["costUsd"] });
 
   assert.deepEqual(pointMap(series(res, "costUsd", null, "api_exact")), {
     "2026-07-01T00:00:00.000Z": 0.6, // rA1(0.1) + rO1(0.5)
     "2026-07-02T00:00:00.000Z": 0.05,
-    "2026-07-03T00:00:00.000Z": 0,
+    "2026-07-03T00:00:00.000Z": 0, // rLegacy(0) + rNoDur(0)
   });
   assert.deepEqual(pointMap(series(res, "costUsd", null, "subscription_reference")), {
     "2026-07-02T00:00:00.000Z": 1.23,
   });
-  assert.deepEqual(pointMap(series(res, "costUsd", null, "questions")), {
+  assert.deepEqual(pointMap(series(res, "costUsd", null, "none")), {
     "2026-07-02T00:00:00.000Z": 0,
-    "2026-07-03T00:00:00.000Z": 0,
-  });
-  // questions measure = Σ turns over question-billed runs (rQ1 turns=2, rLegacy turns=1).
-  assert.deepEqual(pointMap(series(res, "questions", null, "questions")), {
-    "2026-07-02T00:00:00.000Z": 2,
-    "2026-07-03T00:00:00.000Z": 1,
   });
 });
 
@@ -316,13 +317,13 @@ test("groupBy dimensions: model / provider / providerKind / environment / test /
   const byModel = count("model");
   assert.equal(byModel.get("claude-sonnet-4"), 3); // rA1, rA2, rNoDur
   assert.equal(byModel.get("gpt-5"), 1);
-  assert.equal(byModel.get("assistant-x"), 2); // rQ1, rLegacy
+  assert.equal(byModel.get("llama-3"), 2); // rQ1, rLegacy
 
   const byKind = count("providerKind");
   assert.equal(byKind.get("anthropic"), 3);
   assert.equal(byKind.get("openai"), 1);
   assert.equal(byKind.get("claude_subscription"), 1);
-  assert.equal(byKind.get("qlik_answers"), 2);
+  assert.equal(byKind.get("ollama"), 2);
 
   const byProvider = count("provider");
   assert.equal(byProvider.get("prov-ant"), 3);
@@ -334,7 +335,7 @@ test("groupBy dimensions: model / provider / providerKind / environment / test /
   assert.equal(byTest.get("t-1"), 5); // rA1, rA2, rQ1, rLegacy, rNoDur
   assert.equal(byTest.get("t-2"), 2);
 
-  // server FANS OUT — scn-ant → {srv-1, srv-2}, scn-oai → {srv-2}. runs on scn-sub/scn-qlik have no
+  // server FANS OUT — scn-ant → {srv-1, srv-2}, scn-oai → {srv-2}. runs on scn-sub/scn-loc have no
   // server → contribute to no server group.
   const byServer = count("server");
   assert.equal(byServer.get("srv-1"), 3); // scn-ant runs (rA1, rA2, rNoDur)
@@ -459,7 +460,7 @@ test("repeated identical calls return byte-identical results (no cache, recomput
   const db = createDatabase();
   seedMixed(db);
   const params = {
-    filter: { providerKind: ["anthropic", "qlik_answers"] as const },
+    filter: { providerKind: ["anthropic", "ollama"] as const },
     bucket: "day" as const,
     groupBy: "providerKind" as const,
     measures: ["count", "tokensIn", "costUsd", "p95DurationMs"] as const,

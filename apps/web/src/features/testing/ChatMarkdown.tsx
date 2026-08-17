@@ -145,7 +145,7 @@ export type MdComponents = NonNullable<ComponentProps<typeof MessageResponse>["c
  * (`MessageResponse` callers must pass stable `components`).
  */
 export const MD_TABLE_COMPONENTS: MdComponents = {
-  // Qlik Answers (WP 6.1) — the markdown table gains the shared download/expand toolbar. There's no
+  // Acme Answers (WP 6.1) — the markdown table gains the shared download/expand toolbar. There's no
   // structured data here (Streamdown hands the header/body as React children), so `ExpandableTable`
   // extracts the CSV from the rendered `<table>` DOM. `Table`'s own `relative w-full overflow-auto`
   // wrapper keeps the responsive horizontal scroll; the toolbar anchors to the outer wrapper so it

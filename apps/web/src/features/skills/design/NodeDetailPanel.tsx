@@ -516,7 +516,7 @@ function ValidationScopeEditor({
           id="validation-scope"
           value={value}
           disabled={disabled}
-          placeholder="qlik-cloud, github…"
+          placeholder="acme-cloud, github…"
           spellCheck={false}
           autoComplete="off"
           aria-label="Validation scope servers"

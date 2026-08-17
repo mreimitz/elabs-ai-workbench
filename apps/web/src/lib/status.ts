@@ -199,7 +199,7 @@ export const REVIEWING_STATUS_VIEW: StatusView = chip("Reviewing…", "info", { 
 
 /** `stopReasonCode` → the "Stopped — …" suffix (locked table row: `stopped` + a budget-meter/stall
  *  code). Exhaustively the 7 guardrail-meter codes; every other code is handled by its own table row
- *  (`wait_expired`, `prompt_rejected`) or doesn't reach the `stopped` status at all (see
+ *  (`wait_expired`) or doesn't reach the `stopped` status at all (see
  *  `apps/api/src/testing/session-terminal.ts` `terminalFor()` — the single writer this mirrors). */
 const GUARDRAIL_STOP_REASON_SUFFIX: Partial<Record<StopReasonCode, string>> = {
   max_duration: "time limit",
@@ -260,7 +260,6 @@ export function deriveRunStatusView(input: RunStatusInput): StatusView {
     const guardrailSuffix = stopReasonCode ? GUARDRAIL_STOP_REASON_SUFFIX[stopReasonCode] : undefined;
     if (guardrailSuffix) return chip(`Stopped — ${guardrailSuffix}`, "warning");
     if (stopReasonCode === "wait_expired") return chip("Expired", "neutral");
-    if (stopReasonCode === "prompt_rejected") return chip("Rejected by assistant", "warning");
     // Pre-contract run (no machine-readable code yet) — render its historical wire label rather than
     // a generic "Stopped" (e.g. `stopped_guardrail` → "Stopped (guardrail)").
     return deriveStatusView(outcome ?? status);

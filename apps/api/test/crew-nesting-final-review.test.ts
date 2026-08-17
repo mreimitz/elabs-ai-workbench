@@ -929,7 +929,7 @@ test("P-GRA1 REFUTED — effectiveAgentGrants only ever NARROWS (a broad plan ca
 test("P-GRA2 REFUTED — the readiness gate recurses into a DEPTH-2 nested crew's grants and blocks approve() naming the nested server", async () => {
   const { repo } = open();
   const g = graph(repo);
-  const deepLeaf = g.role("Deep Leaf", { servers: { qlik: "all" }, builtins: [] });
+  const deepLeaf = g.role("Deep Leaf", { servers: { acme: "all" }, builtins: [] });
   const crewC = g.crew("crewC", "Deep Crew", "parallel", [{ agentId: deepLeaf.id }]);
   const crewMid = g.crew("crewMid", "Mid Crew", "parallel", [{ crewId: crewC.id }]);
   g.crew("crewP", "Parent", "parallel", [{ crewId: crewMid.id }]);
@@ -940,8 +940,8 @@ test("P-GRA2 REFUTED — the readiness gate recurses into a DEPTH-2 nested crew'
     resolveCrew: g.resolveCrew,
     runAgent: leafRunner({}),
     config: { defaultAutonomy: "always_ask", maxDepth: 4 },
-    // The nested server "qlik" is NOT ready (e.g. an OAuth server with no token).
-    isServerRunReady: (serverId) => (serverId === "qlik" ? { ready: false, serverName: "Qlik" } : { ready: true }),
+    // The nested server "acme" is NOT ready (e.g. an OAuth server with no token).
+    isServerRunReady: (serverId) => (serverId === "acme" ? { ready: false, serverName: "Acme" } : { ready: true }),
   });
 
   const session = missionSession(repo, "always_ask");
@@ -950,12 +950,12 @@ test("P-GRA2 REFUTED — the readiness gate recurses into a DEPTH-2 nested crew'
   await service.approve({ missionId: proposed.id, sink });
   const mission = repo.getMission(proposed.id);
 
-  // The readiness gate recursed to DEPTH 2, found "qlik" unready, and blocked the run — the mission stays
-  // `proposed` (re-approvable once connected), and NO agent ever ran a tool-less nested Qlik agent.
+  // The readiness gate recursed to DEPTH 2, found "acme" unready, and blocked the run — the mission stays
+  // `proposed` (re-approvable once connected), and NO agent ever ran a tool-less nested Acme agent.
   assert.equal(mission.status, "proposed", "approve() left the mission proposed — the nested unready server blocked the whole tree");
   const errs = errorEvents(events).filter((e) => e.authRequired === true);
   assert.ok(errs.length >= 1, "an auth-required error was surfaced");
-  assert.ok(errs.some((e) => (e.serverIds ?? []).includes("qlik")), "the error names the NESTED (depth-2) server 'qlik'");
+  assert.ok(errs.some((e) => (e.serverIds ?? []).includes("acme")), "the error names the NESTED (depth-2) server 'acme'");
   assert.equal(agentReports(events, mission.id).length, 0, "no agent ran — the tree was blocked before spawning");
 });
 

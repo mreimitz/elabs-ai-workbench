@@ -60,7 +60,7 @@ const STEPS: RunStep[] = [
     runId: "run_1",
     index: 4,
     type: "tool_call",
-    label: "qlik_get_app",
+    label: "acme_get_app",
     status: "error",
     profileTokens: {},
     turnIndex: 1,
@@ -489,7 +489,7 @@ describe("ReportTab", () => {
         id: "iss_2",
         targetKind: "skill",
         targetId: "skill_9",
-        targetName: "qlik-analysis",
+        targetName: "acme-analysis",
         title: "SKILL.md promises a tool the scenario never exposes",
         severity: "medium",
         status: "resolved",
@@ -509,7 +509,7 @@ describe("ReportTab", () => {
 
     // Target labels + dedup counts.
     expect(screen.getByText("MCP server · docs-server")).toBeInTheDocument();
-    expect(screen.getByText("skill · qlik-analysis")).toBeInTheDocument();
+    expect(screen.getByText("skill · acme-analysis")).toBeInTheDocument();
     expect(screen.getByText("seen 3×")).toBeInTheDocument();
     expect(screen.getByText("seen 1×")).toBeInTheDocument();
 

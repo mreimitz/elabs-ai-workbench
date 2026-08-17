@@ -315,7 +315,7 @@ export class RunRepository implements RunPersistenceSink {
    * emit-path `meta` (see {@link RunEmitMeta}) and stay NULL until an executor supplies them.
    *
    * WP1.R (B1/B3 fix) — `phase = NULL` on every terminal write. A `{type:"phase"}` emit (e.g. the
-   * engine/qlik SessionClock `onFire` stamping `'stopping'` right before the terminal status, or a run
+   * engine SessionClock `onFire` stamping `'stopping'` right before the terminal status, or a run
    * left at `'waiting_input'` when `/end` finalizes it) has no guaranteed later clearing emit — the
    * engine's own `{phase:null}` after a clock-fired terminal is a no-op once `detachActiveRun` has
    * already removed the run from the manager. Clearing `phase` centrally here, on the ONE write every
@@ -368,7 +368,7 @@ export class RunRepository implements RunPersistenceSink {
         // call always lands BEFORE this finalize's deferred persistence microtask runs (same
         // synchronous call stack, no `await` between them at every current call site). Without the
         // COALESCE this write would silently clobber that already-recorded value back to NULL. Every
-        // OTHER kind (engine, qlik) threads real durations through `meta` here directly, so this is a
+        // OTHER kind (the engine) threads real durations through `meta` here directly, so this is a
         // no-op change for them (COALESCE picks the provided value when non-null, same as before).
         activeDurationMs: meta?.activeDurationMs ?? null,
         totalDurationMs: meta?.totalDurationMs ?? null,
@@ -538,7 +538,7 @@ export class RunRepository implements RunPersistenceSink {
   // touches ONLY its own column(s), never `status`/`outcome`/totals (owned by `finalize`), so they are
   // safe to call at any point in a run's lifecycle and can never mask an engine result. All are no-ops
   // (0 rows, never throw) for an unknown/deleted run. These are the methods the executors (WP1.3 engine,
-  // WP1.4 subscription, WP1.5 qlik) wire to once they adopt SessionClock/capabilities/`terminalFor`.
+  // WP1.4 subscription) wire to once they adopt SessionClock/capabilities/`terminalFor`.
 
   /**
    * Persist the backend's {@link SessionCapabilities} manifest for this run (D-US4). Call once, at

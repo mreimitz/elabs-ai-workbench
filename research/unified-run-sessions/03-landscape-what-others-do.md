@@ -65,7 +65,7 @@ formal prior art for exactly the state-machine questions in `02-open-questions.m
   no cursors.** A root-level provider follows *all* running sessions even when not viewed
   (multi-window/phone relay).
 - Raw agent stdout JSONL is persisted; the normalized transcript is **re-derived at read time** —
-  a normalizer fix retroactively improves old transcripts (we already do this for Qlik legacy runs).
+  a normalizer fix retroactively improves old transcripts (we already do this for the vendor legacy runs).
 - Capabilities: **static per-executor enum** (`SessionFork | SetupHelper | ContextUsage` — the
   context gauge only renders when the backend declares ContextUsage) *separate from* runtime
   `AvailabilityInfo` (installed/logged-in probes).
@@ -215,7 +215,7 @@ Leanings only — decisions stay with the owner in `02-open-questions.md`.
 | **Q5** capability manifest static vs detected | Settled by convergence: **static declaration per backend adapter + runtime availability/verification**, manifest gates UI elements (cdesktop context gauge). Estimability itself is a documented capability (Gumloop: flows exact, agents not pre-calculable) — matches our `tokens/cost` axes. |
 | **Q6** status vocabulary | Steal the two named states we lack: a transitional **`stopping`** (Gumloop TERMINATING, OpenAI cancelling) and a named abandoned-wait terminal (**`expired`**-like, OpenAI) distinct from user stop and from failure. Budget-exhausted distinct from error (OpenAI `incomplete` vs `failed`) — we have this (`stopped_guardrail`) — keep it. |
 | **Q7** queue visibility | Real queued state + numeric position (Gumloop `queue_position`), plus a **named double-texting policy per surface** (LangGraph): enqueue for suites, and for interactive composer decide enqueue-single-slot (cdesktop, discard-on-failure) vs interrupt. |
-| **Q8** idle-timeout policy | Bound the wait by what it costs to hold: our engine/CLI runs hold live processes and MCP sessions → a bounded ask-user/idle wait with its own terminal is right; qlik holds only a thread id → could wait much longer. Timeout values in the field: 10 min (OpenAI, resource-holding) to 10 h (cdesktop) to indefinite (Gumloop/LangGraph, checkpointed). A per-kind wait budget is defensible and the capability manifest is where it belongs. |
+| **Q8** idle-timeout policy | Bound the wait by what it costs to hold: our engine/CLI runs hold live processes and MCP sessions → a bounded ask-user/idle wait with its own terminal is right; vendor holds only a thread id → could wait much longer. Timeout values in the field: 10 min (OpenAI, resource-holding) to 10 h (cdesktop) to indefinite (Gumloop/LangGraph, checkpointed). A per-kind wait budget is defensible and the capability manifest is where it belongs. |
 | **Q9** SSE resume | Both proven. Given our events are persisted rows with `seq`, OpenAI-style cursor resume is cheap; cdesktop/openwork show snapshot-then-tail also works and needs no protocol change. Either way, adopt the **30 s stale-stream watchdog** and delta coalescing (openwork) — those address the observed "ticking clock, no data" failure directly. |
 | **Q10** quick wins first | The field's invariants that we violate *today* and could fix cheaply: stop-verdict-written-before-kill ordering (cdesktop), suppress finish-notification/toast on user stop (cdesktop), stop clears queued follow-ups (openwork). |
 | **Q11** scope (assistant dock, compat runner) | openwork/cdesktop run *everything* through one session model and one normalized transcript taxonomy over 12 backends — evidence that one contract can absorb our other session-ish surfaces later; but both also show it works fine to keep the kanban/task layer (suites, for us) as a *separate* aggregate over runs. |
@@ -241,7 +241,7 @@ Leanings only — decisions stay with the owner in `02-open-questions.md`.
 9. **Context-window meter segmented by source** (Gumloop agents) — convergent validation of our
    ContextChart segments; keep it.
 10. **Raw-payload persistence + read-time re-normalization** as the general rule (cdesktop; we
-    already do it for Qlik legacy runs).
+    already do it for the vendor legacy runs).
 
 ## Sources
 

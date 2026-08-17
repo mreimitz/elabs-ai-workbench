@@ -136,8 +136,6 @@ const STEP_CONFIGURE = 2;
  * and there is currently no read API serving these as data:
  *  - `SESSION_STALL_MS`/`SESSION_WAIT_BUDGET_MS` mirror `DEFAULT_STALL_MS`/`DEFAULT_WAIT_BUDGET_MS` in
  *    `apps/api/src/testing/session-clock.ts` — fixed constants with NO environment-variable override.
- *  - `QLIK_ANSWERS_WAIT_BUDGET_MS` mirrors the same-named export in
- *    `apps/api/src/testing/session-capabilities.ts` (Qlik Answers' longer wait budget).
  *  - `SUBSCRIPTION_RUNS_DEFAULT_CONCURRENCY` mirrors the `SUBSCRIPTION_RUNS_MAX_CONCURRENCY` env var's
  *    default in `apps/api/src/config/env.ts` (that one IS env-configurable, unlike the two above).
  * **Backend gap (flagged for a follow-up WP):** keeping these in sync by hand is fragile — a settings
@@ -146,7 +144,6 @@ const STEP_CONFIGURE = 2;
  */
 const SESSION_STALL_MS = 10 * 60_000;
 const SESSION_WAIT_BUDGET_MS = 10 * 60_000;
-const QLIK_ANSWERS_WAIT_BUDGET_MS = 30 * 60_000;
 const SUBSCRIPTION_RUNS_DEFAULT_CONCURRENCY = 2;
 
 export function RunLauncher({
@@ -1296,17 +1293,11 @@ function EffectiveLimits({
 
   const kindOf = (scenario: Scenario): ProviderKind | undefined =>
     providers.find((provider) => provider.id === scenario.providerId)?.kind;
-  const qlikCount = selected.filter((scenario) => kindOf(scenario) === "qlik_answers").length;
   const subscriptionCount = selected.filter(
     (scenario) => kindOf(scenario) === "claude_subscription",
   ).length;
 
-  const waitBudgetLabel =
-    qlikCount === 0
-      ? formatDuration(SESSION_WAIT_BUDGET_MS)
-      : qlikCount === selected.length
-        ? formatDuration(QLIK_ANSWERS_WAIT_BUDGET_MS)
-        : `${formatDuration(SESSION_WAIT_BUDGET_MS)} · ${formatDuration(QLIK_ANSWERS_WAIT_BUDGET_MS)} for ${qlikCount} Qlik Answers environment${qlikCount === 1 ? "" : "s"}`;
+  const waitBudgetLabel = formatDuration(SESSION_WAIT_BUDGET_MS);
 
   return (
     <div className="flex flex-col gap-2.5 rounded-md border border-border bg-card px-3 py-2.5">
@@ -1453,18 +1444,6 @@ function CostPreview({
 
   if (!ready) return null;
 
-  // Qlik Answers (WP 3.2): `answersQuestions` is the plan TOTAL across every `qlik_answers`
-  // environment (the wire carries no per-environment breakdown — additive-only, see WP 0.1). Since
-  // each such environment contributes exactly `testCount × repetitions` questions, the environment
-  // count for the explicit multiplier divides back out exactly (integer, never a guess).
-  const qlikAnswersEnvironmentCount =
-    estimate &&
-    estimate.answersQuestions !== undefined &&
-    estimate.testCount > 0 &&
-    estimate.repetitions > 0
-      ? Math.round(estimate.answersQuestions / (estimate.testCount * estimate.repetitions))
-      : 0;
-
   return (
     <div className="flex flex-col gap-2 rounded-md border border-border bg-card px-3 py-2.5">
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
@@ -1530,27 +1509,6 @@ function CostPreview({
             </Text>
           ) : null}
 
-          {/* Qlik Answers (WP 3.2): a tenant assistant consumes QUESTIONS, not metered tokens — the
-              matrix multiplier is spelled out explicitly (mirrors MatrixSummary's "A × B × reps ="
-              convention) so it's clear this is a separate quota from the $ estimate above. */}
-          {estimate.answersQuestions !== undefined ? (
-            <div className="flex flex-col gap-1 rounded-md border border-border bg-muted px-3 py-2">
-              <Text variant="meta" tone="muted" className="tabular-nums text-pretty">
-                {estimate.testCount} test{estimate.testCount === 1 ? "" : "s"} ×{" "}
-                {qlikAnswersEnvironmentCount} Qlik Answers environment
-                {qlikAnswersEnvironmentCount === 1 ? "" : "s"} × {estimate.repetitions} repetition
-                {estimate.repetitions === 1 ? "" : "s"} ={" "}
-                <span className="font-medium text-foreground">
-                  {formatNumber(estimate.answersQuestions)} question
-                  {estimate.answersQuestions === 1 ? "" : "s"}
-                </span>
-              </Text>
-              <Text variant="meta" tone="muted" className="text-pretty">
-                Qlik Answers has no per-token cost — each prompt draws one question from the
-                tenant's shared monthly quota.
-              </Text>
-            </div>
-          ) : null}
 
           {estimate.uncappedEnvironmentCount > 0 ? (
             <div className="flex items-start gap-1.5">

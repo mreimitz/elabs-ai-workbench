@@ -121,7 +121,7 @@ describe("CompareView — type filter (WP 4.1)", () => {
 
   test("shows the type filter when a type is in use among servers with scans", async () => {
     listServerTypesMock.mockResolvedValue([
-      serverType({ id: "type-beta", name: "qlik-stage", status: "beta" }),
+      serverType({ id: "type-beta", name: "acme-stage", status: "beta" }),
     ]);
     await renderCompare(
       [
@@ -138,7 +138,7 @@ describe("CompareView — type filter (WP 4.1)", () => {
   test("hides the type filter when no server (with scans) has a known type", async () => {
     // Types exist but no eligible server references them → nothing to group by → no control.
     listServerTypesMock.mockResolvedValue([
-      serverType({ id: "type-prod", name: "Qlik-SaaS", status: "production" }),
+      serverType({ id: "type-prod", name: "Acme-SaaS", status: "production" }),
     ]);
     await renderCompare(
       [

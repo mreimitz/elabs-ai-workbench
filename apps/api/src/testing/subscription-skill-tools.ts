@@ -1,6 +1,6 @@
 // Claude subscription skill wiring (roadmap/claude-subscription/, WP 1.4, D-CS9 — the skills half).
 //
-// Skills DO work on the subscription path (unlike qlik_answers' structural clean-session invariant).
+// Skills DO work on the subscription path.
 // Each of the run's attached skills is resolved (`ScenarioService.resolveAllowedSkills`, the SAME
 // resolution the AI-SDK path uses) and MATERIALIZED READ-ONLY into the run's throwaway workspace (a
 // `skills/` subtree — see `claude-subscription-executor.ts`'s `materializeSkillWorkspace`), then served

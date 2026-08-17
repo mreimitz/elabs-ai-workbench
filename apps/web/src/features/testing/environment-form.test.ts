@@ -46,24 +46,6 @@ const minimalScenario: Scenario = {
   updatedAt: "2026-07-01T00:00:00.000Z",
 };
 
-// WP 2.3 (D-QA2) — a Qlik Answers environment carries an explicit transport override.
-const qlikAnswersScenario: Scenario = {
-  id: "env-3",
-  name: "Qlik env",
-  providerId: "cred-qlik",
-  model: "asst-123",
-  params: {},
-  systemPrompt: "",
-  allowedServers: [],
-  allowedSkills: [],
-  defaultProfiles: ["generic_o200k"],
-  guardrails: { maxRunDurationMs: 60000 },
-  toolLoadingMode: "eager",
-  answersMode: { transport: "invoke" },
-  createdAt: "2026-07-01T00:00:00.000Z",
-  updatedAt: "2026-07-01T00:00:00.000Z",
-};
-
 describe("environment-form round-trip", () => {
   it("round-trips a fully-populated environment with no diff", () => {
     expect(toInput(fromScenario(fullScenario))).toEqual(inputOf(fullScenario));
@@ -94,18 +76,4 @@ describe("environment-form round-trip", () => {
     expect(input.toolLoadingMode).toBe("eager");
   });
 
-  it("EMPTY_FORM and a non-qlik scenario both omit answersMode (byte-identical to before the field existed)", () => {
-    expect("answersMode" in toInput(EMPTY_FORM)).toBe(false);
-    expect("answersMode" in toInput(fromScenario(minimalScenario))).toBe(false);
-    expect(fromScenario(minimalScenario).answersMode).toBeNull();
-  });
-
-  it("round-trips a Qlik Answers environment's answersMode.transport override with no diff", () => {
-    expect(toInput(fromScenario(qlikAnswersScenario))).toEqual(inputOf(qlikAnswersScenario));
-  });
-
-  it("prefills the transport toggle from the loaded scenario", () => {
-    const form = fromScenario(qlikAnswersScenario);
-    expect(form.answersMode).toEqual({ transport: "invoke" });
-  });
 });

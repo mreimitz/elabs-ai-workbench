@@ -72,9 +72,9 @@ describe("AgentTranscript", () => {
         part: {
           type: "tool_call",
           toolCallId: "c1",
-          toolName: "mcp__qlik__search",
+          toolName: "mcp__acme__search",
           source: "mcp",
-          serverId: "qlik",
+          serverId: "acme",
           state: "input-available",
           args: { q: "revenue" },
         },
@@ -87,7 +87,7 @@ describe("AgentTranscript", () => {
     expect(screen.getByRole("log", { name: "Live session — Researcher" })).toBeInTheDocument();
     expect(screen.getByText("Research Q3 revenue")).toBeInTheDocument();
     const toolHeader = screen.getByTestId("tool-header");
-    expect(toolHeader.dataset.toolName).toBe("mcp__qlik__search");
+    expect(toolHeader.dataset.toolName).toBe("mcp__acme__search");
     expect(toolHeader.dataset.state).toBe("input-available");
     expect(screen.getByText("Looking it up")).toBeInTheDocument();
 
@@ -108,9 +108,9 @@ describe("AgentTranscript", () => {
           {
             type: "tool_call",
             toolCallId: "c1",
-            toolName: "mcp__qlik__search",
+            toolName: "mcp__acme__search",
             source: "mcp",
-            serverId: "qlik",
+            serverId: "acme",
             state: "input-available",
           },
           { type: "text", text: "Q3 revenue was up." },

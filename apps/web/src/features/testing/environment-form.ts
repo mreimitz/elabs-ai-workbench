@@ -24,10 +24,6 @@ export const REASONING_NONE = "__none__" as const;
 
 type Reasoning = NonNullable<ModelParams["reasoningEffort"]>;
 
-/** Qlik Answers (WP 2.3, D-QA2) — `packages/shared` inlines this shape on `Scenario`/`ScenarioInput`
- * rather than exporting it standalone; derive it locally instead of adding a shared export. */
-type AnswersMode = NonNullable<Scenario["answersMode"]>;
-
 export type FormState = {
   name: string;
   providerId: string;
@@ -42,8 +38,6 @@ export type FormState = {
   defaultProfiles: TokenProfileRef[];
   guardrails: GuardrailConfig;
   toolLoadingMode: ToolLoadingMode;
-  /** `null` = omit `answersMode` entirely (every non-qlik scenario, or one that never set it). */
-  answersMode: AnswersMode | null;
 };
 
 export const EMPTY_FORM: FormState = {
@@ -60,7 +54,6 @@ export const EMPTY_FORM: FormState = {
   defaultProfiles: ["generic_o200k"],
   guardrails: {},
   toolLoadingMode: "eager",
-  answersMode: null,
 };
 
 /** Project an existing scenario onto the editor's form state (the "open" side of the round-trip). */
@@ -79,7 +72,6 @@ export function fromScenario(scenario: Scenario): FormState {
     defaultProfiles: scenario.defaultProfiles,
     guardrails: scenario.guardrails,
     toolLoadingMode: scenario.toolLoadingMode,
-    answersMode: scenario.answersMode ?? null,
   };
 }
 
@@ -103,8 +95,5 @@ export function toInput(form: FormState): ScenarioInput {
     guardrails: form.guardrails,
     toolLoadingMode: form.toolLoadingMode,
   };
-  // Omit the key entirely rather than sending `answersMode: null` — mirrors how `params` above omits
-  // absent fields, and keeps a non-qlik scenario's wire input byte-identical to before this field existed.
-  if (form.answersMode !== null) input.answersMode = form.answersMode;
   return input;
 }

@@ -17,13 +17,6 @@ export type SuiteKpiRailProps = {
   aggregates: SuiteAggregates | null;
   /** The aggregate soft-stop cost cap (USD), shown as context on the exec-cost tile when set. */
   costCapUsd?: number;
-  /**
-   * Qlik Answers (WP 3.2, D-QA5) — the suite's questions-consumed total, rolled up by the caller
-   * (`SuiteRunConsole`) from the member runs' provider KIND (never a new wire field — see that
-   * component's derivation comment). `null` when the suite has no `qlik_answers` environment at all,
-   * which hides the tile entirely rather than showing a misleading "0 questions" for an all-LLM suite.
-   */
-  answersQuestions?: number | null;
 };
 
 // A grade fraction (0–1) rendered as a PERCENT via the single formatter (`formatGradePercent`), so
@@ -33,7 +26,7 @@ function gradeText(value: number | null): string {
   return value === null ? "—" : formatGradePercent(value);
 }
 
-export function SuiteKpiRail({ aggregates, costCapUsd, answersQuestions }: SuiteKpiRailProps) {
+export function SuiteKpiRail({ aggregates, costCapUsd }: SuiteKpiRailProps) {
   const cellsTotal = aggregates?.cellsTotal ?? 0;
   const cellsCompleted = aggregates?.cellsCompleted ?? 0;
   const progressPct = cellsTotal > 0 ? (cellsCompleted / cellsTotal) * 100 : 0;
@@ -112,17 +105,6 @@ export function SuiteKpiRail({ aggregates, costCapUsd, answersQuestions }: Suite
           value={<span className="tabular-nums">{formatCostUsd(judgeCostUsd)}</span>}
           description="grader spend"
         />
-        {/* Qlik Answers (WP 3.2, D-QA5) — only shown when the suite has at least one qlik_answers
-            environment; hidden (not "0 questions") for an all-LLM suite. */}
-        {answersQuestions !== null && answersQuestions !== undefined ? (
-          <MetricCard
-            className="min-w-0"
-            icon={<MessageCircleQuestion aria-hidden />}
-            label="Questions"
-            value={<span className="tabular-nums">{formatNumber(answersQuestions)}</span>}
-            description="Qlik Answers · shared monthly quota"
-          />
-        ) : null}
       </div>
     </section>
   );

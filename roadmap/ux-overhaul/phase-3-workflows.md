@@ -21,7 +21,7 @@ accept `?serverA/scanA/scanB` — coordinate: that view is 2.3's domain, so this
 PM schedules 3.1 after 2.3 — it does). (4) Server detail Scans tab gets the same Δ + action.
 (5) Dashboard footprint Δ column wired if 2.1 left it deferred.
 **Acceptance:** from any scan row, one click answers "what changed vs previous?" with a pre-filled
-diff; Δ math spot-checked against two known scans (qlik-mreimitz 22,436 → 45,264). Gate green.
+diff; Δ math spot-checked against two known scans (acme-demo 22,436 → 45,264). Gate green.
 
 ## WP 3.2 — Console review mode & cross-representation links (G9, S20)
 **Domain:** `apps/web/src/features/testing/` console files (post-2.5).
@@ -31,7 +31,7 @@ that turn; Analytics→Errors cards clickable → jump to the failing step in Ch
 rows ↔ Chat blocks share anchor ids. Grade "—" in any console/feed surface gets tooltip + link to
 Settings judge card (G12 slice).
 **Acceptance:** on run `9JThXmPbkW2zh8JeINxGy`: click error card → lands on the failed
-qlik_create_data_object call in chat; click Turn-3 bar → turn 3; every "—" grade explains itself.
+acme_create_data_object call in chat; click Turn-3 bar → turn 3; every "—" grade explains itself.
 Gate green.
 
 ## WP 3.3 — Skills connected to their life (G11 remainder) — after 3.2

@@ -557,7 +557,7 @@ function mcpGrantsWithOneDrop(): HubMcpGrantInputs {
     sink: { toolCall: () => undefined },
     serverStatuses: [
       { serverId: "srv-1", serverName: "Research server", status: "connected" },
-      { serverId: "srv-2", serverName: "Qlik server", status: "error", message: "connection refused" },
+      { serverId: "srv-2", serverName: "Acme server", status: "error", message: "connection refused" },
     ],
   };
 }
@@ -593,7 +593,7 @@ test("hub-fixes WP1.3 (RC3.4): a dropped granted server gets a persisted status 
 
   assert.match(
     recorded[0]?.system ?? "",
-    /Unreachable this turn: Qlik server \(connection refused\)/,
+    /Unreachable this turn: Acme server \(connection refused\)/,
     "the prompt states the truth instead of pretending nothing was granted",
   );
   assert.ok(
@@ -611,7 +611,7 @@ test("hub-fixes WP1.3 (RC3.4): a dropped granted server gets a persisted status 
     2,
     "no NEW status events on an unchanged second turn (dedupe on last-known status)",
   );
-  assert.match(recorded[1]?.system ?? "", /Unreachable this turn: Qlik server/);
+  assert.match(recorded[1]?.system ?? "", /Unreachable this turn: Acme server/);
 });
 
 test("hub-fixes WP1.3 (RC3.4): all-fail ⇒ no more silent null — status events + the prompt line still land, and the turn proceeds on built-ins", async () => {
@@ -624,7 +624,7 @@ test("hub-fixes WP1.3 (RC3.4): all-fail ⇒ no more silent null — status event
     sink: { toolCall: () => undefined },
     serverStatuses: [
       { serverId: "srv-1", serverName: "Research server", status: "error", message: "ECONNREFUSED" },
-      { serverId: "srv-2", serverName: "Qlik server", status: "error", message: "OAuth expired" },
+      { serverId: "srv-2", serverName: "Acme server", status: "error", message: "OAuth expired" },
     ],
   };
   const service = new HubSessionService({
@@ -652,7 +652,7 @@ test("hub-fixes WP1.3 (RC3.4): all-fail ⇒ no more silent null — status event
 
   const system = recorded[0]?.system ?? "";
   assert.match(system, /Unreachable this turn: Research server \(ECONNREFUSED\)/);
-  assert.match(system, /Unreachable this turn: Qlik server \(OAuth expired\)/);
+  assert.match(system, /Unreachable this turn: Acme server \(OAuth expired\)/);
   assert.ok(
     !system.includes("No MCP tools are granted in this session"),
     "the honest per-server text replaces the misleading blanket fallback (RC3.4's whole point)",
@@ -670,7 +670,7 @@ test("an auth failure carries authRequired through to the persisted mcp_server_s
     serverStatuses: [
       {
         serverId: "srv-auth",
-        serverName: "qlik-stage",
+        serverName: "acme-stage",
         status: "error",
         message: "Unauthorized",
         authRequired: true,

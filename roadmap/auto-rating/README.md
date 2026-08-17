@@ -32,7 +32,7 @@ testing-ia one-engine model (D-T3: everything is a plan → suite-run).
      buckets** (`skill`, `mcp_server`, `model_behavior`, `test_setup`, `provider_infra`), each
      finding carrying a mandatory **`fixTarget: skill | mcp_server | none`** and a **drafted
      concrete fix** (AR4/AR9) — e.g. "add to SKILL.md: always pass `fields=…` to
-     `qlik_get_app`" vs "server: `search_docs` rejects its own documented `limit` param".
+     `acme_get_app`" vs "server: `search_docs` rejects its own documented `limit` param".
 2. **One judge resolution chain for ALL LLM graders** (AR2/AR3), used by `outcome_judge`,
    `trajectory_judge`, and the new base graders alike:
    **Claude CLI (assistant subscription, if signed in) → configured provider judge

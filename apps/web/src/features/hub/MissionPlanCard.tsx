@@ -80,7 +80,7 @@ function summarizeBudgets(budgets?: HubBudgets): string {
   return bits.length > 0 ? bits.join(" · ") : "no explicit budget";
 }
 
-/** hub-fixes WP2.2 (RC2.4) — one chip label per granted server ("qlik · all" / "files · 3 tools"). */
+/** hub-fixes WP2.2 (RC2.4) — one chip label per granted server ("acme · all" / "files · 3 tools"). */
 function grantServerChips(grants: HubToolGrants): { id: string; label: string }[] {
   return Object.entries(grants.servers ?? {}).map(([serverId, grant]) => ({
     id: serverId,

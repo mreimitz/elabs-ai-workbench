@@ -33,7 +33,7 @@ const collect = (warnings: string[], diagnostics: ToolDiagnostic[] = []) =>
 
 describe("collectSkillProblems — live unknown-tool warnings (WP 7.5)", () => {
   it("re-classifies a live unknown-tool warning to the tool source with a line + node pin", () => {
-    const warning = formatUnknownToolWarning({ name: "qlik_serach", line: 12, count: 1 });
+    const warning = formatUnknownToolWarning({ name: "acme_serach", line: 12, count: 1 });
     const problems = collect([warning]);
     expect(problems).toHaveLength(1);
     expect(problems[0]).toMatchObject({
@@ -47,18 +47,18 @@ describe("collectSkillProblems — live unknown-tool warnings (WP 7.5)", () => {
   });
 
   it("keeps the line pin even when no node spans the line", () => {
-    const warning = formatUnknownToolWarning({ name: "qlik_serach", line: 99, count: 2 });
+    const warning = formatUnknownToolWarning({ name: "acme_serach", line: 99, count: 2 });
     const problems = collect([warning]);
     expect(problems[0]).toMatchObject({ source: "tool", line: 99 });
     expect(problems[0]?.nodeId).toBeUndefined();
   });
 
   it("drops the live row when the persisted diagnostics already report the same name", () => {
-    const warning = formatUnknownToolWarning({ name: "qlik_serach", line: 12, count: 1 });
+    const warning = formatUnknownToolWarning({ name: "acme_serach", line: 12, count: 1 });
     const diagnostics: ToolDiagnostic[] = [
       {
         kind: "unknown_tool",
-        name: "qlik_serach",
+        name: "acme_serach",
         anchor: { headingPath: [], startLine: 12, endLine: 12 },
         candidates: [],
       },
@@ -66,7 +66,7 @@ describe("collectSkillProblems — live unknown-tool warnings (WP 7.5)", () => {
     const problems = collect([warning], diagnostics);
     // Exactly ONE row for the issue — the persisted diagnostic (richer: close-match candidates).
     expect(problems).toHaveLength(1);
-    expect(problems[0]).toMatchObject({ source: "tool", message: "Unknown tool qlik_serach" });
+    expect(problems[0]).toMatchObject({ source: "tool", message: "Unknown tool acme_serach" });
   });
 
   it("leaves genuine projector warnings on the projector source", () => {

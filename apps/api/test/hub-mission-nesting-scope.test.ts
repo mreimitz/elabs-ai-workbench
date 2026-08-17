@@ -238,17 +238,17 @@ test("(i) a level-2 agent's child toolScope is the TRANSITIVE intersection (root
 test("(i-b) an EXPLICIT crew-ref narrowing binds the whole sub-crew (transitive non-escalation)", async () => {
   const { repo } = open();
   const g = graph(repo);
-  // The level-2 role WANTS all of qlik; the enclosing crew-ref narrows qlik down to [search] for its sub-crew.
-  const leaf = g.role("Sub Leaf", { servers: { qlik: "all" }, builtins: [] });
+  // The level-2 role WANTS all of acme; the enclosing crew-ref narrows acme down to [search] for its sub-crew.
+  const leaf = g.role("Sub Leaf", { servers: { acme: "all" }, builtins: [] });
   const crewC = g.crew("crewC", "Child", "parallel", [{ agentId: leaf.id }]);
   g.crew("crewP", "Parent", "parallel", [
-    { crewId: crewC.id, toolGrants: { servers: { qlik: ["search"] }, builtins: [] } },
+    { crewId: crewC.id, toolGrants: { servers: { acme: ["search"] }, builtins: [] } },
   ]);
 
   const { sink } = collectSink();
   const service = makeService({ repository: repo, resolveCrew: g.resolveCrew, runAgent: leafRunner() });
-  // Root scope allows ALL of qlik — the crew-ref's OWN narrowing (not the root) is what must bind the sub-crew.
-  const session = scopedSession(repo, { servers: { qlik: "all" }, builtins: [] });
+  // Root scope allows ALL of acme — the crew-ref's OWN narrowing (not the root) is what must bind the sub-crew.
+  const session = scopedSession(repo, { servers: { acme: "all" }, builtins: [] });
   const mission = await service.proposePlan({ sessionId: session.id, text: "Do", sink, crewId: "crewP" });
   assert.equal(mission.status, "completed");
 
@@ -256,8 +256,8 @@ test("(i-b) an EXPLICIT crew-ref narrowing binds the whole sub-crew (transitive 
   const level2 = repo.listMissionAgentSessions(childId)[0]!;
   assert.deepEqual(
     level2.toolScope?.servers,
-    { qlik: ["search"] },
-    "the crew-ref's [search] narrowing bounds the sub-crew even though root + the role both grant all of qlik",
+    { acme: ["search"] },
+    "the crew-ref's [search] narrowing bounds the sub-crew even though root + the role both grant all of acme",
   );
 });
 
@@ -267,7 +267,7 @@ test("(ii) a NESTED crew granting an unready server → approve() BLOCKS the who
   const { repo } = open();
   const g = graph(repo);
   // The unready server is granted ONLY by a level-2 role — the flat root plan never names it.
-  const leaf = g.role("Nested Qlik", { servers: { "srv-nested": "all" }, builtins: [] });
+  const leaf = g.role("Nested Acme", { servers: { "srv-nested": "all" }, builtins: [] });
   const crewC = g.crew("crewC", "Child", "parallel", [{ agentId: leaf.id }]);
   g.crew("crewP", "Parent", "parallel", [{ crewId: crewC.id }]);
 
@@ -279,7 +279,7 @@ test("(ii) a NESTED crew granting an unready server → approve() BLOCKS the who
       throw new Error("runAgent must not be called when the readiness gate blocks");
     },
     // srv-nested is registered but unauthenticated (a headless child can't OAuth); everything else is ready.
-    isServerRunReady: (id) => (id === "srv-nested" ? { ready: false, serverName: "qlik-nested" } : { ready: true }),
+    isServerRunReady: (id) => (id === "srv-nested" ? { ready: false, serverName: "acme-nested" } : { ready: true }),
   });
   // The session scopes srv-nested IN so it survives to the nested spawn.
   const session = scopedSession(repo, { servers: { "srv-nested": "all" }, builtins: [] });
@@ -291,7 +291,7 @@ test("(ii) a NESTED crew granting an unready server → approve() BLOCKS the who
   assert.ok(err, "a recoverable authenticate error was emitted");
   assert.equal(err!.authRequired, true, "the error flags authRequired");
   assert.deepEqual(err!.serverIds, ["srv-nested"], "the NESTED unready server id is named");
-  assert.ok(err!.message.includes("qlik-nested"), "the message names the nested server to connect");
+  assert.ok(err!.message.includes("acme-nested"), "the message names the nested server to connect");
 });
 
 test("(ii) an all-ready nested tree is NOT blocked — it runs to completion", async () => {

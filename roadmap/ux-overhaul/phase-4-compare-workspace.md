@@ -75,7 +75,7 @@ next-steps action cards per H7 rules (deferred-loading win → env editor; faili
 prefilled; unused skill → SkillFlow trace; export baseline report MD/JSON via existing report
 endpoints if they cover runs — `GET /api/reports/run/:id/*` exists; a comparison export may be
 client-side composition).
-**Acceptance:** comparing runs that span the qlik-stage Jul-4 scan boundary surfaces the server-
+**Acceptance:** comparing runs that span the acme-stage Jul-4 scan boundary surfaces the server-
 change marker linking a pre-filled scan diff; at least 3 next-step rules fire correctly on seed
 data; every card's action lands pre-focused. Gate green.
 

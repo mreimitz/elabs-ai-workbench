@@ -70,11 +70,11 @@ dependency tree) and systemic (the hand-mirrored zod↔TS split, version/changel
   omits `"generic_estimate"`, a valid `TOKEN_PROFILES` member — a user who selected it is silently reset to the default on reload (the guard validates the persisted value). `rows.ts:38` lists all four profiles; `rows.ts:407` lists only three (`"generic_o200k" | "generic_cl100k" | "raw_json_rough"`).
 - **Recommendation:** derive the guard from `TOKEN_PROFILES.includes(...)` and type both row fields as the shared `TokenProfileId`.
 
-### M2 — `.env.example` missing variables the code reads: `COLLECTIONS_DIR`, `QLIK_ANSWERS_DEBUG`
+### M2 — `.env.example` missing variables the code reads: `COLLECTIONS_DIR`, `VENDOR_ASSISTANT_DEBUG`
 - **Category:** Config / docs
-- **Files:** `.env.example` (neither var present, verified against the full 137-line file); `apps/api/src/config/env.ts:88–90` (`process.env.COLLECTIONS_DIR`); `apps/api/src/providers/model-catalog.ts:85`, `apps/api/src/testing/qlik-answers-executor.ts:170,814,819,824` (`process.env.QLIK_ANSWERS_DEBUG`); `docker-compose.yml:19` (`QLIK_ANSWERS_DEBUG: "${QLIK_ANSWERS_DEBUG:-}"`)
-- **Evidence:** env.ts comment: "Benchmarks (WP 4.2, B11) — base dir for per-collection git working clones" — but `.env.example` documents every other `DATA_DIR`-derived dir (`ATTACHMENTS_DIR`, `ASSISTANT_DATA_DIR`) and skips this one. `QLIK_ANSWERS_DEBUG` is even plumbed through compose yet documented nowhere. It is also the only env var read via bare `process.env` outside `config/env.ts` (all other API reads are `PATH`/`CLAUDE_CONFIG_DIR` in spawn-env plumbing).
-- **Recommendation:** add both to `.env.example`; move the `QLIK_ANSWERS_DEBUG` read into `config/env.ts` so the config hub stays exhaustive.
+- **Files:** `.env.example` (neither var present, verified against the full 137-line file); `apps/api/src/config/env.ts:88–90` (`process.env.COLLECTIONS_DIR`); `apps/api/src/providers/model-catalog.ts:85`, `apps/api/src/testing/vendor-assistant-executor.ts:170,814,819,824` (`process.env.VENDOR_ASSISTANT_DEBUG`); `docker-compose.yml:19` (`VENDOR_ASSISTANT_DEBUG: "${VENDOR_ASSISTANT_DEBUG:-}"`)
+- **Evidence:** env.ts comment: "Benchmarks (WP 4.2, B11) — base dir for per-collection git working clones" — but `.env.example` documents every other `DATA_DIR`-derived dir (`ATTACHMENTS_DIR`, `ASSISTANT_DATA_DIR`) and skips this one. `VENDOR_ASSISTANT_DEBUG` is even plumbed through compose yet documented nowhere. It is also the only env var read via bare `process.env` outside `config/env.ts` (all other API reads are `PATH`/`CLAUDE_CONFIG_DIR` in spawn-env plumbing).
+- **Recommendation:** add both to `.env.example`; move the `VENDOR_ASSISTANT_DEBUG` read into `config/env.ts` so the config hub stays exhaustive.
 
 ### M3 — Five orphaned zod schemas; zod↔TS wire types are hand-mirrored with no compile-time link
 - **Category:** Contract drift (systemic)
@@ -97,7 +97,7 @@ dependency tree) and systemic (the hand-mirrored zod↔TS split, version/changel
 ### M6 — Version reporting is inconsistent and the changelog is stale
 - **Category:** Release hygiene
 - **Files:** root `package.json:3` (`"version": "0.2.0"`); `apps/api|web/package.json`, `packages/shared/package.json` (all `0.1.0`); `apps/api/src/config/env.ts:73` (`appVersion: process.env.npm_package_version ?? "0.1.0"`); `Dockerfile:116` (`CMD ["node", "apps/api/dist/index.js"]`); `apps/api/src/index.ts:485–495` (`/api/health` returns `version: config.appVersion`); `CHANGELOG.md` (last entry `0.2.0 — 2026-07-02`)
-- **Evidence:** in Docker the process is started by `node` directly, so `npm_package_version` is unset and `/api/health` reports **0.1.0**; `pnpm start` on a dev box reports **0.2.0**. Meanwhile CLAUDE.md documents whole feature waves shipped after 2026-07-02 (testing-IA v16, Qlik Answers v23/v24, Assistant Phases 0–3, the UX overhaul) with no changelog entry and no version bump.
+- **Evidence:** in Docker the process is started by `node` directly, so `npm_package_version` is unset and `/api/health` reports **0.1.0**; `pnpm start` on a dev box reports **0.2.0**. Meanwhile CLAUDE.md documents whole feature waves shipped after 2026-07-02 (testing-IA v16, the vendor assistant v23/v24, Assistant Phases 0–3, the UX overhaul) with no changelog entry and no version bump.
 - **Recommendation:** derive `appVersion` from the root `package.json` at build/startup (read the file) instead of `npm_package_version`; bump to 0.3.x and backfill the changelog before calling anything a release candidate.
 
 ### M7 — No `engines` field anywhere; Node version pinned only implicitly
@@ -182,7 +182,7 @@ dependency tree) and systemic (the hand-mirrored zod↔TS split, version/changel
 
 ### L10 — compose duplicates the image healthcheck and passes through almost no tunables
 - **Category:** Config
-- **Files:** `docker-compose.yml:21–32` (verbatim copy of `Dockerfile:111–112`'s check — two places to drift); `docker-compose.yml:12–19` (environment: only the fixed basics + `QLIK_ANSWERS_DEBUG`; no passthrough for `MCP_SECRET_KEY`, `SCAN_RETENTION_PER_SERVER`, `ASSISTANT_*`, `DEFAULT_TOKEN_PROFILE` override, etc.)
+- **Files:** `docker-compose.yml:21–32` (verbatim copy of `Dockerfile:111–112`'s check — two places to drift); `docker-compose.yml:12–19` (environment: only the fixed basics + `VENDOR_ASSISTANT_DEBUG`; no passthrough for `MCP_SECRET_KEY`, `SCAN_RETENTION_PER_SERVER`, `ASSISTANT_*`, `DEFAULT_TOKEN_PROFILE` override, etc.)
 - **Recommendation:** drop the compose healthcheck (inherit the image's) and add an `env_file: .env.local`-style passthrough so operators don't edit compose to tune retention/assistant settings.
 
 ### L11 — Shared package types resolve to `src` while runtime resolves to `dist`

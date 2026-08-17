@@ -172,7 +172,7 @@ describe("deriveNextSteps", () => {
       id: "s1",
       type: "tool_result",
       status: "error",
-      toolName: "qlik_create_data_object",
+      toolName: "acme_create_data_object",
       serverId: "srv-1",
     } as unknown as RunStep;
     const steps = deriveNextSteps(
@@ -187,7 +187,7 @@ describe("deriveNextSteps", () => {
     );
     const fail = steps.find((s) => s.id === "failing-tool");
     expect(fail).toBeTruthy();
-    expect(fail?.title).toContain("qlik_create_data_object");
+    expect(fail?.title).toContain("acme_create_data_object");
     expect(fail?.action).toEqual({
       kind: "link",
       to: "/servers/srv-1",

@@ -11,11 +11,10 @@ import type { RunStreamState } from "./use-run-stream";
 
 /**
  * WP 3.2 (Unified Sessions, D-US4) — the console-chrome half of the capability-driven rail: for a
- * manifest with `contextWindow: false` (today `qlik_answers`) BOTH context-window surfaces are gated
+ * manifest with `contextWindow: false` BOTH context-window surfaces are gated
  * OFF at the RunConsole render site — the `<ContextChart>` (which owns the never-fulfilling "No
  * context yet" turn-0 empty state) and the `<BaselineFootprint>` turn-0 card — because that kind has
- * no context window at all (the rail's assistant-identity card replaces them, driven by
- * `capabilities.identity`). Every manifest with `contextWindow: true` still renders both. This is
+ * no context window at all. Every manifest with `contextWindow: true` still renders both. This is
  * proven by mounting RunConsole in its lightest (pre-run) state with only the THREE module-load-heavy
  * children stubbed (ConversationPane, AnalyticsPanel — both pull `@brand/ai`/`@brand/charts` that
  * jsdom can't load — and ContextChart, stubbed to a sentinel so its presence/absence is directly
@@ -68,7 +67,7 @@ vi.mock("@brand/ai", () => ({
 
 // The SSE hook — return a stable empty stream so no real EventSource opens and the console renders
 // its pre-run shell deterministically. Keep every other export (buildTimeline, answersPayloadOf,
-// the gate helpers, types) as the real thing (RunConsole + our own questions/identity useMemo use them).
+// the gate helpers, types) as the real thing.
 const EMPTY_STREAM = {
   status: null,
   ratingState: null,
@@ -213,16 +212,15 @@ const ENGINE_CAPS: SessionCapabilities = {
   askUser: true,
 };
 
-const QLIK_CAPS: SessionCapabilities = {
+const NO_CONTEXT_CAPS: SessionCapabilities = {
   liveText: true,
-  liveReasoning: "structured",
-  toolCalls: false,
+  liveReasoning: "none",
+  toolCalls: true,
   contextWindow: false,
-  tokens: "estimated",
-  costBasis: "questions",
+  tokens: "exact",
+  costBasis: "subscription_reference",
   followUps: true,
   askUser: false,
-  identity: { kind: "qlik_assistant", assistantId: "assistant-abc123" },
 };
 
 function renderConsole(
@@ -234,7 +232,7 @@ function renderConsole(
       <TooltipProvider>
         <RunConsole
           target={{ kind: "prerun", test: makeTest(), scenario }}
-          providerLabel="Qlik Answers"
+          providerLabel="Anthropic"
           capabilities={capabilities}
         />
       </TooltipProvider>
@@ -248,20 +246,15 @@ describe("RunConsole — capability-driven context-window chrome (WP 3.2, D-US4)
 
     expect(screen.getByTestId("context-chart")).toBeInTheDocument();
     expect(screen.getByText("Turn-0 baseline")).toBeInTheDocument();
-    // sanity: no identity on this manifest, so the rail keeps the Context tile.
     expect(screen.getByText("Context")).toBeInTheDocument();
-    expect(screen.queryByText("Assistant")).not.toBeInTheDocument();
   });
 
-  test("contextWindow:false + identity manifest (Qlik): NEITHER the context chart nor the turn-0 baseline renders", () => {
-    renderConsole(QLIK_CAPS, makeScenario({ answersMode: { transport: "stream" } }));
+  test("contextWindow:false manifest: NEITHER the context chart nor the turn-0 baseline renders", () => {
+    renderConsole(NO_CONTEXT_CAPS);
 
     expect(screen.queryByTestId("context-chart")).not.toBeInTheDocument();
     expect(screen.queryByText("Turn-0 baseline")).not.toBeInTheDocument();
-    // the rail's assistant-identity card replaces the context surfaces for this manifest — its unique
-    // "Assistant" tile label is present, and the meaningless "Context" tile is gone. (The card's
-    // per-field content, e.g. the app/version/transport rows, is detail-proven in KpiRail.test.tsx.)
-    expect(screen.getByText("Assistant")).toBeInTheDocument();
+    // the meaningless "Context" tile is gone from the rail too.
     expect(screen.queryByText("Context")).not.toBeInTheDocument();
   });
 });

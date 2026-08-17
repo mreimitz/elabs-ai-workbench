@@ -17,7 +17,7 @@ const SKILL_MD = [
   "name: demo",
   "description: A demo skill for the palette render test.",
   "servers:",
-  "  - Qlik-SaaS",
+  "  - Acme-SaaS",
   "  - files",
   "---",
   "",
@@ -28,14 +28,14 @@ const SKILL_MD = [
 ].join("\n");
 
 const BINDINGS: SkillServerBinding[] = [
-  { serverName: "Qlik-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
+  { serverName: "Acme-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
   { serverName: "files", serverId: "s-files" },
 ];
 
 const TYPES: ServerType[] = [
   {
     id: "t-saas",
-    name: "Qlik-SaaS",
+    name: "Acme-SaaS",
     status: "production",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -44,7 +44,7 @@ const TYPES: ServerType[] = [
 ];
 
 const SERVERS = [
-  { id: "s-rep", name: "Qlik Prod B" },
+  { id: "s-rep", name: "Acme Prod B" },
   { id: "s-files", name: "files" },
 ];
 
@@ -95,7 +95,7 @@ const graph: SkillGraph = { nodes: [], edges: [], warnings: [] };
 const boundTools: BoundTool[] = [
   {
     serverId: "s-rep",
-    serverName: "Qlik Prod B",
+    serverName: "Acme Prod B",
     toolName: "get_app",
     schemaParams: [],
     definitionTokens: 40,
@@ -136,7 +136,7 @@ describe("ToolsPalette — type-vs-server chips (WP 3.2 A)", () => {
   test("a type-bound entry renders its type name, a Type indicator, and the lifecycle status", async () => {
     renderPalette();
     // The type chip carries the TYPE name + a "Type" indicator + the "Production" status badge.
-    expect(await screen.findByText("Qlik-SaaS")).toBeTruthy();
+    expect(await screen.findByText("Acme-SaaS")).toBeTruthy();
     expect(await screen.findByText("Type")).toBeTruthy();
     expect(await screen.findByText("Production")).toBeTruthy();
   });

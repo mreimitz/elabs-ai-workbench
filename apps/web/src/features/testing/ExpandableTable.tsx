@@ -11,7 +11,7 @@ import { IconButton } from "../../components/IconButton";
 import { downloadCsv, toCsv } from "../../lib/csv";
 
 /**
- * Qlik Answers (WP 6.1) — the ONE clean `@brand` data table used everywhere in the answer surface,
+ * Acme Answers (WP 6.1) — the ONE clean `@brand` data table used everywhere in the answer surface,
  * carrying the two affordances the streaming Streamdown table had (CSV download + expand) but the
  * settled `@brand` tables lacked. It wraps a caller's `@brand/ui` `Table*` subtree, rendering it
  * INLINE unchanged, and floats a small toolbar over its top-right corner — a **download** button

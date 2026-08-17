@@ -1,6 +1,6 @@
-# Assessment: `insights-bench-qlik` vs. MCP Token Footprint
+# Assessment: `insights-bench` vs. MCP Token Footprint
 
-> Analysis of `~/Downloads/insights-bench-qlik-main` (2026-07-04). Research artifact, not a plan —
+> Analysis of `~/Downloads/insights-bench-main` (2026-07-04). Research artifact, not a plan —
 > nothing here is committed work; owner decisions are flagged at the end.
 >
 > **Follow-up (same day):** the §6 decisions were resolved with the owner and became the
@@ -11,23 +11,23 @@
 ## 1. What it is
 
 A **Python research pipeline** (scripts + Jupyter, no app, no UI, no DB) that benchmarks the
-**answer quality** of two Qlik analytics agents against
+**answer quality** of two vendor analytics agents against
 [InsightBench](https://insightbench.github.io/) — 100 datasets / 425 questions across 12 question
 types and 3 difficulty levels, each with ground-truth insight, insight value, action, and the
 reference pandas code that produced it.
 
 Two engines are compared:
 
-- **MCP path** — the Qlik MCP server driven by **Claude Code (Sonnet 4.5)**. Per-app prompt files
-  instruct the agent to answer all questions using only `qlik_*` tools and to **self-report** its
+- **MCP path** — the vendor MCP server driven by **Claude Code (Sonnet 4.5)**. Per-app prompt files
+  instruct the agent to answer all questions using only `<vendor>_*` tools and to **self-report** its
   own metrics (tool-call trajectory, full interaction log, token estimate, latency, skills used)
   back into a JSON file via a bash heredoc.
-- **DAA path** — Qlik's hosted **Data Analyst Agent / Qlik Answers** via the
+- **DAA path** — the vendor's hosted **Data Analyst Agent / the vendor assistant API** via the
   `cloud-assistants` threads + stream REST API; the `<final>` answer is parsed out of the streamed
   AdaptiveCard payload.
 
-Pipeline: extract questions from InsightBench notebooks → load CSVs as Qlik Cloud apps
-(`csv_to_qlik_apps.py`) → run predictions (both paths) → score → analyze in a notebook.
+Pipeline: extract questions from InsightBench notebooks → load CSVs as the vendor's analytics apps
+(`csv_to_apps.py`) → run predictions (both paths) → score → analyze in a notebook.
 Everything persists as mutated-in-place JSON files.
 
 ## 2. The evaluation methodology (the valuable part)
@@ -55,7 +55,7 @@ questions** instead of being judged against a broken ground truth.
 temporal blindspot (static aggregates instead of grouping by time), the "smart-analyst penalty",
 methodology mismatch, undefined-bucket ambiguity. MCP-specific: missing time dimension (39% of its
 unique failures), silent proxy substitution, unprompted filters. DAA-specific: 51% of its unique
-failures are *process narration instead of results*. They also correlate **which qlik-\* skills
+failures are *process narration instead of results*. They also correlate **which vendor skills
 the agent invoked per question type** (their §9) — directly relevant to our Skills attachment.
 
 ## 3. Engineering maturity — honest read
@@ -114,8 +114,8 @@ model, per MCP server, per attached skill. We have the X axis built; they protot
    unique payoff of our Skills + Testing combination; feeds SkillFlow's fracture→suggestion loop.
 5. **`answerable: false` semantics** — grade the agent on refusing gracefully.
 6. *(Content, optional)* An **InsightBench importer** (their `questions.json` → scenarios/tests).
-   Caveat: the GT is bound to Qlik Cloud apps, so the suite is only meaningful when pointed at a
-   Qlik MCP; generic suites need their own GT.
+   Caveat: the GT is bound to the vendor's analytics apps, so the suite is only meaningful when pointed at a
+   vendor MCP; generic suites need their own GT.
 
 **Not worth adopting:** JSON-file persistence, prompt-based orchestration, self-reported metrics,
 in-place score overwrites, the Vertex-specific client, single-run methodology.
@@ -134,7 +134,7 @@ version the judge, and never present a single-run score as truth.
   "results produced outside our run engine" — same territory as the session-JSONL feature you
   removed on 2026-07-03 (SkillFlow D6 amendment). Default: out of scope; graded runs stay
   engine-native.
-- **D-4 — InsightBench content import:** worth it only if Qlik-MCP benchmarking is a real target
+- **D-4 — InsightBench content import:** worth it only if vendor-MCP benchmarking is a real target
   tenant/workflow for you.
 
 ## 7. Source map (for later reference)
@@ -143,7 +143,7 @@ version the judge, and never present a single-run score as truth.
 - Trajectory-vs-reference judge (prompt, rubric, parsing): `scripts/evaluator/compare_tools_vs_code.py`
 - Scoring orchestration: `scripts/evaluator/compare_insights.py`
 - Self-reporting prompt scheme (what our run engine obsoletes): `scripts/querying/mcp_w_claude_code/generate_batch_prompts.py`
-- Hosted-agent path (DAA/Qlik Answers stream parsing): `scripts/querying/daa_via_api/run_daa_predictions.py`
+- Hosted-agent path (DAA/vendor-specific stream parsing): `scripts/querying/daa_via_api/run_daa_predictions.py`
 - `answerable:false` + benchmark folder format: `scripts/convertor/convert_to_benchmarks.py`
 - Analytics/failure taxonomy: `evaluation/notebooks/insightbench_MCP_vs_DAA_comparison.ipynb` (+ `notebook_utils.py`)
 - Data shapes: `data/extracted_questions/questions.json` (425 q / 100 apps),

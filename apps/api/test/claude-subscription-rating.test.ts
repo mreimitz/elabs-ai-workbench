@@ -236,7 +236,6 @@ function makeRatingHarness(opts: {
     undefined, // sessionOpener — unused
     undefined, // skills
     gradeService, // WP 1.2 (rating): wired so `reviewRun` actually grades, unlike the WP1.2 routing tests
-    undefined, // answersFetch
     undefined, // issues
     opts.driver, // subscription run driver
     opts.resolveAuth,

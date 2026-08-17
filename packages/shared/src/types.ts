@@ -56,7 +56,6 @@ import type {
   INSIGHT_SURPLUS_VERDICTS,
   ISSUE_ASSIST_PRIORITIES,
   JUDGE_METHODS,
-  MEMBER_SKIP_REASONS,
   METRICS_BUCKETS,
   METRICS_TIMEZONE,
   PROVIDER_KINDS,
@@ -126,7 +125,7 @@ export type ServerTypeStatus = (typeof SERVER_TYPE_STATUSES)[number];
 
 /**
  * Server type (roadmap/server-types, D-ST1/D-ST2): a first-class named group of MCP servers that
- * share one tool surface (e.g. "Qlik-SaaS" = production fleet, "qlik-stage" = beta/RC). Lifecycle
+ * share one tool surface (e.g. "Acme-SaaS" = production fleet, "acme-stage" = beta/RC). Lifecycle
  * `status` lives on the type; each server references at most one type. Carries NO secrets and NO
  * connection config — the redaction model is untouched.
  */
@@ -226,19 +225,6 @@ export type ServerProbeRequest = {
   auth?: ServerAuthInput;
 };
 
-/**
- * Qlik Answers onboarding (WP 0.1/2.1) — the tenant-assistants availability check, run only when the
- * probed URL looks like a Qlik Cloud origin. `needsOwnKey` is set when the server's own credentials
- * couldn't reach `GET /api/v1/assistants` (401/403) — the wizard then offers an API-key fallback
- * (D-QA1) instead of reusing the server's auth. See {@link ServerProbeResponse.qlikTenant}.
- */
-export type QlikTenantProbe = {
-  origin: string;
-  answersAvailable: boolean;
-  assistantCount: number;
-  needsOwnKey?: boolean;
-};
-
 export type ServerProbeResponse = {
   ok: boolean;
   url: string;
@@ -249,12 +235,6 @@ export type ServerProbeResponse = {
   message: string;
   authMethods: ServerAuthType[];
   errorMessage?: string;
-  /**
-   * Qlik Answers onboarding (WP 0.1/2.1) — populated when the probed URL looks like a Qlik Cloud
-   * tenant origin and the free, list-only assistants availability check ran. Additive/optional: every
-   * other server keeps probing exactly as before.
-   */
-  qlikTenant?: QlikTenantProbe;
 };
 
 export type OAuthStartResponse = {
@@ -693,12 +673,6 @@ export type ConnectivityResponse = {
   oauthAvailable: boolean;
   message: string;
   errorMessage?: string;
-  /**
-   * Qlik Answers onboarding (WP 2.1) — populated ONLY when the server's URL looks like a Qlik Cloud
-   * tenant origin; the free, list-only assistants availability check ran with the server's OWN
-   * credentials. Additive/optional: every non-Qlik server's connectivity result is unchanged.
-   */
-  qlikTenant?: QlikTenantProbe;
 };
 
 // --- Testing (runs) contract ---------------------------------------------------------------
@@ -763,18 +737,11 @@ export type ProviderCredential = {
   baseUrl?: string;
   hasKey: boolean;
   /**
-   * Qlik Answers (WP 0.2, D-QA1) — auth PROVENANCE for the credential. All three are additive/optional
-   * and NEVER carry a secret value (only ids/flags):
-   *  - `linkedServerId` — the linked `mcp_servers.id` a `qlik_answers` credential reuses auth from
-   *    (an id, not a token/header). Absent for an own-API-key credential.
-   *  - `authSource` — where this credential's auth resolves from: its own `api_key`, or a
-   *    `linked_server` (that server's OAuth token / auth headers).
-   *  - `authBroken` — true only when the credential is linked but that server's auth is currently
-   *    unresolvable (server removed / no usable token): the provider is listed but runs refuse until
-   *    the server is reconnected or an API key is set. Undefined for an unlinked credential.
+   * Claude subscription (WP 0.2, D-CS7) — true when the credential's auth is currently unresolvable:
+   * a `claude_subscription` credential with no signed-in subscription (or no resolver configured).
+   * The provider stays listed but runs refuse until the owner signs in again. Non-secret (a flag, never
+   * a token); undefined for a credential that carries its own API key.
    */
-  linkedServerId?: string;
-  authSource?: "api_key" | "linked_server";
   authBroken?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -785,14 +752,6 @@ export type ProviderCredentialInput = {
   label: string;
   baseUrl?: string;
   apiKey?: string;
-  /**
-   * Qlik Answers (WP 0.1, D-QA1) — alternative to `apiKey`: reuse an already-registered MCP server's
-   * own auth (OAuth token / headers) instead of a standalone key. Additive/optional; every other kind
-   * and every existing api-key-only input keeps validating unchanged. Resolving exactly one auth
-   * source from `apiKey`/`mcpServerId` (and surfacing a broken link) is WP 0.2's service, not this
-   * contract.
-   */
-  mcpServerId?: string;
 };
 
 export type ProviderCredentialUpdate = Partial<ProviderCredentialInput>;
@@ -850,12 +809,6 @@ export type Scenario = {
   guardrails: GuardrailConfig;
   /** How MCP tool definitions are loaded for this scenario's runs (`eager` default vs `deferred`). */
   toolLoadingMode: ToolLoadingMode;
-  /**
-   * Qlik Answers (WP 0.1, D-QA2) — per-environment transport override for `qlik_answers` scenarios:
-   * `stream` (default — live deltas in the console) or `invoke` (synchronous fallback). Additive/
-   * optional; meaningless for every other provider kind, which omit it.
-   */
-  answersMode?: { transport: "stream" | "invoke" };
   createdAt: string;
   updatedAt: string;
 };
@@ -1141,20 +1094,6 @@ export type SuiteInput = Omit<
   collectionId?: string;
 };
 
-/** Qlik Answers (WP 1.4, D-QA6) — why a plan member was skipped rather than run (see {@link MEMBER_SKIP_REASONS}). */
-export type MemberSkipReason = (typeof MEMBER_SKIP_REASONS)[number];
-
-/**
- * One (test × scenario) pairing skipped at plan time (WP 1.4, D-QA6) — never started as a run, so it
- * carries no run id. Surfaced on {@link SuiteAggregates.skippedMembers} (live + cached) and echoed onto
- * {@link SuiteReport.skippedMembers} so the operator sees "N skipped: incompatible" either way.
- */
-export type SkippedSuiteMember = {
-  testId: string;
-  scenarioId: string;
-  reason: MemberSkipReason;
-};
-
 /** One matrix cell (WP 3.2/3.3). `variantLabel` present only for skill-effect suites. */
 export type SuiteCell = {
   testId: string;
@@ -1164,12 +1103,6 @@ export type SuiteCell = {
   runId?: string;
   status: string;
   score?: number | null;
-  /**
-   * Qlik Answers (WP 1.4, D-QA6) — this cell was never run: its test/environment pairing is
-   * incompatible with a `qlik_answers` environment. `status` is `"skipped"` alongside this; absent for
-   * every executed cell (every non-`qlik_answers` matrix, unaffected).
-   */
-  skipped?: MemberSkipReason;
 };
 
 /** Rolled-up metrics of a suite run (WP 3.2/3.4). `failureBuckets` is derived + opt-in (WP 3.5). */
@@ -1183,12 +1116,6 @@ export type SuiteAggregates = {
   execCostUsd: number;
   judgeCostUsd: number;
   failureBuckets?: FailureBucket[]; // WP 3.5 (derived, opt-in)
-  /**
-   * Qlik Answers (WP 1.4, D-QA6) — the plan's skipped-incompatible members, one entry per distinct
-   * (testId, scenarioId) pairing (not per repetition). Additive; absent/omitted when nothing was
-   * skipped, so a suite run with no `qlik_answers` members is byte-identical to before this WP.
-   */
-  skippedMembers?: SkippedSuiteMember[];
 };
 
 /** One executed suite run (the matrix instance). `configSnapshot` freezes the config used. */
@@ -1442,15 +1369,13 @@ export type ContextSnapshot = {
 
 /**
  * Claude subscription (roadmap/claude-subscription/, WP 0.1, D-CS8) — discriminates HOW a run's
- * `costUsd` was derived, mirroring the existing `estimatedTokens` marker convention `qlik_answers`
- * established (D-CS4): reuse the "est." badge idea, don't invent a parallel one.
+ * `costUsd` was derived (D-CS4): reuse the "est." badge idea, don't invent a parallel one.
  *   - `"api_exact"`          — the default/normal path: a metered provider API call, real billed cost.
  *   - `"subscription_reference"` — the run went through a signed-in Claude subscription
  *     (`claude_subscription` {@link ProviderKind}); marginal cost is $0 (covered by the
  *     subscription), and `costUsd` is a SHADOW price = real, provider-exact token counts x the
  *     Anthropic list rate for the model used — a reference estimate for cost comparison, not a
- *     charge. UI/reports must label this "est. · subscription", the same accuracy-marker treatment
- *     `estimatedTokens` gets for `qlik_answers`.
+ *     charge. UI/reports must label this "est. · subscription".
  * Optional/additive on every field that carries it ({@link RunSummary.costBasis}, the `kpi`
  * {@link RunEvent} variant): absent (or `"api_exact"`) means "normal, exactly-billed cost" — the
  * meaning of every run persisted before this field existed is unchanged.
@@ -1492,34 +1417,9 @@ export type SessionTokenAccounting = (typeof SESSION_TOKEN_ACCOUNTING)[number];
 
 /**
  * How a run's cost figure should be read ({@link SESSION_COST_BASES}). A superset of {@link CostBasis}
- * (its 2 members stay unchanged for their exhaustive consumers) plus the session-only bases `questions`
- * (Qlik's shared monthly-quota unit) and `none`.
+ * (its 2 members stay unchanged for their exhaustive consumers) plus the session-only basis `none`.
  */
 export type SessionCostBasis = (typeof SESSION_COST_BASES)[number];
-
-/**
- * Identity of the backend "assistant" behind a session, when it is a first-class product with its own
- * name/version (today only the Qlik Answers tenant assistant) — the data the console's identity card
- * (WP3.2) renders. Referenced (not copied) from the persisted run wire: `assistantId`/`version`/`appId`
- * mirror {@link AnswersStepPayload.assistantVersion}/`appId` and the env "model", and `transport`
- * mirrors the scenario `answersMode.transport` / the executor's `QlikAnswersTransport`. Additive; only
- * a `qlik_answers` session carries one.
- */
-export type SessionAssistantIdentity = {
-  kind: "qlik_assistant";
-  /** The tenant assistant's UUID (the env "model"). */
-  assistantId: string;
-  /** Display name of the assistant, when known. */
-  name?: string;
-  /** One-line description of the assistant, when known. */
-  description?: string;
-  /** The assistant's version at session start (the response `Etag` — a drift signal). */
-  version?: string;
-  /** The Qlik Sense app bound as the assistant's data context, when app-backed. */
-  appId?: string;
-  /** Console transport for prompts (mirrors `answersMode.transport`). */
-  transport?: "stream" | "invoke";
-};
 
 /**
  * The static-per-backend capability manifest (D-US4). Declared per adapter in
@@ -1532,13 +1432,13 @@ export type SessionAssistantIdentity = {
 export type SessionCapabilities = {
   /** Streams assistant text deltas live. */
   liveText: boolean;
-  /** Reasoning surface: none / raw text stream / pre-structured sections. */
+  /** Reasoning surface: none / raw text stream. */
   liveReasoning: SessionLiveReasoning;
   /** Emits `tool_call`/`tool_result` steps. */
   toolCalls: boolean;
   /** Context-window snapshots + % of limit are meaningful (drives the context tile/chart). */
   contextWindow: boolean;
-  /** Token-count fidelity — exact (provider-reported) / estimated (our own) / none. */
+  /** Token-count fidelity — exact (provider-reported) / none. */
   tokens: SessionTokenAccounting;
   /** Cost-figure basis — drives the cost tile's unit + accuracy marker. */
   costBasis: SessionCostBasis;
@@ -1547,12 +1447,10 @@ export type SessionCapabilities = {
   /** Exposes the agent-initiated `ask_user` question tool. */
   askUser: boolean;
   /**
-   * Per-kind override for the SessionClock wait budget (ms) armed in `waiting_input` (D-US7; Qlik
-   * defaults to a longer wait than the 10-min global). Absent ⇒ the app/global default applies.
+   * Per-kind override for the SessionClock wait budget (ms) armed in `waiting_input` (D-US7).
+   * Absent ⇒ the app/global default applies.
    */
   waitBudgetMs?: number;
-  /** Assistant identity card, when the backend has a first-class named assistant (Qlik). */
-  identity?: SessionAssistantIdentity;
 };
 
 /**
@@ -1560,9 +1458,8 @@ export type SessionCapabilities = {
  * never `providerKind === …`) for a MID-RUN fork: whether a run backend can be forked AT a step by
  * reconstructing + seeding its conversation prefix. True only for a session whose transcript is a
  * meaningful, replayable chat-completions history — i.e. it exposes context-window accounting AND
- * tool-call steps (the AI-SDK engine kinds). A `claude_subscription` child (`contextWindow:false`) and a
- * `qlik_answers` wrapper (`toolCalls:false`, one-shot threads — no seedable message prefix) are excluded,
- * so a mid-run fork of either is refused (422); a WHOLE-run re-launch (no `fromStepId`) still works for
+ * tool-call steps (the AI-SDK engine kinds). A `claude_subscription` child (`contextWindow:false`) is
+ * excluded, so a mid-run fork of it is refused (422); a WHOLE-run re-launch (no `fromStepId`) still works for
  * EVERY kind. Absent capabilities (a pre-contract run) → false (conservative — no mid-run fork).
  */
 export function supportsMidRunFork(capabilities: SessionCapabilities | undefined): boolean {
@@ -1626,8 +1523,7 @@ export type RunStep = {
   // Claude subscription (roadmap/claude-subscription/, WP 0.1, D-CS4) — true when this step's
   // token/byte footprint was counted LOCALLY (our own estimator, e.g. tiktoken over the request/
   // response we assembled) rather than read from a provider-reported usage block. Set on steps
-  // produced by the `claude_subscription` executor (which has no billed-usage API, mirroring why
-  // `qlik_answers` steps carry {@link AnswersStepPayload.estimatedTokens}); ordinary API-metered
+  // produced by the `claude_subscription` executor (which has no billed-usage API); ordinary API-metered
   // providers never set it. Optional/additive — older runs and every other kind's steps lack it,
   // meaning "provider-reported/exact" as they always have.
   meteringEstimated?: boolean;
@@ -2568,7 +2464,7 @@ export type ErrorFinding = {
   category: ErrorFindingCategory;
   bucket: RootCauseBucket;
   fixTarget: FixTarget;
-  /** A concrete, labeled fix suggestion — e.g. "add to SKILL.md: always pass `fields=…` to `qlik_get_app`". Never auto-applied. */
+  /** A concrete, labeled fix suggestion — e.g. "add to SKILL.md: always pass `fields=…` to `acme_get_app`". Never auto-applied. */
   draftFix: string;
   /**
    * Concrete failure evidence lifted from the run's persisted (redacted) step payloads — so a filed
@@ -2754,12 +2650,6 @@ export type SuiteReport = {
   judgeProvenance: Pick<RunGrade, "judgeProviderId" | "judgeModel">;
   ratingVersion: number;
   generatedAt: string;
-  /**
-   * Qlik Answers (WP 1.4, D-QA6) — echoes the suite run's skipped-incompatible members (see
-   * {@link SuiteAggregates.skippedMembers}) so the persisted report surfaces them alongside the graded
-   * test groups. `[]` for every suite run that skipped nothing (every report before this WP).
-   */
-  skippedMembers: SkippedSuiteMember[];
   /**
    * The persisted `suite_run_reports.status` (suite-report enrichment, additive): `ready` = every
    * member was rated, `partial` = some member ratings never landed within the bound, `error` = the
@@ -3989,204 +3879,6 @@ export type RunPlanEstimate = {
   /** How many environments have NO per-run cost cap — advisory warn rows; blocks nothing. */
   uncappedEnvironmentCount: number;
   environments: RunPlanEstimateEnvironment[];
-  /**
-   * Qlik Answers (WP 0.1, D-QA5) — total questions the plan would consume across every
-   * `qlik_answers` environment (1 per prompt × testCount × repetitions, summed). Additive/optional: a
-   * plan with no `qlik_answers` environments omits it. Surfaced by the launcher preview (WP 3.2)
-   * alongside the token/cost bands.
-   */
-  answersQuestions?: number;
-};
-
-// ==================================================================================================
-// Qlik Answers (WP 0.1) — shared contract
-// ==================================================================================================
-// A Qlik Answers tenant assistant treated as a test target (roadmap/qlik-answers/README.md,
-// decisions D-QA1–D-QA7). This WP lands the wire contract only — the executor (WP 1.1), credential
-// link (WP 0.2), and detection probe (WP 2.1) build on it. Naming (locked in the plan): the internal
-// provider kind is `qlik_answers`; the run executor is `qlik-answers-executor`. NEVER the bare word
-// "assistant" as a code identifier for this feature — `apps/api/src/assistant/*` is the unrelated
-// embedded Claude dock (the `assistantVersion`/`promptMode` field NAMES below mirror Qlik's own wire
-// vocabulary for its tenant assistants, not that feature).
-
-/** One citation in a Qlik Answers response's `sources[]` — the retrieval trail (research doc §2.2). */
-export type AnswersSource = {
-  chunks?: unknown[];
-  datasourceId?: string;
-  documentId?: string;
-  knowledgebaseId?: string;
-  /** The source document's path/label, as the API names it — kept as-is (mirrors the wire). */
-  source?: string;
-};
-
-/** A measure/dimension behind a snapshot chart — the Qlik expression + its human label. */
-export type AnswersSnapshotField = { expression: string; label?: string };
-
-/**
- * One `Qlik.Snapshot` insight the assistant attached to an app-backed answer (Phase 4b, 2026-07-11).
- * Each snapshot is a chart the assistant computed to support a claim in its narrative: `measures` /
- * `dimensions` are the data behind it, and `reason` is WHY the assistant chose that analysis — i.e. the
- * per-insight reasoning + source the native Qlik Answers UI shows. Absent for a document assistant or a
- * plain (non-analytical) answer.
- */
-export type AnswersSnapshot = {
-  /** The chart's title (its primary measure label), when present. */
-  title?: string;
-  /** Why the assistant chose this analysis — the per-insight reasoning/source rationale. */
-  reason?: string;
-  /** The measures (Qlik expressions + labels) behind the chart — the data expressions for this insight. */
-  measures?: AnswersSnapshotField[];
-  /** The dimensions the chart is grouped by. */
-  dimensions?: AnswersSnapshotField[];
-  /**
-   * The hypercube matrix behind the chart (Phase 5, D-QA10) — derived from the raw card's
-   * `qHyperCube` (WP 5.2). `columns` are the dimension labels followed by the measure labels
-   * (`qDimensionInfo`/`qMeasureInfo`); `rows` are the `qMatrix` cell values, capped at **50** rows;
-   * `totalRows` carries the true row count when the cap trims the table (honest "showing N of M").
-   * Absent when the raw snapshot has no hypercube or the extraction misses — the web then renders
-   * the snapshot without its table (title/reason/measures/dimensions only).
-   */
-  data?: {
-    columns: string[];
-    rows: (string | number)[][];
-    totalRows?: number;
-  };
-};
-
-/**
- * One card-body element in the ordered answer sequence (Phase 5, D-QA8) — narrative text
- * interleaved with the `Qlik.Snapshot` insights it refers to, in the order the assistant's own
- * card renders them. A `"snapshot"` block is a **reference** (`index` into
- * {@link AnswersStepPayload.snapshots}), not a copy, so the snapshot's full detail (including its
- * optional {@link AnswersSnapshot.data}) is read from there.
- */
-export type AnswersAnswerBlock =
-  | {
-      kind: "text";
-      /** One narrative TextBlock's text, already citation-marker-stripped for display. */
-      markdown: string;
-      /**
-       * The snapshot indices this text block cited (D-QA9) — extracted from
-       * `<citation data-index="N">` markers, where `N` is the snapshot's position in
-       * {@link AnswersStepPayload.snapshots}. Absent when the block cited nothing.
-       */
-      citations?: number[];
-    }
-  | {
-      kind: "snapshot";
-      /** Position of the referenced snapshot in {@link AnswersStepPayload.snapshots}. */
-      index: number;
-    };
-
-/**
- * One recognized-asset row inside a {@link ReasoningSection} of kind `"assets"` (Phase 5, D-QA11) —
- * one line of a "Search Findings" master-measure / master-dimension / field list, parsed from
- * `- [Name] - <type>, similarity: 0.888, hybrid: N/A [GLOSSARY MATCH: …]` into columns.
- */
-export type ReasoningAssetRow = {
-  /** The asset identifier (the `[Name]` in brackets), verbatim. */
-  asset: string;
-  /** The asset kind the stream labeled it (`measure`/`dimension`/`field`/`timestamp`/…), when present. */
-  type?: string;
-  /** The similarity score (`similarity: 0.888` → `0.888`), when the line carried one. */
-  similarity?: number;
-  /** The glossary/hybrid match text (`[GLOSSARY MATCH: carrier]` → `"carrier"`), when present. */
-  glossary?: string;
-};
-
-/**
- * One structured section of a `qlik_answers` run's reasoning stream (Phase 5, D-QA11), produced by
- * the pure `parseReasoningSections` parser (`apps/api/src/testing/qlik-answers-reasoning.ts`) over
- * the persisted {@link AnswersStepPayload.reasoning} string. The reasoning string itself is NEVER
- * mutated — this is an additive, rendering-only projection so the web can render the agent process
- * as recognized phases (Understanding · Rewritten question · Asset search · Classification · Draft)
- * instead of one opaque markdown blob. Recognized phases become typed sections; unrecognized content
- * NEVER drops — it falls back to a verbatim `prose`/`raw` section. A `"draft"` section is a full
- * answer draft embedded in the stream; `duplicatesAnswer` flags the ones that substantially restate
- * the final {@link RunStep.assistantText} (the web collapses those, but keeps the text).
- */
-export type ReasoningSection =
-  | { kind: "understanding"; title?: string; markdown: string }
-  | { kind: "rewritten"; title?: string; markdown: string }
-  | { kind: "classification"; title?: string; markdown: string }
-  | { kind: "prose"; title?: string; markdown: string }
-  | { kind: "assets"; title?: string; rows: ReasoningAssetRow[] }
-  | { kind: "draft"; title?: string; markdown: string; duplicatesAnswer: boolean }
-  | { kind: "raw"; markdown: string };
-
-/**
- * The additive payload carried on a `qlik_answers` run's `llm_response` step. `RunStep.payload`
- * itself stays `unknown` (its existing, loosely-typed convention) — this is the canonical shape the
- * executor (WP 1.1) writes and later WPs (3.1 sources panel, grading) read via a narrowing cast or
- * {@link "./schemas.js".answersStepPayloadSchema}.
- */
-export type AnswersStepPayload = {
-  /**
-   * The citation trail for a DOCUMENT-backed answer (empty/absent when nothing was cited). NOTE (Phase 4
-   * cloud-assistants rework, 2026-07-11): a Qlik Sense **app**-backed assistant does not cite documents —
-   * its evidence is the {@link AnswersStepPayload.expressions} (the hypercube measure definitions), so
-   * `sources` is typically `[]` for app assistants. Kept optional and unchanged for document assistants.
-   */
-  sources?: AnswersSource[];
-  /** The response's `Etag` header — the tenant assistant's version at answer time (drift signal). */
-  assistantVersion?: string;
-  /** The Qlik Answers thread this step ran in (named `mcpfp run <id>`, kept — D-QA4). */
-  threadId?: string;
-  /** The server-side interaction id (`GET …/threads/{tid}/interactions`), when available. */
-  interactionId?: string;
-  /** Which prompt-type axis produced this answer (D-QA3: one-shot for scripted tests, thread for interactive turns). */
-  promptMode?: "oneshot" | "thread";
-  /** True when the assistant's own guardrail rejected the prompt (`AE-4 "Prompt is rejected"`). */
-  rejected?: boolean;
-  /** Always true for this kind — the API reports no token usage; every token figure is our own estimate. */
-  estimatedTokens?: boolean;
-  /** Questions drawn from the tenant's shared monthly quota by this step (1 per prompt — D-QA5). */
-  questionsConsumed?: number;
-  // ── Cloud-assistants rework (Phase 4, 2026-07-11) — additive; absent on document-only replays ──────
-  /**
-   * The Qlik Sense **app** id bound as the assistant's data context (`context:{type:"app", id}`), resolved
-   * from the assistant UUID (the env "model") before the run. Present on every app-assistant answer.
-   */
-  appId?: string;
-  /** The cloud-assistants message id whose card carried this answer (`…/threads/{tid}/messages` join key). */
-  messageId?: string;
-  /**
-   * The data **expressions** behind the answer — the `qMeasures[].qDef.qDef` / hypercube measure
-   * definitions the assistant computed against the bound app. This is the app-assistant equivalent of a
-   * "reasoning"/evidence trail (the analytical expressions, not document citations).
-   */
-  expressions?: string[];
-  /** The assistant's shown reasoning — the card TextBlocks that precede the "Conclusion" block, when present. */
-  reasoning?: string;
-  /**
-   * The `Qlik.Snapshot` insights behind an app-backed answer (Phase 4b) — the supporting charts the
-   * assistant computed, each with its title, the `reason` it was chosen, and its measures/dimensions.
-   * This is the app-assistant analogue of document `sources`: the "much more insights + reasonings +
-   * sources" the native Qlik Answers UI renders. Empty/absent for a plain answer.
-   */
-  snapshots?: AnswersSnapshot[];
-  /**
-   * The full official cloud-assistants message object for this answer (lossless capture — the console
-   * sources/expressions panel and graders can read the raw card). Absent for document-only replays.
-   */
-  rawResponse?: unknown;
-  // ── Answer rendering (Phase 5, WP 5.1) — additive; absent on legacy/document replays ────────────
-  /**
-   * The ordered card-body sequence — text blocks interleaved with snapshot references (D-QA8) —
-   * derived from {@link rawResponse} (WP 5.2). Absent for legacy/document replays or whenever the
-   * extraction misses; the web then falls back to rendering the plain {@link RunStep.assistantText}.
-   * `assistantText`/`reasoning` are unchanged by this field — it is a rendering projection, not a
-   * replacement.
-   */
-  blocks?: AnswersAnswerBlock[];
-  /**
-   * The structured breakdown of the {@link reasoning} stream (Phase 5, D-QA11) — recognized phases
-   * (Understanding · Rewritten question · Asset search · Classification · Draft) plus verbatim
-   * `prose`/`raw` fallbacks, derived from {@link reasoning} (WP 5.2). Absent for legacy/document
-   * replays or a total parse miss; the web then falls back to rendering the plain {@link reasoning}
-   * markdown. Additive projection — {@link reasoning} itself is unchanged.
-   */
-  reasoningSections?: ReasoningSection[];
 };
 
 // ==================================================================================================

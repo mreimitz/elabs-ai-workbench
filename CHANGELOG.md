@@ -8,7 +8,7 @@ ledgers. Per-phase git tags are an **owner action** (not created by this remedia
 
 Significant feature completion across multiple workstreams: the UX overhaul consolidated into main
 (all 34 WPs, Phases 0–5; Compare Workspace rebuild per audit), Skill IDE all 20 WPs Phases 1–9
-live-validated + 851 API tests, Testing-IA consolidation migration v16 + 697 API tests, Qlik Answers
+live-validated + 851 API tests, Testing-IA consolidation migration v16 + 697 API tests, the vendor-assistant backend
 Phases 0–5 (migrations v23/v24) + Phase 5 answer rendering rework, Assistant Phases 0–3 + hardening
 (gate 1143 API + 566 web tests), Auto-Rating Phases 1–4 complete (13 WPs, migrations v22/v26, 1624 API
 tests + live bug-fix + rating-issues registry post-work), Assistant Hub all 5 waves (missions, roles/
@@ -103,7 +103,7 @@ both-theme + keyboard walk (see ledger's Owner-acceptance section and
 
 ### Unified Sessions — one run/session lifecycle across every backend (Phases 0–5)
 
-Consolidated the three run backends (the AI-SDK engine, Claude subscription, Qlik Answers) onto **one
+Consolidated the run backends (the AI-SDK engine, Claude subscription, and the since-removed vendor assistant) onto **one
 session lifecycle**, so a run reads, streams, and renders the same way regardless of provider. Plan +
 locked decisions D-US1–D-US26 at [`roadmap/unified-sessions/`](./roadmap/unified-sessions/).
 
@@ -119,22 +119,22 @@ locked decisions D-US1–D-US26 at [`roadmap/unified-sessions/`](./roadmap/unifi
   only), so a long but healthy run is never killed on the clock.
 - **Static-per-kind capability manifest + a capability-driven console** — a run persists a
   `capabilities_json` manifest at start and the console's KPI tiles + affordances are gated
-  declaratively off it (e.g. context-window surfaces hidden for question-metered `qlik_answers`).
+  declaratively off it (e.g. context-window surfaces hidden for question-metered `vendor_assistant`).
 - **Cursor-resumable SSE** — the run stream carries a cursor + periodic ping; a client watchdog
   reconnects and resumes from the last cursor after a drop, and an expected post-terminal socket close
   is never surfaced as an error.
 - **End session** — an explicit affordance to end a live run/session, alongside live phase chips, a
   "needs attention" section, seen-markers, and durations in the Runs feed.
 - **OpenAI-compatible facade (`/openai/v1`)** — an external interop endpoint (`GET /openai/v1/models`
-  + `POST /openai/v1/chat/completions`) that makes a configured `qlik_answers` assistant selectable
+  + `POST /openai/v1/chat/completions`) that makes a configured `vendor_assistant` assistant selectable
   from any OpenAI-compatible client (Open WebUI, LiteLLM, another harness). Hold-back streaming by
   default (reasoning live, the answer held until settled) with an opt-in `OPENAI_FACADE_LIVE_STREAM`
   flag, a locally-minted `0600` bearer key (`DATA_DIR/openai-facade.key`; `OPENAI_FACADE_KEY`
   overrides), a per-facade concurrency cap → `429` + `Retry-After` (`OPENAI_FACADE_MAX_CONCURRENCY`),
-  and vendor `qlik_answers`/`citations` fields; the internal Qlik executor is untouched, so the answer
+  and vendor `vendor_assistant`/`citations` fields; the internal the vendor executor is untouched, so the answer
   is byte-identical. Mounted in `apps/api/src/index.ts` with real provider-layer deps; documented in
   [`user-guide/15-openai-endpoint.md`](./user-guide/15-openai-endpoint.md). Every tenant call is
-  stubbed in tests — no real Qlik tenant is ever contacted.
+  stubbed in tests — no real the vendor tenant is ever contacted.
 
 ## 0.2.0 — 2026-07-02 — Docs & process remediation wave
 

@@ -1,7 +1,7 @@
 import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import { TooltipProvider } from "@brand/ui";
 import { describe, expect, test, vi } from "vitest";
-import type { QlikTenantProbe, ServerConfig, ServerProbeResponse } from "@mcp-token-footprint/shared";
+import type { ServerConfig, ServerProbeResponse } from "@mcp-token-footprint/shared";
 import { ServerWizard } from "./ServerWizard";
 
 // Test harness (toolbar-reach Phase 3): a shared control here now mounts a Radix Tooltip via
@@ -34,7 +34,7 @@ if (typeof window.ResizeObserver !== "function") {
 
 const OK_PROBE: ServerProbeResponse = {
   ok: true,
-  url: "https://acme.us.qlikcloud.com/mcp",
+  url: "https://acme.example.com/mcp",
   authRequired: false,
   oauthAvailable: false,
   tools: 3,
@@ -48,7 +48,7 @@ function serverFixture(overrides: Partial<ServerConfig> = {}): ServerConfig {
     id: "server-new",
     name: "Acme tenant",
     transport: "streamable_http",
-    url: "https://acme.us.qlikcloud.com/mcp",
+    url: "https://acme.example.com/mcp",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
     hasEnvSecrets: false,
@@ -70,184 +70,13 @@ async function fillAndSave(onCreateServer: ReturnType<typeof vi.fn>) {
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Acme tenant" } });
   // The "Server URL" label now carries a required marker (" *"), so match by prefix.
   fireEvent.change(screen.getByLabelText(/^Server URL/), {
-    target: { value: "https://acme.us.qlikcloud.com/mcp" }
+    target: { value: "https://acme.example.com/mcp" }
   });
   fireEvent.click(screen.getByRole("button", { name: /test & continue/i }));
   await waitFor(() => expect(screen.getByRole("button", { name: /save server/i })).toBeInTheDocument());
   fireEvent.click(screen.getByRole("button", { name: /save server/i }));
   await waitFor(() => expect(onCreateServer).toHaveBeenCalledTimes(1));
 }
-
-describe("ServerWizard — Qlik Answers post-save offer (WP 2.2)", () => {
-  test("a brand-new streamable-HTTP server whose probe reports answersAvailable shows the offer instead of closing", async () => {
-    const onCreateServer = vi.fn().mockResolvedValue(serverFixture());
-    const onProbeServer = vi.fn().mockResolvedValue(OK_PROBE);
-    const probe: QlikTenantProbe = { origin: "https://acme.us.qlikcloud.com", answersAvailable: true, assistantCount: 4 };
-    const onProbeAnswers = vi.fn().mockResolvedValue(probe);
-    const onComplete = vi.fn();
-
-    render(
-      <ServerWizard
-        {...NOOP_PROPS}
-        open
-        server={null}
-        onCreateServer={onCreateServer}
-        onUpdateServer={vi.fn()}
-        onProbeServer={onProbeServer}
-        onComplete={onComplete}
-        onProbeAnswers={onProbeAnswers}
-        onOfferAnswers={vi.fn()}
-      />
-    );
-
-    await fillAndSave(onCreateServer);
-
-    await waitFor(() => expect(onProbeAnswers).toHaveBeenCalledWith("server-new"));
-    expect(await screen.findByText(/tenant with 4 Qlik Answers assistants/i)).toBeInTheDocument();
-    // The wizard stays open — neither completion callback has fired yet.
-    expect(onComplete).not.toHaveBeenCalled();
-  });
-
-  test("accepting the offer calls onOfferAnswers with the server id/name/probe, then finishes like a normal save", async () => {
-    const onCreateServer = vi.fn().mockResolvedValue(serverFixture());
-    const onProbeServer = vi.fn().mockResolvedValue(OK_PROBE);
-    const probe: QlikTenantProbe = { origin: "https://acme.us.qlikcloud.com", answersAvailable: true, assistantCount: 1 };
-    const onProbeAnswers = vi.fn().mockResolvedValue(probe);
-    const onOfferAnswers = vi.fn();
-    const onComplete = vi.fn();
-    const onOpenChange = vi.fn();
-
-    render(
-      <ServerWizard
-        {...NOOP_PROPS}
-        open
-        server={null}
-        onOpenChange={onOpenChange}
-        onCreateServer={onCreateServer}
-        onUpdateServer={vi.fn()}
-        onProbeServer={onProbeServer}
-        onComplete={onComplete}
-        onProbeAnswers={onProbeAnswers}
-        onOfferAnswers={onOfferAnswers}
-      />
-    );
-
-    await fillAndSave(onCreateServer);
-    await screen.findByText(/tenant with 1 Qlik Answers assistant\./i);
-
-    fireEvent.click(screen.getByRole("button", { name: /set up assistant/i }));
-
-    expect(onOfferAnswers).toHaveBeenCalledWith({
-      serverId: "server-new",
-      serverName: "Acme tenant",
-      probe
-    });
-    expect(onComplete).toHaveBeenCalledWith("server-new");
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  test("declining the offer finishes the save WITHOUT calling onOfferAnswers", async () => {
-    const onCreateServer = vi.fn().mockResolvedValue(serverFixture());
-    const onProbeServer = vi.fn().mockResolvedValue(OK_PROBE);
-    const probe: QlikTenantProbe = { origin: "https://acme.us.qlikcloud.com", answersAvailable: true, assistantCount: 2 };
-    const onProbeAnswers = vi.fn().mockResolvedValue(probe);
-    const onOfferAnswers = vi.fn();
-    const onComplete = vi.fn();
-    const onOpenChange = vi.fn();
-
-    render(
-      <ServerWizard
-        {...NOOP_PROPS}
-        open
-        server={null}
-        onOpenChange={onOpenChange}
-        onCreateServer={onCreateServer}
-        onUpdateServer={vi.fn()}
-        onProbeServer={onProbeServer}
-        onComplete={onComplete}
-        onProbeAnswers={onProbeAnswers}
-        onOfferAnswers={onOfferAnswers}
-      />
-    );
-
-    await fillAndSave(onCreateServer);
-    await screen.findByText(/tenant with 2 Qlik Answers assistants/i);
-
-    fireEvent.click(screen.getByRole("button", { name: /not now/i }));
-
-    expect(onOfferAnswers).not.toHaveBeenCalled();
-    expect(onComplete).toHaveBeenCalledWith("server-new");
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  test("when the probe reports answersAvailable:false, the wizard closes normally with no offer step", async () => {
-    const onCreateServer = vi.fn().mockResolvedValue(serverFixture());
-    const onProbeServer = vi.fn().mockResolvedValue(OK_PROBE);
-    const onProbeAnswers = vi.fn().mockResolvedValue({
-      origin: "https://example.com",
-      answersAvailable: false,
-      assistantCount: 0
-    } satisfies QlikTenantProbe);
-    const onOfferAnswers = vi.fn();
-    const onComplete = vi.fn();
-    const onOpenChange = vi.fn();
-
-    render(
-      <ServerWizard
-        {...NOOP_PROPS}
-        open
-        server={null}
-        onOpenChange={onOpenChange}
-        onCreateServer={onCreateServer}
-        onUpdateServer={vi.fn()}
-        onProbeServer={onProbeServer}
-        onComplete={onComplete}
-        onProbeAnswers={onProbeAnswers}
-        onOfferAnswers={onOfferAnswers}
-      />
-    );
-
-    await fillAndSave(onCreateServer);
-
-    await waitFor(() => expect(onComplete).toHaveBeenCalledWith("server-new"));
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onOfferAnswers).not.toHaveBeenCalled();
-    expect(screen.queryByText(/Qlik Answers/i)).not.toBeInTheDocument();
-  });
-
-  test("editing an EXISTING server never runs the answers probe on save", async () => {
-    const existing = serverFixture({ id: "server-existing" });
-    const onUpdateServer = vi.fn().mockResolvedValue(existing);
-    const onProbeServer = vi.fn().mockResolvedValue(OK_PROBE);
-    const onProbeAnswers = vi.fn();
-    const onComplete = vi.fn();
-    const onOpenChange = vi.fn();
-
-    render(
-      <ServerWizard
-        {...NOOP_PROPS}
-        open
-        server={existing}
-        onOpenChange={onOpenChange}
-        onCreateServer={vi.fn()}
-        onUpdateServer={onUpdateServer}
-        onProbeServer={onProbeServer}
-        onComplete={onComplete}
-        onProbeAnswers={onProbeAnswers}
-        onOfferAnswers={vi.fn()}
-      />
-    );
-
-    // Even editing starts at "connection" (prefilled from the existing server) — click through.
-    fireEvent.click(screen.getByRole("button", { name: /test & continue/i }));
-    await waitFor(() => expect(screen.getByRole("button", { name: /save server/i })).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: /save server/i }));
-
-    await waitFor(() => expect(onComplete).toHaveBeenCalledWith("server-existing"));
-    expect(onProbeAnswers).not.toHaveBeenCalled();
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-});
 
 describe("ServerWizard — reauthentication (T7 / P0)", () => {
   test("reason='reauth' retitles, names the interrupted action, and opens at the AUTH step (not the URL field)", () => {

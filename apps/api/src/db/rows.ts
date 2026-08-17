@@ -135,7 +135,6 @@ export type ProviderCredentialRow = {
     | "google"
     | "openai_compatible"
     | "ollama"
-    | "qlik_answers"
     // Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS6/D-CS7): admitted by migration
     // v28's widened CHECK. No `api_key_encrypted` is ever stored for this kind — auth resolves from
     // `assistant_credentials` at run time (see `providers/subscription-auth.ts`).
@@ -143,10 +142,6 @@ export type ProviderCredentialRow = {
   label: string;
   base_url: string | null;
   api_key_encrypted: string | null;
-  // Qlik Answers (WP 0.2, D-QA1): optional link to a registered MCP server whose OAuth token / auth
-  // headers this credential reuses in place of a standalone key. NULL for an own-key credential and
-  // for every non-qlik kind. ON DELETE SET NULL → a deleted server leaves this NULL ("auth broken").
-  mcp_server_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -161,9 +156,6 @@ export type ScenarioRow = {
   default_profiles_json: string;
   guardrails_json: string;
   tool_loading_mode: string;
-  // Qlik Answers (WP 2.3, D-QA2): JSON-serialized `{transport}` override, or NULL (non-qlik scenarios /
-  // any qlik_answers scenario that never set it). Added by migration v24.
-  answers_mode: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -59,7 +59,6 @@ function makeReport(overrides: Partial<SuiteReport> = {}): SuiteReport {
     judgeProvenance: { judgeProviderId: CLAUDE_CLI_PROVIDER_ID, judgeModel: "claude-sonnet-4-5" },
     ratingVersion: 1,
     generatedAt: "2026-07-11T00:00:00.000Z",
-    skippedMembers: [],
     ...overrides,
   };
 }

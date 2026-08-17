@@ -23,7 +23,7 @@ function renderTable(overrides: Partial<Parameters<typeof IssueTriageTable>[0]> 
         issues={ALL_FLEET_FIXTURES}
         selectedId={null}
         onSelect={onSelect}
-        entityLabel={(id) => (id === "srv-1" ? "Qlik-SaaS" : id === "skill-1" ? "Sales summary" : id)}
+        entityLabel={(id) => (id === "srv-1" ? "Acme-SaaS" : id === "skill-1" ? "Sales summary" : id)}
         {...overrides}
       />
     </TooltipProvider>,
@@ -51,7 +51,7 @@ describe("IssueTriageTable — rendering", () => {
 
   test("resolves affected entity ids to display names via entityLabel", () => {
     renderTable();
-    expect(screen.getByText("Qlik-SaaS")).toBeInTheDocument();
+    expect(screen.getByText("Acme-SaaS")).toBeInTheDocument();
     expect(screen.getByText("Sales summary")).toBeInTheDocument();
   });
 

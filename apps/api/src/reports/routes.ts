@@ -5,7 +5,6 @@ import {
   digestScheduleSchema,
   serverReportQuerySchema,
   suiteRunReportQuerySchema,
-  type RunDetail,
 } from "@mcp-token-footprint/shared";
 import type { ScanRepository } from "../scans/repository.js";
 import type { ServerRepository } from "../servers/repository.js";
@@ -15,7 +14,6 @@ import { parseGraderQuery } from "../suites/analytics.js";
 import type { SuiteReportRepository } from "../suites/suite-report-repository.js";
 import type { SuiteService } from "../suites/service.js";
 import type { SuiteRunRepository } from "../suites/suite-run-repository.js";
-import { deriveLegacyAnswerStep } from "../testing/qlik-answers-message.js";
 import type { RunRepository } from "../testing/run-repository.js";
 import type { ScenarioService } from "../testing/scenario-service.js";
 import type { TestService } from "../testing/test-service.js";
@@ -116,14 +114,10 @@ export async function registerReportRoutes(
   // surfaces as a 404 via `runRepository.getRun`'s own throw (central error handler); we don't
   // hand-roll an error body. Auto-Rating WP 1.5 (AR1): also compose the rating/grades block via the
   // SAME `RunReportService` the `GET /api/runs/:id/report` endpoint uses, so the export and the endpoint
-  // can never disagree — additive (existing fields unchanged). Qlik Answers Phase 5 (WP 5.6): apply the
-  // SAME read-time `deriveLegacyAnswerStep` projection `GET /api/runs/:id` uses (`testing/routes.ts`) so
-  // a LEGACY qlik_answers run (rawResponse captured, no blocks/reasoningSections yet) reports the Phase 5
-  // rendering fields too — no migration, no row rewrite. A non-qlik / post-5.2 run maps to itself
-  // (byte-identical). ─────────────────────────────────────────────────────────────────────────────────
+  // can never disagree — additive (existing fields unchanged). ──────────────────────────────────────
   app.get("/api/reports/run/:id/json", async (request) => {
     const { id } = request.params as { id: string };
-    const run = withDerivedAnswerSteps(runRepository.getRun(id));
+    const run = runRepository.getRun(id);
     const test = testService.get(run.testId);
     const scenario = scenarioService.get(run.scenarioId);
     return createRunJsonReport(run, { test, scenario }, runReports.compose(id));
@@ -131,7 +125,7 @@ export async function registerReportRoutes(
 
   app.get("/api/reports/run/:id/markdown", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const run = withDerivedAnswerSteps(runRepository.getRun(id));
+    const run = runRepository.getRun(id);
     const test = testService.get(run.testId);
     const scenario = scenarioService.get(run.scenarioId);
     reply.header("content-type", "text/markdown; charset=utf-8");
@@ -218,13 +212,3 @@ export async function registerReportRoutes(
   });
 }
 
-/**
- * Qlik Answers Phase 5 (WP 5.6, D-QA8): apply {@link deriveLegacyAnswerStep} to every step of a run
- * before it reaches the (pure, DB-free) report builders — mirrors the exact `detail.steps.map(...)`
- * projection `GET /api/runs/:id` already applies (`../testing/routes.ts`). A step that isn't a legacy
- * qlik_answers answer (no `rawResponse`, already carries `blocks`, or isn't `qlik_answers` at all) maps
- * to itself, so a non-qlik run's report stays byte-identical to before this WP.
- */
-function withDerivedAnswerSteps(run: RunDetail): RunDetail {
-  return { ...run, steps: run.steps.map(deriveLegacyAnswerStep) };
-}

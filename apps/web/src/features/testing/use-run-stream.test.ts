@@ -2,7 +2,6 @@ import type { RunEvent, RunStep } from "@mcp-token-footprint/shared";
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
-  answersPayloadOf,
   buildTimeline,
   INITIAL_ANNOUNCE_GATE,
   type AnnounceGate,
@@ -698,98 +697,6 @@ describe("suppressFinishToast", () => {
   test("the 'ended' phase is covered defensively even though it never reaches the toast switch today", () => {
     expect(suppressFinishToast("ended", true)).toBe(true);
     expect(suppressFinishToast("ended", false)).toBe(false);
-  });
-});
-
-// ── Qlik Answers (WP 3.1) — the llm_response payload → TimelineAssistantTurn.answersPayload thread ──
-// The qlik-answers-executor (`apps/api/src/testing/qlik-answers-executor.ts`) always sets
-// `estimatedTokens: true` on its llm_response payload (success, rejection, AND every interactive
-// turn); the regular engine sink's llm_response payload is `{ deltas, snapshot }` and never carries
-// that field. `answersPayloadOf` narrows on that marker; `buildTimeline` threads the narrowed payload
-// onto the settled turn as `answersPayload` — `SourcesPanel.tsx` reads it there.
-describe("answersPayloadOf / buildTimeline — Qlik Answers payload threading", () => {
-  function llmResponseStep(payload: unknown, over: Partial<RunStep> = {}): RunStep {
-    return {
-      id: "run-1:step:0",
-      runId: "run-1",
-      index: 0,
-      type: "llm_response",
-      label: "answer",
-      status: "ok",
-      profileTokens: {},
-      turnIndex: 0,
-      payload,
-      ...over,
-    };
-  }
-
-  test("answersPayloadOf narrows a qlik_answers payload (promptMode marker)", () => {
-    const payload = {
-      sources: [{ source: "doc.pdf" }],
-      promptMode: "oneshot",
-      estimatedTokens: true,
-      questionsConsumed: 1,
-    };
-    expect(answersPayloadOf(payload)).toEqual(payload);
-    // thread mode (interactive follow-up) narrows too
-    expect(answersPayloadOf({ ...payload, promptMode: "thread" })).toBeTruthy();
-  });
-
-  test("answersPayloadOf narrows a PERSISTED (redacted) payload — replay works", () => {
-    // run-repository redaction replaces the boolean `estimatedTokens` (a `…Tokens`-keyed non-number)
-    // with "[redacted]" on persist; `promptMode` survives, so a re-read/replayed run still narrows.
-    const persisted = {
-      sources: [{ source: "doc.pdf" }],
-      assistantVersion: "etag-abc",
-      promptMode: "oneshot",
-      estimatedTokens: "[redacted]",
-      questionsConsumed: 1,
-    };
-    expect(answersPayloadOf(persisted)).toEqual(persisted);
-  });
-
-  test("answersPayloadOf rejects the REGULAR engine llm_response payload shape", () => {
-    expect(answersPayloadOf({ deltas: { text: "hi", reasoning: "" }, snapshot: {} })).toBeUndefined();
-    // a payload with the redacted estimatedTokens but NO promptMode is not ours
-    expect(answersPayloadOf({ estimatedTokens: "[redacted]" })).toBeUndefined();
-    expect(answersPayloadOf(null)).toBeUndefined();
-    expect(answersPayloadOf(undefined)).toBeUndefined();
-    expect(answersPayloadOf("not an object")).toBeUndefined();
-  });
-
-  test("buildTimeline threads a qlik_answers payload onto its settled turn", () => {
-    const payload = {
-      sources: [{ source: "kb/doc-1.pdf", knowledgebaseId: "kb-1" }],
-      assistantVersion: "etag-abc",
-      promptMode: "oneshot",
-      estimatedTokens: true,
-      questionsConsumed: 1,
-    };
-    const items = buildTimeline({
-      steps: [llmResponseStep(payload, { assistantText: "The answer is 42." })],
-      deltas: { text: "", reasoning: "" },
-      status: "completed",
-    });
-    expect(items).toHaveLength(1);
-    const turn = items[0];
-    if (turn?.kind !== "assistant_turn") throw new Error("expected an assistant turn");
-    expect(turn.answersPayload).toEqual(payload);
-  });
-
-  test("buildTimeline leaves answersPayload undefined for a regular (non-qlik_answers) run", () => {
-    const items = buildTimeline({
-      steps: [
-        llmResponseStep(
-          { deltas: { text: "hi", reasoning: "" }, snapshot: { total: 10 } },
-          { assistantText: "hi" },
-        ),
-      ],
-      deltas: { text: "", reasoning: "" },
-      status: "completed",
-    });
-    const turn = items[0];
-    if (turn?.kind !== "assistant_turn") throw new Error("expected an assistant turn");
-    expect(turn.answersPayload).toBeUndefined();
   });
 });
 

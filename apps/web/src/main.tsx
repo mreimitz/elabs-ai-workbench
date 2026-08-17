@@ -30,7 +30,7 @@ import {
 import "./styles/app.css";
 
 // @brand/tokens ships three themes (qlik-bright, qlik-dark, blueprint), but this
-// app exposes only the two Qlik themes (plus a "System" preference that resolves to
+// app exposes only the two shipped themes (plus a "System" preference that resolves to
 // one of them). ThemeProvider has no allow-list prop and will re-apply any persisted
 // theme on mount — including a previously selected `blueprint`. Before the provider
 // mounts, resolve the app's PREFERENCE to a concrete allowed theme and write it into

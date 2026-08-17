@@ -215,7 +215,7 @@ function installNonEmptyMetrics() {
         }),
       ]);
     }
-    if (m === "costUsd,questions") {
+    if (m === "costUsd") {
       return runMetricsResponse([
         metricsSeries({
           measure: "costUsd",

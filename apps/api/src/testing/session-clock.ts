@@ -1,17 +1,17 @@
 // Unified Sessions — SessionClock (roadmap/unified-sessions/, WP1.2, D-US3/D-US7).
 //
 // Before this module each executor hand-rolled its own timer logic: the engine raced an idle timeout
-// against a hard-coded 30-min wall deadline (`DEFAULT_MAX_RUN_DURATION_MS` in engine.ts), the Qlik
+// against a hard-coded 30-min wall deadline (`DEFAULT_MAX_RUN_DURATION_MS` in engine.ts), the
 // executor built its own `createDeadline` AbortController, and none of them distinguished "no one is
 // looking at this run" (a stall) from "the run is correctly waiting on the operator" (a bounded wait) —
-// which is exactly how a long interactive Qlik session used to mis-terminate as `aborted` once the wall
+// which is exactly how a long interactive session used to mis-terminate as `aborted` once the wall
 // clock silently expired mid-conversation. SessionClock is the ONE timer engine every executor (WP1.3
-// engine, WP1.4 subscription, WP1.5 Qlik) now drives, so the three independent knobs behave identically
+// engine, WP1.4 subscription) now drives, so the three independent knobs behave identically
 // everywhere:
 //
 //   - a STALL timer (default 10 min) that only ticks while the run is actively RUNNING and is ROLLED
 //     (reset to a fresh window) by every emitted event — no events for the whole window fires `stalled`;
-//   - a WAIT BUDGET (default 10 min, per-kind override e.g. Qlik's 30 min) that is armed the moment the
+//   - a WAIT BUDGET (default 10 min, per-kind override) that is armed the moment the
 //     run enters `waiting_input` and, while it is ticking, the stall timer is paused (waiting on the
 //     operator is not a stall) — exhausting it fires `wait_expired`;
 //   - an OPTIONAL hard wall cap (off by default; an env/guardrail value the caller supplies) that ticks
@@ -45,7 +45,7 @@ export type SessionClockCause = Extract<TerminalCause, "stalled" | "wait_expired
 export const DEFAULT_STALL_MS = 10 * 60_000;
 
 /** Default wait budget (D-US3/D-US7): armed on `enterWaiting`; per-kind override at construction (e.g.
- *  Qlik's `QLIK_ANSWERS_WAIT_BUDGET_MS` in session-capabilities.ts) or per-call in {@link SessionClock.enterWaiting}. */
+ *  session-capabilities.ts) or per-call in {@link SessionClock.enterWaiting}. */
 export const DEFAULT_WAIT_BUDGET_MS = 10 * 60_000;
 
 /** Cancels a previously scheduled timer. Calling it more than once, or after the timer already fired, is
@@ -96,8 +96,8 @@ export type SessionClockOptions = {
   /** Stall window (ms). `<= 0` disables the stall detector entirely. Default {@link DEFAULT_STALL_MS}. */
   stallMs?: number;
   /** Wait budget (ms) armed on `enterWaiting` (absent a per-call override). `<= 0` disables wait expiry.
-   *  Default {@link DEFAULT_WAIT_BUDGET_MS} — callers pass the resolved capability value (e.g. Qlik's
-   *  30-min `QLIK_ANSWERS_WAIT_BUDGET_MS`) here so the whole run uses one consistent budget. */
+   *  Default {@link DEFAULT_WAIT_BUDGET_MS} — callers pass the resolved capability value (e.g. the
+   *  per-kind override) here so the whole run uses one consistent budget. */
   waitBudgetMs?: number;
   /** Optional hard wall cap (ms) measured from `start()`. Undefined (default) = no cap (D-US3, opt-in
    *  only). Unlike the other two timers this ticks in REAL time regardless of phase — it is NOT paused

@@ -62,7 +62,6 @@ import {
   HUB_WORKSPACE_CHANGE_KINDS,
   INSIGHT_SURPLUS_VERDICTS,
   ISSUE_ASSIST_PRIORITIES,
-  MEMBER_SKIP_REASONS,
   METRICS_BUCKETS,
   NOTIFICATION_LIST_MAX_LIMIT,
   PROVIDER_KINDS,
@@ -237,18 +236,6 @@ export const serverProbeRequestSchema = z.object({
   auth: serverAuthInputSchema.optional(),
 });
 
-/**
- * Qlik Answers onboarding (WP 0.1/2.1) — the additive `ServerProbeResponse.qlikTenant` shape (see
- * `QlikTenantProbe` in types.ts). Exported so the probe route (WP 2.1) constructs/validates against
- * one canonical schema.
- */
-export const qlikTenantProbeSchema = z.object({
-  origin: z.string(),
-  answersAvailable: z.boolean(),
-  assistantCount: z.number().int().nonnegative(),
-  needsOwnKey: z.boolean().optional(),
-});
-
 export const oauthClientInputSchema = z.object({
   clientId: z.string().trim().optional(),
   clientSecret: z.string().optional(),
@@ -287,9 +274,6 @@ export const providerCredentialInputSchema = z.object({
   label: z.string().trim().min(1),
   baseUrl: z.string().trim().url().optional(),
   apiKey: z.string().optional(),
-  // Qlik Answers (WP 0.1, D-QA1) — alternative to `apiKey`: reuse an already-registered MCP server's
-  // own auth. Additive/optional; resolving exactly one auth source is WP 0.2's service.
-  mcpServerId: z.string().trim().min(1).optional(),
 });
 
 export const providerCredentialUpdateSchema = z.object({
@@ -297,7 +281,6 @@ export const providerCredentialUpdateSchema = z.object({
   label: z.string().trim().min(1).optional(),
   baseUrl: z.string().trim().url().optional(),
   apiKey: z.string().optional(),
-  mcpServerId: z.string().trim().min(1).optional(),
 });
 
 export const modelParamsSchema = z.object({
@@ -328,12 +311,6 @@ export const toolLoadingModeSchema = z.enum(TOOL_LOADING_MODES).default(DEFAULT_
 
 // Skill version-selection mode for a scenario attachment (Phase 2 — WP 2.1).
 export const skillVersionModeSchema = z.enum(SKILL_VERSION_MODES);
-
-// Qlik Answers (WP 0.1, D-QA2) — per-environment transport override; only meaningful for
-// `qlik_answers` scenarios (ignored otherwise). Additive/optional on `scenarioInputSchema`.
-export const answersModeSchema = z.object({
-  transport: z.enum(["stream", "invoke"]),
-});
 
 // One skill attached to a scenario. `pinned` requires a `pinnedVersionId`; `latest` resolves at run
 // time. `scenarioInputSchema` gains `allowedSkills: z.array(allowedSkillSchema).default([])` (WP 2.1).
@@ -369,8 +346,6 @@ export const scenarioInputSchema = z
     defaultProfiles: z.array(tokenProfileRefSchema).default([]),
     guardrails: guardrailConfigSchema.default({}),
     toolLoadingMode: toolLoadingModeSchema,
-    // Qlik Answers (WP 0.1) — additive; omitted for every other provider kind.
-    answersMode: answersModeSchema.optional(),
   })
   .superRefine((value, ctx) => {
     if (value.model.trim().length === 0) {
@@ -652,16 +627,6 @@ export const failureBucketSchema = z.object({
   share: z.number(),
 });
 
-/** Qlik Answers (WP 1.4, D-QA6) — why a plan member was skipped rather than run. */
-export const memberSkipReasonSchema = z.enum(MEMBER_SKIP_REASONS);
-
-/** One (test × scenario) pairing skipped at plan time — never started as a run. */
-export const skippedSuiteMemberSchema = z.object({
-  testId: z.string(),
-  scenarioId: z.string(),
-  reason: memberSkipReasonSchema,
-});
-
 export const suiteReportSchema = z.object({
   suiteRunId: z.string(),
   testGroups: z.array(suiteReportTestGroupSchema),
@@ -674,7 +639,6 @@ export const suiteReportSchema = z.object({
   }),
   ratingVersion: z.number().int().nonnegative(),
   generatedAt: z.string(),
-  skippedMembers: z.array(skippedSuiteMemberSchema),
   // Suite-report enrichment (additive) — the persisted row's status, stamped at generation time and
   // echoed at read time; the baseline delta is omitted when no comparable earlier run exists.
   status: z.enum(["ready", "partial", "error"]).optional(),
@@ -931,7 +895,7 @@ export const runTurnSchema = z.object({
 //  * `fromStepId` — the parent step to fork AT (its conversation prefix ≤ this step is reconstructed +
 //    seeded into the new run). OMITTED ⇒ a whole-run re-launch with the overrides (works for EVERY kind).
 //    A mid-run fork (`fromStepId` present) is CAPABILITY-gated server-side (422 for a kind whose session
-//    manifest can't seed a reconstructed chat-completions prefix — e.g. `qlik_answers`).
+//    manifest can't seed a reconstructed chat-completions prefix).
 //  * `overrides` — edited launch params: a replacement final user `prompt`, `model` (must resolve for the
 //    SAME provider kind as the parent's environment), `temperature`, and a `skillVersionId` (pins the
 //    environment's attached skill to a specific version). Each absent field inherits the parent value.
@@ -2347,115 +2311,6 @@ export const skillUsageSchema = z.object({
 });
 
 // ==================================================================================================
-// Qlik Answers (WP 0.1) — shared contract
-// ==================================================================================================
-// A Qlik Answers tenant assistant treated as a test target (roadmap/qlik-answers/README.md,
-// decisions D-QA1–D-QA7). Mirrors `AnswersSource`/`AnswersStepPayload` in types.ts exactly. Not yet
-// wired into any route (`RunStep.payload` stays an untyped JSON blob) — exported so the executor
-// (WP 1.1) constructs/validates the payload it emits against one canonical schema, rather than a
-// parallel ad hoc shape.
-
-export const answersSourceSchema = z.object({
-  chunks: z.array(z.unknown()).optional(),
-  datasourceId: z.string().optional(),
-  documentId: z.string().optional(),
-  knowledgebaseId: z.string().optional(),
-  source: z.string().optional(),
-});
-
-const answersSnapshotFieldSchema = z.object({
-  expression: z.string(),
-  label: z.string().optional(),
-});
-
-/** Mirrors `AnswersSnapshot.data` (D-QA10) — the hypercube matrix behind a snapshot chart. */
-const answersSnapshotDataSchema = z.object({
-  columns: z.array(z.string()),
-  rows: z.array(z.array(z.union([z.string(), z.number()]))),
-  totalRows: z.number().int().nonnegative().optional(),
-});
-
-export const answersSnapshotSchema = z.object({
-  title: z.string().optional(),
-  reason: z.string().optional(),
-  measures: z.array(answersSnapshotFieldSchema).optional(),
-  dimensions: z.array(answersSnapshotFieldSchema).optional(),
-  // Answer rendering (Phase 5, WP 5.1) — additive (see AnswersSnapshot.data).
-  data: answersSnapshotDataSchema.optional(),
-});
-
-/** Mirrors `AnswersAnswerBlock` (Phase 5, D-QA8/D-QA9) exactly. Canonical — reused by WP 5.2/5.3. */
-export const answersAnswerBlockSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("text"),
-    markdown: z.string(),
-    citations: z.array(z.number().int().nonnegative()).optional(),
-  }),
-  z.object({
-    kind: z.literal("snapshot"),
-    index: z.number().int().nonnegative(),
-  }),
-]);
-
-/** Mirrors `ReasoningAssetRow` (Phase 5, D-QA11) — one "Search Findings" asset row, tabularized. */
-const reasoningAssetRowSchema = z.object({
-  asset: z.string(),
-  type: z.string().optional(),
-  similarity: z.number().optional(),
-  glossary: z.string().optional(),
-});
-
-/** Mirrors `ReasoningSection` (Phase 5, D-QA11) exactly. Canonical — reused by WP 5.2/5.4. */
-export const reasoningSectionSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("understanding"),
-    title: z.string().optional(),
-    markdown: z.string(),
-  }),
-  z.object({ kind: z.literal("rewritten"), title: z.string().optional(), markdown: z.string() }),
-  z.object({
-    kind: z.literal("classification"),
-    title: z.string().optional(),
-    markdown: z.string(),
-  }),
-  z.object({ kind: z.literal("prose"), title: z.string().optional(), markdown: z.string() }),
-  z.object({
-    kind: z.literal("assets"),
-    title: z.string().optional(),
-    rows: z.array(reasoningAssetRowSchema),
-  }),
-  z.object({
-    kind: z.literal("draft"),
-    title: z.string().optional(),
-    markdown: z.string(),
-    duplicatesAnswer: z.boolean(),
-  }),
-  z.object({ kind: z.literal("raw"), markdown: z.string() }),
-]);
-
-export const answersStepPayloadSchema = z.object({
-  sources: z.array(answersSourceSchema).optional(),
-  assistantVersion: z.string().optional(),
-  threadId: z.string().optional(),
-  interactionId: z.string().optional(),
-  promptMode: z.enum(["oneshot", "thread"]).optional(),
-  rejected: z.boolean().optional(),
-  estimatedTokens: z.boolean().optional(),
-  questionsConsumed: z.number().int().nonnegative().optional(),
-  // Cloud-assistants rework (Phase 4, 2026-07-11) — additive, all optional (see AnswersStepPayload).
-  appId: z.string().optional(),
-  messageId: z.string().optional(),
-  expressions: z.array(z.string()).optional(),
-  reasoning: z.string().optional(),
-  snapshots: z.array(answersSnapshotSchema).optional(),
-  rawResponse: z.unknown().optional(),
-  // Answer rendering (Phase 5, WP 5.1) — additive (see AnswersStepPayload.blocks).
-  blocks: z.array(answersAnswerBlockSchema).optional(),
-  // Reasoning structuring (Phase 5, WP 5.2, D-QA11) — additive (see AnswersStepPayload.reasoningSections).
-  reasoningSections: z.array(reasoningSectionSchema).optional(),
-});
-
-// ==================================================================================================
 // Assistant (WP 0.1) — request contract
 // ==================================================================================================
 // Embedded Claude agent chat (roadmap/assistant/00-plan.md). These are the request-body schemas for
@@ -2775,17 +2630,6 @@ export const sessionLiveReasoningSchema = z.enum(SESSION_LIVE_REASONING);
 export const sessionTokenAccountingSchema = z.enum(SESSION_TOKEN_ACCOUNTING);
 export const sessionCostBasisSchema = z.enum(SESSION_COST_BASES);
 
-/** Mirrors {@link SessionAssistantIdentity} — the Qlik assistant identity card. */
-export const sessionAssistantIdentitySchema = z.object({
-  kind: z.literal("qlik_assistant"),
-  assistantId: z.string(),
-  name: z.string().optional(),
-  description: z.string().optional(),
-  version: z.string().optional(),
-  appId: z.string().optional(),
-  transport: z.enum(["stream", "invoke"]).optional(),
-});
-
 /** Mirrors {@link SessionCapabilities} — persisted `capabilities_json`, emitted at session start. */
 export const sessionCapabilitiesSchema = z.object({
   liveText: z.boolean(),
@@ -2797,7 +2641,6 @@ export const sessionCapabilitiesSchema = z.object({
   followUps: z.boolean(),
   askUser: z.boolean(),
   waitBudgetMs: z.number().int().nonnegative().optional(),
-  identity: sessionAssistantIdentitySchema.optional(),
 });
 
 // The phase-detail bag on the `{type:"phase"}` event (see the `RunEvent` `phase` member in types.ts).
@@ -2906,7 +2749,6 @@ const suiteCellEventSchema = z
     runId: z.string().optional(),
     status: z.string(),
     score: z.number().nullable().optional(),
-    skipped: memberSkipReasonSchema.optional(),
   })
   .passthrough();
 

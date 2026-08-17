@@ -30,7 +30,7 @@ the worktree, and own the final gate.
   data. Never move secret/MCP logic into `apps/web`.
 - **No new runtime dependencies** without flagging it to me. No `@brand/*` version bump.
 - **Honest reporting:** each sub-agent leads its report with what it did NOT verify (especially
-  anything visual/live — there's no provider key or Qlik tenant available, so those paths are
+  anything visual/live — there's no provider key or the vendor tenant available, so those paths are
   read-and-reason, not executed).
 - For every fix, add or extend a **test that locks the behavior** (the repo has 1532 API + 746 web
   tests — match that bar). Where a security fix has a natural negative test (traversal rejected,
@@ -135,7 +135,7 @@ noted so you can serialize just those.
 - The unauthenticated-API design and full SSRF posture on user-supplied MCP URLs — accepted for the
   local single-owner tool; belongs to the planned team-server work. Just confirm the compose bind
   fix landed.
-- Anything requiring a live provider key or Qlik tenant.
+- Anything requiring a live provider key or the vendor tenant.
 - CI existence (`04` H): verify whether `.github/workflows/ci.yml` exists relative to the real git
   root and report; don't invent a workflow unless I confirm where it should live.
 

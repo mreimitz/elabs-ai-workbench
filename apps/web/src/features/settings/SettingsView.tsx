@@ -757,7 +757,7 @@ function SubHeading(props: { title: string; description?: ReactNode }) {
  * stays — two entry points, one preference (toolbar-reach WP 4.4).
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
-/** Human label for a theme preference — "System" plus the concrete Qlik labels from
+/** Human label for a theme preference — "System" plus the concrete theme labels from
  *  `@brand/tokens` `THEME_META`. Mirrors `AppShell.tsx`'s (unexported) `themePreferenceLabel` —
  *  both read the same `THEME_META` source, so the two entry points' wording can't diverge. */
 function themePreferenceLabel(preference: ThemePreference): string {
@@ -845,7 +845,7 @@ function GeneralSection(props: {
  * `roadmap/unified-sessions/STATUS.md`): the stall timeout and wait budget are fixed constants with
  * NO environment-variable override at all (`apps/api/src/testing/session-clock.ts`'s
  * `DEFAULT_STALL_MS`/`DEFAULT_WAIT_BUDGET_MS`, `session-capabilities.ts`'s
- * `QLIK_ANSWERS_WAIT_BUDGET_MS`), and subscription concurrency IS an env var
+ * `ACME_ANSWERS_WAIT_BUDGET_MS`), and subscription concurrency IS an env var
  * (`SUBSCRIPTION_RUNS_MAX_CONCURRENCY`, `apps/api/src/config/env.ts`) but neither has a settings
  * read/write API serving it as data — this pane surfaces the known values as an informational
  * read-out, not editable fields. A per-environment override exists ONLY for the wall cap today (see
@@ -909,12 +909,7 @@ export function TestingSection(
           label="Wait budget"
           description="Stops an interactive run waiting on a follow-up beyond this long."
         >
-          <Text className="tabular-nums font-medium">
-            10 min{" "}
-            <Text as="span" variant="meta" tone="muted" className="font-normal">
-              · 30 min for Qlik Answers
-            </Text>
-          </Text>
+          <Text className="tabular-nums font-medium">10 min</Text>
         </SettingsRow>
         <SettingsRow
           label="Wall cap"
@@ -1520,24 +1515,15 @@ function GradingSection() {
 // still a normal roster entry (no hidden surfaces) whose create form has no key field — see
 // NO_API_KEY_KINDS below.
 
-/** Kinds that talk to a local / self-hosted / tenant endpoint and therefore need a base URL. */
-const BASE_URL_KINDS = new Set<ProviderKind>(["openai_compatible", "ollama", "qlik_answers"]);
+/** Kinds that talk to a local / self-hosted endpoint and therefore need a base URL. */
+const BASE_URL_KINDS = new Set<ProviderKind>(["openai_compatible", "ollama"]);
 
 /**
- * Kinds where the base/tenant URL has no sensible default and so is mandatory (unlike
- * ollama/openai_compatible, which fall back to a local default when left blank).
+ * Kinds where the base URL has no sensible default and so is mandatory (unlike ollama/
+ * openai_compatible, which fall back to a local default when left blank). Empty today — kept as the
+ * one declaration point so a future kind with no default is a one-line change.
  */
-const REQUIRED_BASE_URL_KINDS = new Set<ProviderKind>(["qlik_answers"]);
-
-function baseUrlFieldLabel(kind: ProviderKind): string {
-  return kind === "qlik_answers" ? "Tenant URL" : "Base URL";
-}
-
-function baseUrlFieldPlaceholder(kind: ProviderKind): string {
-  return kind === "qlik_answers"
-    ? "https://<tenant>.<region>.qlikcloud.com…"
-    : "http://localhost:11434/v1…";
-}
+const REQUIRED_BASE_URL_KINDS = new Set<ProviderKind>([]);
 
 /**
  * Claude subscription (roadmap/claude-subscription/, WP 0.3, D-CS7) — this kind's ONLY auth is the
@@ -1547,25 +1533,6 @@ function baseUrlFieldPlaceholder(kind: ProviderKind): string {
  * sign-in state instead — see the `claude_subscription`-kind branch in the form below.
  */
 const NO_API_KEY_KINDS = new Set<ProviderKind>(["claude_subscription"]);
-
-/**
- * Qlik Answers (WP 0.2, in parallel) adds these additive, optional REDACTED fields to the provider
- * response — `authSource`/`linkedServerId`/`authBroken` — describing whether the credential reuses
- * a linked MCP server's own auth (D-QA1) instead of a standalone API key. They are NOT yet
- * declared on `ProviderCredential` in `packages/shared` as of this WP (owned by WP 0.2, not
- * touched here) — narrowed locally so this reads them defensively via optional chaining and
- * compiles/behaves correctly whether or not WP 0.2 has landed yet. Once `packages/shared` gains
- * the real fields (same names/shapes), this cast is simply redundant — no follow-up needed here.
- */
-type QlikAnswersAuthMeta = {
-  authSource?: "api_key" | "linked_server";
-  linkedServerId?: string;
-  authBroken?: boolean;
-};
-
-function qlikAnswersAuthMeta(provider: ProviderCredential): QlikAnswersAuthMeta {
-  return provider as ProviderCredential & QlikAnswersAuthMeta;
-}
 
 type ProviderFormState = {
   kind: ProviderKind;
@@ -1607,15 +1574,6 @@ export function ProvidersSection() {
     () => providers.find((provider) => provider.id === editingId) ?? null,
     [providers, editingId],
   );
-
-  // Present only when the credential being edited is a qlik_answers kind reusing a linked MCP
-  // server's own auth (D-QA1) — null for every other kind/state, so the form falls back to the
-  // normal api-key copy.
-  const linkedAuth = useMemo(() => {
-    if (!editing || editing.kind !== "qlik_answers") return null;
-    const auth = qlikAnswersAuthMeta(editing);
-    return auth.authSource === "linked_server" ? auth : null;
-  }, [editing]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -1682,7 +1640,7 @@ export function ProvidersSection() {
       const trimmedBaseUrl = form.baseUrl.trim();
       if (!trimmedBaseUrl) {
         if (REQUIRED_BASE_URL_KINDS.has(form.kind)) {
-          next.baseUrl = `${baseUrlFieldLabel(form.kind)} is required`;
+          next.baseUrl = "Base URL is required";
         }
       } else {
         try {
@@ -1692,8 +1650,7 @@ export function ProvidersSection() {
         }
       }
     }
-    // A brand-new credential needs a key up front (except local kinds, which may run keyless,
-    // qlik_answers, which may instead reuse a linked MCP server's auth — D-QA1/WP 0.2, and
+    // A brand-new credential needs a key up front (except local kinds, which may run keyless, and
     // claude_subscription, which is ALWAYS keyless — auth is the signed-in subscription, D-CS7).
     if (
       !editing &&
@@ -1790,9 +1747,6 @@ export function ProvidersSection() {
       ) : (
         <ul className="flex flex-col gap-2">
           {providers.map((provider) => {
-            const auth = qlikAnswersAuthMeta(provider);
-            const isLinked =
-              provider.kind === "qlik_answers" && auth.authSource === "linked_server";
             return (
               <li
                 key={provider.id}
@@ -1818,16 +1772,6 @@ export function ProvidersSection() {
                       <Badge variant="success">signed in</Badge>
                     ) : (
                       <Badge variant="warning">not signed in</Badge>
-                    )
-                  ) : isLinked ? (
-                    auth.authBroken ? (
-                      <Badge variant="destructive">auth broken — reconnect or add a key</Badge>
-                    ) : (
-                      <Badge variant="secondary">
-                        {auth.linkedServerId
-                          ? `linked to server · ${auth.linkedServerId}`
-                          : "linked to server"}
-                      </Badge>
                     )
                   ) : provider.hasKey ? (
                     <Badge variant="success">key stored</Badge>
@@ -1924,13 +1868,13 @@ export function ProvidersSection() {
 
           {BASE_URL_KINDS.has(form.kind) ? (
             <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="provider-baseurl">{baseUrlFieldLabel(form.kind)}</Label>
+              <Label htmlFor="provider-baseurl">Base URL</Label>
               <Input
                 id="provider-baseurl"
                 type="url"
                 inputMode="url"
                 value={form.baseUrl}
-                placeholder={baseUrlFieldPlaceholder(form.kind)}
+                placeholder="http://localhost:11434/v1…"
                 spellCheck={false}
                 autoComplete="off"
                 aria-invalid={errors.baseUrl ? true : undefined}
@@ -1939,10 +1883,6 @@ export function ProvidersSection() {
               {errors.baseUrl ? (
                 <Text variant="meta" className="text-destructive" role="alert">
                   {errors.baseUrl}
-                </Text>
-              ) : form.kind === "qlik_answers" ? (
-                <Text variant="meta" tone="muted">
-                  The Qlik Cloud tenant origin hosting the assistants.
                 </Text>
               ) : null}
             </div>
@@ -1974,13 +1914,7 @@ export function ProvidersSection() {
                 value={form.apiKey}
                 autoComplete="off"
                 spellCheck={false}
-                placeholder={
-                  editing?.hasKey
-                    ? "Leave blank to keep the stored key…"
-                    : form.kind === "qlik_answers"
-                      ? "Tenant API key…"
-                      : "sk-…"
-                }
+                placeholder={editing?.hasKey ? "Leave blank to keep the stored key…" : "sk-…"}
                 aria-invalid={errors.apiKey ? true : undefined}
                 onChange={(event) => patch("apiKey", event.target.value)}
               />
@@ -1988,30 +1922,15 @@ export function ProvidersSection() {
                 <Text variant="meta" className="text-destructive" role="alert">
                   {errors.apiKey}
                 </Text>
-              ) : linkedAuth ? (
-                // Read-only, API-key-or-linked display (WP 0.3): this credential reuses a linked
-                // MCP server's own auth (D-QA1) rather than a standalone key.
-                <Text
-                  variant="meta"
-                  tone={linkedAuth.authBroken ? undefined : "muted"}
-                  className={linkedAuth.authBroken ? "text-destructive" : undefined}
-                  role={linkedAuth.authBroken ? "alert" : undefined}
-                >
-                  {linkedAuth.authBroken
-                    ? `Linked server auth is broken${linkedAuth.linkedServerId ? ` (server ${linkedAuth.linkedServerId})` : ""} — reconnect the server, or set an API key above as a fallback.`
-                    : `Linked to server ${linkedAuth.linkedServerId ?? "(unknown)"} — this key is only used if that link breaks.`}
-                </Text>
               ) : (
                 <Text variant="meta" tone="muted">
                   {editing
                     ? editing.hasKey
                       ? "A key is stored. Type a new one only to rotate it."
                       : "No key stored yet."
-                    : form.kind === "qlik_answers"
-                      ? "Optional if this credential will be linked to an MCP server's own auth instead."
-                      : BASE_URL_KINDS.has(form.kind)
-                        ? "Optional for local providers that run without a key."
-                        : "Sent once and encrypted; never shown again."}
+                    : BASE_URL_KINDS.has(form.kind)
+                      ? "Optional for local providers that run without a key."
+                      : "Sent once and encrypted; never shown again."}
                 </Text>
               )}
             </div>

@@ -1,4 +1,4 @@
-# Research — Unified run sessions (API · CLI · Qlik Answers)
+# Research — Unified run sessions (API · CLI · the vendor assistant)
 
 **Status: IMPLEMENTED (2026-07-16).** All decisions **D-US1…D-US15** have shipped in Waves 1–5 +
 the OpenAI-compat facade. The authoritative record of what was built lives in
@@ -12,7 +12,7 @@ decision (e.g. extend-button vs stall-based clock, End-session→completed vs th
 
 Owner report (2026-07-16): runs are the session harness for three very different backends —
 API-based LLM connections (AI-SDK engine), the CLI-based Claude subscription connection (Agent SDK
-child), and the Qlik Answers wrapper — and (1) every session *feels and looks different* depending
+child), and the the vendor assistant wrapper — and (1) every session *feels and looks different* depending
 on which backend ran it, and (2) *longer runs get stopped*.
 
 ## Docs
@@ -23,7 +23,7 @@ on which backend ran it, and (2) *longer runs get stopped*.
 | [`01-concept-session-contract.md`](./01-concept-session-contract.md) | Concept v0: one *session contract* — shared lifecycle + terminal table, one clock policy, a capability manifest that drives the UI, one status vocabulary, stream robustness. Ends with a non-binding implementation sketch. |
 | [`02-open-questions.md`](./02-open-questions.md) | The questions to settle (owner decisions) before anything is built. |
 | [`03-landscape-what-others-do.md`](./03-landscape-what-others-do.md) | Comparative research: openwork + cdesktop (code read), Gumloop (docs), and documented state machines (OpenAI runs, LangGraph, Temporal, AI SDK/AG-UI). Ten convergent patterns, per-question leanings, and a steal-list. Key field consensus: session ≠ run (only executions terminate), nobody caps whole runs at 30 min (stall/liveness detection instead), waits on humans are indefinite-or-long with named expiry terminals. |
-| [`04-openai-compat-wrapper.md`](./04-openai-compat-wrapper.md) | Feasibility evaluation: wrapping the Qlik Answers cloud-assistants APIs in an OpenAI-standard (Chat Completions) endpoint. Verdict: feasible — parser/extraction/retry all reusable; three design mismatches (stateless `messages[]` vs threads → affinity cache, streamed-vs-settled truth → hold-back mode, lossy rich payload → vendor fields). Recommended as an external interop facade (Option C); NOT recommended as an internal replacement for the executor. |
+| [`04-openai-compat-wrapper.md`](./04-openai-compat-wrapper.md) | Feasibility evaluation: wrapping the the vendor assistant cloud-assistants APIs in an OpenAI-standard (Chat Completions) endpoint. Verdict: feasible — parser/extraction/retry all reusable; three design mismatches (stateless `messages[]` vs threads → affinity cache, streamed-vs-settled truth → hold-back mode, lossy rich payload → vendor fields). Recommended as an external interop facade (Option C); NOT recommended as an internal replacement for the executor. |
 
 ## Relationship to existing docs
 
@@ -31,7 +31,7 @@ on which backend ran it, and (2) *longer runs get stopped*.
   (unified `RunEvent` vocabulary, `RunManager` choke point, turn-indexed timeline) — that work is
   the reason the remaining divergence is *policy*, not wire format.
 - Completes, rather than replaces, the D-CS3 (subscription "renders identically") and D-QA
-  (qlik-answers same-vocabulary) invariants.
+  (vendor-assistant same-vocabulary) invariants.
 - Out of scope for now, but noted in the open questions: the Assistant dock has its own session
   engine (`apps/api/src/assistant/session-manager.ts`) that this contract does not cover.
 

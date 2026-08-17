@@ -128,7 +128,7 @@ a future third theme gets the whole illustration library for free.
 | `--illus-guide` | `--rule` (fallback `--border`) | construction dashes, crosshairs |
 | `--illus-surface` | `--card` | solid top faces (left/right derived via `color-mix`) |
 | `--illus-surface-sunken` | `--surface-muted` | inset panels, tray wells |
-| `--illus-accent` | `--primary` | **the** hero accent (Qlik green in both themes) |
+| `--illus-accent` | `--primary` | **the** hero accent (the vendor green in both themes) |
 | `--illus-accent-contrast` | `--primary-foreground` | glyphs on accent fills |
 | `--illus-accent-2` | `--chart-3` | rare secondary accent (particles, one connector kind) |
 | `--illus-ok / -warn / -error` | `--success / --warning / --destructive` | entity state chips |
@@ -173,7 +173,7 @@ Priority tiers drive the build order (Phase 1 WPs):
 
 **Tier 1 — the agentic-loop cast (needed to reproduce the reference scene):**
 `Agent/LLM` (robot on platform), `Model` (chip/badge variant of agent), `Provider`
-(anthropic/openai/google/ollama/qlik_answers as neutral logo-slot housing), `McpServer`
+(anthropic/openai/google/ollama/vendor_assistant as neutral logo-slot housing), `McpServer`
 (server rack; `stdio` vs `streamable_http` variants — plug vs antenna), `Tool` (small socketed
 module on the server), `Skill` (puzzle chip; version stack variant `vN`), `Prompt` (speech
 bubble on a display), `Validator/Grader` (shield agent), `Run/Session` (conveyor/track
@@ -188,7 +188,7 @@ auto-grade-on-completion; the app has no cron scheduler, so this is the honest m
 Scenario` (terrarium/stage plate).
 
 **Tier 3 — platform cast:** `Assistant` (docked companion robot), `Owner/User`, `Database/
-Storage` (the SQLite crate), `Credentials/Secrets` (key vault), `QlikAnswers Assistant`,
+Storage` (the SQLite crate), `Credentials/Secrets` (key vault), `VendorAssistant Assistant`,
 `GitHub/Repo` (for skill sync), `Guardrail` (barrier), `Cost` (coin/meter).
 
 The catalog is **open**: the registry (see system design §3) is the machine-readable list, and

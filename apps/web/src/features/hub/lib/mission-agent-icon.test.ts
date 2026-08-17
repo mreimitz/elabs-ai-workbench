@@ -39,7 +39,7 @@ function role(overrides: Partial<HubAgentRole> & { id: string }): HubAgentRole {
 describe("missionAgentIcon", () => {
   const lookup = buildMissionRoleLookup([
     role({ id: "role-1", name: "Research Analyst", icon: "lucide:brain" }),
-    role({ id: "role-2", name: "qlik-analyst-agent", displayName: "Steven", icon: "lucide:database" }),
+    role({ id: "role-2", name: "acme-analyst-agent", displayName: "Steven", icon: "lucide:database" }),
   ]);
 
   test("resolves an agent's icon by key → roleId → role.icon", () => {
@@ -48,7 +48,7 @@ describe("missionAgentIcon", () => {
   });
 
   test("resolves by NAME when the planner INVENTED the agent (no roleId) but its name matches a role", () => {
-    const p = plan([plannedAgent({ key: "a", name: "qlik-analyst-agent" })]); // no roleId
+    const p = plan([plannedAgent({ key: "a", name: "acme-analyst-agent" })]); // no roleId
     expect(missionAgentIcon(p, lookup, "a")).toBe("lucide:database");
   });
 
@@ -73,13 +73,13 @@ describe("missionAgentIcon", () => {
 
 describe("plannedAgentIcon", () => {
   const lookup = buildMissionRoleLookup([
-    role({ id: "role-2", name: "qlik-analyst-agent", icon: "lucide:database" }),
+    role({ id: "role-2", name: "acme-analyst-agent", icon: "lucide:database" }),
   ]);
 
   test("resolves a HubPlannedAgent by roleId then name", () => {
     expect(plannedAgentIcon(lookup, { roleId: "role-2", name: "whatever" })).toBe("lucide:database");
-    expect(plannedAgentIcon(lookup, { name: "qlik-analyst-agent" })).toBe("lucide:database");
+    expect(plannedAgentIcon(lookup, { name: "acme-analyst-agent" })).toBe("lucide:database");
     expect(plannedAgentIcon(lookup, { name: "nope" })).toBeUndefined();
-    expect(plannedAgentIcon(undefined, { name: "qlik-analyst-agent" })).toBeUndefined();
+    expect(plannedAgentIcon(undefined, { name: "acme-analyst-agent" })).toBeUndefined();
   });
 });

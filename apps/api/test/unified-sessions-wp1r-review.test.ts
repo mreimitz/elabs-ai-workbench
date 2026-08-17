@@ -3,7 +3,7 @@
 // Authored by the ADVERSARIAL REVIEWER to REFUTE the wave's invariants, not summarize them.
 //
 //   • Part A — THE cause × executor MATRIX (Invariant 1 — HOLDS): for every TerminalCause reachable by
-//     each of the three executors (AI-SDK engine · claude-subscription child · Qlik Answers wrapper),
+//     each of the two executors (AI-SDK engine · claude-subscription child),
 //     drive it to that cause and assert the emitted TERMINAL triple (status, outcome, stopReasonCode) is
 //     EXACTLY `terminalFor(cause)` — byte-identical across executors for the same cause.
 //   • Part B — FIXED DEFECTS (Invariant 2 — coherence). Originally THREE tests here were
@@ -20,10 +20,10 @@
 //   • Part C — backward-compat: a pre-contract run + old event log still loads + replays. (Invariant 3.)
 //   • Part D — `ended` is terminal everywhere + the new guardrail causes stay gradeable + grading
 //     byte-identity (`assistantText`) untouched + error-forensics on an `ended` run (flagged NON-ISSUE).
-//   • Part E — capabilities + durations persist for all 3 kinds, incl. WP1.7's subscription COALESCE fix.
+//   • Part E — capabilities + durations persist for both kinds, incl. WP1.7's subscription COALESCE fix.
 //   • Part F — user_stop distinguishability (finish-toast suppression backbone).
 //
-// Every executor is driven through DI seams / stubs — NO real provider, child, tenant, or filesystem.
+// Every executor is driven through DI seams / stubs — NO real provider, child, or filesystem.
 
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
@@ -42,7 +42,6 @@ import { MockLanguageModelV3, simulateReadableStream } from "ai/test";
 import { schemaSql } from "../src/db/schema.js";
 import type { AppDatabase } from "../src/db/database.js";
 import type { McpSession } from "../src/mcp/client.js";
-import { _clearQlikAnswersAppContextCache } from "../src/providers/model-catalog.js";
 import { ProviderRepository } from "../src/providers/repository.js";
 import type { DecryptedCredential } from "../src/providers/registry.js";
 import { ScanRepository } from "../src/scans/repository.js";
@@ -67,7 +66,6 @@ import { TestService } from "../src/testing/test-service.js";
 import { buildTools, type AllowedTool } from "../src/testing/tool-bridge.js";
 import {
   ENGINE_SESSION_CAPABILITIES,
-  QLIK_ANSWERS_WAIT_BUDGET_MS,
 } from "../src/testing/session-capabilities.js";
 import {
   runClaudeSubscription,
@@ -75,11 +73,6 @@ import {
   AsyncSemaphore,
   type ClaudeSubscriptionRunConfig,
 } from "../src/testing/claude-subscription-executor.js";
-import {
-  runQlikAnswers,
-  runQlikAnswersInteractive,
-  type QlikAnswersRunConfig,
-} from "../src/testing/qlik-answers-executor.js";
 import type {
   AgentSessionDriver,
   DriverEvent,
@@ -277,72 +270,16 @@ async function driveSubscription(cause: TerminalCause): Promise<RunEvent[]> {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════════════════════
-//  QLIK harness (stub fetch)
-// ════════════════════════════════════════════════════════════════════════════════════════════════
-
-const Q_BASE = "https://acme.us.qlikcloud.com";
-const Q_ASSIST = "asst-1";
-const Q_APP = "app-1";
-const Q_ANSWER = "The answer is 42.";
-function qJson(body: unknown, init?: { status?: number; headers?: Record<string, string> }): Response {
-  return new Response(JSON.stringify(body), { status: init?.status ?? 200, headers: { "content-type": "application/json", ...(init?.headers ?? {}) } });
-}
-function qAnswerMessage(): unknown {
-  return { id: "msg-1", type: "ai", content: [{ card: { body: [{ type: "TextBlock", text: "Conclusion" }, { type: "TextBlock", text: Q_ANSWER }] } }] };
-}
-function qSuccessStream(): Response {
-  const enc = new TextEncoder();
-  const body = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(enc.encode(`data: {"messageId":"msg-1"}\n`)); c.close(); } });
-  return new Response(body, { status: 200, headers: { "content-type": "text/event-stream", etag: "v-42" } });
-}
-function qNeverSettling(): (init: RequestInit | undefined) => Promise<Response> {
-  return (init) => new Promise<Response>((_res, rej) => { const sig = init?.signal ?? undefined; if (sig?.aborted) return rej(new DOMException("Aborted", "AbortError")); sig?.addEventListener("abort", () => rej(new DOMException("Aborted", "AbortError")), { once: true }); });
-}
-function qStub(onStream?: (init: RequestInit | undefined) => Response | Promise<Response>): typeof fetch {
-  const impl = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = String(input);
-    if (url.endsWith("/messages")) return qJson({ data: [qAnswerMessage()] });
-    if (url.endsWith("/actions/stream")) { if (!onStream) throw new Error("unexpected stream"); return onStream(init); }
-    if (url.endsWith("/cloud-assistants/threads")) return qJson({ id: "thread-1" });
-    if (url.includes("/api/v1/assistants/")) return qJson({ id: Q_ASSIST, appIds: [Q_APP], knowledgeBases: [] });
-    return new Response("nf", { status: 404 });
-  };
-  return impl as typeof fetch;
-}
-function qConfig(over: Partial<QlikAnswersRunConfig> & Pick<QlikAnswersRunConfig, "fetchImpl">): QlikAnswersRunConfig {
-  return { assistantId: Q_ASSIST, prompt: "P", auth: { apiKey: "k", baseUrl: Q_BASE }, profiles: ["generic_o200k"], transport: "invoke", retrySleep: () => Promise.resolve(), retryRandom: () => 0, ...over };
-}
-async function driveQlik(cause: TerminalCause): Promise<RunEvent[]> {
-  const events: RunEvent[] = [];
-  const emit = (e: RunEvent) => events.push(e);
-  const runId = `qlik-${cause}`;
-  switch (cause) {
-    case "user_stop": { const c = new AbortController(); const p = runQlikAnswersInteractive(runId, qConfig({ fetchImpl: qStub(() => qSuccessStream()), abortSignal: c.signal }), { nextTurn: () => new Promise<string | null>((res) => c.signal.addEventListener("abort", () => res(null), { once: true })) }, emit); await tick(20); c.abort(); await p; break; }
-    case "stalled": await runQlikAnswers(runId, qConfig({ fetchImpl: qStub(qNeverSettling()), stallMs: 15 }), emit); break;
-    case "max_duration": await runQlikAnswers(runId, qConfig({ fetchImpl: qStub(qNeverSettling()), maxRunDurationMs: 15, stallMs: 100000 }), emit); break;
-    case "wait_expired": await runQlikAnswersInteractive(runId, qConfig({ fetchImpl: qStub(() => qSuccessStream()), waitBudgetMs: 15 }), { nextTurn: () => new Promise<string | null>(() => {}) }, emit); break;
-    case "prompt_rejected": await runQlikAnswers(runId, qConfig({ fetchImpl: qStub(() => qJson({ errors: [{ code: "AE-4", title: "Prompt is rejected" }] }, { status: 400 })) }), emit); break;
-    case "rate_limit": await runQlikAnswers(runId, qConfig({ fetchImpl: qStub(() => qJson({ errors: [{ code: "AE-6" }] }, { status: 429 })) }), emit); break;
-    case "provider_error": await runQlikAnswers(runId, qConfig({ fetchImpl: qStub(() => qJson({ message: "ise" }, { status: 500 })) }), emit); break;
-    default: throw new Error(`qlik cannot reach ${cause}`);
-  }
-  return events;
-}
-
-beforeEach(() => _clearQlikAnswersAppContextCache());
-
-// ════════════════════════════════════════════════════════════════════════════════════════════════
 //  PART A — THE cause × executor MATRIX (Invariant 1 — HOLDS)
 // ════════════════════════════════════════════════════════════════════════════════════════════════
 
-const REACH: Record<"engine" | "subscription" | "qlik", TerminalCause[]> = {
+const REACH: Record<"engine" | "subscription", TerminalCause[]> = {
   engine: ["user_stop", "stalled", "max_duration", "wait_expired", "max_turns", "max_tool_calls", "max_tokens", "max_context_tokens", "max_cost", "context_overflow", "provider_error", "auth", "rate_limit"],
   subscription: ["user_stop", "stalled", "max_duration", "wait_expired", "max_cost", "provider_error", "auth", "rate_limit"],
-  qlik: ["user_stop", "stalled", "max_duration", "wait_expired", "prompt_rejected", "provider_error", "rate_limit"],
 };
-const DRIVERS = { engine: driveEngine, subscription: driveSubscription, qlik: driveQlik } as const;
+const DRIVERS = { engine: driveEngine, subscription: driveSubscription } as const;
 
-for (const executor of ["engine", "subscription", "qlik"] as const) {
+for (const executor of ["engine", "subscription"] as const) {
   for (const cause of REACH[executor]) {
     test(`MATRIX [${executor} × ${cause}] emits EXACTLY terminalFor(${cause})`, async () => {
       const events = await DRIVERS[executor](cause);
@@ -354,7 +291,7 @@ for (const executor of ["engine", "subscription", "qlik"] as const) {
 test("MATRIX cross-executor identity: a shared cause yields a byte-identical terminal triple on every executor that reaches it", async () => {
   const shared: TerminalCause[] = ["user_stop", "stalled", "max_duration", "wait_expired", "provider_error", "rate_limit", "max_cost"];
   for (const cause of shared) {
-    const reachers = (["engine", "subscription", "qlik"] as const).filter((x) => REACH[x].includes(cause));
+    const reachers = (["engine", "subscription"] as const).filter((x) => REACH[x].includes(cause));
     assert.ok(reachers.length >= 2, `${cause} reachable by ≥2 executors`);
     const triples = await Promise.all(reachers.map((x) => DRIVERS[x](cause).then(terminalTripleOf)));
     for (let i = 1; i < triples.length; i++) assert.deepEqual(triples[i], triples[0], `${cause}: ${reachers[i]} vs ${reachers[0]}`);
@@ -363,7 +300,7 @@ test("MATRIX cross-executor identity: a shared cause yields a byte-identical ter
 });
 
 test("MATRIX coverage: every TerminalCause is exercised somewhere (incl. session_ended via /end)", () => {
-  const covered = new Set<TerminalCause>([...REACH.engine, ...REACH.subscription, ...REACH.qlik, "session_ended"]);
+  const covered = new Set<TerminalCause>([...REACH.engine, ...REACH.subscription, "session_ended"]);
   for (const c of TERMINAL_CAUSES) assert.ok(covered.has(c), `cause ${c} not exercised`);
 });
 
@@ -377,7 +314,7 @@ test("MATRIX coverage: every TerminalCause is exercised somewhere (incl. session
 test("FIXED B1 [Inv2 · engine · WP1.R]: a SessionClock-fired terminal clears runs.phase (was STUCK at 'stopping')", async () => {
   // The engine's clock `onFire` emits {phase:'stopping'} before the terminal status; nothing emitted a
   // clearing {phase:null} after the terminal, so a stalled/max_duration/wait_expired run used to persist
-  // phase='stopping' FOREVER (same for qlik, which emits 'stopping' before every stop/error terminal).
+  // phase='stopping' FOREVER.
   // FIXED (apps/api/src/testing/run-repository.ts `finalize()`): the terminal UPDATE now also
   // `SET phase = NULL`, centrally clearing any lingering phase on EVERY terminal disposition regardless
   // of executor.
@@ -542,22 +479,11 @@ test("INV4 `ended` is treated as terminal by orphan reconcile (a crashed-mid-rev
 });
 
 test("INV4 the NEW guardrail causes stay gradeable — every one maps to the existing stopped/stopped_guardrail terminal", () => {
-  for (const cause of ["stalled", "wait_expired", "max_duration", "max_tool_calls", "prompt_rejected"] as TerminalCause[]) {
+  for (const cause of ["stalled", "wait_expired", "max_duration", "max_tool_calls"] as TerminalCause[]) {
     const v = terminalFor(cause);
     assert.equal(v.status, "stopped", `${cause} → stopped`);
     assert.equal(v.outcome, "stopped_guardrail", `${cause} → stopped_guardrail (the shape graders already handle)`);
   }
-});
-
-test("INV4 grading byte-identity: a qlik success run's llm_response step carries the extracted answer VERBATIM in assistantText", async () => {
-  const events = await (async () => {
-    const out: RunEvent[] = [];
-    await runQlikAnswers("q-byte", qConfig({ fetchImpl: qStub(() => qSuccessStream()) }), (e) => out.push(e));
-    return out;
-  })();
-  const answerStep = events.find((e): e is Extract<RunEvent, { type: "step" }> => e.type === "step" && e.step.type === "llm_response");
-  assert.ok(answerStep, "a qlik success emits an llm_response step");
-  assert.equal(answerStep.step.assistantText, Q_ANSWER, "assistantText is the extracted answer byte-for-byte (the grader input is untouched by this wave)");
 });
 
 test("FLAGGED (NON-ISSUE): error-forensics on a clean `ended` run yields ZERO findings (an ended session is a clean terminal, not an error)", () => {
@@ -624,25 +550,6 @@ test("INV5 subscription (WP1.7 COALESCE): recordDurations survives the meta-less
   assert.equal(typeof s.totalDurationMs, "number");
 });
 
-test("INV5 qlik: onCapabilities + terminal-emit meta durations round-trip", async () => {
-  const db = seededDb();
-  const repo = new RunRepository(db);
-  const manager = new RunManager(repo);
-  const runId = "cap-qlik";
-  repo.createRun(runId, { testId: "t-1", scenarioId: "s-1", mode: "automated" });
-  manager.create(runId);
-  await runQlikAnswers(runId, qConfig({
-    fetchImpl: qStub(() => qSuccessStream()),
-    onCapabilities: (c) => repo.setCapabilities(runId, c),
-  }), (e, meta) => manager.emit(runId, e, meta));
-  await flush(); await flush();
-  const s = repo.getSummary(runId);
-  assert.equal(s.capabilities?.costBasis, "questions", "the qlik manifest persisted");
-  assert.equal(s.capabilities?.waitBudgetMs, QLIK_ANSWERS_WAIT_BUDGET_MS);
-  assert.equal(typeof s.activeDurationMs, "number", "qlik durations arrive via the terminal emit's meta");
-  assert.equal(typeof s.totalDurationMs, "number");
-});
-
 // ════════════════════════════════════════════════════════════════════════════════════════════════
 //  PART F — user_stop distinguishability (finish-toast suppression backbone, WP1.6/WP3.3)
 // ════════════════════════════════════════════════════════════════════════════════════════════════
@@ -650,12 +557,12 @@ test("INV5 qlik: onCapabilities + terminal-emit meta durations round-trip", asyn
 test("FLAGGED user_stop distinguishability: markUserInitiatedStop/wasUserInitiatedStop is a manager-level flag any executor's run can carry (read before settle)", () => {
   // The finish-toast suppression (WP3.3) reads `wasUserInitiatedStop` — a RunManager flag set by the
   // `/stop` and `/end` routes BEFORE the terminal, independent of which executor produced the run. It is
-  // NOT re-derived from stopReasonCode string-sniffing, so it works identically for engine/subscription/
-  // qlik runs. Verify the round-trip + the read-before-settle contract.
+  // NOT re-derived from stopReasonCode string-sniffing, so it works identically for engine and
+  // subscription runs. Verify the round-trip + the read-before-settle contract.
   const db = seededDb();
   const repo = new RunRepository(db);
   const manager = new RunManager(repo);
-  for (const runId of ["f-eng", "f-sub", "f-qlik"]) {
+  for (const runId of ["f-eng", "f-sub"]) {
     repo.createRun(runId, { testId: "t-1", scenarioId: "s-1", mode: "interactive" });
     manager.create(runId);
     assert.equal(manager.wasUserInitiatedStop(runId), false, "false before marking");

@@ -79,7 +79,7 @@ function buildFixture(): Fixture {
   ).run({ now: NOW });
 
   const server = servers.create({
-    name: "Qlik MCP",
+    name: "Acme MCP",
     transport: "stdio",
     command: "npx",
     args: ["-y", "server"],

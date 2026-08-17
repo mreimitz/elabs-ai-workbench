@@ -57,7 +57,7 @@ they touch the database and are never returned by the API.
   involved, with a drafted fix you can apply yourself or hand to the built-in Assistant — then re-run
   and verify.
 - **Compare anything.** Diff a server against its own history, two servers against each other, two
-  runs turn by turn, or a Qlik Answers assistant head-to-head against a full MCP session.
+  runs turn by turn, or two agent configurations head-to-head.
 - **Fully local.** Everything runs on your machine, so sensitive setups and credentials never leave it.
 
 ---
@@ -77,7 +77,7 @@ the count of the **serialized provider payload** actually sent to a model — no
 facets — and every scan is stamped with a counting version so results from different methods are
 never silently compared.
 
-![A scan of a Qlik MCP server: 60 tools, 48,614 tokens, every tool ranked by footprint with schema / description / bytes / share.](docs/screenshots/scan-footprint.png)
+![A scan of an MCP server: 60 tools, 48,614 tokens, every tool ranked by footprint with schema / description / bytes / share.](docs/screenshots/scan-footprint.png)
 
 ### 2 · Server health, findings, and token advice
 
@@ -152,9 +152,7 @@ directory you can browse, reuse, and cost-track.
 
 ![Agents & Crews: a directory of saved agents organized into crews, each with its model, tools, skills, and run history.](docs/screenshots/hub-agents.png)
 
-> **Also on board:** run **Qlik Answers assistants** as a first-class test target and compare them
-> head-to-head against a full MCP session; export any scan, server, or run as **JSON or Markdown**;
-> and expose a Qlik Answers assistant through an **OpenAI-compatible endpoint** for outside tools.
+> **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](user-guide/README.md) for the full picture.
 
 ### Two themes
@@ -199,8 +197,8 @@ API-key header, custom headers, or OAuth. Bearer/API-key headers and OAuth token
 before they're persisted.
 
 The default OAuth callback is `http://127.0.0.1:8080/api/oauth/callback` (override with
-`OAUTH_REDIRECT_URL`). Providers without Dynamic Client Registration — including Qlik Cloud MCP —
-need a pre-registered OAuth client id. For Qlik Cloud, create an OAuth client with scopes
+`OAUTH_REDIRECT_URL`). Providers without Dynamic Client Registration need a pre-registered OAuth client id — create an
+OAuth client in the provider's admin UI with scopes
 `user_default` and `mcp:execute`, add the callback as an allowed redirect URL, and enter the Client
 ID in the wizard.
 
@@ -261,7 +259,7 @@ planned** lives in:
   status.
 - **[`CHANGELOG.md`](CHANGELOG.md)** — notable changes over time.
 - **[`user-guide/`](user-guide/README.md)** — a task-oriented guide written for people who *use* the
-  app (key concepts, connecting servers, testing, comparing runs, Qlik Answers, the Assistant, and
+  app (key concepts, connecting servers, testing, comparing runs, the Assistant, and
   more).
 
 ## The design system

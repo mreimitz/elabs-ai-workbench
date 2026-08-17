@@ -32,8 +32,8 @@ beforeEach(() => {
 // gap, not any save/edit flow (there is none yet).
 
 /** Each row is `SettingsRow`'s [label block, control block] — "10 min" alone would be ambiguous
- *  (it also opens the Wait budget row's "10 min · 30 min for Qlik Answers"), so scope the value
- *  lookup to the label's own row instead of a bare `getByText`. */
+ *  (the stall-timeout and wait-budget rows share the value), so scope the value lookup to the
+ *  label's own row instead of a bare `getByText`. */
 function settingsRowValue(label: string): string {
   const labelEl = screen.getByText(label);
   const row = labelEl.parentElement?.parentElement;
@@ -48,8 +48,7 @@ describe("TestingSection — Settings → Testing (WP3.4)", () => {
 
     expect(screen.getByText("Testing")).toBeInTheDocument();
     expect(settingsRowValue("Stall timeout")).toBe("10 min");
-    expect(settingsRowValue("Wait budget")).toContain("10 min");
-    expect(settingsRowValue("Wait budget")).toContain("30 min for Qlik Answers");
+    expect(settingsRowValue("Wait budget")).toBe("10 min");
     expect(settingsRowValue("Wall cap")).toBe("No cap by default");
     expect(settingsRowValue("Subscription run concurrency")).toBe("2");
 

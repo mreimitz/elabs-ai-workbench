@@ -103,8 +103,7 @@ export type NewSessionDialogProps = {
  *   • Skills   — Auto (the whole registry, prompt-driven pick) or Pick (attach a specific set) ⇒
  *               `skills` on the create input.
  * Both left on Auto ⇒ the create input carries neither field, and the session behaves like Claude
- * Desktop (discovers tools + skills from the prompt). A `qlik_answers` model runs as a CLEAN session
- * (no MCP/skills, D-QA invariant), so its MCP & Skills sections show a note instead of the pickers.
+ * Desktop (discovers tools + skills from the prompt).
  */
 export function NewSessionDialog({
   open,
@@ -162,9 +161,6 @@ export function NewSessionDialog({
   }, [open, models]);
 
   const modelId = selectedModel?.modelId ?? "";
-  // A Qlik Answers model runs as a clean session — no MCP servers or skills can be attached.
-  const isCleanSession = selectedModel?.kind === "qlik_answers";
-
   const handleCreate = async (): Promise<void> => {
     if (!selectedModel) return;
     setCreating(true);
@@ -174,12 +170,11 @@ export function NewSessionDialog({
       // `providerCredentialId`; `model` is unchanged and byte-identical.
       const input: HubSessionCreateInput = { mode, ...hubModelWireFields(selectedModel) };
       if (projectId !== NO_PROJECT_VALUE) input.projectId = projectId;
-      // Auto ⇒ omit the field entirely (the Claude-Desktop default lives server-side); a clean-session
-      // model never carries MCP/skill config.
-      if (!isCleanSession && toolAccess === "scoped") {
+      // Auto ⇒ omit the field entirely (the Claude-Desktop default lives server-side).
+      if (toolAccess === "scoped") {
         input.toolScope = toolScope;
       }
-      if (!isCleanSession && skillAccess === "pick" && skillIds.length > 0) {
+      if (skillAccess === "pick" && skillIds.length > 0) {
         input.skills = skillIds.map((id) => ({
           skillId: id,
           versionMode: "latest" as const,
@@ -187,11 +182,7 @@ export function NewSessionDialog({
         }));
       }
       // Agents & Crews roster — a preferred pool for the mission planner; omit when empty (auto).
-      if (
-        !isCleanSession &&
-        rosterAccess === "pick" &&
-        (roster.crewIds.length > 0 || roster.agentIds.length > 0)
-      ) {
+      if (rosterAccess === "pick" && (roster.crewIds.length > 0 || roster.agentIds.length > 0)) {
         input.roster = roster;
       }
       await onCreate(input);
@@ -289,19 +280,7 @@ export function NewSessionDialog({
     </div>
   );
 
-  const cleanSessionNote = (
-    <div className="flex items-start gap-2 rounded-md border border-border bg-muted/30 p-3">
-      <Info aria-hidden className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-      <Text variant="caption" tone="muted">
-        This model runs as a clean session — it answers on its own and never attaches MCP servers or
-        skills.
-      </Text>
-    </div>
-  );
-
-  const mcpContent = isCleanSession ? (
-    cleanSessionNote
-  ) : (
+  const mcpContent = (
     <div className="flex flex-col gap-4">
       <SegmentedField
         id="hub-new-tools-access"
@@ -334,9 +313,7 @@ export function NewSessionDialog({
     </div>
   );
 
-  const skillsContent = isCleanSession ? (
-    cleanSessionNote
-  ) : (
+  const skillsContent = (
     <div className="flex flex-col gap-4">
       <SegmentedField
         id="hub-new-skills-access"
@@ -359,9 +336,7 @@ export function NewSessionDialog({
     </div>
   );
 
-  const agentsCrewsContent = isCleanSession ? (
-    cleanSessionNote
-  ) : (
+  const agentsCrewsContent = (
     <div className="flex flex-col gap-4">
       <SegmentedField
         id="hub-new-roster-access"

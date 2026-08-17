@@ -37,7 +37,7 @@ Evidence: `shots/01-shell-{dashboard,runs,servers,settings}-{bright,dark}.png`, 
 
 The code comments frame depth-1 roots as intentionally crumb-less — but that is internally inconsistent (Settings/Environments/Compatibility are *also* depth-1 roots yet were given a `Home ›` crumb) and contradicts the audit's stated acceptance. **Follow-up A.**
 
-**Skills detail has no page `<h1>` — FAIL (known).** On `/skills/:id` the only `<h1>` is the markdown-rendered content heading at y=984 (16px/400); the page title "qlik-investigatory-analysis" is a `SectionHeader` (`<h2>`). This is the STATUS carry-forward "→ WP 5.1: SkillInspector uses SectionHeader". **Confirmed, not new. Follow-up B.**
+**Skills detail has no page `<h1>` — FAIL (known).** On `/skills/:id` the only `<h1>` is the markdown-rendered content heading at y=984 (16px/400); the page title "vendor-investigatory-analysis" is a `SectionHeader` (`<h2>`). This is the STATUS carry-forward "→ WP 5.1: SkillInspector uses SectionHeader". **Confirmed, not new. Follow-up B.**
 
 **Compatibility has no `<h1>` — FAIL (minor, appears new).** `/testing/compatibility` returns `h1count=0`; the visible title "MCP × Model compatibility" is not a semantic h1. Same class of gap as Skills. **Follow-up C.**
 
@@ -57,7 +57,7 @@ Strip position and content offset are **constant to the pixel** across every tab
 *Note (not a failure):* the console exposes **6** tabs (Chat/Trace/Analytics + a Network/Console/Application inspector trio), not the "3" the acceptance text anticipated — but stability holds across all 6.
 
 ### 3. Scroll walk (S22) — **PASS (compat, proven) / PARTIAL (others, could not force overflow)**
-- **Compatibility Tool × Model (55 rows, real overflow): PASS.** After scrolling to a mid-list position (rows scrolled to `qlik_get_sheet25`…), the **model-name column header row stays pinned** and the page controls stay visible — `shots/03-scroll-compat-toolmodel.png`. (My generic `thead` selector reported a false negative — the heatmap uses a sticky header row; the screenshot is authoritative.)
+- **Compatibility Tool × Model (55 rows, real overflow): PASS.** After scrolling to a mid-list position (rows scrolled to `acme_get_sheet25`…), the **model-name column header row stays pinned** and the page controls stay visible — `shots/03-scroll-compat-toolmodel.png`. (My generic `thead` selector reported a false negative — the heatmap uses a sticky header row; the screenshot is authoritative.)
 - **Runs feed / server Scans tab / skill Design: PARTIAL.** At the seed size these did not produce a content-region overflow even at a 560px viewport (`scrolltest.mjs`: `scrollables:0`), so the sticky behaviour could not be *exercised*; but the shell stayed fixed in every attempt (h1 top=66, tablist top=193 constant) and these use the **same** PageShell scroll container + DataTable sticky mechanism that Compatibility proved. Not independently confirmed under real overflow due to seed volume.
 
 ### 4. Status sweep (S3) — **PASS (minor label polish outstanding)**
@@ -94,7 +94,7 @@ High-value links are implemented and several verified live:
   - *Which wins / how much:* verdict sentence **"B completed with the same outcome as A at −39% tokens and −38% cost — recommended."** + baseline-Δ matrix (Ⓐ baseline / Ⓑ −39% tokens, −38% cost, −37% peak context).
   - *Can I trust it:* honest **"Not directly comparable — No runs are graded, so output quality can't be compared — enable grading"** caveat (T9h/H8), instead of fake quality precision.
 - **Change markers (H6):** "Loading eager → deferred" chip on the compare bar.
-- **Next-step cards (H7):** all three rules fired from seed — "Deferred loading saved 8,020 tokens → Open environment editor", "qlik-investigatory-analysis loaded but never used → Open SkillFlow trace", "Save this comparison as a baseline → Markdown/JSON".
+- **Next-step cards (H7):** all three rules fired from seed — "Deferred loading saved 8,020 tokens → Open environment editor", "vendor-investigatory-analysis loaded but never used → Open SkillFlow trace", "Save this comparison as a baseline → Markdown/JSON".
 - **Flow mode (H4):** Tools/Skills/Cost-heat lenses + add/remove/changed/unchanged legend; two synchronized lanes; turn boundaries; LCS step alignment; and a real **skills diff** (Ⓐ "1 skill loaded · 159 tok always-on" vs Ⓑ "No skills attached").
 - **H5 lossless drill loop — PARTIAL:** the verdict→Flow and step→drawer legs are present (WP 4.4/4.5); the drawer→**console**→back leg could not be fully driven because the run console needs the SSE **`run_events`** log to reconstruct, which the structural seed does not contain (see below). The "← Back to comparison" pill and drawer wiring exist in code but the round-trip was not exercised end-to-end.
 

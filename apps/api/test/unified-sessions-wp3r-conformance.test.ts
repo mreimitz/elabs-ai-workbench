@@ -139,7 +139,7 @@ test("WP3.R conformance — persistence → GET /api/runs/:id → deriveRunStatu
   assert.equal(defects.length, 0, `off-table renders:\n${defects.join("\n")}`);
 });
 
-test("WP3.R conformance — the same state renders an IDENTICAL chip across all three backend kinds (D-US5: kind never changes the label)", async () => {
+test("WP3.R conformance — the same state renders an IDENTICAL chip across every backend kind (D-US5: kind never changes the label)", async () => {
   const { app, db } = await makeApp();
   const seeded = seedSessionGrid(db);
 

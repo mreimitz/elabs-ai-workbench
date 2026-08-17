@@ -31,7 +31,7 @@ import type { RunKpis } from "./use-run-stream";
  * chat-completions engine) manifest gets Tool calls + Context + both Tokens tiles, a `$` cost value,
  * and no identity card; a `subscription_reference` manifest drops the Context tile (no meaningful
  * context window) and marks the cost tile "est. · subscription"; a `questions`-cost + identity
- * manifest (Qlik) drops Context AND Tool-calls, replaces the headline slot with the assistant-identity
+ * manifest (Acme) drops Context AND Tool-calls, replaces the headline slot with the assistant-identity
  * card, reads the cost tile as "<N> questions", and — since its `tokens` facet is `"estimated"`, not
  * `"none"` — STILL shows the Tokens tiles, marked "(estimated)" instead of "(provider-actual)".
  */
@@ -58,18 +58,6 @@ const SUBSCRIPTION_CAPS: SessionCapabilities = {
   costBasis: "subscription_reference",
   followUps: true,
   askUser: false,
-};
-
-const QLIK_CAPS: SessionCapabilities = {
-  liveText: true,
-  liveReasoning: "structured",
-  toolCalls: false,
-  contextWindow: false,
-  tokens: "estimated",
-  costBasis: "questions",
-  followUps: true,
-  askUser: false,
-  identity: { kind: "qlik_assistant", assistantId: "assistant-abc123" },
 };
 
 function kpis(over: Partial<RunKpis> = {}): RunKpis {
@@ -140,82 +128,6 @@ describe("KpiRail — declarative tile list (WP 3.2, D-US4)", () => {
     expect(screen.getByText("$0.12")).toBeInTheDocument();
     expect(screen.getByText("subscription reference")).toBeInTheDocument();
     expect(screen.queryByText("estimated")).not.toBeInTheDocument();
-  });
-
-  test("questions-cost + identity manifest (Qlik): NO Context tile, NO Tool-calls tile — the identity card + question-count cost tile replace them; Tokens tiles STILL show ('estimated' fidelity, not 'none')", () => {
-    renderRail({
-      capabilities: QLIK_CAPS,
-      questionsConsumed: 5,
-    });
-
-    expect(screen.queryByText("Context")).not.toBeInTheDocument();
-    expect(screen.queryByText("Tool calls")).not.toBeInTheDocument();
-    // QLIK_CAPS declares `tokens: "estimated"` (not `"none"`) — per the declarative rule ("estimated
-    // → show with an 'est.' marker") the tiles still render, just marked estimated rather than hidden.
-    expect(screen.getByText("Tokens ↑")).toBeInTheDocument();
-    expect(screen.getByText("sent (estimated)")).toBeInTheDocument();
-    expect(screen.getByText("received (estimated)")).toBeInTheDocument();
-
-    expect(screen.getByText("Assistant")).toBeInTheDocument();
-    expect(screen.getByText("assistant-abc123")).toBeInTheDocument();
-    expect(screen.getByText("Est. cost")).toBeInTheDocument();
-    expect(screen.getByText("5 questions")).toBeInTheDocument();
-    expect(screen.getByText("Turns")).toBeInTheDocument();
-  });
-
-  test("questions-cost manifest: the cost tile's value is the raw question count, not a dollar figure", () => {
-    renderRail({ capabilities: QLIK_CAPS, questionsConsumed: 1 });
-    expect(screen.getByText("1 question")).toBeInTheDocument();
-    expect(screen.queryByText("$0.05")).not.toBeInTheDocument();
-  });
-
-  test("questions-cost manifest: cost tile appends the guardrail cap when one is set", () => {
-    renderRail({
-      capabilities: QLIK_CAPS,
-      questionsConsumed: 1,
-      guardrails: { maxCostUsd: 2 },
-    });
-    expect(screen.getByText("estimated · of $2.00 cap")).toBeInTheDocument();
-  });
-
-  test("identity card renders every settled field (name/app/version/transport), omitting unsettled ones", () => {
-    renderRail({
-      capabilities: {
-        ...QLIK_CAPS,
-        identity: {
-          kind: "qlik_assistant",
-          assistantId: "assistant-abc123",
-          name: "Flight Ops Assistant",
-          appId: "app-xyz",
-          version: "etag-42",
-          transport: "stream",
-        },
-      },
-      questionsConsumed: 2,
-    });
-
-    expect(screen.getByText("Flight Ops Assistant")).toBeInTheDocument();
-    expect(screen.getByText("app-xyz")).toBeInTheDocument();
-    expect(screen.getByText("etag-42")).toBeInTheDocument();
-    expect(screen.getByText("Streaming")).toBeInTheDocument();
-  });
-
-  test("identity card falls back to assistantId when no display name has settled yet, and omits every unsettled field", () => {
-    renderRail({ capabilities: QLIK_CAPS, questionsConsumed: 0 });
-
-    expect(screen.getByText("Assistant")).toBeInTheDocument();
-    expect(screen.getByText("assistant-abc123")).toBeInTheDocument();
-    expect(screen.queryByText("App")).not.toBeInTheDocument();
-    expect(screen.queryByText("Version")).not.toBeInTheDocument();
-    expect(screen.queryByText("Transport")).not.toBeInTheDocument();
-  });
-
-  test("tokens:\"estimated\" (no identity) marks the token tiles 'estimated', not 'provider-actual'", () => {
-    renderRail({
-      capabilities: { ...ENGINE_CAPS, tokens: "estimated", identity: undefined },
-    });
-    expect(screen.getByText("sent (estimated)")).toBeInTheDocument();
-    expect(screen.getByText("received (estimated)")).toBeInTheDocument();
   });
 
   test("tokens:\"none\" hides both Tokens tiles entirely", () => {
@@ -336,9 +248,9 @@ describe("KpiRail — hotspots strip (Observability WP 3.2, ADDITIVE to the D-US
     expect(screen.queryByText("Largest context jump")).not.toBeInTheDocument();
   });
 
-  test("questions-cost manifest (Qlik): DURATION-ONLY — only the slowest hotspot renders (no honest per-step $ or context figure)", () => {
+  test("costBasis:\"none\": DURATION-ONLY — only the slowest hotspot renders (no honest per-step $ or context figure)", () => {
     renderRail({
-      capabilities: QLIK_CAPS,
+      capabilities: { ...ENGINE_CAPS, costBasis: "none", contextWindow: false },
       steps: HOTSPOT_STEPS,
       kpiByStepId: HOTSPOT_KPI_MAP,
       onSelectStep: () => {},

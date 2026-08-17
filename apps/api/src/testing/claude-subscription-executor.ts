@@ -3,8 +3,8 @@
 // The app has TWO inference stacks. A regular run rides the Vercel-AI-SDK loop
 // ({@link import("./engine.js").runAgentLoop} → `streamText`). The owner's Claude *subscription*
 // cannot: the Claude Agent SDK never exposes an AI-SDK `LanguageModel`, so a subscription run runs
-// on its OWN executor branch — exactly like `qlik_answers` ({@link import("./qlik-answers-executor.js")}).
-// WP 1.2 adds the `RunService.execute()` fork that CALLS this module (parallel to the qlik branch);
+// on its OWN executor branch.
+// WP 1.2 adds the `RunService.execute()` fork that CALLS this module;
 // THIS module is that executor.
 //
 // It GENERALIZES the Auto-Rating Claude-CLI judge ({@link import("../grading/claude-cli-judge.js")}),
@@ -275,7 +275,7 @@ export type ClaudeSubscriptionRunConfig = {
    * WP 1.3 — the Agent SDK `mcpServers` config map (`driver.start({ mcpServers })`): one entry per
    * allow-listed server (stdio command/args/env OR http url/headers), built by the run service from the
    * scenario's allow-list ({@link import("./subscription-tools.js").buildSubscriptionToolWiring}). The
-   * SDK connects/spawns these servers in its CHILD (D-CS9 — unlike qlik_answers, MCP tools DO work on
+   * SDK connects/spawns these servers in its CHILD (D-CS9 — MCP tools DO work on
    * the subscription path). Defaults to `{}` (tools-less). Typed loosely (the SDK's `McpServerConfig`
    * union lives at the driver seam); the real driver casts at the `query()` boundary.
    */
@@ -455,7 +455,7 @@ export function makeAllowListGate(allowedTools: readonly string[]): DriverCanUse
 }
 
 /**
- * A per-run monotonic {@link RunStep} allocator (mirrors the engine / qlik-answers executor). Steps carry
+ * A per-run monotonic {@link RunStep} allocator (mirrors the engine executor). Steps carry
  * no estimator lenses by default (`profileTokens: {}`); a `tool_result` step overrides it with the
  * ESTIMATED per-tool lenses (WP 1.3).
  */
@@ -969,7 +969,7 @@ async function consumeTurn(
  * Unified Sessions (WP1.7, D-US1 follow-up) — the `finally` UNCONDITIONALLY emits an additional
  * `{type:"phase",phase:null}` clearing the `waiting_input` phase back to "no distinct phase", whether
  * the wait resolved because the run is CONTINUING (a real next turn) or because it's ENDING (a clock
- * fire or a user stop aborted `termination.signal`). Unlike `engine.ts`/`qlik-answers-executor.ts`, this
+ * fire or a user stop aborted `termination.signal`). Unlike `engine.ts`, this
  * executor has NO `stopping` phase write on ANY terminal path (`createTermination`'s `settle()` writes
  * only the terminal `status`) — so without an unconditional clear here, a run that reached ANY terminal
  * (`wait_expired`, `user_stop`, …) while `waiting_input` would leave `runs.phase` stuck at

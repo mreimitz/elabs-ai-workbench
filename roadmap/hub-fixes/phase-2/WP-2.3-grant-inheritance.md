@@ -11,7 +11,7 @@ Enforced at spawn, tested, and shown on the plan card estimate.
 ## Why / evidence
 
 `analysis.md` RC2/RC3: WP 2.1 passes plan grants straight through; without the intersection, a
-scoped parent (say, qlik-mreimitz only) could spawn agents granted other servers by a crew role's
+scoped parent (say, acme-demo only) could spawn agents granted other servers by a crew role's
 Access tab, silently escalating beyond the session the owner configured.
 
 ## Design

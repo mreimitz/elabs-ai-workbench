@@ -199,7 +199,7 @@ export type StepLogProps = {
   kpiByStepId?: ReadonlyMap<string, StepCumulativeKpi> | null;
   /**
    * Observability (WP 3.2) — the run's `SessionCapabilities.costBasis` (D-US4). Governs the tree's
-   * per-step cost-delta chip: suppressed for `"none"` (no cost at all) and `"questions"` (Qlik's
+   * per-step cost-delta chip: suppressed for `"none"` (no cost at all) and `"questions"` (Acme's
    * question-count basis has no honest PER-STEP dollar figure), marked "est." for
    * `"subscription_reference"`. `undefined` shows a plain dollar chip (the `"api_exact"` default).
    * Ignored entirely by the flat (no-hierarchy) branch.
@@ -723,10 +723,9 @@ function toTreeNode(
   };
 }
 
-/** Whether a cost-delta chip is honest to show for this basis (never a fake per-step $ for a
- *  question-count run, never anything for a costless run). */
+/** Whether a cost-delta chip is honest to show for this basis (never anything for a costless run). */
 function showsCostChip(econ: StepEconomics, costBasis: SessionCostBasis | undefined): boolean {
-  return econ.costUsdDelta > 0 && costBasis !== "none" && costBasis !== "questions";
+  return econ.costUsdDelta > 0 && costBasis !== "none";
 }
 
 /** One tree row's content: the step's label (left, truncating) + status/economics chips (right). */

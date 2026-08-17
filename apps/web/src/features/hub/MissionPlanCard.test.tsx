@@ -117,13 +117,13 @@ describe("MissionPlanCard — grant chips (WP2.2, RC2.4)", () => {
           agent({
             key: "a",
             name: "Analyst",
-            toolGrants: { servers: { qlik: "all", files: ["read_file", "list_dir"] }, builtins: ["files.read"] },
+            toolGrants: { servers: { acme: "all", files: ["read_file", "list_dir"] }, builtins: ["files.read"] },
           }),
           agent({ key: "b", name: "Idler" }),
         ])}
       />,
     );
-    expect(screen.getByText("qlik · all")).toBeInTheDocument();
+    expect(screen.getByText("acme · all")).toBeInTheDocument();
     expect(screen.getByText("files · 2 tools")).toBeInTheDocument();
     expect(screen.getByText("1 built-in")).toBeInTheDocument();
     expect(screen.getByText("reasoning only")).toBeInTheDocument();
@@ -149,11 +149,11 @@ describe("MissionPlanCard — unconfigured-role warning (WP2.2, RC2.4)", () => {
 describe("MissionPlanCard — per-agent grant editor (WP2.2, RC2.4)", () => {
   test("Edit access opens a picker constrained to the parent catalog; Save persists grants via onEditPlan", async () => {
     vi.mocked(api.listServers).mockResolvedValue([
-      server({ id: "qlik-x", name: "Qlik" }),
+      server({ id: "acme-x", name: "Acme" }),
       server({ id: "other", name: "Other" }),
     ]);
     vi.mocked(api.apiGet).mockImplementation(async (path: string) => {
-      if (path === "/api/servers/qlik-x/latest-scan") return scanWith("qlik-x", ["search", "list_apps"]);
+      if (path === "/api/servers/acme-x/latest-scan") return scanWith("acme-x", ["search", "list_apps"]);
       if (path === "/api/servers/other/latest-scan") return scanWith("other", ["x"]);
       throw new Error(`unexpected apiGet(${path})`);
     });
@@ -162,7 +162,7 @@ describe("MissionPlanCard — per-agent grant editor (WP2.2, RC2.4)", () => {
       <MissionPlanCard
         missionId="m1"
         onEditPlan={onEditPlan}
-        catalogServerIds={["qlik-x"]}
+        catalogServerIds={["acme-x"]}
         plan={plan([agent({ key: "a", name: "Analyst" })])}
       />,
     );
@@ -170,12 +170,12 @@ describe("MissionPlanCard — per-agent grant editor (WP2.2, RC2.4)", () => {
     fireEvent.click(screen.getByRole("button", { name: /edit access for analyst/i }));
     const dialog = await screen.findByRole("dialog");
 
-    // Constrained to the parent catalog: only Qlik is offered, never Other.
-    await waitFor(() => expect(within(dialog).getByText("Qlik")).toBeInTheDocument());
+    // Constrained to the parent catalog: only Acme is offered, never Other.
+    await waitFor(() => expect(within(dialog).getByText("Acme")).toBeInTheDocument());
     expect(within(dialog).queryByText("Other")).not.toBeInTheDocument();
 
-    // Grant all of Qlik, then Save → the plan round-trips through onEditPlan with the new grants.
-    fireEvent.click(within(dialog).getByText("Qlik"));
+    // Grant all of Acme, then Save → the plan round-trips through onEditPlan with the new grants.
+    fireEvent.click(within(dialog).getByText("Acme"));
     await waitFor(() =>
       expect(within(dialog).getByRole("checkbox", { name: "All tools" })).toBeInTheDocument(),
     );
@@ -184,7 +184,7 @@ describe("MissionPlanCard — per-agent grant editor (WP2.2, RC2.4)", () => {
 
     expect(onEditPlan).toHaveBeenCalledTimes(1);
     const [, edited] = onEditPlan.mock.calls[0]!;
-    expect((edited as HubMissionPlan).agents[0]!.toolGrants.servers).toEqual({ "qlik-x": "all" });
+    expect((edited as HubMissionPlan).agents[0]!.toolGrants.servers).toEqual({ "acme-x": "all" });
   });
 });
 
@@ -193,7 +193,7 @@ describe("MissionPlanCard — effective-grant subtitle for a scoped parent (WP2.
     render(
       <MissionPlanCard
         missionId="m1"
-        plan={plan([agent({ key: "a", name: "Analyst", toolGrants: { servers: { qlik: "all" }, builtins: [] } })])}
+        plan={plan([agent({ key: "a", name: "Analyst", toolGrants: { servers: { acme: "all" }, builtins: [] } })])}
       />,
     );
     expect(screen.queryByTestId("agent-effective-access-a")).not.toBeInTheDocument();
@@ -204,7 +204,7 @@ describe("MissionPlanCard — effective-grant subtitle for a scoped parent (WP2.
       <MissionPlanCard
         missionId="m1"
         parentScope={null}
-        plan={plan([agent({ key: "a", name: "Analyst", toolGrants: { servers: { qlik: "all" }, builtins: [] } })])}
+        plan={plan([agent({ key: "a", name: "Analyst", toolGrants: { servers: { acme: "all" }, builtins: [] } })])}
       />,
     );
     expect(screen.queryByTestId("agent-effective-access-a")).not.toBeInTheDocument();
@@ -214,12 +214,12 @@ describe("MissionPlanCard — effective-grant subtitle for a scoped parent (WP2.
     render(
       <MissionPlanCard
         missionId="m1"
-        parentScope={{ servers: { qlik: ["search", "list_apps"] }, builtins: [] }}
+        parentScope={{ servers: { acme: ["search", "list_apps"] }, builtins: [] }}
         plan={plan([
           agent({
             key: "a",
             name: "Analyst",
-            toolGrants: { servers: { qlik: ["search", "list_apps", "delete_app"] }, builtins: [] },
+            toolGrants: { servers: { acme: ["search", "list_apps", "delete_app"] }, builtins: [] },
           }),
         ])}
       />,
@@ -233,12 +233,12 @@ describe("MissionPlanCard — effective-grant subtitle for a scoped parent (WP2.
     render(
       <MissionPlanCard
         missionId="m1"
-        parentScope={{ servers: { qlik: "all" }, builtins: [] }}
+        parentScope={{ servers: { acme: "all" }, builtins: [] }}
         plan={plan([
           agent({
             key: "a",
             name: "Analyst",
-            toolGrants: { servers: { qlik: "all", files: ["read_file"] }, builtins: [] },
+            toolGrants: { servers: { acme: "all", files: ["read_file"] }, builtins: [] },
           }),
         ])}
       />,
@@ -252,8 +252,8 @@ describe("MissionPlanCard — effective-grant subtitle for a scoped parent (WP2.
     render(
       <MissionPlanCard
         missionId="m1"
-        parentScope={{ servers: { qlik: "all" }, builtins: [] }}
-        plan={plan([agent({ key: "a", name: "Analyst", toolGrants: { servers: { qlik: "all" }, builtins: [] } })])}
+        parentScope={{ servers: { acme: "all" }, builtins: [] }}
+        plan={plan([agent({ key: "a", name: "Analyst", toolGrants: { servers: { acme: "all" }, builtins: [] } })])}
       />,
     );
     expect(screen.queryByTestId("agent-effective-access-a")).not.toBeInTheDocument();

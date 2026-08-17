@@ -13,7 +13,7 @@ document the scoped-session workflow that keeps eager mode inside the context bu
 (live: `resident: []`, 245k deferred tokens). Eager mode is the tested path
 (`session-service.hub-mcp-grants.test.ts` forces `toolLoadingDefault: "eager"`). Eager with ALL
 five servers (~245k tokens) cannot fit a context window; a session scoped to one server
-(qlik-mreimitz ≈ 45-50k) can.
+(acme-demo ≈ 45-50k) can.
 
 ## Files (exclusive)
 
@@ -40,5 +40,5 @@ five servers (~245k tokens) cannot fit a context window; a session scoped to one
 ## Notes / owner-acceptance
 
 Owner-op: `docker compose up -d --build` (or recreate) to apply, then verify live: scoped session
-to qlik-mreimitz → ask a question → a `qlik_*` tool call appears with an approval card and, once
+to acme-demo → ask a question → a `vendor_*` tool call appears with an approval card and, once
 approved, returns data. Record the outcome in `STATUS.md`'s owner-acceptance list.

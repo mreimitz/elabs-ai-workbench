@@ -44,7 +44,7 @@ import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
 // WP 1.2 (roadmap/claude-subscription/) — the RunService `execute()` fork that routes a
-// `claude_subscription` credential to the subscription executor (parallel to the qlik_answers branch)
+// `claude_subscription` credential to the subscription executor (parallel to the acme_answers branch)
 // instead of the AI-SDK agent loop. Exercised ENTIRELY through a SCRIPTED FAKE driver + a stub auth
 // resolver: NO SDK is imported, NO child is spawned, NO Anthropic call is made, and the not-signed-in
 // path degrades to an honest `auth` error (never a fabricated result). Non-subscription runs are proven
@@ -309,7 +309,6 @@ function makeHarness(opts: {
     sessionOpener,
     skills,
     undefined, // grades
-    undefined, // answersFetch
     undefined, // issues
     opts.omitDriver ? undefined : driver,
     opts.resolveAuth,

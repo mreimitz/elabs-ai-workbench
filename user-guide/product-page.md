@@ -7,14 +7,14 @@ for know-how, and everything those pieces contribute lands in the model's limite
 shapes how a session behaves. AI Workbench is where you see all of it clearly: measure what each
 piece costs, watch a real session play out step by step, **grade every run automatically**, and
 **compare anything against anything** — one model against another, a skill on against off, or a
-Qlik Answers assistant head-to-head with a full MCP agent.
+two agent configurations head-to-head.
 
 It runs entirely on your own machine. Your servers, your credentials, your data — nothing leaves it.
 
 ![The AI Workbench dashboard — startup-token totals across every server, what needs attention, and recent activity.](./images/01-dashboard.png)
 
 > **Real tokenizers, not guesses · a real multi-provider agent loop · automatic grading on every
-> run · apples-to-apples comparison across models, skills, and Qlik Answers.**
+> run · apples-to-apples comparison across models and skills.**
 
 ---
 
@@ -155,7 +155,6 @@ Attach expectations to a test and every run is also scored against them:
 | **Cached %** | Share of input served from prompt cache |
 | **Tool errors** | Failed tool calls |
 | **Duration** | Wall-clock time |
-| **Questions** | (Qlik Answers) questions consumed — the assistant's cost unit |
 | **Outcome** | completed / aborted / stopped-by-guardrail / failed |
 | **Quality** | The graded score |
 
@@ -185,27 +184,6 @@ or read a different skill file — right down to the final answers side by side.
 
 ---
 
-## Qlik Answers vs. a full MCP session — head to head
-
-Here's a comparison you can't get anywhere else. AI Workbench treats a **Qlik Answers assistant as a
-model**, runs it against the same tests as your MCP setups, and compares them directly.
-
-The result is striking. Asked the *same* question, a Claude model driving Qlik MCP tools worked
-through **9 turns, ~266K tokens, and $0.31** to score **100%** — while the Qlik Answers assistant
-answered in a **single turn, ~478 tokens, at $0.00**, scoring **70%**. Dramatically cheaper and
-simpler, at a measurable quality trade-off. Now that decision is evidence, not opinion.
-
-![Qlik Answers (B) compared against an MCP session (A) for the same question — the full cost and quality trade-off.](./images/18-qlik-vs-mcp-compare.png)
-
-![Detail — the head-to-head matrix: 9 turns / 266K tokens / $0.31 / 100% vs. 1 turn / 478 tokens / $0.00 / 70%.](./images/zoom-qa-vs-mcp.png)
-
-Qlik Answers runs get a console tuned to how they respond: the answer is shown with the **data behind
-it** — the hypercube tables the assistant used — with citations, and the KPI rail is question-first.
-
-![Detail — a Qlik Answers answer rendered with its data-backed Insights and citations.](./images/zoom-qa-insights.png)
-
----
-
 ## The loop closes: fixes flow back to your skills
 
 When a run fails or grades poorly and a skill was involved, AI Workbench doesn't just note it — it
@@ -226,7 +204,7 @@ caught before anyone else sees them.
 
 ## One workbench, your whole setup
 
-Connect many servers, treat models and Qlik Answers assistants as interchangeable run targets, attach
+Connect many servers, treat every model as an interchangeable run target, attach
 skills, and manage it all from one place — with a clear operational overview across everything.
 
 ![Detail — the dashboard KPIs: servers, total startup tokens, resources, prompts, unscanned, failed, and largest tool.](./images/zoom-dashboard-kpis.png)
@@ -234,7 +212,7 @@ skills, and manage it all from one place — with a clear operational overview a
 - **Real token counting** with production tokenizers plus fast estimate profiles.
 - **A real agent loop**, multi-provider, with token/context accounting, cost estimates, and guardrails.
 - **Automatic grading and issue detection** on every run — no setup required.
-- **Comparison across time, models, skills, and Qlik Answers**, distilled to a verdict.
+- **Comparison across time, models, and skills**, distilled to a verdict.
 - **A Skills registry** with footprint, security surface, versioning, and the closed fix loop.
 - **Fully local** — no accounts, no cloud, nothing sensitive ever leaves your machine.
 

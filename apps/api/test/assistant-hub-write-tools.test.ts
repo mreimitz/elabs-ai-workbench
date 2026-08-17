@@ -32,10 +32,11 @@ afterEach(() => {
  *  `assistant-hub-read-tools.test.ts`) rather than every call site guessing which db a repo belongs to. */
 const providersByRepo = new WeakMap<HubRepository, ProviderRepository>();
 
-/** The three credentials the F5 tests turn on: a usable one, a non-hub-eligible one (`qlik_answers`,
- *  D-AH4) and an auth-broken one. Inserted directly — no key material is involved. */
+/** The two credentials the F5 tests turn on: a usable one and an auth-broken one. Inserted directly —
+ *  no key material is involved. (The third D-MI9 refusal reason, a non-hub-eligible KIND, has no
+ *  reachable fixture today: every live `ProviderKind` is hub-eligible, so `assertHubModelKind` stands
+ *  as the enforcement point for a future non-eligible kind rather than a currently-firing branch.) */
 const PIN_OK = "prov-anthropic";
-const PIN_INELIGIBLE = "prov-qlik";
 const PIN_BROKEN = "prov-broken";
 
 function openRepo(): HubRepository {
@@ -49,7 +50,6 @@ function openRepo(): HubRepository {
     "INSERT INTO provider_credentials (id, kind, label, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
   );
   insert.run(PIN_OK, "anthropic", "Anthropic", at, at);
-  insert.run(PIN_INELIGIBLE, "qlik_answers", "Qlik Answers", at, at);
   insert.run(PIN_BROKEN, "claude_subscription", "Anthropic CLI", at, at);
   const repo = new HubRepository(db);
   // No signed-in subscription resolver ⇒ the `claude_subscription` credential reads back auth-broken,
@@ -426,8 +426,8 @@ test("a hub_crew_update whose members would create a cycle comes back as a clean
 
 // ── model-identity WP6.1 (F5) — the dock write tools enforce the SAME D-MI9 guard as the routes ────
 //
-// These four tools call `HubRepository` DIRECTLY, so they bypassed the route guards entirely: a
-// `qlik_answers`/auth-broken pin was accepted silently and an unknown one died on the FK as a raw
+// These four tools call `HubRepository` DIRECTLY, so they bypassed the route guards entirely: an
+// auth-broken pin was accepted silently and an unknown one died on the FK as a raw
 // SQLITE_CONSTRAINT. New tests — a tool that never called the validator cannot be surfaced by mutating
 // one. (A refusal reaches the model as a safe `isError`, `safeTool`'s contract, not an HTTP status.)
 
@@ -436,13 +436,12 @@ function textOf(result: CallToolResult): string {
   return (result.content[0] as { type: "text"; text: string }).text;
 }
 
-test("F5: hub_agent_create refuses an unusable pin for all three reasons and persists nothing", async () => {
+test("F5: hub_agent_create refuses an unusable pin for every reachable reason and persists nothing", async () => {
   const repo = openRepo();
   const deps = depsFor(repo);
 
   for (const [pin, match] of [
     ["prov-does-not-exist", /no longer exists/],
-    [PIN_INELIGIBLE, /not an Assistant-eligible provider/],
     [PIN_BROKEN, /authentication is broken/],
   ] as const) {
     const result = await callRaw(deps, "hub_agent_create", {
@@ -469,7 +468,7 @@ test("F5: hub_agent_update refuses an unusable re-pin and leaves the existing pi
 
   const refused = await callRaw(deps, "hub_agent_update", {
     agentId: role.id,
-    providerCredentialId: PIN_INELIGIBLE,
+    providerCredentialId: PIN_BROKEN,
   });
   assert.equal(refused.isError, true);
   assert.equal(repo.getAgentRole(role.id).providerCredentialId, PIN_OK, "the pin is unchanged");
@@ -516,7 +515,7 @@ test("F5: hub_crew_create / hub_crew_update refuse an unusable MEMBER pin (the f
 
   const badPatch = await callRaw(deps, "hub_crew_update", {
     crewId: crew.id,
-    members: [{ agentId: agent.id, providerCredentialId: PIN_INELIGIBLE }],
+    members: [{ agentId: agent.id, providerCredentialId: PIN_BROKEN }],
   });
   assert.equal(badPatch.isError, true);
   assert.equal(

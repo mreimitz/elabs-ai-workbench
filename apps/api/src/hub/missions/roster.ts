@@ -57,7 +57,7 @@ export type HubRosterModel = {
 // Output $/1M-token thresholds for the price-derived tiers (a heuristic, deliberately coarse — the
 // guard makes routing SAFE regardless, this only makes it GOOD). Opus-class (~$25) → frontier;
 // gpt-4o / haiku-class (~$5–10) → balanced; mini/flash-class (<$3) → fast. An unpriced model (e.g. a
-// Qlik-Answers assistant or a local OpenAI-compatible endpoint) defaults to `balanced`.
+// Acme-Answers assistant or a local OpenAI-compatible endpoint) defaults to `balanced`.
 const FRONTIER_OUT_PER_1M = 20;
 const FAST_OUT_PER_1M = 3;
 
@@ -79,7 +79,7 @@ export function tierForModel(modelId: string, kind: ProviderKind): HubModelTier 
 
 /**
  * hub-fixes (Defect 2) — whether a model supports structured output (`generateObject` / JSON-schema
- * mode). The OpenAI-compatible facade serves Qlik-Answers assistants as `assistant|<server>|<assistant>`
+ * mode). The OpenAI-compatible facade serves Acme-Answers assistants as `assistant|<server>|<assistant>`
  * ids — single-shot assistants with NO structured-output mode — so a mission agent's report-extraction
  * call must not run on such a model (it throws and wrongly fails the agent); the orchestrator projects the
  * agent's prose deterministically instead.

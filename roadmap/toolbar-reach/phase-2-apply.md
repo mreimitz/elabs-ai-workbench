@@ -84,7 +84,7 @@ don't re-add a hand-rolled wrapper. The remaining C-3 problems:
 - The host-client `Select` (`:296`) renders visible text **"None"** — meaningless. Give it
   `<SelectValue placeholder="Host client" />` and render the empty state as **"Host client: none"**, not
   "None". (Its `aria-label="Host client"` already tells AT users more than sighted ones — invert that.)
-- The scan select reads `qlik-mreimitz · Jul 21,…` truncated mid-date → shorten its option label to
+- The scan select reads `acme-demo · Jul 21,…` truncated mid-date → shorten its option label to
   `<server> · <date>` (or widen it). The model picker reads `5 models · De…` — give it room or a cleaner label.
 
 **C-10.** The Server × Model heatmap renders a single subject row then ~470px of empty page, with the
@@ -110,13 +110,13 @@ Model** (the view that has content) and move the legend **adjacent to the grid**
   already merged) beyond what the bar needs. (+ `CompareView.test.tsx` if a bar assertion changes.)
 - **Depends:** 1.1, 1.2 · **Size:** M · **parallel** · **Batch C** · **Model:** sonnet, effort **medium**.
 
-The Server A / Server B selects hold `qlik-mreimitz · qlik-saas · Production` (38 chars) in a **131px** box —
-measured `scrollWidth` 129 vs 131px client width, fully clipped. What renders is `· qlik-saas · Pro…`: the
+The Server A / Server B selects hold `acme-demo · acme-saas · Production` (38 chars) in a **131px** box —
+measured `scrollWidth` 129 vs 131px client width, fully clipped. What renders is `· acme-saas · Pro…`: the
 leading separator + type/environment, with **the server name — the only thing that distinguishes A from B —
 cut off.** Neither select carries a `title`, so no hover recovery. Eleven controls sit in this one row.
 
 **Fix:**
-- Put the **server name first** and let the rest go: `qlik-mreimitz`, with type/environment as a secondary
+- Put the **server name first** and let the rest go: `acme-demo`, with type/environment as a secondary
   `Badge` **outside** the select.
 - Add `title` with the full value for hover recovery. *(D-TB5 carve-out: `title` is banned on a **text-less
   `<Button>`**; a truncating value control like this select uses `title` for recovery, per D-10 — this is
@@ -125,7 +125,7 @@ cut off.** Neither select carries a `title`, so no hover recovery. Eleven contro
 
 ### Acceptance (checklist)
 - [ ] On the running compare-scans bar, each server select shows the **server name** first (not clipped to
-      `· qlik-saas · Pro…`); type/environment is a `Badge` outside the select; a `title` carries the full
+      `· acme-saas · Pro…`); type/environment is a `Badge` outside the select; a `title` carries the full
       value. Measured: the select is `w-56` and the name is fully visible for the seed data. Both themes.
 - [ ] The diff-table region and the `Δ tokens` readout are untouched; the bar still reads as one row.
 - [ ] Gate green + tests.

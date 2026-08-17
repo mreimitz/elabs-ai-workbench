@@ -40,7 +40,7 @@ regressed after its scan changed"), we have no answer surface. This gap also blo
 | Storage | SmithDB, tree-aware, "sub-second over millions" | SQLite. Fine at our scale, but no FTS index exists, so content search would be a table scan today |
 
 For a *debugging* tool this is the most acutely felt gap after D1: "which run was it where the
-agent called `qlik_answers` with an empty filter?" is answerable in LangSmith in seconds and in
+agent called `vendor_assistant` with an empty filter?" is answerable in LangSmith in seconds and in
 our app only by opening runs one by one. SQLite FTS5 gives us 90% of this locally for near-zero
 infra cost.
 

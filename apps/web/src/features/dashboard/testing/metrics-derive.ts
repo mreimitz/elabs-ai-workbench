@@ -237,7 +237,6 @@ export type CapabilityClassSeries = {
 // class identically to the prebuilt Tokens/Cost panels, without redefining the map.
 export const TOKEN_CLASS_LABELS: Record<SessionTokenAccounting, string> = {
   exact: "Exact (provider-metered)",
-  estimated: "Estimated",
   none: "Not measured",
 };
 
@@ -289,31 +288,15 @@ export function buildTokensResult(series: RunMetricsSeries[]): TokensResult {
 export type CostResult = {
   costRows: PivotedRow[];
   costClasses: CapabilityClassSeries[];
-  questionsRows: PivotedRow[];
-  questionsTotal: number;
   hasData: boolean;
 };
 
-/** Panel 5: `costUsd` split by cost-basis (its own grouped, un-stacked series per class), PLUS
- *  `questions` (Qlik's own unit) rendered as its own separate mini-series/unit — never folded into
- *  the `$` figure (they are not the same unit, let alone the same capability class). */
+/** Panel 5: `costUsd` split by cost-basis — its own grouped, un-stacked series per class, never a
+ *  blended total across classes. */
 export function buildCostResult(series: RunMetricsSeries[]): CostResult {
-  const costClasses = buildCapabilityClassSeries(series, "costUsd", COST_CLASS_LABELS).filter(
-    (c) => c.cls !== "questions",
-  );
+  const costClasses = buildCapabilityClassSeries(series, "costUsd", COST_CLASS_LABELS);
   const costRows = pivotToRows(costClasses.map((c) => ({ key: c.cls, label: c.label, points: c.points })));
-  const questionsSeries = series.find((s) => s.measure === "questions");
-  const questionsRows = questionsSeries
-    ? pivotToRows([{ key: "questions", label: "Questions", points: questionsSeries.points }])
-    : [];
-  const questionsTotal = questionsSeries ? questionsSeries.points.reduce((sum, p) => sum + p.value, 0) : 0;
-  return {
-    costRows,
-    costClasses,
-    questionsRows,
-    questionsTotal,
-    hasData: costClasses.length > 0 || questionsRows.length > 0,
-  };
+  return { costRows, costClasses, hasData: costClasses.length > 0 };
 }
 
 // ── Panel 6 — Score trend ───────────────────────────────────────────────────────────────────────
@@ -443,9 +426,8 @@ export function buildScansStripResult(series: ScanMetricsSeries[]): ScansStripRe
 export type TestingKpis = {
   runCount: number;
   errorRatePercent: number;
-  /** One entry per cost-basis class present (excluding `questions`, which gets its own `questions` figure). */
+  /** One entry per cost-basis class present. */
   costByBasis: { cls: string; label: string; total: number }[];
-  questionsTotal: number;
   /** The latest bucket's p95 ACTIVE duration (ms), or `null` when no duration data exists. */
   latestP95DurationMs: number | null;
 };
@@ -483,7 +465,6 @@ export function buildTestingKpis(
     runCount,
     errorRatePercent,
     costByBasis: cost.costClasses.map((c) => ({ cls: c.cls, label: c.label, total: c.total })),
-    questionsTotal: cost.questionsTotal,
     latestP95DurationMs: duration.latestP95,
   };
 }

@@ -312,7 +312,7 @@ describe("ProducedAssetsPanel (WP3.4)", () => {
 // ── WP1.3 follow-up (RC3.4, folded into WP6.1) — the inline "unreachable server" transcript notice ────
 
 describe("inline unreachable-server notice (WP1.3 data → WP6.1 render)", () => {
-  const issue = { serverId: "srv-1", serverName: "qlik-mreimitz", message: "OAuth expired" };
+  const issue = { serverId: "srv-1", serverName: "acme-demo", message: "OAuth expired" };
   function turnWithIssues(
     streaming: boolean,
     mcpServerIssues: { serverId: string; serverName: string; message?: string }[],
@@ -331,13 +331,13 @@ describe("inline unreachable-server notice (WP1.3 data → WP6.1 render)", () =>
   test("a SETTLED turn renders the notice from turn.mcpServerIssues (server name + reason)", () => {
     renderPane({ ...EMPTY_STREAM, timeline: [turnWithIssues(false, [issue])] });
     expect(screen.getByText(/an mcp server was unreachable this turn/i)).toBeInTheDocument();
-    expect(screen.getByText("qlik-mreimitz")).toBeInTheDocument();
+    expect(screen.getByText("acme-demo")).toBeInTheDocument();
     expect(screen.getByText(/OAuth expired/)).toBeInTheDocument();
   });
 
   test("a STREAMING (not-yet-settled) turn does NOT render the notice (terminal-only, loading-states.md)", () => {
     renderPane({ ...EMPTY_STREAM, timeline: [turnWithIssues(true, [issue])] });
-    expect(screen.queryByText("qlik-mreimitz")).not.toBeInTheDocument();
+    expect(screen.queryByText("acme-demo")).not.toBeInTheDocument();
     expect(screen.queryByText(/unreachable this turn/i)).not.toBeInTheDocument();
   });
 
@@ -347,7 +347,7 @@ describe("inline unreachable-server notice (WP1.3 data → WP6.1 render)", () =>
       timeline: [turnWithIssues(false, [issue, { serverId: "srv-2", serverName: "postgres-prod" }])],
     });
     expect(screen.getByText(/2 mcp servers were unreachable this turn/i)).toBeInTheDocument();
-    expect(screen.getByText("qlik-mreimitz")).toBeInTheDocument();
+    expect(screen.getByText("acme-demo")).toBeInTheDocument();
     expect(screen.getByText("postgres-prod")).toBeInTheDocument();
   });
 
@@ -440,23 +440,8 @@ describe("elicitation (R-MCP4)", () => {
   });
 });
 
-// ── Interactive question card + Qlik-Answers disambiguation → clickable choices ─────────────────────
+// ── Interactive question card ──────────────────────────────────────────────────────────────────────
 
-function assistantTextTurn(text: string): HubTimelineAssistantTurn {
-  return {
-    kind: "assistant_turn",
-    id: "turn-txt",
-    parts: [{ type: "text", text }],
-    toolCalls: [],
-    citations: [],
-    streaming: false,
-  };
-}
-
-const QLIK_DISAMBIGUATION = `Your question could be answered by more than one app or assistant. Reply with the number — or the name — to choose:
-
-1. Sales Analytics (assistant) — HSBC: Indexed Qlik assistant.
-2. MCP Sales (assistant) — MCP Demo: Indexed Qlik assistant.`;
 
 describe("interactive ask_user question card", () => {
   test("renders the open question when askUser:true; hidden when askUser:false", () => {
@@ -485,35 +470,6 @@ describe("interactive ask_user question card", () => {
   });
 });
 
-describe("Qlik-Answers disambiguation → clickable choices", () => {
-  test("renders choice buttons from the trailing assistant text; clicking submits the picked name", () => {
-    const onStarterSelect = vi.fn();
-    render(
-      <ConversationPane
-        stream={{ ...EMPTY_STREAM, timeline: [assistantTextTurn(QLIK_DISAMBIGUATION)] }}
-        session={session()}
-        onStarterSelect={onStarterSelect}
-      />,
-    );
-    // The choice NAMES render as buttons (context shown separately as muted detail).
-    const button = screen.getByRole("button", { name: /MCP Sales \(assistant\)/ });
-    expect(button).toBeInTheDocument();
-    fireEvent.click(button);
-    expect(onStarterSelect).toHaveBeenCalledWith("MCP Sales (assistant)");
-  });
-
-  test("does NOT render choices while the turn is still streaming", () => {
-    render(
-      <ConversationPane
-        stream={{ ...EMPTY_STREAM, turnRunning: true, timeline: [assistantTextTurn(QLIK_DISAMBIGUATION)] }}
-        session={session()}
-        onStarterSelect={vi.fn()}
-      />,
-    );
-    expect(screen.queryByText("Choose one to continue")).not.toBeInTheDocument();
-  });
-});
-
 // ── MCP reachability: quiet auto mode + actionable "Authenticate" affordance ────────────────────────
 
 function turnWithMcpIssues(
@@ -534,7 +490,7 @@ describe("MCP reachability notices", () => {
   const transportIssue = { serverId: "s1", serverName: "srv-1", message: "fetch failed" };
   const authIssue = {
     serverId: "s2",
-    serverName: "qlik-stage",
+    serverName: "acme-stage",
     message: "Unauthorized",
     authRequired: true,
   };
@@ -578,8 +534,8 @@ describe("MCP reachability notices", () => {
     expect(screen.getByText(/needs authentication/i)).toBeInTheDocument();
     // No plain "unreachable" warning for the auth failure — it's actionable instead.
     expect(screen.queryByText(/unreachable this turn/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Authenticate qlik-stage/i }));
-    expect(onAuth).toHaveBeenCalledWith("s2", "qlik-stage");
+    fireEvent.click(screen.getByRole("button", { name: /Authenticate acme-stage/i }));
+    expect(onAuth).toHaveBeenCalledWith("s2", "acme-stage");
   });
 
   test("mixed (auto): auth failure shows an Authenticate card; the transport failure stays silent", () => {
@@ -591,7 +547,7 @@ describe("MCP reachability notices", () => {
         onStarterSelect={vi.fn()}
       />,
     );
-    expect(screen.getByRole("button", { name: /Authenticate qlik-stage/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Authenticate acme-stage/i })).toBeInTheDocument();
     expect(screen.queryByText("srv-1")).not.toBeInTheDocument();
   });
 });

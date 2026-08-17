@@ -34,7 +34,7 @@ No WP is ticked without it. Co-locate tests as `name.test.ts` next to sources; A
    recompute endpoint, never a source of truth.
 2. **Honest aggregation (D-OB14).** Token/cost measures are grouped by capability
    (`tokens: exact|estimated|none`, `costBasis`) and rendered as separate, marked series —
-   never summed into one blended line. Question-based cost (`qlik_answers`) is its own unit.
+   never summed into one blended line. Question-based cost (`vendor_assistant`) is its own unit.
    A slice with no data is omitted or marked "no data", never zero-filled. `meanScore` uses
    `PRIMARY_GRADER_PRIORITY` selection exactly as suite analytics do.
 3. **Feedback separation (D-OB15, AR6 intact).** Human `run_feedback` scores NEVER blend into

@@ -17,7 +17,7 @@
 ## Testing discipline
 
 - No live providers or live MCP servers in the gate. Engine behavior is proven with stubs/fakes (existing patterns: `session-service.hub-mcp-grants.test.ts`, `e2e/fixtures/hub-stub-llm-server.ts`).
-- Anything only provable live (real Qlik call, real web search, both-theme visual walk) is recorded as **owner-acceptance** in the WP and in `STATUS.md`, never faked, never ticked as tested.
+- Anything only provable live (real the vendor call, real web search, both-theme visual walk) is recorded as **owner-acceptance** in the WP and in `STATUS.md`, never faked, never ticked as tested.
 - e2e (`pnpm exec playwright test`) is owned by WPs that change engine flows (2.1, 3.2, 6.1); keep the stub LLM server deterministic.
 
 ## Behavior-freeze guarantees (do not regress)

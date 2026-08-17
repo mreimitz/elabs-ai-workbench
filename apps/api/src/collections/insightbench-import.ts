@@ -61,7 +61,6 @@ export function isUnanswerableInsight(insight: string | undefined | null): boole
 // external, so the importer validates/normalizes rather than trusting a strict schema.
 type RawQuestion = {
   question?: unknown;
-  qlik_question?: unknown;
   question_type?: unknown;
   gt_insight?: unknown;
   gt_insight_value?: unknown;
@@ -226,7 +225,7 @@ function mapQuestion(
   question: RawQuestion,
   usedNames: Map<string, number>,
 ): TestInput | null {
-  const promptText = str(question.qlik_question) || str(question.question);
+  const promptText = str(question.question);
   const userPrompt = promptText.trim();
   if (!userPrompt) return null;
 

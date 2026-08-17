@@ -7,7 +7,7 @@
 // with zero new UI branches. This module is the hub adapter's thin declaration layer on top of that
 // shared source of truth:
 //   • it constrains the manifest to the hub's ACTUAL model surface (D-AH4: the five AI-SDK kinds +
-//     `claude_subscription` — NOT `qlik_answers`, whose clean-session/no-tools shape is a hub non-goal
+//     `claude_subscription` — NOT `acme_answers`, whose clean-session/no-tools shape is a hub non-goal
 //     in v1), refusing any other kind up front rather than silently mis-declaring; and
 //   • it coerces `askUser` to false: the shared engine manifest advertises the Testing feature's
 //     agent-initiated `ask_user` tool, which the hub does NOT expose in v1 (its interaction model is
@@ -68,7 +68,7 @@ export function isHubAiSdkKind(kind: ProviderKind): kind is HubAiSdkModelKind {
 }
 
 /**
- * Assert `kind` is a hub model kind, throwing a clean 400 otherwise (the one place `qlik_answers` — a
+ * Assert `kind` is a hub model kind, throwing a clean 400 otherwise (the one place `acme_answers` — a
  * hub non-goal in v1, D-AH4 — is rejected). A `TypeScript` `asserts` guard so callers narrow to
  * {@link HubModelKind} after it returns.
  */
@@ -88,7 +88,7 @@ export function assertHubModelKind(kind: ProviderKind): asserts kind is HubModel
 /**
  * The hub capability manifest for a model kind (D-US4). Reuses the shared Unified-Sessions manifest
  * ({@link capabilitiesForProviderKind}) and applies the hub adaptations documented in the module header:
- * it refuses a non-hub kind (`qlik_answers`) and sets `askUser` from `exposeAskUser`. The hub reuses the
+ * it refuses a non-hub kind (`acme_answers`) and sets `askUser` from `exposeAskUser`. The hub reuses the
  * Testing `ask_user` primitive, exposed ONLY on interactive foreground sessions (chat/research) — the
  * session-service passes `exposeAskUser: session.kind !== "agent"`, so a mission agent CHILD turn (and a
  * synthesis turn) keeps the default `false` (no operator present to answer). Persisted on

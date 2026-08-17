@@ -667,7 +667,7 @@ test.skip("skill design → code-mode decorations + construct hover (both themes
     "",
     "## /report daily",
     "",
-    "Call the `qlik_create_data_object` tool to persist the report.",
+    "Call the `acme_create_data_object` tool to persist the report.",
     "",
   ].join("\n");
   const saved = await request.post(`/api/skills/${skill.id}/save-draft`, {

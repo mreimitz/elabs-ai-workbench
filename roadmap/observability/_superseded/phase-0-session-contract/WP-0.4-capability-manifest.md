@@ -14,14 +14,14 @@ the credential. Fix the estimated-tokens redaction bug along the way.
   C3 values — engine kinds: `{liveText:true, liveReasoning:"raw", toolCalls:true,
   contextWindow:true, tokens:"exact", costBasis:"api_exact", followUps:true, askUser:true}`;
   `claude_subscription`: `{liveReasoning:"none", contextWindow:false,
-  costBasis:"subscription_reference", tokens:"exact", …}`; `qlik_answers`:
+  costBasis:"subscription_reference", tokens:"exact", …}`; `vendor_assistant`:
   `{toolCalls:false, tokens:"estimated", costBasis:"questions", liveReasoning:"structured",
   identity: {...}}`). Structure allows later per-model overrides without wire change.
 - Run-service stamps the manifest at run start: emits the `capabilities` RunEvent (0.1) and
   persists it to a JSON column on `runs` (MIGRATION — claim next free version). Replay serves
   it from the row.
 - Estimated-tokens fix: the persistence redaction heuristic that strips `estimatedTokens`
-  (qlik-answers STATUS §599-603 finding) is corrected so the flag survives — the manifest plus
+  (vendor-assistant STATUS §599-603 finding) is corrected so the flag survives — the manifest plus
   this flag replace the web's credential-based kind re-derivation (`use-run-stream.ts`).
 - Backfill for existing rows: derive manifest from the run's provider kind at read time when the
   column is null (no data rewrite).

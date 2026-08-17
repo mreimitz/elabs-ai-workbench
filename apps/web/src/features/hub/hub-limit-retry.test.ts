@@ -153,7 +153,7 @@ describe("FROZEN — no stop-reason was repurposed to carry a billing/credential
   // make the retry banner appear would corrupt every observability and auto-rating bucket built on
   // `STOP_REASON_CODES` (`apps/api/src/testing/session-terminal.ts`). This WP therefore changed the
   // retry's PAYLOAD (a roster row instead of a bare model id), not the classification vocabulary.
-  test("STOP_REASON_CODES is byte-identical to its pre-WP-4.3 contents", () => {
+  test("STOP_REASON_CODES gained no member for a billing/credential failure", () => {
     expect([...STOP_REASON_CODES]).toEqual([
       "user_stop",
       "session_ended",
@@ -165,7 +165,6 @@ describe("FROZEN — no stop-reason was repurposed to carry a billing/credential
       "max_context_tokens",
       "max_cost",
       "context_overflow",
-      "prompt_rejected",
       "provider_error",
       "auth",
       "rate_limit",

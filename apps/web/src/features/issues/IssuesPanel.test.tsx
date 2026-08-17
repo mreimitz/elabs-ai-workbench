@@ -202,8 +202,8 @@ describe("IssuesPanel", () => {
   });
 
   test("buildIssueFixPrompt carries the skill name, title, summary and draft fix", () => {
-    const prompt = buildIssueFixPrompt("qlik-analyst", makeIssue());
-    expect(prompt).toContain("qlik-analyst");
+    const prompt = buildIssueFixPrompt("acme-analyst", makeIssue());
+    expect(prompt).toContain("acme-analyst");
     expect(prompt).toContain("search_docs rejects its own documented limit param");
     expect(prompt).toContain("refused the `limit` argument");
     expect(prompt).toContain("accept the documented `limit` param");

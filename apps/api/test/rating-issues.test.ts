@@ -620,7 +620,6 @@ function makeRunService(
     sessionOpener,
     skills,
     grades,
-    undefined,
     issues,
   );
   return { scenarioRepo, testService, runRepo, runService };
@@ -726,10 +725,10 @@ function seedIssue(repo: RatingIssueRepository, over: Partial<Parameters<RatingI
     targetName: "My Skill",
     skillVersionId: "skv-3",
     title: "SKILL.md omits the required fields param",
-    summary: "The skill never tells the model to pass fields=… to qlik_get_app.",
+    summary: "The skill never tells the model to pass fields=… to acme_get_app.",
     bucket: "skill",
     fixTarget: "skill",
-    draftFix: "add to SKILL.md: always pass fields=… to qlik_get_app",
+    draftFix: "add to SKILL.md: always pass fields=… to acme_get_app",
     severity: "high",
     ratingVersion: 1,
     occurrence: {
@@ -875,10 +874,10 @@ test("migration v26 — fresh DB stamps LATEST (55) and carries rating_issues + 
   applyMigrations(db);
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    55,
-    "LATEST_SCHEMA_VERSION auto-derived to 55 (v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index; v34 = run_views; v35 = runs.pinned; v36 = run_feedback; v37 = run_steps hierarchy; v38 = watch_rules; v39 = watch_rules.last_evaluated_at; v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1)",
+    56,
+    "LATEST_SCHEMA_VERSION auto-derived to 56 (v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index; v34 = run_views; v35 = runs.pinned; v36 = run_feedback; v37 = run_steps hierarchy; v38 = watch_rules; v39 = watch_rules.last_evaluated_at; v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 55, "fresh DB stamped at 55");
+  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
   assert.ok(tableExists(db, "rating_issues"));
   assert.ok(tableExists(db, "rating_issue_occurrences"));
   // v30 — the concrete-evidence columns exist on a fresh DB (schema.ts baseline).
@@ -896,7 +895,7 @@ test("migration v26 — a pre-v26 DB (stamped 25, no tables) is brought forward 
   db.pragma("user_version = 25"); // a MINIMAL fixture: nothing but the version stamp (the v19/v24 guard pattern)
   assert.ok(!tableExists(db, "rating_issues"));
   applyMigrations(db);
-  assert.equal(db.pragma("user_version", { simple: true }), 55, "stamped forward to LATEST (55)");
+  assert.equal(db.pragma("user_version", { simple: true }), 56, "stamped forward to LATEST (55)");
   assert.ok(tableExists(db, "rating_issues"), "v26 created rating_issues");
   assert.ok(tableExists(db, "rating_issue_occurrences"), "v26 created rating_issue_occurrences");
 });
@@ -918,7 +917,7 @@ test("migration v30 — a pre-v30 occurrences table (no evidence columns) gains 
 
   applyMigrations(db as unknown as AppDatabase);
 
-  assert.equal(db.pragma("user_version", { simple: true }), 55, "stamped forward to LATEST (55)");
+  assert.equal(db.pragma("user_version", { simple: true }), 56, "stamped forward to LATEST (55)");
   const cols = (db.pragma("table_info(rating_issue_occurrences)") as { name: string }[]).map(
     (c) => c.name,
   );

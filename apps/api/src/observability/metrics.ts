@@ -233,12 +233,9 @@ function capabilityClassForRun(
     try {
       const parsed = JSON.parse(capabilitiesJson) as Partial<CapabilityClass>;
       if (
-        (parsed.tokens === "exact" ||
-          parsed.tokens === "estimated" ||
-          parsed.tokens === "none") &&
+        (parsed.tokens === "exact" || parsed.tokens === "none") &&
         (parsed.costBasis === "api_exact" ||
           parsed.costBasis === "subscription_reference" ||
-          parsed.costBasis === "questions" ||
           parsed.costBasis === "none")
       ) {
         return { tokens: parsed.tokens, costBasis: parsed.costBasis };
@@ -291,8 +288,6 @@ type BucketAcc = {
   scoreN: number;
   tokens: Map<SessionTokenAccounting, { inSum: number; outSum: number; n: number }>;
   cost: Map<SessionCostBasis, { sum: number; n: number }>;
-  questionsSum: number;
-  questionsN: number;
 };
 
 function newBucketAcc(): BucketAcc {
@@ -306,8 +301,6 @@ function newBucketAcc(): BucketAcc {
     scoreN: 0,
     tokens: new Map(),
     cost: new Map(),
-    questionsSum: 0,
-    questionsN: 0,
   };
 }
 
@@ -495,10 +488,6 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
       ct.sum += row.cost_usd;
       ct.n += 1;
       acc.cost.set(cap.costBasis, ct);
-      if (cap.costBasis === "questions") {
-        acc.questionsSum += row.turns;
-        acc.questionsN += 1;
-      }
     }
   }
 
@@ -615,8 +604,6 @@ function splitPoints(measure: RunMetricsMeasure, acc: BucketAcc): [string, numbe
     for (const [cls, t] of acc.tokens) out.push([cls, t.outSum, t.n]);
   } else if (measure === "costUsd") {
     for (const [cls, c] of acc.cost) out.push([cls, c.sum, c.n]);
-  } else if (measure === "questions") {
-    if (acc.questionsN > 0) out.push(["questions", acc.questionsSum, acc.questionsN]);
   }
   return out;
 }

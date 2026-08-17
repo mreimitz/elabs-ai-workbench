@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import type {
   CompatibilityTestReport,
   PromptScan,
-  QlikTenantProbe,
   ResourceScan,
   ScanDetail,
   ScanSummary,
@@ -73,7 +72,7 @@ import { loadableData, useLoadable } from "../../lib/loadable";
 import { getErrorMessage } from "../../lib/errors";
 import { formatDateTime, formatNumber, formatPercent } from "../../lib/format";
 import { promptColumns, resourceColumns } from "../scans/resourcePromptColumns";
-import { apiDelete, getServerTests, getToolFindings, probeServerAnswers } from "../../lib/api";
+import { apiDelete, getServerTests, getToolFindings } from "../../lib/api";
 import { PromptGetDialog, ResourceReadDialog } from "../scans/ResourcePromptRun";
 import { ToolDetailPanel } from "../scans/ToolDetailPanel";
 import {
@@ -85,7 +84,6 @@ import {
 import { ServerFindings, ServerTestsTab } from "../compatibility/CompatibilityTests";
 import { IssuesPanel } from "../issues/IssuesPanel";
 import { useRatingIssues } from "../issues/use-rating-issues";
-import { QlikAnswersOfferDialog } from "./QlikAnswersOfferDialog";
 import { ServerTypeStatusBadge } from "./ServerTypeStatusBadge";
 import { notifyError } from "../../lib/notify";
 
@@ -122,33 +120,6 @@ export function ServersView(props: {
   useEffect(() => {
     setDeletedScanIds(new Set());
   }, [props.selectedServer?.id]);
-
-  // Qlik Answers onboarding (WP 2.2) — the free, list-only availability check for the SELECTED
-  // server, re-run whenever the selection changes or a new scan lands ("recheck at scan time"). It
-  // degrades to `null` on any non-Qlik server or probe failure, so the badge/CTA simply don't render
-  // — never a fake/stale "Answers available". The CTA reopens the SAME setup flow the wizard's
-  // post-save offer uses, for a server registered before this feature existed.
-  const [answersProbe, setAnswersProbe] = useState<QlikTenantProbe | null>(null);
-  const [answersOfferOpen, setAnswersOfferOpen] = useState(false);
-  useEffect(() => {
-    if (!server || server.transport !== "streamable_http") {
-      setAnswersProbe(null);
-      return;
-    }
-    let active = true;
-    probeServerAnswers(server.id)
-      .then((result) => {
-        if (active) setAnswersProbe(result);
-      })
-      .catch(() => {
-        if (active) setAnswersProbe(null);
-      });
-    return () => {
-      active = false;
-    };
-    // Keyed on identity/transport, not the whole `server` object, so an unrelated `servers` list
-    // refresh (a new array/object reference, same content) doesn't re-trigger a redundant probe.
-  }, [server?.id, server?.transport, latestScan?.id]);
 
   // Resource read / prompt get consoles — targeted row + open flag.
   const [readResource, setReadResource] = useState<ResourceScan | null>(null);
@@ -517,24 +488,6 @@ export function ServersView(props: {
                   </span>
                 </>
               ) : null}
-              {/* Qlik Answers onboarding (WP 2.2) — shown only once the free availability probe
-                  confirms the tenant has assistants; re-probed on selection change + every new scan. */}
-              {answersProbe?.answersAvailable ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex shrink-0">
-                      <Badge variant="success" className="gap-1">
-                        <Sparkles aria-hidden className="size-3" />
-                        Answers available
-                      </Badge>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {answersProbe.assistantCount} Qlik Answers assistant
-                    {answersProbe.assistantCount === 1 ? "" : "s"} on this tenant.
-                  </TooltipContent>
-                </Tooltip>
-              ) : null}
               <Text variant="meta" tone="muted" className="min-w-0 truncate font-mono">
                 {endpoint || "No endpoint configured."}
               </Text>
@@ -567,19 +520,6 @@ export function ServersView(props: {
                 >
                   <Wifi aria-hidden />
                 </IconButton>
-                {/* Qlik Answers onboarding (WP 2.2) — the CTA for a server registered BEFORE this
-                    feature (the wizard's own post-save offer covers brand-new servers). Consent-gated:
-                    this only opens the setup dialog, it creates nothing by itself. */}
-                {answersProbe?.answersAvailable ? (
-                  <IconButton
-                    variant="outline"
-                    size="icon"
-                    label="Set up Qlik Answers"
-                    onClick={() => setAnswersOfferOpen(true)}
-                  >
-                    <Wand2 aria-hidden />
-                  </IconButton>
-                ) : null}
                 <IconButton
                   variant="outline"
                   size="icon"
@@ -981,18 +921,6 @@ export function ServersView(props: {
         busy={deletingScan}
         onConfirm={() => void performScanDelete()}
       />
-
-      {/* Qlik Answers onboarding (WP 2.2) — the CTA's setup flow, for a server that already has
-          answers available (the badge/CTA guard above already imply a non-null probe here). */}
-      {answersProbe?.answersAvailable ? (
-        <QlikAnswersOfferDialog
-          open={answersOfferOpen}
-          onOpenChange={setAnswersOfferOpen}
-          serverId={server.id}
-          serverName={server.name}
-          probe={answersProbe}
-        />
-      ) : null}
     </PageShell>
   );
 }

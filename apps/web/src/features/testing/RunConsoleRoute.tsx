@@ -8,7 +8,6 @@ import type {
   RunStatus,
   RunStep,
   Scenario,
-  SessionAssistantIdentity,
   SessionCapabilities,
   Test,
 } from "@mcp-token-footprint/shared";
@@ -55,40 +54,8 @@ const SUBSCRIPTION_CAPABILITIES: SessionCapabilities = {
   askUser: false,
 };
 
-const QLIK_ANSWERS_CAPABILITIES: SessionCapabilities = {
-  liveText: true,
-  liveReasoning: "structured",
-  toolCalls: false,
-  contextWindow: false,
-  tokens: "estimated",
-  costBasis: "questions",
-  followUps: true,
-  askUser: false,
-};
-
-/**
- * The scenario-derived identity a `qlik_answers` fallback carries even before any run has started
- * (mirrors what the console already showed pre-WP3.2: the environment's configured assistant + the
- * transport override). A REAL run's persisted `capabilities.identity` supersedes this once it exists
- * (the executor fills in `name`/`description`/`version`/`appId` as it resolves them) — this is only
- * the best-effort placeholder for "no run yet" / "pre-contract run".
- */
-function fallbackIdentity(scenario: Scenario): SessionAssistantIdentity {
-  return {
-    kind: "qlik_assistant",
-    assistantId: scenario.model,
-    ...(scenario.answersMode?.transport ? { transport: scenario.answersMode.transport } : {}),
-  };
-}
-
 /** The credential-derived capability manifest for a scenario, when no persisted one is available. */
-function fallbackCapabilities(
-  kind: ProviderKind | undefined,
-  scenario: Scenario,
-): SessionCapabilities {
-  if (kind === "qlik_answers") {
-    return { ...QLIK_ANSWERS_CAPABILITIES, identity: fallbackIdentity(scenario) };
-  }
+function fallbackCapabilities(kind: ProviderKind | undefined): SessionCapabilities {
   if (kind === "claude_subscription") return SUBSCRIPTION_CAPABILITIES;
   // Unknown (providers not loaded yet) or one of the five chat-completions kinds.
   return ENGINE_CAPABILITIES;
@@ -203,7 +170,7 @@ export function RunConsoleRoute() {
       (providers ?? []).find((p) => p.id === scenario.providerId)?.label ?? scenario.providerId,
     [providers],
   );
-  // Qlik Answers (WP 3.2) — the KPI rail marks token figures "est." (and suppresses the meaningless
+  // Acme Answers (WP 3.2) — the KPI rail marks token figures "est." (and suppresses the meaningless
   // context metric) by provider KIND, resolved here from the same credential lookup as the label
   // above — never from the run's stripped `estimatedTokens` step-payload flag (see the WP 1.2 gap
   // note: that key doesn't survive persistence).
@@ -261,7 +228,7 @@ export function RunConsoleRoute() {
         target: { kind: "prerun", test, scenario },
         providerLabel: providerLabelFor(scenario),
         // No run row exists yet — always the credential-derived fallback (D-US4).
-        capabilities: fallbackCapabilities(providerKindFor(scenario), scenario),
+        capabilities: fallbackCapabilities(providerKindFor(scenario)),
       };
     }
 
@@ -275,7 +242,7 @@ export function RunConsoleRoute() {
       target: { kind: "run", runId: runId!, test, scenario, mode: run.mode, replay: terminal },
       providerLabel: providerLabelFor(scenario),
       // The persisted manifest wins; a pre-contract run (no `capabilities_json`) falls back (D-US4).
-      capabilities: run.capabilities ?? fallbackCapabilities(providerKindFor(scenario), scenario),
+      capabilities: run.capabilities ?? fallbackCapabilities(providerKindFor(scenario)),
     };
   }, [
     tests,

@@ -249,7 +249,7 @@ otherwise.
 WP 2.2's surface sweep concluded "exactly 4 write bindings, all guarded". That is true for the four
 bindings it enumerated, but crew-member pins are a **fifth** write of a credential id, unguarded —
 and the dock's `hub_agent_create`/`hub_crew_create` tools call the repository directly, bypassing the
-route guards entirely. A `qlik_answers` or `authBroken` pin is accepted there; only the unknown-id
+route guards entirely. A `vendor_assistant` or `authBroken` pin is accepted there; only the unknown-id
 case is caught, and only as a raw `SQLITE_CONSTRAINT` → **500**, not the D-MI9 409. (Inert today
 because of F2 — but F2 is the bug, not the mitigation.)
 

@@ -144,8 +144,8 @@ describe("AddServerModal — attach by server type (WP 4.2)", () => {
   test("attaching a type stores the D-ST3 representative's CONCRETE id (newest success scan)", () => {
     // Two members: EU scanned more recently than US → EU is the representative.
     const servers = [
-      server({ id: "srv-eu", name: "Qlik EU", typeId: "type-qs" }),
-      server({ id: "srv-us", name: "Qlik US", typeId: "type-qs" }),
+      server({ id: "srv-eu", name: "Acme EU", typeId: "type-qs" }),
+      server({ id: "srv-us", name: "Acme US", typeId: "type-qs" }),
     ];
     const latestScans = new Map<string, ScanDetail>([
       ["srv-eu", scan({ serverId: "srv-eu", scannedAt: "2026-02-01T00:00:00Z" })],
@@ -153,14 +153,14 @@ describe("AddServerModal — attach by server type (WP 4.2)", () => {
     ]);
     const { onAdd } = renderModal({
       servers,
-      serverTypes: [type({ id: "type-qs", name: "Qlik-SaaS", status: "production", memberCount: 2 })],
+      serverTypes: [type({ id: "type-qs", name: "Acme-SaaS", status: "production", memberCount: 2 })],
       latestScans,
     });
 
     selectTypeSource();
     // The type row resolves transparently to the newer member.
-    const typeRow = screen.getByRole("button", { name: /Qlik-SaaS/i });
-    expect(within(typeRow).getByText(/Resolves to Qlik EU/i)).toBeInTheDocument();
+    const typeRow = screen.getByRole("button", { name: /Acme-SaaS/i });
+    expect(within(typeRow).getByText(/Resolves to Acme EU/i)).toBeInTheDocument();
     fireEvent.click(typeRow);
 
     // Step 1 shows the resolved "type → member", then confirm.
@@ -183,12 +183,12 @@ describe("AddServerModal — attach by server type (WP 4.2)", () => {
     ]);
     const { onAdd } = renderModal({
       servers,
-      serverTypes: [type({ id: "type-qs", name: "Qlik-SaaS", status: "production", memberCount: 2 })],
+      serverTypes: [type({ id: "type-qs", name: "Acme-SaaS", status: "production", memberCount: 2 })],
       latestScans,
     });
 
     selectTypeSource();
-    const typeRow = screen.getByRole("button", { name: /Qlik-SaaS/i });
+    const typeRow = screen.getByRole("button", { name: /Acme-SaaS/i });
     expect(within(typeRow).getByText(/Resolves to Member A/i)).toBeInTheDocument();
     fireEvent.click(typeRow);
     fireEvent.click(screen.getByRole("button", { name: "Add server" }));
@@ -217,19 +217,19 @@ describe("AddServerModal — attach by server type (WP 4.2)", () => {
   });
 
   test("a type whose representative is already on the allow-list is disabled", () => {
-    const servers = [server({ id: "srv-eu", name: "Qlik EU", typeId: "type-qs" })];
+    const servers = [server({ id: "srv-eu", name: "Acme EU", typeId: "type-qs" })];
     const latestScans = new Map<string, ScanDetail>([
       ["srv-eu", scan({ serverId: "srv-eu", scannedAt: "2026-02-01T00:00:00Z" })],
     ]);
     const { onAdd } = renderModal({
       servers,
-      serverTypes: [type({ id: "type-qs", name: "Qlik-SaaS", status: "production", memberCount: 1 })],
+      serverTypes: [type({ id: "type-qs", name: "Acme-SaaS", status: "production", memberCount: 1 })],
       latestScans,
       existing: [{ serverId: "srv-eu", allowedTools: null }], // the representative is already added
     });
 
     selectTypeSource();
-    const typeRow = screen.getByRole("button", { name: /Qlik-SaaS/i });
+    const typeRow = screen.getByRole("button", { name: /Acme-SaaS/i });
     expect(typeRow).toBeDisabled();
     expect(within(typeRow).getByText(/Representative already added/i)).toBeInTheDocument();
     expect(onAdd).not.toHaveBeenCalled();

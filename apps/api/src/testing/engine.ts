@@ -148,7 +148,7 @@ export type EngineConfig = {
  * cap), and idle/stall detection is now owned by {@link SessionClock}'s stall + wait-budget timers
  * (10 min / 10 min defaults), not a bespoke idle timer (the old `DEFAULT_IDLE_TIMEOUT_MS`/
  * `EngineConfig.idleTimeoutMs` are removed). This constant is KEPT (unchanged name/value) because the
- * sibling `qlik-answers-executor.ts` / `claude-subscription-executor.ts` still import it as THEIR OWN
+ * sibling `claude-subscription-executor.ts` still imports it as ITS OWN
  * fallback default until their own adoption WPs (1.4/1.5) land — do not repurpose or remove it.
  */
 export const DEFAULT_MAX_RUN_DURATION_MS = 30 * 60_000; // 30 min

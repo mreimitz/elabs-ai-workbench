@@ -73,7 +73,7 @@ is runnable here.
 **Files:** `apps/api/src/collections/insightbench-import.ts` —
 `POST /api/collections/import/insightbench` (multipart or path: `questions.json` and/or answered
 result files): app entry → tags `[app-name]` + `category` + difficulty mapping (1–2 easy /
-3 medium / 4 hard — the prototype's `DIFF_LEVEL_MAP`), question → test (`qlik_question` →
+3 medium / 4 hard — the prototype's `DIFF_LEVEL_MAP`), question → test (`acme_question` →
 userPrompt, name from question text, `gt_insight`/`gt_insight_value` → expectations,
 `gt_code` → `referenceLogic{kind:'code',language:'python'}`); unanswerable-insight regex port
 (`convert_to_benchmarks.py` patterns) → `answerable:false`; one suite per import (ordered by

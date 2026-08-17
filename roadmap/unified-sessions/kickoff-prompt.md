@@ -33,7 +33,7 @@ implement work packages yourself.
   Haiku-class bookkeeping agent. Never rewrite history.
 - Hard invariants for every subagent prompt: additive-only changes to `packages/shared` and the
   DB schema; grading byte-identity (`assistantText`) untouched; Assistant dock and compatibility
-  runner untouched (D-US10); no real Qlik tenant is ever contacted from tests (stub fetch only);
+  runner untouched (D-US10); no real the vendor tenant is ever contacted from tests (stub fetch only);
   UI uses `@brand/*` components only per `.claude/rules/`.
 
 **Start now:** determine the current wave from STATUS.md (fresh start = Wave 1 + the Wave-4 facade

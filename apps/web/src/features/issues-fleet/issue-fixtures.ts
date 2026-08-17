@@ -29,7 +29,7 @@ export const OPEN_FLEET_ISSUE: FleetIssue = {
   id: "issue-open-1",
   targetKind: "mcp_server",
   targetId: "srv-1",
-  targetName: "Qlik-SaaS",
+  targetName: "Acme-SaaS",
   title: "Tool `run_query` rejects a valid date filter",
   summary: "The tool consistently rejects ISO date filters with a schema-validation error.",
   bucket: "mcp_server",
@@ -156,7 +156,7 @@ export const ALL_FLEET_FIXTURES: FleetIssue[] = [
 export const FIXTURE_SERVERS: ServerConfig[] = [
   {
     id: "srv-1",
-    name: "Qlik-SaaS",
+    name: "Acme-SaaS",
     transport: "streamable_http",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -166,7 +166,7 @@ export const FIXTURE_SERVERS: ServerConfig[] = [
   },
   {
     id: "srv-2",
-    name: "Qlik-Stage",
+    name: "Acme-Stage",
     transport: "streamable_http",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",

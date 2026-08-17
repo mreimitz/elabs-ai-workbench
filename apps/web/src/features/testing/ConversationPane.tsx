@@ -6,13 +6,11 @@ import type {
   SessionCapabilities,
   Test,
 } from "@mcp-token-footprint/shared";
-import { parseReasoningSections } from "@mcp-token-footprint/shared";
 import {
   Alert,
   AlertDescription,
   AlertTitle,
   Badge,
-  CollapsibleContent,
   ErrorState,
   Text,
   toast,
@@ -51,9 +49,6 @@ import { ToolCallCard } from "./ToolCallCard";
 import { Composer } from "./Composer";
 import { QuestionPrompt } from "./QuestionPrompt";
 import { ChatMarkdown } from "./ChatMarkdown";
-import { AnswersAnswerView } from "./AnswersAnswerView";
-import { AnswersReasoning } from "./AnswersReasoning";
-import { SourcesPanel } from "./SourcesPanel";
 import { FeedbackControl } from "./FeedbackControl";
 import { useTurnFeedback } from "./use-turn-feedback";
 import {
@@ -112,10 +107,8 @@ export type ConversationPaneProps = {
    * Unified Sessions WP 3.2 (D-US4) — the run's resolved session capability manifest, threaded
    * through from `RunConsole` (the same value it already passes to `KpiRail`). GATING ONLY (this pane
    * is a seam — WP 3.3 owns the composer-area affordances like End-session/waiting chips): drives
-   * — `capabilities.liveReasoning`: `"none"` hides the Reasoning disclosure entirely; `"structured"`
-   *   is the LIVE signal that a turn renders the structured `AnswersReasoning` (client-parsed from the
-   *   live text while streaming, since `turn.answersPayload` only exists post-settle) instead of the
-   *   flat verbatim `ReasoningContent`; `"raw"` keeps the verbatim stream (today's default);
+   * — `capabilities.liveReasoning`: `"none"` hides the Reasoning disclosure entirely; `"raw"` keeps
+   *   the verbatim stream (today's default);
    * — `capabilities.followUps`: gates whether the composer accepts a follow-up send;
    * — `capabilities.askUser`: gates the `QuestionPrompt` (ask-the-operator) card.
    */
@@ -444,7 +437,6 @@ function AssistantTurn({
   onShowInTrace: (ref: ConsoleNavRef) => void;
   serverNames: Record<string, string>;
   multiServer: boolean;
-  /** Qlik Answers (WP 3.1) — "same test × environment" drift key for the {@link SourcesPanel}. */
   testId: string;
   runId: string | null;
   /**
@@ -457,42 +449,13 @@ function AssistantTurn({
   /**
    * Unified Sessions WP 3.2 (D-US4) — `capabilities.liveReasoning`: `"none"` renders no Reasoning
    * disclosure at all (defensive — a backend that declares no reasoning surface never shows one even
-   * if a stray `reasoningText` were present); `"structured"` is the LIVE "render the structured
-   * breakdown" signal (replaces the old `providerKind === "qlik_answers"` check); `"raw"` keeps the
-   * verbatim stream.
+   * if a stray `reasoningText` were present); `"raw"` keeps the verbatim stream.
    */
   liveReasoning: SessionCapabilities["liveReasoning"];
 }) {
   const reasoning = liveReasoning === "none" ? undefined : turn.reasoningText?.trim();
   const prose = turn.assistantText?.trim();
   const reasoningTokens = turn.usageActual?.reasoningTokens;
-  const isStructured = liveReasoning === "structured";
-  // Qlik Answers (WP 5.4, D-QA11) — the SERVER-derived phase breakdown of `reasoning`, present only
-  // once the turn has settled (`answersPayload` is written at emit time). This is canonical.
-  const settledSections = turn.answersPayload?.reasoningSections;
-  // Qlik Answers (WP 6.2, item B) — the LIVE structured render. While a structured-reasoning turn is
-  // still streaming there is no `answersPayload` yet, so we client-parse the growing `reasoningText`
-  // with the SAME pure `parseReasoningSections` the server uses at emit time, memoized on the text (it
-  // grows to ~11 KB over ~140 deltas). The parser is partial/mid-token tolerant — a half-formed tail
-  // flows as a `prose`/`raw` section, never dropped, never a throw. Computed only for a streaming turn
-  // whose backend declares `liveReasoning: "structured"`.
-  const liveSections = useMemo(() => {
-    if (!isStructured || !turn.streaming) return undefined;
-    const source = turn.reasoningText;
-    if (!source || !source.trim()) return undefined;
-    return parseReasoningSections(source, turn.assistantText ?? undefined);
-  }, [isStructured, turn.streaming, turn.reasoningText, turn.assistantText]);
-  // The sections to render structurally: the SETTLED canonical server sections once closed (unchanged
-  // from WP 5.4 — byte-identical), else the LIVE client-parse while a structured-reasoning turn
-  // streams. Anything with no usable sections (raw/none reasoning, empty parse) falls back to the
-  // verbatim `ReasoningContent` below.
-  const reasoningSections =
-    settledSections && settledSections.length > 0 && !turn.streaming
-      ? settledSections
-      : liveSections && liveSections.length > 0
-        ? liveSections
-        : undefined;
-
   const toolRows = turn.toolCalls.map((call) => {
     const toolCallId = toolCallIdOfStep(call.call);
     return (
@@ -546,24 +509,7 @@ function AssistantTurn({
                   : "Thought process"
             }
           />
-          {/* Qlik Answers (WP 5.4 settled · WP 6.2 LIVE, D-QA11) — a `qlik_answers` turn renders the
-              structured phase breakdown (Understanding · Search findings · Classification · Draft)
-              instead of the raw stream: from the canonical SERVER `reasoningSections` once SETTLED
-              (byte-identical to WP 5.4), and from a client-side parse of the growing `reasoningText`
-              while it STREAMS (item B — memoized above, partial-tolerant). Every non-qlik run and any
-              case with no usable sections keeps the verbatim `ReasoningContent`, unchanged.
-              `ReasoningContent`'s `children` are typed as a raw markdown STRING (it renders through
-              Streamdown) — the structured path can't be handed to it, so it renders through the
-              underlying `CollapsibleContent` directly: the SAME disclosure, the SAME `Reasoning`-provided
-              open/close state, just different content. `streaming` keeps a mid-stream draft expanded so
-              the process stays watchable as it builds. */}
-          {reasoningSections ? (
-            <CollapsibleContent className="mt-4 text-body text-muted-foreground">
-              <AnswersReasoning sections={reasoningSections} streaming={turn.streaming} />
-            </CollapsibleContent>
-          ) : (
-            <ReasoningContent>{reasoning}</ReasoningContent>
-          )}
+          <ReasoningContent>{reasoning}</ReasoningContent>
         </Reasoning>
       ) : null}
 
@@ -588,21 +534,7 @@ function AssistantTurn({
       {prose && prose.length > 0 ? (
         <AgentMessage className="group/msg">
           <MessageContent>
-            {/* Qlik Answers (WP 5.3, D-QA8) — a SETTLED `qlik_answers` turn whose payload carries the
-                derived `blocks` renders as the ordered card sequence (text + snapshot insets) instead
-                of the flattened `assistantText`. Every other case — no `blocks` (non-qlik run, legacy
-                that didn't derive, or an extraction miss) OR a still-streaming turn — falls back to
-                today's live `ChatMarkdown(assistantText)`, byte-identical, no half-parsed blocks. */}
-            {turn.answersPayload?.blocks && !turn.streaming ? (
-              <AnswersAnswerView
-                blocks={turn.answersPayload.blocks}
-                snapshots={turn.answersPayload.snapshots ?? []}
-                // WP 7.1 — turn-qualifies each citation chip's rail↔chat anchor.
-                turnIndex={turn.turnIndex}
-              />
-            ) : (
-              <ChatMarkdown text={prose} streaming={turn.streaming} />
-            )}
+            <ChatMarkdown text={prose} streaming={turn.streaming} />
           </MessageContent>
           {/* Copy the COMPLETE message (its raw markdown) — hover/focus-revealed like a real Claude
               session; hidden while streaming so a partial answer can't be copied. Always copies the
@@ -627,13 +559,6 @@ function AssistantTurn({
             </div>
           ) : null}
         </AgentMessage>
-      ) : null}
-
-      {/* Qlik Answers (WP 3.1) — the citation trail + assistant-version drift marker, payload-driven
-          off the settled `llm_response` step (never mid-stream: `answersPayload` only exists once the
-          turn has closed). Renders nothing for every other run kind (no `answersPayload`). */}
-      {turn.answersPayload ? (
-        <SourcesPanel payload={turn.answersPayload} testId={testId} runId={runId} />
       ) : null}
 
       {(!prose || prose.length === 0) &&

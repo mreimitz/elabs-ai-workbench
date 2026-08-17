@@ -943,17 +943,6 @@ test("hasHubProviderCredential / assertHubProviderConfigured reflect hub-eligibl
   );
 
   const now = "2026-07-17T00:00:00.000Z";
-  // `qlik_answers` is NEVER a hub model (D-AH4) — its presence must not satisfy the gate.
-  db.prepare(
-    `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
-     VALUES ('prov-qlik', 'qlik_answers', 'Qlik', 'https://tenant.example', @key, @now, @now)`,
-  ).run({ key: secrets.encryptText("dummy"), now });
-  assert.equal(
-    hasHubProviderCredential(providers),
-    false,
-    "a qlik_answers credential doesn't count",
-  );
-
   db.prepare(
     `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
      VALUES ('prov-anthropic', 'anthropic', 'Claude', NULL, @key, @now, @now)`,
@@ -1048,7 +1037,6 @@ function seedAmbiguousClaudeCredentials(options: { signedIn?: boolean } = {}): {
     providers: new ProviderRepository(
       db,
       secrets,
-      undefined,
       options.signedIn === false ? undefined : SIGNED_IN_SUBSCRIPTION,
     ),
     anthropicId: "prov-anthropic",
@@ -1267,37 +1255,6 @@ test("createHubModelResolver: an UNKNOWN explicit credential 409s and never re-p
   assert.equal(warnings.length, 0, "and an explicit resolution never logs a guess");
 });
 
-test("createHubModelResolver: a NON-hub-eligible explicit credential (qlik_answers, D-AH4) 409s", () => {
-  const db = openDb();
-  const secrets = new SecretStore(crypto.randomBytes(32));
-  const now = "2026-07-27T00:00:00.000Z";
-  db.prepare(
-    `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
-     VALUES ('prov-qlik', 'qlik_answers', 'Tenant assistants', 'https://tenant.example', @key, @now, @now)`,
-  ).run({ key: secrets.encryptText(SEEDED_API_KEY), now });
-  db.prepare(
-    `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
-     VALUES ('prov-anthropic', 'anthropic', 'Anthropic API', NULL, @key, @now, @now)`,
-  ).run({ key: secrets.encryptText(SEEDED_API_KEY), now });
-  const warnings: Array<{ context: Record<string, unknown>; message: string }> = [];
-  const resolveModel = createHubModelResolver(new ProviderRepository(db, secrets), {
-    warn: (context, message) => warnings.push({ context, message }),
-  });
-
-  const message = expectResolverRefusal(() => resolveModel("claude-sonnet-5", "prov-qlik"));
-  assert.match(
-    message,
-    /Tenant assistants/,
-    "the refusal names the credential by its LABEL, not a key",
-  );
-  assert.match(message, /not an Assistant-eligible provider/);
-  assert.equal(
-    warnings.length,
-    0,
-    "the eligible anthropic credential was NOT silently substituted",
-  );
-});
-
 test("createHubModelResolver: an AUTH-BROKEN explicit credential 409s instead of falling back to the metered key", () => {
   // Nobody signed in ⇒ the `claude_subscription` credential is auth-broken (its only auth source is the
   // signed-in Claude OAuth). This is the highest-stakes case: degrading here is EXACTLY the reported
@@ -1354,33 +1311,6 @@ test("POST /api/hub/sessions: an UNKNOWN providerCredentialId is a 409 (not a 50
   assert.match(String(body.error), /prov-does-not-exist/);
   assert.match(String(body.error), /no longer exists/);
   assert.equal(sessionRowCount(h), 0, "a refused create leaves no orphan hub_sessions row");
-});
-
-test("POST /api/hub/sessions: a NON-hub-eligible pin is a 409 and writes no row", async () => {
-  const h = await makeApp({
-    seedCredentials: (db, secrets) => {
-      db.prepare(
-        `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
-         VALUES ('prov-qlik', 'qlik_answers', 'Tenant assistants', 'https://tenant.example', @key, @now, @now)`,
-      ).run({ key: secrets.encryptText(SEEDED_API_KEY), now: nowIso });
-    },
-    resolveModelFrom: (providers) => createHubModelResolver(providers),
-  });
-
-  const res = await postJson(h, "/api/hub/sessions", {
-    mode: "chat",
-    model: "claude-sonnet-5",
-    providerCredentialId: "prov-qlik",
-  });
-  assert.equal(res.status, 409);
-  const body = (await res.json()) as { error?: string };
-  assert.match(String(body.error), /not an Assistant-eligible provider/);
-  assert.ok(!String(body.error).includes(SEEDED_API_KEY), "and it carries no credential material");
-  assert.equal(
-    sessionRowCount(h),
-    0,
-    "the eligible `prov-1` was NOT silently substituted into a created session",
-  );
 });
 
 test("POST /api/hub/sessions: an authBroken pin is a 409 and writes no row", async () => {
@@ -1509,24 +1439,6 @@ test("PATCH /api/hub/sessions/:id: an UNKNOWN re-pin is a 409 (not a 500) and le
   assert.equal(persistedPin(h, sessionId), "prov-1", "the existing pin survives a refused re-pin");
 });
 
-test("PATCH /api/hub/sessions/:id: a NON-eligible re-pin is a 409 (it used to be silently persisted)", async () => {
-  const { h, sessionId } = await makeRepinHarness((db, secrets) => {
-    db.prepare(
-      `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
-       VALUES ('prov-qlik', 'qlik_answers', 'Tenant assistants', 'https://tenant.example', @key, @now, @now)`,
-    ).run({ key: secrets.encryptText(SEEDED_API_KEY), now: nowIso });
-  });
-
-  const res = await patchJson(h, `/api/hub/sessions/${sessionId}`, {
-    providerCredentialId: "prov-qlik",
-  });
-  assert.equal(res.status, 409);
-  const body = (await res.json()) as { error?: string };
-  assert.match(String(body.error), /not an Assistant-eligible provider/);
-  assert.ok(!String(body.error).includes(SEEDED_API_KEY));
-  assert.equal(persistedPin(h, sessionId), "prov-1", "and nothing was written");
-});
-
 test("PATCH /api/hub/sessions/:id: an authBroken re-pin is a 409 (it used to be silently persisted)", async () => {
   const { h, sessionId } = await makeRepinHarness((db) => {
     db.prepare(
@@ -1653,28 +1565,25 @@ function roleBody(over: Record<string, unknown> = {}): Record<string, unknown> {
   };
 }
 
-/** `prov-qlik` (not hub-eligible) + `prov-subscription` (auth-broken: no subscription-auth resolver is
- *  wired into the harness's ProviderRepository), alongside the default valid `prov-1`. */
-function seedRefusableCredentials(db: AppDatabase, secrets: SecretStore): void {
-  db.prepare(
-    `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
-     VALUES ('prov-qlik', 'qlik_answers', 'Tenant assistants', 'https://tenant.example', @key, @now, @now)`,
-  ).run({ key: secrets.encryptText(SEEDED_API_KEY), now: nowIso });
+/** `prov-subscription` (auth-broken: no subscription-auth resolver is wired into the harness's
+ *  ProviderRepository), alongside the default valid `prov-1`. */
+function seedRefusableCredentials(db: AppDatabase, _secrets: SecretStore): void {
   db.prepare(
     `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
      VALUES ('prov-subscription', 'claude_subscription', 'Anthropic CLI', NULL, NULL, @now, @now)`,
   ).run({ now: nowIso });
 }
 
-/** The three refusal reasons and the phrase each must surface — one vocabulary across all three
- *  surfaces (sessions create, sessions patch, roles), because there is one validator. */
+/** The reachable refusal reasons and the phrase each must surface — one vocabulary across all three
+ *  surfaces (sessions create, sessions patch, roles), because there is one validator. (The validator's
+ *  third reason, a non-hub-eligible KIND, has no reachable fixture: every live ProviderKind is
+ *  hub-eligible today — see `hub-capabilities.test.ts`.) */
 const REFUSALS = [
   { pin: "prov-does-not-exist", reason: "unknown", match: /no longer exists/ },
-  { pin: "prov-qlik", reason: "non-eligible", match: /not an Assistant-eligible provider/ },
   { pin: "prov-subscription", reason: "auth-broken", match: /authentication is broken/ },
 ] as const;
 
-test("POST /api/hub/agents: an unusable pin is a 409 for all three reasons, and no role row is created", async () => {
+test("POST /api/hub/agents: an unusable pin is a 409 for every reachable reason, and no role row is created", async () => {
   const h = await makeApp({
     seedCredentials: seedRefusableCredentials,
     resolveModelFrom: (providers) => createHubModelResolver(providers),
@@ -1705,7 +1614,7 @@ test("POST /api/hub/agents: a valid pin creates the role and persists the creden
   assert.equal(persistedRolePin(h, ((await unpinned.json()) as { id: string }).id), null);
 });
 
-test("PATCH /api/hub/agents/:id: an unusable re-pin is a 409 for all three reasons and leaves the pin unchanged", async () => {
+test("PATCH /api/hub/agents/:id: an unusable re-pin is a 409 for every reachable reason and leaves the pin unchanged", async () => {
   const h = await makeApp({
     seedCredentials: seedRefusableCredentials,
     resolveModelFrom: (providers) => createHubModelResolver(providers),
@@ -1774,7 +1683,7 @@ test("PATCH /api/hub/agents/:id: valid re-pin persists, explicit null unpins, an
 });
 
 // model-identity WP6.1 (F5) — CREW-MEMBER pins are a FIFTH write binding WP2.2's "exactly 4, all
-// guarded" sweep missed. `POST/PATCH /api/hub/crews` called the repository bare, so a `qlik_answers` or
+// guarded" sweep missed. `POST/PATCH /api/hub/crews` called the repository bare, so a `acme_answers` or
 // auth-broken member pin was accepted silently and an unknown one was not caught at all (members ride
 // the `hub_crews.members_json` blob, which no foreign key protects). These are NEW tests: a route that
 // never called the validator cannot be surfaced by mutating one.
@@ -1784,7 +1693,7 @@ function crewBody(member: Record<string, unknown>): Record<string, unknown> {
   return { name: "Crew", topology: "parallel", members: [member] };
 }
 
-test("F5: POST /api/hub/crews 409s on an unusable MEMBER pin for all three reasons, and writes no crew", async () => {
+test("F5: POST /api/hub/crews 409s on an unusable MEMBER pin for every reachable reason, and writes no crew", async () => {
   const h = await makeApp({
     seedCredentials: seedRefusableCredentials,
     resolveModelFrom: (providers) => createHubModelResolver(providers),
@@ -1832,10 +1741,10 @@ test("F5: PATCH /api/hub/crews/:id validates a members replacement; a rename val
 
   // A members REPLACEMENT is a fresh write of every pin in it ⇒ validated.
   const bad = await patchJson(h, `/api/hub/crews/${crew.id}`, {
-    members: [{ agentId: role.id, providerCredentialId: "prov-qlik" }],
+    members: [{ agentId: role.id, providerCredentialId: "prov-subscription" }],
   });
   assert.equal(bad.status, 409);
-  assert.match(String(((await bad.json()) as { error?: string }).error), /not an Assistant-eligible/);
+  assert.match(String(((await bad.json()) as { error?: string }).error), /authentication is broken/);
 
   // A rename touches no members ⇒ nothing is validated (the agent PATCH's own convention).
   const renamed = await patchJson(h, `/api/hub/crews/${crew.id}`, { name: "Renamed" });
@@ -1908,17 +1817,6 @@ for (const refusal of [
     pin: "prov-does-not-exist",
     seed: undefined,
     expect: /no longer exists/,
-  },
-  {
-    name: "NON-hub-eligible",
-    pin: "prov-qlik",
-    seed: (db: AppDatabase, secrets: SecretStore) => {
-      db.prepare(
-        `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
-         VALUES ('prov-qlik', 'qlik_answers', 'Tenant assistants', 'https://tenant.example', @key, @now, @now)`,
-      ).run({ key: secrets.encryptText(SEEDED_API_KEY), now: nowIso });
-    },
-    expect: /not an Assistant-eligible provider/,
   },
   {
     name: "authBroken",
@@ -2058,7 +1956,6 @@ test("model-identity WP4.4 minted no STOP_REASON_CODES member (README §3 — th
       "max_context_tokens",
       "max_cost",
       "context_overflow",
-      "prompt_rejected",
       "provider_error",
       "auth",
       "rate_limit",
@@ -2497,10 +2394,10 @@ test("POST /api/hub/servers/:id/reconnect calls the injected evict callback with
     },
   });
 
-  const res = await postJson(h, "/api/hub/servers/srv-qlik/reconnect", {});
+  const res = await postJson(h, "/api/hub/servers/srv-acme/reconnect", {});
   assert.equal(res.status, 202);
   assert.deepEqual(await res.json(), { ok: true });
-  assert.deepEqual(evicted, ["srv-qlik"], "the route forwarded the path serverId to the evict callback");
+  assert.deepEqual(evicted, ["srv-acme"], "the route forwarded the path serverId to the evict callback");
 });
 
 test("POST /api/hub/servers/:id/reconnect awaits an async evict callback before responding", async () => {
@@ -2513,14 +2410,14 @@ test("POST /api/hub/servers/:id/reconnect awaits an async evict callback before 
     },
   });
 
-  const res = await postJson(h, "/api/hub/servers/srv-qlik/reconnect", {});
+  const res = await postJson(h, "/api/hub/servers/srv-acme/reconnect", {});
   assert.equal(res.status, 202);
   assert.equal(resolved, true, "the response only sent after the async evict settled");
 });
 
 test("POST /api/hub/servers/:id/reconnect is NOT mounted (404) when evictHubMcpSession isn't wired", async () => {
   const h = await makeApp({ resolveModel: resolverFor({}) });
-  const res = await postJson(h, "/api/hub/servers/srv-qlik/reconnect", {});
+  const res = await postJson(h, "/api/hub/servers/srv-acme/reconnect", {});
   assert.equal(res.status, 404);
 });
 

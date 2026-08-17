@@ -76,8 +76,8 @@ export type SuiteRunConsoleProps = {
   tests: Test[];
   scenarios: Scenario[];
   /**
-   * Qlik Answers (WP 3.2) — used ONLY to resolve each scenario's provider KIND, so the rail can roll
-   * up a questions-consumed total for `qlik_answers` members (never fetched — a lightweight,
+   * Acme Answers (WP 3.2) — used ONLY to resolve each scenario's provider KIND, so the rail can roll
+   * up a questions-consumed total for `acme_answers` members (never fetched — a lightweight,
    * already-redacted list, same client `listProviders()` `RunConsoleRoute` uses for the single-run
    * console's "est." labels).
    */
@@ -218,31 +218,6 @@ export function SuiteRunConsole({
 
   const testName = useMemo(() => new Map(tests.map((t) => [t.id, t.name])), [tests]);
   const scenarioName = useMemo(() => new Map(scenarios.map((s) => [s.id, s.name])), [scenarios]);
-
-  // Qlik Answers (WP 3.2, D-QA5) — the suite's questions-consumed total, rolled up client-side (no new
-  // wire field): a `qlik_answers` scenario is identified by its provider KIND (never inferred from any
-  // run payload flag), and every AUTOMATED suite member consumes exactly 1 question on the two outcomes
-  // the executor ever stamps `questionsConsumed` for — `"completed"` (answered) and
-  // `"stopped_guardrail"` (the assistant's own AE-4 rejection, which still calls the API) — every other
-  // outcome (`aborted`/`error`) never reached the API call, so it contributes 0. `null` (not `0`) when
-  // the suite has no `qlik_answers` environment at all, so the KPI tile stays hidden rather than
-  // showing a misleading "0 questions" for an all-LLM suite.
-  const qlikAnswersScenarioIds = useMemo(() => {
-    const providerKindById = new Map(providers.map((p) => [p.id, p.kind]));
-    return new Set(
-      scenarios
-        .filter((s) => providerKindById.get(s.providerId) === "qlik_answers")
-        .map((s) => s.id),
-    );
-  }, [scenarios, providers]);
-  const answersQuestions = useMemo(() => {
-    if (qlikAnswersScenarioIds.size === 0) return null;
-    return members.members.filter(
-      (m) =>
-        qlikAnswersScenarioIds.has(m.scenarioId) &&
-        (m.outcome === "completed" || m.outcome === "stopped_guardrail"),
-    ).length;
-  }, [members.members, qlikAnswersScenarioIds]);
 
   // Matrix axes: the suite's ordered membership first, then any id that streamed a cell but isn't in
   // the suite any more (it changed since this run) so a live cell is never dropped.
@@ -402,7 +377,6 @@ export function SuiteRunConsole({
         <SuiteKpiRail
           aggregates={aggregates}
           costCapUsd={suite.config.aggregateCostCapUsd}
-          answersQuestions={answersQuestions}
         />
       </div>
 

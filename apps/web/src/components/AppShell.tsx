@@ -611,7 +611,7 @@ export function AppShell({
           <SidebarHeader>
             <div className="flex items-center gap-2 px-2 py-1.5">
               {/* AppIcon (v1.5.0) is the canonical app-chrome brand mark: theme-correct via
-                BrandLogo tokens, and with the default morph="auto" it shows the full Qlik
+                BrandLogo tokens, and with the default morph="auto" it shows the full
                 lockup and crossfades to the Q mark when this collapsible="icon" sidebar
                 collapses. aria-hidden because the product label below names the app. */}
               <AppIcon height={20} aria-hidden className="shrink-0" />
@@ -983,7 +983,7 @@ const THEME_PREFERENCE_ICON: Record<ThemePreference, typeof Sun> = {
   "qlik-dark": Moon,
 };
 
-/** Human label for a preference — "System" plus the two concrete Qlik labels from `@brand/tokens`. */
+/** Human label for a preference — "System" plus the two concrete Acme labels from `@brand/tokens`. */
 function themePreferenceLabel(preference: ThemePreference): string {
   return preference === "system" ? "System" : (THEME_META[preference]?.label ?? preference);
 }

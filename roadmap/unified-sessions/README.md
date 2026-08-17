@@ -1,4 +1,4 @@
-# Unified Sessions — one session experience across API, CLI and Qlik Answers runs
+# Unified Sessions — one session experience across API, CLI and the vendor assistant runs
 
 **Status:** ready to start (decisions locked 2026-07-16). Concept + evidence live in
 [`research/unified-run-sessions/`](../../research/unified-run-sessions/) (docs 00–04); this folder
@@ -7,13 +7,13 @@ not reopen them.
 
 ## Goal
 
-Runs over the three backends (AI-SDK engine, Claude-subscription Agent-SDK child, Qlik Answers
+Runs over the three backends (AI-SDK engine, Claude-subscription Agent-SDK child, the vendor assistant
 wrapper) currently diverge in lifecycle semantics, timeout policy and presentation — the same
 event ends three different ways, interactive sessions can never succeed, a hard-coded 30-minute
 wall clock silently kills long runs, and the console forks on `providerKind` in 11+ places. This
 workstream ships **one session contract**: shared terminal table, stall-based clock, capability
 manifest, one status vocabulary, cursor-resumable streams — plus an **OpenAI-compatible facade**
-around Qlik Answers as an independent parallel track.
+around the vendor assistant as an independent parallel track.
 
 ## Locked decisions (D-US log)
 
@@ -25,12 +25,12 @@ around Qlik Answers as an independent parallel track.
 | D-US4 | **Capability manifest**: statically declared per backend adapter, runtime-verified, persisted on the run (`capabilities_json`), emitted at start. UI gates on capabilities, not `providerKind`. |
 | D-US5 | **One status/label table** (locked, see execution-plan WP3.1) rendered by a single shared module on every surface. |
 | D-US6 | **Queue visibility**: `queued` phase with position; subscription run concurrency decoupled from the judge gate via its own setting. |
-| D-US7 | **Timer defaults**: 10 min stall / 10 min wait / no cap — configurable in Settings → Testing, per-environment override; Qlik may default to a longer wait (thread survives regardless). |
+| D-US7 | **Timer defaults**: 10 min stall / 10 min wait / no cap — configurable in Settings → Testing, per-environment override; the vendor may default to a longer wait (thread survives regardless). |
 | D-US8 | **Cursor stream resume**: SSE `id: <seq>` + `Last-Event-ID` replay (DB-backed beyond the in-memory buffer), `{type:"ping"}` keepalive event, 45 s client staleness watchdog. |
 | D-US9 | **No Wave 0** — quick wins land inside the contract waves, not as a pre-release. |
 | D-US10 | **Out of scope**: the Assistant dock session engine and the compatibility probe runner. Revisit post-ship. |
 | D-US11 | **Naming (labels only, wire stays `runs`)**: interactive container = **“session”**, automated/suite execution = **“run”**. |
-| D-US12 | **OpenAI facade = Option A only** (external interop endpoint; the qlik-answers executor is untouched): Chat Completions protocol, **hold-back streaming default** (reasoning live, settled answer as final content), thread-affinity cache, Perplexity-style vendor fields, locally-minted facade key. Runs as a **parallel track from day one**. |
+| D-US12 | **OpenAI facade = Option A only** (external interop endpoint; the vendor-assistant executor is untouched): Chat Completions protocol, **hold-back streaming default** (reasoning live, settled answer as final content), thread-affinity cache, Perplexity-style vendor fields, locally-minted facade key. Runs as a **parallel track from day one**. |
 | D-US13 | **Tiered model policy** for subagents: Opus-class for contract design / adversarial review / facade core; Sonnet-class for standard implementation; Haiku-class for docs & status upkeep. Every WP carries a model tag. |
 | D-US14 | **Verification**: adversarial reviewer agent per wave; final acceptance via seeded runs (each backend kind × each new terminal state, through the REAL engine + persistence, both themes) + e2e smoke extension. |
 | D-US15 | Conventions apply, no extra constraints: branch family `feat/unified-sessions`, gates `corepack pnpm@9.15.4` → `pnpm typecheck && pnpm test && pnpm build`, `.claude/rules/*` (brand-ui only, etc.), **grading byte-identity (`assistantText`) untouched**. |
@@ -57,5 +57,5 @@ assignments in [`execution-plan.md`](./execution-plan.md); start everything via
 
 Full session/run entity split (revisit only if the lightweight model hits a wall — record in
 STATUS), engine-through-facade for internal runs (rejected in research 04 §5 Option B), Assistant
-dock unification (D-US10), thread pruning / native Qlik feedback (per qlik-answers roadmap), any
+dock unification (D-US10), thread pruning / native the vendor feedback (per vendor-assistant roadmap), any
 change to `RunEvent` members other than the additive `phase`/`ping`.

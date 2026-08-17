@@ -1,8 +1,5 @@
 import type {
   AllowedServer,
-  AnswersAnswerBlock,
-  AnswersSnapshot,
-  AnswersStepPayload,
   AssertionResult,
   ContextSegment,
   ContextSnapshot,
@@ -505,12 +502,6 @@ function renderStepContent(lines: string[], step: RunStep): void {
       lines.push("", "Assistant:", "");
       pushFenced(lines, boundString(step.assistantText, MAX_PROSE_CHARS));
     }
-    // Qlik Answers Phase 5 (WP 5.6, D-QA8/D-QA9/D-QA10) — ADDITIVE: a `qlik_answers` answer step
-    // carries an ordered `blocks[]` sequence (the route derives it for legacy runs too, via
-    // `deriveLegacyAnswerStep`). Render it as its own subsection, alongside (not instead of) the
-    // plain `assistantText`/`reasoningText` dump above. A non-qlik step (no `blocks`) adds nothing —
-    // its report output is unchanged.
-    renderAnswerBlocks(lines, answersBlocksPayload(step.payload));
     return;
   }
 
@@ -526,127 +517,6 @@ function renderStepContent(lines: string[], step: RunStep): void {
       pushFencedJson(lines, result);
     }
   }
-}
-
-// ── Qlik Answers block rendering (Phase 5, WP 5.6) ──────────────────────────────────────────────────
-// Renders an `llm_response` step's ordered `AnswersStepPayload.blocks` sequence (D-QA8) — narrative
-// `text` blocks interleaved with `snapshot` references — as its own report subsection, mirroring what
-// the web `AnswersAnswerView`/`AnswersSnapshotData` render live (apps/web/src/features/testing/). A
-// markdown report has no interactive scroll-to-insight, so a citation (D-QA9) becomes a footnote-style
-// `[^n]` marker instead of a clickable chip; a snapshot block becomes a markdown table of its hypercube
-// `data` (or a compact one-line "label: value" for a 1×1 KPI), bounds-checked exactly like the web.
-
-/** Narrow a step's redacted `payload` to an `AnswersStepPayload` carrying a non-empty `blocks[]`
- *  sequence — undefined for a non-qlik / not-yet-derived-legacy / plain step, so the caller renders
- *  nothing. */
-function answersBlocksPayload(payload: unknown): AnswersStepPayload | undefined {
-  if (typeof payload !== "object" || payload === null || Array.isArray(payload)) return undefined;
-  const candidate = payload as AnswersStepPayload;
-  return Array.isArray(candidate.blocks) && candidate.blocks.length > 0 ? candidate : undefined;
-}
-
-function renderAnswerBlocks(lines: string[], payload: AnswersStepPayload | undefined): void {
-  if (!payload?.blocks || payload.blocks.length === 0) return;
-  const snapshots = payload.snapshots ?? [];
-
-  lines.push("", "Answer (structured):", "");
-  for (const block of payload.blocks) {
-    if (block.kind === "text") {
-      renderAnswerTextBlock(lines, block, snapshots.length);
-    } else {
-      renderAnswerSnapshotBlock(lines, block.index, snapshots);
-    }
-  }
-}
-
-/** One narrative text block + its footnote-style citation markers (D-QA9). */
-function renderAnswerTextBlock(
-  lines: string[],
-  block: Extract<AnswersAnswerBlock, { kind: "text" }>,
-  snapshotCount: number,
-): void {
-  const markers = (block.citations ?? []).map((index) => citationMarker(index, snapshotCount));
-  const suffix = markers.length > 0 ? ` ${markers.join(" ")}` : "";
-  lines.push(`${block.markdown}${suffix}`, "");
-}
-
-/**
- * One citation marker: `[^N]` (1-based, matching the snapshot's position) when the index is IN range;
- * a DANGLING index (≥ `snapshotCount`, or negative — the real run cites indices 0..5 but has only 5
- * snapshots) still renders a plain marker, never throws, with an honest "(unavailable)" suffix (a space
- * before the parenthesis so it can never be misread as a markdown link, `[^n](...)`).
- */
-function citationMarker(index: number, snapshotCount: number): string {
-  const label = index + 1;
-  const inRange = index >= 0 && index < snapshotCount;
-  return inRange ? `[^${label}]` : `[^${label}] (unavailable)`;
-}
-
-/** One `snapshot` block reference — bounds-checked against `snapshots` (a dangling index renders nothing,
- *  same as the web `AnswersSnapshotBlock`). */
-function renderAnswerSnapshotBlock(
-  lines: string[],
-  index: number,
-  snapshots: AnswersSnapshot[],
-): void {
-  if (index < 0 || index >= snapshots.length) return;
-  const snapshot = snapshots[index];
-  if (!snapshot) return;
-  const label = index + 1;
-
-  if (snapshot.data) {
-    renderSnapshotTable(lines, label, snapshot);
-    return;
-  }
-
-  // No hypercube data — fall back to a minimal title line (mirrors the web fallback) so the block
-  // isn't a silent gap; nothing at all when even the title is missing.
-  const title = snapshot.title?.trim();
-  if (title) lines.push(`_[^${label}] ${escapeText(title)}_`, "");
-}
-
-/** A snapshot's hypercube `data` as a markdown table (D-QA10): 1×1 → a compact "label: value" line,
- *  everything else → a header + rows table, honoring `totalRows` with a "showing N of M" note. */
-function renderSnapshotTable(lines: string[], label: number, snapshot: AnswersSnapshot): void {
-  const data = snapshot.data;
-  if (!data) return;
-  const columns = data.columns ?? [];
-  const rows = data.rows ?? [];
-  if (columns.length === 0 || rows.length === 0) return;
-
-  const heading = snapshot.title ? escapeText(snapshot.title) : "Insight";
-  lines.push(`**[^${label}] ${heading}**`, "");
-
-  if (columns.length === 1 && rows.length === 1) {
-    lines.push(`- **${escapeMarkdownTable(columns[0] ?? "Value")}:** ${formatSnapshotCell(rows[0]?.[0])}`, "");
-    return;
-  }
-
-  lines.push(
-    `| ${columns.map((column) => escapeMarkdownTable(column)).join(" | ")} |`,
-    `|${columns.map(() => "---").join("|")}|`,
-  );
-  for (const row of rows) {
-    lines.push(`| ${columns.map((_column, ci) => formatSnapshotCell(row[ci])).join(" | ")} |`);
-  }
-  const totalRows = data.totalRows;
-  if (typeof totalRows === "number" && totalRows > rows.length) {
-    lines.push("", `_Showing ${rows.length} of ${totalRows} rows._`);
-  }
-  lines.push("");
-}
-
-/** Locale number formatting that KEEPS decimals (mirrors the web `AnswersSnapshotData` formatter) —
- *  measure values must not be rounded to integers. */
-const SNAPSHOT_CELL_NUMBER = new Intl.NumberFormat("en-US", { maximumFractionDigits: 4 });
-
-/** One hypercube matrix cell → its table-safe display string (pipes escaped; empty → an em dash). */
-function formatSnapshotCell(value: string | number | undefined): string {
-  if (value === undefined || value === null) return "—";
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? SNAPSHOT_CELL_NUMBER.format(value) : String(value);
-  }
-  return value.length > 0 ? escapeMarkdownTable(value) : "—";
 }
 
 // ── Section 1 — Rating & verdict (Auto-Rating WP 1.5) ───────────────────────────────────────────────

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
-  AnswersStepPayload,
   ContextSnapshot,
   CostBasis,
   RatingState,
@@ -173,13 +172,6 @@ export type TimelineAssistantTurn = {
   context?: ContextSnapshot;
   /** Provider-actual usage from the closing `llm_response` step (settled turns only). */
   usageActual?: TokenUsageActual;
-  /**
-   * Qlik Answers (WP 3.1) — the closing `llm_response` step's payload, narrowed to
-   * {@link AnswersStepPayload} via {@link answersPayloadOf}, when this turn is a `qlik_answers` answer
-   * (sources/citations, the assistant-version Etag, rejection). Undefined for every other run kind and
-   * for a not-yet-settled turn (the payload only exists on the settled step).
-   */
-  answersPayload?: AnswersStepPayload;
   /** The turn's status — `running` while in-flight, else the `llm_response` step status. */
   status: RunStep["status"];
   /** True while this is the synthesized in-flight turn (text/reasoning from live deltas). */
@@ -365,26 +357,6 @@ function payloadToolCallId(step: RunStep): string | undefined {
 }
 
 /**
- * Qlik Answers (WP 3.1) — narrow an `llm_response` step's opaque `payload` to {@link AnswersStepPayload}
- * when it actually is one, so the sources panel + version-drift marker (`SourcesPanel.tsx`) can read it
- * without guessing at an `unknown`. The REGULAR engine's `llm_response` payload is `{ deltas, snapshot }`
- * (`apps/api/src/testing/accounting.ts`) and never carries a `promptMode`; the `qlik-answers-executor`
- * ALWAYS sets `promptMode` (`"oneshot"` on the opener/rejection, `"thread"` on interactive turns —
- * `apps/api/src/testing/qlik-answers-executor.ts`).
- *
- * `promptMode` is the discriminator (NOT `estimatedTokens`): `run-repository.ts`'s redaction replaces any
- * `…Tokens`-keyed non-number field with `"[redacted]"`, so a boolean `estimatedTokens: true` becomes a
- * string on the PERSISTED payload — a live run would narrow but a REPLAYED (re-read) run would not.
- * `promptMode` isn't secret-named, so it survives persistence; the panel works for live AND replayed runs.
- */
-export function answersPayloadOf(payload: unknown): AnswersStepPayload | undefined {
-  if (!payload || typeof payload !== "object") return undefined;
-  const mode = (payload as { promptMode?: unknown }).promptMode;
-  if (mode !== "oneshot" && mode !== "thread") return undefined;
-  return payload as AnswersStepPayload;
-}
-
-/**
  * F7 — reconstruct the ordered conversation timeline from the run's ordered `steps` (+ the per-turn
  * live `deltasByTurn` for the not-yet-settled turn). PURE: no React, no side effects — so it is
  * unit-testable on its own and later waves can reuse it.
@@ -531,8 +503,6 @@ export function buildTimeline(state: {
         if (step.reasoningText !== undefined) turn.reasoningText = step.reasoningText;
         if (step.context !== undefined) turn.context = step.context;
         if (step.usageActual !== undefined) turn.usageActual = step.usageActual;
-        const answers = answersPayloadOf(step.payload);
-        if (answers) turn.answersPayload = answers;
         turn.status = step.status;
         turn.streaming = false;
         settledTurns.add(ti);

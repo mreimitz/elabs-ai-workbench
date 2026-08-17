@@ -57,7 +57,6 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
     "label",
     "base_url",
     "api_key_encrypted",
-    "mcp_server_id",
     "created_at",
     "updated_at",
   ],
@@ -71,7 +70,6 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
     "default_profiles_json",
     "guardrails_json",
     "tool_loading_mode",
-    "answers_mode",
     "created_at",
     "updated_at",
   ],
@@ -245,7 +243,6 @@ test("inserts and reads back one row per new table respecting FK ordering", () =
     label: "Claude",
     base_url: null,
     api_key_encrypted: "enc:v1:abc",
-    mcp_server_id: null,
     created_at: "2026-06-20T00:00:00.000Z",
     updated_at: "2026-06-20T00:00:00.000Z",
   });
@@ -284,8 +281,6 @@ test("inserts and reads back one row per new table respecting FK ordering", () =
     guardrails_json: '{"maxTurns":10}',
     // Column default backfills the new tool-loading mode for an insert that omits it.
     tool_loading_mode: "eager",
-    // Nullable column (WP 2.3); an insert that omits it defaults to NULL (non-qlik scenario).
-    answers_mode: null,
     created_at: "2026-06-20T00:00:00.000Z",
     updated_at: "2026-06-20T00:00:00.000Z",
   });

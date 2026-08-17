@@ -4,7 +4,7 @@ import { Badge, Tooltip, TooltipContent, TooltipTrigger, cn } from "@brand/ui";
 /**
  * Claude subscription (roadmap/claude-subscription/, WP 3.1, D-CS4) — the shared accuracy marker for a
  * cost figure that is a subscription SHADOW price rather than a billed charge. Reuses the "est." marker
- * convention `qlik_answers` established (see `KpiRail`): a compact, muted "est." {@link Badge} carrying a
+ * convention `acme_answers` established (see `KpiRail`): a compact, muted "est." {@link Badge} carrying a
  * tooltip that explains the run's `costUsd` is exact tokens × the model's list rate on the Claude
  * subscription — a reference estimate for comparison, marginal cost \$0, never an actual charge.
  *

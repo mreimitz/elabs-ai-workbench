@@ -5,8 +5,8 @@
  * --ring-* accent layer, so the illustration reads correctly in BOTH themes (qlik-bright /
  * qlik-dark) with no raw literal and no `dark:` override.
  *
- * The concept's identity is the Qlik brand green + cyan. The green maps 1:1 to the app's --primary
- * (which IS the Qlik green). The cyan has no semantic @brand/tokens equivalent, so it is defined
+ * The concept's identity is the design system's brand green + cyan. The green maps 1:1 to the app's --primary
+ * (which IS the brand green). The cyan has no semantic @brand/tokens equivalent, so it is defined
  * ONCE here as a scoped closed token (the pattern the planned packages/illustrations --illus-* layer
  * will generalise). Alpha shades are composed with color-mix() over these tokens rather than baked
  * as literals, so a theme change re-tints the whole ring for free.
@@ -15,16 +15,16 @@
  * alpha-based — the hue is irrelevant; only "opaque = show / transparent = hide" matters), so masks
  * carry no raw color either.
  *
- * brand-ui-allow: --ring-cyan/--ring-cyan-soft are the Qlik brand cyan; no semantic @brand/tokens
+ * brand-ui-allow: --ring-cyan/--ring-cyan-soft are the design system's brand cyan; no semantic @brand/tokens
  * color matches it. Scoped to .cognitive-ring, documented, owner-approved for the welcome
  * illustration (see the accent-palette decision in the build conversation).
  */
 
 .cognitive-ring {
   /* Scoped brand-accent layer — the only place raw accent values live, kept theme-safe. */
-  --ring-green: var(--primary); /* Qlik green === app --primary */
-  --ring-cyan: oklch(0.79 0.105 191); /* brand-ui-allow: Qlik brand cyan, no token equivalent */
-  --ring-cyan-soft: oklch(0.87 0.06 191); /* brand-ui-allow: Qlik brand cyan (soft) */
+  --ring-green: var(--primary); /* brand green === app --primary */
+  --ring-cyan: oklch(0.79 0.105 191); /* brand-ui-allow: brand cyan, no token equivalent */
+  --ring-cyan-soft: oklch(0.87 0.06 191); /* brand-ui-allow: brand cyan (soft) */
   --ring-ink: var(--foreground); /* neutral structural lines, theme-aware */
   --ring-muted: var(--muted-foreground);
   --ring-surface: var(--card); /* the surface the dots "cut out" of */

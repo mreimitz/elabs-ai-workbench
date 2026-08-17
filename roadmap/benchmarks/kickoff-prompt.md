@@ -27,7 +27,7 @@ subagents, validation, and an honest hand-off. The mission is the **entire works
 7. `.claude/rules/` — all bind you: `brand-ui-only`, `quality-gates`, `mcp-and-security`,
    `dependencies`, `library-first`, `styling-and-tokens`, `loading-states`,
    `interaction-guidelines`, `architecture`.
-8. Concept origin (context): `roadmap/research/insights-bench-qlik-assessment.md`.
+8. Concept origin (context): `roadmap/research/insights-bench-assessment.md`.
 9. Code you will extend — read before designing: `apps/api/src/testing/` (run-service
    post-completion assertion hook, `resolution.ts`, `skill-context.ts`, run-manager SSE
    pattern), `apps/api/src/skills/git-service.ts` + `publish-service.ts` (credential/SSRF

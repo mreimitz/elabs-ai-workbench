@@ -37,11 +37,6 @@ const EXPECTED: Record<TerminalCause, TerminalVerdict> = {
     outcome: "context_overflow",
     stopReasonCode: "context_overflow",
   },
-  prompt_rejected: {
-    status: "stopped",
-    outcome: "stopped_guardrail",
-    stopReasonCode: "prompt_rejected",
-  },
   provider_error: { status: "error", outcome: "error", stopReasonCode: "provider_error" },
   auth: { status: "error", outcome: "error", stopReasonCode: "auth" },
   rate_limit: { status: "error", outcome: "error", stopReasonCode: "rate_limit" },

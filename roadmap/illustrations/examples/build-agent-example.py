@@ -224,7 +224,7 @@ svg = sheet("{THEME}")
 import cairosvg
 for theme in ("bright", "dark"):
     r = resolved(theme)
-    body = svg.replace("{THEME}", f"qlik-{theme}")
+    body = svg.replace("{THEME}", f"vendor-{theme}")
     for k, v in r.items():
         body = body.replace(f"var(--{k})", v)
     cairosvg.svg2png(bytestring=body.encode(), write_to=str(out / f"agent-{theme}.png"), scale=1.4)

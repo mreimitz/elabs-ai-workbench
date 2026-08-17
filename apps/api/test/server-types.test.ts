@@ -35,21 +35,21 @@ test("server type CRUD: create defaults, list ordering, member counts", () => {
   const types = new ServerTypeRepository(db);
   const servers = new ServerRepository(db, new SecretStore(Buffer.alloc(32, 1)));
 
-  const saas = types.create({ name: "Qlik-SaaS" });
+  const saas = types.create({ name: "Acme-SaaS" });
   assert.equal(saas.status, "production"); // default
   assert.equal(saas.memberCount, 0);
 
-  const stage = types.create({ name: "qlik-stage", status: "beta", description: "RC fleet" });
+  const stage = types.create({ name: "acme-stage", status: "beta", description: "RC fleet" });
   assert.equal(stage.status, "beta");
   assert.equal(stage.description, "RC fleet");
 
-  servers.create({ name: "Qlik A", transport: "stdio", command: "npx", typeId: saas.id });
-  servers.create({ name: "Qlik B", transport: "stdio", command: "npx", typeId: saas.id });
+  servers.create({ name: "Acme A", transport: "stdio", command: "npx", typeId: saas.id });
+  servers.create({ name: "Acme B", transport: "stdio", command: "npx", typeId: saas.id });
 
   const listed = types.list();
   assert.deepEqual(
     listed.map((t) => t.name),
-    ["Qlik-SaaS", "qlik-stage"], // name-sorted, case-insensitive
+    ["Acme-SaaS", "acme-stage"], // name-sorted, case-insensitive
   );
   assert.equal(listed[0]?.memberCount, 2);
   assert.equal(listed[1]?.memberCount, 0);
@@ -58,10 +58,10 @@ test("server type CRUD: create defaults, list ordering, member counts", () => {
 test("server type update: rename, restatus, description null clears; duplicate name is 409", () => {
   const db = createDatabase();
   const types = new ServerTypeRepository(db);
-  const created = types.create({ name: "Qlik-SaaS", description: "prod" });
+  const created = types.create({ name: "Acme-SaaS", description: "prod" });
 
-  const renamed = types.update(created.id, { name: "Qlik-SaaS-EU", status: "deprecated" });
-  assert.equal(renamed.name, "Qlik-SaaS-EU");
+  const renamed = types.update(created.id, { name: "Acme-SaaS-EU", status: "deprecated" });
+  assert.equal(renamed.name, "Acme-SaaS-EU");
   assert.equal(renamed.status, "deprecated");
   assert.equal(renamed.description, "prod"); // omitted → kept
 
@@ -72,8 +72,8 @@ test("server type update: rename, restatus, description null clears; duplicate n
   assert.equal(statusCodeOf(() => types.create({ name: "other" })), 409); // case-insensitive
   assert.equal(statusCodeOf(() => types.update(created.id, { name: "OTHER" })), 409);
   // Re-saving a type under its own name (case change only) is not a conflict.
-  const recased = types.update(created.id, { name: "QLIK-SAAS-EU" });
-  assert.equal(recased.name, "QLIK-SAAS-EU");
+  const recased = types.update(created.id, { name: "ACME-SAAS-EU" });
+  assert.equal(recased.name, "ACME-SAAS-EU");
 });
 
 test("unknown ids: get/update/delete 404; assigning an unknown typeId to a server is 400", () => {
@@ -100,14 +100,14 @@ test("server typeId round-trips additively and stays redaction-safe", () => {
   const db = createDatabase();
   const types = new ServerTypeRepository(db);
   const servers = new ServerRepository(db, new SecretStore(Buffer.alloc(32, 3)));
-  const saas = types.create({ name: "Qlik-SaaS" });
+  const saas = types.create({ name: "Acme-SaaS" });
 
   // Untyped server: typeId absent from the public shape (additive wire, D-ST5).
   const untyped = servers.create({ name: "Plain", transport: "stdio", command: "npx" });
   assert.equal(untyped.typeId, undefined);
 
   const typed = servers.create({
-    name: "Qlik prod",
+    name: "Acme prod",
     transport: "stdio",
     command: "npx",
     env: { API_TOKEN: "super-secret" },
@@ -118,7 +118,7 @@ test("server typeId round-trips additively and stays redaction-safe", () => {
   assert.equal((typed as { env?: unknown }).env, undefined); // redaction untouched
 
   // Omitting typeId on update keeps it; explicit null clears it.
-  const renamed = servers.update(typed.id, { name: "Qlik prod EU" });
+  const renamed = servers.update(typed.id, { name: "Acme prod EU" });
   assert.equal(renamed.typeId, saas.id);
   const cleared = servers.update(typed.id, { typeId: null });
   assert.equal(cleared.typeId, undefined);
@@ -128,9 +128,9 @@ test("deleting a type detaches members (SET NULL) and never deletes servers (D-S
   const db = createDatabase();
   const types = new ServerTypeRepository(db);
   const servers = new ServerRepository(db, new SecretStore(Buffer.alloc(32, 4)));
-  const saas = types.create({ name: "Qlik-SaaS" });
+  const saas = types.create({ name: "Acme-SaaS" });
   const member = servers.create({
-    name: "Qlik prod",
+    name: "Acme prod",
     transport: "stdio",
     command: "npx",
     typeId: saas.id,
@@ -140,7 +140,7 @@ test("deleting a type detaches members (SET NULL) and never deletes servers (D-S
 
   const survivor = servers.getPublic(member.id);
   assert.equal(survivor.typeId, undefined);
-  assert.equal(survivor.name, "Qlik prod");
+  assert.equal(survivor.name, "Acme prod");
 });
 
 test("migration v25 adds server_types + mcp_servers.type_id to a pre-v25 DB and no-ops on fresh", () => {

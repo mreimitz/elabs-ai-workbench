@@ -82,7 +82,7 @@ the itch. Locked decisions (numbering continues the owner's Q1–Q3):
 
 - **Q4a — Rename Scenario → "Environment", UI labels only.** "Scenario" reads as a *task* and
   collides head-on with "Test" (visible in the run list, where the scenario name — e.g.
-  "Banking Analyst – Qlik" — is the primary label and reads like a test name). API routes, shared
+  "Banking Analyst – the vendor" — is the primary label and reads like a test name). API routes, shared
   type names, and DB tables keep `scenario` naming (versionless-API additive-only rule; a wire
   rename would be breaking). ~20–30 user-visible label sites in `apps/web/src`; the string
   "Environment" is collision-free in the testing UI (verified 2026-07-04).

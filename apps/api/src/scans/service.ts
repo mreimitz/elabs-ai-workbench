@@ -1,7 +1,6 @@
 import type {
   ConnectivityResponse,
   PromptGetResult,
-  QlikTenantProbe,
   ResourceReadResult,
   ServerTestResponse,
   TokenProfileId,
@@ -19,18 +18,8 @@ import { isAuthRequiredError, isOAuthHttpServer } from "../mcp/auth-error.js";
 import { formatConnectionError } from "../mcp/connection-error.js";
 import type { OAuthService } from "../oauth/service.js";
 import { normalizePrompt, normalizeResource, normalizeTool } from "../mcp/normalize.js";
-import { isLikelyQlikTenantUrl } from "../servers/qlik-detect.js";
 import type { ServerRepository } from "../servers/repository.js";
 import { getTokenCounter } from "../token-counting/profiles.js";
-
-/**
- * Qlik Answers (WP 2.1) — a list-only tenant-assistants availability probe for a saved server, injected
- * (optional) so `ScanService` stays free of any tenant-auth/HTTP knowledge (the sensitive logic lives in
- * `servers/qlik-answers-probe.ts`, behind the runtime boundary). Only ever invoked for a Qlik-tenant
- * server (see {@link ScanService.checkConnectivity}); it can never consume a question — it is list-only
- * by construction.
- */
-export type QlikTenantProber = (serverId: string) => Promise<QlikTenantProbe>;
 
 /** One tool from a live {@link ScanService.listTools} — the lean subset the agent needs to call it. */
 export type ListedTool = {
@@ -59,7 +48,6 @@ export class ScanService {
     private readonly servers: ServerRepository,
     private readonly scans: ScanRepository,
     private readonly oauth: OAuthService,
-    private readonly qlikTenantProbe?: QlikTenantProber,
   ) {}
 
   async testServer(serverId: string): Promise<ServerTestResponse> {
@@ -134,12 +122,6 @@ export class ScanService {
    */
   async checkConnectivity(serverId: string): Promise<ConnectivityResponse> {
     const server = this.servers.getInternal(serverId);
-    // Qlik Answers (WP 2.1) — for a Qlik-tenant server, fold in the list-only assistants availability
-    // check (never consumes a question). Gated on the already-fetched URL so non-Qlik servers do NO
-    // extra work and carry no `qlikTenant` field. Never throws (the prober degrades to not-available).
-    const qlikTenant = isLikelyQlikTenantUrl(server.url)
-      ? await this.qlikTenantProbe?.(serverId)
-      : undefined;
 
     try {
       await checkConnection(server, { authProvider: this.getAuthProvider(server) });
@@ -149,7 +131,6 @@ export class ScanService {
         authRequired: false,
         oauthAvailable: false,
         message: "Connection OK.",
-        qlikTenant,
       };
     } catch (error) {
       const authRequired = isOAuthHttpServer(server) && isAuthRequiredError(error);
@@ -162,7 +143,6 @@ export class ScanService {
         oauthAvailable,
         message: authRequired ? "Authentication is required." : "Connection failed.",
         errorMessage: formatConnectionError(error, server.url),
-        qlikTenant,
       };
     }
   }

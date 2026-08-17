@@ -476,7 +476,7 @@ test("WP1.4 (RC1): a 5-server / 280-tool deferred catalog's rendered tools secti
   const counter = getTokenCounter("generic_o200k");
   // Mirrors the live defect session's shape (analysis.md RC1/§2): 5 granted servers, ~280 total tools.
   const serverNames = [
-    "qlik-mreimitz",
+    "acme-demo",
     "filesystem-tools",
     "github-integration",
     "postgres-analytics",

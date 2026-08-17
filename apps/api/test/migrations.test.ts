@@ -275,9 +275,15 @@ test("applyMigrations brings an OLD-schema DB up to the current schema and stamp
     columns(db, "scenarios").includes("tool_loading_mode"),
     "scenarios.tool_loading_mode added",
   );
+  // v24 added `scenarios.answers_mode` for the Qlik Answers transport override; v56 DROPPED it again
+  // with the feature. A DB migrated all the way to LATEST must therefore NOT carry it.
   assert.ok(
-    columns(db, "scenarios").includes("answers_mode"),
-    "scenarios.answers_mode added (v24)",
+    !columns(db, "scenarios").includes("answers_mode"),
+    "scenarios.answers_mode added by v24 and dropped again by v56",
+  );
+  assert.ok(
+    !columns(db, "provider_credentials").includes("mcp_server_id"),
+    "provider_credentials.mcp_server_id added by v23 and dropped again by v56",
   );
   for (const col of [
     "cumulative_tokens",
@@ -444,17 +450,17 @@ test("migration v18 — pre-v18 DB gains skill_versions.intent_log_json (additiv
 // NOTE: roadmap/assistant/00-plan.md §4 originally numbered this migration "v19", but v19 (Testing-UX
 // suite-run member index, above) landed first — this is v20 (see db/database.ts). Later WPs added
 // v21 (assistant_settings), v22 (suite_run_reports), v23 (provider_credentials server link), and v24
-// (scenarios.answers_mode), so LATEST is now 24.
+// (scenarios.answers_mode — both later reverted by v56).
 
-test("migration v20 — a fresh DB stamps LATEST (55) and carries the 3 assistant tables", () => {
+test("migration v20 — a fresh DB stamps LATEST (56) and carries the 3 assistant tables", () => {
   const db = openFresh();
 
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    55,
-    "LATEST_SCHEMA_VERSION auto-derived to 55 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1)",
+    56,
+    "LATEST_SCHEMA_VERSION auto-derived to 56 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the qlik_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 55, "fresh DB stamped at 55");
+  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
   for (const table of ["assistant_credentials", "assistant_threads", "assistant_events"]) {
     assert.ok(tableExists(db, table), `fresh DB has ${table}`);
   }
@@ -545,8 +551,8 @@ test("migration v43 — a pre-v43 (v42) DB gains digest_reports; idempotent, imm
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    55,
-    "stamped to LATEST (55) after v43…v55",
+    56,
+    "stamped to LATEST (56) after v43…v56",
   );
   assert.ok(
     tableExists(db, "digest_reports"),
@@ -585,7 +591,7 @@ test("migration v43 — a pre-v43 (v42) DB gains digest_reports; idempotent, imm
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v43+v44+v45+v46 is a no-op");
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    55,
+    LATEST_SCHEMA_VERSION,
     "version unchanged after the re-run",
   );
 });
@@ -603,8 +609,8 @@ test("migration v44 — a pre-v44 (v43) DB gains model_pricing seeded from the c
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    55,
-    "stamped to LATEST (55) after v44…v55",
+    56,
+    "stamped to LATEST (56) after v44…v56",
   );
   assert.ok(tableExists(db, "model_pricing"), "v44 created model_pricing on the existing (v43) DB");
   assert.ok(indexExists(db, "idx_model_pricing_match"), "v44 added idx_model_pricing_match");
@@ -655,7 +661,7 @@ test("migration v44 — a pre-v44 (v43) DB gains model_pricing seeded from the c
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v44+v45+v46 is a no-op");
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    55,
+    LATEST_SCHEMA_VERSION,
     "version unchanged after the re-run",
   );
   assert.equal(
@@ -996,14 +1002,19 @@ test("migration v22 — a pre-v22 (v21) DB gains suite_run_reports and it is imm
   );
 });
 
-// ── Migration v23 (Qlik Answers WP 0.2) — provider_credentials: + mcp_server_id link, widened kind CHECK ──
+// ── Migrations v23/v24 → v56 — the retired `qlik_answers` provider kind, end to end ──────────────
 //
-// Build a pre-v23 DB (provider_credentials at the OLD shape: no mcp_server_id column, kind CHECK without
-// 'qlik_answers'; stamped at user_version 22) with a provider row that assistant_settings' fallback
-// pointer references, then run applyMigrations and prove: the link column + widened CHECK arrive; every
-// existing row survives with its SAME id (so the fallback FK stays valid — foreign_key_check clean); a
-// second run is a no-op (idempotent); and a qlik_answers row now inserts (the widened CHECK admits it),
-// its mcp_server_id link honoring ON DELETE SET NULL.
+// v23 (a provider_credentials REBUILD: + `mcp_server_id`, `kind` CHECK widened to admit
+// 'qlik_answers') and v24 (`scenarios.answers_mode`) built the Qlik Answers feature's schema; v56
+// REMOVED it again when the feature was deleted from the product — purging every `qlik_answers`
+// credential together with the environments and runs that depended on it, narrowing the CHECK back to
+// the 6 live kinds, and dropping both columns.
+//
+// Those three steps must still REPLAY on a real old DB, so this drives a genuine pre-v23 fixture (the
+// OLD provider_credentials shape, stamped at 22) all the way to LATEST and asserts the END state:
+// the historical rows a customer actually cares about survive with their SAME ids (the
+// assistant_settings fallback FK stays valid — foreign_key_check clean), the retired columns are gone,
+// and the narrowed CHECK rejects the retired kind. A second run is a no-op (idempotent).
 
 /** Rewind a fresh (latest) DB's provider_credentials to its pre-v23 (v22) shape + stamp back to 22, then
  * seed a provider row referenced by the assistant_settings fallback pointer and a registered server. */
@@ -1028,7 +1039,7 @@ function seedPreV23Database(): AppDatabase {
   db.pragma("foreign_keys = ON");
   db.pragma("user_version = 22");
 
-  // A provider row the assistant_settings fallback pointer references (must survive the parent rebuild).
+  // A provider row the assistant_settings fallback pointer references (must survive every rebuild).
   db.prepare(
     `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
      VALUES ('prov-keep', 'anthropic', 'Prod', NULL, 'enc:v1:x', @now, @now)`,
@@ -1036,16 +1047,11 @@ function seedPreV23Database(): AppDatabase {
   db.prepare(
     `INSERT INTO assistant_settings (id, fallback_provider_credential_id, updated_at) VALUES (1, 'prov-keep', @now)`,
   ).run({ now: NOW });
-  // A registered streamable-HTTP server so a qlik_answers link + the ON DELETE SET NULL path are exercisable.
-  db.prepare(
-    `INSERT INTO mcp_servers (id, name, transport, command, args_json, url, headers_json, env_json, auth_type, auth_header_name, created_at, updated_at)
-     VALUES ('srv-qlik', 'Qlik', 'streamable_http', NULL, '[]', 'https://tenant.example.com/mcp', '{}', '{}', 'oauth', NULL, @now, @now)`,
-  ).run({ now: NOW });
 
   return db;
 }
 
-test("migration v23 — pre-v23 DB gains mcp_server_id + widened kind CHECK; rows + fallback FK preserved; idempotent", () => {
+test("migrations v23…v56 — a pre-v23 DB replays the whole chain: rows + fallback FK preserved, retired columns gone, idempotent", () => {
   const db = seedPreV23Database();
   assert.equal(
     db.pragma("user_version", { simple: true }),
@@ -1062,77 +1068,34 @@ test("migration v23 — pre-v23 DB gains mcp_server_id + widened kind CHECK; row
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    "stamped to latest after v23",
+    "stamped to LATEST after the full chain",
+  );
+  // v23 added `mcp_server_id` and v24 `scenarios.answers_mode`; v56 dropped both again.
+  assert.ok(
+    !columns(db, "provider_credentials").includes("mcp_server_id"),
+    "mcp_server_id is gone again (v56)",
   );
   assert.ok(
-    columns(db, "provider_credentials").includes("mcp_server_id"),
-    "v23 added mcp_server_id",
-  );
-  assert.equal(
-    (db.pragma("foreign_key_check") as unknown[]).length,
-    0,
-    "foreign_key_check clean after the rebuild",
+    !columns(db, "scenarios").includes("answers_mode"),
+    "scenarios.answers_mode is gone again (v56)",
   );
 
-  // The pre-existing provider row survived with its SAME id → the fallback pointer still resolves.
-  const keep = db.prepare("SELECT kind FROM provider_credentials WHERE id = 'prov-keep'").get() as
-    | { kind: string }
-    | undefined;
-  assert.equal(keep?.kind, "anthropic", "existing provider row preserved across the rebuild");
-  const fallback = db
-    .prepare("SELECT fallback_provider_credential_id AS ref FROM assistant_settings WHERE id = 1")
-    .get() as { ref: string | null } | undefined;
-  assert.equal(
-    fallback?.ref,
-    "prov-keep",
-    "assistant_settings fallback pointer survives the rebuild (FK intact)",
-  );
-
-  // The widened CHECK now admits a linked qlik_answers row.
-  assert.doesNotThrow(
-    () =>
-      db
-        .prepare(
-          `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, mcp_server_id, created_at, updated_at)
-           VALUES ('prov-qa', 'qlik_answers', 'Tenant Assistant', 'https://tenant.example.com', NULL, 'srv-qlik', @now, @now)`,
-        )
-        .run({ now: NOW }),
-    "the widened CHECK admits a qlik_answers row",
-  );
-  // ON DELETE SET NULL: deleting the linked server nulls the link (surfaced later as "auth broken"), no dangle.
-  db.prepare("DELETE FROM mcp_servers WHERE id = 'srv-qlik'").run();
-  const linked = db
-    .prepare("SELECT mcp_server_id AS link FROM provider_credentials WHERE id = 'prov-qa'")
-    .get() as { link: string | null } | undefined;
-  assert.equal(
-    linked?.link,
-    null,
-    "deleting the linked server nulls mcp_server_id (ON DELETE SET NULL)",
-  );
-
-  // Idempotent: re-running is a no-op and leaves the FK graph clean + the version unchanged.
-  assert.doesNotThrow(() => applyMigrations(db), "re-applying v23 is a no-op");
-  assert.equal(
-    (db.pragma("foreign_key_check") as unknown[]).length,
-    0,
-    "foreign_key_check still clean after a re-run",
-  );
-  assert.equal(
-    db.pragma("user_version", { simple: true }),
-    LATEST_SCHEMA_VERSION,
-    "version unchanged after the re-run",
-  );
-
-  // Fresh DB == upgraded DB shape for provider_credentials.
+  // Every pre-existing row survived with its SAME id, so the fallback FK is still valid.
+  const keep = db
+    .prepare("SELECT kind, label, api_key_encrypted AS key FROM provider_credentials WHERE id = 'prov-keep'")
+    .get() as { kind: string; label: string; key: string } | undefined;
   assert.deepEqual(
-    tableShape(db, "provider_credentials"),
-    tableShape(openFresh(), "provider_credentials"),
-    "upgraded provider_credentials column shape matches a fresh DB",
+    keep,
+    { kind: "anthropic", label: "Prod", key: "enc:v1:x" },
+    "the pre-existing credential survived the rebuilds verbatim",
   );
-});
+  const settings = db
+    .prepare("SELECT fallback_provider_credential_id AS f FROM assistant_settings WHERE id = 1")
+    .get() as { f: string | null };
+  assert.equal(settings.f, "prov-keep", "the assistant_settings fallback pointer still resolves");
+  assert.deepEqual(db.pragma("foreign_key_check"), [], "no dangling references after the rebuilds");
 
-test("migration v23 — the pre-v23 CHECK rejected qlik_answers (guards the rebuild's purpose)", () => {
-  const db = seedPreV23Database();
+  // The narrowed CHECK rejects the retired kind (v56's whole purpose) but still admits a live one.
   assert.throws(
     () =>
       db
@@ -1142,215 +1105,86 @@ test("migration v23 — the pre-v23 CHECK rejected qlik_answers (guards the rebu
         )
         .run({ now: NOW }),
     /CHECK constraint failed/,
-    "the pre-v23 CHECK rejects a qlik_answers kind",
+    "the narrowed CHECK rejects qlik_answers",
   );
+  assert.doesNotThrow(() =>
+    db
+      .prepare(
+        `INSERT INTO provider_credentials (id, kind, label, created_at, updated_at)
+         VALUES ('sub', 'claude_subscription', 'CLI', @now, @now)`,
+      )
+      .run({ now: NOW }),
+  );
+
+  // Idempotent: re-running changes nothing.
+  const before = tableShape(db, "provider_credentials");
+  applyMigrations(db);
+  assert.deepEqual(tableShape(db, "provider_credentials"), before, "second run is a no-op");
+  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION);
 });
 
-// ── Migration v24 (Qlik Answers WP 2.3, D-QA2 gap fix) — scenarios.answers_mode; LATEST is 24 ─────
-//
-// WP 0.1 added the `Scenario.answersMode` type + `scenarioInputSchema` field but no backing column,
-// so it was silently dropped on save (surfaced as a gap by WP 1.2). This is a single ADDITIVE
-// `ensureColumn` (the v2/v11/v21 pattern, NOT a table rebuild — no CHECK/constraint touched).
-
-test("migration v24 — a pre-v24 (v23) DB gains scenarios.answers_mode and it is immediately usable", () => {
+test("migration v56 — a qlik_answers credential is purged together with its environments and runs; unrelated rows survive", () => {
   const db = track(new Database(":memory:"));
   db.pragma("foreign_keys = ON");
-  db.exec(schemaSql); // everything at latest, incl. scenarios.answers_mode…
+  db.exec(schemaSql);
+  // Rewind provider_credentials + scenarios to the pre-v56 (v55) shape so the purge has real rows.
+  db.pragma("foreign_keys = OFF");
   db.exec(`
-    ALTER TABLE scenarios RENAME TO scenarios_with_answers_mode;
-    CREATE TABLE scenarios (
+    DROP TABLE provider_credentials;
+    CREATE TABLE provider_credentials (
       id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      provider_id TEXT NOT NULL REFERENCES provider_credentials(id) ON DELETE RESTRICT,
-      model TEXT NOT NULL,
-      params_json TEXT NOT NULL DEFAULT '{}',
-      system_prompt TEXT NOT NULL DEFAULT '',
-      default_profiles_json TEXT NOT NULL DEFAULT '[]',
-      guardrails_json TEXT NOT NULL DEFAULT '{}',
-      tool_loading_mode TEXT NOT NULL DEFAULT 'eager' CHECK (tool_loading_mode IN ('eager', 'deferred')),
+      kind TEXT NOT NULL CHECK (kind IN ('anthropic','openai','google','openai_compatible','ollama','qlik_answers','claude_subscription')),
+      label TEXT NOT NULL,
+      base_url TEXT,
+      api_key_encrypted TEXT,
+      mcp_server_id TEXT REFERENCES mcp_servers(id) ON DELETE SET NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
-    DROP TABLE scenarios_with_answers_mode;
-  `); // …then simulate a pre-v24 (v23) DB lacking answers_mode
-  db.pragma("user_version = 23");
-  assert.ok(
-    !columns(db, "scenarios").includes("answers_mode"),
-    "sanity: the v23 fixture lacks answers_mode",
-  );
-
-  // A pre-existing scenario row (from before v24) must survive the additive migration untouched.
-  db.prepare(
-    `INSERT INTO provider_credentials (id, kind, label, api_key_encrypted, created_at, updated_at)
-     VALUES ('prov-1', 'anthropic', 'Claude', 'enc:v1:abc', @now, @now)`,
-  ).run({ now: NOW });
-  db.prepare(
-    `INSERT INTO scenarios (id, name, provider_id, model, tool_loading_mode, created_at, updated_at)
-     VALUES ('scn-pre-v24', 'Pre-existing', 'prov-1', 'claude-sonnet-4', 'eager', @now, @now)`,
-  ).run({ now: NOW });
-
-  applyMigrations(db);
-
-  assert.equal(
-    db.pragma("user_version", { simple: true }),
-    LATEST_SCHEMA_VERSION,
-    "stamped to latest after v24",
-  );
-  assert.ok(columns(db, "scenarios").includes("answers_mode"), "v24 added scenarios.answers_mode");
-
-  const pre = db
-    .prepare("SELECT name, answers_mode FROM scenarios WHERE id = 'scn-pre-v24'")
-    .get() as { name: string; answers_mode: string | null };
-  assert.equal(
-    pre.name,
-    "Pre-existing",
-    "unrelated pre-existing row survives the additive migration",
-  );
-  assert.equal(pre.answers_mode, null, "the new column defaults to NULL for existing rows");
-
-  // The new column is immediately usable: a qlik_answers-style scenario can persist a transport value.
-  db.prepare(
-    `UPDATE scenarios SET answers_mode = '{"transport":"invoke"}' WHERE id = 'scn-pre-v24'`,
-  ).run();
-  const updated = db
-    .prepare("SELECT answers_mode FROM scenarios WHERE id = 'scn-pre-v24'")
-    .get() as { answers_mode: string | null };
-  assert.equal(
-    updated.answers_mode,
-    '{"transport":"invoke"}',
-    "answers_mode is usable post-migration",
-  );
-
-  // NOTE: unlike v16/v23 (full table REBUILDS, whose shape canonically matches a fresh DB), this is a
-  // plain `ensureColumn` ALTER TABLE ADD COLUMN — it always APPENDS the column at the physical end,
-  // while schema.ts places `answers_mode` before created_at/updated_at (mirroring where v2's
-  // tool_loading_mode sits). Column ORDER legitimately differs between an upgraded and a fresh DB here
-  // (same as tool_loading_mode always has); only column PRESENCE is asserted, per the v2/v11/v18/v21
-  // additive-column test convention (tableShape equality is reserved for rebuilds).
-  assert.ok(
-    columns(db, "scenarios").includes("answers_mode"),
-    "answers_mode present after migrating",
-  );
-});
-
-// ── Migration v27 (Auto-Rating AR11) — runs/suite_runs.rating_state + the honest backfill ─────────
-//
-// The additive review-axis column (TEXT NOT NULL DEFAULT 'pending', no CHECK — no rebuild). The
-// backfill reads history honestly: a TERMINAL run is 'rated' iff a base-rating grade row exists
-// (grader_id in BASE_RATING_GRADER_IDS), else 'skipped'; a TERMINAL suite run is 'rated' iff a
-// suite_run_reports row exists, else 'skipped'; non-terminal rows stay 'pending'. The status
-// vocabularies themselves are untouched (rating is an orthogonal axis, never a new status).
-
-test("migration v27 — pre-v27 DB gains rating_state on runs + suite_runs with the honest backfill", () => {
-  const db = track(new Database(":memory:"));
-  db.pragma("foreign_keys = ON");
-  db.exec(schemaSql); // everything at latest, incl. rating_state…
-  // …then simulate a pre-v27 (v26) DB: SQLite ≥3.35 DROP COLUMN removes the additive column cleanly
-  // (it is not indexed / not part of any constraint), mirroring the on-disk pre-v27 shape.
-  db.exec(`
-    ALTER TABLE runs DROP COLUMN rating_state;
-    ALTER TABLE suite_runs DROP COLUMN rating_state;
+    ALTER TABLE scenarios ADD COLUMN answers_mode TEXT;
   `);
-  db.pragma("user_version = 26");
-  assert.ok(!columns(db, "runs").includes("rating_state"), "sanity: v26 fixture lacks the column");
+  db.pragma("foreign_keys = ON");
+  db.pragma("user_version = 55");
 
-  // Parents for the run rows.
-  db.prepare(
-    `INSERT INTO provider_credentials (id, kind, label, api_key_encrypted, created_at, updated_at)
-     VALUES ('prov-1', 'anthropic', 'Claude', 'enc:v1:abc', @now, @now)`,
-  ).run({ now: NOW });
-  db.prepare(
-    `INSERT INTO scenarios (id, name, provider_id, model, created_at, updated_at)
-     VALUES ('scn-1', 'Baseline', 'prov-1', 'claude-sonnet-4', @now, @now)`,
-  ).run({ now: NOW });
-  db.prepare(
-    `INSERT INTO tests (id, name, user_prompt, created_at, updated_at)
-     VALUES ('test-1', 'List files', 'Use the tools.', @now, @now)`,
-  ).run({ now: NOW });
-  // Three runs: terminal WITH a base-rating grade row → 'rated'; terminal without → 'skipped';
-  // non-terminal → 'pending'. An expectation-grader row alone must NOT count as a base rating.
-  const insertRun = db.prepare(
-    `INSERT INTO runs (id, test_id, scenario_id, mode, status, started_at)
-     VALUES (?, 'test-1', 'scn-1', 'automated', ?, ?)`,
+  const cred = db.prepare(
+    "INSERT INTO provider_credentials (id, kind, label, created_at, updated_at) VALUES (?, ?, ?, @now, @now)",
   );
-  insertRun.run("run-rated", "completed", NOW);
-  insertRun.run("run-skipped", "error", NOW);
-  insertRun.run("run-pending", "running", NOW);
-  db.prepare(
-    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, grading_version, created_at)
-     VALUES ('g-1', 'run-rated', 'answer_validation', 'llm', 'graded', 0.9, 'answer_validation_v1', 1, @now),
-            ('g-2', 'run-skipped', 'rouge1', 'deterministic', 'graded', 0.5, 'rouge1_v1', 1, @now)`,
-  ).run({ now: NOW });
-  // Three suite runs: terminal with a persisted report → 'rated'; terminal without → 'skipped';
-  // non-terminal → 'pending'.
-  const insertSuiteRun = db.prepare(
-    `INSERT INTO suite_runs (id, suite_id, status, config_snapshot_json, started_at)
-     VALUES (?, NULL, ?, '{}', ?)`,
+  cred.run("prov-qa", "qlik_answers", "Tenant", { now: NOW });
+  cred.run("prov-keep", "anthropic", "Prod", { now: NOW });
+  const scenario = db.prepare(
+    "INSERT INTO scenarios (id, name, provider_id, model, created_at, updated_at) VALUES (?, ?, ?, 'm', @now, @now)",
   );
-  insertSuiteRun.run("sr-rated", "completed", NOW);
-  insertSuiteRun.run("sr-skipped", "capped", NOW);
-  insertSuiteRun.run("sr-pending", "running", NOW);
+  scenario.run("scn-qa", "Q", "prov-qa", { now: NOW });
+  scenario.run("scn-keep", "K", "prov-keep", { now: NOW });
   db.prepare(
-    `INSERT INTO suite_run_reports (id, suite_run_id, status, report_json, rating_version, created_at)
-     VALUES ('rep-1', 'sr-rated', 'ready', '{}', 1, @now)`,
+    "INSERT INTO tests (id, name, user_prompt, created_at, updated_at) VALUES ('t-1', 'T', 'go', @now, @now)",
+  ).run({ now: NOW });
+  const run = db.prepare(
+    "INSERT INTO runs (id, test_id, scenario_id, mode, status, started_at) VALUES (?, 't-1', ?, 'automated', 'completed', @now)",
+  );
+  run.run("run-qa", "scn-qa", { now: NOW });
+  run.run("run-keep", "scn-keep", { now: NOW });
+  const step = db.prepare(
+    "INSERT INTO run_steps (id, run_id, idx, type, label, status) VALUES (?, ?, 1, 'llm_response', 'x', 'ok')",
+  );
+  step.run("step-qa", "run-qa");
+  step.run("step-keep", "run-keep");
+  db.prepare(
+    "INSERT INTO assistant_settings (id, fallback_provider_credential_id, updated_at) VALUES (1, 'prov-qa', @now)",
   ).run({ now: NOW });
 
   applyMigrations(db);
 
-  assert.equal(
-    db.pragma("user_version", { simple: true }),
-    LATEST_SCHEMA_VERSION,
-    "stamped to latest after v27",
-  );
-  const runState = (id: string) =>
-    (db.prepare("SELECT rating_state FROM runs WHERE id = ?").get(id) as { rating_state: string })
-      .rating_state;
-  assert.equal(runState("run-rated"), "rated", "terminal run WITH a base-rating grade → 'rated'");
-  assert.equal(
-    runState("run-skipped"),
-    "skipped",
-    "terminal run without a base-rating grade → 'skipped' (an expectation grade alone doesn't count)",
-  );
-  assert.equal(runState("run-pending"), "pending", "non-terminal run stays 'pending'");
-
-  const suiteState = (id: string) =>
-    (
-      db.prepare("SELECT rating_state FROM suite_runs WHERE id = ?").get(id) as {
-        rating_state: string;
-      }
-    ).rating_state;
-  assert.equal(suiteState("sr-rated"), "rated", "terminal suite run WITH a report → 'rated'");
-  assert.equal(suiteState("sr-skipped"), "skipped", "terminal suite run without one → 'skipped'");
-  assert.equal(suiteState("sr-pending"), "pending", "non-terminal suite run stays 'pending'");
-
-  // The status vocabularies were NOT touched (rating is an orthogonal axis — locked AR11 rule).
-  assert.equal(runStateColumnDefault(db, "runs"), "'pending'", "runs default is 'pending'");
-  assert.equal(
-    runStateColumnDefault(db, "suite_runs"),
-    "'pending'",
-    "suite_runs default is 'pending'",
-  );
-});
-
-/** The dflt_value of a table's rating_state column (PRAGMA table_info). */
-function runStateColumnDefault(db: AppDatabase, table: string): unknown {
-  return (
-    db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
-      name: string;
-      dflt_value: unknown;
-    }>
-  ).find((c) => c.name === "rating_state")?.dflt_value;
-}
-
-test("migration v24 is idempotent — re-running on an already-migrated DB is a no-op", () => {
-  const db = openFresh();
-  assert.doesNotThrow(() => applyMigrations(db), "re-applying v24 does not throw");
-  assert.equal(
-    db.pragma("user_version", { simple: true }),
-    LATEST_SCHEMA_VERSION,
-    "version unchanged",
-  );
-  assert.ok(columns(db, "scenarios").includes("answers_mode"), "fresh DB has answers_mode (v24)");
+  const ids = (sql: string) => (db.prepare(sql).all() as Array<{ id: string }>).map((r) => r.id);
+  assert.deepEqual(ids("SELECT id FROM provider_credentials"), ["prov-keep"], "the qlik credential is gone");
+  assert.deepEqual(ids("SELECT id FROM scenarios"), ["scn-keep"], "its environment went with it");
+  assert.deepEqual(ids("SELECT id FROM runs"), ["run-keep"], "and its runs");
+  assert.deepEqual(ids("SELECT id FROM run_steps"), ["step-keep"], "and their steps (no orphans)");
+  const settings = db
+    .prepare("SELECT fallback_provider_credential_id AS f FROM assistant_settings WHERE id = 1")
+    .get() as { f: string | null };
+  assert.equal(settings.f, null, "the ON DELETE SET NULL pointer was nulled by hand (FKs are OFF)");
+  assert.deepEqual(db.pragma("foreign_key_check"), [], "nothing dangling after the purge + rebuild");
 });
 
 // ── Migration v28 (Claude subscription WP 0.2, D-CS6) — provider_credentials: widen kind CHECK to admit
@@ -1452,12 +1286,13 @@ test("migration v28 — pre-v28 DB widens the kind CHECK to admit claude_subscri
   );
 
   // The widened CHECK now admits a keyless claude_subscription row (D-CS7 — no api_key_encrypted).
+  // NOTE: `mcp_server_id` is deliberately NOT named here — v23 added it, v56 dropped it again.
   assert.doesNotThrow(
     () =>
       db
         .prepare(
-          `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, mcp_server_id, created_at, updated_at)
-           VALUES ('prov-cs', 'claude_subscription', 'Claude (subscription)', NULL, NULL, NULL, @now, @now)`,
+          `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
+           VALUES ('prov-cs', 'claude_subscription', 'Claude (subscription)', NULL, NULL, @now, @now)`,
         )
         .run({ now: NOW }),
     "the widened CHECK admits a claude_subscription row",
@@ -2642,7 +2477,7 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
 
 test("migration v55 — a fresh DB carries hub_sessions/hub_agents.provider_credential_id (schema.ts baseline)", () => {
   const db = openFresh();
-  assert.equal(db.pragma("user_version", { simple: true }), 55, "fresh DB stamped at 55");
+  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
   assert.ok(
     columnExists(db, "hub_sessions", "provider_credential_id"),
     "the baseline DDL carries hub_sessions.provider_credential_id (a fresh DB SKIPS every migration)",
@@ -2695,7 +2530,9 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
   applyMigrations(db);
 
   assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
-  assert.equal(LATEST_SCHEMA_VERSION, 55, "and latest is 55");
+  assert.equal(
+    LATEST_SCHEMA_VERSION,
+    56, "and latest is 56");
   assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
   assert.ok(columnExists(db, "hub_sessions", "provider_credential_id"), "hub_sessions gained it");
   assert.ok(columnExists(db, "hub_agents", "provider_credential_id"), "hub_agents gained it");

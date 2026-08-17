@@ -5,7 +5,7 @@
 // bindings it enumerated (session create/patch, agent create/patch) and missed two more:
 //
 //   • **crew-member pins** — a FIFTH write of a credential id. `POST/PATCH /api/hub/crews` called
-//     `repository.createCrew`/`updateCrew` bare, so a `qlik_answers` or `authBroken` pin was accepted
+//     `repository.createCrew`/`updateCrew` bare, so a `acme_answers` or `authBroken` pin was accepted
 //     silently and an unknown id was not caught at all (crew members ride the `hub_crews.members_json`
 //     blob, which no foreign key protects — D-MI2).
 //   • **the dock's Hub write tools** (`assistant/tools/hub-write-tools.ts`) — `hub_agent_create` /
@@ -61,7 +61,7 @@ export function describeHubCredential(credential: ProviderCredential): string {
  * model-identity WP2.1 (D-MI1) — resolve an EXPLICIT `providerCredentialId` to the credential that must
  * run the turn, refusing loudly (D-MI9) rather than degrading.
  *
- * Degrading here would mean an unknown / non-hub-eligible (`qlik_answers`, D-AH4) / auth-broken pin
+ * Degrading here would mean an unknown / non-hub-eligible (`acme_answers`, D-AH4) / auth-broken pin
  * falls through to the name heuristic, which is precisely the class of behaviour that produced the
  * original defect: the operator asked for one credential and silently got another, with no signal
  * anywhere. Refusing in the module's existing `NO_PROVIDER_MESSAGE` 409 posture is the only outcome that

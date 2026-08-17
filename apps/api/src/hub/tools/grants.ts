@@ -117,7 +117,7 @@ export function unionServerGrant(a: HubServerToolGrant, b: HubServerToolGrant): 
  * roles + crew member roles) INTO the session's own tool scope, so a server a reused server-bound role
  * needs is REACHABLE from the session. Every reachability read — the planner's grantable-server catalog,
  * the plan-grant clamp ({@link resolveMcpGrants}'s catalog source), and the child-spawn intersection
- * ({@link effectiveAgentGrants}) — reads `session.toolScope`; without this union, scoping a Qlik-connected
+ * ({@link effectiveAgentGrants}) — reads `session.toolScope`; without this union, scoping a Acme-connected
  * role into a mission whose session had no server attached silently stripped the role's server at plan
  * time and the agent ran tool-less. A `null` scope (the "auto"/unscoped default — already every reachable
  * server) is returned UNCHANGED (nothing to widen). Built-ins are untouched. Pure; never mutates inputs;

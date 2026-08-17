@@ -67,13 +67,6 @@ describe("deriveHotspots", () => {
     expect(hotspots.some((h) => h.kind === "costliest")).toBe(false);
   });
 
-  test("costBasis:\"questions\" ALSO omits the costliest hotspot — no honest per-step dollar figure for a question-count run", () => {
-    const s1 = step({ id: "s1", index: 0, type: "tool_call", durationMs: 10 });
-    const perStep = new Map<string, StepEconomics>([["s1", econ({ costUsdDelta: 3, durationMs: 10 })]]);
-    const hotspots = deriveHotspots([s1], perStep, { costBasis: "questions", contextWindow: false });
-    expect(hotspots.some((h) => h.kind === "costliest")).toBe(false);
-  });
-
   test("contextWindow:false omits the contextJump hotspot entirely", () => {
     const s1 = step({
       id: "s1",

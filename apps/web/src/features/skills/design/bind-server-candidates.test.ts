@@ -12,7 +12,7 @@ import {
 
 const servers = [
   { id: "s-files", name: "files", transport: "stdio" },
-  { id: "s-qlik", name: "qlik-cloud", transport: "streamable_http" },
+  { id: "s-acme", name: "acme-cloud", transport: "streamable_http" },
   { id: "s-fresh", name: "brand-new", transport: "stdio" },
 ];
 
@@ -20,16 +20,16 @@ const scans = [
   // files: an older success, then a newer FAILED scan → latest=failed, but a completed scan exists.
   { serverId: "s-files", status: "success", scannedAt: "2026-07-01T10:00:00.000Z", totalTools: 12 },
   { serverId: "s-files", status: "failed", scannedAt: "2026-07-02T10:00:00.000Z", totalTools: 0 },
-  // qlik-cloud: two successes → the NEWEST success wins the tool count.
-  { serverId: "s-qlik", status: "success", scannedAt: "2026-06-01T00:00:00.000Z", totalTools: 5 },
-  { serverId: "s-qlik", status: "success", scannedAt: "2026-06-20T00:00:00.000Z", totalTools: 8 },
+  // acme-cloud: two successes → the NEWEST success wins the tool count.
+  { serverId: "s-acme", status: "success", scannedAt: "2026-06-01T00:00:00.000Z", totalTools: 5 },
+  { serverId: "s-acme", status: "success", scannedAt: "2026-06-20T00:00:00.000Z", totalTools: 8 },
   // brand-new: never scanned.
 ];
 
 describe("deriveBindCandidates", () => {
   test("annotates latest scan status, completed-scan flag, and success tool count", () => {
     const rows = deriveBindCandidates(servers, scans, []);
-    expect(rows.map((row) => row.serverName)).toEqual(["brand-new", "files", "qlik-cloud"]);
+    expect(rows.map((row) => row.serverName)).toEqual(["acme-cloud", "brand-new", "files"]);
 
     const files = rows.find((row) => row.serverId === "s-files");
     expect(files).toMatchObject({
@@ -40,8 +40,8 @@ describe("deriveBindCandidates", () => {
       disabledReason: null,
     });
 
-    const qlik = rows.find((row) => row.serverId === "s-qlik");
-    expect(qlik).toMatchObject({
+    const acme = rows.find((row) => row.serverId === "s-acme");
+    expect(acme).toMatchObject({
       lastScanStatus: "success",
       scannedTools: 8,
       hasCompletedScan: true,
@@ -60,7 +60,7 @@ describe("deriveBindCandidates", () => {
   test("already-declared names are disabled (trimmed comparison)", () => {
     const rows = deriveBindCandidates(servers, scans, ["  files  ", "unrelated"]);
     expect(rows.find((row) => row.serverId === "s-files")?.disabledReason).toBe("already-bound");
-    expect(rows.find((row) => row.serverId === "s-qlik")?.disabledReason).toBeNull();
+    expect(rows.find((row) => row.serverId === "s-acme")?.disabledReason).toBeNull();
   });
 
   test("duplicate registered names are ALL disabled as ambiguous (the resolver never guesses)", () => {
@@ -106,11 +106,11 @@ const mkType = (id: string, name: string, status: ServerTypeStatus, memberCount:
 
 describe("deriveBindTypeCandidates", () => {
   const typeServers = [
-    { id: "s-a", name: "Qlik A", transport: "streamable_http", typeId: "t-saas" },
-    { id: "s-b", name: "Qlik B", transport: "streamable_http", typeId: "t-saas" },
+    { id: "s-a", name: "Acme A", transport: "streamable_http", typeId: "t-saas" },
+    { id: "s-b", name: "Acme B", transport: "streamable_http", typeId: "t-saas" },
     { id: "s-solo", name: "solo", transport: "stdio", typeId: null },
   ];
-  const types = [mkType("t-saas", "Qlik-SaaS", "production", 2)];
+  const types = [mkType("t-saas", "Acme-SaaS", "production", 2)];
 
   test("resolves the representative = the member with the NEWEST successful scan (D-ST3)", () => {
     const scansIn = [
@@ -121,11 +121,11 @@ describe("deriveBindTypeCandidates", () => {
     const [row] = deriveBindTypeCandidates(types, typeServers, scansIn, []);
     expect(row).toMatchObject({
       typeId: "t-saas",
-      typeName: "Qlik-SaaS",
+      typeName: "Acme-SaaS",
       status: "production",
       memberCount: 2,
       representativeId: "s-b",
-      representativeName: "Qlik B",
+      representativeName: "Acme B",
       hasRepresentative: true,
       representativeTools: 8,
       disabledReason: null,
@@ -159,7 +159,7 @@ describe("deriveBindTypeCandidates", () => {
   test("a type whose name is ALSO a registered server name is disabled as `name-collision`", () => {
     const collidingServers = [
       ...typeServers,
-      { id: "s-clash", name: "Qlik-SaaS", transport: "stdio", typeId: null }, // exact same name as the type
+      { id: "s-clash", name: "Acme-SaaS", transport: "stdio", typeId: null }, // exact same name as the type
     ];
     const scansIn = [
       { serverId: "s-a", status: "success", scannedAt: "2026-01-01T00:00:00.000Z", totalTools: 5 },
@@ -172,16 +172,16 @@ describe("deriveBindTypeCandidates", () => {
     const scansIn = [
       { serverId: "s-a", status: "success", scannedAt: "2026-01-01T00:00:00.000Z", totalTools: 5 },
     ];
-    const [row] = deriveBindTypeCandidates(types, typeServers, scansIn, ["  qlik-saas "]);
+    const [row] = deriveBindTypeCandidates(types, typeServers, scansIn, ["  acme-saas "]);
     expect(row?.disabledReason).toBe("already-bound");
   });
 
   test("already-bound wins over name-collision (the truer state)", () => {
     const collidingServers = [
       ...typeServers,
-      { id: "s-clash", name: "Qlik-SaaS", transport: "stdio", typeId: null },
+      { id: "s-clash", name: "Acme-SaaS", transport: "stdio", typeId: null },
     ];
-    const [row] = deriveBindTypeCandidates(types, collidingServers, [], ["Qlik-SaaS"]);
+    const [row] = deriveBindTypeCandidates(types, collidingServers, [], ["Acme-SaaS"]);
     expect(row?.disabledReason).toBe("already-bound");
   });
 

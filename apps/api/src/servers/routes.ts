@@ -10,7 +10,6 @@ import { callTool, discoverTools } from "../mcp/client.js";
 import { isAuthRequiredError, isOAuthHttpServer } from "../mcp/auth-error.js";
 import { formatConnectionError } from "../mcp/connection-error.js";
 import type { OAuthService } from "../oauth/service.js";
-import type { LinkedAuthResolver } from "../providers/linked-auth.js";
 import type { ScanService } from "../scans/service.js";
 import { httpError, toErrorMessage } from "../utils/errors.js";
 import {
@@ -21,7 +20,6 @@ import {
   parseAssetResult,
   resolveAssetFetchUrl,
 } from "./asset-proxy.js";
-import { probeRequestAnswers, probeServerAnswers } from "./qlik-answers-probe.js";
 import type { InternalServerConfig, ServerRepository } from "./repository.js";
 
 // Kept as a named export (re-exported from the shared formatter) for backward-compat with callers
@@ -33,7 +31,6 @@ export async function registerServerRoutes(
   servers: ServerRepository,
   scanService: ScanService,
   oauthService: OAuthService,
-  linkedAuth: LinkedAuthResolver,
 ) {
   app.get("/api/servers", async () => servers.list());
 
@@ -58,11 +55,6 @@ export async function registerServerRoutes(
         () => undefined,
       );
 
-      // Qlik Answers (WP 2.1) — when the probed URL looks like a Qlik Cloud tenant, fold in the free,
-      // list-only assistants availability check using the probe's OWN supplied auth (the server isn't
-      // saved yet). `undefined` for any non-Qlik URL, so every other probe is unchanged. List-only by
-      // construction — a probe never consumes a question.
-      const qlikTenant = await probeRequestAnswers(input.url, input.auth);
       return {
         ok: true,
         url: input.url,
@@ -72,7 +64,6 @@ export async function registerServerRoutes(
         durationMs: Date.now() - startedAt,
         message: `Connection OK. ${result.tools.length} tools listed.`,
         authMethods: [input.auth?.type ?? "none"],
-        ...(qlikTenant ? { qlikTenant } : {}),
       };
     } catch (error) {
       const authRequired = isAuthRequiredError(error);
@@ -119,19 +110,6 @@ export async function registerServerRoutes(
   app.post("/api/servers/:id/test", async (request) => {
     const { id } = request.params as { id: string };
     return scanService.testServer(id);
-  });
-
-  /**
-   * Qlik Answers availability probe (WP 2.1) for a SAVED server — detect (URL-based) then, only for a
-   * Qlik tenant with resolvable OWN credentials, run the LIST-ONLY `GET /api/v1/assistants` check. Thin:
-   * delegates to `probeServerAnswers`, which is list-only BY CONSTRUCTION (it can never invoke/stream a
-   * question). Returns the redacted `QlikTenantProbe` (origin + booleans + a count) — never a secret.
-   * A 401/403 from the tenant → `needsOwnKey:true` (the wizard offers an API-key fallback). An unknown
-   * server id 404s (via `getInternal` inside the helper).
-   */
-  app.post("/api/servers/:id/qlik/answers-probe", async (request) => {
-    const { id } = request.params as { id: string };
-    return probeServerAnswers({ servers, auth: linkedAuth }, id);
   });
 
   /**

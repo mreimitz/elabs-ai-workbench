@@ -7,7 +7,7 @@ information-design + interaction the Servers view has real problems. The right c
 their **composition, density, and interaction** are not. Below: every issue (Manuel's list + the ones I
 should have caught), each with **source evidence**, the **rubric**, and the **fix**.
 
-Evidence is cited as `file:line`. Live measurements were taken on the 60-tool `mcp-qlik-mreimitz` server.
+Evidence is cited as `file:line`. Live measurements were taken on the 60-tool `mcp-acme-demo` server.
 Severity: 🔴 High · 🟠 Medium · 🟡 Low.
 
 Files: `features/servers/ServersView.tsx`, `features/scans/ToolDetailPanel.tsx`,
@@ -23,9 +23,9 @@ Files: `features/servers/ServersView.tsx`, `features/scans/ToolDetailPanel.tsx`,
 twice, and renders **zero** charts despite being a token-analytics tool.
 
 ### 1.1 🔴 "Attention & optimization" — grouped per tool, not per finding type
-**Observed (`:239-266`):** `recommendations` render as one flat `<ul>`; on the qlik server you get
-`Split or trim qlik_create_data_object`, `Split or trim qlik_add_chart`, `Review the schema for
-qlik_add_chart`, `Review the schema for qlik_create_data_object`, … — i.e. a per-tool list where the
+**Observed (`:239-266`):** `recommendations` render as one flat `<ul>`; on the vendor server you get
+`Split or trim acme_create_data_object`, `Split or trim acme_add_chart`, `Review the schema for
+acme_add_chart`, `Review the schema for acme_create_data_object`, … — i.e. a per-tool list where the
 **same finding type repeats** down the page. There is no grouping by *kind* of problem.
 **Why it's wrong:** findings are the page's highest-value content (Tier: Act). A flat per-tool list
 buries the pattern ("12 tools have oversized schemas") and makes the list as long as the tool count.
@@ -105,7 +105,7 @@ the "how is this server changing" view (and a shortcut into Compare).
 ### 2.1 🔴 Master-detail split is NOT resizable
 **Observed:** `SplitPanel startSize="380px"` (`ServersView.tsx:336-338`). Live DOM on the Tools tab:
 **0 resize handles** (`[data-panel-resize-handle]/[role=separator]` count = 0). `SplitPanel` renders a
-fixed 380px rail; the user can't widen the list to read long `qlik_*` names or widen the detail.
+fixed 380px rail; the user can't widen the list to read long `vendor_*` names or widen the detail.
 **Why it's wrong:** the run modal uses `ResizablePanelGroup` for the same master/detail need; the Tools
 tab should too. Consistency + operator control. (`screen-layout-patterns.md` — master-detail.)
 **Fix:** replace `SplitPanel` with `ResizablePanelGroup` + `ResizableHandle withHandle` (default ~32/68),
@@ -201,7 +201,7 @@ handling are active — same root cause as 2.1), and set the default to **⅓ Pa
 (`defaultSize={33}` / `{67}`).
 
 ### 4.2 🟠 Parameters not sorted required → optional
-**Observed:** `params.map(...)` in schema order (`:170`). Live order on `qlik_create_data_object`:
+**Observed:** `params.map(...)` in schema order (`:170`). Live order on `acme_create_data_object`:
 `appId(req), dimensions(req), limit(opt), measures(req), sort(opt), stateName(opt)` — required and
 optional interleaved. (Same in the Parameters tab, `ToolDetailPanel.tsx:135`.)
 **Fix:** sort **required first, then optional** (stable within each group); optionally a subtle divider /

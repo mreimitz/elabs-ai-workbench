@@ -66,7 +66,7 @@ front of a user.
 - **Long-running quality gates.** Validate servers and skills over time and flag regressions
   before they reach a session.
 - **Compare anything.** Diff a server against its own past, two servers against each other, two
-  runs turn by turn, or a **Qlik Answers assistant head-to-head against a full MCP session**.
+  runs turn by turn, or two agent configurations head-to-head.
 - **Fully local.** Everything runs on your machine, so sensitive setups and credentials never
   leave it.
 
@@ -99,7 +99,6 @@ natural order you'll use the app in.
 - [Suites & benchmarks](./18-suites-and-benchmarks.md) — run many tests at once and grade the answers.
 - [Model compatibility](./19-compatibility.md) — check whether a server fits inside each model's limits.
 - [Observability](./17-observability.md) — watch rules, the Review queue, and catching regressions.
-- [Qlik Answers as a model](./11-qlik-answers.md) — run a Qlik Answers assistant and compare it against an MCP session.
 
 **More**
 
@@ -107,7 +106,6 @@ natural order you'll use the app in.
 - [Assistant](./16-assistant-hub.md) — the full-page, multi-model, multi-agent **workspace**.
 - [Settings](./13-settings.md) — providers, themes, and storage.
 - [Troubleshooting & FAQ](./14-troubleshooting.md) — common problems and fixes.
-- [The OpenAI-compatible endpoint](./15-openai-endpoint.md) — expose a Qlik Answers assistant to outside tools.
 
 ---
 

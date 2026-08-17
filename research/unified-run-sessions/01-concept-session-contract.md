@@ -18,7 +18,7 @@ Normative phases: `queued → starting → running ⇄ waiting_input → reviewi
 
 - Additive event `{type: "phase", phase: "queued" | "waiting_input" | …, detail?}` emitted at
   transitions. `RunStatus` stays untouched (no migration); the phase event is presentation-level
-  truth. Emitters: subscription gate wait (`queued`, with queue position in `detail`), engine/qlik
+  truth. Emitters: subscription gate wait (`queued`, with queue position in `detail`), engine/vendor
   `nextTurn` + `ask_user` waits (`waiting_input`), all executors on permit/start.
   *(Open question Q1: phase event vs real status values.)*
 - **One terminal mapping shared by all executors.** Extract a `terminalFor(cause)` helper into a
@@ -36,7 +36,7 @@ Normative phases: `queued → starting → running ⇄ waiting_input → reviewi
 | provider/transport failure | `error` / `error` | `provider_error` / `auth` / `rate_limit` |
 
 - Add `stopReasonCode` (machine-readable) alongside the existing human `stopReason` on the `status`
-  event and the runs row. This retires `guardrailFromReason`'s string-sniffing and fixes the qlik
+  event and the runs row. This retires `guardrailFromReason`'s string-sniffing and fixes the vendor
   `aborted`-on-deadline mismatch (00 §3.1) in one move.
 - **"End session" button** on interactive runs (all kinds): finalizes as `completed`/`session_ended`.
   Interactive sessions stop being the only runs that can never succeed.
@@ -56,7 +56,7 @@ owned by run-service and injected into every executor. Policy:
    bounds a waiting session is the **idle timeout, uniformly**: one configurable value (default
    10 min) applied to `nextTurn` *and* `ask_user` waits on *all three* executors — wiring
    `idleTimeoutMs` from the scenario at last (it exists in the engine signature and is dead today),
-   adding it to the subscription/qlik interactive loops' `nextTurnOrStop` race.
+   adding it to the subscription/vendor interactive loops' `nextTurnOrStop` race.
    *(Open question Q3: pausing clocks changes what "duration" means for benchmarking.)*
 3. **Warn, then extend, then stop.** At T−5 min the clock emits `{type:"phase", phase:"deadline_warning"}`;
    RunBar shows a countdown chip with one-click **"+15 min"** (new `POST /api/runs/:id/extend`,
@@ -85,21 +85,21 @@ type SessionCapabilities = {
   costBasis: "api_exact" | "subscription_reference" | "questions" | "none";
   followUps: boolean;                     // POST /turns supported while live
   askUser: boolean;
-  identity?: { kind: "qlik_assistant"; assistantId; appId; threadMode; transport }; // rail card
+  identity?: { kind: "vendor_assistant"; assistantId; appId; threadMode; transport }; // rail card
 };
 ```
 
 Current values: engine → `{liveReasoning:"raw", tokens:"exact", contextWindow:true, costBasis:"api_exact", …}`;
 subscription → `{liveReasoning:"none", tokens:"exact", contextWindow:false, costBasis:"subscription_reference"}`;
-qlik → `{toolCalls:false, tokens:"estimated", contextWindow:false, costBasis:"questions", liveReasoning:"structured"}`.
+vendor → `{toolCalls:false, tokens:"estimated", contextWindow:false, costBasis:"questions", liveReasoning:"structured"}`.
 
 The UI then renders **one console with per-capability degradation**:
 
 - `KpiRail` assembles its tiles from a declarative list driven by capabilities (context tile iff
   `contextWindow`; token tiles labelled "est." iff `tokens==="estimated"`, hidden iff `"none"`;
-  cost tile knows its unit — `$`, `$ est. · subscription`, or `N questions`). The qlik identity
+  cost tile knows its unit — `$`, `$ est. · subscription`, or `N questions`). The vendor identity
   card renders iff `identity` is present.
-- `ContextChart`/baseline gate on `contextWindow`, not `providerKind === "qlik_answers"`.
+- `ContextChart`/baseline gate on `contextWindow`, not `providerKind === "vendor_assistant"`.
 - `ConversationPane` picks the reasoning renderer from `liveReasoning`, and the answer renderer
   from the payload (as it already does via `promptMode` — formalized instead of inferred).
 - The composer/QuestionPrompt gate on `followUps`/`askUser` (also fixes the current
@@ -145,7 +145,7 @@ single vocabulary (labels are an owner decision — Q6):
 > settled — several answers (Q1, Q2, Q3, Q5) change the cut lines.
 
 - **Wave 1 — contract + clock (api, shared):** `stopReasonCode` + shared `terminalFor` adopted by
-  all three executors (incl. qlik deadline fix, "End session" terminal); `SessionClock` extraction
+  all three executors (incl. vendor deadline fix, "End session" terminal); `SessionClock` extraction
   (pause-in-waiting_input, uniform idle timeout, deadline warning, `POST /api/runs/:id/extend`,
   stall detector); `phase` events + subscription queue visibility + own concurrency setting;
   `SessionCapabilities` emitted + persisted. Regression tests: one lifecycle test *per executor*
@@ -157,7 +157,7 @@ single vocabulary (labels are an owner decision — Q6):
   `id:`/`Last-Event-ID` cursor resume + `ping` event + client watchdog; suite console parity pass.
 
 **Candidate quick wins** (small, independent of the concept; whether to ship any of them *before*
-the concept settles is itself Q10): fix the qlik deadline terminal to `stopped`/`stopped_guardrail`;
+the concept settles is itself Q10): fix the vendor deadline terminal to `stopped`/`stopped_guardrail`;
 wire `scenario.guardrails.idleTimeoutMs` through `resolve()`; make queued subscription runs visible
 before `gate.acquire()`; unify `error`/`aborted` labels between RunBar and status.ts; surface
 `maxRunDurationMs` in the launcher + RunBar.

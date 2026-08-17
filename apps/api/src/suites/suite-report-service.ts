@@ -17,7 +17,6 @@ import {
   type RunDetail,
   type RunEvent,
   type RunGrade,
-  type SkippedSuiteMember,
   type SuiteReport,
   type SuiteReportBaseline,
   type SuiteReportTestGroup,
@@ -189,13 +188,6 @@ export class SuiteReportService {
       }
     }
 
-    // Qlik Answers (WP 1.4, D-QA6) — echo the suite run's ALREADY-FINALIZED skipped-incompatible
-    // members (cached on `aggregates_json` by the orchestrator's `finalize()`, no separate query/table)
-    // onto the persisted report, so the operator sees "N skipped: incompatible" here too. Best-effort:
-    // an unreadable suite run here can't ordinarily happen (its child ids were just read above), but
-    // this step must never fail generation — it just leaves the report's `skippedMembers` honestly `[]`.
-    report = { ...report, skippedMembers: this.readSkippedMembers(suiteRunId) };
-
     // Suite-report enrichment — per-test-group findings highlights: DETERMINISTIC, evidence-grounded
     // sentences derived ONLY from the already-computed facets (agreement contradiction, score spread,
     // tool-path divergence, cost outlier, error-cluster membership — see computeTestGroupFindings).
@@ -265,19 +257,6 @@ export class SuiteReportService {
       return this.deps.grades.listByRun(runId).length > 0;
     } catch {
       return true; // a member that no longer resolves cannot gate the report (never hang on it)
-    }
-  }
-
-  /**
-   * Qlik Answers (WP 1.4, D-QA6) — read the skipped-incompatible members the orchestrator already
-   * cached on this suite run's `aggregates_json` at `finalize()` time. Never throws: an unreadable
-   * suite run (or one with no skipped members) yields `[]`, never blocking report generation.
-   */
-  private readSkippedMembers(suiteRunId: string): SkippedSuiteMember[] {
-    try {
-      return this.deps.suiteRuns.getRun(suiteRunId).aggregates?.skippedMembers ?? [];
-    } catch {
-      return [];
     }
   }
 
@@ -501,7 +480,6 @@ export function buildDeterministicSuiteReport(
     judgeProvenance: { judgeProviderId: null, judgeModel: null },
     ratingVersion: AUTO_RATING_VERSION,
     generatedAt: new Date().toISOString(),
-    skippedMembers: [], // Filled by SuiteReportService.generate (reads the suite run's cached aggregates).
   };
 }
 
@@ -794,7 +772,6 @@ export function emptySuiteReport(suiteRunId: string): SuiteReport {
     judgeProvenance: { judgeProviderId: null, judgeModel: null },
     ratingVersion: AUTO_RATING_VERSION,
     generatedAt: new Date().toISOString(),
-    skippedMembers: [], // Filled by SuiteReportService.generate (reads the suite run's cached aggregates).
   };
 }
 

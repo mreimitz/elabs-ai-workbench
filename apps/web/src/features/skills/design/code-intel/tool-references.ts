@@ -13,13 +13,13 @@
 //     backticked or bare, in a heading, bold, prose, or a fenced example. List-driven: any name the
 //     bound servers' latest scans expose matches, whatever its shape.
 //   • UNKNOWN-TOOLLIKE — a BACKTICKED inline-code span whose whole text has the server tool-name
-//     shape (`qlik_search`-style snake_case) but is NOT in the known list. Deliberately conservative
+//     shape (`acme_search`-style snake_case) but is NOT in the known list. Deliberately conservative
 //     (false positives are worse than misses, same stance as the API's `extract-tools.ts`): bare
 //     snake_case words are NEVER flagged, only exact single-token backticked spans are.
 //
 // Skipped contexts: the YAML frontmatter block (keys AND values — mirrors the API extractor) and
 // fence DELIMITER lines (so a ``` language tag can never match). Inside a fence, backticks are
-// literal, so fence content can still match KNOWN names (an example calling `qlik_search` is a real
+// literal, so fence content can still match KNOWN names (an example calling `acme_search` is a real
 // reference) but never produces unknown-toollike findings (example code is a false-positive magnet).
 
 /** How a matched occurrence classifies against the bound servers' scanned tool names. */
@@ -51,7 +51,7 @@ export type UnknownToolFinding = {
 
 /**
  * The server tool-name SHAPE an unknown-toollike span must have: lowercase snake_case with a first
- * segment of ≥ 2 chars and ≥ 1 underscore-joined segment (`qlik_search`, `qlik_get_data_model`).
+ * segment of ≥ 2 chars and ≥ 1 underscore-joined segment (`acme_search`, `acme_get_data_model`).
  * Tightened from the audit's `^[a-z][a-z0-9]+_[a-z0-9_]+$` to reject trailing/double underscores —
  * conservative on purpose so ordinary prose tokens don't get flagged.
  */
@@ -62,8 +62,8 @@ export function isToolLikeName(name: string): boolean {
   return TOOL_NAME_SHAPE_RE.test(name);
 }
 
-/** A word character for boundary purposes — underscore included, so `qlik_search` never matches
- *  inside `qlik_search_advanced` (this is also what resolves overlapping names longest-first). */
+/** A word character for boundary purposes — underscore included, so `acme_search` never matches
+ *  inside `acme_search_advanced` (this is also what resolves overlapping names longest-first). */
 const WORD_CHAR_RE = /[A-Za-z0-9_]/;
 
 /** A fence delimiter line (``` or ~~~, optionally indented) — same toggle the repo's other markdown
@@ -98,8 +98,8 @@ function frontmatterEnd(lines: readonly string[]): number {
 /**
  * Match every tool-name occurrence in `text` against `knownToolNames` (see the module header for the
  * exact rules). Matches are returned in document order; ranges never overlap — an occurrence is
- * reported exactly once, and word boundaries make overlapping names (`qlik_search` vs
- * `qlik_search_advanced`) resolve to the longest actual name at each position.
+ * reported exactly once, and word boundaries make overlapping names (`acme_search` vs
+ * `acme_search_advanced`) resolve to the longest actual name at each position.
  *
  * Classification is PURE list-membership: with an empty known list every backticked toollike span is
  * `unknown-toollike` — it is the CALLER's job to decide that an unbound skill (no scanned bound
@@ -113,7 +113,7 @@ export function matchToolReferences(
   const known = [...new Set(knownToolNames)].filter((name) => name.length > 0);
   const knownSet = new Set(known);
   // One alternation, longest-first, so at any position the regex engine prefers the longest known
-  // name (boundary checks then reject prefix hits like `qlik_search` inside `qlik_search_advanced`).
+  // name (boundary checks then reject prefix hits like `acme_search` inside `acme_search_advanced`).
   const knownRe =
     known.length > 0
       ? new RegExp(
@@ -172,7 +172,7 @@ export function matchToolReferences(
     }
 
     // (b) Bare occurrences of KNOWN names anywhere else on the line (word-boundary, case-sensitive).
-    //     Also covers a known name inside a longer inline-code span (`` `use qlik_search here` ``)
+    //     Also covers a known name inside a longer inline-code span (`` `use acme_search here` ``)
     //     and known names inside fence content — those report as `backticked: false`.
     if (knownRe) {
       knownRe.lastIndex = 0;

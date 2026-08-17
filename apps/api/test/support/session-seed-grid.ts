@@ -11,7 +11,7 @@
 //
 // Kind is DELIBERATELY orthogonal to the label: the whole point of D-US5 is that the same state renders
 // the same chip regardless of backend (`deriveRunStatusView` never consults `providerKind`/capabilities
-// for the label). Seeding every state for all three kinds proves exactly that invariant. Kind only
+// for the label). Seeding every state for every kind proves exactly that invariant. Kind only
 // changes the persisted `capabilities_json` manifest (so a downstream visual pass exercises the
 // capability-driven KPI rail too) and the provider/mode.
 
@@ -48,20 +48,18 @@ function chip(
   return { kind: "chip", label, tone, spinner: opts.spinner ?? false, dashed: opts.dashed ?? false };
 }
 
-/** The three backend families the console must render identically. */
-export type SeedKind = "engine" | "subscription" | "qlik";
+/** The backend families the console must render identically. */
+export type SeedKind = "engine" | "subscription";
 
 /** The one provider kind each family persists a run under (drives `capabilities_json` + the provider FK). */
 const KIND_PROVIDER: Record<SeedKind, ProviderKind> = {
   engine: "anthropic",
   subscription: "claude_subscription",
-  qlik: "qlik_answers",
 };
 
 const KIND_MODEL: Record<SeedKind, string> = {
   engine: "claude-sonnet-4",
   subscription: "claude-sonnet-4",
-  qlik: "assistant-abc",
 };
 
 /** Every session state WP3.R exercises. The task's required set + the remaining LOCKED-table rows
@@ -74,7 +72,6 @@ export type SeedState =
   | "ended"
   | "stalled"
   | "wait_expired"
-  | "prompt_rejected"
   | "max_duration"
   | "context_overflow"
   | "assertions_failed"
@@ -159,12 +156,6 @@ export const SEED_STATE_SPECS: Record<SeedState, StateSpec> = {
     ratingState: "rated",
     expected: chip("Expired", "neutral"),
   },
-  prompt_rejected: {
-    mode: "automated",
-    terminal: "prompt_rejected",
-    ratingState: "rated",
-    expected: chip("Rejected by assistant", "warning"),
-  },
   max_duration: {
     mode: "automated",
     terminal: "max_duration",
@@ -218,7 +209,7 @@ export const SEED_STATE_SPECS: Record<SeedState, StateSpec> = {
 
 /** The state × kind grid, in a stable order (kinds outer, states inner) so screenshots/logs are stable. */
 export const SEED_STATES = Object.keys(SEED_STATE_SPECS) as SeedState[];
-export const SEED_KINDS: SeedKind[] = ["engine", "subscription", "qlik"];
+export const SEED_KINDS: SeedKind[] = ["engine", "subscription"];
 
 /** States seeded UNSEEN so the "Needs attention" feed surfaces them (`pendingInput || unseen-not-running`):
  *  the two live-attention states + two representative unseen finished runs. */

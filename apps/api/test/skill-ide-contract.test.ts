@@ -292,8 +292,8 @@ test("toolDiagnosticsReportSchema round-trips diagnostics with candidates + the 
     name: "queery_data",
     anchor: { headingPath: ["Run the query"], startLine: 20, endLine: 20 },
     candidates: [
-      { server: "qlik", tool: "query_data", confidence: "normalized" },
-      { server: "qlik", tool: "query", confidence: "fuzzy" },
+      { server: "acme", tool: "query_data", confidence: "normalized" },
+      { server: "acme", tool: "query", confidence: "fuzzy" },
     ],
   };
   assert.deepEqual(toolDiagnosticSchema.parse(diagnostic), diagnostic);

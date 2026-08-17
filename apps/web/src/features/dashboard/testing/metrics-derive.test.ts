@@ -287,8 +287,8 @@ describe("buildCapabilityClassSeries / buildTokensResult — D-OB14 no-blend gua
   });
 });
 
-describe("buildCostResult — cost basis vs questions are DIFFERENT units, never combined", () => {
-  test("costUsd classes and the questions measure produce SEPARATE row sets with no shared figure", () => {
+describe("buildCostResult — one labelled series per cost basis, never a blended total", () => {
+  test("each costUsd class keeps its own row figure", () => {
     const input: RunMetricsSeries[] = [
       series({ measure: "costUsd", capabilityClass: "api_exact", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 1.5, n: 3 }] }),
       series({
@@ -296,18 +296,11 @@ describe("buildCostResult — cost basis vs questions are DIFFERENT units, never
         capabilityClass: "subscription_reference",
         points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 0, n: 2 }],
       }),
-      series({ measure: "costUsd", capabilityClass: "questions", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 7, n: 2 }] }),
-      series({ measure: "questions", capabilityClass: "questions", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 7, n: 2 }] }),
     ];
     const result = buildCostResult(input);
-    // The `questions` cost-basis class is filtered OUT of the $ series (it isn't $ at all).
     expect(result.costClasses.map((c) => c.cls).sort()).toEqual(["api_exact", "subscription_reference"]);
     expect(result.costRows[0]?.api_exact).toBe(1.5);
     expect(result.costRows[0]?.subscription_reference).toBe(0);
-    expect(result.costRows[0]).not.toHaveProperty("questions");
-    // Questions get their OWN unit/panel figure — never summed into the $ total.
-    expect(result.questionsTotal).toBe(7);
-    expect(result.questionsRows[0]?.questions).toBe(7);
     expect(result.hasData).toBe(true);
   });
 });

@@ -41,13 +41,8 @@ export const DEFAULT_COMPARE_THRESHOLD = 0.6;
 
 // --- Testing (runs) contract ---------------------------------------------------------------
 
-// `qlik_answers` (roadmap/qlik-answers/, WP 0.1) — a Qlik Answers tenant assistant treated as a test
-// target. Unlike the others it is NOT chat-completions-shaped: it never goes through `modelFor()`/the
-// AI-SDK loop, only through a dedicated executor (`qlik-answers-executor`, WP 1.1) that branches at
-// `RunService.execute()`. Its "models" are the tenant's assistants (roster via `GET /api/v1/assistants`).
-//
-// `claude_subscription` (roadmap/claude-subscription/, WP 0.1) — mirrors the `qlik_answers` shape: a
-// selectable "model" that never goes through `modelFor()`/the AI-SDK loop, only through a dedicated
+// `claude_subscription` (roadmap/claude-subscription/, WP 0.1) — the one kind that is NOT
+// chat-completions-shaped: a selectable "model" that never goes through `modelFor()`/the AI-SDK loop, only through a dedicated
 // executor (`claude-subscription-executor`, later WP) that branches at `RunService.execute()`. Auth
 // resolves from the owner's SIGNED-IN Claude subscription (`assistant_credentials` — the same
 // sign-in the embedded Assistant dock uses), never a `provider_credentials` API key. Cost is a
@@ -62,7 +57,6 @@ export const PROVIDER_KINDS = [
   "google",
   "openai_compatible",
   "ollama",
-  "qlik_answers",
   "claude_subscription",
 ] as const;
 
@@ -84,8 +78,6 @@ export const PROVIDER_KIND_BILLINGS = [
   "subscription",
   /** Runs on the owner's own hardware — no per-token charge. */
   "local",
-  /** Billed by the tenant in QUESTIONS, not tokens (Qlik Answers — the API reports no token usage). */
-  "tenant_questions",
 ] as const;
 
 export type ProviderKindBilling = (typeof PROVIDER_KIND_BILLINGS)[number];
@@ -151,12 +143,6 @@ export const PROVIDER_KIND_META: Record<ProviderKindLocal, ProviderKindMeta> = {
     logoProvider: "ollama",
     billing: "local",
   },
-  qlik_answers: {
-    label: "Qlik Answers",
-    shortLabel: "Qlik",
-    logoProvider: "qlik_answers",
-    billing: "tenant_questions",
-  },
   claude_subscription: {
     label: "Anthropic CLI",
     shortLabel: "CLI",
@@ -185,7 +171,6 @@ export const PROVIDER_KIND_BILLING_LABELS: Record<ProviderKindBilling, string> =
   metered_api_key: "Metered",
   subscription: "Subscription",
   local: "Local",
-  tenant_questions: "Questions",
 };
 
 export const RUN_MODES = ["automated", "interactive"] as const;
@@ -234,8 +219,8 @@ export const RUN_OUTCOMES = [
 ] as const;
 
 // --- Unified Sessions — session contract (roadmap/unified-sessions/, WP1.1) --------------------
-// One shared lifecycle vocabulary every run backend (AI-SDK engine, Claude-subscription child, Qlik
-// Answers wrapper) maps to, so the same cause ends the same way everywhere. All additive: old
+// One shared lifecycle vocabulary every run backend (AI-SDK engine, Claude-subscription child) maps
+// to, so the same cause ends the same way everywhere. All additive: old
 // persisted runs/events carry none of these and replay unchanged.
 
 // The MACHINE-READABLE terminal reason (closed union), carried alongside the existing HUMAN
@@ -254,7 +239,6 @@ export const STOP_REASON_CODES = [
   "max_context_tokens", // budget meter
   "max_cost", // budget meter
   "context_overflow", // context window exceeded → outcome `context_overflow`
-  "prompt_rejected", // Qlik AE-4 "Prompt is rejected" (assistant guardrail) → guardrail stop
   "provider_error", // provider/transport failure → status `error`
   "auth", // auth/credential failure → status `error`
   "rate_limit", // 429 / rate limit → status `error`
@@ -295,22 +279,17 @@ export const WAITING_INPUT_REASONS = [
 // session-capabilities.ts), runtime-verifiable, persisted as `capabilities_json` (WP1.6) and emitted
 // at start, so the console renders what a run CAN DO instead of forking on `providerKind`.
 
-// Whether/how a backend surfaces model reasoning: none, raw text stream, or pre-structured sections.
-export const SESSION_LIVE_REASONING = ["none", "raw", "structured"] as const;
+// Whether/how a backend surfaces model reasoning: none or a raw text stream.
+export const SESSION_LIVE_REASONING = ["none", "raw"] as const;
 
-// Token-accounting fidelity: provider-reported exact, our own local estimate, or not measurable.
-export const SESSION_TOKEN_ACCOUNTING = ["exact", "estimated", "none"] as const;
+// Token-accounting fidelity: provider-reported exact, or not measurable.
+export const SESSION_TOKEN_ACCOUNTING = ["exact", "none"] as const;
 
 // How a run's cost figure should be read. Superset of {@link CostBasis} (the 2-member cost-derivation
-// marker on runs/kpi events) plus the session-only bases: `questions` (Qlik's shared monthly quota
-// unit) and `none` (no cost basis). Kept SEPARATE from `CostBasis` (which stays 2 members — its
-// exhaustive consumers are unaffected); {@link SessionCostBasis} references it in `types.ts`.
-export const SESSION_COST_BASES = [
-  "api_exact",
-  "subscription_reference",
-  "questions",
-  "none",
-] as const;
+// marker on runs/kpi events) plus the session-only basis `none` (no cost basis). Kept SEPARATE from
+// `CostBasis` (which stays 2 members — its exhaustive consumers are unaffected);
+// {@link SessionCostBasis} references it in `types.ts`.
+export const SESSION_COST_BASES = ["api_exact", "subscription_reference", "none"] as const;
 
 // Auto-Rating (AR11) — the post-run REVIEW axis: a NEW, additive dimension ORTHOGONAL to
 // `RUN_STATUSES` / `SUITE_RUN_STATUSES` (rating never blocks or mutates a terminal status, so it is
@@ -439,7 +418,7 @@ export const RUN_METRICS_GROUP_BY = [
 
 // `GET /api/metrics/runs?measures=…`. `p*DurationMs` are over the ACTIVE duration (activeDurationMs ??
 // totalDurationMs, D-US3) — a series that fell back to totalDurationMs is MARKED (`durationFallback`).
-// `questions` is Qlik's own cost unit (Σ answered prompts). `feedbackRate` has NO backing store until
+// `feedbackRate` has NO backing store until
 // WP1.5 — requesting it lists it in `unavailableMeasures` and emits no series (never a fake 0).
 export const RUN_METRICS_MEASURES = [
   "count",
@@ -450,17 +429,16 @@ export const RUN_METRICS_MEASURES = [
   "tokensIn",
   "tokensOut",
   "costUsd",
-  "questions",
   "meanScore",
   "feedbackRate",
 ] as const;
 
 // D-OB14 (chart honesty) — the token/cost measures whose values must NEVER be blended across capability
 // classes. Each returns ONE labelled series per capability class (`tokens` class for tokensIn/tokensOut;
-// `costBasis` class for costUsd; `questions` is inherently the single `questions` cost class). The
+// `costBasis` class for costUsd). The
 // capability class is read from the run's persisted `capabilities_json` (a legacy run with none falls
 // back to the STATIC per-kind manifest — never a `providerKind === …` fork in the aggregation).
-export const CAPABILITY_SPLIT_MEASURES = ["tokensIn", "tokensOut", "costUsd", "questions"] as const;
+export const CAPABILITY_SPLIT_MEASURES = ["tokensIn", "tokensOut", "costUsd"] as const;
 
 // --- Observability — custom chart composer (roadmap/observability/, WP2.7, D-OB22) --------------
 // User-defined charts on the Testing dashboard (`dashboard_charts`, migration v45): measure(s) +
@@ -507,7 +485,6 @@ export const RUN_METRICS_MEASURE_UNITS: Record<(typeof RUN_METRICS_MEASURES)[num
   tokensIn: "tokens",
   tokensOut: "tokens",
   costUsd: "usd",
-  questions: "questions",
   meanScore: "score",
   feedbackRate: "rate",
 };
@@ -539,7 +516,7 @@ export const DASHBOARD_CHART_SCAN_MEASURE_UNITS: Record<
 // The content classes indexed per run (D-OB16). The `kind` column each `run_search` row carries, and
 // the `matchKind` returned alongside a search hit's snippet:
 //   • prompt      — user prompts (the test opener + each interactive `user_message` turn)
-//   • assistant   — assistant / answer prose (per-turn `llm_response` text; a Qlik answer)
+//   • assistant   — assistant / answer prose (per-turn `llm_response` text)
 //   • tool        — tool name + serialized call arguments
 //   • tool_result — tool result TEXT only (base64 / binary payloads are skipped, see below)
 //   • error       — the human `stopReason` + tool-level error strings
@@ -1228,13 +1205,6 @@ export const SUITE_MAX_CONCURRENCY = 8;
 // WP 3.5 default low-score cutoff — a run scoring below this is a candidate for a failure bucket.
 export const FAILURE_BUCKET_SCORE_THRESHOLD = 0.5;
 
-// Qlik Answers (WP 1.4, D-QA6) — the clean-session invariant means some plan MEMBERS (a test ×
-// environment pairing) can never be run against a `qlik_answers` environment (the API takes a text
-// prompt only, has no MCP servers/skills, and owns its own system config). Such a member is SKIPPED
-// at plan time rather than run or hard-failed. The vocabulary is closed (one reason today) so a skip
-// is always machine-readable; a future reason is additive.
-export const MEMBER_SKIP_REASONS = ["incompatible"] as const;
-
 // --- Benchmarks — collections & on-disk file format (WP 4.1, B10/B12) -------------------------
 // A Collection is a synced set of tests/suites backed by a git repo (B10). Its members serialize to
 // deterministic on-disk files (B12) whose `formatVersion` is stamped so a reader can reject/upgrade a
@@ -1774,8 +1744,8 @@ export const HUB_WEB_BUILTIN_NAMES = [HUB_WEB_SEARCH_BUILTIN, HUB_WEB_FETCH_BUIL
 
 // The provider kinds whose native model surface can back `web.search` (capability-derived — the UI + the
 // composition seam both read this rather than branching on the kind ad hoc). `openai_compatible`/`ollama`
-// have no native web search and are deliberately absent; `qlik_answers`/`claude_subscription` are not
-// AI-SDK turn-engine kinds, so they never reach the web-tool composition path.
+// have no native web search and are deliberately absent; `claude_subscription` is not an
+// AI-SDK turn-engine kind, so it never reaches the web-tool composition path.
 export const HUB_WEB_SEARCH_PROVIDER_KINDS = ["anthropic", "openai", "google"] as const;
 
 // Approval option kinds offered on an approval card (R-MCP3 / R-UX1): grant this call once, or `always`

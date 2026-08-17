@@ -119,7 +119,7 @@ export type HubAgentRunInput = {
   roleName: string;
   model: string;
   /** hub-fixes (Defect 2) — the model for the bounded report-EXTRACTION `generateObject` (SESSION runner
-   *  only). The orchestrator sets it to the PARENT/mission model so a facade agent-`model` (a Qlik-Answers
+   *  only). The orchestrator sets it to the PARENT/mission model so a facade agent-`model` (a Acme-Answers
    *  assistant with no structured-output mode) never runs the extraction call itself; a structured-
    *  incapable extraction model falls back to {@link projectTranscriptToReport}. Absent ⇒ `model`. */
   extractionModel?: string;
@@ -292,7 +292,7 @@ export type HubMissionServiceDeps = {
    * **Why ALL kinds, not the hub-eligible subset.** The map doubles as the known-id set
    * {@link clampPlannedCredentials} strips against, and stripping means "fall back to the heuristic" —
    * the very silent re-pick D-MI9 forbids. Narrowing the map to hub-eligible kinds would therefore turn
-   * a deliberate-but-ineligible pin (a `qlik_answers` credential) into a silent swap instead of the
+   * a deliberate-but-ineligible pin (a `acme_answers` credential) into a silent swap instead of the
    * honest 409 the resolver owes it. Only a genuinely UNKNOWN id — a planner hallucination, or a
    * credential deleted out from under a JSON blob no FK protects (D-MI2) — may be stripped; every
    * existing credential is left for the resolver to accept or refuse at turn time.
@@ -361,7 +361,7 @@ export type HubMissionServiceDeps = {
    * `ready:false` when the server is unregistered/deleted OR is an OAuth streamable-HTTP server with no
    * valid token (a background mission child cannot complete the interactive OAuth dance, so its tools
    * would be stripped and the agent would run tool-less — the pre-run gate blocks that instead of silently
-   * running a Qlik agent with no Qlik). Absent ⇒ NO gating (the pre-fix best-effort behavior). Injected by
+   * running a Acme agent with no Acme). Absent ⇒ NO gating (the pre-fix best-effort behavior). Injected by
    * index.ts over `servers` + `oauthService` so the orchestrator stays MCP/OAuth-free (the runtime boundary).
    */
   isServerRunReady?: (serverId: string) => HubServerRunReadiness;
@@ -2457,7 +2457,7 @@ export function createSessionAgentRunner(deps: {
 
     // Extract the structured report from the child's settled transcript (bounded structured output).
     // hub-fixes (Defect 2) — extract with the PARENT/mission model (`input.extractionModel`), NEVER the
-    // agent's own `model`: a facade agent-model (a Qlik-Answers assistant) can't produce structured
+    // agent's own `model`: a facade agent-model (a Acme-Answers assistant) can't produce structured
     // output, so running the extraction on it threw and wrongly failed an agent that had real findings. A
     // structured-incapable extraction model — or a transient extraction failure — falls back to a
     // DETERMINISTIC prose projection, so an agent that produced real work is never dropped from synthesis.
@@ -2588,7 +2588,7 @@ function renderAgentTranscript(events: readonly HubEvent[]): string {
 /**
  * hub-fixes (Defect 2/3) — the DETERMINISTIC fallback for report extraction: project a child agent's
  * SETTLED prose into a schema-valid {@link HubAgentReport}. Used when the extraction model can't produce
- * structured output (a Qlik-Answers facade model with no JSON-schema mode) or the extraction call fails,
+ * structured output (a Acme-Answers facade model with no JSON-schema mode) or the extraction call fails,
  * so an agent that produced REAL work is never dropped from the mission's synthesis. Citations the agent
  * actually surfaced are carried through via {@link reconstructCitationBaseline} so they survive into the
  * cited synthesis. Returns `undefined` only when the transcript has no usable assistant prose (nothing to

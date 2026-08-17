@@ -57,8 +57,8 @@ export function SuiteRunConsoleRoute() {
     setData(null);
     (async () => {
       const suiteRun = await getSuiteRun(suiteRunId);
-      // Qlik Answers (WP 3.2) — `providers` resolves each member scenario's provider KIND, so the
-      // console can roll up a questions-consumed total for `qlik_answers` members (see
+      // Acme Answers (WP 3.2) — `providers` resolves each member scenario's provider KIND, so the
+      // console can roll up a questions-consumed total for `acme_answers` members (see
       // `SuiteRunConsole`'s derivation). A lightweight, already-redacted list — same call
       // `RunConsoleRoute` makes for the single-run console's "est." labels.
       // Testing IA (D-T5) — a collection/adhoc plan run has NO owning suite (`suiteId` undefined).

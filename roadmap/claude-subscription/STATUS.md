@@ -8,7 +8,7 @@ Living state for the **claude-subscription** plan, read and updated by
 
 > Plan + locked decisions D-CS1–D-CS10 in [`README.md`](./README.md). Reference implementation to
 > generalize: [`../../apps/api/src/grading/claude-cli-judge.ts`](../../apps/api/src/grading/claude-cli-judge.ts).
-> Pattern to mirror: the `qlik_answers` executor branch + estimated-metric markers.
+> Pattern to mirror: the `vendor_assistant` executor branch + estimated-metric markers.
 >
 > **Kickoff: owner-locked 2026-07-13** — all ten decisions locked (README §2). **Phases 0–3 DONE
 > 2026-07-13** — all 13 WPs built + gate green (API 1731 tests) on the local branch
@@ -19,7 +19,7 @@ Living state for the **claude-subscription** plan, read and updated by
 >
 > **Migration note:** WP 0.2 widens the `provider_credentials.kind` CHECK and **claims the next free
 > `user_version` at claim time** — re-verify `apps/api/src/db/database.ts` `MIGRATIONS` (sibling
-> ledgers — auto-rating, qlik-answers — have consumed versions up through the v20s; do not hardcode).
+> ledgers — auto-rating, vendor-assistant — have consumed versions up through the v20s; do not hardcode).
 >
 > **Contention note:** `packages/shared` (WP 0.1) and `apps/api/src/testing/run-service.ts` (WP 1.2)
 > are hot files other sessions touch — start those WPs only when no sibling session is writing them.
@@ -57,7 +57,7 @@ Living state for the **claude-subscription** plan, read and updated by
 - [x] WP 1.2 — `RunService.execute()` `claude_subscription` branch (run-service.ts:398-406);
       **not** clean-session (MCP + skills wired)
       — done 2026-07-13 · wp/claude-subscription/1.2 · `resolveClaudeSubscription` (redacted-kind read,
-      branch before qlik so unsigned `getDecrypted` can't mask honest auth); 2 optional `RunService`
+      branch before vendor so unsigned `getDecrypted` can't mask honest auth); 2 optional `RunService`
       seams + `index.ts` wires `SdkAgentSessionDriver` + subscription-only `resolveJudgeAuth` (D-CS7).
       MCP/skills are seams (`mcpServers:{}`) not yet populated — WP 1.3/1.4.
 - [x] WP 1.3 — MCP tools via SDK `mcpServers`; allow-list → `disallowedTools`/patterns; local

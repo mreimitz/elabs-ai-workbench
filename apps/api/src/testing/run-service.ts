@@ -50,11 +50,6 @@ import { ENGINE_SESSION_CAPABILITIES, capabilitiesForProviderKind } from "./sess
 import { reconstructForkPrefix } from "./fork.js";
 import { SessionClock } from "./session-clock.js";
 import {
-  runQlikAnswers,
-  runQlikAnswersInteractive,
-  type QlikAnswersRunConfig,
-} from "./qlik-answers-executor.js";
-import {
   runClaudeSubscription,
   runClaudeSubscriptionInteractive,
   type ClaudeSubscriptionRunConfig,
@@ -169,7 +164,7 @@ export function createAccountingStepSink(
       // it takes the NEXT monotonic idx (no reordering), and its `parentStepId` is the parent's EMITTED id
       // (`${runId}:mcp:${stepIndex}`) — the persistence layer resolves it to the parent's persisted row id
       // through the same emitted→persisted map the live path uses. ENGINE PATH ONLY by construction: this
-      // sink is only wired by the engine executor (the subscription child owns its MCP internally; qlik has
+      // sink is only wired by the engine executor (the subscription child owns its MCP internally; it has
       // no tools). Skill-DISCLOSURE reads flow the SAME sink but are NOT MCP roundtrips (D-OB17 scope) —
       // excluded by their `skill://` serverId so a skill read never grows a spurious `tool_io` child.
       if (!outcome.serverId.startsWith("skill://")) {
@@ -356,13 +351,6 @@ export class RunService {
      */
     private readonly grades?: GradeService,
     /**
-     * Qlik Answers tenant HTTP seam (WP 1.2). The `qlik_answers` branch threads this into the executor's
-     * {@link QlikAnswersRunConfig.fetchImpl} so a test can inject a stub fetch (NO real tenant is ever
-     * contacted). Production omits it → the executor falls back to the global `fetch`. It is the ONLY
-     * outward call surface of a Qlik Answers run — this kind never opens an MCP session or tool bridge.
-     */
-    private readonly answersFetch?: typeof fetch,
-    /**
      * Rating Issues registry (Auto-Rating follow-on). Optional so existing callers/tests keep working
      * with zero behavior change. When present, the settled run's `error_forensics` findings are folded
      * into the persistent per-skill / per-server issue registry immediately AFTER the grade call in
@@ -493,7 +481,7 @@ export class RunService {
    *  2. The source run must NOT be a suite member (D-OB18: a matrix member is never forkable) → 409.
    *  3. A MID-RUN fork (`fromStepId` present) is CAPABILITY-gated ({@link supportsMidRunFork} over the
    *     run's session manifest — D-US4, NOT `providerKind === …`): a kind whose transcript can't seed a
-   *     reconstructed chat-completions prefix (`claude_subscription`, `qlik_answers`) is refused → 422.
+   *     reconstructed chat-completions prefix (`claude_subscription`) is refused → 422.
    *     A WHOLE-run re-launch (no `fromStepId`) works for EVERY kind.
    *  4. A `skillVersionId` override is resolved to its owning skill (→ a {@link SkillOverrides} pin);
    *     an unknown version → 422. `prompt`/`model`/`temperature` are shape-validated by the route schema;
@@ -703,16 +691,15 @@ export class RunService {
     try {
       // WP 1.2 (claude-subscription) — the owner's signed-in Claude SUBSCRIPTION driven as a run model.
       // A `claude_subscription` credential has no AI-SDK `LanguageModel` (the Agent SDK never exposes
-      // one), so it runs its OWN executor over the raw Agent-SDK driver — a SIBLING of the qlik_answers
-      // branch below. Resolved LIGHTWEIGHT + dispatched HERE, BEFORE `resolve()` and BEFORE the qlik
-      // branch: that branch's `getDecrypted` would THROW `brokenSubscriptionAuthError` for a
-      // not-signed-in subscription, which would mask the executor's honest `auth` degradation, so the
-      // subscription kind must be recognized first (its resolver reads the kind via the REDACTED
-      // `providers.get`, which never resolves auth / throws). Unlike qlik_answers this is NOT
+      // one), so it runs its OWN executor over the raw Agent-SDK driver. Resolved LIGHTWEIGHT +
+      // dispatched HERE, BEFORE `resolve()`: a `getDecrypted` on this path would THROW
+      // `brokenSubscriptionAuthError` for a not-signed-in subscription, which would mask the executor's
+      // honest `auth` degradation, so the subscription kind must be recognized first (its resolver reads
+      // the kind via the REDACTED `providers.get`, which never resolves auth / throws). This is NOT
       // structurally clean-session — MCP tools (WP 1.3) AND attached skills (WP 1.4, materialized
       // read-only into the run's throwaway workspace) both work on this path. Every non-
       // `claude_subscription` kind falls through (`resolveClaudeSubscription` returns `undefined`),
-      // leaving the qlik + agent-loop paths unchanged.
+      // leaving the agent-loop path unchanged.
       const subscription = this.resolveClaudeSubscription(
         runId,
         testId,
@@ -740,26 +727,6 @@ export class RunService {
         } finally {
           releaseProviderSlot();
         }
-      }
-      // WP 1.2 — clean-session dispatch. A `qlik_answers` credential is a RAG product API, NOT a
-      // chat-completions model, so it runs the dedicated Qlik Answers executor instead of the AI-SDK
-      // agent loop. It is resolved LIGHTWEIGHT and dispatched HERE, BEFORE `resolve()` — so NO MCP
-      // session, tool bridge, or skill context is EVER opened for this kind (the structural
-      // clean-session invariant: `sessions` stays empty, the `finally` closes nothing). EVERY other
-      // provider kind (`cred.kind !== "qlik_answers"`) falls through to the unchanged agent-loop path
-      // below, byte-for-byte as before — `resolveAnswers` returns `undefined` for them.
-      const answers = this.resolveAnswers(runId, testId, scenarioId, control, forkSeed);
-      if (answers) {
-        // Unified Sessions (WP1.7, D-US4) — forward the executor's optional `meta` (SessionClock
-        // durations, carried on its terminal `status` emit) to `RunManager.emit`'s own `meta` param,
-        // mirroring the AI-SDK path below. Before this WP the closure dropped the second argument, so a
-        // qlik run's `activeDurationMs`/`totalDurationMs` were computed but never persisted (see
-        // `QlikAnswersEmit`'s doc in qlik-answers-executor.ts for the coordination note this closes).
-        const emit = (event: RunEvent, meta?: RunEmitMeta) =>
-          this.runManager.emit(runId, event, meta);
-        return control.mode === "interactive"
-          ? await runQlikAnswersInteractive(runId, answers, this.nextTurnProvider(control), emit)
-          : await runQlikAnswers(runId, answers, emit);
       }
       const cfg = await this.resolve(
         runId,
@@ -1099,7 +1066,7 @@ export class RunService {
    * {@link resolveAnswers}, parallel to the AI-SDK {@link resolve}).
    *
    * Returns a {@link ClaudeSubscriptionRunConfig} when this run's credential is `claude_subscription`,
-   * else `undefined` (so `execute` continues to the qlik / agent-loop paths, unchanged). It reads the
+   * else `undefined` (so `execute` continues to the agent-loop path, unchanged). It reads the
    * credential KIND via the REDACTED {@link ProviderRepository.get} — NOT `getDecrypted` — on purpose:
    * a `claude_subscription` `getDecrypted` THROWS `brokenSubscriptionAuthError` when not signed in,
    * which would surface as a generic terminal error BEFORE the executor's dedicated honest `auth`
@@ -1116,7 +1083,7 @@ export class RunService {
    *                         prepended (WP 1.4).
    *   - `maxTurns`        = `scenario.guardrails.maxTurns ?? 20` (the SAME step cap the agent loop uses).
    *   - `maxRunDurationMs`= `scenario.guardrails.maxRunDurationMs` (the SAME wall-clock guardrail source
-   *                         the engine + qlik executor read; omitted → the executor's default cap).
+   *                         the engine executor reads; omitted → the executor's default cap).
    *   - `profiles`        = {@link resolveProfiles}(scenario, test) — the run's effective profiles,
    *                         driving the ESTIMATED per-tool-AND-per-skill-disclosure-call metering.
    *   - `abortSignal`     = `control.abort.signal` (user stop).
@@ -1335,64 +1302,6 @@ export class RunService {
       if (token) headers.Authorization = `Bearer ${token}`;
     }
     return headers;
-  }
-
-  /**
-   * WP 1.2 — the LIGHTWEIGHT Qlik Answers resolution (the clean-session counterpart to {@link resolve}).
-   *
-   * Returns a {@link QlikAnswersRunConfig} when this run's credential is `qlik_answers`, else `undefined`
-   * (so `execute` falls through to the unchanged agent-loop path). It deliberately does the ABSOLUTE
-   * MINIMUM — load the scenario + credential + test and read the run's prompt/profiles/guardrail — and
-   * NEVER touches `resolveAllowedTools`/`resolveAllowedSkills`, opens no MCP session, and builds no tool
-   * bridge or skill context (a Qlik Answers run has no tools, skills, or accounting sink by construction).
-   *
-   *   - `assistantId` = `scenario.model` (a tenant assistant is the run's "model").
-   *   - `prompt`      = `test.userPrompt` (the SAME source the agent-loop config uses).
-   *   - `profiles`    = {@link resolveProfiles}(scenario, test) — the SAME effective profiles the rest of
-   *                     the app (KPIs, grading) reads, so token estimates use the run's primary lens.
-   *   - `transport`   = `answersMode.transport ?? "stream"` (D-QA2 default: live deltas in the console).
-   *   - `maxRunDurationMs` = the scenario's wall-clock guardrail (the ONLY guardrail this kind honors).
-   *   - `auth`        = the resolved bearer + tenant origin from the `DecryptedCredential` (WP 0.2).
-   *   - `fetchImpl`   = the injected {@link answersFetch} test seam (omitted in production → global fetch).
-   *   - `onCapabilities` (WP1.7, D-US4) = bound to `RunRepository.setCapabilities(runId, …)`, so this
-   *     run's enriched {@link SessionCapabilities} manifest (assistantId/transport, then appId, then the
-   *     assistant-version Etag as the executor discovers them) is persisted the same way the AI-SDK path
-   *     persists its static manifest. Requires `runId`, which is why this method now takes it — see the
-   *     coordination note on {@link QlikAnswersRunConfig.onCapabilities}.
-   *
-   * A `qlik_answers` credential missing its resolved `apiKey`/`baseUrl` throws a clear typed error
-   * (caught by `execute` → a terminal `error` status) rather than letting the executor issue a malformed
-   * tenant request.
-   */
-  private resolveAnswers(
-    runId: string,
-    testId: string,
-    scenarioId: string,
-    control: RunControl,
-    forkSeed?: ForkSeed,
-  ): QlikAnswersRunConfig | undefined {
-    const scenario = this.scenarios.get(scenarioId);
-    const cred = this.providers.getDecrypted(scenario.providerId);
-    if (cred.kind !== "qlik_answers") return undefined;
-    if (!cred.apiKey || !cred.baseUrl) {
-      throw httpError(400, "Qlik Answers credential is missing its API key or tenant base URL");
-    }
-    const test = this.tests.get(testId);
-    return {
-      // WP3.3 (D-OB18) — a WHOLE-run rerun's model/prompt overrides (mid-run fork is refused for this
-      // kind at the endpoint; `messagePrefix`/temperature never apply to Qlik). Absent → parent values.
-      assistantId: forkSeed?.modelOverride ?? scenario.model,
-      prompt: forkSeed?.promptOverride ?? test.userPrompt,
-      auth: { apiKey: cred.apiKey, baseUrl: cred.baseUrl },
-      profiles: resolveProfiles(scenario, test),
-      transport: scenario.answersMode?.transport ?? "stream",
-      ...(scenario.guardrails.maxRunDurationMs !== undefined
-        ? { maxRunDurationMs: scenario.guardrails.maxRunDurationMs }
-        : {}),
-      abortSignal: control.abort.signal,
-      ...(this.answersFetch ? { fetchImpl: this.answersFetch } : {}),
-      onCapabilities: (capabilities) => this.runs.setCapabilities(runId, capabilities),
-    };
   }
 
   /**

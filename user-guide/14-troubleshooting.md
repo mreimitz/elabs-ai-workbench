@@ -20,8 +20,8 @@ MCP server publishes a port to your Mac, use `host.docker.internal` instead — 
 `http://host.docker.internal:7030/mcp`. A bare service name from a different Docker project
 won't resolve unless both containers share a network.
 
-**Qlik Cloud OAuth won't complete.**
-Qlik Cloud requires a **pre-registered OAuth client**. In your tenant admin UI, create an OAuth
+**OAuth won't complete.**
+Some providers require a **pre-registered OAuth client**. In the provider's admin UI, create an OAuth
 client with the scopes `user_default` and `mcp:execute`, add the app's callback URL
 (`http://127.0.0.1:8080/api/oauth/callback` by default) as an allowed redirect, and enter the
 resulting **Client ID** in the wizard. Leave the Client Secret empty for Native or Single-page
@@ -77,4 +77,4 @@ usually points at the cause. For anything about *what's built vs. planned*, the 
 
 ---
 
-Next: [The OpenAI-compatible endpoint →](./15-openai-endpoint.md)
+Next: [Assistant →](./16-assistant-hub.md)

@@ -81,7 +81,7 @@ high-value Run feature; the token split is drawn as four stacked bars.
 - **Tab order = Overview · Tools · Scans**, with **Overview the default**.
 - **Remove the duplicated KPI band** on Overview — those KPIs already live in the sticky header.
 - **Lead with the findings (hero):** "Attention & Optimization" becomes a **list of
-  recommendations**, each = **what + why + a CTA** (e.g. "Schema is 88% of `qlik_create_data_object`'s
+  recommendations**, each = **what + why + a CTA** (e.g. "Schema is 88% of `acme_create_data_object`'s
   tokens → Review schema" that selects that tool). No card-in-card.
 - **Server Profile** → `Descriptions` (calm, below the findings). **Footprint composition** →
   one **segmented bar**. **Top token contributors** → a **compact ranked list** (tool · tokens ·
@@ -95,7 +95,7 @@ high-value Run feature; the token split is drawn as four stacked bars.
 
 ### 6 — [P1 theme / P2 settings] baseline chrome
 - Replace the light/dark toggle with the **library `<ThemeSwitcher />`** (its `themes` defaults
-  to the Qlik light/dark pair and `showSystem` defaults to `true`, so it renders **System /
+  to the the vendor light/dark pair and `showSystem` defaults to `true`, so it renders **System /
   Qlik Bright / Qlik Dark** out of the box). Confirm with `brand-ui docs ThemeSwitcher`.
 - Optional: add a quick settings `Dialog` (gear in the top bar) with an **Appearance** section
   hosting the theme switcher; keep the Settings route for deep config.

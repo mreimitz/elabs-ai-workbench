@@ -292,7 +292,7 @@ aside[aria-label="Assistant"] .from-background {
                 the two share this token. The earlier 0.535 fixed the on-FILL pair (4.29→4.60) but
                 text-primary on the #f2f2f2 muted/rail surface still measured 4.29:1 — fails AA for
                 normal text (critique: "brand green #008442 on #f2f2f2 · 4.3:1", /servers + /skills).
-                L −0.020 more (hue/chroma untouched, so it stays Qlik green — #008442→#007e3d) takes
+                L −0.020 more (hue/chroma untouched, so it stays the brand green — #008442→#007e3d) takes
                 text-on-#f2f2f2 to 4.65:1 AND the on-fill pair UP to 4.98:1 (both clear AA; the
                 existing token-contrast guard only gets stronger). Long-term the clean split is an
                 upstream --primary-text token (like --success-text/--info-text) — recorded as a gap.
@@ -308,7 +308,7 @@ aside[aria-label="Assistant"] .from-background {
    ===================================================================== */
 [data-theme="qlik-bright"] {
   /* T1: L 0.535 → 0.515 so text-primary clears AA (4.65:1) on the #f2f2f2 muted/rail surface, not
-     just the on-fill pair. C 0.143 / H 153 unchanged — same Qlik green (#008442 → #007e3d). */
+     just the on-fill pair. C 0.143 / H 153 unchanged — same brand green (#008442 → #007e3d). */
   --primary: oklch(0.515 0.143 153);
   --info: oklch(0.55 0.13 245);
   /* WP 4.3 FIX 4: pushed FURTHER from --primary. It was 0.51 0.15 150 — numerically distinct

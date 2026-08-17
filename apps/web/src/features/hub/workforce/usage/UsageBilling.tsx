@@ -40,7 +40,6 @@ const BILLING_BADGE_VARIANT: Record<
   metered_api_key: "outline",
   subscription: "info",
   local: "secondary",
-  tenant_questions: "secondary",
 };
 
 export function UsageBilling({ buckets }: { buckets: HubUsageProviderCredentialBucket[] }) {

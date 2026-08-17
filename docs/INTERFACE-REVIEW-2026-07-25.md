@@ -25,7 +25,7 @@ Fixes below are expressed in that system.
 
 Review boundary: this is a desktop operator console — `RunConsole.tsx:333` treats <1200px as "narrow"
 and there is no mobile target. I reviewed adaptivity down to 514px (Chrome's floor for this window) but
-weighted findings for the desktop range. Not inspected: SkillFlow Design/Trace canvas, Qlik Answers
+weighted findings for the desktop range. Not inspected: SkillFlow Design/Trace canvas, the vendor assistant
 surfaces, suite-run console with live data, OAuth flows — all need credentials or a live workload.
 
 | Domain | Evidence inspected | Result |
@@ -160,7 +160,7 @@ only affects genuine prose; tables and dense rows correctly stay full-width.
 ### 10 · MEDIUM · Typography
 **Location:** `features/testing/runs/RunTableRow.tsx:174-178`; `features/hub/workforce/AgentCard.tsx:230-234`
 and `CrewCard.tsx:59-63`; `vendor select.tsx:22`.
-**Before:** Confirmed in the live DOM: `<TableCell className="max-w-[12rem] truncate">` renders `Qlik
+**Before:** Confirmed in the live DOM: `<TableCell className="max-w-[12rem] truncate">` renders `the vendor
 Answers — ontime-assistant` clipped with no `title`, no tooltip. Agent/crew descriptions use
 `line-clamp-2` with no recovery. `SelectTrigger` ships `[&>span]:line-clamp-1` with no `title`, so every
 select in the app clips its value — including `CompatibilityView.tsx:545`'s composed `${server} · ${date}
@@ -271,7 +271,7 @@ risk, affects every glyph.
 | Reflow | Window resized to 514px (Chrome floor) and 1100px | No document-level horizontal scroll; but the `ml-auto … shrink-0` actions cluster extends 157px past the viewport at 514px and "New run" is unreachable |
 | Prose measure | Character-width probe against rendered container widths at 1600px | Compatibility callout = 190 ch/line at 13px |
 | Font smoothing | `getComputedStyle(document.body).webkitFontSmoothing` | "auto" — antialiasing not applied |
-| Truncation recovery | Live scan for clipped/clamped text lacking title/aria-label/tooltip | Confirmed on the Runs Environment column (`Qlik Answers — ontime-assistant`, `max-w-[12rem]`, no recovery) |
+| Truncation recovery | Live scan for clipped/clamped text lacking title/aria-label/tooltip | Confirmed on the Runs Environment column (`the vendor assistant — ontime-assistant`, `max-w-[12rem]`, no recovery) |
 | Both themes rendered | Full walk in qlik-bright and qlik-dark | No unthemed surface, no raw color, no broken token — dark is independently tuned, not a mechanical inversion |
 
 **Not verified — stated rather than converted into findings:**
@@ -290,7 +290,7 @@ risk, affects every glyph.
 - **Below 514px not tested** — Chrome would not size the window smaller, so WCAG 1.4.10's 320px reflow
   requirement is unconfirmed.
 - **Icon size collisions** — per-row visual check not run (see Considered but Rejected).
-- **Not inspected at all:** SkillFlow Design/Trace canvas, Qlik Answers surfaces, live suite runs, OAuth
+- **Not inspected at all:** SkillFlow Design/Trace canvas, the vendor assistant surfaces, live suite runs, OAuth
   flows.
 
 ## Verdict

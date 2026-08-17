@@ -7,7 +7,7 @@ Part of the full-validation series. Scope: `apps/api/src/**` (all 22 subdirector
 - Read `CLAUDE.md`, `.claude/rules/architecture.md`, `.claude/rules/mcp-and-security.md`, `.claude/rules/quality-gates.md` for the intended design, then reviewed every subdirectory: `assistant` (+`tools`), `collections`, `compare`, `compatibility` (+`data`), `config`, `db`, `estimate`, `git`, `grading`, `mcp`, `oauth`, `providers`, `reports`, `scans`, `secrets`, `servers`, `skillflow`, `skills`, `suites`, `testing`, `token-counting`, `utils`, plus `index.ts`.
 - Review was executed by six parallel sub-reviews (testing+estimate · assistant · skills+skillflow · grading+suites+collections+git · compatibility+reports+compare · core infra), each required to verify every citation by reading the file at the cited offset. All Critical/High findings (and the load-bearing Medium ones) were then independently re-verified against the source by the compiling reviewer.
 - Hunted for: dead code, hardcoded values, duplication, bugs/races (SSE, run orchestration, child processes), resource leaks, zod validation gaps, contract drift vs `packages/shared`, transaction misuse, N+1 patterns, and perf concerns — against the repo's stated conventions (contract-first, routes-thin/services/repositories, typed errors with `statusCode`, secrets never returned, additive-only `/api`).
-- Overlapping findings from different sub-reviews were merged (graceful shutdown; route-param validation; `QLIK_ANSWERS_DEBUG` scaffolding), so each issue appears once.
+- Overlapping findings from different sub-reviews were merged (graceful shutdown; route-param validation; `VENDOR_ASSISTANT_DEBUG` scaffolding), so each issue appears once.
 
 Line numbers are as of this review (2026-07-11, current working tree).
 
@@ -193,18 +193,18 @@ The file ends with `await server.listen({ port: config.port, host: config.host }
 
 **Recommendation:** register SIGTERM/SIGINT + Fastify `onClose` handling: `await server.close()`, stop active runs/suites, `assistantSessionManager.killAllSessions()` + `flowManager.cancel()`, `wal_checkpoint(TRUNCATE)`, `db.close()`.
 
-### h-10-unconditional-qlik-debug-dump
+### h-10-unconditional-vendor-debug-dump
 
 **Severity:** High · **Category:** bug / security
 
 **File:** `apps/api/src/providers/model-catalog.ts:300-301`
 
 ```ts
-// TEMP DEBUG (qlik retrieval diagnosis) — REMOVE. Raw assistant objects incl. knowledgeBases/spaceId.
+// TEMP DEBUG (vendor retrieval diagnosis) — REMOVE. Raw assistant objects incl. knowledgeBases/spaceId.
 console.error("[QA-DEBUG roster]", JSON.stringify(record?.data).slice(0, 6000));
 ```
 
-Runs on **every** `GET /api/providers/:id/models` for a `qlik_answers` credential, on every pagination page, dumping up to 6 KB of raw tenant assistant metadata to stderr. Unlike its sibling `qaDebug()` (line 84-92) it is not gated by `QLIK_ANSWERS_DEBUG`, and it bypasses pino. Self-labelled "REMOVE".
+Runs on **every** `GET /api/providers/:id/models` for a `vendor_assistant` credential, on every pagination page, dumping up to 6 KB of raw tenant assistant metadata to stderr. Unlike its sibling `qaDebug()` (line 84-92) it is not gated by `VENDOR_ASSISTANT_DEBUG`, and it bypasses pino. Self-labelled "REMOVE".
 
 **Recommendation:** delete the line (or route through `qaDebug`).
 
@@ -245,15 +245,15 @@ No `try/catch` closes the client on failure — contrast `discoverTools` (line 9
 **Category:** perf · `apps/api/src/testing/accounting.ts:388-393, 591-597`
 Inside the per-step per-counter loop, `countToolDefs` re-BPE-counts **all** tool definitions and the system prompt on every settled step for every non-primary lens (the primary lens caches via `ensureFixedSegments`). 100 tools × 3 profiles × 50 turns = 15 000 redundant BPE counts per run, on the event loop. **Fix:** memoize per-counter `toolDefTokens`/`systemTokens` once.
 
-#### m-4-qlik-answers-debug-scaffolding
+#### m-4-vendor-assistant-debug-scaffolding
 
-**Category:** dead-code/convention · `apps/api/src/testing/qlik-answers-executor.ts:169-177, 795-829`, `apps/api/src/providers/model-catalog.ts:87`
-`QLIK_ANSWERS_DEBUG` gates `console.error`/`process.stderr` output that bypasses pino; when set, `rawDebug += decoded` accumulates the **entire tenant SSE stream unbounded in memory** and writes it verbatim to stderr (`[QA-RAWSTREAM-START]`). The env var is not declared in `config/env.ts` or `.env.example`. **Fix:** remove, or route through the Fastify logger at `debug`, declare the flag in `config/env.ts`, cap `rawDebug`.
+**Category:** dead-code/convention · `apps/api/src/testing/vendor-assistant-executor.ts:169-177, 795-829`, `apps/api/src/providers/model-catalog.ts:87`
+`VENDOR_ASSISTANT_DEBUG` gates `console.error`/`process.stderr` output that bypasses pino; when set, `rawDebug += decoded` accumulates the **entire tenant SSE stream unbounded in memory** and writes it verbatim to stderr (`[QA-RAWSTREAM-START]`). The env var is not declared in `config/env.ts` or `.env.example`. **Fix:** remove, or route through the Fastify logger at `debug`, declare the flag in `config/env.ts`, cap `rawDebug`.
 
-#### m-5-qlik-executor-duplication
+#### m-5-vendor-executor-duplication
 
-**Category:** duplication · `apps/api/src/testing/qlik-answers-executor.ts:198-214 vs 387-403, 257-363 vs 506-555`
-`runQlikAnswers` vs `runQlikAnswersInteractive` duplicate ~150 lines: two identical `nextStep` factories (a third in `engine.ts:356-371`) and a copy-pasted abort/deadline → AE-4 → generic-error terminal ladder. **Fix:** extract a shared `classifyAnswersTerminal(...)` + step factory.
+**Category:** duplication · `apps/api/src/testing/vendor-assistant-executor.ts:198-214 vs 387-403, 257-363 vs 506-555`
+`runVendorAssistant` vs `runVendorAssistantInteractive` duplicate ~150 lines: two identical `nextStep` factories (a third in `engine.ts:356-371`) and a copy-pasted abort/deadline → AE-4 → generic-error terminal ladder. **Fix:** extract a shared `classifyAnswersTerminal(...)` + step factory.
 
 ### assistant
 
@@ -328,7 +328,7 @@ Routes defeat repository encapsulation to reach the connection and `new ScanRepo
 #### m-18-suite-aggregates-o-n-squared
 
 **Category:** perf · `apps/api/src/suites/orchestrator.ts:666, 760-769, 156-183, 706-715`
-Every settled cell triggers `emitAggregates` → `collectChildData`, re-running `runs.getSummary` + `grades.listByRun` for **every** child run so far (~20 k+ synchronous queries for a 40×5 suite), and `claimRunnableCell` → `qlikAnswersProviderIdFor` does two uncached repo lookups per scanned queue cell per claim. **Fix:** accumulate incremental aggregates in `SuiteControl` for the live SSE snapshot (full recompute only in `finish()`); cache scenarioId→providerId per suite run.
+Every settled cell triggers `emitAggregates` → `collectChildData`, re-running `runs.getSummary` + `grades.listByRun` for **every** child run so far (~20 k+ synchronous queries for a 40×5 suite), and `claimRunnableCell` → `vendorAssistantProviderIdFor` does two uncached repo lookups per scanned queue cell per claim. **Fix:** accumulate incremental aggregates in `SuiteControl` for the live SSE snapshot (full recompute only in `finish()`); cache scenarioId→providerId per suite run.
 
 #### m-19-tool-path-empty-separator
 
@@ -391,7 +391,7 @@ The comment promises "both 0/absent mean 'use the configured retention'", but `p
 
 #### m-30-linked-auth-first-header-guess
 
-**Category:** security/bug · `apps/api/src/providers/linked-auth.ts:108-112`, duplicated in `apps/api/src/servers/qlik-answers-probe.ts:121-124`
+**Category:** security/bug · `apps/api/src/providers/linked-auth.ts:108-112`, duplicated in `apps/api/src/servers/vendor-assistant-probe.ts:121-124`
 ```ts
 for (const value of Object.values(headers)) {
   if (value.trim()) return value.trim();
@@ -440,7 +440,7 @@ Bodies are consistently zod-parsed; params and most queries are `as`-cast everyw
 | L-6 | convention | `testing/engine.ts:315, 330-332, 538, 764` | `console.warn`/`console.error` instead of pino → thread a logger into `EngineConfig`. |
 | L-7 | security/docs | `testing/run-repository.ts:601-606` | `SECRET_VALUE_PATTERN` doc claims bearer-token coverage; regex only matches `sk-ant-`/`sk-`/`AIza` prefixes → extend pattern (`Bearer …`, `ghp_`, JWT `eyJ`) or fix the comment. |
 | L-8 | hardcoded | `testing/run-service.ts:800` | `maxTurns: scenario.guardrails.maxTurns ?? 20` — magic default while peers are named constants → promote to a shared `DEFAULT_RUN_MAX_TURNS`. |
-| L-9 | duplication | `qlik-answers-executor.ts:948-956` / `qlik-answers-message.ts:249-257` / `qlik-answers-sse.ts:136-140`; `engine.ts:463-471` vs `703-712`; `test-service.ts:59-60` | `asRecord`/`asString` ×3; guardrail step-fold loop duplicated (with a double `estimateCost` call at :706/:711); `addAttachment` re-parses an already-parsed schema → extract shared util / single fold / drop double parse. |
+| L-9 | duplication | `vendor-assistant-executor.ts:948-956` / `vendor-assistant-message.ts:249-257` / `vendor-assistant-sse.ts:136-140`; `engine.ts:463-471` vs `703-712`; `test-service.ts:59-60` | `asRecord`/`asString` ×3; guardrail step-fold loop duplicated (with a double `estimateCost` call at :706/:711); `addAttachment` re-parses an already-parsed schema → extract shared util / single fold / drop double parse. |
 | L-10 | perf | `scenario-repository.ts:24-29, 180-204`; `test-repository.ts:29-32, 213-214`; `testing/routes.ts:108` | `list()` hydration is N+1 (2 child queries per scenario, 1 per test); `GET /api/runs` returns unbounded history though the repo supports `limit` → batch with `IN (…)`, expose `?limit=`. |
 | L-11 | bug | `testing/test-service.ts:67-71`; `packages/shared/src/schemas.ts:762-766` | Attachment blob written to disk before the DB insert (orphan on failure); `contentBase64` has no max length — only Fastify's default 1 MiB bodyLimit bounds it incidentally → unlink on insert failure, add an explicit shared max-bytes constant. |
 
@@ -475,11 +475,11 @@ Bodies are consistently zod-parsed; params and most queries are `as`-cast everyw
 | L-26 | dead-code | `grading/grader.ts:90-95` | `export function graderById(` — zero call sites in src and test → remove or use. |
 | L-27 | bug | `collections/routes.ts:88-92, 100-104` | `DELETE /api/collections/A/tests/:testId` ignores `:id` — detaches the test even if it belongs to collection B → verify membership (or re-shape the route). |
 | L-28 | bug | `suites/orchestrator.ts:475`; `packages/shared/src/schemas.ts:593-594` | Empty `testIds`/`scenarioIds` allowed; a 0-cell suite instantly finalizes `completed` while the collection path 400s → mirror the 400 for `cells.length === 0`. |
-| L-29 | bug | `suites/orchestrator.ts:529-536, 615` | `stop()` 404s on a finished suite run (409 fits better) and doesn't wake workers parked in `waitForQlikAnswersSlot` — a stopped suite can't finalize until an unrelated slot frees → wake this control's waiters on stop. |
+| L-29 | bug | `suites/orchestrator.ts:529-536, 615` | `stop()` 404s on a finished suite run (409 fits better) and doesn't wake workers parked in `waitForVendorAssistantSlot` — a stopped suite can't finalize until an unrelated slot frees → wake this control's waiters on stop. |
 | L-30 | security | `git/git-credential.ts:117-119` | `redactUrl` regex requires `user:pass@`; a `https://token@host` form is not redacted → broaden to `https:\/\/[^@\s/]+@`. |
 | L-31 | bug | `grading/judge.ts:432` vs `:156` | `extractRatingLogprobs` (`/<rating>(\d+)<\/rating>/i`) stricter than `parseRating` (whitespace + decimals) — `<rating> 8 </rating>` silently loses logprob weighting → align the regexes. |
 | L-32 | bug | `grading/skillflow-conformance.ts:89-90`, `grading/tool-hygiene.ts:144-146` | Unvalidated enum indexing (`tallies[key]`, `TOOL_HYGIENE_CHECKS[...]`) throws on an unknown kind/checkId (caught into an `error` grade row, but silently breaks the grader) → guard the lookup. |
-| L-33 | hardcoded | `git/git-credential.ts:56` (`maxBuffer: 16 MiB`), `collections/git-sync.ts:71` (`gitTimeoutMs ?? 120_000`, no env), `suites/orchestrator.ts:113` (`QLIK_ANSWERS_MAX_CONCURRENCY = 4`) | Ops knobs not tunable without a rebuild → env entries for at least the git timeout. |
+| L-33 | hardcoded | `git/git-credential.ts:56` (`maxBuffer: 16 MiB`), `collections/git-sync.ts:71` (`gitTimeoutMs ?? 120_000`, no env), `suites/orchestrator.ts:113` (`VENDOR_ASSISTANT_MAX_CONCURRENCY = 4`) | Ops knobs not tunable without a rebuild → env entries for at least the git timeout. |
 | L-34 | bug | `grading/failure-buckets.ts:235-238` | Docs say "Given a FINISHED suite run" but status is never checked; buckets on a running suite run get clobbered by `finalize()` → reject non-terminal status (409). |
 | L-35 | perf | `suites/suite-report-service.ts:356, 451, 494, 665, 671` | `grades.latestByGrader(runId)` executed 3× per member + `runs.getRun(runId)` hydrates full step detail just for `finalAssistantText` → batch per member; lighter answer projection. |
 
@@ -512,7 +512,7 @@ Bodies are consistently zod-parsed; params and most queries are `as`-cast everyw
 | L-53 | perf (minor) | `oauth/provider.ts:41, 49, 65, 79`; `providers/repository.ts:199-211` | Every provider callback re-fetches + decrypts all four credential fields; `redact()` performs a full linked-auth resolve per row on every `GET /api/providers` → memoize per instance if flows get chatty. |
 | L-54 | bug (verify intent) | `scans/repository.ts:271-284` | `latest-scan` has no `status` filter — a just-failed or still-running scan shadows the last good one → filter to success/terminal or expose both. |
 | L-55 | convention/security (minor) | `index.ts:475, 490-492` | Central handler logs expected 4xx at `error` level (alert fatigue); `GET /api/health` returns `databasePath` + `dataDirectory` unauthenticated — fine local-only, revisit before the team-server workstream → 4xx at `warn`, trim health payload when auth lands. |
-| L-56 | hardcoded | `providers/service.ts:14` (`MODEL_CACHE_TTL_MS`), `model-catalog.ts:81, 21` (`APP_CONTEXT_TTL_MS`, `MAX_PAGES`), `qlik-answers-probe.ts:33` (`ASSISTANTS_PROBE_LIMIT = 100`), `servers/asset-proxy.ts:16` (`MAX_ASSET_BYTES`), `oauth/repository.ts:16` (`OAUTH_FLOW_TTL_MS`), `pricing.ts:80` (`CACHE_WRITE_MULTIPLIER = 1.25`) | Documented-in-place operational constants; none env-tunable — acceptable, but sweep alongside m-33. |
+| L-56 | hardcoded | `providers/service.ts:14` (`MODEL_CACHE_TTL_MS`), `model-catalog.ts:81, 21` (`APP_CONTEXT_TTL_MS`, `MAX_PAGES`), `vendor-assistant-probe.ts:33` (`ASSISTANTS_PROBE_LIMIT = 100`), `servers/asset-proxy.ts:16` (`MAX_ASSET_BYTES`), `oauth/repository.ts:16` (`OAUTH_FLOW_TTL_MS`), `pricing.ts:80` (`CACHE_WRITE_MULTIPLIER = 1.25`) | Documented-in-place operational constants; none env-tunable — acceptable, but sweep alongside m-33. |
 
 ---
 

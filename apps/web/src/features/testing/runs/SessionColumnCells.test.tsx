@@ -22,26 +22,13 @@ function withTooltip(node: ReactNode) {
   return render(<TooltipProvider>{node}</TooltipProvider>);
 }
 
-describe("SessionKindChip — capability-gated (D-US4), never a providerKind fork", () => {
-  test("a backend with a named-assistant identity shows the identity's name", () => {
-    const capabilities = { identity: { kind: "qlik_assistant", assistantId: "a-1", name: "Sales Copilot" } } as SessionCapabilities;
-    withTooltip(<SessionKindChip capabilities={capabilities} model="claude-sonnet-4-5" />);
-    expect(screen.getByText("Sales Copilot")).toBeInTheDocument();
-    expect(screen.queryByText("claude-sonnet-4-5")).not.toBeInTheDocument();
-  });
-
-  test("identity present but unnamed falls back to the assistantId", () => {
-    const capabilities = { identity: { kind: "qlik_assistant", assistantId: "assistant-42" } } as SessionCapabilities;
-    withTooltip(<SessionKindChip capabilities={capabilities} model="claude-sonnet-4-5" />);
-    expect(screen.getByText("assistant-42")).toBeInTheDocument();
-  });
-
-  test("no identity ⇒ shows the plain scenario model", () => {
+describe("SessionKindChip", () => {
+  test("shows the plain scenario model", () => {
     withTooltip(<SessionKindChip capabilities={undefined} model="claude-sonnet-4-5" />);
     expect(screen.getByText("claude-sonnet-4-5")).toBeInTheDocument();
   });
 
-  test("no identity AND no model ⇒ honest dash", () => {
+  test("no model ⇒ honest dash", () => {
     withTooltip(<SessionKindChip capabilities={undefined} model={undefined} />);
     expect(screen.getByText("—")).toBeInTheDocument();
   });

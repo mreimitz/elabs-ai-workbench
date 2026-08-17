@@ -21,7 +21,7 @@ import { RunManager } from "../src/testing/run-manager.js";
 import { RunRepository } from "../src/testing/run-repository.js";
 import { RunService, type ModelFactory, type SessionOpener } from "../src/testing/run-service.js";
 import { registerTestingRoutes } from "../src/testing/routes.js";
-import { QLIK_ANSWERS_SESSION_CAPABILITIES } from "../src/testing/session-capabilities.js";
+import { SUBSCRIPTION_SESSION_CAPABILITIES } from "../src/testing/session-capabilities.js";
 import { ScenarioRepository } from "../src/testing/scenario-repository.js";
 import { ScenarioService } from "../src/testing/scenario-service.js";
 import { TestRepository } from "../src/testing/test-repository.js";
@@ -383,9 +383,10 @@ test("a mid-run fork of a kind whose manifest can't seed a prefix → 422; whole
   const parentId = await runToDone(h);
   const parent = await getJson<RunDetail>(h, `/api/runs/${parentId}`);
   const forkStep = parent.steps.find((s) => s.type === "llm_response")!;
-  // Overlay a Qlik capability manifest (contextWindow:false) so the fork gate reads the MANIFEST, not
-  // the providerKind (D-US4). A mid-run fork must be refused; a whole-run re-launch must still work.
-  h.runs.setCapabilities(parentId, QLIK_ANSWERS_SESSION_CAPABILITIES);
+  // Overlay a capability manifest with contextWindow:false (the subscription child's) so the fork gate
+  // reads the MANIFEST, not the providerKind (D-US4). A mid-run fork must be refused; a whole-run
+  // re-launch must still work.
+  h.runs.setCapabilities(parentId, SUBSCRIPTION_SESSION_CAPABILITIES);
 
   const midRun = await post(h, `/api/runs/${parentId}/rerun`, { fromStepId: forkStep.id });
   assert.equal(midRun.status, 422, "mid-run fork refused by the capability gate");

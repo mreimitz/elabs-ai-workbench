@@ -12,7 +12,7 @@
 > | Q5 | Capabilities statically declared per adapter, runtime-verified, persisted `capabilities_json` (D-US4) |
 > | Q6 | Label table locked (execution-plan §1); one derivation module, all surfaces (D-US5) |
 > | Q7 | `queued` phase with position; `SUBSCRIPTION_RUNS_MAX_CONCURRENCY` decoupled from the judge gate (D-US6) |
-> | Q8 | Wait budget 10 min default (Qlik 30 min), `wait_expired` → "Expired" terminal; configurable Settings → Testing + env override (D-US3/D-US7) |
+> | Q8 | Wait budget 10 min default (the vendor 30 min), `wait_expired` → "Expired" terminal; configurable Settings → Testing + env override (D-US3/D-US7) |
 > | Q9 | Cursor SSE resume (`id:`/Last-Event-ID, DB-backed) + `ping` event + 45 s client watchdog (D-US8) |
 > | Q10 | No Wave 0 — straight to the contract waves (D-US9) |
 > | Q11 | Assistant dock + compatibility runner out of scope (D-US10) |
@@ -84,7 +84,7 @@ buffer cap and reconnect cost start to matter. Decide: build with the contract, 
 concrete long-run pain report.
 
 **Q10 — Do any quick wins ship before the concept settles?**
-The candidates (01 appendix) are all small and independently safe: qlik deadline terminal fix,
+The candidates (01 appendix) are all small and independently safe: vendor deadline terminal fix,
 `idleTimeoutMs` wiring, queued-run visibility, label unification, cap surfaced in launcher/RunBar.
 Shipping them early relieves the acute pain (silent 30-min kills, hung-looking queues) but bakes in
 answers to Q2/Q6 implicitly. Explicit go/no-go per item.

@@ -110,7 +110,7 @@ step can complete. Scripts are stored and metered by this app but **never execut
 ## 5. Tool & MCP-server references
 
 ### Tool references are explicit and conservative · [enforced-when-5.1-lands, planned]
-**Do:** name tools in backticks exactly as the server exposes them (`` `qlik_create_data_object` ``),
+**Do:** name tools in backticks exactly as the server exposes them (`` `acme_create_data_object` ``),
 near words like "tool"/"call"; declare target servers in frontmatter `servers:` and resolve
 them to exact registered servers in the IDE (Phase 8 binding).
 **Don't:** paraphrased tool names ("use the data-object thing"), tools the bound server's scan

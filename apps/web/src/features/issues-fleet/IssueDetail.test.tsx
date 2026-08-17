@@ -59,7 +59,7 @@ function renderDetail(overrides: Partial<Parameters<typeof IssueDetail>[0]> = {}
           <IssueDetail
             issue={OPEN_FLEET_ISSUE}
             onChanged={onChanged}
-            entityLabel={(id) => (id === "srv-1" ? "Qlik-SaaS" : id)}
+            entityLabel={(id) => (id === "srv-1" ? "Acme-SaaS" : id)}
             {...overrides}
           />
         </AssistantProvider>
@@ -85,16 +85,16 @@ describe("IssueDetail — renders every WP5.1 field somewhere", () => {
     // The bucket chip renders in BOTH the header and the drafted-fix section (context in each place).
     expect(screen.getAllByText("MCP server").length).toBeGreaterThan(0);
     expect(screen.getByText(OPEN_FLEET_ISSUE.summary)).toBeInTheDocument();
-    // "Qlik-SaaS" appears both in the target line and the Affected chip — assert presence, not count.
-    expect(screen.getAllByText(/Qlik-SaaS/).length).toBeGreaterThan(0);
+    // "Acme-SaaS" appears both in the target line and the Affected chip — assert presence, not count.
+    expect(screen.getAllByText(/Acme-SaaS/).length).toBeGreaterThan(0);
     await waitFor(() => expect(mockGetRunMetrics).toHaveBeenCalled());
   });
 
   test("affected entities, drafted fix, occurrences count, first/last seen, cluster key", async () => {
     renderDetail();
-    // Affected chips (server name resolved + test id + model). "Qlik-SaaS" also appears in the
+    // Affected chips (server name resolved + test id + model). "Acme-SaaS" also appears in the
     // target line above, so assert at least one (the chip) rather than a brittle exact single match.
-    expect(screen.getAllByText("Qlik-SaaS").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Acme-SaaS").length).toBeGreaterThan(0);
     expect(screen.getByText(`Test ${OPEN_FLEET_ISSUE.fleet.affected.tests[0]}`)).toBeInTheDocument();
     expect(screen.getByText("claude-opus-4")).toBeInTheDocument();
     // Draft fix text + fix-target chip.

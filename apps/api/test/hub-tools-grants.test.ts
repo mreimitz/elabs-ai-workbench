@@ -20,56 +20,56 @@ const grants = (over: Partial<HubToolGrants>): HubToolGrants => ({
 });
 
 test("effectiveAgentGrants: a null parent (auto/unscoped) passes the plan grants through unchanged", () => {
-  const plan = grants({ servers: { qlik: "all", files: ["read_file"] }, builtins: ["memory.save"] });
+  const plan = grants({ servers: { acme: "all", files: ["read_file"] }, builtins: ["memory.save"] });
   const effective = effectiveAgentGrants(plan, null);
   assert.deepEqual(effective, plan, "unscoped parent ⇒ identity — nothing to bound against");
 });
 
 test('effectiveAgentGrants: "all" (plan) ∩ list (parent) = the parent\'s list', () => {
-  const plan = grants({ servers: { qlik: "all" } });
-  const parent = grants({ servers: { qlik: ["search", "list_apps"] } });
+  const plan = grants({ servers: { acme: "all" } });
+  const parent = grants({ servers: { acme: ["search", "list_apps"] } });
   const effective = effectiveAgentGrants(plan, parent);
-  assert.deepEqual(effective.servers, { qlik: ["search", "list_apps"] });
+  assert.deepEqual(effective.servers, { acme: ["search", "list_apps"] });
 });
 
 test('effectiveAgentGrants: list (plan) ∩ "all" (parent) = the plan\'s own list', () => {
-  const plan = grants({ servers: { qlik: ["search"] } });
-  const parent = grants({ servers: { qlik: "all" } });
+  const plan = grants({ servers: { acme: ["search"] } });
+  const parent = grants({ servers: { acme: "all" } });
   const effective = effectiveAgentGrants(plan, parent);
-  assert.deepEqual(effective.servers, { qlik: ["search"] });
+  assert.deepEqual(effective.servers, { acme: ["search"] });
 });
 
 test('effectiveAgentGrants: "all" ∩ "all" = "all"', () => {
-  const plan = grants({ servers: { qlik: "all" } });
-  const parent = grants({ servers: { qlik: "all" } });
+  const plan = grants({ servers: { acme: "all" } });
+  const parent = grants({ servers: { acme: "all" } });
   const effective = effectiveAgentGrants(plan, parent);
-  assert.deepEqual(effective.servers, { qlik: "all" });
+  assert.deepEqual(effective.servers, { acme: "all" });
 });
 
 test("effectiveAgentGrants: list ∩ list = the SET INTERSECTION of tool names", () => {
-  const plan = grants({ servers: { qlik: ["search", "list_apps", "get_measure"] } });
-  const parent = grants({ servers: { qlik: ["search", "get_measure", "delete_app"] } });
+  const plan = grants({ servers: { acme: ["search", "list_apps", "get_measure"] } });
+  const parent = grants({ servers: { acme: ["search", "get_measure", "delete_app"] } });
   const effective = effectiveAgentGrants(plan, parent);
   assert.deepEqual(
-    effective.servers.qlik,
+    effective.servers.acme,
     ["search", "get_measure"],
     "only tool names present in BOTH the plan and the parent scope survive, plan order preserved",
   );
 });
 
 test("effectiveAgentGrants: a server outside the parent's scope is DROPPED entirely (not an empty list)", () => {
-  const plan = grants({ servers: { qlik: "all", files: ["read_file"] } });
-  const parent = grants({ servers: { qlik: "all" } }); // no "files" entry at all
+  const plan = grants({ servers: { acme: "all", files: ["read_file"] } });
+  const parent = grants({ servers: { acme: "all" } }); // no "files" entry at all
   const effective = effectiveAgentGrants(plan, parent);
-  assert.deepEqual(effective.servers, { qlik: "all" });
+  assert.deepEqual(effective.servers, { acme: "all" });
   assert.equal("files" in effective.servers, false, "dropped means ABSENT, never {files: []}");
 });
 
 test("effectiveAgentGrants: a server the plan never asked for stays absent regardless of parent scope", () => {
-  const plan = grants({ servers: { qlik: "all" } });
-  const parent = grants({ servers: { qlik: "all", files: "all" } }); // parent allows more than the plan wants
+  const plan = grants({ servers: { acme: "all" } });
+  const parent = grants({ servers: { acme: "all", files: "all" } }); // parent allows more than the plan wants
   const effective = effectiveAgentGrants(plan, parent);
-  assert.deepEqual(effective.servers, { qlik: "all" }, "intersection never GRANTS something the plan didn't ask for");
+  assert.deepEqual(effective.servers, { acme: "all" }, "intersection never GRANTS something the plan didn't ask for");
 });
 
 test("effectiveAgentGrants: builtins intersect like servers — set intersection when the parent restricts them", () => {
@@ -92,7 +92,7 @@ test("effectiveAgentGrants: builtins — an EMPTY parent builtins list means uns
 
 test("effectiveAgentGrants: a fully scoped-out plan (every server dropped) still returns a valid empty grants object", () => {
   const plan = grants({ servers: { ghost: "all" }, builtins: ["memory.save"] });
-  const parent = grants({ servers: { qlik: "all" }, builtins: [] });
+  const parent = grants({ servers: { acme: "all" }, builtins: [] });
   const effective = effectiveAgentGrants(plan, parent);
   assert.deepEqual(effective, { servers: {}, builtins: ["memory.save"] });
 });
@@ -102,15 +102,15 @@ test("effectiveAgentGrants: a fully scoped-out plan (every server dropped) still
 test("effectiveAgentGrants composes TRANSITIVELY: L2 ∩ (L1 ∩ L0) === the direct triple intersection", () => {
   // L0 = the root chat-session scope; L1 = a mid crew-ref's scope; L2 = a level-2 role's own Access.
   const L0 = grants({
-    servers: { qlik: "all", files: ["read_file", "write_file"] },
+    servers: { acme: "all", files: ["read_file", "write_file"] },
     builtins: ["memory.save", "tasks.add"],
   });
   const L1 = grants({
-    servers: { qlik: ["search", "list_apps"], files: "all", ghost: "all" },
+    servers: { acme: ["search", "list_apps"], files: "all", ghost: "all" },
     builtins: ["memory.save", "artifacts.create"],
   });
   const L2 = grants({
-    servers: { qlik: "all", files: ["read_file"], other: "all" },
+    servers: { acme: "all", files: ["read_file"], other: "all" },
     builtins: ["memory.save", "tasks.add", "artifacts.create"],
   });
 
@@ -119,27 +119,27 @@ test("effectiveAgentGrants composes TRANSITIVELY: L2 ∩ (L1 ∩ L0) === the dir
   const composed = effectiveAgentGrants(L2, effectiveAgentGrants(L1, L0));
 
   // The hand-computed L2 ∩ L1 ∩ L0:
-  //  qlik  — L1 narrows to [search, list_apps]; L0="all" ⇒ kept; L2="all" ⇒ [search, list_apps].
+  //  acme  — L1 narrows to [search, list_apps]; L0="all" ⇒ kept; L2="all" ⇒ [search, list_apps].
   //  files — L1="all"; L0=[read_file, write_file]; L2=[read_file] ⇒ [read_file].
   //  ghost — L0 has no ghost ⇒ dropped at L1∩L0 ⇒ never reachable at L2.
   //  other — L1∩L0 has no other ⇒ L2's `other` is dropped (intersection never GRANTS).
   //  builtins — L0=[memory.save, tasks.add]; L1∩L0=[memory.save]; L2 ∩ [memory.save] = [memory.save].
   assert.deepEqual(composed, {
-    servers: { qlik: ["search", "list_apps"], files: ["read_file"] },
+    servers: { acme: ["search", "list_apps"], files: ["read_file"] },
     builtins: ["memory.save"],
   });
 });
 
 test("effectiveAgentGrants: a server/tool L1 dropped is NOT re-granted by an L2 plan (no re-widen — R6/D-CN9)", () => {
-  const L0 = grants({ servers: { qlik: "all", files: "all" } });
-  // L1 (the enclosing crew-ref) drops `files` ENTIRELY and narrows qlik down to [search].
-  const l1l0 = effectiveAgentGrants(grants({ servers: { qlik: ["search"] } }), L0);
-  assert.deepEqual(l1l0.servers, { qlik: ["search"] }, "L1 ∩ L0 already dropped files + narrowed qlik");
+  const L0 = grants({ servers: { acme: "all", files: "all" } });
+  // L1 (the enclosing crew-ref) drops `files` ENTIRELY and narrows acme down to [search].
+  const l1l0 = effectiveAgentGrants(grants({ servers: { acme: ["search"] } }), L0);
+  assert.deepEqual(l1l0.servers, { acme: ["search"] }, "L1 ∩ L0 already dropped files + narrowed acme");
 
-  // A level-2 plan RE-REQUESTS files:"all" and qlik:"all" — the transitive intersection can only NARROW.
-  const composed = effectiveAgentGrants(grants({ servers: { qlik: "all", files: "all" } }), l1l0);
+  // A level-2 plan RE-REQUESTS files:"all" and acme:"all" — the transitive intersection can only NARROW.
+  const composed = effectiveAgentGrants(grants({ servers: { acme: "all", files: "all" } }), l1l0);
   assert.equal("files" in composed.servers, false, "files, dropped at L1, is never re-granted at L2");
-  assert.deepEqual(composed.servers.qlik, ["search"], "qlik stays bounded to L1's [search], not re-widened to all");
+  assert.deepEqual(composed.servers.acme, ["search"], "acme stays bounded to L1's [search], not re-widened to all");
 });
 
 test("effectiveAgentGrants: builtins compose transitively down the path (crew nesting WP2.3)", () => {
@@ -181,22 +181,22 @@ function roleWithServers(id: string, servers: Record<string, HubServerToolGrant>
 
 test("unionRosterServerGrantsIntoScope: a role's server is unioned into an empty (scoped) session scope", () => {
   const scope = grants({ servers: {}, builtins: ["memory.propose_save"] });
-  const unioned = unionRosterServerGrantsIntoScope(scope, [roleWithServers("r1", { qlik: "all" })]);
-  assert.deepEqual(unioned.servers, { qlik: "all" }, "the Qlik server the role needs is now reachable");
+  const unioned = unionRosterServerGrantsIntoScope(scope, [roleWithServers("r1", { acme: "all" })]);
+  assert.deepEqual(unioned.servers, { acme: "all" }, "the Acme server the role needs is now reachable");
   assert.deepEqual(unioned.builtins, ["memory.propose_save"], "built-ins are untouched");
 });
 
 test("unionRosterServerGrantsIntoScope: returns the SAME reference when the role adds nothing new", () => {
-  const scope = grants({ servers: { qlik: "all" } });
-  const unioned = unionRosterServerGrantsIntoScope(scope, [roleWithServers("r1", { qlik: "all" })]);
+  const scope = grants({ servers: { acme: "all" } });
+  const unioned = unionRosterServerGrantsIntoScope(scope, [roleWithServers("r1", { acme: "all" })]);
   assert.equal(unioned, scope, "no change ⇒ identity (so callers can compare by reference)");
 });
 
 test("unionRosterServerGrantsIntoScope: unions a role's allowlist with the scope's existing allowlist", () => {
-  const scope = grants({ servers: { qlik: ["search"] } });
-  const unioned = unionRosterServerGrantsIntoScope(scope, [roleWithServers("r1", { qlik: ["list_apps"] })]);
+  const scope = grants({ servers: { acme: ["search"] } });
+  const unioned = unionRosterServerGrantsIntoScope(scope, [roleWithServers("r1", { acme: ["list_apps"] })]);
   assert.deepEqual(
-    [...(unioned.servers.qlik as string[])].sort(),
+    [...(unioned.servers.acme as string[])].sort(),
     ["list_apps", "search"],
     "both the scope's and the role's tools survive",
   );

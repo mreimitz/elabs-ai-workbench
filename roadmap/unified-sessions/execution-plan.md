@@ -30,7 +30,7 @@ rate_limit`. Human `stopReason` text stays alongside.
 | wait budget exhausted | `stopped`/`stopped_guardrail` | `wait_expired` |
 | budget meters | `stopped`/`stopped_guardrail` | `max_turns` etc. |
 | context overflow | `stopped`/`context_overflow` | `context_overflow` |
-| Qlik AE-4 | `stopped`/`stopped_guardrail` | `prompt_rejected` |
+| the vendor AE-4 | `stopped`/`stopped_guardrail` | `prompt_rejected` |
 | provider/transport/auth/429 | `error`/`error` | `provider_error`/`auth`/`rate_limit` |
 
 **phase** (queryable `runs.phase` + `{type:"phase"}` event): `queued (detail: position) · starting ·
@@ -41,11 +41,11 @@ signaling the child/stream, so an exit can never be reclassified.
 **SessionCapabilities** (zod, persisted `capabilities_json`, emitted at start): `liveText`,
 `liveReasoning: none|raw|structured`, `toolCalls`, `contextWindow`, `tokens: exact|estimated|none`,
 `costBasis: api_exact|subscription_reference|questions|none`, `followUps`, `askUser`,
-`waitBudgetMs?`, `identity?` (qlik assistant card). Declared statically per adapter; runtime
+`waitBudgetMs?`, `identity?` (vendor assistant card). Declared statically per adapter; runtime
 verification may downgrade (record in STATUS if it ever does).
 
 **Clock (D-US3/D-US7):** `SessionClock` owns: stall timer (rolled by every emitted event; default
-10 min), wait budget (armed in `waiting_input`; default 10 min; per-kind override — Qlik default
+10 min), wait budget (armed in `waiting_input`; default 10 min; per-kind override — the vendor default
 30 min), optional wall cap (off by default; from env guardrail), pause accounting
 (`activeDurationMs` excludes waiting), per-transition timestamps.
 
@@ -104,8 +104,8 @@ setting). `queued` phase (with position) BEFORE `gate.acquire()`; new
 `terminalFor`; stop-verdict-before-kill ordering; capabilities (`liveReasoning:"none"`,
 `tokens:"exact"`, `costBasis:"subscription_reference"`, `contextWindow:false`).
 
-**WP1.5 — Qlik adoption** · implementer · **Sonnet-class** · M · deps: WP1.2
-Owns: `qlik-answers-executor.ts`. Fixes the deadline→`aborted` bug via `terminalFor`
+**WP1.5 — the vendor adoption** · implementer · **Sonnet-class** · M · deps: WP1.2
+Owns: `vendor-assistant-executor.ts`. Fixes the deadline→`aborted` bug via `terminalFor`
 (`max_duration` → guardrail stop), AE-4 → `prompt_rejected`; SessionClock with 30-min wait
 default; `waiting_input` on interactive turns; capabilities (`toolCalls:false`,
 `tokens:"estimated"`, `costBasis:"questions"`, `liveReasoning:"structured"`, `identity`).
@@ -191,7 +191,7 @@ Owns: NEW `apps/api/src/openai-facade/**` (routes, translator, affinity-cache, a
 NEW test files. `/openai/v1/chat/completions` + `/openai/v1/models` per research 04 §3: hold-back
 streaming default (reasoning_content + reasoning mirrored live; settled extracted answer as final
 content), thread-affinity cache (hash of prior messages → threadId; LRU+TTL), vendor fields
-(`qlik_answers{…}`, `citations`), minted local facade key (mcp-secret pattern), error mapping
+(`vendor_assistant{…}`, `citations`), minted local facade key (mcp-secret pattern), error mapping
 (AE-4→`content_filter` finish, AE-6/429→429+Retry-After, unresolvable app→404 model_not_found),
 usage chunk always emitted (BPE estimates + `estimated` marker in vendor field). Golden tests:
 byte-identical answer text vs the executor's extraction over the same stub fixtures; stub fetch
@@ -214,7 +214,7 @@ Merge train onto `feat/unified-sessions` (1 → 2 → 3 → 4), resolve seams (r
 full gate incl. `pnpm build`, CHANGELOG entry, re-run WP3.R seed script as final acceptance.
 
 **WP5.2 — Docs & bookkeeping** · docs · **Haiku-class** · S · deps: WP5.1
-`user-guide/09-testing.md`, `10-comparing-runs.md`, `11-qlik-answers.md` updates (new states,
+`user-guide/09-testing.md`, `10-comparing-runs.md`, `11-vendor-assistant.md` updates (new states,
 timers, sessions-vs-runs naming); research package cross-links (02 decisions table already
 present, add "implemented in" pointers); STATUS.md final.
 
@@ -252,7 +252,7 @@ RunBar.tsx 3.1→3.3, facade mount at 5.1) are sequenced by the orchestrator.
 5. **STATUS.md upkeep**: after every WP completes (or blocks), a **Haiku-class** bookkeeping agent
    appends: WP id, verdict, gate result, files touched, blockers, next. Never edit history.
 6. **Escalation to the owner**: only for (a) a locked decision proven wrong by evidence, (b) a
-   file-ownership conflict the plan didn't foresee, (c) live-tenant verification wishes (Qlik/
+   file-ownership conflict the plan didn't foresee, (c) live-tenant verification wishes (the vendor/
    facade against a real tenant is OUT of agent scope — stub-only, per repo invariant).
 7. **Merge discipline**: WP branch → wave integration branch → `feat/unified-sessions` after the
    wave review; `pnpm build` once per wave integration, not per WP.

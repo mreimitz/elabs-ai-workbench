@@ -227,8 +227,8 @@ describe("StepLog — per-step economics chips match hand-computed deltas + subt
     expect(screen.getByText("120 ms")).toBeInTheDocument();
   });
 
-  test("costBasis:\"questions\" suppresses the cost-delta chip entirely (no honest per-step $ figure)", () => {
-    renderLog({ steps, kpiByStepId, costBasis: "questions" as SessionCostBasis });
+  test("costBasis:\"none\" suppresses the cost-delta chip entirely (no cost figure at all)", () => {
+    renderLog({ steps, kpiByStepId, costBasis: "none" as SessionCostBasis });
     expect(screen.queryByText("$0.10")).not.toBeInTheDocument();
     expect(screen.queryByText("$0.05")).not.toBeInTheDocument();
     // Token/duration chips are unaffected by cost-basis gating.

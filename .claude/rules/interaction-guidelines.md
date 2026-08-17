@@ -22,7 +22,7 @@ generates input forms from MCP tool schemas — forms are a first-class surface 
 - Real ellipsis, curly quotes. Loading/among-actions text ends with an ellipsis ("Scanning...").
 - **`tabular-nums`** for any number column or before/after comparison (token counts, deltas,
   history) so digits line up.
-- `text-wrap: balance`/`pretty` on headings; non-breaking space in units (`10 MB`, "Qlik").
+- `text-wrap: balance`/`pretty` on headings; non-breaking space in units (`10 MB`, `4 GB`).
 
 ## Content handling & empty states
 

@@ -6,7 +6,7 @@ import type { HubAgentRole, HubCrew, HubMissionPlan } from "@mcp-token-footprint
  * custom `icon` is recovered from the role library two ways, in order:
  *   1. by `roleId` — set on the planned agent when the planner REUSES a saved role;
  *   2. by NAME — the planner often INVENTS an agent (no `roleId`) whose name nonetheless matches a
- *      saved role (e.g. "qlik-analyst-agent"). Matching that name to the library recovers the icon the
+ *      saved role (e.g. "acme-analyst-agent"). Matching that name to the library recovers the icon the
  *      owner set — otherwise every planner-invented agent would fall back to a generic glyph.
  *
  * Returns `undefined` when neither resolves or the role has no icon — `RoleAvatar` then falls back to

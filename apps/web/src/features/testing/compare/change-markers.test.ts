@@ -117,14 +117,14 @@ describe("deriveChangeMarkers", () => {
       scan({
         id: "scanA",
         serverId: "s1",
-        serverName: "qlik-stage",
+        serverName: "acme-stage",
         scannedAt: "2026-07-04T06:00:00Z",
         totalTools: 5,
       }),
       scan({
         id: "scanB",
         serverId: "s1",
-        serverName: "qlik-stage",
+        serverName: "acme-stage",
         scannedAt: "2026-07-05T06:00:00Z",
         totalTools: 7,
       }),
@@ -132,7 +132,7 @@ describe("deriveChangeMarkers", () => {
     const markers = deriveChangeMarkers(runs, data({ scenariosById, scans }), noSkills);
     const serverScan = markers.find((m) => m.kind === "server-scan");
     expect(serverScan).toBeTruthy();
-    expect(serverScan?.label).toContain("qlik-stage");
+    expect(serverScan?.label).toContain("acme-stage");
     expect(serverScan?.label).toContain("+2 tools");
     expect(serverScan?.href).toBe("/compare/scans?serverA=s1&serverB=s1&scanA=scanA&scanB=scanB");
   });

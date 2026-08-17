@@ -308,7 +308,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   in `index.ts`) and **tool_io child at the engine MCP sink** (`run-service.ts` — an ORCHESTRATOR-
   AUTHORIZED targeted additive edit after the agent correctly STOPped at the original "don't touch
   run-service" boundary; ENGINE-PATH ONLY by construction — the sink is only wired by the engine
-  executor; `skill://` disclosure reads excluded; subscription/qlik assert NO child) — both live in
+  executor; `skill://` disclosure reads excluded; subscription/vendor assert NO child) — both live in
   production. **⚠️ PROBE EMITTER DEFERRED → OWNER ESCALATION:** the WP spec assumed compat probes
   emit run steps to nest under a `probe` parent, but `compatibility/runner.ts` is a **pure static
   evaluator with no run-step surface** and `POST /api/runs/:id/compatibility` only READS steps — so
@@ -480,7 +480,7 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
   byte-identical when absent; `temperature` fork-only) — **the three executor core loops are UNCHANGED**
   (the 2222 existing tests are the guardrail; overrides apply as `override ?? default` so non-fork runs
   are byte-identical). `POST /api/runs/:id/rerun {fromStepId?, overrides?}` validates (terminal;
-  suite-member→409; model-resolves-for-kind; qlik whole-run-only→422 via the MANIFEST, not providerKind).
+  suite-member→409; model-resolves-for-kind; vendor whole-run-only→422 via the MANIFEST, not providerKind).
   RunFilter `derived` now LIVE + consistent across all 3 predicate copies (run-repository / metrics.ts
   replica / shared `matchesRunFilter`; default-EXCLUDES forks, "Show forks" chip; cross-check green);
   derived runs are NEVER suite members + absent from suite analytics. Estimate-first (`POST
@@ -725,6 +725,6 @@ webhook test-fire 4.3, real fork 3.3, real digest 5.5) — none claimed by an ag
 - Live walks needing real credentials/tenants: judge-chain LLM clustering assist (5.2);
   assistant issue loop (5.4); webhook test-fire to a real Slack endpoint.
 - Data-quality spot-checks: FTS relevance on a real corpus; metrics drill-down counts match the
-  runs feed; capability-split series render honestly for a mixed suite (API + CLI + qlik).
+  runs feed; capability-split series render honestly for a mixed suite (API + CLI + vendor).
 - Session-contract walks (End session, waiting, stall/expiry, seen) belong to
   `roadmap/unified-sessions/` — not duplicated here.

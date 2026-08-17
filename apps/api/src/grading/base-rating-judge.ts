@@ -80,7 +80,7 @@ export type ConversationTurn = { question: string; answer: string };
 /**
  * Reconstruct the run's conversation as USER turns. Each `user_message` step opens a turn whose `answer`
  * is the `assistantText` of the `llm_response` steps that follow it (until the next `user_message`),
- * joined. A single-prompt run (a scripted qlik answer or an agent loop) yields ONE turn; an INTERACTIVE
+ * joined. A single-prompt run (an agent loop) yields ONE turn; an INTERACTIVE
  * session yields one turn per user message. This is what makes session validation "see the conversation"
  * rather than comparing only the test's opener prompt against every answer glued together.
  *

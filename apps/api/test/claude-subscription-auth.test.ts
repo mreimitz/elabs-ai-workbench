@@ -76,7 +76,7 @@ test("brokenSubscriptionAuthError is a fixed, secret-free 400 message (no token/
 const OAUTH_TOKEN = "sk-ant-oat01-subscription-secret";
 
 function repoWith(db: AppDatabase, resolver?: SubscriptionAuthResolver): ProviderRepository {
-  return new ProviderRepository(db, new SecretStore(Buffer.alloc(32, 9)), undefined, resolver);
+  return new ProviderRepository(db, new SecretStore(Buffer.alloc(32, 9)), resolver);
 }
 const okResolver: SubscriptionAuthResolver = { resolve: () => ({ token: OAUTH_TOKEN }) };
 const brokenResolver: SubscriptionAuthResolver = {
@@ -104,18 +104,16 @@ test("signed-in claude_subscription — getDecrypted resolves the subscription t
   const repo = repoWith(db, okResolver);
   const cred = repo.create({ kind: "claude_subscription", label: "Claude (subscription)" });
 
-  // Redacted view: no key, no linked server, not broken.
+  // Redacted view: no key, not broken.
   assert.equal(cred.hasKey, false);
-  assert.equal(cred.linkedServerId, undefined);
   assert.equal(cred.authBroken, false, "a resolvable subscription is not broken");
   assert.equal((cred as { apiKey?: unknown }).apiKey, undefined, "the token never leaks in redact()");
 
-  // Decrypted (internal) view: the resolved OAuth token as apiKey, no baseUrl/mcpServerId.
+  // Decrypted (internal) view: the resolved OAuth token as apiKey, no baseUrl.
   const dec = repo.getDecrypted(cred.id);
   assert.equal(dec.kind, "claude_subscription");
   assert.equal(dec.apiKey, OAUTH_TOKEN, "the resolved subscription token is the apiKey");
   assert.equal(dec.baseUrl, undefined);
-  assert.equal(dec.mcpServerId, undefined);
 
   // The resolved token must NEVER appear in any redacted response.
   assert.equal(JSON.stringify(repo.list()).includes(OAUTH_TOKEN), false);
@@ -152,22 +150,11 @@ test("claude_subscription credential with NO resolver configured — redact mark
   assert.equal((err as { statusCode?: number }).statusCode, 500);
 });
 
-test("claude_subscription — authSource is left unset (neither api_key nor linked_server describes it)", () => {
-  const db = createDatabase();
-  const repo = repoWith(db, okResolver);
-  const cred = repo.create({ kind: "claude_subscription", label: "Claude (subscription)" });
-  assert.equal(
-    cred.authSource,
-    undefined,
-    "D-CS7: the wire authSource enum (api_key | linked_server) has no literal for a subscription credential",
-  );
-});
-
 test("an existing anthropic credential is unaffected by the subscription resolver being wired", () => {
   const db = createDatabase();
   const repo = repoWith(db, okResolver);
   const cred = repo.create({ kind: "anthropic", label: "Prod", apiKey: "sk-ant-secret" });
-  assert.equal(cred.authSource, "api_key");
+  // `authBroken` is a subscription-only signal: an own-key credential leaves it unset.
   assert.equal(cred.authBroken, undefined);
   assert.equal(repo.getDecrypted(cred.id).apiKey, "sk-ant-secret", "own-key path unchanged");
 });

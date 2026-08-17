@@ -264,7 +264,7 @@ const SCOPE_NARROWING_PLAN: HubMissionPlan = {
     agent({
       key: "a",
       name: "Analyst",
-      toolGrants: { servers: { qlik: ["search", "list_apps", "delete_app"] }, builtins: [] },
+      toolGrants: { servers: { acme: ["search", "list_apps", "delete_app"] }, builtins: [] },
     }),
   ],
 };
@@ -274,7 +274,7 @@ describe("ConversationPane — WP6.1 follow-up B: MissionPlanCard parentScope th
     vi.mocked(api.listServers).mockResolvedValue([server({ name: "Postgres" })]);
     renderPane(
       proposedMissionStream(SCOPE_NARROWING_PLAN),
-      session({ mode: "auto", toolScope: { servers: { qlik: ["search", "list_apps"] }, builtins: [] } }),
+      session({ mode: "auto", toolScope: { servers: { acme: ["search", "list_apps"] }, builtins: [] } }),
     );
     expect(await screen.findByTestId("agent-effective-access-a")).toHaveTextContent(
       "2 of 3 tools after session scope",

@@ -21,18 +21,11 @@ const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
 // Hard ceiling on pagination loops so a misbehaving provider can never spin forever.
 const MAX_PAGES = 10;
 
-/**
- * The injectable fetch seam (WP 0.3). Only the `qlik_answers` path threads this through today —
- * the other listers call global `fetch` directly and are exercised only at the pure-parser level
- * (see the file-header note); `qlik_answers` needs full fetch/pagination coverage with NO real
- * tenant ever contacted, so `listAvailableModels`/`listQlikAnswers`/`fetchJson` all accept an
- * optional `fetchImpl` that defaults to the global `fetch`, letting tests stub it directly.
- */
+/** The injectable fetch seam — defaults to the global `fetch`, letting tests stub it directly. */
 export type FetchLike = typeof fetch;
 
 export async function listAvailableModels(
   cred: DecryptedCredential,
-  fetchImpl: FetchLike = fetch,
   subscriptionModels?: SubscriptionModelSource,
 ): Promise<AvailableModel[]> {
   switch (cred.kind) {
@@ -50,8 +43,6 @@ export async function listAvailableModels(
       const baseUrl = cred.baseUrl?.trim() ? cred.baseUrl.trim() : DEFAULT_OLLAMA_BASE_URL;
       return listOpenAiCompatible(baseUrl, cred.apiKey, "Ollama");
     }
-    case "qlik_answers":
-      return listQlikAnswers(cred, fetchImpl);
     case "claude_subscription":
       return listClaudeSubscription(subscriptionModels);
     default: {
@@ -59,150 +50,6 @@ export async function listAvailableModels(
       throw httpError(400, `Unsupported provider kind: ${String(exhaustive)}`);
     }
   }
-}
-
-// --- Qlik Answers app-context resolution (Phase 4 cloud-assistants rework, 2026-07-11) ----------
-//
-// A Qlik Answers **app**-backed assistant is executed through the internal `/api/v1/cloud-assistants/`
-// API, which binds a Qlik Sense **app** as the run's data context (`context:{type:"app", id: APP_ID}`)
-// rather than an assistant UUID. The env "model" stays the assistant UUID; we resolve its bound app id
-// here (once, cached) from the assistant's own metadata. The public `/api/v1/assistants/{id}` detail
-// carries `knowledgeBases[]` (and possibly the app directly); the app id, when not inline, is found by
-// walking the assistant → knowledge-base → data-source metadata. All GETs are FREE (metadata only — no
-// question consumed). Set `QLIK_ANSWERS_DEBUG=1` to log every candidate response's raw shape.
-
-/** Thrown when no Qlik Sense app can be resolved for an assistant — the run cannot bind a data context. */
-export class QlikAnswersAppResolutionError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "QlikAnswersAppResolutionError";
-  }
-}
-
-/** Resolved tenant auth for the cloud-assistants calls (mirrors the executor's `auth`). */
-export type QlikAnswersAuth = { apiKey: string; baseUrl: string };
-
-const APP_CONTEXT_TTL_MS = 5 * 60_000;
-const appContextCache = new Map<string, { appId: string; expires: number }>();
-
-function qaDebug(label: string, data: unknown): void {
-  if (process.env.QLIK_ANSWERS_DEBUG) {
-    try {
-      console.error(`[QA-DEBUG ${label}]`, JSON.stringify(data ?? null).slice(0, 20000));
-    } catch {
-      console.error(`[QA-DEBUG ${label}] <unserializable>`);
-    }
-  }
-}
-
-/**
- * Resolve the Qlik Sense app id bound to a Qlik Answers assistant, so a run can send it as the
- * cloud-assistants data context. Cached per `(baseUrl, assistantId)` for {@link APP_CONTEXT_TTL_MS}
- * (the binding is stable). Probes, in order: the public assistant detail, the internal cloud-assistants
- * detail, then each linked knowledge base's data sources. Throws {@link QlikAnswersAppResolutionError}
- * when nothing yields an app id (the owner-locked "STOP" case). `fetchImpl` is injectable so tests never
- * contact a real tenant.
- */
-export async function resolveQlikAnswersAppContext(
-  auth: QlikAnswersAuth,
-  assistantId: string,
-  fetchImpl: FetchLike = fetch,
-): Promise<string> {
-  const key = `${auth.baseUrl}::${assistantId}`;
-  const cached = appContextCache.get(key);
-  if (cached && cached.expires > Date.now()) return cached.appId;
-
-  const headers = { authorization: `Bearer ${auth.apiKey}` };
-  const get = async (path: string): Promise<unknown> => {
-    try {
-      const res = await fetchImpl(joinUrl(auth.baseUrl, path), { headers });
-      const body = res.ok ? await res.json().catch(() => undefined) : undefined;
-      qaDebug(`resolve GET ${path} -> ${res.status}`, body ?? null);
-      return body;
-    } catch (error) {
-      qaDebug(`resolve GET ${path} threw`, toErrorMessage(error));
-      return undefined;
-    }
-  };
-
-  // 1) public assistant detail — may carry the app inline; always carries `knowledgeBases[]`.
-  const detail = await get(`api/v1/assistants/${encodeURIComponent(assistantId)}`);
-  let appId = findAppId(detail);
-  // 2) internal cloud-assistants detail — the Answers UI's own source for the bound app/context.
-  if (!appId) appId = findAppId(await get(`api/v1/cloud-assistants/${encodeURIComponent(assistantId)}`));
-  // 3) walk the assistant's knowledge bases → their data sources for a Qlik app id.
-  if (!appId) {
-    const kbIds = asArray(asRecord(detail)?.knowledgeBases).filter(
-      (value): value is string => typeof value === "string",
-    );
-    for (const kbId of kbIds) {
-      appId =
-        findAppId(await get(`api/v1/knowledge-bases/${encodeURIComponent(kbId)}`)) ??
-        findAppId(await get(`api/v1/knowledge-bases/${encodeURIComponent(kbId)}/data-sources`)) ??
-        findAppId(await get(`api/v1/knowledgebases/${encodeURIComponent(kbId)}/datasources`));
-      if (appId) break;
-    }
-  }
-
-  if (!appId) {
-    throw new QlikAnswersAppResolutionError(
-      `Could not resolve the Qlik Sense app bound to Qlik Answers assistant "${assistantId}". An ` +
-        `app-backed assistant needs its app id as the run's data context, but none was present in the ` +
-        `assistant detail, the cloud-assistants detail, or its knowledge-base data sources. Re-run with ` +
-        `QLIK_ANSWERS_DEBUG=1 to capture the raw metadata shapes.`,
-    );
-  }
-  appContextCache.set(key, { appId, expires: Date.now() + APP_CONTEXT_TTL_MS });
-  return appId;
-}
-
-/** Test-only: clear the resolved-app-context cache between cases. */
-export function _clearQlikAnswersAppContextCache(): void {
-  appContextCache.clear();
-}
-
-// String-valued app-id keys, and array-valued ones. `appIds` (plural array) is what a live Qlik Answers
-// **app**-backed assistant carries (verified 2026-07-11: `GET /api/v1/assistants/{id}` →
-// `{ …, appIds:["<app-guid>"], knowledgeBases:[] }`). We do NOT match arbitrary arrays (e.g.
-// `knowledgeBases`) — only the explicit app-id keys — so an assistant UUID or a KB id is never grabbed.
-const APP_ID_STRING_KEYS = new Set(["appid", "app_id", "qlikappid", "sourceappid", "senseappid"]);
-const APP_ID_ARRAY_KEYS = new Set(["appids", "app_ids"]);
-
-/**
- * Depth-first search of Qlik metadata for a Qlik Sense app id. Field-guided (an assistant UUID is ALSO a
- * GUID, so we never grab an arbitrary GUID): matches an `appIds[]` array (the live shape) or a singular
- * app-id key, a `{type:"app", id}` context object, or a `qri:app:sense://<guid>` resource identifier.
- * Returns the FIRST match — a multi-app assistant binds its first app (a documented v1 limitation).
- */
-export function findAppId(obj: unknown): string | undefined {
-  if (Array.isArray(obj)) {
-    for (const item of obj) {
-      const found = findAppId(item);
-      if (found) return found;
-    }
-    return undefined;
-  }
-  const record = asRecord(obj);
-  if (!record) return undefined;
-  if (record.type === "app" && typeof record.id === "string" && record.id.length > 0) return record.id;
-  for (const [rawKey, value] of Object.entries(record)) {
-    const key = rawKey.toLowerCase();
-    if (APP_ID_STRING_KEYS.has(key) && typeof value === "string" && value.length > 0) return value;
-    if (APP_ID_ARRAY_KEYS.has(key) && Array.isArray(value)) {
-      const first = value.find((entry) => typeof entry === "string" && entry.length > 0);
-      if (typeof first === "string") return first;
-    }
-    if ((key === "qri" || key === "qriid" || key === "resourceid") && typeof value === "string") {
-      const match =
-        value.match(/app[:/]sense:\/\/([0-9a-fA-F-]{16,})/) ?? value.match(/app[:/]([0-9a-fA-F-]{16,})/);
-      if (match) return match[1];
-    }
-  }
-  for (const value of Object.values(record)) {
-    const found = findAppId(value);
-    if (found) return found;
-  }
-  return undefined;
 }
 
 // --- Provider fetchers -------------------------------------------------------------------------
@@ -287,44 +134,6 @@ async function listClaudeSubscription(
   return ASSISTANT_DEFAULT_MODEL_ROSTER.map((id) => ({ id }));
 }
 
-/**
- * Qlik Answers `GET /api/v1/assistants` (roadmap/qlik-answers/, WP 0.3) — bearer-authed, cursor
- * paged via `links.next.href` (a full URL to the next page; verified against the public
- * `qlik-oss/qlik-api-ts` generated types + qlik.dev OpenAPI spec for the assistants API — the
- * response is `{ data: Assistant[], links?: { next?: { href } }, meta? }`). This call is list-only
- * and consumes no question. `cred.apiKey` carries either the tenant API key or — for a
- * server-linked credential — the resolved OAuth access token (WP 0.2 populates that
- * transparently); this function only ever reads `apiKey`/`baseUrl`.
- *
- * CLASSIC-ONLY FILTER (D-QA7) — NOT APPLIED, FLAGGED FOR THE OWNER: the public `Assistant` schema
- * (qlik.dev OpenAPI spec + the generated TS types, checked 2026-07-11) has NO field that
- * distinguishes a classic assistant from an agentic one — no `type`/`kind`/`mode`/`assistantType`.
- * The one anomaly, an undocumented `legacy` entry in the OpenAPI schema's `required` array with
- * ZERO type/description in `properties`, is too ambiguous to hang a filtering decision on (unknown
- * type, unverified semantics, never checked against a live tenant). This is exactly the stop
- * condition the qlik-answers kickoff prompt pre-flagged ("the assistants list API can't
- * distinguish classic vs agentic — affects D-QA7 filtering"). Until the owner confirms a real
- * field (or another signal) against a live tenant, this roster returns EVERY assistant the tenant
- * reports, unfiltered — do not silently narrow this list without a documented, verified field.
- */
-async function listQlikAnswers(
-  cred: DecryptedCredential,
-  fetchImpl: FetchLike,
-): Promise<AvailableModel[]> {
-  const baseUrl = requireBaseUrl(cred, "qlik_answers");
-  const apiKey = requireKey(cred, "Qlik Answers");
-  const headers = { authorization: `Bearer ${apiKey}` };
-  const out: AvailableModel[] = [];
-  let url: string | undefined = `${joinUrl(baseUrl, "api/v1/assistants")}?limit=100`;
-  for (let page = 0; page < MAX_PAGES && url; page += 1) {
-    const payload = await fetchJson(url, headers, "Qlik Answers", fetchImpl);
-    const record = asRecord(payload);
-    out.push(...parseQlikAnswersAssistants(record?.data));
-    url = asString(asRecord(asRecord(record?.links)?.next)?.href);
-  }
-  return sortModels(out);
-}
-
 // --- Pure parsers (unit-tested in apps/api/test/provider-model-catalog.test.ts) ----------------
 
 /** Anthropic `GET /v1/models` → `{ data: [{ id, display_name, type }], has_more, last_id }`. */
@@ -379,23 +188,6 @@ const NON_CHAT_MODEL_PATTERN =
 
 export function isChatModelId(id: string): boolean {
   return !NON_CHAT_MODEL_PATTERN.test(id);
-}
-
-/**
- * Qlik Answers assistants `data[]` entries → `AvailableModel { id, displayName }`. Per the
- * `Assistant` schema, `id` is the assistant's uuid and `name` its display name (`title` is a
- * separate, optional, human-facing field the schema doesn't guarantee — `name` is required).
- * See {@link listQlikAnswers} for why no classic/agentic filter is applied here.
- */
-export function parseQlikAnswersAssistants(payload: unknown): AvailableModel[] {
-  const out: AvailableModel[] = [];
-  for (const entry of asArray(payload)) {
-    const record = asRecord(entry);
-    const id = asString(record?.id);
-    if (!id) continue;
-    out.push({ id, displayName: asString(record?.name) });
-  }
-  return out;
 }
 
 // --- Helpers -----------------------------------------------------------------------------------

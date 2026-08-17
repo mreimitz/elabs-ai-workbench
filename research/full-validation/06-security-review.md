@@ -32,10 +32,10 @@ The critical shift for team-server: today the operator is the only actor and is 
 1. **Secrets & crypto:** `secrets/secret-store.ts`, `config/env.ts`, all of `oauth/`, all of `providers/`, `servers/repository.ts` redaction, `git/git-credential.ts`, `skills/git-service.ts`, `assistant/spawn-env.ts`, assistant read tools. Plus a repo-wide logging sweep for secret leakage.
 2. **Skill/zip ingestion:** `skills/ingest-service.ts`, `caps.ts`, `git-service.ts`, `routes.ts`, `repository.ts` file-serving, `assistant/workspace.ts`, `collections/git-sync.ts`.
 3. **Injection:** all 19 `*/repository.ts` + `db/*` for SQL; `mcp/client.ts` + `assistant/session-driver.ts` + `spawn-env.ts` + all `child_process` uses for command injection; report/static/skill-file routes for path traversal & header injection.
-4. **SSRF:** probe endpoint, streamable-HTTP MCP, `servers/asset-proxy.ts`, `qlik-detect.ts`, `qlik-answers-probe.ts`, GitHub import, collections git sync.
+4. **SSRF:** probe endpoint, streamable-HTTP MCP, `servers/asset-proxy.ts`, `vendor-detect.ts`, `vendor-assistant-probe.ts`, GitHub import, collections git sync.
 5. **Web XSS & storage:** full `apps/web/src` sweep for `dangerouslySetInnerHTML`/`innerHTML`/etc.; markdown pipeline (Streamdown/`@brand/ai`), Mermaid config, SKILL.md rendering, skill file viewer/SVG, `href` construction, all `localStorage` keys, provider-key write-only invariant.
 6. **Transport/container:** `index.ts` CORS/auth/rate-limit/error-handler/static, `Dockerfile`, `docker-compose.yml`, dependency versions.
-7. **Logging:** tool-playground call route, MCP client `callTool`, runs engine, Fastify logger config, Qlik Answers debug lines.
+7. **Logging:** tool-playground call route, MCP client `callTool`, runs engine, Fastify logger config, the vendor assistant debug lines.
 
 ---
 
@@ -46,14 +46,14 @@ The critical shift for team-server: today the operator is the only actor and is 
 | H1 | Collection conflict-`resolve` path traversal → arbitrary host file write/delete | Medium | **High** | `collections/git-sync.ts:196` |
 | M1 | Asset-proxy follows redirects, forwards stored credential off-origin (SSRF + cred leak) | Medium | **High** | `servers/routes.ts:169` |
 | M2 | GitHub-import `subpath` path traversal → read arbitrary host files into a skill | Low | **Medium** | `skills/git-service.ts:300` |
-| M3 | Unconditional `console.error` dumps Qlik tenant roster to logs (leftover "REMOVE" debug) | Medium | Medium | `providers/model-catalog.ts:301` |
+| M3 | Unconditional `console.error` dumps the vendor tenant roster to logs (leftover "REMOVE" debug) | Medium | Medium | `providers/model-catalog.ts:301` |
 | M4 | docker-compose publishes the unauthenticated API on `0.0.0.0:8080` | Low | **High** | `docker-compose.yml:11` |
 | L1 | Git `ref`/`branch` not guarded against leading-dash argument injection | Low | Low | `skills/git-service.ts:404`, `collections/git-sync.ts:611` |
 | L2 | `runGit` inherits full `process.env` (incl. `MCP_SECRET_KEY`) into git child | Low | Low | `git/git-credential.ts:57` |
 | L3 | GitHub PAT passed in argv URL — visible in process listing during clone | Low | Medium | `git/git-credential.ts:102` |
 | L4 | Native 500s echo `error.message` to the client (minor info disclosure) | Low | Low | `index.ts:482` |
 | L5 | Protocol-relative markdown link (`//evil.com`) escapes router as off-site nav | Low | Low | `assistant/AssistantMessageBody.tsx:110` |
-| L6 | Gated Qlik Answers debug dumps response bodies to stderr when env flag set | Low | Low | `testing/qlik-answers-executor.ts:169` |
+| L6 | Gated the vendor assistant debug dumps response bodies to stderr when env flag set | Low | Low | `testing/vendor-assistant-executor.ts:169` |
 | I1 | SKILL.md/LLM markdown safety depends entirely on a vendored sanitizer (no app-side pin/test) | Info | Info | `features/skills/SkillOverview.tsx:514` |
 | I2 | No CORS / CSRF protection (state-changing POSTs triggerable cross-site) | Info | Medium | `index.ts` (absent) |
 
@@ -125,18 +125,18 @@ const files = readTreeFiles(root, this.caps);
 
 **Fix:** reject `subpath` with absolute or `..` segments in the schema; additionally assert `path.resolve(root)` is within `path.resolve(tmpDir)` before `readTreeFiles`.
 
-#### M3 — Unconditional debug dump of Qlik Answers roster to stderr (leftover "REMOVE" code)
+#### M3 — Unconditional debug dump of the vendor assistant roster to stderr (leftover "REMOVE" code)
 **File:** `apps/api/src/providers/model-catalog.ts:301` (verified directly)
 **Local: Medium · Team-server: Medium**
 
 ```ts
-// TEMP DEBUG (qlik retrieval diagnosis) — REMOVE. Raw assistant objects incl. knowledgeBases/spaceId.
+// TEMP DEBUG (vendor retrieval diagnosis) — REMOVE. Raw assistant objects incl. knowledgeBases/spaceId.
 console.error("[QA-DEBUG roster]", JSON.stringify(record?.data).slice(0, 6000));
 ```
 
-Unlike the sibling `qaDebug()` helpers (gated behind `QLIK_ANSWERS_DEBUG`), this line is **unconditional** and runs on every `GET /api/providers/:id/models` for a `qlik_answers` credential, writing up to 6000 chars of the tenant's raw assistants list (names, `knowledgeBases`, `spaceId`) to server stderr. No bearer token is in `record.data`, so this is tenant-metadata disclosure into logs rather than a credential leak — but it is explicitly self-labeled temporary and must not ship.
+Unlike the sibling `qaDebug()` helpers (gated behind `VENDOR_ASSISTANT_DEBUG`), this line is **unconditional** and runs on every `GET /api/providers/:id/models` for a `vendor_assistant` credential, writing up to 6000 chars of the tenant's raw assistants list (names, `knowledgeBases`, `spaceId`) to server stderr. No bearer token is in `record.data`, so this is tenant-metadata disclosure into logs rather than a credential leak — but it is explicitly self-labeled temporary and must not ship.
 
-**Fix:** delete the line (or gate it behind `qaDebug`/`QLIK_ANSWERS_DEBUG` like the others).
+**Fix:** delete the line (or gate it behind `qaDebug`/`VENDOR_ASSISTANT_DEBUG` like the others).
 
 #### M4 — docker-compose publishes the unauthenticated API on all host interfaces
 **File:** `docker-compose.yml:11` (verified directly) · `:15` `HOST: "0.0.0.0"`
@@ -214,11 +214,11 @@ if (typeof href === "string" && href.startsWith("/")) {
 
 **Fix:** guard with `href.startsWith("/") && !href.startsWith("//")` before rendering a `Link`.
 
-#### L6 — Gated Qlik Answers debug dumps response bodies to stderr
-**File:** `apps/api/src/testing/qlik-answers-executor.ts:169-176`; `apps/api/src/providers/model-catalog.ts:84-92`
+#### L6 — Gated the vendor assistant debug dumps response bodies to stderr
+**File:** `apps/api/src/testing/vendor-assistant-executor.ts:169-176`; `apps/api/src/providers/model-catalog.ts:84-92`
 
 ```ts
-if (process.env.QLIK_ANSWERS_DEBUG) {
+if (process.env.VENDOR_ASSISTANT_DEBUG) {
   console.error(`[QA-DEBUG ${label}]`, JSON.stringify(data ?? null).slice(0, 20000));
 ```
 
@@ -277,9 +277,9 @@ The app relies on the loopback default bind + browser same-origin policy. Absent
 **Zip ingestion — `skills/ingest-service.ts`, `caps.ts`**
 - Extraction purely in-memory (`fflate` streaming `Unzip`), no per-entry disk write. Zip-slip guarded **before** inflate (`assertSafeZipEntryPath`, rejects absolute + any `..`). Zip-bomb enforced **during** decompression, per chunk, counting actual inflated bytes (declared size never trusted); ignored entries (`.git`/`__MACOSX`) still metered. Symlink entries become inert blobs; nested zips stored opaque. Export zip rebuilt in-memory. GitHub path enforces caps **before** reading contents.
 
-**SSRF baseline — `git/git-credential.ts`, `schemas.ts`, `qlik-*`**
+**SSRF baseline — `git/git-credential.ts`, `schemas.ts`, `vendor-*`**
 - Skill/collection git: `https://`-only schema + literal-host block (`isBlockedIp` covers loopback/RFC1918/link-local incl. `169.254.169.254`/IPv6 ULA/mapped) + pre-network DNS-resolution guard `assertHostAllowed` on every clone/fetch/ls-remote/push. `file://`/`ssh://`/`git://` rejected. TOCTOU/rebind residual explicitly acknowledged in-code.
-- Qlik Answers probe forwards the bearer only to a host gated by `isLikelyQlikTenantUrl` (`*.qlikcloud.com` + `/api/ai/mcp`) — no arbitrary-host credential leak.
+- the vendor assistant probe forwards the bearer only to a host gated by `isLikelyVendorTenantUrl` (`*.example.com` + `/api/ai/mcp`) — no arbitrary-host credential leak.
 - MCP probe/config URLs use bare `.url()` with no internal-host block — **by design** (MCP servers may be internal) and use the owner's own supplied auth.
 
 **Command execution**

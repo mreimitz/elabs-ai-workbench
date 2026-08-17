@@ -129,9 +129,9 @@ test("remembers the OAuth client id across save + reload (and keeps the secret s
   const repository = new ServerRepository(db, new SecretStore(Buffer.alloc(32, 7)));
 
   const created = repository.create({
-    name: "Qlik",
+    name: "Acme",
     transport: "streamable_http",
-    url: "https://example.qlikcloud.com/api/ai/mcp",
+    url: "https://example.acmecloud.com/api/ai/mcp",
     auth: { type: "oauth", clientId: "my-registered-client", clientSecret: "shh" },
   });
 
@@ -158,7 +158,7 @@ test("remembers the OAuth client id across save + reload (and keeps the secret s
     created.id,
   );
   repository.update(created.id, {
-    name: "Qlik (renamed)",
+    name: "Acme (renamed)",
     auth: { type: "oauth", clientId: "my-registered-client" },
   });
   const afterRename = db

@@ -19,7 +19,7 @@ run count does that stop holding on the SQLite file, and do we then add a derive
 profiling spike with realistic volumes (10k–100k runs).
 
 **Q-OB3 — Comparability rules for mixed-capability fleets.**
-`qlik_answers` runs have estimated tokens and question-based cost; subscription runs have
+`vendor_assistant` runs have estimated tokens and question-based cost; subscription runs have
 reference cost. Do token/cost charts exclude, footnote, or split these (per the C3 capability
 manifest)? Same question for `meanScore` across judge vs deterministic graders. The wrong
 default silently produces dishonest charts — the one sin the app's reporting has avoided so far.

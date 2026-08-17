@@ -43,7 +43,7 @@ This is how you pinpoint *where* two sessions parted ways — the turn where one
 tool, took a slower path, or read a different skill file.
 
 The Flow view finishes with a **Result** panel that places the **final answer each run produced**
-side by side, so you compare not just the path but the outcome. Below, two runs of the same Qlik
+side by side, so you compare not just the path but the outcome. Below, two runs of the same the vendor
 Answers assistant are compared on the same question — the reasoning lines up, but the answers differ
 in wording and emphasis:
 
@@ -56,9 +56,7 @@ in wording and emphasis:
 - **Model A vs model B** — run the same test on two models and see the cost/quality trade-off.
 - **Skill on vs off** — compare a run with a skill attached against one without, to measure the
   skill's real effect.
-- **A different kind of target entirely** — you can even compare a Qlik Answers assistant against a
-  full MCP session for the same question. That's the next page.
 
 ---
 
-Next: [Qlik Answers as a model →](./11-qlik-answers.md)
+Next: [App assistant →](./12-assistant.md)

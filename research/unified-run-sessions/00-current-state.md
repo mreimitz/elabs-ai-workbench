@@ -14,7 +14,7 @@ provider kind:
 | Path | Executor | Mechanism |
 |---|---|---|
 | `claude_subscription` | `claude-subscription-executor.ts` | Claude **Agent SDK** child process via the injected `AgentSessionDriver` seam; MCP servers spawned *inside* the child from a translated `mcpServers` config (subscription-tools.ts:76-108) |
-| `qlik_answers` | `qlik-answers-executor.ts` | Internal `/api/v1/cloud-assistants/` REST + SSE card-patch stream; thread per run; settled answer re-fetched from `…/messages` (executor:763-921) |
+| `vendor_assistant` | `vendor-assistant-executor.ts` | Internal `/api/v1/cloud-assistants/` REST + SSE card-patch stream; thread per run; settled answer re-fetched from `…/messages` (executor:763-921) |
 | everything else (anthropic, openai, google, openai_compatible, ollama) | `engine.ts` `runAgentLoop` | AI-SDK `streamText` multi-step loop + server-side `McpSession` tool bridge |
 
 `providers/registry.ts:67-77` throws for the two special kinds, so they can never reach the engine.
@@ -27,7 +27,7 @@ packages/shared/src/types.ts:1366-1422) through the **same choke point** `RunMan
 (run-manager.ts:132), which stamps monotonic `seq`/`step.index`, keeps a bounded live replay buffer,
 and fans out to persistence + SSE. One console (`RunConsole`) renders all three kinds; persistence,
 replay, grading, suites and Compare are kind-agnostic. The Answers executor was explicitly designed
-to "render identically" (qlik-answers-executor.ts:29-30), as was the subscription path (D-CS3).
+to "render identically" (vendor-assistant-executor.ts:29-30), as was the subscription path (D-CS3).
 
 **The divergence is not in the wire format. It is in lifecycle semantics, timeout policy, and
 presentation policy — three places where each executor made its own local decision.**
@@ -36,11 +36,11 @@ presentation policy — three places where each executor made its own local deci
 
 ### 3.1 The same cause produces a different terminal per executor (verified first-hand)
 
-| Cause | API engine | CLI subscription | Qlik Answers |
+| Cause | API engine | CLI subscription | the vendor assistant |
 |---|---|---|---|
 | 30-min wall clock fires | `stopped` / `stopped_guardrail` (engine.ts:814-827) | `stopped` / `stopped_guardrail` (executor:997-1002) | **`aborted` / `aborted`** (executor:273-289 — comment admits "duration cap and a user stop both map to `aborted`, distinguished only by the free-form stopReason") |
 | Interactive session ends cleanly | idle timeout → `stopped` / `stopped_guardrail` (engine.ts:831-844) | `aborted` ("Run aborted by user") (executor:995-1002) | `aborted` (executor:505-519) |
-| Interactive run ever `completed`? | never (idle timeout or stop) | never — by design "the session was ended, not completed" | never — accepted deviation (roadmap/qlik-answers/STATUS.md:586-592) |
+| Interactive run ever `completed`? | never (idle timeout or stop) | never — by design "the session was ended, not completed" | never — accepted deviation (roadmap/vendor-assistant/STATUS.md:586-592) |
 | Waiting on subscription concurrency permit | n/a | **invisible** — `status: running` only emitted *after* `gate.acquire()` (executor:855-856); until then the run sits `pending` with a dead console | n/a |
 | Waiting for user input / ask_user answer | stays `running`, no distinct state (use-run-stream.ts:182-186) | stays `running` | stays `running` |
 
@@ -72,20 +72,20 @@ badge directly.
 
 Eleven+ branch sites fork the console by kind rather than by what the run *can do*:
 
-- `KpiRail.tsx:125-345`: qlik → Context tile becomes an identity card, Context "N/A", both token
+- `KpiRail.tsx:125-345`: vendor → Context tile becomes an identity card, Context "N/A", both token
   tiles dropped, "Tool calls" renamed "Questions"; subscription → context % becomes cumulative
   tokens, "est. · subscription" marker.
-- `RunConsole.tsx:779-812`: `ContextChart` and baseline suppressed for qlik; `RailInsightsPanel`
-  only for qlik.
+- `RunConsole.tsx:779-812`: `ContextChart` and baseline suppressed for vendor; `RailInsightsPanel`
+  only for vendor.
 - `ConversationPane.tsx:400-544`: `AnswersReasoning` / `AnswersAnswerView` / `SourcesPanel` for
-  qlik; verbatim reasoning + `ChatMarkdown` otherwise.
+  vendor; verbatim reasoning + `ChatMarkdown` otherwise.
 - `ToolCallCard.tsx:57-61`: strips the `mcp__server__` prefix that only the subscription path produces.
 - Reasoning visibility: engine streams a `reasoning` delta channel; **the subscription executor
-  never emits one** (executor:724-729); qlik streams reasoning but renders it structured.
+  never emits one** (executor:724-729); vendor streams reasoning but renders it structured.
 
 The kind itself is re-derived client-side from the credential because the one flag that should
 mark estimated tokens (`estimatedTokens`) is stripped by the persistence redaction heuristic
-(roadmap/qlik-answers/STATUS.md:599-603; use-run-stream.ts:296-314). Every new executor kind means
+(roadmap/vendor-assistant/STATUS.md:599-603; use-run-stream.ts:296-314). Every new executor kind means
 another round of scattered `if (providerKind === …)` forks — this is exactly why each new
 integration "looks different" by default.
 
@@ -94,7 +94,7 @@ integration "looks different" by default.
 There is exactly **one** wall-clock guard, and it is a hard-coded default:
 
 1. **`DEFAULT_MAX_RUN_DURATION_MS = 30 * 60_000`** (engine.ts:114) applies to *all three* executors
-   (engine.ts:440; subscription executor:850/931; qlik executor:202/398). Override exists **only**
+   (engine.ts:440; subscription executor:850/931; vendor executor:202/398). Override exists **only**
    as `scenario.guardrails.maxRunDurationMs` per environment — no app setting, no env var, no
    launcher field, no UI hint that a cap exists. When it fires it aborts the in-flight stream
    mid-turn via `AbortController`, with **no warning and no grace period**, and the terminal it
@@ -102,7 +102,7 @@ There is exactly **one** wall-clock guard, and it is a hard-coded default:
    killed the same as a hung one.
 2. **Idle timeout is engine-only and unconfigurable in practice.** `DEFAULT_IDLE_TIMEOUT_MS = 10 min`
    (engine.ts:112); `cfg.idleTimeoutMs` is never wired from the scenario in `resolve()`
-   (run-service.ts:1265-1296), so 10 minutes always. Subscription and qlik interactive sessions have
+   (run-service.ts:1265-1296), so 10 minutes always. Subscription and vendor interactive sessions have
    **no idle timeout at all** — a walked-away session burns the 30-min wall clock and then reports
    `aborted`/`stopped_guardrail`.
 3. **The wall clock keeps burning while the run waits on a human.** Interactive turn waits and

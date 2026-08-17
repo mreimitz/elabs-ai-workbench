@@ -105,7 +105,7 @@ export function buildHubWriteToolDefinitions(deps: HubWriteToolDeps) {
         safeTool(() => {
           const input = hubAgentRoleInputSchema.parse(args); // re-apply .strict() + field refinements
           // model-identity WP6.1 (F5) — the SAME guard `POST /api/hub/agents` runs. Without it this
-          // tool wrote an unvalidated pin: a `qlik_answers`/auth-broken credential was accepted
+          // tool wrote an unvalidated pin: an auth-broken credential was accepted
           // silently, and an unknown id died on the FK as a raw SQLITE_CONSTRAINT rather than D-MI9's
           // 409. `safeTool` turns the typed throw into a clean `isError` result for the model.
           if (input.providerCredentialId !== undefined) {

@@ -47,5 +47,5 @@ session running." Repo pattern for expand-to-full-modal: `features/testing/Trace
 
 ## Notes / owner-acceptance
 
-Full live-stream feel (real model latency, real Qlik calls) is an owner-acceptance walk item; the
+Full live-stream feel (real model latency, real the vendor calls) is an owner-acceptance walk item; the
 gate proves it with the stub stream.

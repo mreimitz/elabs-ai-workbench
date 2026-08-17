@@ -31,7 +31,7 @@ parallel worktrees (entities are independent files) · 2.x sequential · 3.x/4.x
 
 ## Phase 1 — Entity library v1 + contribution kit
 
-- **WP 1.1 — Runtime cast.** `model`, `provider` (incl. `qlik_answers` variant), `validator`
+- **WP 1.1 — Runtime cast.** `model`, `provider` (incl. `vendor_assistant` variant), `validator`
   (shield agent), `run` (track segment), `prompt` (display + bubble). Registry entries + tests.
 - **WP 1.2 — Assets & knowledge cast.** `tool`, `resource`, `prompt-template`, `file`
   (sheet stack), `feedback-report` (doc tray), `scan` (scanner arch), `token-meter`.

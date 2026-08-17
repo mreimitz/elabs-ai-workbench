@@ -56,7 +56,7 @@ test("tierForModel: kind wins for subscription/ollama; price derives the rest; u
   assert.equal(tierForModel("claude-opus-4-8", "anthropic"), "frontier");
   assert.equal(tierForModel("gpt-4o", "openai"), "balanced");
   assert.equal(tierForModel("gpt-4o-mini", "openai"), "fast");
-  // An unpriced id (e.g. a Qlik-Answers assistant surfaced via an OpenAI-compatible facade) → balanced.
+  // An unpriced id (e.g. a Acme-Answers assistant surfaced via an OpenAI-compatible facade) → balanced.
   assert.equal(tierForModel("assistant|mcp-demo|mcp-sales", "openai_compatible"), "balanced");
 });
 

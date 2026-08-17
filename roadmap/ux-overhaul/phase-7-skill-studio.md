@@ -74,7 +74,7 @@ util (read-only reuse of the existing scan-aware reference checker).
 styled + hover tool-card (name · server · tokens · scan status); unknown/unresolvable refs get
 warning underline wired into the Problems panel (same rule source as Quality's tool-reference
 check); decorations identical in Code mode, Split mode, and every file tab.
-**Acceptance:** in SKILL.md v4: `qlik_search`, `qlik_get_data_model`, `qlik_create_data_object`
+**Acceptance:** in SKILL.md v4: `acme_search`, `acme_get_data_model`, `acme_create_data_object`
 decorated with correct hover cards; a nonsense ref underlined + listed in Problems; same result
 in Split and in a second file. Gate green; both themes.
 **Size:** M.

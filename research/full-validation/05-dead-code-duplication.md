@@ -9,7 +9,7 @@ sandboxed Linux workspace against the current working tree.
 dozen dead exports**; exactly **1 genuinely unused dependency** (`pino`); duplication is a low
 **3.36% overall (~2.2% for TS/TSX once the generated model dataset is excluded)** and is
 concentrated in 4–5 identifiable clusters. One real hygiene bug surfaced: a leftover
-**"TEMP DEBUG — REMOVE"** `console.error` that dumps raw Qlik Answers roster data on every
+**"TEMP DEBUG — REMOVE"** `console.error` that dumps raw the vendor assistant roster data on every
 roster fetch.
 
 ---
@@ -74,7 +74,7 @@ apps/api:
 | `testsForLevel()` | `apps/api/src/compatibility/catalog.ts:93` | No caller, no test. |
 | `PROVIDER_KIND_TO_RESEARCH_IDS` | `apps/api/src/compatibility/dataset.ts:40` | No caller (sibling `MODEL_ID_ALIASES` *is* used in-module). |
 | `parseOauthToken()` | `apps/api/src/assistant/claude-auth.ts:201` | No caller, no test (`parseAuthUrl` at :189 also has no non-test caller). |
-| `QlikAnswersAppResolutionError` re-export | `apps/api/src/testing/qlik-answers-executor.ts:994` | The class itself lives (and is used/tested) in `providers/model-catalog.ts`; this re-export line has no importer. |
+| `VendorAssistantAppResolutionError` re-export | `apps/api/src/testing/vendor-assistant-executor.ts:994` | The class itself lives (and is used/tested) in `providers/model-catalog.ts`; this re-export line has no importer. |
 | `SkillBlobRow`, `AssistantSettingsRow` (types) | `apps/api/src/db/rows.ts:421, 498` | No references outside their declarations. |
 
 apps/web:
@@ -97,14 +97,14 @@ deleted from git; this is harmless local build residue that pnpm ignores, worth 
 `apps/api/src/providers/model-catalog.ts:300-301`:
 
 ```ts
-// TEMP DEBUG (qlik retrieval diagnosis) — REMOVE. Raw assistant objects incl. knowledgeBases/spaceId.
+// TEMP DEBUG (vendor retrieval diagnosis) — REMOVE. Raw assistant objects incl. knowledgeBases/spaceId.
 console.error("[QA-DEBUG roster]", JSON.stringify(record?.data).slice(0, 6000));
 ```
 
-This is **ungated** — it fires on every Qlik Answers assistants-roster fetch and dumps up to
+This is **ungated** — it fires on every the vendor assistant assistants-roster fetch and dumps up to
 6 KB of raw tenant assistant metadata to stderr. The two `qaDebug()` helpers in the same file
-(:84) and in `testing/qlik-answers-executor.ts:169` are correctly gated behind
-`process.env.QLIK_ANSWERS_DEBUG`; this one line escaped its own gate and its own comment says
+(:84) and in `testing/vendor-assistant-executor.ts:169` are correctly gated behind
+`process.env.VENDOR_ASSISTANT_DEBUG`; this one line escaped its own gate and its own comment says
 REMOVE.
 
 ---
@@ -128,7 +128,7 @@ patterns). The actionable cross-file clusters, verified by reading both sides:
 Self-duplication worth a mention: `packages/shared/src/schemas.ts` (8 self-clones, ~75 lines
 of repeated zod envelope patterns — arguably idiomatic for a contract file) and
 `apps/api/src/skillflow/routes.ts` (7 self-clones, ~64 lines of repeated route scaffolding);
-`apps/api/src/testing/qlik-answers-executor.ts` (6 self-clones, ~83 lines of retry/backoff
+`apps/api/src/testing/vendor-assistant-executor.ts` (6 self-clones, ~83 lines of retry/backoff
 blocks).
 
 Raw report: jscpd JSON was written to the sandbox at `/tmp/analysis/jscpd/jscpd-report.json`
@@ -204,8 +204,8 @@ Raw report: jscpd JSON was written to the sandbox at `/tmp/analysis/jscpd/jscpd-
   `skills/repository.ts`; `MODEL_ID_ALIASES`; `isTerminalSuiteStatus`; `DEFAULT_IDLE_TIMEOUT_MS`;
   web: `ServerReportView`, `apiUpload`, and the four `lib/theme.ts` names) — and **(b) test-only
   exports** (verified: `createDefaultStepSink`, `appendContextEnvelope`, `requiresApproval`,
-  `lineDelta`, `perRequestPrice`, `listTokenCounters`, `getAllModels`, `qlikTenantOrigin`,
-  `_clearQlikAnswersAppContextCache`, `deriveContextLimits`/`derivePricing` [entry
+  `lineDelta`, `perRequestPrice`, `listTokenCounters`, `getAllModels`, `vendorTenantOrigin`,
+  `_clearVendorAssistantAppContextCache`, `deriveContextLimits`/`derivePricing` [entry
   `build-cli.ts` uses `buildModelData` which calls them in-module]). The remaining ~70
   unchecked names most plausibly follow the same distribution but were **not individually
   verified**.
@@ -235,7 +235,7 @@ Raw report: jscpd JSON was written to the sandbox at `/tmp/analysis/jscpd/jscpd-
 ## 8. Suggested actions (prioritized)
 
 1. **Remove the ungated `[QA-DEBUG roster]` console.error** (`model-catalog.ts:301`) or gate it
-   behind `QLIK_ANSWERS_DEBUG` like its siblings — it leaks tenant metadata to logs and its own
+   behind `VENDOR_ASSISTANT_DEBUG` like its siblings — it leaks tenant metadata to logs and its own
    comment says REMOVE. *(pre-release)*
 2. **Drop `pino` from `apps/api/package.json`.** *(trivial)*
 3. **Delete `ProfilePicker.tsx` and `ScanStatusBadge.tsx`** and the ~12 verified dead exports

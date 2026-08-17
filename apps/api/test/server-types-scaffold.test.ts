@@ -155,8 +155,8 @@ async function scaffold(app: FastifyInstance, body: unknown) {
 
 test("scaffold-from-type writes the TYPE NAME into frontmatter and resolves to the representative", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const member = seedServer(serverRepo, "Qlik Prod A", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const member = seedServer(serverRepo, "Acme Prod A", saas.id);
   seedScan(db, scans, member, {
     scannedAt: "2026-01-01T00:00:00.000Z",
     status: "success",
@@ -168,8 +168,8 @@ test("scaffold-from-type writes the TYPE NAME into frontmatter and resolves to t
 
   const res = await scaffold(app, {
     serverId: member, // the client-resolved D-ST3 representative (only the tool surface)
-    name: "qlik-helper",
-    bindTypeName: "Qlik-SaaS", // ← binds the TYPE
+    name: "acme-helper",
+    bindTypeName: "Acme-SaaS", // ← binds the TYPE
     tools: ["get_app"],
   });
   assert.equal(res.statusCode, 201, res.body);
@@ -180,12 +180,12 @@ test("scaffold-from-type writes the TYPE NAME into frontmatter and resolves to t
   const md = repo.getFileContent(versionId, "SKILL.md");
   assert.ok(!md.isBinary && md.text);
   const parsed = parseSkillManifest(md.text ?? "");
-  assert.deepEqual(parsed.manifest.servers, ["Qlik-SaaS"], "frontmatter binds the TYPE name");
+  assert.deepEqual(parsed.manifest.servers, ["Acme-SaaS"], "frontmatter binds the TYPE name");
 
   // The returned bindings resolve the type name → representative (additive type metadata present) —
   // and NO persisted override was created (type resolution is dynamic).
   assert.deepEqual(result.bindings, [
-    { serverName: "Qlik-SaaS", serverId: member, typeId: saas.id, resolvedVia: "type" },
+    { serverName: "Acme-SaaS", serverId: member, typeId: saas.id, resolvedVia: "type" },
   ]);
 });
 
@@ -193,7 +193,7 @@ test("scaffold-from-type: the representative with NO successful scan among membe
   // A two-member type: memberA sourced the tools (its scan is the D-ST3 rep at scaffold time). The
   // binding response reflects live D-ST3 resolution over the current scans.
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
+  const saas = types.create({ name: "Acme-SaaS" });
   const a = seedServer(serverRepo, "A", saas.id);
   const b = seedServer(serverRepo, "B", saas.id);
   seedScan(db, scans, a, {
@@ -206,7 +206,7 @@ test("scaffold-from-type: the representative with NO successful scan among membe
   const res = await scaffold(app, {
     serverId: a, // A is the newest-success representative
     name: "qh",
-    bindTypeName: "Qlik-SaaS",
+    bindTypeName: "Acme-SaaS",
     tools: ["t"],
   });
   assert.equal(res.statusCode, 201, res.body);
@@ -260,7 +260,7 @@ test("scaffold-from-type 400s on an unknown type name", async () => {
 
 test("scaffold-from-type 400s (unknown type) when the ServerTypeRepository DI is not wired", async () => {
   const { app, serverRepo, scans, types, db } = await buildApp({ withTypes: false });
-  const saas = types.create({ name: "Qlik-SaaS" });
+  const saas = types.create({ name: "Acme-SaaS" });
   const member = seedServer(serverRepo, "member", saas.id);
   seedScan(db, scans, member, {
     scannedAt: "2026-01-01T00:00:00.000Z",
@@ -270,7 +270,7 @@ test("scaffold-from-type 400s (unknown type) when the ServerTypeRepository DI is
   const res = await scaffold(app, {
     serverId: member,
     name: "s",
-    bindTypeName: "Qlik-SaaS",
+    bindTypeName: "Acme-SaaS",
     tools: ["t"],
   });
   assert.equal(res.statusCode, 400, res.body, "no serverTypes DI ⇒ the type can't be resolved");

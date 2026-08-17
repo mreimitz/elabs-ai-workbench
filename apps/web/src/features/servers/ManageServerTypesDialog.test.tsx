@@ -41,7 +41,7 @@ import { ManageServerTypesDialog } from "./ManageServerTypesDialog";
 const TYPES: ServerType[] = [
   {
     id: "t-saas",
-    name: "Qlik-SaaS",
+    name: "Acme-SaaS",
     status: "production",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
@@ -49,7 +49,7 @@ const TYPES: ServerType[] = [
   },
   {
     id: "t-stage",
-    name: "qlik-stage",
+    name: "acme-stage",
     status: "beta",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
@@ -78,8 +78,8 @@ describe("ManageServerTypesDialog (WP 2.2)", () => {
   test("lists every type with its status badge and member count", () => {
     renderDialog(TYPES);
 
-    expect(screen.getByText("Qlik-SaaS")).toBeInTheDocument();
-    expect(screen.getByText("qlik-stage")).toBeInTheDocument();
+    expect(screen.getByText("Acme-SaaS")).toBeInTheDocument();
+    expect(screen.getByText("acme-stage")).toBeInTheDocument();
     // Lifecycle status badges from the shared ServerTypeStatusBadge.
     expect(screen.getByText("Production")).toBeInTheDocument();
     expect(screen.getByText("Beta")).toBeInTheDocument();
@@ -134,7 +134,7 @@ describe("ManageServerTypesDialog (WP 2.2)", () => {
 
   test("delete states the member count and that servers are detached, not deleted (D-ST4)", async () => {
     renderDialog(TYPES);
-    fireEvent.click(screen.getByRole("button", { name: "Delete Qlik-SaaS" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Acme-SaaS" }));
 
     // The confirm copy names the count and the detach-not-delete consequence.
     expect(

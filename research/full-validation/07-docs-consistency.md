@@ -11,7 +11,7 @@ the code as of **2026-07-11**.
   `apps/api/src/config/env.ts`, `apps/api/src/index.ts`, `package.json`, `.mcp.json`,
   `apps/web/src/App.tsx`, `apps/web/package.json`).
 - Verified every `roadmap/*/STATUS.md` ledger named in `CLAUDE.md` exists; deep-read three ledgers
-  (`skill-ide`, `auto-rating`, `qlik-answers`/`assistant` spot checks) and confirmed their "Built"
+  (`skill-ide`, `auto-rating`, `vendor-assistant`/`assistant` spot checks) and confirmed their "Built"
   claims against real files.
 - Resolved every relative link/path cited in `CLAUDE.md`, `README.md`, and the rules docs.
 - Test counts were **not** obtained by running tests (out of scope); they are grep counts of
@@ -32,7 +32,7 @@ the code as of **2026-07-11**.
 | 4 | Medium | CLAUDE.md §4 | `pnpm test` — "web has no tests yet" | Same as #3; contradicts CLAUDE.md's own table ("566 web tests") |
 | 5 | Medium | `.claude/rules/architecture.md` | "View switching is local state (`activeView: ViewKey` in `App.tsx`), not a router" | `App.tsx:888` renders react-router `<Routes>`; contradicts CLAUDE.md §3/§5 |
 | 6 | Medium | CLAUDE.md §6 | Endpoint families list (10 families) | Omits 6 registered families: estimate, grading, suites/run-plans, collections, skillflow, assistant |
-| 7 | Medium | CHANGELOG.md | Last entry `0.2.0 — 2026-07-02` | Major shipped work since (UX overhaul, Skill IDE, testing-ia v16, Qlik Answers v23/v24, Assistant, Auto-Rating) unrecorded |
+| 7 | Medium | CHANGELOG.md | Last entry `0.2.0 — 2026-07-02` | Major shipped work since (UX overhaul, Skill IDE, testing-ia v16, the vendor assistant v23/v24, Assistant, Auto-Rating) unrecorded |
 | 8 | Medium | CLAUDE.md §8 + `.claude/rules/library-first.md` | `apps/web/src/components/` contains `CodeBlock` / `components/CodeBlock.tsx` | No such file; only `features/testing/CodeSnippet.tsx` exists |
 | 9 | Low | CLAUDE.md §7 | "Current tables span: …" (19 tables) | `schema.ts` defines 35 tables; suites/collections/grades/assistant families missing from the list |
 | 10 | Low | CLAUDE.md §7 | Environment list (11 vars) | `env.ts` reads ~25 (ATTACHMENTS_DIR, COLLECTIONS_DIR, SKILL_QUALITY_*, ASSISTANT_* ×12, AUTO_RATING_* missing) |
@@ -40,7 +40,7 @@ the code as of **2026-07-11**.
 | 12 | Low | `.claude/rules/architecture.md` | "Schema is created/migrated on startup in `schema.ts`" | Versioned migrations live in `database.ts` (schema.ts holds the baseline DDL) |
 | 13 | Low | `roadmap/auto-rating/STATUS.md` header | "`MIGRATIONS` is at v21 today … v22 expected" | Migrations now end at v24; WP 4.1 (ticked) landed `suite_run_reports` |
 | 14 | Low | README.md | "After implementation, the target command is:" | Implementation is done; phrasing is pre-MVP leftover |
-| 15 | Low | README.md | Feature list + ledger pointers | Omits Benchmarks/suites, Collections, Compare workspace, SkillFlow/Skill IDE, Qlik Answers; points to only 2 of 15 ledgers (does defer to CLAUDE.md) |
+| 15 | Low | README.md | Feature list + ledger pointers | Omits Benchmarks/suites, Collections, Compare workspace, SkillFlow/Skill IDE, the vendor assistant; points to only 2 of 15 ledgers (does defer to CLAUDE.md) |
 | 16 | Low | `docs/UI-AUDIT-2026-06-20.md` (+ `UI-FIX-PROMPT-2026-06-20.md`) | Presented as live audit | Superseded by `UI-UX-AUDIT-2026-07-05.md` + completed ux-overhaul; no "historical" banner |
 | 17 | Low | `research/EXPLORATION_FINDINGS.md` | Research "to inform a new model-compatibility test suite" | That suite (testing Phase 5) is built; doc is undated and unmarked |
 
@@ -50,8 +50,8 @@ Claims verified **accurate** (no finding): `TOKEN_COUNTING_VERSION = 2`
 (`constants.ts:7–14`: `generic_o200k`, `generic_cl100k`, `generic_estimate`, `raw_json_rough`);
 `pnpm@9.15.4` (`package.json:6`); `.mcp.json` exists and registers the `brand-ui` MCP server;
 ROADMAP.md carries a proper "Historical document" banner; all **15** `roadmap/*/STATUS.md` ledgers
-named in CLAUDE.md exist; Qlik Answers code is real
-(`apps/api/src/testing/qlik-answers-{executor,message,sse}.ts`, migration v23/v24); Assistant code
+named in CLAUDE.md exist; the vendor assistant code is real
+(`apps/api/src/testing/vendor-assistant-{executor,message,sse}.ts`, migration v23/v24); Assistant code
 is real (`apps/api/src/assistant/` — 20+ modules incl. `spawn-env.ts`, `retention.ts`,
 `session-manager.ts`); `.env.example` is current and thorough (incl. Assistant + Auto-Rating vars);
 CI workflow exists at the **git** root `../.github/workflows/ci.yml` (one level above the project
@@ -181,14 +181,14 @@ beyond F8's `library-first.md` CodeBlock mention.
 
 Largely current: features, ports (8080/5173), commands, brand-ui vendoring, secrets model, the
 Assistant section (egress allowlist, node-pty patch — `patches/node-pty@1.1.0.patch` exists), and
-the Qlik Cloud OAuth guidance all match code.
+the the vendor cloud OAuth guidance all match code.
 
 **F14 · Low —** "## Run / **After implementation, the target command is:**" — pre-MVP phrasing;
 the app is long since implemented. Fix: "Run it with:".
 
 **F15 · Low —** The "What it does" list and the ledger pointer (only `roadmap/testing/STATUS.md` +
 `roadmap/skills/STATUS.md`) predate Benchmarks/suites, Collections, the Compare workspace,
-SkillFlow/Skill IDE, and Qlik Answers. It does defer to CLAUDE.md for the authoritative picture,
+SkillFlow/Skill IDE, and the vendor assistant. It does defer to CLAUDE.md for the authoritative picture,
 so this is currency polish, not misinformation. Fix: one bullet each for suite/benchmark runs and
 the visual skill designer, and point at "the `roadmap/*/STATUS.md` ledgers" generically (as the
 closing line already does).
@@ -197,10 +197,10 @@ closing line already does).
 
 - **Existence:** all 15 ledgers referenced from CLAUDE.md exist (glob-verified):
   testing, skills, skillflow, skill-ide, benchmarks, auto-rating, testing-ia, ci,
-  security-posture, advisor, assistant, qlik-answers, team-server, platform, ux-overhaul.
+  security-posture, advisor, assistant, vendor-assistant, team-server, platform, ux-overhaul.
 - **Built-claims spot checks (pass):**
-  - *qlik-answers* — executor/message/SSE modules exist
-    (`apps/api/src/testing/qlik-answers-executor.ts` et al.); `answers_mode` migration v24 in
+  - *vendor-assistant* — executor/message/SSE modules exist
+    (`apps/api/src/testing/vendor-assistant-executor.ts` et al.); `answers_mode` migration v24 in
     `database.ts:543–563`; provider/model-catalog + suites member-compatibility touchpoints exist.
   - *assistant* — full module tree exists (`apps/api/src/assistant/`: session-manager,
     session-driver, spawn-env, retention, tools/{read,write,ui,workspace}); routes registered in
@@ -218,7 +218,7 @@ closing line already does).
 - Last entry: `## 0.2.0 — 2026-07-02 — Docs & process remediation wave` (line 7).
 - Since then (per ledgers + docs dated in-repo): UX overhaul incl. the Compare Workspace rebuild
   (audit dated 2026-07-05), Skill IDE (2026-07-03…05), Assistant phases + refinements, testing-ia
-  v16, Qlik Answers (migrations v23/v24), Auto-Rating (2026-07-11). Nine days of the heaviest
+  v16, the vendor assistant (migrations v23/v24), Auto-Rating (2026-07-11). Nine days of the heaviest
   feature work in the repo's history is unrecorded, and `package.json` still says `0.2.0`.
 - Fix: add a `0.3.0` (or dated "unreleased") entry summarizing the shipped workstreams, or state
   in the header that the ledgers replace per-feature changelog entries entirely.
@@ -237,7 +237,7 @@ Checked and resolving (sample of ~35): `roadmap/08-expanded-target.md`,
 `UI-UX-AUDIT-2026-07-05.md`, `roadmap/ux-overhaul/verification-report.md`,
 `roadmap/testing/{STATUS,conventions,ia-restructure-handover}.md`,
 `roadmap/skills/{STATUS,conventions}.md`,
-`roadmap/research/{insights-bench-qlik-assessment,qlik-answers-as-model}.md`, all 15
+`roadmap/research/{insights-bench-assessment,vendor-assistant-as-model}.md`, all 15
 `roadmap/*/STATUS.md`, `vendor/brand/PROVENANCE.md` + 9 tarballs,
 `vendor/brand-ui-agent-kit/` (manifest, llms/, playbooks/, skills/),
 `.claude/commands/{quality,scan-server,audit-brand-usage,next-wp}.md`,

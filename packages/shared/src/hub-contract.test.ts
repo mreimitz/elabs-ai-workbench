@@ -1052,7 +1052,7 @@ test("hubSessionSchema accepts a full session reusing RunStatus/RunPhase/StopRea
     stopReasonCode: undefined,
     capabilities: {
       liveText: true,
-      liveReasoning: "structured",
+      liveReasoning: "raw",
       toolCalls: true,
       contextWindow: true,
       tokens: "exact",

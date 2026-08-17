@@ -5,7 +5,6 @@ import type {
   RunMode,
   RunPlanSource,
   RunStatus,
-  SkippedSuiteMember,
   SuiteAggregates,
   SuiteCell,
   SuiteConfig,
@@ -21,11 +20,6 @@ import {
 } from "../testing/scenario-service.js";
 import type { SkillRepository } from "../skills/repository.js";
 import { httpError } from "../utils/errors.js";
-import {
-  assertNoQlikAnswersVariants,
-  checkMemberCompatibility,
-  type MemberCompatibilityDeps,
-} from "./member-compatibility.js";
 import type { SuiteRepository } from "./repository.js";
 import type { SuiteRunManager } from "./suite-run-manager.js";
 import type { SuiteRunRepository } from "./suite-run-repository.js";
@@ -48,11 +42,6 @@ import type { SuiteRunRepository } from "./suite-run-repository.js";
  * Concurrency: a fixed worker pool of `config.maxConcurrency` workers pulls cells off a shared queue
  * (mutating the queue synchronously is atomic under Node's single thread), so in-flight cells never
  * exceed the cap, and no cell is started twice. Process-local by design (single container, no broker).
- *
- * WP 1.5 — a SECOND, narrower cap layers on top for `qlik_answers` cells only: no more than
- * {@link QLIK_ANSWERS_MAX_CONCURRENCY} may be in flight for the SAME provider credential at once
- * (Qlik's tenant rate limit), enforced by {@link SuiteOrchestrator.claimRunnableCell} instead of a plain
- * `queue.shift()`. Every other kind is unaffected — see that method's doc.
  */
 
 /**
@@ -96,22 +85,6 @@ export const PRIMARY_GRADER_PRIORITY: readonly GraderId[] = [
   "tool_hygiene",
   "skillflow_conformance",
 ];
-
-/**
- * Qlik Answers (WP 1.5) — the per-provider CONCURRENCY CAP for `qlik_answers` cells. Qlik invoke/stream
- * endpoints are Tier 2 (research doc §3.4): **100 requests/min per tenant**. A mass-run's worker pool
- * (`config.maxConcurrency`) can be set far higher than that for ordinary providers, so left uncapped a
- * suite run could burst many simultaneous `qlik_answers` cells at the SAME tenant credential and blow
- * through its rate limit. Each cell is a multi-second call (thread create + invoke/stream), so only a
- * handful need to be in flight at once to stay comfortably under 100/min — **4** is conservative headroom
- * (4 concurrent multi-second calls is nowhere near 100/min) while still giving a mass-run real
- * parallelism. This is a PROCESS-LOCAL cap, keyed by provider CREDENTIAL id and shared across every
- * suite run this {@link SuiteOrchestrator} instance is concurrently driving (the tenant limit is per
- * credential, not per suite run) — see the `qlikAnswersInFlight`/`qlikAnswersWaiters` fields below. Every
- * OTHER provider kind is completely unaffected: {@link SuiteOrchestrator.qlikAnswersProviderIdFor} returns
- * `undefined` for them, which short-circuits every cap check as a no-op.
- */
-export const QLIK_ANSWERS_MAX_CONCURRENCY = 4;
 
 /**
  * A run is settled once it reaches one of these terminal statuses. Unified Sessions (roadmap/
@@ -197,15 +170,10 @@ export function collectChildData(
  * scores; `meanGrade`/`gradeStdDev`/`passRateAt05` are null when no child produced a graded score.
  * `execCostUsd` = Σ run `cost_usd`; `judgeCostUsd` = Σ grade `judge_cost_usd` (a SEPARATE ledger, never
  * folded into exec cost); `totalTokens` = Σ (tokens_in + tokens_out).
- *
- * `skippedMembers` (WP 1.4, D-QA6) is an OPTIONAL trailing param — omitted (or empty) reproduces the
- * exact pre-WP-1.4 return shape (the key is entirely absent, never an empty array), so existing callers
- * that never skip a member see no change.
  */
 export function computeSuiteAggregates(
   children: readonly ChildRunData[],
   cellsTotal: number,
-  skippedMembers: readonly SkippedSuiteMember[] = [],
 ): SuiteAggregates {
   const cellsCompleted = children.filter((child) => isTerminalRunStatus(child.status)).length;
 
@@ -233,7 +201,6 @@ export function computeSuiteAggregates(
     totalTokens,
     execCostUsd,
     judgeCostUsd,
-    ...(skippedMembers.length > 0 ? { skippedMembers: [...skippedMembers] } : {}),
   };
 }
 
@@ -248,49 +215,19 @@ type OrchestratorCell = {
   variantLabel?: string;
   /** WP 5.1 — the variant's ± skill/version override threaded to the run starter (absent for a plain cell). */
   skillOverrides?: SkillOverrides;
-  /** WP 1.4 (D-QA6) — this cell was never run: its test/environment pairing is incompatible with a
-   * `qlik_answers` environment. `status` is `"skipped"` alongside this. */
-  skipped?: SkippedSuiteMember["reason"];
-  /**
-   * WP 1.5 — set the moment this cell is CLAIMED off the queue, when (and only when) it resolves to a
-   * `qlik_answers` provider credential (see {@link SuiteOrchestrator.qlikAnswersProviderIdFor}). Recorded
-   * here (rather than recomputed later) so `runCell`'s release always frees the EXACT slot that was
-   * reserved, even if the underlying scenario/provider row changes mid-run. Absent for every other kind.
-   */
-  qlikAnswersProviderId?: string;
 };
 
-/**
- * Qlik Answers (WP 1.4, D-QA6) — per-(testId, scenarioId) compatibility check, injected so
- * {@link buildScenarioCells} stays pure/testable independent of any repository. Returns the skip reason,
- * or `undefined` for a compatible (or non-`qlik_answers`) pairing.
- */
-type MemberCompatibilityChecker = (testId: string, scenarioId: string) => SkippedSuiteMember["reason"] | undefined;
-
-/**
- * Plain matrix (no variants): test × scenario × repetition. WP 1.4 (D-QA6) — an optional `compat`
- * checker marks EVERY repetition of an incompatible (testId, scenarioId) pairing `status:"skipped"` +
- * `skipped:<reason>` instead of `"pending"`, so the scheduler never starts a run for it. Absent `compat`
- * (the pre-WP-1.4 default) reproduces the exact previous cell shape.
- */
+/** Plain matrix (no variants): test × scenario × repetition. */
 function buildScenarioCells(
   testIds: string[],
   scenarioIds: string[],
   repetitions: number,
-  compat?: MemberCompatibilityChecker,
 ): OrchestratorCell[] {
   const cells: OrchestratorCell[] = [];
   for (const testId of testIds) {
     for (const scenarioId of scenarioIds) {
-      const skipped = compat?.(testId, scenarioId);
       for (let repetition = 1; repetition <= repetitions; repetition++) {
-        cells.push({
-          testId,
-          scenarioId,
-          repetition,
-          status: skipped ? "skipped" : "pending",
-          ...(skipped ? { skipped } : {}),
-        });
+        cells.push({ testId, scenarioId, repetition, status: "pending" });
       }
     }
   }
@@ -368,20 +305,6 @@ type SuiteControl = {
 export class SuiteOrchestrator {
   private readonly controls = new Map<string, SuiteControl>();
 
-  /**
-   * WP 1.5 — live in-flight COUNT of `qlik_answers` cells per provider credential id. Only credentials
-   * that currently have at least one cell in flight have an entry (removed, not zeroed, on release) so
-   * `isQlikAnswersCapped` reads `0` for a resting provider without a map lookup miss ambiguity.
-   */
-  private readonly qlikAnswersInFlight = new Map<string, number>();
-
-  /**
-   * WP 1.5 — workers parked because EVERY remaining cell in their queue currently belongs to a
-   * provider at {@link QLIK_ANSWERS_MAX_CONCURRENCY}. Woken (in FIFO order, all at once) the instant any
-   * provider's count drops, so a parked worker re-scans rather than the pool deadlocking.
-   */
-  private qlikAnswersWaiters: Array<() => void> = [];
-
   constructor(
     private readonly startRun: SuiteRunStarter,
     private readonly stopRun: SuiteRunStopper,
@@ -403,16 +326,6 @@ export class SuiteOrchestrator {
      * working; when absent, no report is generated (behavior is exactly as before this WP).
      */
     private readonly generateReport?: SuiteReportHook,
-    /**
-     * Qlik Answers (WP 1.4, D-QA6) — the clean-session member-compatibility deps (scenario/test/
-     * provider lookups), used ONLY to (a) skip a `qlik_answers` member that is incompatible
-     * (attachments/`systemPromptOverride`/legacy servers-or-skills) instead of running it, and (b)
-     * reject a whole plan up front if any skill-effect variant targets a `qlik_answers` scenario.
-     * Optional so existing callers/tests that run no `qlik_answers` scenarios keep working unchanged;
-     * when absent, no member is ever skipped and no variant is ever kind-rejected (production always
-     * wires it — see `index.ts`).
-     */
-    private readonly compat?: MemberCompatibilityDeps,
   ) {}
 
   /**
@@ -455,37 +368,12 @@ export class SuiteOrchestrator {
       }
     }
 
-    // WP 1.4 (D-QA6) — same fail-fast guarantee: a skill-effect variant plan can't target a
-    // `qlik_answers` scenario (its skill overrides are meaningless for a skill-less kind).
-    if (this.compat) {
-      assertNoQlikAnswersVariants(this.compat, variants);
-    }
-
     // Cells: with skill-effect variants (WP 5.1) the matrix is test × VARIANT × repetition (each variant
     // carries its own scenario + ± skill override + label); otherwise the plain test × scenario × rep.
-    // WP 1.4 (D-QA6) — the plain matrix additionally marks an incompatible (testId, scenarioId) pairing
-    // `skipped` (never variant cells: a variant targeting the kind was just rejected above).
-    const compatChecker = this.compat
-      ? (testId: string, scenarioId: string) => checkMemberCompatibility(this.compat!, testId, scenarioId)
-      : undefined;
     const cells =
       variants.length > 0
         ? buildVariantCells(plan.testIds, variants, configSnapshot.repetitions)
-        : buildScenarioCells(
-            plan.testIds,
-            plan.scenarioIds,
-            configSnapshot.repetitions,
-            compatChecker,
-          );
-
-    // WP 1.4 (D-QA6) — a plan whose every member is incompatible has nothing to run; mirror the existing
-    // empty-collection 400 (`plan-routes.ts`) instead of starting a suite run with zero real cells.
-    if (cells.length > 0 && cells.every((cell) => cell.skipped)) {
-      throw httpError(
-        400,
-        "Every member of this plan is incompatible with its Qlik Answers environment(s) — nothing to run.",
-      );
-    }
+        : buildScenarioCells(plan.testIds, plan.scenarioIds, configSnapshot.repetitions);
 
     const created = this.suiteRuns.create(plan.suiteId, configSnapshot, plan.source, plan.planJson);
     const control: SuiteControl = {
@@ -505,12 +393,6 @@ export class SuiteOrchestrator {
     this.manager.create(created.id);
     this.suiteRuns.updateStatus(created.id, "running");
     this.manager.emit(created.id, { type: "status", status: "running" });
-
-    // WP 1.4 (D-QA6) — skipped cells are never scheduled (see `run()`'s runnable-only queue below), so
-    // emit them once up front rather than waiting on a worker that will never reach them.
-    for (const cell of cells) {
-      if (cell.skipped) this.emitCell(control, cell);
-    }
 
     // Kick off async scheduling. The synchronous prefix of `run` starts the first wave before this
     // returns; the rest proceeds off the microtask/IO queue. Never awaited here.
@@ -569,11 +451,11 @@ export class SuiteOrchestrator {
   /** Drive the whole matrix through a bounded worker pool, then finalize + (WP 4.1) generate the suite report. */
   private async run(control: SuiteControl): Promise<void> {
     try {
-      // WP 1.4 (D-QA6) — skipped cells are already emitted (see `startPlanRun`) and never started as a
-      // run; the worker pool only ever pulls RUNNABLE cells off the queue.
-      const runnable = control.cells.filter((cell) => !cell.skipped);
-      const workerCount = Math.min(control.configSnapshot.maxConcurrency, runnable.length);
-      const queue = [...runnable];
+      const workerCount = Math.min(
+        control.configSnapshot.maxConcurrency,
+        control.cells.length,
+      );
+      const queue = [...control.cells];
       const workers = Array.from({ length: workerCount }, () => this.worker(control, queue));
       await Promise.all(workers);
     } catch {
@@ -640,23 +522,11 @@ export class SuiteOrchestrator {
    * One worker: pull the next pending RUNNABLE cell off the shared queue and run it to settlement,
    * repeating until the queue drains OR scheduling is halted (stop/cap). The `stopped`/`capped` checks
    * gate only NEW cells — a cell already inside {@link runCell} always finishes (soft-stop).
-   *
-   * WP 1.5 — "next pending cell" is no longer always `queue[0]`: {@link claimRunnableCell} skips over a
-   * `qlik_answers` cell whose provider is currently at {@link QLIK_ANSWERS_MAX_CONCURRENCY} (for every
-   * OTHER kind it always returns `queue[0]`, i.e. exactly the old `queue.shift()` behavior — a no-op).
-   * If EVERY remaining cell is capped right now (queue non-empty but nothing claimable), the worker
-   * parks on {@link waitForQlikAnswersSlot} instead of busy-looping or giving up — it is woken the
-   * instant any provider's in-flight count drops (a cell always eventually settles, so this can't
-   * deadlock) and re-scans the queue from the top.
    */
   private async worker(control: SuiteControl, queue: OrchestratorCell[]): Promise<void> {
     while (!control.stopped && !control.capped) {
-      if (queue.length === 0) return; // truly nothing left — done (never wait on an empty queue)
-      const cell = this.claimRunnableCell(queue);
-      if (!cell) {
-        await this.waitForQlikAnswersSlot();
-        continue; // re-check stopped/capped, then re-scan — a freed slot may still be taken by another worker
-      }
+      const cell = queue.shift();
+      if (!cell) return; // queue drained — done
       await this.runCell(control, cell);
     }
   }
@@ -665,117 +535,41 @@ export class SuiteOrchestrator {
    * Run one cell AS A NORMAL RUN: start it via the injected starter, stamp its suite linkage, await the
    * run to settle, then accrue its settled cost toward the soft-stop cap and emit a cell transition +
    * a recomputed aggregate snapshot. Never throws (a failed start/await is recorded on the cell).
-   *
-   * WP 1.5 — the whole body is wrapped in a `finally` that releases this cell's `qlik_answers` provider
-   * slot (reserved by {@link claimRunnableCell} before this was ever called) on EVERY exit path — the
-   * early return on a start failure included — so a slot is never leaked and the next parked worker
-   * always eventually wakes.
    */
   private async runCell(control: SuiteControl, cell: OrchestratorCell): Promise<void> {
+    cell.status = "running";
+    let handle: RunHandle;
     try {
-      cell.status = "running";
-      let handle: RunHandle;
-      try {
-        handle = this.startRun(cell.testId, cell.scenarioId, "automated", cell.skillOverrides);
-      } catch {
-        cell.status = "error";
-        this.emitCell(control, cell);
-        return;
-      }
-      cell.runId = handle.runId;
-      control.activeRunIds.add(handle.runId);
-      // Stamp the suite linkage on the just-started run (additive; tolerates a raced delete).
-      this.runs.linkRunToSuite(handle.runId, control.suiteRunId, cell.repetition);
-      this.emitCell(control, cell); // cell started (running)
-
-      try {
-        const result = await handle.done;
-        cell.status = result.status;
-      } catch {
-        cell.status = "error";
-      } finally {
-        control.activeRunIds.delete(handle.runId);
-      }
-
-      // Accrue the settled child's cost, then evaluate the soft-stop cap (the run row's cost_usd is
-      // finalized on its terminal status, before `done` resolves, so this reads the real spend).
-      const summary = this.safeSummary(handle.runId);
-      if (summary) control.spentUsd += summary.costUsd;
-      const cap = control.configSnapshot.aggregateCostCapUsd;
-      if (typeof cap === "number" && control.spentUsd >= cap) control.capped = true;
-
-      this.emitCell(control, cell); // cell settled
-      this.emitAggregates(control); // live progress snapshot (no DB write — cache is written on finalize)
-    } finally {
-      if (cell.qlikAnswersProviderId !== undefined) {
-        this.releaseQlikAnswersSlot(cell.qlikAnswersProviderId);
-      }
-    }
-  }
-
-  // --- qlik_answers per-provider concurrency cap (WP 1.5) ---------------------------------------
-
-  /**
-   * Scan the queue in order for the first cell that is runnable RIGHT NOW, splice it out, and (for a
-   * `qlik_answers` cell) reserve its provider slot before returning it. Returns `undefined` only when
-   * EVERY remaining cell's provider is currently at cap (never when the queue is merely empty — the
-   * caller checks that separately). For a non-`qlik_answers` cell (or when `compat` isn't wired at all)
-   * `qlikAnswersProviderIdFor` returns `undefined`, so the very first scan iteration always matches —
-   * i.e. this reduces to exactly `queue.shift()` whenever no cell in the queue is `qlik_answers`.
-   */
-  private claimRunnableCell(queue: OrchestratorCell[]): OrchestratorCell | undefined {
-    for (let i = 0; i < queue.length; i++) {
-      const cell = queue[i];
-      if (cell === undefined) continue;
-      const providerId = this.qlikAnswersProviderIdFor(cell);
-      if (providerId !== undefined) {
-        if (this.isQlikAnswersCapped(providerId)) continue; // this provider is saturated — try the next cell
-        this.acquireQlikAnswersSlot(providerId);
-        cell.qlikAnswersProviderId = providerId; // remembered so runCell releases the SAME slot on settle
-      }
-      queue.splice(i, 1);
-      return cell;
-    }
-    return undefined;
-  }
-
-  /**
-   * The `qlik_answers` provider CREDENTIAL id a cell's scenario resolves to, or `undefined` for every
-   * other kind (never capped) — including when `compat` isn't wired (pre-WP-1.5 callers/tests: every
-   * cell is then treated as uncapped, exactly the old behavior) or the scenario/provider no longer
-   * resolves (never this cap's concern — the run starter's own lookup surfaces that honestly).
-   */
-  private qlikAnswersProviderIdFor(cell: OrchestratorCell): string | undefined {
-    if (!this.compat) return undefined;
-    try {
-      const scenario = this.compat.scenarios.get(cell.scenarioId);
-      const kind = this.compat.providers.get(scenario.providerId).kind;
-      return kind === "qlik_answers" ? scenario.providerId : undefined;
+      handle = this.startRun(cell.testId, cell.scenarioId, "automated", cell.skillOverrides);
     } catch {
-      return undefined;
+      cell.status = "error";
+      this.emitCell(control, cell);
+      return;
     }
-  }
+    cell.runId = handle.runId;
+    control.activeRunIds.add(handle.runId);
+    // Stamp the suite linkage on the just-started run (additive; tolerates a raced delete).
+    this.runs.linkRunToSuite(handle.runId, control.suiteRunId, cell.repetition);
+    this.emitCell(control, cell); // cell started (running)
 
-  private isQlikAnswersCapped(providerId: string): boolean {
-    return (this.qlikAnswersInFlight.get(providerId) ?? 0) >= QLIK_ANSWERS_MAX_CONCURRENCY;
-  }
+    try {
+      const result = await handle.done;
+      cell.status = result.status;
+    } catch {
+      cell.status = "error";
+    } finally {
+      control.activeRunIds.delete(handle.runId);
+    }
 
-  private acquireQlikAnswersSlot(providerId: string): void {
-    this.qlikAnswersInFlight.set(providerId, (this.qlikAnswersInFlight.get(providerId) ?? 0) + 1);
-  }
+    // Accrue the settled child's cost, then evaluate the soft-stop cap (the run row's cost_usd is
+    // finalized on its terminal status, before `done` resolves, so this reads the real spend).
+    const summary = this.safeSummary(handle.runId);
+    if (summary) control.spentUsd += summary.costUsd;
+    const cap = control.configSnapshot.aggregateCostCapUsd;
+    if (typeof cap === "number" && control.spentUsd >= cap) control.capped = true;
 
-  /** Release one slot and wake EVERY parked worker — each re-scans its own queue for a now-claimable cell. */
-  private releaseQlikAnswersSlot(providerId: string): void {
-    const next = (this.qlikAnswersInFlight.get(providerId) ?? 1) - 1;
-    if (next <= 0) this.qlikAnswersInFlight.delete(providerId);
-    else this.qlikAnswersInFlight.set(providerId, next);
-    const waiters = this.qlikAnswersWaiters;
-    this.qlikAnswersWaiters = [];
-    for (const wake of waiters) wake();
-  }
-
-  private waitForQlikAnswersSlot(): Promise<void> {
-    return new Promise((resolve) => this.qlikAnswersWaiters.push(resolve));
+    this.emitCell(control, cell); // cell settled
+    this.emitAggregates(control); // live progress snapshot (no DB write — cache is written on finalize)
   }
 
   /** Finalize the suite run: persist status + derived aggregates, emit the terminal snapshot. Idempotent. */
@@ -806,25 +600,7 @@ export class SuiteOrchestrator {
     return computeSuiteAggregates(
       collectChildData(this.runs, this.grades, runIds),
       control.cellsTotal,
-      this.skippedMembersFor(control),
     );
-  }
-
-  /**
-   * WP 1.4 (D-QA6) — the plan's skipped-incompatible members, one entry per DISTINCT (testId,
-   * scenarioId) pairing (not per repetition — every repetition of a skipped pairing shares one reason).
-   */
-  private skippedMembersFor(control: SuiteControl): SkippedSuiteMember[] {
-    const seen = new Set<string>();
-    const result: SkippedSuiteMember[] = [];
-    for (const cell of control.cells) {
-      if (!cell.skipped) continue;
-      const key = `${cell.testId}::${cell.scenarioId}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      result.push({ testId: cell.testId, scenarioId: cell.scenarioId, reason: cell.skipped });
-    }
-    return result;
   }
 
   private emitAggregates(control: SuiteControl): void {
@@ -844,7 +620,6 @@ export class SuiteOrchestrator {
     };
     if (cell.runId !== undefined) suiteCell.runId = cell.runId;
     if (cell.variantLabel !== undefined) suiteCell.variantLabel = cell.variantLabel; // WP 5.1 skill-effect axis
-    if (cell.skipped !== undefined) suiteCell.skipped = cell.skipped; // WP 1.4 (D-QA6)
     this.manager.emit(control.suiteRunId, { type: "cell", cell: suiteCell });
   }
 

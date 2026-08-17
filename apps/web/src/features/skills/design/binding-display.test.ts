@@ -9,7 +9,7 @@ import { buildBindingChips } from "./binding-display";
 
 const saas: ServerType = {
   id: "t-saas",
-  name: "Qlik-SaaS",
+  name: "Acme-SaaS",
   status: "production",
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
@@ -18,7 +18,7 @@ const saas: ServerType = {
 
 const stage: ServerType = {
   id: "t-stage",
-  name: "qlik-stage",
+  name: "acme-stage",
   status: "beta",
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
@@ -28,24 +28,24 @@ const stage: ServerType = {
 describe("buildBindingChips", () => {
   test("a type-resolved binding becomes a `type` chip with name, status, and representative", () => {
     const bindings: SkillServerBinding[] = [
-      { serverName: "Qlik-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
+      { serverName: "Acme-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
     ];
     const chips = buildBindingChips(
-      ["Qlik-SaaS"],
+      ["Acme-SaaS"],
       bindings,
       [saas],
-      [{ id: "s-rep", name: "Qlik Prod B" }],
-      new Map([["Qlik Prod B", 12]]),
+      [{ id: "s-rep", name: "Acme Prod B" }],
+      new Map([["Acme Prod B", 12]]),
     );
     expect(chips).toEqual([
       {
         kind: "type",
-        name: "Qlik-SaaS",
+        name: "Acme-SaaS",
         typeId: "t-saas",
-        typeName: "Qlik-SaaS",
+        typeName: "Acme-SaaS",
         status: "production",
         representativeId: "s-rep",
-        representativeName: "Qlik Prod B",
+        representativeName: "Acme Prod B",
         toolCount: 12, // counted under the REPRESENTATIVE's name, not the type name
       },
     ]);
@@ -53,15 +53,15 @@ describe("buildBindingChips", () => {
 
   test("a type with NO scanned member → null representative (honest, never guessed)", () => {
     const bindings: SkillServerBinding[] = [
-      { serverName: "qlik-stage", serverId: null, typeId: "t-stage", resolvedVia: "type" },
+      { serverName: "acme-stage", serverId: null, typeId: "t-stage", resolvedVia: "type" },
     ];
-    const chips = buildBindingChips(["qlik-stage"], bindings, [stage], [], new Map());
+    const chips = buildBindingChips(["acme-stage"], bindings, [stage], [], new Map());
     expect(chips).toEqual([
       {
         kind: "type",
-        name: "qlik-stage",
+        name: "acme-stage",
         typeId: "t-stage",
-        typeName: "qlik-stage",
+        typeName: "acme-stage",
         status: "beta",
         representativeId: null,
         representativeName: null,
@@ -90,32 +90,32 @@ describe("buildBindingChips", () => {
   test("declared order is preserved across mixed server + type + unbound entries", () => {
     const bindings: SkillServerBinding[] = [
       { serverName: "files", serverId: "s-files" },
-      { serverName: "Qlik-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
+      { serverName: "Acme-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
       { serverName: "ghost", serverId: null },
     ];
     const chips = buildBindingChips(
-      ["files", "Qlik-SaaS", "ghost"],
+      ["files", "Acme-SaaS", "ghost"],
       bindings,
       [saas],
       [
         { id: "s-files", name: "files" },
-        { id: "s-rep", name: "Qlik Prod B" },
+        { id: "s-rep", name: "Acme Prod B" },
       ],
       new Map(),
     );
     expect(chips.map((chip) => `${chip.kind}:${chip.name}`)).toEqual([
       "server:files",
-      "type:Qlik-SaaS",
+      "type:Acme-SaaS",
       "server:ghost",
     ]);
   });
 
   test("a type chip whose type row is missing degrades to null name/status (never throws)", () => {
     const bindings: SkillServerBinding[] = [
-      { serverName: "Qlik-SaaS", serverId: "s-rep", typeId: "t-gone", resolvedVia: "type" },
+      { serverName: "Acme-SaaS", serverId: "s-rep", typeId: "t-gone", resolvedVia: "type" },
     ];
     const chips = buildBindingChips(
-      ["Qlik-SaaS"],
+      ["Acme-SaaS"],
       bindings,
       [], // the type directory doesn't carry t-gone
       [{ id: "s-rep", name: "Rep" }],

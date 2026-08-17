@@ -8,7 +8,6 @@ import type { ScanRepository } from "../scans/repository.js";
 import type { ScenarioService } from "../testing/scenario-service.js";
 import type { TestService } from "../testing/test-service.js";
 import { resolvePrice } from "../providers/pricing.js";
-import type { ProviderRepository } from "../providers/repository.js";
 import {
   type EstimateEnvInput,
   type EstimateTestInput,
@@ -49,11 +48,6 @@ export type EstimateDeps = {
   scenarios: ScenarioService;
   tests: TestService;
   scans: ScanRepository;
-  /**
-   * Qlik Answers (WP 3.2) — cheap kind lookup (`get()`/`list()` never decrypt a key) so the estimate can
-   * flag which environments are `qlik_answers` and roll up {@link RunPlanEstimate.answersQuestions}.
-   */
-  providers: ProviderRepository;
 };
 
 /**
@@ -67,10 +61,6 @@ export function buildRunPlanEstimate(
 ): RunPlanEstimate {
   const testById = new Map(deps.tests.list().map((t) => [t.id, t]));
   const scenarioById = new Map(deps.scenarios.list().map((s) => [s.id, s]));
-  // Qlik Answers (WP 3.2): a scenario's `providerId` always resolves (FK RESTRICT keeps a referenced
-  // provider from being deleted) — a plain map avoids a per-environment lookup/throw.
-  const providerKindById = new Map(deps.providers.list().map((p) => [p.id, p.kind]));
-
   const resolvedTests: EstimateTestInput[] = input.testIds
     .map((id) => testById.get(id))
     .filter((t): t is NonNullable<typeof t> => t !== undefined)
@@ -95,7 +85,6 @@ export function buildRunPlanEstimate(
         hasCostCap:
           scenario.guardrails.maxCostUsd !== undefined && scenario.guardrails.maxCostUsd !== null,
         pricing: price ? { inPer1M: price.inPer1M, outPer1M: price.outPer1M } : null,
-        isQlikAnswers: providerKindById.get(scenario.providerId) === "qlik_answers",
         ...(scenario.guardrails.maxTurns ? { maxTurns: scenario.guardrails.maxTurns } : {}),
       } satisfies EstimateEnvInput;
     });

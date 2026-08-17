@@ -25,7 +25,7 @@ placeholders and "Not yet configured" targets.
   broad analyst roles).
 - **Validation:** plan clamp rejects/strips grants whose server id is not in the catalog
   (`resolveMcpGrants` already skips unknown ids silently — make it loud at plan time).
-- **Plan card:** per-agent chips listing granted servers ("qlik-mreimitz · all" / "3 tools");
+- **Plan card:** per-agent chips listing granted servers ("acme-demo · all" / "3 tools");
   an edit affordance per agent (reuse `ToolGrantPicker` constrained to the parent catalog);
   a warning badge per agent whose `systemPrompt`/`target`/`expectedOutcome` contains the
   "Finish configuring" / "Not yet configured" placeholder strings (exported const in

@@ -1653,6 +1653,144 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
       }
     },
   },
+  {
+    // v56 — remove the retired `qlik_answers` provider kind. The Qlik Answers executor, its
+    // OpenAI-compatible facade, the tenant detection/probe and the per-environment `answers_mode`
+    // transport override were all deleted from the product, so the DB must stop admitting the kind.
+    //
+    // DESTRUCTIVE, by owner decision: a `qlik_answers` credential's environments (`scenarios`) and
+    // every run/report captured against them are DELETED. There is no non-destructive alternative —
+    // `scenarios.provider_id` is ON DELETE RESTRICT, so the credential cannot be removed while an
+    // environment still points at it, and the narrowed CHECK would reject the row on the rebuild's
+    // `INSERT … SELECT`.
+    //
+    // `applyMigrations` runs with foreign_keys OFF, so NO cascade fires on its own: every child row is
+    // deleted EXPLICITLY here, in child→parent order, and the pre-commit `foreign_key_check` is what
+    // proves nothing was missed. The two SET NULL pointers (`assistant_settings.fallback_provider_
+    // credential_id` and v55's `hub_sessions`/`hub_agents.provider_credential_id`) are nulled by hand
+    // for the same reason. Every statement is guarded on its table's presence so a minimal
+    // migration-test fixture (or a DB stamped before a given table existed) is a correct no-op.
+    //
+    // The `provider_credentials` rebuild follows v23/v28's SQLite 12-step pattern (a CHECK cannot be
+    // altered in place), narrowing `kind` to 6 values AND dropping the retired `mcp_server_id` link
+    // column in the same pass. Rows are copied with their SAME `id`, so every surviving child
+    // reference stays valid. Self-guarded CONTENT-wise (v28's pattern): if the persisted DDL no longer
+    // mentions `qlik_answers`, the DB is already at the target shape (fresh DB / re-run) → no-op.
+    // Bumps LATEST_SCHEMA_VERSION (auto-derived below) to 56.
+    version: 56,
+    up: (db) => {
+      const hasTable = (name: string) =>
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name) !==
+        undefined;
+      if (!hasTable("provider_credentials")) return;
+      // A MINIMAL migration-test fixture may stand up `provider_credentials` as a bare
+      // `(id TEXT PRIMARY KEY)` stub purely so an FK target resolves (see `seedPreV51Database`), with
+      // no `kind` column at all — querying it would throw. Guard on the column, not just the table
+      // (the v19/v24/v27 minimal-fixture guard pattern, applied one level deeper).
+      const hasKind = (
+        db.prepare("PRAGMA table_info(provider_credentials)").all() as Array<{ name: string }>
+      ).some((c) => c.name === "kind");
+      if (!hasKind) return;
+
+      const doomedCredentials = (
+        db
+          .prepare("SELECT id FROM provider_credentials WHERE kind = 'qlik_answers'")
+          .all() as Array<{ id: string }>
+      ).map((row) => row.id);
+
+      if (doomedCredentials.length > 0) {
+        const credentialList = doomedCredentials.map(() => "?").join(",");
+
+        // 1. The environments pointing at a doomed credential, and their runs.
+        const scenarioIds = hasTable("scenarios")
+          ? (
+              db
+                .prepare(
+                  `SELECT id FROM scenarios WHERE provider_id IN (${credentialList})`,
+                )
+                .all(...doomedCredentials) as Array<{ id: string }>
+            ).map((row) => row.id)
+          : [];
+
+        if (scenarioIds.length > 0) {
+          const scenarioList = scenarioIds.map(() => "?").join(",");
+          const runIds = hasTable("runs")
+            ? (
+                db
+                  .prepare(`SELECT id FROM runs WHERE scenario_id IN (${scenarioList})`)
+                  .all(...scenarioIds) as Array<{ id: string }>
+              ).map((row) => row.id)
+            : [];
+
+          // 2. Run children first (ON DELETE CASCADE would have done this with FKs on).
+          if (runIds.length > 0) {
+            const runList = runIds.map(() => "?").join(",");
+            for (const table of [
+              "run_steps",
+              "run_events",
+              "run_grades",
+              "run_skills",
+              "run_feedback",
+              "run_search_map",
+            ]) {
+              if (hasTable(table)) {
+                db.prepare(`DELETE FROM ${table} WHERE run_id IN (${runList})`).run(...runIds);
+              }
+            }
+            // `run_search` is an FTS5 virtual table with no FK; its docmap was just purged, so drop
+            // its now-unreferenced documents by the same run ids.
+            if (hasTable("run_search")) {
+              db.prepare(`DELETE FROM run_search WHERE run_id IN (${runList})`).run(...runIds);
+            }
+            db.prepare(`DELETE FROM runs WHERE id IN (${runList})`).run(...runIds);
+          }
+
+          // 3. Environment children, then the environments.
+          for (const table of ["scenario_servers", "scenario_skills", "suite_scenarios"]) {
+            if (hasTable(table)) {
+              db.prepare(`DELETE FROM ${table} WHERE scenario_id IN (${scenarioList})`).run(
+                ...scenarioIds,
+              );
+            }
+          }
+          db.prepare(`DELETE FROM scenarios WHERE id IN (${scenarioList})`).run(...scenarioIds);
+        }
+
+        // 4. The ON DELETE SET NULL pointers, nulled by hand (foreign_keys is OFF).
+        for (const [table, column] of [
+          ["assistant_settings", "fallback_provider_credential_id"],
+          ["hub_sessions", "provider_credential_id"],
+          ["hub_agents", "provider_credential_id"],
+        ] as const) {
+          if (!hasTable(table)) continue;
+          const hasColumn = (
+            db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
+          ).some((c) => c.name === column);
+          if (!hasColumn) continue;
+          db.prepare(
+            `UPDATE ${table} SET ${column} = NULL WHERE ${column} IN (${credentialList})`,
+          ).run(...doomedCredentials);
+        }
+
+        // 5. The credentials themselves.
+        db.prepare(`DELETE FROM provider_credentials WHERE id IN (${credentialList})`).run(
+          ...doomedCredentials,
+        );
+      }
+
+      narrowProviderCredentialsKindCheck(db);
+
+      // 6. The per-environment Qlik transport override (v24's column) is retired with the feature.
+      if (hasTable("scenarios")) {
+        const hasAnswersMode = (
+          db.prepare("PRAGMA table_info(scenarios)").all() as Array<{ name: string }>
+        ).some((c) => c.name === "answers_mode");
+        if (hasAnswersMode) {
+          db.exec("ALTER TABLE scenarios DROP COLUMN answers_mode");
+        }
+      }
+    },
+  },
 ];
 
 /** The baseline schema version: the current full schema (schema.ts + every migration step above). */
@@ -1916,6 +2054,50 @@ function widenProviderCredentialsKindCheck(db: AppDatabase): void {
     );
     INSERT INTO provider_credentials_new (id, kind, label, base_url, api_key_encrypted, mcp_server_id, created_at, updated_at)
       SELECT id, kind, label, base_url, api_key_encrypted, mcp_server_id, created_at, updated_at FROM provider_credentials;
+    DROP TABLE provider_credentials;
+    ALTER TABLE provider_credentials_new RENAME TO provider_credentials;
+  `);
+}
+
+/**
+ * v56 — NARROW `provider_credentials.kind`'s CHECK back to the 6 live kinds (dropping the retired
+ * `'qlik_answers'`) and drop the `mcp_server_id` link column that only ever served it. The inverse of
+ * {@link rebuildProviderCredentialsForServerLink} (v23) + {@link widenProviderCredentialsKindCheck}
+ * (v28), and the SAME SQLite 12-step rebuild for the same reason: a CHECK cannot be altered in place.
+ *
+ * MUST run with foreign_keys OFF (the caller's responsibility — see {@link applyMigrations}), exactly
+ * as v23/v28 document: `provider_credentials` is the parent of `scenarios.provider_id` (ON DELETE
+ * RESTRICT), `assistant_settings.fallback_provider_credential_id` and v55's
+ * `hub_sessions`/`hub_agents.provider_credential_id` (ON DELETE SET NULL), so the DROP would otherwise
+ * fire those actions. Every surviving row keeps its SAME `id`, so those child references stay valid
+ * (verified by `foreign_key_check` before commit).
+ *
+ * The caller (v56's `up`) has ALREADY removed every `qlik_answers` row and its dependents, so the
+ * `INSERT … SELECT` below cannot hit the narrowed CHECK. Idempotency is CONTENT-based (v28's pattern):
+ * no column is added, so the self-guard inspects the persisted DDL for the retired literal. No-ops on
+ * a fresh DB (schema.ts already builds the narrowed shape) and on a re-run.
+ */
+function narrowProviderCredentialsKindCheck(db: AppDatabase): void {
+  const row = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='provider_credentials'")
+    .get() as { sql?: string } | undefined;
+  // A real DB always has `provider_credentials` (schemaSql), but a MINIMAL migration-test fixture may
+  // not — rebuilding an absent table would throw (the v19/v24/v27 guard pattern).
+  if (!row?.sql) return;
+  if (!row.sql.includes("qlik_answers")) return; // already at the target shape (fresh DB / re-run)
+
+  db.exec(`
+    CREATE TABLE provider_credentials_new (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL CHECK (kind IN ('anthropic','openai','google','openai_compatible','ollama','claude_subscription')),
+      label TEXT NOT NULL,
+      base_url TEXT,
+      api_key_encrypted TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    INSERT INTO provider_credentials_new (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
+      SELECT id, kind, label, base_url, api_key_encrypted, created_at, updated_at FROM provider_credentials;
     DROP TABLE provider_credentials;
     ALTER TABLE provider_credentials_new RENAME TO provider_credentials;
   `);

@@ -159,11 +159,11 @@ test("createSession (Defect 1a): a scoped-in server-bound role's MCP server is u
   const { service, repo } = makeService({ resolveModel: resolverFor({ "gpt-4o": { kind: "openai" } }) });
   const analyst = repo.createAgentRole({
     name: "data-analyst-agent",
-    systemPrompt: "You use my Qlik MCP server.",
+    systemPrompt: "You use my Acme MCP server.",
     defaultModel: "gpt-4o",
-    target: "query Qlik",
+    target: "query Acme",
     expectedOutcome: "answers",
-    toolGrants: { servers: { "srv-qlik": "all" }, builtins: ["memory.propose_save"] },
+    toolGrants: { servers: { "srv-acme": "all" }, builtins: ["memory.propose_save"] },
   });
   const researcher = repo.createAgentRole({
     name: "data-researcher-agent",
@@ -171,7 +171,7 @@ test("createSession (Defect 1a): a scoped-in server-bound role's MCP server is u
     defaultModel: "gpt-4o",
     target: "research",
     expectedOutcome: "answers",
-    toolGrants: { servers: { "srv-qlik": ["search"] }, builtins: [] },
+    toolGrants: { servers: { "srv-acme": ["search"] }, builtins: [] },
   });
   const crew = repo.createCrew({
     name: "analysts",
@@ -179,8 +179,8 @@ test("createSession (Defect 1a): a scoped-in server-bound role's MCP server is u
     members: [{ agentId: researcher.id }],
   });
 
-  // A mission session scoped with an EMPTY server scope but a roster of the Qlik-bound role + crew — the
-  // exact shape that used to strip the Qlik grant at plan time and leave the agent tool-less.
+  // A mission session scoped with an EMPTY server scope but a roster of the Acme-bound role + crew — the
+  // exact shape that used to strip the Acme grant at plan time and leave the agent tool-less.
   const session = await service.createSession({
     mode: "mission",
     model: "gpt-4o",
@@ -188,11 +188,11 @@ test("createSession (Defect 1a): a scoped-in server-bound role's MCP server is u
     roster: { agentIds: [analyst.id], crewIds: [crew.id] },
   });
 
-  // The Qlik server both roles need is now REACHABLE from the session ("all" ∪ ["search"] = "all").
+  // The Acme server both roles need is now REACHABLE from the session ("all" ∪ ["search"] = "all").
   assert.equal(
-    session.toolScope?.servers["srv-qlik"],
+    session.toolScope?.servers["srv-acme"],
     "all",
-    "the roster roles' Qlik server was unioned into the session tool scope",
+    "the roster roles' Acme server was unioned into the session tool scope",
   );
   assert.deepEqual(session.toolScope?.builtins, ["memory.propose_save"], "built-ins are untouched");
 });
@@ -205,7 +205,7 @@ test("createSession (Defect 1a): an auto (unscoped) session is left untouched �
     defaultModel: "gpt-4o",
     target: "x",
     expectedOutcome: "x",
-    toolGrants: { servers: { "srv-qlik": "all" }, builtins: [] },
+    toolGrants: { servers: { "srv-acme": "all" }, builtins: [] },
   });
   // No toolScope ⇒ auto (null). The union is a no-op — auto already reaches every server.
   const session = await service.createSession({

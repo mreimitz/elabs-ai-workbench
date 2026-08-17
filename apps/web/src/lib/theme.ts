@@ -4,9 +4,9 @@ import type { ThemeName } from "@brand/tokens";
  * The themes this app exposes, in display order.
  *
  * `@brand/tokens` v1.9.0 still ships three themes (`THEMES = ["qlik-bright",
- * "qlik-dark", "blueprint"]`, with `qlik-bright`/`qlik-dark` on the canonical Qlik
+ * "qlik-dark", "blueprint"]`, with `qlik-bright`/`qlik-dark` on the canonical Acme
  * palette), but this app
- * intentionally restricts the UI to the two Qlik themes — `blueprint` must not be
+ * intentionally restricts the UI to the two Acme themes — `blueprint` must not be
  * selectable anywhere. Typed against `ThemeName` so it stays in sync if upstream
  * renames a theme.
  */
@@ -44,7 +44,7 @@ export const THEME_PREFERENCE_STORAGE_KEY = "mcp-token-footprint.theme-preferenc
  * Every theme control in the app (the top-bar switcher AND the Settings mirror) maps over this one
  * ordered list, so the two can never drift. **"System" is listed FIRST** (audit ST2/S12: the
  * OS-follower is the leading choice, not a trailing dropdown afterthought), then the two concrete
- * Qlik themes in `ALLOWED_THEMES` order. `blueprint` is intentionally absent — the app never offers
+ * Acme themes in `ALLOWED_THEMES` order. `blueprint` is intentionally absent — the app never offers
  * it. Concrete-theme labels come from `@brand/tokens` `THEME_META` at the call site.
  */
 export const THEME_PREFERENCE_ORDER: readonly ThemePreference[] = [

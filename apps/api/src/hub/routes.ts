@@ -211,7 +211,7 @@ const NO_PROVIDER_MESSAGE =
   "The Assistant is not configured. Add a provider credential " +
   `(${orList(HUB_MODEL_KINDS.map((kind) => providerKindLabel(kind)))}) in Settings first.`;
 
-/** Hub-eligible credentials only (D-AH4) — `qlik_answers` is never a hub model. */
+/** Hub-eligible credentials only (D-AH4) — `acme_answers` is never a hub model. */
 export function hubEligibleCredentials(providers: ProviderRepository): ProviderCredential[] {
   return providers.list().filter((credential) => isHubModelKind(credential.kind));
 }
@@ -2910,7 +2910,7 @@ function registerHubAgentRoutes(
 // model-identity WP6.1 (F5) — `providers` is threaded in for the reason the agent routes above already
 // were: a crew MEMBER can pin a credential too (`HubCrewMember.providerCredentialId`), and that is a
 // FIFTH write binding WP2.2's "exactly 4, all guarded" sweep missed. These handlers called
-// `repository.createCrew`/`updateCrew` bare, so a `qlik_answers` or auth-broken pin was accepted
+// `repository.createCrew`/`updateCrew` bare, so a `acme_answers` or auth-broken pin was accepted
 // silently and an unknown one was not caught at all (members ride the `hub_crews.members_json` blob,
 // which no foreign key protects). `assertCrewMemberCredentials` applies the SAME
 // `resolveExplicitHubCredential` the agent + session routes use — one validator, one error vocabulary.

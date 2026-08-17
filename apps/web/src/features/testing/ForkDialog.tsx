@@ -234,11 +234,7 @@ export function ForkDialog(props: {
               </Text>
               <div className="mt-1 flex items-center gap-4 tabular-nums">
                 <span>~{formatNumber(estimate.tokens.mid)} tokens</span>
-                {estimate.answersQuestions !== undefined ? (
-                  <span>~{formatNumber(estimate.answersQuestions)} questions</span>
-                ) : (
-                  <span>~${estimate.costUsd.mid.toFixed(4)}</span>
-                )}
+                <span>~${estimate.costUsd.mid.toFixed(4)}</span>
               </div>
             </div>
           ) : null}

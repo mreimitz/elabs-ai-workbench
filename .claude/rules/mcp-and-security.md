@@ -21,8 +21,7 @@ logic into `apps/web`.
 ## OAuth
 
 Uses the MCP SDK OAuth provider flow. Default callback `http://127.0.0.1:8080/api/oauth/callback`
-(override with `OAUTH_REDIRECT_URL`). Providers without Dynamic Client Registration (e.g. Qlik
-Cloud) need a pre-registered client id. OAuth tokens, client info, discovery state, and code
+(override with `OAUTH_REDIRECT_URL`). Providers without Dynamic Client Registration need a pre-registered client id. OAuth tokens, client info, discovery state, and code
 verifiers are stored **encrypted**.
 
 ## Secret handling (non-negotiable)

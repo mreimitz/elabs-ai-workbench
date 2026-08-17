@@ -3,8 +3,8 @@
 New workstream adding **output-quality measurement** to the Testing feature: graded tests
 (ground truth + LLM-as-judge + deterministic graders), **suite mass-runs** (test × scenario
 matrix, parallel, repetitions), result analytics (quality × cost), and **Collections** synced
-two-way with GitHub repos. Concept origin: the `insights-bench-qlik` prototype analyzed in
-[`../research/insights-bench-qlik-assessment.md`](../research/insights-bench-qlik-assessment.md) —
+two-way with GitHub repos. Concept origin: the `insights-bench` prototype analyzed in
+[`../research/insights-bench-assessment.md`](../research/insights-bench-assessment.md) —
 we adopt its methodology (G-Eval judge with logprob weighting, trajectory-vs-reference judging,
 `answerable:false` semantics), not its execution machinery (our run engine already captures
 exactly, not self-reported, what that pipeline begs the agent to record).
@@ -131,7 +131,7 @@ binding to real scenarios happens locally.
 ### B13 — InsightBench importer
 A one-time importer converts the colleague's `questions.json` (and the answered result files)
 into a chosen collection: app → `tags: [app]` + category/difficulty, question → test
-(`qlik_question` → userPrompt, `gt_insight`/`gt_insight_value` → expectations,
+(`acme_question` → userPrompt, `gt_insight`/`gt_insight_value` → expectations,
 `gt_code` → `referenceLogic { kind:'code', language:'python' }`), unanswerable-pattern detection
 → `answerable:false` (port of `convert_to_benchmarks.py` regexes). Import only — we never write
 his format back.
@@ -142,7 +142,7 @@ Runs **in parallel with Skill IDE** via `/next-wp benchmarks`, own
 `run-service` writers serialize across workstreams as always.
 
 ### B15 — Non-goals (this plan)
-- **No external hosted-agent adapters** (e.g. Qlik DAA API): graded results come only from this
+- **No external hosted-agent adapters** (e.g. the vendor DAA API): graded results come only from this
   app's own run engine — consistent with the SkillFlow D6 amendment (external session-JSONL
   removed 2026-07-03).
 - Judge/graders **never execute anything** (no code run, no MCP calls; they read persisted runs,

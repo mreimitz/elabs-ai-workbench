@@ -168,8 +168,8 @@ test("the additive `stopReasonCode` on `status` parses and rejects an out-of-uni
       type: "status",
       status: "stopped",
       outcome: "stopped_guardrail",
-      stopReason: "assistant rejected the prompt",
-      stopReasonCode: "prompt_rejected",
+      stopReason: "the stall detector tripped",
+      stopReasonCode: "stalled",
     } satisfies RunEvent),
   );
   const bad = runEventSchema.safeParse({
@@ -200,7 +200,7 @@ test("an unknown discriminant is rejected (the union stays closed)", () => {
 test("STOP_REASON_CODES / RUN_PHASES round-trip through their enum schemas", () => {
   for (const code of STOP_REASON_CODES) assert.equal(stopReasonCodeSchema.parse(code), code);
   for (const phase of RUN_PHASES) assert.equal(runPhaseSchema.parse(phase), phase);
-  assert.equal(STOP_REASON_CODES.length, 15);
+  assert.equal(STOP_REASON_CODES.length, 14);
   assert.equal(RUN_PHASES.length, 4);
 });
 
@@ -221,22 +221,14 @@ test("`ended` was appended (not reordered) to the status + outcome vocabularies"
 test("sessionCapabilitiesSchema accepts a full manifest and infers to SessionCapabilities", () => {
   const manifest: SessionCapabilities = {
     liveText: true,
-    liveReasoning: "structured",
+    liveReasoning: "raw",
     toolCalls: false,
     contextWindow: false,
-    tokens: "estimated",
-    costBasis: "questions",
+    tokens: "none",
+    costBasis: "none",
     followUps: true,
     askUser: false,
     waitBudgetMs: 1_800_000,
-    identity: {
-      kind: "qlik_assistant",
-      assistantId: "asst-1",
-      name: "Sales Assistant",
-      version: 'W/"v3"',
-      appId: "app-9",
-      transport: "stream",
-    },
   };
   const parsed = sessionCapabilitiesSchema.parse(manifest);
   assert.deepEqual(parsed, manifest);

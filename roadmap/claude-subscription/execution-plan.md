@@ -22,10 +22,10 @@ quality gate, ticks the ledger, and repeats. Locked decisions D-CS1–D-CS10 are
 | WP | Model | Why |
 | --- | --- | --- |
 | 0.1 shared contract | `sonnet` | Additive types/zod; mechanical but must be exact (barrier). |
-| 0.2 credential + migration + auth | `sonnet` | Follows the `qlik_answers` linked-auth pattern; migration is boilerplate. |
+| 0.2 credential + migration + auth | `sonnet` | Follows the `vendor_assistant` linked-auth pattern; migration is boilerplate. |
 | 0.3 roster + Settings form | `sonnet` | Reuses `ASSISTANT_MODEL_ROSTER`; standard form work. |
 | **1.1 executor core** | **`opus`** | The crux: generalize the judge one-shot to a multi-turn loop and map SDK `DriverEvent`s → `run_steps`/KPIs so the console renders identically. Deepest reasoning. |
-| **1.2 run-service branch** | **`opus`** | Hot, high-blast-radius file (`run-service.ts`); must mirror the `qlik_answers` fork without disturbing existing paths. |
+| **1.2 run-service branch** | **`opus`** | Hot, high-blast-radius file (`run-service.ts`); must mirror the `vendor_assistant` fork without disturbing existing paths. |
 | **1.3 MCP tools via SDK** | **`opus`** | Allow-list → SDK `mcpServers`/`disallowedTools` mapping + estimated `tool_result` metering + transport-vs-tool-error semantics. Subtle. |
 | 1.4 skills materialization | `sonnet` | Materialize read-only files into the workspace; bounded. |
 | **1.5 cost / cap** | **`opus`** | Shadow-pricing must feed the cost cap correctly (D-CS8) — a wrong sign here breaks guardrails silently. |

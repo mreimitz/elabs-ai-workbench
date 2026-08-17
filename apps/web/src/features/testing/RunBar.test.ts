@@ -211,9 +211,6 @@ describe("deriveRunBarView — statusView adoption + the ended-phase fix (WP3.1)
     expect(
       deriveRunBarView("stopped", "stopped_guardrail", undefined, "wait_expired").statusView,
     ).toMatchObject({ label: "Expired" });
-    expect(
-      deriveRunBarView("stopped", "stopped_guardrail", undefined, "prompt_rejected").statusView,
-    ).toMatchObject({ label: "Rejected by assistant" });
   });
 
   test("aborted reads Stopped by you on statusView (richer than the coarse Stopped phase bucket)", () => {

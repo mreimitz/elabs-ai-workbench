@@ -13,12 +13,12 @@ const outDir = path.join(rootDir, "user-guide", "images");
 const BASE = process.env.BASE_URL ?? "http://localhost:8080";
 
 // Live entity ids (probed via /api on this instance).
-const SCAN_QLIK = "A1A2TeOHNdTqsYL1tQyLm";
-const SERVER_QLIK = "p_m2aMW4hyPJb3q8Evd6s";
+const SCAN_VENDOR = "A1A2TeOHNdTqsYL1tQyLm";
+const SERVER_VENDOR = "p_m2aMW4hyPJb3q8Evd6s";
 const SERVER_BARC = "O3Ar9zrXY8f-9mX1oXEzw";
 const SCAN_BARC = "_djByOZ6uBkuGEWnine7D";
-const SKILL = "Tx5FcyLBjpq8Y1R5LEvLe"; // qlik-freeform-analyst
-const SKILL_ISSUES = "DPKnXS7AHxz62oxcNqxxx"; // qlik-data-analyst (has issues)
+const SKILL = "Tx5FcyLBjpq8Y1R5LEvLe"; // vendor-freeform-analyst
+const SKILL_ISSUES = "DPKnXS7AHxz62oxcNqxxx"; // vendor-data-analyst (has issues)
 const RUN = "weBwxqBvct2p5sYxgydid"; // completed, rated, 61 steps
 const RUN_B = "q5f0M9ZrcrgfdnY_ixUd9"; // completed, 51 steps
 const SUITE_RUN = "ROBawV-mkagclimwXH32X";
@@ -27,10 +27,10 @@ const shots = [
   // Core-flow full-window shots (regenerated over stale same-named files)
   { name: "01-dashboard", url: "/dashboard" },
   { name: "02-servers", url: `/servers/${SERVER_BARC}` },
-  { name: "03-scan-footprint", url: `/scans/${SCAN_QLIK}` },
+  { name: "03-scan-footprint", url: `/scans/${SCAN_VENDOR}` },
   {
     name: "05-compare-scans",
-    url: `/compare/scans?serverA=${SERVER_QLIK}&scanA=${SCAN_QLIK}&serverB=${SERVER_BARC}&scanB=${SCAN_BARC}`,
+    url: `/compare/scans?serverA=${SERVER_VENDOR}&scanA=${SCAN_VENDOR}&serverB=${SERVER_BARC}&scanB=${SCAN_BARC}`,
   },
   { name: "08-run-console-chat", url: `/testing/runs/${RUN}` },
   { name: "09-run-trace", url: `/testing/runs/${RUN}`, clickTab: "Trace" },

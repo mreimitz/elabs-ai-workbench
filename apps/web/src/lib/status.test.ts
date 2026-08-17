@@ -160,18 +160,6 @@ describe("deriveRunStatusView — the locked label table (D-US5)", () => {
     });
   });
 
-  test("stopped + prompt_rejected → Rejected by assistant, amber outline", () => {
-    expect(
-      chip({ status: "stopped", outcome: "stopped_guardrail", stopReasonCode: "prompt_rejected" }),
-    ).toEqual({
-      kind: "chip",
-      label: "Rejected by assistant",
-      tone: "warning",
-      spinner: false,
-      dashed: false,
-    });
-  });
-
   test("context_overflow (outcome OR stopReasonCode) → Context overflow, amber outline", () => {
     const byOutcome = chip({
       status: "stopped",
@@ -248,7 +236,6 @@ describe("deriveRunStatusView — the locked label table (D-US5)", () => {
       max_cost: { status: "stopped", outcome: "stopped_guardrail" },
       max_tool_calls: { status: "stopped", outcome: "stopped_guardrail" },
       context_overflow: { status: "stopped", outcome: "context_overflow" },
-      prompt_rejected: { status: "stopped", outcome: "stopped_guardrail" },
       provider_error: { status: "error", outcome: "error" },
       auth: { status: "error", outcome: "error" },
       rate_limit: { status: "error", outcome: "error" },

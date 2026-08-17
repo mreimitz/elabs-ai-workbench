@@ -11,21 +11,21 @@ const BASE = process.env.BASE_URL ?? "http://localhost:8080";
 const THEME_KEY = "brand-ui-theme";
 
 // Real entity ids from the live instance (probed via /api).
-const SCAN_QLIK = "A1A2TeOHNdTqsYL1tQyLm"; // qlik-mreimitz, 60 tools, 48.6k tok
-const SERVER_QLIK = "p_m2aMW4hyPJb3q8Evd6s";
+const SCAN_VENDOR = "A1A2TeOHNdTqsYL1tQyLm"; // acme-demo, 60 tools, 48.6k tok
+const SERVER_VENDOR = "p_m2aMW4hyPJb3q8Evd6s";
 const SERVER_BARC = "O3Ar9zrXY8f-9mX1oXEzw";
 const SCAN_BARC = "_djByOZ6uBkuGEWnine7D"; // barc-benchmark, 77 tools, 64.5k tok
-const SKILL = "Tx5FcyLBjpq8Y1R5LEvLe"; // qlik-freeform-analyst
+const SKILL = "Tx5FcyLBjpq8Y1R5LEvLe"; // vendor-freeform-analyst
 const RUN = "weBwxqBvct2p5sYxgydid"; // completed, rated, 61 steps
 const SUITE_RUN = "ROBawV-mkagclimwXH32X";
 
 const shots = [
   { name: "dashboard", url: "/dashboard" },
   { name: "servers", url: "/servers" },
-  { name: "scan-footprint", url: `/scans/${SCAN_QLIK}` },
+  { name: "scan-footprint", url: `/scans/${SCAN_VENDOR}` },
   {
     name: "compare-scans",
-    url: `/compare/scans?serverA=${SERVER_QLIK}&scanA=${SCAN_QLIK}&serverB=${SERVER_BARC}&scanB=${SCAN_BARC}`,
+    url: `/compare/scans?serverA=${SERVER_VENDOR}&scanA=${SCAN_VENDOR}&serverB=${SERVER_BARC}&scanB=${SCAN_BARC}`,
   },
   { name: "skills", url: "/skills" },
   { name: "skill-inspector", url: `/skills/${SKILL}` },

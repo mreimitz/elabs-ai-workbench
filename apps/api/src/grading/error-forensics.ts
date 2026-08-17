@@ -383,7 +383,7 @@ ${list}
 * Each object: { "id": "<the exact id from the list>", "bucket": <one of ${ROOT_CAUSE_BUCKETS.join(" | ")}>, "fixTarget": <one of ${FIX_TARGETS.join(" | ")}>, "draftFix": "<a specific, actionable suggestion — never auto-applied>" }.
 * Only use "id" values that appear above. Do NOT invent findings.
 * Choose "fixTarget" to match the actionable owner: "skill" when a SKILL.md change fixes it, "mcp_server" when the server must change, "none" when there is no actionable fix (e.g. most model_behavior / provider_infra causes).
-* Make "draftFix" concrete and labeled, e.g. "add to SKILL.md: always pass \`fields=…\` to \`qlik_get_app\`" or "server: \`search_docs\` rejects its own documented \`limit\` param".
+* Make "draftFix" concrete and labeled, e.g. "add to SKILL.md: always pass \`fields=…\` to \`acme_get_app\`" or "server: \`search_docs\` rejects its own documented \`limit\` param".
 * Respond with ONLY the JSON array, nothing else.
 `;
 }

@@ -35,7 +35,7 @@ node with no children, so nothing regresses.
   `HubPlanProposedEvent:6286`/`HubAgentSpawnedEvent:6310` (gain `parentMissionId?` from 3.1's
   event-sourced parent-linkage — the field this WP groups on).
 - Precedent for the "legacy renders unchanged via read-time projection" mechanic: `deriveLegacyAnswerStep`
-  (`apps/api/src/testing/qlik-answers-message.ts:409`) — a pure function that derives new rendering
+  (`apps/api/src/testing/vendor-assistant-message.ts:409`) — a pure function that derives new rendering
   fields for old-shaped data and returns the input **unchanged** when nothing applies, so one
   renderer serves both eras with no migration and no regression on the old shape.
 

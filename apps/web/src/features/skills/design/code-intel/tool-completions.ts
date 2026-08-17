@@ -2,7 +2,7 @@ import type { BoundTool } from "@mcp-token-footprint/shared";
 import type { Disposable, MonacoApi, MonacoEditor, MonacoModel } from "./monaco-types";
 
 // Skill Studio SI9 — tool-name IntelliSense for the code editor: typing a bare tool-name prefix
-// (`qlik_` on a blank line — the owner's repro) now offers the bound servers' tools as completions.
+// (`acme_` on a blank line — the owner's repro) now offers the bound servers' tools as completions.
 // Split the way tool-references.ts is: a PURE, exhaustively-tested context decision
 // (`getToolCompletionContext`) + a PURE item mapper (`buildToolCompletionItems`), and a thin Monaco
 // registration (`registerToolCompletionProvider`) the code-intel orchestrator wires ONCE per mount.
@@ -26,7 +26,7 @@ import type { Disposable, MonacoApi, MonacoEditor, MonacoModel } from "./monaco-
 /** The lowercase alphabet a completion word is scanned over (the tool-name alphabet). */
 const LOWER_WORD_CHAR_RE = /[a-z0-9_]/;
 /** The broader identifier alphabet used for BOUNDARY checks (mirrors tool-references.ts) — a word
- *  abutting one of these (`Qlik_sea`, `qlik_Search`) is mid-identifier, not a clean tool word. */
+ *  abutting one of these (`Acme_sea`, `acme_Search`) is mid-identifier, not a clean tool word. */
 const BOUNDARY_CHAR_RE = /[A-Za-z0-9_]/;
 /** The shape a completion word must have: starts with a lowercase letter, then `[a-z0-9_]*`. */
 const WORD_SHAPE_RE = /^[a-z][a-z0-9_]*$/;
@@ -87,9 +87,9 @@ export function getToolCompletionContext(
   while (start > 0 && LOWER_WORD_CHAR_RE.test(lineText.charAt(start - 1))) start -= 1;
   const query = prefix.slice(start);
   if (query.length < MIN_BARE_QUERY_LENGTH) return null;
-  if (start > 0 && BOUNDARY_CHAR_RE.test(lineText.charAt(start - 1))) return null; // `Qlik_sea`
+  if (start > 0 && BOUNDARY_CHAR_RE.test(lineText.charAt(start - 1))) return null; // `Acme_sea`
   const end = wordEndFrom(lineText, cursor);
-  if (end === null) return null; // `qlik_Search` — the word continues in another alphabet
+  if (end === null) return null; // `acme_Search` — the word continues in another alphabet
   const word = lineText.slice(start, end);
   if (!WORD_SHAPE_RE.test(word)) return null; // must start with a lowercase letter
   return {
@@ -173,7 +173,7 @@ export function registerToolCompletionProvider(
   ctx: ToolCompletionProviderContext,
 ): Disposable {
   const provider = monacoApi.languages.registerCompletionItemProvider("markdown", {
-    // "_" re-invokes the widget while a snake_case prefix is being typed (the owner's `qlik_` repro
+    // "_" re-invokes the widget while a snake_case prefix is being typed (the owner's `acme_` repro
     // fires here even with quick-suggest off); "`" claims the span-open keystroke, where this
     // provider then defers to WP 8.2's (see below) so the span still gets exactly one list.
     triggerCharacters: ["`", "_"],

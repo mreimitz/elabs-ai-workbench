@@ -134,7 +134,6 @@ import { prettyToolName, taskStatusToStatus, toolUiPartApproval } from "./hub-to
 import { GenUiPart } from "./genui/index";
 import { HubLimitErrorBanner } from "./HubLimitErrorBanner";
 import { HubQuestionPrompt } from "./HubQuestionPrompt";
-import { parseQlikDisambiguation } from "./qlik-disambiguation";
 import { citationMarkdownComponents, MessageSources, SessionSourceRail } from "./SourcesPanel";
 import { MissionPlanCard } from "./MissionPlanCard";
 import { MissionBoard, reconstructMissionBoard } from "./MissionBoard";
@@ -1824,17 +1823,6 @@ export function ConversationPane({
   const awaitingQuestion =
     stream.phase === "waiting_input" &&
     (stream.waitingReason === "question" || stream.waitingReason === "elicitation");
-  // Qlik-Answers disambiguation: the trailing settled assistant message is a "pick an app/assistant"
-  // prose list (no tool call). Parse it so we can render one-click choice buttons that submit the picked
-  // name as the next message — otherwise the operator has to re-type it. Only the TRAILING message, and
-  // only once the turn has settled (so we don't parse a half-streamed list).
-  const disambiguation = useMemo(() => {
-    if (stream.turnRunning) return null;
-    const last = stream.timeline[stream.timeline.length - 1];
-    if (!last || last.kind !== "assistant_turn") return null;
-    const text = last.parts.map((part) => (part.type === "text" ? part.text : "")).join("\n");
-    return parseQlikDisambiguation(text);
-  }, [stream.timeline, stream.turnRunning]);
   // WP1.7 — reconstruct the mission board from the event log alone (R-SES1). A still-proposed mission
   // renders the editable plan card; once approved it renders the live board (in-band in the transcript).
   const missionBoard = useMemo(() => reconstructMissionBoard(stream.events), [stream.events]);
@@ -2343,40 +2331,6 @@ export function ConversationPane({
             questions={stream.openQuestions}
             askUser={session?.capabilities?.askUser === true}
           />
-
-          {/* Qlik-Answers disambiguation → clickable choices (the trailing assistant message asked the
-            operator to pick an app/assistant by number/name). Clicking submits the picked NAME as the
-            next message — exactly what the operator would otherwise type. */}
-          {disambiguation ? (
-            <AgentMessage>
-              <MessageContent>
-                <Card className="border-primary/40">
-                  <CardHeader className="flex-row items-center gap-2 space-y-0">
-                    <HelpCircle className="size-4 shrink-0 text-primary" aria-hidden />
-                    <CardTitle className="text-subtitle">Choose one to continue</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3">
-                    <Text className="whitespace-pre-wrap text-pretty">{disambiguation.prompt}</Text>
-                    <div className="flex flex-col gap-2">
-                      {disambiguation.options.map((option) => (
-                        <Button
-                          key={`${option.index}-${option.name}`}
-                          variant="outline"
-                          className="h-auto flex-col items-start gap-0.5 whitespace-normal py-2 text-left"
-                          onClick={() => onStarterSelect(option.name)}
-                        >
-                          <span className="font-medium">{option.name}</span>
-                          {option.detail ? (
-                            <span className="text-caption text-muted-foreground">{option.detail}</span>
-                          ) : null}
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </MessageContent>
-            </AgentMessage>
-          ) : null}
 
           {/* R-MCP4 elicitation: render the full panel when a request is present; otherwise a plain
             "waiting for you" notice while the session sits in a wait phase with no concrete card to show

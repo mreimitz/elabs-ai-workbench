@@ -490,7 +490,6 @@ function makeRunServiceWithWatch(h: ReturnType<typeof makeHarness>, watch: Watch
     sessionOpener,
     skills,
     h.gradeService,
-    undefined, // answersFetch
     undefined, // issues
     undefined, // subscriptionDriver
     undefined, // subscriptionAuth

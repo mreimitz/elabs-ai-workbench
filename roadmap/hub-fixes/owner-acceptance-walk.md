@@ -2,7 +2,7 @@
 
 **Assembled by WP 7.R (2026-07-20).** This is the ONE honest live checklist for everything the
 `hub-fixes` workstream could NOT prove in the gate — anything needing a running instance, real
-provider keys, a live MCP server, a real Qlik tenant, or a browser (both-theme + keyboard). It
+provider keys, a live MCP server, a real the vendor tenant, or a browser (both-theme + keyboard). It
 consolidates every owner-acceptance item recorded across `STATUS.md`'s WP tick-notes and its
 Owner-acceptance section into exact click-paths + expected outcomes.
 
@@ -34,27 +34,27 @@ visible focus ring) on every new interactive control.
   of blowing the prompt budget. **The live RC1/RC3 proof works under either mode.** Choose:
   - Keep `eager` → simplest, long-tested path; but a large unscoped session re-hits the ~245k-token
     cost the analysis flagged. Best paired with always creating **scoped** sessions.
-  - Remove the line (fall back to `auto`) → recommended once you've done the scoped-Qlik proof below;
+  - Remove the line (fall back to `auto`) → recommended once you've done the scoped-the vendor proof below;
     lets big catalogs defer gracefully.
   *Action:* decide, edit `docker-compose.yml`, recreate the container. Record the choice.
 
 - [ ] **Register at least one MCP server + scan it** (Servers → Add server → run a discovery scan) so
-  the Hub has a real tool surface to grant. For the Qlik checks, register `qlik-mreimitz` (or your
-  Qlik Cloud MCP server) with working OAuth.
+  the Hub has a real tool surface to grant. For the the vendor checks, register `acme-demo` (or your
+  the vendor cloud MCP server) with working OAuth.
 
 ---
 
 ## 1 · MCP truth in a main session (RC1 / RC3)
 
-- [ ] **Scoped-Qlik tool call end-to-end (the core RC1/RC3 proof).**
+- [ ] **Scoped-the vendor tool call end-to-end (the core RC1/RC3 proof).**
   Assistant → **New session** → **MCP & tools** tab → switch to **Scoped** → tick ONLY
-  `qlik-mreimitz` → create. Ask a question that needs the server (e.g. "search my Qlik apps for
-  sales"). *Expected:* a `qlik_*` tool call appears with an **approval card**; approve it; it returns
+  `acme-demo` → create. Ask a question that needs the server (e.g. "search my the vendor apps for
+  sales"). *Expected:* a `vendor_*` tool call appears with an **approval card**; approve it; it returns
   real data; the answer renders. (Pre-fix, no MCP tool was ever callable — RC1.) In `auto`/`deferred`
   mode you may first see a `tool_search` step that promotes the tool, then the call.
 
 - [ ] **Rail Tools section shows ONLY the scoped server (RC3.1).** Open the meta-rail **Context**
-  section on that scoped session. *Expected:* it lists `qlik-mreimitz` only, NOT all registered
+  section on that scoped session. *Expected:* it lists `acme-demo` only, NOT all registered
   servers. Compare an **Auto** (unscoped) session — it should list every reachable server. (Both
   themes.)
 
@@ -62,7 +62,7 @@ visible focus ring) on every new interactive control.
   **Manage tools** editor (`ManageToolScopeDialog`), change the grant, save. *Expected:* the scope
   persists (PATCH), the next turn honors it. (Both themes; keyboard-open the dialog.)
 
-- [ ] **Real failing-MCP path (RC3.4).** Force a broken/expired server (e.g. let the Qlik OAuth
+- [ ] **Real failing-MCP path (RC3.4).** Force a broken/expired server (e.g. let the the vendor OAuth
   expire, or point a server at a dead URL) and take a turn that needs it. *Expected:* the rail shows
   an **error chip** with the reason (not a silent drop); the model's answer/prompt states
   "Unreachable this turn: `<server>` (`<reason>`)" instead of the misleading "no MCP tools are

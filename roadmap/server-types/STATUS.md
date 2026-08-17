@@ -79,7 +79,7 @@ following need the owner + a real fleet/tenant and were **not** verifiable headl
   nested-dialog focus).
 - **Phase 2 live** — CRUD against a real fleet: create/rename/restatus, a real duplicate-name 409,
   and a real delete detaching real members to Untyped.
-- **Phase 3 live** — a real skill bound to a type (e.g. Qlik-SaaS) whose tools validate against the
+- **Phase 3 live** — a real skill bound to a type (e.g. Acme-SaaS) whose tools validate against the
   representative member (newest successful scan); the representative re-resolving as members/scans
   change.
 - **Phase 3.2 visual** — both-theme + keyboard walk of the Skill IDE: the **type chip** (type name

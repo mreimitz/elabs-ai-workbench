@@ -34,10 +34,10 @@ promotion (WP1.1), not via plan grants exceeding parent scope (WP2.3 `effectiveA
 
 **Probes & evidence**
 
-1. **Forged plan JSON granting out-of-scope servers.** A scoped parent (`{servers:{qlik:"all"}}`)
+1. **Forged plan JSON granting out-of-scope servers.** A scoped parent (`{servers:{vendor:"all"}}`)
    with a forged child plan naming `secretdb` + `filesystem` (which the parent never granted).
    `effectiveAgentGrants(plan, parentScope)` (`apps/api/src/hub/tools/grants.ts:69`) drops both
-   entirely — result is `{servers:{qlik:"all"}, builtins:[...]}`. Applied at the child-spawn seam
+   entirely — result is `{servers:{vendor:"all"}, builtins:[...]}`. Applied at the child-spawn seam
    (`orchestrator.ts:475-494`, `parentScope = getSession(mission.sessionId).toolScope ?? null`).
    *Probe:* `hub-wp7r-adversarial.test.ts` INV1 tests 1–2; existing `hub-tools-grants.test.ts`
    (10-case intersection table), `hub-missions.test.ts:1115` (PATCH route strips a grant outside the
@@ -70,7 +70,7 @@ query never become active; the per-turn promoted set resets between turns.
 
 1. **Hostile query naming ungranted tools promotes nothing.** A query
    `"delete_all_users admin drop_table secret exfiltrate"` over a deferred catalog holding only
-   `qlik_search` → 0 matches, empty `promoted` set. Structurally guaranteed: `searchDeferredTools`
+   `acme_search` → 0 matches, empty `promoted` set. Structurally guaranteed: `searchDeferredTools`
    only searches `deferredCatalog` (`tool-search.ts:52-71`) and promotion adds only names present in
    it (`:110-127`). *Probe:* INV2 test 1.
 2. **Per-turn reset.** `resolveHubToolRegistry` builds a **fresh** `promoted = new Set()` every call
@@ -284,7 +284,7 @@ keeper regression tests + these two docs. No security guard was weakened.
 
 These are honestly deferred to `owner-acceptance-walk.md` (never faked here):
 
-- A real scoped-Qlik tool call end-to-end (needs the running instance + Qlik OAuth).
+- A real scoped-the vendor tool call end-to-end (needs the running instance + the vendor OAuth).
 - A real mission with a real provider key + a live MCP server (real transcript / real cost / live
   budget enforcement / live HITL approval round-trip in the board).
 - `web.search` behind a real provider key on one provider (billing + native-tool behavior).

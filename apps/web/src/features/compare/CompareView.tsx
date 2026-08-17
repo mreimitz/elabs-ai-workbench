@@ -804,8 +804,8 @@ function ScanSide(props: {
 }) {
   const noScans = props.eligibleCount === 0;
   // C-4: the closed select used to inherit the whole option row (name + type/status suffix) as its
-  // displayed value, so the 38-char "qlik-mreimitz · qlik-saas · Production" string got clipped to
-  // "· qlik-saas · Pro…" — the server name, the only thing that distinguishes A from B, was the part
+  // displayed value, so the 38-char "acme-demo · acme-saas · Production" string got clipped to
+  // "· acme-saas · Pro…" — the server name, the only thing that distinguishes A from B, was the part
   // that disappeared. Fix: look up the selected option ourselves, show ONLY the name inside the
   // (now-wider) select via an explicit `SelectValue` child (overriding Radix's default projection of
   // the option's full node), and move type/environment out to a secondary Badge beside the select.

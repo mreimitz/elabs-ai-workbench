@@ -49,8 +49,8 @@ built once per turn (`turn-engine.ts:703`, used at `:1029`). Live proof: `/conte
 2. Registry partition + toolset shape (shared types untouched; this is server-internal).
 3. Turn-engine `prepareStep` wiring + promotion set; token-cap guard in `tool_search.execute`.
 4. `auto` policy + env plumbing + default flip.
-5. Tests, incl. THE missing one: deferred session + grant → first step has no `qlik_*` active →
-   `tool_search("qlik")` → next step calls the promoted tool successfully (stub MCP session).
+5. Tests, incl. THE missing one: deferred session + grant → first step has no `vendor_*` active →
+   `tool_search("vendor")` → next step calls the promoted tool successfully (stub MCP session).
 
 ## Acceptance
 

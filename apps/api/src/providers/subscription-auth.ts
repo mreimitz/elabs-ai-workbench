@@ -4,7 +4,7 @@ import { httpError } from "../utils/errors.js";
  * Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS7) — resolve a `claude_subscription`
  * provider credential's auth from the OWNER'S SIGNED-IN Claude subscription (`assistant_credentials`,
  * the single `claude_oauth` row — the SAME sign-in the embedded Assistant dock uses). This mirrors the
- * `qlik_answers` linked-auth resolver (`linked-auth.ts`): auth is resolved from ANOTHER store at run
+ * linked-auth pattern: auth is resolved from ANOTHER store at run
  * time rather than a standalone stored key, and a broken/absent sign-in surfaces a clear, non-leaking
  * "auth broken" error rather than a partial credential.
  *

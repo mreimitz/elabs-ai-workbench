@@ -33,7 +33,7 @@ silent patches.
 
 - Review report in this folder (`review-7R.md`): probes run, PASS/FAIL each, minimal repros.
 - Bounded fixes on `wp/hub-fixes/7.fix` for confirmed defects; ledger updated.
-- `owner-acceptance-walk.md` for this plan: the live checklist (scoped Qlik call; mission with
+- `owner-acceptance-walk.md` for this plan: the live checklist (scoped the vendor call; mission with
   real MCP tools + live expand-modal transcript; both-theme walks of rail/board/modal/clarify;
   live `web.search` on one provider; container mitigation removal check from WP 0.1 once WP 1.1
   shipped) with exact click-paths and expected outcomes.

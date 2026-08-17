@@ -7,7 +7,7 @@
 
 ## 1. Executive summary
 
-The session you shared fails for reasons that are almost all **downstream of your setup, not caused by it**. Your crew configuration was correct: the plan really did grant `qlik-mreimitz` (`p_m2aMW4hyPJb3q8Evd6s: "all"`) to both agents. The app then dropped that grant at several independent points.
+The session you shared fails for reasons that are almost all **downstream of your setup, not caused by it**. Your crew configuration was correct: the plan really did grant `acme-demo` (`p_m2aMW4hyPJb3q8Evd6s: "all"`) to both agents. The app then dropped that grant at several independent points.
 
 | # | Finding | Severity | Status |
 |---|---|---|---|
@@ -30,10 +30,10 @@ Facts read from the running instance for session `oNiw1PCAmxc5_ietGD_0h`:
 | Fact | Value | Meaning |
 |---|---|---|
 | `session.mode` / `autonomy` | `mission` / `auto` | Mission mode was set at creation (crew-bound session). |
-| `session.toolScope` | `null` | No session-level scope was persisted. `null` means "auto: grant every reachable server", so your qlik-mreimitz-only selection never reached the DB (see RC3). |
+| `session.toolScope` | `null` | No session-level scope was persisted. `null` means "auto: grant every reachable server", so your acme-demo-only selection never reached the DB (see RC3). |
 | `context.tools.mode` | `"deferred"` | Deferred loading active (the default). |
 | `context.tools.resident` | `[]`, `residentTokens: 0` | **Zero callable MCP tools.** All 281 tool definitions (~245k tokens across all 5 servers) sit in the "deferred" list that the model can search but never call (RC1). |
-| Mission plan `toolGrants` (both agents) | `{"servers":{"p_m2aMW4hyPJb3q8Evd6s":"all"}}` | The crew roles **did** grant the Qlik server. The failure is downstream (RC2). |
+| Mission plan `toolGrants` (both agents) | `{"servers":{"p_m2aMW4hyPJb3q8Evd6s":"all"}}` | The crew roles **did** grant the the vendor server. The failure is downstream (RC2). |
 | Agent reports | 13:34:49 and 13:35:40 | Debater 2 started after debater 1 finished: sequential execution, 50 s apart (RC6). Debater 2's report cites debater 1 (`c1`), as designed. |
 | Synthesis message | `parts[0].text` starts `## Synthesis:` with `[1]` markers, `citations:[{id:"1",…}]` | Exactly the shape that triggers the raw-markdown branch (RC4). |
 | Mission `costUsd` / plan `estimatedCostUsd` | `0` / `0` | Cost tracking inert (side finding). |
@@ -52,7 +52,7 @@ Mechanism, in order:
 3. Only `resolution.mcpResident` is built into callable AI-SDK tools (`session-service.ts:664-689`). Deferred tools get exactly one affordance: the `tool_search` built-in, which returns matching definitions **as data** (`apps/api/src/hub/tools/tool-search.ts:70-74`). Its own header comment admits that making a discovered tool callable "is a turn-engine wiring question … outside WP0.5's scope" (`tool-search.ts:8-11`). That wiring was never built.
 4. The turn engine builds `providerTools` once per turn and never re-injects (`apps/api/src/hub/turn-engine.ts:703`, `:1029`).
 
-Net effect: the model is told "Definitions load on demand: call `tool_search` … " (`apps/api/src/hub/prompting/layers/tools.ts:20`), it can *find* `qlik_search`, but the tool is not in the provider tool list, so it can never invoke it. The model then correctly reports it has no access.
+Net effect: the model is told "Definitions load on demand: call `tool_search` … " (`apps/api/src/hub/prompting/layers/tools.ts:20`), it can *find* `acme_search`, but the tool is not in the provider tool list, so it can never invoke it. The model then correctly reports it has no access.
 
 Why the gate never caught it: the only test asserting a callable granted MCP tool forces `toolLoadingDefault: "eager"` (`apps/api/src/hub/session-service.hub-mcp-grants.test.ts:165`). The production default path (deferred) has no callability test.
 
@@ -112,14 +112,14 @@ Phased so that each phase lands value on its own, respects the repo's convention
 ### Phase 0: Same-day mitigation (no code)
 
 1. Add `HUB_TOOL_LOADING_DEFAULT: "eager"` to `docker-compose.yml` environment and recreate the container.
-2. Create sessions with an explicit scope: New session → MCP & tools → *Scoped* → pick only `qlik-mreimitz` (roughly 45-50k tokens of definitions; workable eager on Opus-class context, unusable with all 5 servers at ~245k).
-3. Result: main-session chat can actually call Qlik tools today (each call approval-gated). Missions stay broken until Phase 2. This validates the diagnosis cheaply.
+2. Create sessions with an explicit scope: New session → MCP & tools → *Scoped* → pick only `acme-demo` (roughly 45-50k tokens of definitions; workable eager on Opus-class context, unusable with all 5 servers at ~245k).
+3. Result: main-session chat can actually call the vendor tools today (each call approval-gated). Missions stay broken until Phase 2. This validates the diagnosis cheaply.
 
 ### Phase 1: Make MCP real in main sessions (critical)
 
 - **WP1.1 Tool-loading correctness.** Keep `deferred` as default but make it functional: register the full granted set with the turn engine and expose only the resident subset per step (AI SDK per-step active-tool limiting), promoting `tool_search` hits into the active set for subsequent steps of the same turn. Add an `auto` policy: small scoped catalogs load eager; large catalogs defer. Acceptance: a deferred-mode session calls a granted MCP tool end-to-end in a gate test (the missing test from RC1).
 - **WP1.2 Grant plumbing honesty.** Persist and honor scope everywhere: context inspector reads `session.toolScope` (fix `routes.ts:1428-1462`); add `toolScope` to the session PATCH + a "Manage tools" editor in the rail; honor the `builtins` selection; crew/session create flows always persist the effective scope instead of `null`.
-- **WP1.3 Connection-failure surfacing.** Replace silent grant-drop with per-server status: rail shows granted servers with `connected / error (reason) / connecting` chips; a turn that loses servers emits a visible system line ("qlik-mreimitz unreachable: OAuth expired") instead of the misleading "no tools granted" prompt; add a retry affordance.
+- **WP1.3 Connection-failure surfacing.** Replace silent grant-drop with per-server status: rail shows granted servers with `connected / error (reason) / connecting` chips; a turn that loses servers emits a visible system line ("acme-demo unreachable: OAuth expired") instead of the misleading "no tools granted" prompt; add a retry affordance.
 - **WP1.4 Prompt-budget sanity.** Deferred name list currently costs ~6k tokens against a 400 budget; compress to per-server groups with counts.
 
 ### Phase 2: Mission agents become real tool-using sessions (critical)
@@ -172,7 +172,7 @@ Phase 1 and Phase 3 are independent and both small enough to start immediately; 
 
 **Verified:** every file:line claim above against the working tree; live session state, mission plan grants, deferred/resident tool split, synthesis message shape, and timing via the running instance's API; the debate execution order from both code and event timestamps.
 
-**Not verified (needs runtime access I did not have):** whether the `qlik-mreimitz` MCP connection itself opens cleanly at turn time (the silent-drop path in RC3.4 makes this invisible; the API log would show `hub: MCP session open failed` if not), and eager-mode end-to-end Qlik calls (Phase 0 will prove this immediately). The Docker volume DB was not directly readable from this session; all live facts came from the HTTP API.
+**Not verified (needs runtime access I did not have):** whether the `acme-demo` MCP connection itself opens cleanly at turn time (the silent-drop path in RC3.4 makes this invisible; the API log would show `hub: MCP session open failed` if not), and eager-mode end-to-end the vendor calls (Phase 0 will prove this immediately). The Docker volume DB was not directly readable from this session; all live facts came from the HTTP API.
 
 ## 6. Housekeeping
 

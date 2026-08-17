@@ -308,27 +308,6 @@ describe("RunTableRow — Sessions lens column set (WP 2.4)", () => {
     expect(screen.queryByText("New")).not.toBeInTheDocument();
   });
 
-  test("a named-assistant session's Kind chip shows the assistant identity, not the model (D-US4 capability gate)", () => {
-    renderSessionRow(
-      makeRun({
-        mode: "interactive",
-        capabilities: {
-          liveText: true,
-          liveReasoning: "none",
-          toolCalls: false,
-          contextWindow: false,
-          tokens: "estimated",
-          costBasis: "questions",
-          followUps: false,
-          askUser: false,
-          identity: { kind: "qlik_assistant", assistantId: "a-1", name: "Sales Copilot" },
-        },
-      }),
-      "some-underlying-model-id",
-    );
-    expect(screen.getByText("Sales Copilot")).toBeInTheDocument();
-    expect(screen.queryByText("some-underlying-model-id")).not.toBeInTheDocument();
-  });
 
   describe("legacy degrade — a pre-Unified-Sessions run (no activeDurationMs/totalDurationMs/endedAt/seen)", () => {
     test("active duration falls back to wall-clock durationMs, MARKED '(wall)' — never silently passed off as active", () => {
@@ -365,13 +344,13 @@ describe("RunTableRow — Sessions lens column set (WP 2.4)", () => {
  * Interface Craft WP 2.1 (D-IC10, finding 10) — the Environment cell truncates
  * (`max-w-[12rem] truncate`) with no recovery; add `title` so the full value is reachable on
  * hover even when clipped. Confirmed live-DOM clip in the review was
- * "Qlik Answers — ontime-assistant".
+ * "Acme Answers — ontime-assistant".
  */
 describe("RunTableRow — Environment cell truncation recovery (WP 2.1, D-IC10)", () => {
   test("a long/clipped environment name is fully recoverable via `title`", () => {
-    renderRow(makeRun(), "Qlik Answers — ontime-assistant");
-    const cell = screen.getByText("Qlik Answers — ontime-assistant");
-    expect(cell).toHaveAttribute("title", "Qlik Answers — ontime-assistant");
+    renderRow(makeRun(), "Acme Answers — ontime-assistant");
+    const cell = screen.getByText("Acme Answers — ontime-assistant");
+    expect(cell).toHaveAttribute("title", "Acme Answers — ontime-assistant");
   });
 
   test("an unknown environment (scenario deleted) still carries a title for its fallback text", () => {

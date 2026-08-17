@@ -89,11 +89,11 @@ test("imports the fixture → 5 tests + 1 suite, ordered; the hard question maps
   assert.deepEqual(
     ordered.map((t) => t.userPrompt),
     [
-      "What is the distribution of incidents across all categories in the flag-1 app?",
-      "What is the distribution of incidents assigned to each human agent in the flag-3 app?",
-      "Is there a specific human agent who is assigned significantly more incidents than others in the flag-3 app?",
-      "How does the success rate of goals met across different categories compare in the flag-82 app?",
-      "How do cross-departmental tasks compare to non-cross-departmental tasks in terms of completion and target achievement percentages in the flag-82 app?",
+      "What is the distribution of incidents across all categories?",
+      "What is the distribution of incidents assigned to each human agent?",
+      "Is there a specific human agent who is assigned significantly more incidents than others?",
+      "How does the success rate of goals met across different categories compare?",
+      "How do cross-departmental tasks compare to non-cross-departmental tasks in terms of completion and target achievement percentages?",
     ],
     "tests are ordered by app then question",
   );
@@ -103,7 +103,7 @@ test("imports the fixture → 5 tests + 1 suite, ordered; the hard question maps
   assert.ok(hard, "the first (flag-1) test exists");
   assert.equal(
     hard.name,
-    "What is the distribution of incidents across all categories in the flag-1 app?",
+    "What is the distribution of incidents across all categories?",
   );
   assert.equal(hard.difficulty, "hard", "difficulty_level 4 → hard");
   assert.equal(hard.category, "descriptive", "category taken from the question type");

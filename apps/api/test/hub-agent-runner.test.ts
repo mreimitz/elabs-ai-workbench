@@ -587,7 +587,7 @@ test("rollback: agentRunnerMode 'structured' writes the synthetic child report m
 
 // ── [Defect 2] the report-extraction step no longer FAILS an agent that produced a real answer ─────────
 //
-// A Qlik-Answers FACADE model (`assistant|<server>|<assistant>`) has no structured-output mode, so the
+// A Acme-Answers FACADE model (`assistant|<server>|<assistant>`) has no structured-output mode, so the
 // old runner — which extracted with the AGENT's own model — threw and wrongly marked such an agent
 // `error`, discarding its real findings. The fix: extract with the PARENT/mission model (never the agent
 // model), and on a structured-incapable extraction model (or an extraction failure) fall back to a
@@ -858,13 +858,13 @@ test("defect-1c: a mission granting an UNAUTHENTICATED server is BLOCKED before 
   const mission = new HubMissionService({
     repository: repo,
     config: { ...MISSION_CONFIG, agentRunnerMode: "session", defaultAutonomy: "auto" },
-    planner: plannerGranting({ servers: { "srv-qlik": "all" }, builtins: [] }),
+    planner: plannerGranting({ servers: { "srv-acme": "all" }, builtins: [] }),
     runAgent: async () => {
       throw new Error("runAgent must not be called when the readiness gate blocks");
     },
     synthesizer: synthesizerStub,
-    // The Qlik server the plan grants is registered but NOT authenticated (a headless child can't OAuth).
-    isServerRunReady: () => ({ ready: false, serverName: "qlik-mreimitz" }),
+    // The Acme server the plan grants is registered but NOT authenticated (a headless child can't OAuth).
+    isServerRunReady: () => ({ ready: false, serverName: "acme-demo" }),
     now: () => "2026-07-19T00:00:00.000Z",
   });
   // The session scopes the server in (so it survives the clamp) — but it's unauthenticated.
@@ -872,7 +872,7 @@ test("defect-1c: a mission granting an UNAUTHENTICATED server is BLOCKED before 
     mode: "mission",
     model: PRICED_MODEL,
     autonomy: "auto",
-    toolScope: { servers: { "srv-qlik": "all" }, builtins: [] },
+    toolScope: { servers: { "srv-acme": "all" }, builtins: [] },
   });
   const { sink, events } = collectSink();
   const result = await mission.proposePlan({ sessionId: session.id, text: "Analyze.", sink });
@@ -882,8 +882,8 @@ test("defect-1c: a mission granting an UNAUTHENTICATED server is BLOCKED before 
   const err = events.find((e): e is Extract<HubEvent, { type: "error" }> => e.type === "error");
   assert.ok(err, "a recoverable authenticate error was emitted");
   assert.equal(err!.authRequired, true, "the error flags authRequired for the Authenticate affordance");
-  assert.deepEqual(err!.serverIds, ["srv-qlik"], "the error names the unready server id");
-  assert.ok(err!.message.includes("qlik-mreimitz"), "the message names the server to connect");
+  assert.deepEqual(err!.serverIds, ["srv-acme"], "the error names the unready server id");
+  assert.ok(err!.message.includes("acme-demo"), "the message names the server to connect");
 });
 
 test("defect-1c: a mission whose granted server IS ready runs normally", async () => {

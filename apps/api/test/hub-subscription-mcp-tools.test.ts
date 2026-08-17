@@ -190,7 +190,7 @@ const STDIO_SERVER: InternalServerConfig = {
 
 const HTTP_SERVER: InternalServerConfig = {
   id: "srv-http",
-  name: "Qlik",
+  name: "Acme",
   transport: "streamable_http",
   url: "https://tenant.example/mcp",
   headers: { "X-Api-Key": HTTP_HEADER_SECRET },
@@ -536,7 +536,7 @@ test("(2) the REAL tool set reaches assembleSessionPrompt — `tools: {}` is gon
     "the prompt names the granted tool by its fully-qualified SDK name",
   );
   assert.ok(prompt.includes("mcp__srv-http__run_query"));
-  assert.ok(prompt.includes("Files") && prompt.includes("Qlik"), "grouped by server display name");
+  assert.ok(prompt.includes("Files") && prompt.includes("Acme"), "grouped by server display name");
   assert.ok(
     !prompt.includes("No MCP tools are granted in this session"),
     "the tool-less fallback line is gone — that was the D-MI3 defect",

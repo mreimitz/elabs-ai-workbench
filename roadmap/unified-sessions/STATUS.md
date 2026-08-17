@@ -10,7 +10,7 @@
 - [x] WP1.2 SessionClock — Sonnet ✅ 15cff93, gate green, merged to feat/unified-sessions
 - [x] WP1.3 Engine adoption — Sonnet ✅ 3932996, gate green, merged (cedf0d8)
 - [x] WP1.4 Subscription adoption (queued phase, own concurrency setting) — Sonnet ✅ 61a6ab0, gate green (merge HELD for coordinated seam-close)
-- [x] WP1.5 Qlik adoption (deadline fix, prompt_rejected, wait budget) — Sonnet ✅ f95bb01, gate green (merge HELD for coordinated seam-close; see flags)
+- [x] WP1.5 the vendor adoption (deadline fix, prompt_rejected, wait budget) — Sonnet ✅ f95bb01, gate green (merge HELD for coordinated seam-close; see flags)
 - [x] WP1.6 Persistence & API (columns, /end, /seen, openQuestions) — Sonnet ✅ 913a9f6, gate green, merged to feat/unified-sessions (4f4ca16)
 - [x] WP1.R Adversarial review: same cause → same terminal, everywhere — Opus ✅ 971e9fe, invariant HOLDS; 3 phase-coherence defects → WP1.fix (running)
 
@@ -29,7 +29,7 @@ gate+build, seeded acceptance (WP3.R harness), CHANGELOG.
 
 ### Wave 3 — One console (web)
 - [x] WP3.1 Status module (locked label table, all surfaces) — Sonnet ✅ e7dbc07, gate green, merged (e11d4a8); 2 flags → WP3.3 (live phase) + WP3.R (8-surface conformance)
-- [x] WP3.2 Capability-driven console (KPI tiles, gating) — Sonnet ✅ 05e8e5b, gate green, merged (acb55d1); qlik est.-token-tiles change → owner acceptance
+- [x] WP3.2 Capability-driven console (KPI tiles, gating) — Sonnet ✅ 05e8e5b, gate green, merged (acb55d1); vendor est.-token-tiles change → owner acceptance
 - [x] WP3.3 Session affordances (End session, Waiting, needs-attention, seen) — Sonnet ✅ bbf7b8e, gate+build green, merged @ bbf7b8e
 - [x] WP3.4 Settings & launcher (timers, concurrency, effective limits) — Sonnet ✅ df7b4f8, gate green, merged (41091ef); D-US7 full editability → owner follow-up (WP3.5)
 - [x] WP3.R Visual + adversarial review (seeded runs, both themes, e2e) — Opus ✅ 89cb589 (42/42 grid PASS, both-theme rendered clean, 4 e2e pass); 2 defects → WP3.fix
@@ -63,7 +63,7 @@ files · blockers · next. Never rewrite history.)*
   `WAITING_INPUT_REASONS` · `ended` appended to `RUN_STATUSES`+`RUN_OUTCOMES` · `SessionCapabilities`
   (+schema) · `RunEvent` gains `{type:"phase",phase,detail?{position?,reason?,deadlineAt?}}` +
   `{type:"ping"}` + optional `stopReasonCode?` on `status` · `terminalFor()`/`TerminalCause` in
-  `session-terminal.ts` · `capabilitiesForProviderKind()`/per-kind caps + `QLIK_ANSWERS_WAIT_BUDGET_MS`
+  `session-terminal.ts` · `capabilitiesForProviderKind()`/per-kind caps + `VENDOR_ASSISTANT_WAIT_BUDGET_MS`
   in `session-capabilities.ts`. **Carry-forward (WP1.1 made design-neutral edits outside its nominal
   files to keep the gate green; downstream owners must reconcile):** `web/.../use-run-stream.ts`
   (`ended`→terminal group; owner **WP2.2**), `web/.../RunBar.tsx` (`ended` arms stubbed to clean-terminal
@@ -77,10 +77,10 @@ files · blockers · next. Never rewrite history.)*
 - 2026-07-16 — **WP4.1 DONE** · verdict PASS · gate green (typecheck exit 0; api 1841 pass incl. 28
   new facade tests, web 947+5 skip; Biome clean) · commit `d12bc73` on `feat/unified-sessions-wp4.1`
   (based on `bef1849`; **facade lane stays UNMERGED until WP5.1's mount seam**). NEW `apps/api/src/
-  openai-facade/**` (routes/translator/affinity-cache/auth/mapping/qlik-call) + 2 test files; **zero
+  openai-facade/**` (routes/translator/affinity-cache/auth/mapping/vendor-call) + 2 test files; **zero
   shared/db edits** (no seam with WP1.1). Golden byte-identity proven vs the real executor's
   `assistantText` over 3 stub fixtures. Stub-fetch-only honored (spy asserts tenant sees only
-  `Bearer <qlikKey>`, facade key never forwarded). **WP5.1 mount (one line in `apps/api/src/index.ts`):**
+  `Bearer <vendorKey>`, facade key never forwarded). **WP5.1 mount (one line in `apps/api/src/index.ts`):**
   `await registerOpenAiFacade(server, { facadeKey, resolveModel, listModels })` + the import. **Flag
   for WP4.R/WP5.1:** the facade key mirrors the mcp-secret *file* convention (random token in a 0600
   file) — the WP text's "encrypted-at-rest" is a slight mischaracterization; confirm acceptable.
@@ -100,14 +100,14 @@ files · blockers · next. Never rewrite history.)*
   `activeDurationMs` (excludes waiting), `totalDurationMs` (wall), `deadlineAt` (ISO for the phase
   event's `detail.deadlineAt`). Time-injection seam `time?: {now, schedule}` (default `REAL_SESSION_CLOCK_TIME`,
   unref'd timers). **Wall cap is NOT paused by waiting** (hard ceiling — verified). Pass a capability's
-  `waitBudgetMs` (e.g. Qlik's `QLIK_ANSWERS_WAIT_BUDGET_MS`=30 min) as `waitBudgetMs`. Clock never
+  `waitBudgetMs` (e.g. the vendor's `VENDOR_ASSISTANT_WAIT_BUDGET_MS`=30 min) as `waitBudgetMs`. Clock never
   emits/persists — executor calls `terminalFor` + emits. Next: WP1.3/1.4/1.5 held until WP1.6 also lands.
 
 - 2026-07-16 — **WP4.2 DONE** · verdict PASS · gate green (typecheck all; api **1855/1855**; web 947+5
   skip; Biome clean; full `pnpm -r build` also passed) · commit `eec43da` on `feat/unified-sessions-wp4.2`
   (off WP4.1; facade lane still UNMERGED until WP5.1). Added `concurrency.ts` (non-blocking
   reject-fast limiter → 429+Retry-After), `config.ts` (`maxConcurrency` dep→`OPENAI_FACADE_MAX_CONCURRENCY`→4;
-  `liveStream` dep→`OPENAI_FACADE_LIVE_STREAM`→false), `qlik-call.ts` `onAnswerDelta` live-stream seam,
+  `liveStream` dep→`OPENAI_FACADE_LIVE_STREAM`→false), `vendor-call.ts` `onAnswerDelta` live-stream seam,
   `user-guide/15-openai-endpoint.md`, and a REAL `createOpenAICompatible` AI-SDK smoke test
   (`@ai-sdk/openai-compatible` was already a dep — no owner dep decision needed). `index.ts`/`config/env.ts`/
   `shared` confirmed byte-untouched. Endpoint is not reachable in a running build until WP5.1 mounts it.
@@ -135,10 +135,10 @@ files · blockers · next. Never rewrite history.)*
   `ended` → an `ended` run under-detects in forensics (not a regression; ended sessions aren't errors, but
   flag for WP1.R to adjudicate/patch). No shared edits.
 - 2026-07-16 — Peak fan-out: dispatched **WP1.3** (engine → `-wp1.3`), **WP1.4** (subscription → `-wp1.4`),
-  **WP1.5** (qlik → `-wp1.5`), **WP2.1** (SSE cursor resume → `-wp2.1`), all Sonnet, off
+  **WP1.5** (vendor → `-wp1.5`), **WP2.1** (SSE cursor resume → `-wp2.1`), all Sonnet, off
   `feat/unified-sessions` @ 4f4ca16. Each carries the WP1.1+1.2+1.6 integration contract (terminalFor,
   SessionClock API, repo methods). Fences enforced: only WP1.3 may edit `run-service.ts`; WP1.4 owns
-  `config/env.ts`; WP1.5 the qlik executor; WP2.1 the routes.ts **stream section only**. WP4.R (facade
+  `config/env.ts`; WP1.5 the vendor executor; WP2.1 the routes.ts **stream section only**. WP4.R (facade
   review) still running. Integration worktree at `.claude/worktrees/us-integration`.
 
 - 2026-07-16 — **WP4.fix DONE** (WP4.R findings) · verdict PASS · gate green (api **1877/1877**; web
@@ -177,11 +177,11 @@ files · blockers · next. Never rewrite history.)*
   WP1.3/1.4/1.5 executors still running.
 
 - 2026-07-16 — **WP1.5 DONE** · verdict PASS · gate green (typecheck all; api **1892**; web 947+5; build+lint
-  clean) · commit `f95bb01` (only `qlik-answers-executor.ts` + 3 tests). Deadline→`aborted` bug FIXED
+  clean) · commit `f95bb01` (only `vendor-assistant-executor.ts` + 3 tests). Deadline→`aborted` bug FIXED
   (opt-in wall cap → `terminalFor("max_duration")` → `stopped/stopped_guardrail`; `aborted` reserved for
   real user stop; `resolveEndCause()` checks abort BEFORE clock.fired). AE-4→`prompt_rejected`; 429/AE-6→
-  `rate_limit` (added `httpStatus` to `QlikAnswersApiError`); other AE-x/thread/network→`provider_error`.
-  `waiting_input` bracketing with 30-min `QLIK_ANSWERS_WAIT_BUDGET_MS`; capabilities via `withAssistantIdentity`
+  `rate_limit` (added `httpStatus` to `VendorAssistantApiError`); other AE-x/thread/network→`provider_error`.
+  `waiting_input` bracketing with 30-min `VENDOR_ASSISTANT_WAIT_BUDGET_MS`; capabilities via `withAssistantIdentity`
   (assistantId/transport→appId→version-from-Etag) through a new `onCapabilities` seam. Used a local **ref'd**
   time source (unref'd default can starve a bare-promise test). **Merge HELD.**
 - 2026-07-16 — **WP1.4 DONE** · verdict PASS · gate green (typecheck all; api **1893**; web 947+5; build+lint
@@ -197,10 +197,10 @@ files · blockers · next. Never rewrite history.)*
 The three executors expose DI seams but **`run-service.ts` (WP1.3-owned) + `index.ts` must be wired** to
 actually persist for non-engine kinds, plus one contract refinement — to be closed in ONE coordinated
 seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
-1. **Capabilities/duration persistence** — thread `runId` into `run-service.ts`'s subscription + qlik
+1. **Capabilities/duration persistence** — thread `runId` into `run-service.ts`'s subscription + vendor
    dispatch and wire `recordCapabilities`/`onCapabilities`→`RunRepository.setCapabilities` and emit-meta/
    `recordDurations`→`RunRepository.recordDurations`. Until then these seams are no-ops (D-US4 unmet for
-   sub/qlik). (Engine path: confirm against WP1.3's report.)
+   sub/vendor). (Engine path: confirm against WP1.3's report.)
 2. **Subscription concurrency wiring** — `run-service.ts` `resolveClaudeSubscription()` `.shared`→`.runs`;
    `index.ts` `new SubscriptionConcurrencyPool(..., config.subscriptionRunsMaxConcurrency)` (3rd arg).
 3. **Phase-clear contract gap** — the `{type:"phase"}` `RunEvent` can't carry a null phase, so `runs.phase`
@@ -232,7 +232,7 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
 - 2026-07-16 — **Wave-1 executors + WP2.2 merged** → `feat/unified-sessions` **@ 697f66d**
   (WP1.1/1.2/1.3/1.4/1.5/1.6 + WP2.1/2.2). Three-way `ort` merge, zero conflicts; integration worktree
   installed + **base typecheck GREEN** (3-way merge integrates). Dispatched **WP1.7 seam-close**
-  (`feat/unified-sessions-wp1.7`, Sonnet) — Task A capabilities/durations persistence for sub+qlik in
+  (`feat/unified-sessions-wp1.7`, Sonnet) — Task A capabilities/durations persistence for sub+vendor in
   run-service.ts; Task B subscription `.shared`→`.runs` + index.ts pool arg; Task C phase-clear
   (`phase: RunPhase|null` additive + executors emit `phase:null` on resume + RunManager persist);
   Task D `max_tool_calls` StopReasonCode. Must land BEFORE WP1.R. Also dispatched **WP2.R** (stream
@@ -253,12 +253,12 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
 - 2026-07-16 — **WP1.7 DONE** · verdict PASS · gate green (shared 22; api **1924**; web 962+5) · commit
   `097845c`, FF-merged → `feat/unified-sessions` **@ 097845c** (fully-wired Wave 1 + Wave 2 stream).
   **Task A:** run-service.ts binds `recordCapabilities`/`recordDurations` (sub) + `onCapabilities` + emit-meta
-  forwarding (qlik) → GET /:id returns capabilities+durations for all 3 kinds. **Found+fixed a real bug:**
+  forwarding (vendor) → GET /:id returns capabilities+durations for all 3 kinds. **Found+fixed a real bug:**
   `finalize()` clobbered subscription `recordDurations` to NULL (terminal emit carries no meta) → `COALESCE`
   in the UPDATE. **Task B:** subscription concurrency `.shared`→`.runs` + `index.ts` pool 3rd arg. **Task C:**
   phase widened to `RunPhase|null` (additive; setPhase already accepted null); executors emit `{phase:null}`
   on resume — **caught a real bug:** subscription must clear UNCONDITIONALLY in `finally` (else stuck at
-  `waiting_input` on wait_expired/user_stop); qlik clears only when not aborted (always emits `stopping`).
+  `waiting_input` on wait_expired/user_stop); vendor clears only when not aborted (always emits `stopping`).
   **Task D:** `max_tool_calls` added (STOP_REASON_CODES 14→15, terminalFor table + test). 
 - 2026-07-16 — Dispatched **WP1.R** (Wave-1 adversarial review → `feat/unified-sessions-wp1.R`, Opus, off
   097845c) — REFUTE same-cause→same-triple (cause×executor matrix), event-log/phase coherence, old-run
@@ -281,15 +281,15 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
   full cause×executor matrix verified, no divergent hand-rolled terminal. Inv 3 (backward compat), Inv 4
   (grading/`ended`/new causes gradeable, byte-identity), Inv 5 (capabilities+durations per kind, COALESCE
   re-verified) all HOLD. All 3 flagged items NON-ISSUE/HOLDS (error-forensics `ended`=correct-by-design;
-  timer ref/unref=consistent+correct [qlik ref'd by design, engine/sub unref'd, all cancel on stop];
+  timer ref/unref=consistent+correct [vendor ref'd by design, engine/sub unref'd, all cancel on stop];
   user_stop suppression holds). **Inv 2 (phase coherence): 3 CONFIRMED defects → dispatched WP1.fix**
   (`feat/unified-sessions-wp1.fix`, Sonnet): **B2 HIGH** — stopping a *queued* subscription run emits
   `aborted` before `running` → trailing `running` overwrites → persisted `status='running'` orphan (fix:
   emit `running` before the abort check); **B1/B3 MEDIUM** — terminal runs leave `runs.phase` stuck
-  (engine/qlik `stopping`; `/end` `waiting_input`) — `finalize()` never clears phase (fix: `phase=NULL` in
+  (engine/vendor `stopping`; `/end` `waiting_input`) — `finalize()` never clears phase (fix: `phase=NULL` in
   the terminal UPDATE, resolves both). WP1.fix imports WP1.R's tests + flips B1/B2/B3 to passing regression
   guards. Minor non-defects noted: unpriced-cost-cap rejection emits `error/error` w/o stopReasonCode
-  (consistent across executors); qlik `resolveEndCause` natural-null path defended-by-contract.
+  (consistent across executors); vendor `resolveEndCause` natural-null path defended-by-contract.
 - 2026-07-16 — **Wave 3 (console) fan-out** (contract verified stable by WP1.R → safe to build in parallel
   with WP1.fix; disjoint web files): **WP3.1** status module (locked label table → `-wp3.1`), **WP3.2**
   capability-driven console (declarative KPI tiles + gating, remove providerKind forks → `-wp3.2`),
@@ -321,8 +321,8 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
   `guardrailFromReason` removed, console surfaces adopt one `StatusBadge`. WP3.2: declarative KPI tiles from
   `capabilities`, all `providerKind` forks removed (only pre-run/pre-contract `fallbackCapabilities` left),
   panes gate on capabilities. Merged Wave-3 trio (3.1/3.2/3.4) **base typechecks green** @ `acb55d1`.
-  **Owner-acceptance flag (WP3.2):** qlik now shows *estimated* token tiles (marked) instead of hiding them
-  (Phase-5 UX) — self-consistent with the locked manifest (qlik `tokens:"estimated"`, `contextWindow:false`
+  **Owner-acceptance flag (WP3.2):** vendor now shows *estimated* token tiles (marked) instead of hiding them
+  (Phase-5 UX) — self-consistent with the locked manifest (vendor `tokens:"estimated"`, `contextWindow:false`
   keeps context hidden); one-line revert (`tokens:"none"`) if the owner prefers hidden. **WP3.R adjudicates:**
   WP3.1 left 8 out-of-fence, test-locked surfaces (RunTableRow/CompareBar/FlowLanes/TestGroupRow/SkillUsageTab/
   SkillTraceView/ReportTab/compare-runs) + StepLog on the legacy `@brand/ui` closed-enum bridge — decide if
@@ -345,7 +345,7 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
   IMPLEMENTATION DONE.**
 - 2026-07-16 — Dispatched **WP3.R** (Wave-3 visual+adversarial review → `feat/unified-sessions-wp3.R`, Opus,
   off `bbf7b8e`) — reusable seed harness (kind×state, 08-rework pattern, no provider key), label-table
-  conformance sweep + adjudicate the 8-surface D-US5 gap + the qlik est-token-tiles question, e2e smoke
+  conformance sweep + adjudicate the 8-surface D-US5 gap + the vendor est-token-tiles question, e2e smoke
   extension (needs-attention / End-session / watchdog banner), best-effort both-theme rendered pass (else
   code-level + owner-acceptance). Gates Wave 3 → then Wave 5 (WP5.1 integration).
 
@@ -354,7 +354,7 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
   (`apps/api/test/support/session-seed-grid.ts` + script `pnpm --filter @mcp-token-footprint/api seed:sessions`)
   → **42/42 grid (3 kinds × 14 states) PASS** identical label+tone via real `GET /:id`→`deriveRunStatusView`;
   **both-theme rendered sweep clean** (real headless screenshots, no contrast/token issues); e2e extended
-  (needs-attention / ended chip / End-session confirm / reconnect banner). **qlik est-token-tiles: KEEP**
+  (needs-attention / ended chip / End-session confirm / reconnect banner). **vendor est-token-tiles: KEEP**
   (capability-correct, honestly marked; show/hide is owner UX preference but recommend keep). **2 defects →
   dispatched WP1.fix… → WP3.fix** (`feat/unified-sessions-wp3.fix`, Sonnet): (1) **MEDIUM** `ended` missing
   from 3 console terminal checks (RunConsole:1207, RunConsoleRoute:323, AnalyticsPanel:114) → ended session
@@ -382,7 +382,7 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
   files) · commit `dc43ff8`. (Resumed once after a transient API 529 — no work lost.) **Facade mounted:**
   `apps/api/src/index.ts` → `await registerOpenAiFacade(server, buildFacadeDeps({providerRepository, providers,
   dataDirectory, explicitKey: OPENAI_FACADE_KEY}))`; new `openai-facade/deps.ts` wires `facadeKey`
-  (loadOrMintFacadeKey 0600), `listModels` (aggregates `ProviderService.listModels` over qlik_answers creds,
+  (loadOrMintFacadeKey 0600), `listModels` (aggregates `ProviderService.listModels` over vendor_assistant creds,
   broken creds skipped), `resolveModel` (finds the cred whose roster lists the model → `getDecrypted`
   `{apiKey,baseUrl}`, same path as `RunService.resolveAnswers`, never re-exposed). Boot test (`openai-facade-mount.test.ts`,
   3 cases): `/openai/v1/models`→200 empty w/ no cred, 401 on bad key (key not leaked), 200 lists a seeded
@@ -396,18 +396,18 @@ seam-close pass AFTER WP1.3 lands + the three executors merge, BEFORE WP1.R:
   (333 lines). **✅ ALL CODE COMPLETE.** Remaining: WP5.2 docs (user-guide 09/10/11 + research cross-links).
 
 - 2026-07-16 — **WORKSTREAM COMPLETE** — **WP5.2 DONE** · user-guide updates (09-testing + 10-comparing-runs
-  + 11-qlik-answers) detailing the new session model, capability manifest, timers, and OpenAI-endpoint link;
+  + 11-vendor-assistant) detailing the new session model, capability manifest, timers, and OpenAI-endpoint link;
   research cross-link added to `research/unified-run-sessions/README.md` pointing to the authoritative
   STATUS.md ledger; STATUS finalized with WP5.1+WP5.2 ticked. All WPs (Waves 1–5 + facade lane 4.1–4.fix +
   review-driven fixes WP1.fix/WP3.fix/WP4.fix/WP2.3/WP1.7) are done; gates green throughout (`feat/unified-sessions`
   @ `61f8b9b`, full gate+build+seeded-acceptance passed, feat is a superset of main). Owner-acceptance items remain:
-  D-US7 full stall/wait editability (WP3.5 follow-up); WP3.2 qlik estimated-token tiles (WP3.R recommends keep);
-  D-US14 live-provider-key acceptance walk incl. facade against a real Qlik Cloud tenant.
+  D-US7 full stall/wait editability (WP3.5 follow-up); WP3.2 vendor estimated-token tiles (WP3.R recommends keep);
+  D-US14 live-provider-key acceptance walk incl. facade against a real the vendor cloud tenant.
 
 ## Blockers
 
 *(Waves 1+2+3 COMPLETE+reviewed; facade lane COMPLETE+mounted; WP5.1 integration DONE (feat @ 61f8b9b,
 full gate+build green, feat is a superset of main). WP5.2 (docs) is the only remaining WP.
  Main divergence = DOCS-ONLY, feat→main code-clean (assessed). OWNER escalations:
-D-US7 editability (WP3.5); WP3.2 qlik est-tokens (WP3.R: KEEP). WP5.1: facade mount + docs reconcile + NUL
+D-US7 editability (WP3.5); WP3.2 vendor est-tokens (WP3.R: KEEP). WP5.1: facade mount + docs reconcile + NUL
 cleanup + full build + seed acceptance. No hard blockers.)*

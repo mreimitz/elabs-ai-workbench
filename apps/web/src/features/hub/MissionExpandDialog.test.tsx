@@ -228,9 +228,9 @@ describe("MissionExpandDialog", () => {
         part: {
           type: "tool_call",
           toolCallId: "c1",
-          toolName: "mcp__qlik__search",
+          toolName: "mcp__acme__search",
           source: "mcp",
-          serverId: "qlik",
+          serverId: "acme",
           state: "input-available",
         },
         seq: 2,
@@ -240,7 +240,7 @@ describe("MissionExpandDialog", () => {
 
     const panel = screen.getByTestId("mission-expand-panel");
     expect(within(panel).getByText("Investigate B")).toBeInTheDocument();
-    expect(within(panel).getByTestId("tool-header").dataset.toolName).toBe("mcp__qlik__search");
+    expect(within(panel).getByTestId("tool-header").dataset.toolName).toBe("mcp__acme__search");
     expect(within(panel).getByText("Working")).toBeInTheDocument();
   });
 

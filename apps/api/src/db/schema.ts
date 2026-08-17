@@ -153,21 +153,15 @@ CREATE INDEX IF NOT EXISTS idx_mcp_oauth_flows_server
 
 CREATE TABLE IF NOT EXISTS provider_credentials (
   id TEXT PRIMARY KEY,
-  -- Qlik Answers (WP 0.2, D-QA1): 'qlik_answers' is admitted here. On an existing DB the CHECK is
-  -- widened by migration v23's table rebuild (SQLite cannot ALTER a CHECK in place).
   -- Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS6): 'claude_subscription' is
-  -- admitted here too. On an existing DB the CHECK is widened by migration v28's table rebuild (same
-  -- reason — SQLite cannot ALTER a CHECK in place). A 'claude_subscription' row never carries an
-  -- api_key_encrypted value — its auth resolves from assistant_credentials at run time (D-CS7).
-  kind TEXT NOT NULL CHECK (kind IN ('anthropic','openai','google','openai_compatible','ollama','qlik_answers','claude_subscription')),
+  -- admitted here. On an existing DB the CHECK is widened by migration v28's table rebuild (SQLite
+  -- cannot ALTER a CHECK in place) and narrowed again by v56's rebuild, which drops the retired
+  -- 'qlik_answers' kind. A 'claude_subscription' row never carries an api_key_encrypted value — its
+  -- auth resolves from assistant_credentials at run time (D-CS7).
+  kind TEXT NOT NULL CHECK (kind IN ('anthropic','openai','google','openai_compatible','ollama','claude_subscription')),
   label TEXT NOT NULL,
   base_url TEXT,
   api_key_encrypted TEXT,            -- enc:v1:…  (SecretStore); never returned
-  -- Qlik Answers (WP 0.2, D-QA1): optional link to a registered MCP server whose OAuth token / auth
-  -- headers this credential reuses instead of a standalone API key. ON DELETE SET NULL → deleting the
-  -- server leaves this NULL (surfaced as "auth broken"), never a dangling FK. NULL for own-key /
-  -- non-qlik credentials. Added on an existing DB by migration v23.
-  mcp_server_id TEXT REFERENCES mcp_servers(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -182,11 +176,6 @@ CREATE TABLE IF NOT EXISTS scenarios (
   default_profiles_json TEXT NOT NULL DEFAULT '[]',
   guardrails_json TEXT NOT NULL DEFAULT '{}',
   tool_loading_mode TEXT NOT NULL DEFAULT 'eager' CHECK (tool_loading_mode IN ('eager', 'deferred')),
-  -- Qlik Answers (WP 2.3, D-QA2): the per-scenario transport override, JSON-serialized (e.g.
-  -- '{"transport":"invoke"}'). NULL for every non-qlik scenario (and any qlik_answers scenario that
-  -- never set it) -- the repository hydrates NULL as an omitted answersMode, and the run engine
-  -- defaults an absent value to "stream". Migration v24 adds this column on an existing DB.
-  answers_mode TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );

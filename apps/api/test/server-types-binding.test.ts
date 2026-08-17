@@ -175,32 +175,32 @@ const byName = (bindings: SkillServerBinding[]) =>
 
 test("a frontmatter name that matches a TYPE resolves to the representative member (newest successful scan)", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const older = seedServer(serverRepo, "Qlik A", saas.id);
-  const newer = seedServer(serverRepo, "Qlik B", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const older = seedServer(serverRepo, "Acme A", saas.id);
+  const newer = seedServer(serverRepo, "Acme B", saas.id);
   // Both members have a success scan; `newer` also carries a NEWER FAILED scan (must be ignored — its
   // representative-candidate timestamp is its newest SUCCESS, not the later failure).
   seedScan(db, scans, older, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
   seedScan(db, scans, newer, { scannedAt: "2026-01-02T00:00:00.000Z", status: "success" });
   seedScan(db, scans, newer, { scannedAt: "2026-01-09T00:00:00.000Z", status: "failed" });
 
-  const skillId = seedSkill(repo, ["Qlik-SaaS"]);
+  const skillId = seedSkill(repo, ["Acme-SaaS"]);
   const bindings = await getBindings(app, skillId);
 
   assert.deepEqual(bindings, [
-    { serverName: "Qlik-SaaS", serverId: newer, typeId: saas.id, resolvedVia: "type" },
+    { serverName: "Acme-SaaS", serverId: newer, typeId: saas.id, resolvedVia: "type" },
   ]);
 });
 
-test("type resolution is CASE-INSENSITIVE (frontmatter `qlik-saas` matches type `Qlik-SaaS`)", async () => {
+test("type resolution is CASE-INSENSITIVE (frontmatter `acme-saas` matches type `Acme-SaaS`)", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const member = seedServer(serverRepo, "Qlik A", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const member = seedServer(serverRepo, "Acme A", saas.id);
   seedScan(db, scans, member, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
 
-  const skillId = seedSkill(repo, ["qlik-saas"]);
+  const skillId = seedSkill(repo, ["acme-saas"]);
   assert.deepEqual(await getBindings(app, skillId), [
-    { serverName: "qlik-saas", serverId: member, typeId: saas.id, resolvedVia: "type" },
+    { serverName: "acme-saas", serverId: member, typeId: saas.id, resolvedVia: "type" },
   ]);
 });
 
@@ -208,28 +208,28 @@ test("type resolution is CASE-INSENSITIVE (frontmatter `qlik-saas` matches type 
 
 test("tiebreak: two members with successful scans → the NEWER scanned_at is the representative", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const a = seedServer(serverRepo, "Qlik A", saas.id);
-  const b = seedServer(serverRepo, "Qlik B", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const a = seedServer(serverRepo, "Acme A", saas.id);
+  const b = seedServer(serverRepo, "Acme B", saas.id);
   seedScan(db, scans, a, { scannedAt: "2026-03-01T00:00:00.000Z", status: "success" });
   seedScan(db, scans, b, { scannedAt: "2026-05-01T00:00:00.000Z", status: "success" }); // newer
 
-  const skillId = seedSkill(repo, ["Qlik-SaaS"]);
+  const skillId = seedSkill(repo, ["Acme-SaaS"]);
   const bindings = await getBindings(app, skillId);
   assert.equal(bindings[0]?.serverId, b, "the member with the newer successful scan is chosen");
 });
 
 test("tiebreak: EQUAL scanned_at → the lower server id wins (deterministic)", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const a = seedServer(serverRepo, "Qlik A", saas.id);
-  const b = seedServer(serverRepo, "Qlik B", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const a = seedServer(serverRepo, "Acme A", saas.id);
+  const b = seedServer(serverRepo, "Acme B", saas.id);
   const at = "2026-06-06T00:00:00.000Z";
   seedScan(db, scans, a, { scannedAt: at, status: "success" });
   seedScan(db, scans, b, { scannedAt: at, status: "success" }); // same instant → id tiebreak
 
   const expected = [a, b].sort()[0]; // lower id (string ASC)
-  const skillId = seedSkill(repo, ["Qlik-SaaS"]);
+  const skillId = seedSkill(repo, ["Acme-SaaS"]);
   const bindings = await getBindings(app, skillId);
   assert.equal(bindings[0]?.serverId, expected, "the lower server id breaks a scanned_at tie");
 });
@@ -238,16 +238,16 @@ test("tiebreak: EQUAL scanned_at → the lower server id wins (deterministic)", 
 
 test("a TYPE whose members have NO successful scan → serverId null (honest unbound), typeId still set", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const m1 = seedServer(serverRepo, "Qlik A", saas.id);
-  const m2 = seedServer(serverRepo, "Qlik B", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const m1 = seedServer(serverRepo, "Acme A", saas.id);
+  const m2 = seedServer(serverRepo, "Acme B", saas.id);
   // Members exist but only failed/running scans → no representative.
   seedScan(db, scans, m1, { scannedAt: "2026-01-01T00:00:00.000Z", status: "failed" });
   seedScan(db, scans, m2, { scannedAt: "2026-01-02T00:00:00.000Z", status: "running" });
 
-  const skillId = seedSkill(repo, ["Qlik-SaaS"]);
+  const skillId = seedSkill(repo, ["Acme-SaaS"]);
   assert.deepEqual(await getBindings(app, skillId), [
-    { serverName: "Qlik-SaaS", serverId: null, typeId: saas.id, resolvedVia: "type" },
+    { serverName: "Acme-SaaS", serverId: null, typeId: saas.id, resolvedVia: "type" },
   ]);
 });
 
@@ -264,7 +264,7 @@ test("a TYPE with NO members at all → serverId null (honest unbound), typeId s
 
 test("a name matching a unique registered SERVER resolves to it — no typeId/resolvedVia (byte-identical)", async () => {
   const { app, repo, serverRepo, types } = await buildApp();
-  types.create({ name: "Qlik-SaaS" }); // a type exists, but the frontmatter names the SERVER
+  types.create({ name: "Acme-SaaS" }); // a type exists, but the frontmatter names the SERVER
   const alpha = seedServer(serverRepo, "Alpha");
 
   const skillId = seedSkill(repo, ["Alpha"]);
@@ -279,7 +279,7 @@ test("an exact SERVER name that ALSO matches a TYPE name resolves via the SERVER
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
   // A type AND a server share the name "Shared". Precedence step 2 (server) wins over step 3 (type).
   const shared = types.create({ name: "Shared" });
-  const typeMember = seedServer(serverRepo, "Qlik A", shared.id);
+  const typeMember = seedServer(serverRepo, "Acme A", shared.id);
   seedScan(db, scans, typeMember, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
   const serverNamedShared = seedServer(serverRepo, "Shared"); // an actual server literally named "Shared"
 
@@ -296,7 +296,7 @@ test("an exact SERVER name that ALSO matches a TYPE name resolves via the SERVER
 test("an AMBIGUOUS server name stays null and NEVER falls through to a same-named type", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
   const dupe = types.create({ name: "Dupe" }); // a type also named "Dupe"…
-  const member = seedServer(serverRepo, "Qlik A", dupe.id);
+  const member = seedServer(serverRepo, "Acme A", dupe.id);
   seedScan(db, scans, member, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
   // …and TWO registered servers both literally named "Dupe" → the server match is ambiguous.
   seedServer(serverRepo, "Dupe");
@@ -341,28 +341,28 @@ test("additive wire: an existing {serverName, serverId} PUT still round-trips un
 
 test("a persisted override WINS over type resolution (precedence step 1)", async () => {
   const { app, repo, serverRepo, scans, types, bindingRepo, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const member = seedServer(serverRepo, "Qlik A", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const member = seedServer(serverRepo, "Acme A", saas.id);
   seedScan(db, scans, member, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
   const picked = serverRepo.create({ name: "Hand-Picked", transport: "stdio", command: "echo" }).id;
 
-  const skillId = seedSkill(repo, ["Qlik-SaaS"]);
+  const skillId = seedSkill(repo, ["Acme-SaaS"]);
   // The developer explicitly bound the type-named entry to a specific server — the override wins.
-  bindingRepo.replaceForSkill(skillId, [{ serverName: "Qlik-SaaS", serverId: picked }]);
+  bindingRepo.replaceForSkill(skillId, [{ serverName: "Acme-SaaS", serverId: picked }]);
 
   assert.deepEqual(
     await getBindings(app, skillId),
-    [{ serverName: "Qlik-SaaS", serverId: picked }],
+    [{ serverName: "Acme-SaaS", serverId: picked }],
     "an explicit persisted pick wins and carries no type metadata",
   );
 });
 
 test("type binding response is redaction-safe — only binding fields, never server secrets/config", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
+  const saas = types.create({ name: "Acme-SaaS" });
   // A member whose env carries a secret; the binding response must never echo it.
   const member = serverRepo.create({
-    name: "Qlik A",
+    name: "Acme A",
     transport: "stdio",
     command: "echo",
     env: { API_KEY: "super-secret-value" },
@@ -370,7 +370,7 @@ test("type binding response is redaction-safe — only binding fields, never ser
   }).id;
   seedScan(db, scans, member, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
 
-  const skillId = seedSkill(repo, ["Qlik-SaaS"]);
+  const skillId = seedSkill(repo, ["Acme-SaaS"]);
   const res = await app.inject({ url: `/api/skills/${skillId}/bindings` });
   assert.equal(res.statusCode, 200, res.body);
   assert.ok(!res.body.includes("super-secret-value"), "no secret leaks into the binding response");
@@ -389,14 +389,14 @@ test("type binding response is redaction-safe — only binding fields, never ser
 
 test("without the ServerTypeRepository DI, a type-named entry degrades to honest unbound", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp({ withTypes: false });
-  const saas = types.create({ name: "Qlik-SaaS" });
-  const member = seedServer(serverRepo, "Qlik A", saas.id);
+  const saas = types.create({ name: "Acme-SaaS" });
+  const member = seedServer(serverRepo, "Acme A", saas.id);
   seedScan(db, scans, member, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
 
-  const skillId = seedSkill(repo, ["Qlik-SaaS"]);
+  const skillId = seedSkill(repo, ["Acme-SaaS"]);
   assert.deepEqual(
     await getBindings(app, skillId),
-    [{ serverName: "Qlik-SaaS", serverId: null }],
+    [{ serverName: "Acme-SaaS", serverId: null }],
     "no serverTypes wired ⇒ type-resolution is inert; the name is honest-unbound (never a 500)",
   );
 });
@@ -405,22 +405,22 @@ test("without the ServerTypeRepository DI, a type-named entry degrades to honest
 
 test("a skill mixing a server, a type, and an unresolved name resolves each independently (order kept)", async () => {
   const { app, repo, serverRepo, scans, types, db } = await buildApp();
-  const saas = types.create({ name: "Qlik-SaaS" });
+  const saas = types.create({ name: "Acme-SaaS" });
   const alpha = seedServer(serverRepo, "Alpha");
-  const member = seedServer(serverRepo, "Qlik A", saas.id);
+  const member = seedServer(serverRepo, "Acme A", saas.id);
   seedScan(db, scans, member, { scannedAt: "2026-01-01T00:00:00.000Z", status: "success" });
 
-  const skillId = seedSkill(repo, ["Alpha", "Qlik-SaaS", "Ghost"]);
+  const skillId = seedSkill(repo, ["Alpha", "Acme-SaaS", "Ghost"]);
   const bindings = await getBindings(app, skillId);
   assert.deepEqual(
     bindings.map((b) => b.serverName),
-    ["Alpha", "Qlik-SaaS", "Ghost"],
+    ["Alpha", "Acme-SaaS", "Ghost"],
     "frontmatter order preserved",
   );
   const map = byName(bindings);
   assert.deepEqual(map.get("Alpha"), { serverName: "Alpha", serverId: alpha });
-  assert.deepEqual(map.get("Qlik-SaaS"), {
-    serverName: "Qlik-SaaS",
+  assert.deepEqual(map.get("Acme-SaaS"), {
+    serverName: "Acme-SaaS",
     serverId: member,
     typeId: saas.id,
     resolvedVia: "type",

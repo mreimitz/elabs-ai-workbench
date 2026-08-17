@@ -32,7 +32,7 @@ port 8099) seeded with two real stdio MCP servers (`@modelcontextprotocol/server
   themed Radix `AlertDialog` (not `window.confirm`): destructive copy, **Esc and Cancel dismiss
   without deleting**, overlay-click intentionally does *not* dismiss (correct for a destructive
   confirm), **Delete** removes it from the UI and from `GET /api/servers`.
-- **Theme restriction ✅** — switcher shows exactly the two Qlik themes; setting
+- **Theme restriction ✅** — switcher shows exactly the two the vendor themes; setting
   `localStorage brand-ui-theme=blueprint` + reload resolves to `qlik-bright` and the bad value is
   sanitized.
 - **Cross-theme focus + contrast ✅** — visible green focus ring on dense rows / Compare table /

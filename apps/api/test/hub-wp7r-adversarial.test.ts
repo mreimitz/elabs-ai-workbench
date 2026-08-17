@@ -37,39 +37,39 @@ function tool(name: string, description = "", schema: unknown = { type: "object"
 //       for servers actually in the resolved catalog — an ungranted/unknown server never materializes.
 
 test("INV1: a forged plan granting servers the SCOPED parent excludes is dropped by effectiveAgentGrants (defense a)", () => {
-  const parentScope: HubToolGrants = { servers: { qlik: "all" }, builtins: [] };
-  // The forged plan tries to reach two servers the parent never granted, plus tighten qlik to a subset.
+  const parentScope: HubToolGrants = { servers: { acme: "all" }, builtins: [] };
+  // The forged plan tries to reach two servers the parent never granted, plus tighten acme to a subset.
   const forgedPlan: HubToolGrants = {
-    servers: { qlik: "all", secretdb: "all", filesystem: ["rm", "read"] },
+    servers: { acme: "all", secretdb: "all", filesystem: ["rm", "read"] },
     builtins: ["memory.propose_save"],
   };
   const effective = effectiveAgentGrants(forgedPlan, parentScope);
-  assert.deepEqual(Object.keys(effective.servers), ["qlik"], "only the in-scope server survives");
-  assert.equal(effective.servers.qlik, "all");
+  assert.deepEqual(Object.keys(effective.servers), ["acme"], "only the in-scope server survives");
+  assert.equal(effective.servers.acme, "all");
   assert.ok(!("secretdb" in effective.servers), "secretdb (outside parent scope) is dropped entirely");
   assert.ok(!("filesystem" in effective.servers), "filesystem (outside parent scope) is dropped entirely");
 });
 
 test("INV1: intersecting a plan's 'all' with a parent ALLOWLIST narrows to the allowlist (no widening)", () => {
-  const parentScope: HubToolGrants = { servers: { qlik: ["qlik_search"] }, builtins: [] };
-  const forgedPlan: HubToolGrants = { servers: { qlik: "all" }, builtins: [] };
+  const parentScope: HubToolGrants = { servers: { acme: ["acme_search"] }, builtins: [] };
+  const forgedPlan: HubToolGrants = { servers: { acme: "all" }, builtins: [] };
   const effective = effectiveAgentGrants(forgedPlan, parentScope);
-  assert.deepEqual(effective.servers.qlik, ["qlik_search"], "plan 'all' is bounded to the parent's allowlist");
+  assert.deepEqual(effective.servers.acme, ["acme_search"], "plan 'all' is bounded to the parent's allowlist");
 });
 
 test("INV1: resolveMcpGrants never yields tools for a server absent from the catalog (defense b)", () => {
   // Even handed the FORGED grant directly (simulating a bypass of defense a), the catalog is ground truth.
   const forgedChildGrant: HubToolGrants = {
-    servers: { qlik: "all", secretdb: "all", filesystem: ["rm"] },
+    servers: { acme: "all", secretdb: "all", filesystem: ["rm"] },
     builtins: [],
   };
   const catalog = new Map<string, HubMcpServerCatalog>([
-    ["qlik", { serverName: "Qlik", tools: [tool("qlik_search", "search app data")] }],
+    ["acme", { serverName: "Acme", tools: [tool("acme_search", "search app data")] }],
   ]);
   const entries = resolveMcpGrants(forgedChildGrant, catalog);
   const serverIds = [...new Set(entries.map((e) => e.serverId))];
-  assert.deepEqual(serverIds, ["qlik"], "ungranted/unknown servers never materialize as callable tools");
-  assert.deepEqual(entries.map((e) => e.def.name), ["qlik_search"]);
+  assert.deepEqual(serverIds, ["acme"], "ungranted/unknown servers never materialize as callable tools");
+  assert.deepEqual(entries.map((e) => e.def.name), ["acme_search"]);
 });
 
 // ── INV2 — Promotion safety ───────────────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@ test("INV1: resolveMcpGrants never yields tools for a server absent from the cat
 
 test("INV2: a hostile tool_search query naming UNGRANTED tools promotes nothing (only the deferred catalog is searchable)", async () => {
   const deferred = resolveMcpCatalog([
-    { serverId: "qlik", def: tool("qlik_search", "search app data") },
+    { serverId: "acme", def: tool("acme_search", "search app data") },
   ]);
   const promoted = new Set<string>();
   const search = createToolSearchBuiltin(deferred, { promoted, tokenCounter: counter, maxTokens: 1_000_000 });

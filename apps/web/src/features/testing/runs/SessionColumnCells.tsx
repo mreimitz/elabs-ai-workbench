@@ -12,7 +12,7 @@ import { activeOrWallDuration, lastActivityAt, waitingTimeMs } from "./session-c
 
 /**
  * Model/kind chip — capability-GATED (D-US4), never a `providerKind` fork: a backend with a
- * first-class named assistant (`capabilities.identity`, today only Qlik) shows its identity name;
+ * first-class named assistant (`capabilities.identity`, today only Acme) shows its identity name;
  * every other kind shows the scenario's plain model string. `model` is threaded in by the caller (the
  * scenario's `model` field — not carried on `RunSummary` itself).
  */
@@ -23,8 +23,7 @@ export function SessionKindChip({
   capabilities: SessionCapabilities | undefined;
   model: string | undefined;
 }) {
-  const identity = capabilities?.identity;
-  const label = identity ? (identity.name ?? identity.assistantId) : (model ?? "—");
+  const label = model ?? "—";
   return (
     <Badge variant="outline" className="max-w-[10rem] truncate font-normal">
       {label}

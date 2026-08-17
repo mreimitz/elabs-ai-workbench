@@ -3,7 +3,7 @@ import type { AlignedColumn, DisplayRow } from "./flow-types";
 
 /**
  * Collapse consecutive all-unchanged `node` columns into a single `group` display row (audit §H4/F3
- * — "changes first"). The audited trace was ~85% unchanged rows (9 identical `qlik_create_data_object`
+ * — "changes first"). The audited trace was ~85% unchanged rows (9 identical `acme_create_data_object`
  * cards in one turn ≈ 460px of no signal); collapsing lets the diff, not the noise, dominate the view.
  *
  * A column is collapsible only when it is a `kind: "node"` column whose {@link columnDiff} is

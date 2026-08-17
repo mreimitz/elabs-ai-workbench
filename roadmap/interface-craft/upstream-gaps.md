@@ -22,7 +22,7 @@ Each entry: the gap · the app-side override this plan ships · the deletion tri
   `qlik-dark --destructive-foreground` the dark-foreground treatment. Guarded by
   `apps/web/src/styles/tokens-contrast.test.ts` (asserts all 5 role pairs × 2 themes).
 - **Delete when.** brand-ui ships token values where every role⇄foreground pair clears 4.5:1 in both
-  qlik themes and the app's test passes against the un-overridden tokens.
+  vendor themes and the app's test passes against the un-overridden tokens.
 
 ## 2. Byte-identical semantic tokens (D-IC2) — `@brand/tokens`
 

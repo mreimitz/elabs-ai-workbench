@@ -40,13 +40,6 @@ export type EstimateEnvInput = {
   pricing: EnvPricing;
   /** The scenario's `guardrails.maxTurns`, if set — clamps the high (and possibly mid/low) turn count. */
   maxTurns?: number;
-  /**
-   * Qlik Answers (WP 3.2) — whether this environment's provider is `qlik_answers` (a tenant assistant,
-   * not a metered LLM). Drives {@link RunPlanEstimate.answersQuestions}: each such environment consumes
-   * ONE question per test × repetition (never a token-metered call). Default `false` so every existing
-   * caller/test is unaffected.
-   */
-  isQlikAnswers?: boolean;
 };
 
 /** One test, reduced to the only thing the estimate needs: its rough user-prompt token count. */
@@ -160,13 +153,6 @@ export function estimateRunPlan(
     ZERO_RANGE,
   );
 
-  // Qlik Answers (WP 3.2, D-QA5) — 1 question per prompt (test) × repetitions, summed across every
-  // `qlik_answers` environment in the plan (a suite matrix multiplies fast). Omitted entirely when the
-  // plan has no such environment — additive, never surfaced for an all-LLM plan.
-  const qlikAnswersEnvironmentCount = environments.filter((e) => e.isQlikAnswers).length;
-  const answersQuestions =
-    qlikAnswersEnvironmentCount > 0 ? qlikAnswersEnvironmentCount * testCount * reps : undefined;
-
   return {
     testCount,
     environmentCount,
@@ -177,7 +163,6 @@ export function estimateRunPlan(
     unpricedEnvironmentCount: envEstimates.filter((e) => !e.priced).length,
     uncappedEnvironmentCount: envEstimates.filter((e) => !e.hasCostCap).length,
     environments: envEstimates,
-    ...(answersQuestions !== undefined ? { answersQuestions } : {}),
   };
 }
 

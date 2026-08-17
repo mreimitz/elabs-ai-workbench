@@ -28,10 +28,10 @@ The **Testing** and **Setup** groups in the sidebar hold a few surfaces that wor
 - **Runs** — the feed of every run, with columns for status, turns, tools, tokens, cost, and the
   automatic quality grade.
 
-![The Environments list, showing the provider for each — anthropic models, a Claude subscription, and Qlik Answers assistants side by side.](./images/16-environments.png)
+![The Environments list, showing the provider for each — anthropic models and a Claude subscription side by side.](./images/16-environments.png)
 
-Notice the **Provider** column above: a model provider (like `anthropic`) and a **Qlik Answers**
-assistant are both valid run targets. More on that in [Qlik Answers](./11-qlik-answers.md).
+Notice the **Provider** column above: every configured provider — a metered API key or the signed-in
+Claude subscription — is a valid run target.
 
 ## Sessions and runs — what's which
 
@@ -52,12 +52,11 @@ surface — the runs feed, the console, comparison views, and reports. The same 
 reads the same way: `Queued` (plus position in the queue), `Pending`, `Running`, `Waiting for you`,
 `Stopping…`, `Reviewing…`, `Completed`, `Ended`, `Stopped — time limit`, `Stopped — stalled`,
 `Stopped — context overflow`, `Stopped — wait timeout`, `Stopped by you`, `Failed`, and
-`Assertions failed`. The app also uses guardrail-specific labels like `Rejected by assistant`
-(a Qlik Answers guard), and shows cost/token/tool limits when they're hit.
+`Assertions failed`. The app also shows cost/token/tool limits when they're hit.
 
 The **wait timeout** is how long a session will wait for you to provide input. By default it's
 **10 minutes** — if you don't respond in that time, the session ends with `Stopped — wait timeout`.
-Qlik Answers assistants default to a longer **30-minute** wait. You can change these defaults in
+You can change these defaults in
 **Settings → Testing**, and override them per environment. While waiting, the session's active
 timer pauses — it resumes when you respond — so a lunch break doesn't count against your run's
 cost.

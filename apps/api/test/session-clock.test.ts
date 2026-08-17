@@ -192,7 +192,7 @@ test("default wait budget is DEFAULT_WAIT_BUDGET_MS (10 min) when unconfigured",
   assert.equal(clock.fired?.cause, "wait_expired");
 });
 
-test("per-call waitBudgetMsOverride (e.g. Qlik's 30-min budget) overrides the clock default", () => {
+test("per-call waitBudgetMsOverride (e.g. Acme's 30-min budget) overrides the clock default", () => {
   const { time, advance } = createFakeSessionClockTime();
   const clock = new SessionClock({ waitBudgetMs: 10 * 60_000, time });
   clock.start();

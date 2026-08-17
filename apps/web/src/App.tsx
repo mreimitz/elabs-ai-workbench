@@ -22,7 +22,6 @@ import type {
   HealthPayload,
   OAuthClientInput,
   OAuthStartResponse,
-  QlikTenantProbe,
   ScanDetail,
   ScanSummary,
   ServerConfig,
@@ -50,7 +49,6 @@ import {
   type ReauthContext,
 } from "./features/servers/McpAuthProvider";
 import { ManageServerTypesDialog } from "./features/servers/ManageServerTypesDialog";
-import { QlikAnswersOfferDialog } from "./features/servers/QlikAnswersOfferDialog";
 import { ServerRail } from "./features/servers/ServerRail";
 import { ServerWizard } from "./features/servers/ServerWizard";
 import { SettingsDialog } from "./features/settings/SettingsView";
@@ -71,7 +69,6 @@ import {
   listCollections,
   listServerTypes,
   listSkills,
-  probeServerAnswers,
   probeSkillRepo,
   pullSkill,
   testServerConnection,
@@ -407,14 +404,6 @@ export function App() {
   const [wizardReason, setWizardReason] = useState<"reauth" | undefined>(undefined);
   const [reauthContext, setReauthContext] = useState<ReauthContext | undefined>(undefined);
   const [pendingDeleteServer, setPendingDeleteServer] = useState<ServerConfig | null>(null);
-  // Qlik Answers onboarding (WP 2.2) — the post-save "set up Qlik Answers" offer, opened by
-  // `ServerWizard`'s `onOfferAnswers` once the user accepts. `null` = closed/nothing to show; the
-  // dialog itself owns every write (provider + environments), never this component.
-  const [answersOffer, setAnswersOffer] = useState<{
-    serverId: string;
-    serverName: string;
-    probe: QlikTenantProbe;
-  } | null>(null);
   // Per-action / per-entity busy keys (e.g. `server:scan:<id>`), NOT a single global slot: two
   // different actions (scan server A while testing server B, refresh while a scan runs) must be
   // independently in-flight, and each affordance shows "busy" for ITS key only. `beginBusy` on
@@ -1499,8 +1488,6 @@ export function App() {
           // wrapped testServer, which would try to re-open this very window on an authRequired result.
           onTestServer={testServerConnection}
           onUpdateServer={updateServer}
-          onProbeAnswers={probeServerAnswers}
-          onOfferAnswers={setAnswersOffer}
         />
         {/* Manage server types (roadmap/server-types WP 2.2). `onChanged` = the app's refreshAll so
             BOTH server types AND servers reload (a delete detaches members → their typeId changes). */}
@@ -1510,20 +1497,6 @@ export function App() {
           serverTypes={serverTypes}
           onChanged={refreshAll}
         />
-        {/* Qlik Answers onboarding (WP 2.2) — the post-accept setup flow (provider + environments),
-            reached from the wizard's offer step. Conditionally mounted so each acceptance starts a
-            fresh instance (no state carried between servers). */}
-        {answersOffer ? (
-          <QlikAnswersOfferDialog
-            open={answersOffer !== null}
-            onOpenChange={(open) => {
-              if (!open) setAnswersOffer(null);
-            }}
-            serverId={answersOffer.serverId}
-            serverName={answersOffer.serverName}
-            probe={answersOffer.probe}
-          />
-        ) : null}
         {/* SV3 · WP 1.5: server delete is a Tier-1 ConfirmDialog, triggered only from the registry
             row menu (it left the edit wizard footer). */}
         <ConfirmDialog

@@ -55,7 +55,7 @@ export function ToolCallCard({
   const status = toBrandStatus(call);
   // The Agent SDK reports an MCP tool by its fully-qualified `mcp__<serverKey>__<toolName>` name
   // (subscription path, WP 1.3). Strip the `mcp__<serverKey>__` prefix so it reads as the plain tool
-  // name (`qlik_search`), matching the API-keyed path; non-prefixed names pass through unchanged.
+  // name (`acme_search`), matching the API-keyed path; non-prefixed names pass through unchanged.
   const toolLabel = call.toolName.startsWith("mcp__")
     ? call.toolName.split("__").slice(2).join("__") || call.toolName
     : call.toolName;

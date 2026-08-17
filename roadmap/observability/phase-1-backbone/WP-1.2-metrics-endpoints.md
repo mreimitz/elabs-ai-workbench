@@ -45,7 +45,7 @@ windowed rules (4.2), and issues (5.1).
 
 - [ ] Bucketing, groupBy, every measure, and RunFilter composition each covered by fixture tests
       (incl. timezone-safe day buckets — document the bucketing timezone: UTC).
-- [ ] Capability split verified: a mixed fixture (API + CLI + qlik runs) yields separate labelled
+- [ ] Capability split verified: a mixed fixture (API + CLI + vendor runs) yields separate labelled
       series; no blended token/cost sum anywhere in the response.
 - [ ] `meanScore` equals the suite-analytics selection on the same fixture.
 - [ ] Perf test green at 50k runs; indexes claimed via migration + both paths tested.

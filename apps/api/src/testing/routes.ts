@@ -18,7 +18,6 @@ import {
   type RunStartResponse,
 } from "@mcp-token-footprint/shared";
 import { httpError } from "../utils/errors.js";
-import { deriveLegacyAnswerStep } from "./qlik-answers-message.js";
 import type { RunManager } from "./run-manager.js";
 import { isTerminalStatus } from "./run-manager.js";
 import type { RunRepository } from "./run-repository.js";
@@ -234,14 +233,10 @@ function registerRunRoutes(
     return streamRun(request, reply, runService, runs, id);
   });
 
-  // Detail (RunDetail; full replay) — 404 if unknown (getRun throws a 404 httpError). For a LEGACY
-  // qlik_answers answer step (rawResponse captured, but no blocks/reasoningSections), derive the Phase 5
-  // rendering fields at READ time from the already-persisted payload (D-QA8) — no migration, no row
-  // rewrite. Non-qlik steps and post-5.2 runs pass through unchanged (byte-identical replay).
+  // Detail (RunDetail; full replay) — 404 if unknown (getRun throws a 404 httpError).
   app.get("/api/runs/:id", async (request) => {
     const { id } = request.params as { id: string };
-    const detail = runs.getRun(id);
-    return { ...detail, steps: detail.steps.map(deriveLegacyAnswerStep) };
+    return runs.getRun(id);
   });
 
   // Skills this run loaded (footprint + realized read-only disclosure usage) — powers the run-console

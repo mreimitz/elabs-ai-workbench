@@ -17,7 +17,7 @@ const SKILL_MD = [
   "name: demo",
   "description: A demo skill for the bindings-panel test.",
   "servers:",
-  "  - Qlik-SaaS",
+  "  - Acme-SaaS",
   "  - files",
   "---",
   "",
@@ -28,14 +28,14 @@ const SKILL_MD = [
 ].join("\n");
 
 const BINDINGS: SkillServerBinding[] = [
-  { serverName: "Qlik-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
+  { serverName: "Acme-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
   { serverName: "files", serverId: "s-files" },
 ];
 
 const TYPES: ServerType[] = [
   {
     id: "t-saas",
-    name: "Qlik-SaaS",
+    name: "Acme-SaaS",
     status: "production",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -44,13 +44,13 @@ const TYPES: ServerType[] = [
 ];
 
 const SERVERS = [
-  { id: "s-rep", name: "Qlik Prod B" },
+  { id: "s-rep", name: "Acme Prod B" },
   { id: "s-files", name: "files" },
 ];
 
 // The representative's tools (grouped under its own name — how WP 3.1 bound-tools reports them).
 const BOUND_TOOLS: BoundTool[] = [
-  { serverId: "s-rep", serverName: "Qlik Prod B", toolName: "get_app", schemaParams: [], definitionTokens: 40 },
+  { serverId: "s-rep", serverName: "Acme Prod B", toolName: "get_app", schemaParams: [], definitionTokens: 40 },
   { serverId: "s-files", serverName: "files", toolName: "read_file", schemaParams: [], definitionTokens: 20 },
 ];
 
@@ -119,7 +119,7 @@ describe("SkillBindingsPanel", () => {
     // captures a chip node that the resolution re-render is about to swap out.
     expect(await screen.findByText("Type")).toBeInTheDocument();
     // The type chip carries the TYPE name + the "Production" lifecycle status.
-    expect(screen.getByText("Qlik-SaaS")).toBeInTheDocument();
+    expect(screen.getByText("Acme-SaaS")).toBeInTheDocument();
     expect(screen.getByText("Production")).toBeInTheDocument();
     // A plain server binding is present and is NOT labeled a Type (exactly one "Type" indicator).
     expect(screen.getByText("files")).toBeInTheDocument();
@@ -130,7 +130,7 @@ describe("SkillBindingsPanel", () => {
     renderPanel({ isHeadVersion: true });
     expect(await screen.findByRole("button", { name: /^Bind server/i })).toBeEnabled();
     // Each resolved chip exposes an unbind × once bindings resolve.
-    expect(await screen.findByLabelText("Unbind server type Qlik-SaaS")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Unbind server type Acme-SaaS")).toBeInTheDocument();
     expect(await screen.findByLabelText("Unbind server files")).toBeInTheDocument();
   });
 
@@ -140,7 +140,7 @@ describe("SkillBindingsPanel", () => {
     expect(await screen.findByText("Type")).toBeInTheDocument();
     // … but there is no Bind action and no unbind control, plus the "switch to Latest" hint.
     expect(screen.queryByRole("button", { name: /^Bind server/i })).toBeNull();
-    expect(screen.queryByLabelText("Unbind server type Qlik-SaaS")).toBeNull();
+    expect(screen.queryByLabelText("Unbind server type Acme-SaaS")).toBeNull();
     expect(screen.getByText(/switch to Latest/i)).toBeInTheDocument();
   });
 

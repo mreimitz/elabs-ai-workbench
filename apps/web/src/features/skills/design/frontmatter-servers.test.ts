@@ -16,7 +16,7 @@ description: Does things.
 keywords:
   - alpha
 servers:
-  - qlik-cloud
+  - acme-cloud
   - files
 license: MIT
 ---
@@ -41,7 +41,7 @@ describe("parseFrontmatterServers", () => {
   });
 
   test("block list → names in order", () => {
-    expect(parseFrontmatterServers(DOC)).toEqual(["qlik-cloud", "files"]);
+    expect(parseFrontmatterServers(DOC)).toEqual(["acme-cloud", "files"]);
   });
 
   test("block list tolerates quotes, blank lines, comments, and trailing comments", () => {
@@ -159,8 +159,8 @@ describe("addFrontmatterServer", () => {
   });
 
   test("plain-safe names stay unquoted", () => {
-    const next = addFrontmatterServer("---\nname: x\n---\n", "qlik_cloud-2.dev/x");
-    expect(next).toContain("- qlik_cloud-2.dev/x\n");
+    const next = addFrontmatterServer("---\nname: x\n---\n", "acme_cloud-2.dev/x");
+    expect(next).toContain("- acme_cloud-2.dev/x\n");
   });
 
   test("opaque servers value (nested map) is never edited", () => {
@@ -184,7 +184,7 @@ describe("addFrontmatterServer", () => {
 
 describe("removeFrontmatterServer", () => {
   test("one of several block items → only that line removed", () => {
-    expect(removeFrontmatterServer(DOC, "qlik-cloud")).toBe(DOC.replace("  - qlik-cloud\n", ""));
+    expect(removeFrontmatterServer(DOC, "acme-cloud")).toBe(DOC.replace("  - acme-cloud\n", ""));
     expect(removeFrontmatterServer(DOC, "files")).toBe(DOC.replace("  - files\n", ""));
   });
 

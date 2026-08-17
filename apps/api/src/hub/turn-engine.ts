@@ -502,7 +502,7 @@ export type HubTurnInput = {
   promptMode: HubPromptMode;
   /** The AI-SDK model, already built via `providers/registry.modelFor(cred, effectiveModel)`. */
   model: LanguageModel;
-  /** The AI-SDK provider kind — selects the provider-actual usage mapping (never `qlik_answers`). */
+  /** The AI-SDK provider kind — selects the provider-actual usage mapping (never `acme_answers`). */
   providerKind: ProviderKind;
   /** The EFFECTIVE per-message model id (override ?? session.model) — the pricing/context key + the
    *  `model` stamped on the settled `assistant_message` (R-SES10 per-message transparency). */

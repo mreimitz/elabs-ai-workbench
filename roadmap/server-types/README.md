@@ -1,7 +1,7 @@
 # Server types — implementation plan · **PRIORITY: HIGH**
 
 Owner directive (2026-07-12): MCP servers need a first-class **type** (grouping) concept. Example:
-most Qlik servers are type **Qlik-SaaS** (current production); **qlik-stage** is beta / release
+most the vendor servers are type **Acme-SaaS** (current production); **acme-stage** is beta / release
 candidate. Servers of one type share the same tool surface and configuration shape, so a skill
 authored against one of them should bind to the **type**, not to a single server. The Servers view
 must let the owner create and manage types (not just servers) and group/filter servers by type and
@@ -81,7 +81,7 @@ Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp server-types`).
    type with status badges makes prod vs. beta vs. RC legible at a glance.
 3. **Safer operations.** Status on the type marks *deprecated* / *beta* fleets explicitly —
    pickers (environments, compare) can warn or de-emphasize non-production servers.
-4. **Drift detection gets a target.** "Do all members of Qlik-SaaS have the same tool surface as
+4. **Drift detection gets a target.** "Do all members of Acme-SaaS have the same tool surface as
    the representative?" is a well-posed future check (security-posture / advisor), impossible while
    grouping lives only in the owner's head.
 5. **Fleet-level analytics unlocked.** Advisor's planned fleet report, CI per-type baselines, and

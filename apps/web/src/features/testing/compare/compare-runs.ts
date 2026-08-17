@@ -371,7 +371,7 @@ export type ChangeMarkerKind = "server-scan" | "skill-version" | "model" | "load
 
 export type ChangeMarker = {
   kind: ChangeMarkerKind;
-  /** The compact chip label (already human — e.g. "qlik-stage re-scanned (+2 tools)"). */
+  /** The compact chip label (already human — e.g. "acme-stage re-scanned (+2 tools)"). */
   label: string;
   /** The longer tooltip / aria sentence. */
   detail: string;

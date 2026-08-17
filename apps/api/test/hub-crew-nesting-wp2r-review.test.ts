@@ -651,20 +651,20 @@ test("PROBE 7a REFUTED — TWO empty crew-refs deep: the root-dropped server is 
 test("PROBE 7b REFUTED — an EXPLICIT crew-ref narrowing binds through a DEEPER empty crew-ref and a broad grandchild role cannot re-widen it", async () => {
   const { repo } = open();
   const g = graph(repo);
-  // The level-3 role WANTS all of qlik; an ENCLOSING crew-ref (level 1) narrows qlik → [search]; a DEEPER
+  // The level-3 role WANTS all of acme; an ENCLOSING crew-ref (level 1) narrows acme → [search]; a DEEPER
   // empty crew-ref (level 2) must PRESERVE that narrowing (not re-widen back to the root's "all").
-  const deepLeaf = g.role("Grandchild", { servers: { qlik: "all" }, builtins: [] });
+  const deepLeaf = g.role("Grandchild", { servers: { acme: "all" }, builtins: [] });
   const crewC = g.crew("crewC", "Deep Crew", "parallel", [{ agentId: deepLeaf.id }]);
   const crewMid = g.crew("crewMid", "Mid Crew", "parallel", [{ crewId: crewC.id }]); // empty crew-ref (level 2)
   g.crew("crewP", "Parent", "parallel", [
     // The explicit narrowing lives on the LEVEL-1 crew-ref.
-    { crewId: crewMid.id, toolGrants: { servers: { qlik: ["search"] }, builtins: [] } },
+    { crewId: crewMid.id, toolGrants: { servers: { acme: ["search"] }, builtins: [] } },
   ]);
 
   const { sink } = collectSink();
   const service = makeService({ repository: repo, resolveCrew: g.resolveCrew, runAgent: leafRunner({}), config: { maxDepth: 4 } });
-  // Root scope allows ALL of qlik — the crew-ref's OWN [search] narrowing must bind, not the root's "all".
-  const session = scopedSession(repo, { servers: { qlik: "all" }, builtins: [] });
+  // Root scope allows ALL of acme — the crew-ref's OWN [search] narrowing must bind, not the root's "all".
+  const session = scopedSession(repo, { servers: { acme: "all" }, builtins: [] });
   const mission = await service.proposePlan({ sessionId: session.id, text: "do", sink, crewId: "crewP" });
   assert.equal(mission.status, "completed");
 
@@ -673,7 +673,7 @@ test("PROBE 7b REFUTED — an EXPLICIT crew-ref narrowing binds through a DEEPER
   const level3 = repo.listMissionAgentSessions(deepMission.id)[0]!;
   assert.deepEqual(
     level3.toolScope?.servers,
-    { qlik: ["search"] },
+    { acme: ["search"] },
     "the level-1 [search] narrowing binds through the level-2 empty crew-ref — the broad grandchild role cannot re-widen",
   );
 });

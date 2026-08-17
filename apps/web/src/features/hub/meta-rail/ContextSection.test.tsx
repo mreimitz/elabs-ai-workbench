@@ -405,8 +405,8 @@ describe("ContextSection (WP1.2, D-HUX3/D-HUX11 — project + servers/skills/mem
         deferred: [],
         serverStatuses: [
           serverStatus({
-            serverId: "qlik",
-            serverName: "qlik-mreimitz",
+            serverId: "acme",
+            serverName: "acme-demo",
             status: "error",
             message: "connection refused",
           }),
@@ -421,15 +421,15 @@ describe("ContextSection (WP1.2, D-HUX3/D-HUX11 — project + servers/skills/mem
     // The old bug: a dropped server had zero tools, so the whole rail showed "No MCP servers" — the
     // server had silently vanished. It must be visible now, with its name and an error chip.
     expect(screen.queryByText("No MCP servers")).not.toBeInTheDocument();
-    expect(screen.getByText("qlik-mreimitz")).toBeInTheDocument();
+    expect(screen.getByText("acme-demo")).toBeInTheDocument();
     expect(screen.getByText("Unreachable")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry connecting to qlik-mreimitz" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry connecting to acme-demo" })).toBeInTheDocument();
   });
 
   test("clicking Retry reconnects the server, toasts, and re-fetches the inspector", async () => {
     vi.mocked(api.reconnectHubMcpServer).mockResolvedValue({ ok: true });
     const refreshed = inspector({
-      tools: { ...inspector().tools, serverStatuses: [serverStatus({ serverId: "qlik", status: "connected" })] },
+      tools: { ...inspector().tools, serverStatuses: [serverStatus({ serverId: "acme", status: "connected" })] },
     });
     vi.mocked(api.getHubSessionContext).mockResolvedValue(refreshed);
 
@@ -437,7 +437,7 @@ describe("ContextSection (WP1.2, D-HUX3/D-HUX11 — project + servers/skills/mem
       tools: {
         ...inspector().tools,
         serverStatuses: [
-          serverStatus({ serverId: "qlik", serverName: "qlik-mreimitz", status: "error", message: "down" }),
+          serverStatus({ serverId: "acme", serverName: "acme-demo", status: "error", message: "down" }),
         ],
       },
     });
@@ -447,9 +447,9 @@ describe("ContextSection (WP1.2, D-HUX3/D-HUX11 — project + servers/skills/mem
       </TooltipProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry connecting to qlik-mreimitz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry connecting to acme-demo" }));
 
-    await waitFor(() => expect(api.reconnectHubMcpServer).toHaveBeenCalledWith("qlik"));
+    await waitFor(() => expect(api.reconnectHubMcpServer).toHaveBeenCalledWith("acme"));
     await waitFor(() => expect(api.getHubSessionContext).toHaveBeenCalledWith("s1"));
   });
 
@@ -459,7 +459,7 @@ describe("ContextSection (WP1.2, D-HUX3/D-HUX11 — project + servers/skills/mem
       tools: {
         ...inspector().tools,
         serverStatuses: [
-          serverStatus({ serverId: "qlik", serverName: "qlik-mreimitz", status: "error", message: "down" }),
+          serverStatus({ serverId: "acme", serverName: "acme-demo", status: "error", message: "down" }),
         ],
       },
     });
@@ -469,12 +469,12 @@ describe("ContextSection (WP1.2, D-HUX3/D-HUX11 — project + servers/skills/mem
       </TooltipProvider>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Retry connecting to qlik-mreimitz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Retry connecting to acme-demo" }));
 
-    await waitFor(() => expect(api.reconnectHubMcpServer).toHaveBeenCalledWith("qlik"));
+    await waitFor(() => expect(api.reconnectHubMcpServer).toHaveBeenCalledWith("acme"));
     // The rail stays intact — the chip and Retry button are still there for another attempt.
     expect(await screen.findByText("Unreachable")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry connecting to qlik-mreimitz" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Retry connecting to acme-demo" })).toBeInTheDocument();
   });
 
   test("a server with no known status (pre-WP1.3 session / never attempted) renders exactly like before — no chip", () => {

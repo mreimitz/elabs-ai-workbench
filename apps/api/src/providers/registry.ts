@@ -12,20 +12,10 @@ import { httpError } from "../utils/errors.js";
 
 // A decrypted credential — never leaves the API process. Mirrors
 // ProviderRepository.getDecrypted's return shape.
-//
-// Qlik Answers (WP 0.2, D-QA1): a `qlik_answers` credential resolves to a usable `apiKey` + `baseUrl`
-// from EITHER source, transparently — the downstream roster (WP 0.3) / executor (WP 1.1) read only
-// `apiKey` (the bearer token) + `baseUrl` (the tenant origin) and never know which source produced it:
-//   - own-key credential → `apiKey` is the decrypted stored key, `baseUrl` is the stored tenant origin.
-//   - linked credential  → `apiKey` is the linked MCP server's OAuth access token or its auth-header
-//     bearer, `baseUrl` is that server's tenant origin, and `mcpServerId` records the link.
-// A broken link never yields a partial credential — `getDecrypted` throws before returning one.
 export type DecryptedCredential = {
   kind: ProviderKind;
   baseUrl?: string;
   apiKey?: string;
-  // Set only when the credential resolved its auth from a linked MCP server (the link's server id).
-  mcpServerId?: string;
 };
 
 // Default base URL for a local Ollama daemon's OpenAI-compatible endpoint. Ollama exposes an
@@ -68,13 +58,8 @@ export function modelFor(cred: DecryptedCredential, model: string): LanguageMode
       const baseURL = cred.baseUrl?.trim() ? cred.baseUrl.trim() : DEFAULT_OLLAMA_BASE_URL;
       return createOpenAICompatible({ name: "ollama", baseURL, apiKey: cred.apiKey })(model);
     }
-    case "qlik_answers":
-      // Qlik Answers is not chat-completions-shaped (a RAG product API, not an LLM). It never runs
-      // through the AI SDK loop / `modelFor()` — the run engine branches to a dedicated executor
-      // (`qlik-answers-executor`, roadmap/qlik-answers/, WP 1.1) at `RunService.execute()` instead.
-      throw httpError(400, "qlik_answers uses the answers executor, not modelFor()");
     case "claude_subscription":
-      // Claude subscription (roadmap/claude-subscription/, WP 0.1) mirrors `qlik_answers`: it never
+      // Claude subscription (roadmap/claude-subscription/, WP 0.1) never
       // runs through the AI SDK loop / `modelFor()` (no API key — auth resolves from the owner's
       // signed-in subscription). The run engine branches to a dedicated executor
       // (`claude-subscription-executor`, later WP) at `RunService.execute()` instead.

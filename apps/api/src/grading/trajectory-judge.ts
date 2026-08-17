@@ -237,7 +237,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 // ── Prompt (ported + adapted from compare_tools_vs_code SYSTEM_MESSAGE + COMPARISON_PROMPT) ─────────
 
 /**
- * Ported from the prototype's `SYSTEM_MESSAGE`, generalized from Qlik/SQL-vs-pandas to any MCP tool
+ * Ported from the prototype's `SYSTEM_MESSAGE`, generalized from SQL-vs-pandas to any MCP tool
  * chain vs a reference-logic document. Frames the judge as a reviewer grading calculation LOGIC only.
  */
 export const TRAJECTORY_JUDGE_SYSTEM =

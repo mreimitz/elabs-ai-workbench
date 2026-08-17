@@ -1,10 +1,10 @@
 // Unified Sessions — the ONE shared terminal table (roadmap/unified-sessions/, WP1.1, D-US1/D-US2).
 //
-// Every run backend (the AI-SDK engine, the Claude-subscription child, the Qlik Answers wrapper) ends
+// Every run backend (the AI-SDK engine, the Claude-subscription child) ends
 // a run through this single function, so the SAME cause produces the SAME terminal triple everywhere
 // (status, outcome, stopReasonCode) — the invariant WP1.R adversarially checks. Before this module the
 // three executors each hand-rolled their own status/outcome mapping and only carried a HUMAN stopReason
-// string (sniffed back apart by `guardrailFromReason`), which is exactly how the Qlik deadline used to
+// string (sniffed back apart by `guardrailFromReason`), which is exactly how the wall deadline used to
 // mis-terminate as `aborted`. Here the mapping is closed, exhaustive (compile-time `never` guard), and
 // the machine-readable {@link StopReasonCode} rides alongside the human text the executor still writes.
 
@@ -28,7 +28,6 @@ export type TerminalCause =
   | "max_context_tokens" // budget meter
   | "max_cost" // budget meter
   | "context_overflow" // model context window exceeded
-  | "prompt_rejected" // Qlik AE-4 "Prompt is rejected" (assistant guardrail)
   | "provider_error" // provider/transport failure
   | "auth" // auth/credential failure
   | "rate_limit"; // 429 / rate limited
@@ -79,8 +78,6 @@ export function terminalFor(cause: TerminalCause): TerminalVerdict {
       return guardrailStop("max_cost");
     case "context_overflow":
       return { status: "stopped", outcome: "context_overflow", stopReasonCode: "context_overflow" };
-    case "prompt_rejected":
-      return guardrailStop("prompt_rejected");
     case "provider_error":
       return errorTerminal("provider_error");
     case "auth":
@@ -113,7 +110,6 @@ export const TERMINAL_CAUSES = [
   "max_context_tokens",
   "max_cost",
   "context_overflow",
-  "prompt_rejected",
   "provider_error",
   "auth",
   "rate_limit",

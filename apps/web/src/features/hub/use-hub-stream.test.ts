@@ -322,8 +322,8 @@ describe("buildHubTimeline", () => {
       { type: "user_message", messageId: "u1", text: "hi", seq: 1 },
       {
         type: "mcp_server_status",
-        serverId: "srv-qlik",
-        serverName: "qlik-mreimitz",
+        serverId: "srv-acme",
+        serverName: "acme-demo",
         status: "error",
         message: "connection refused",
         seq: 2,
@@ -332,7 +332,7 @@ describe("buildHubTimeline", () => {
         type: "assistant_message",
         messageId: "m1",
         model: "claude-sonnet-5",
-        parts: [{ type: "text", text: "I couldn't reach qlik-mreimitz this turn." }],
+        parts: [{ type: "text", text: "I couldn't reach acme-demo this turn." }],
         citations: [],
         artifactsTouched: [],
         seq: 3,
@@ -344,7 +344,7 @@ describe("buildHubTimeline", () => {
     const turn = timeline[1];
     if (turn?.kind !== "assistant_turn") throw new Error("expected an assistant turn");
     expect(turn.mcpServerIssues).toEqual([
-      { serverId: "srv-qlik", serverName: "qlik-mreimitz", message: "connection refused" },
+      { serverId: "srv-acme", serverName: "acme-demo", message: "connection refused" },
     ]);
   });
 
@@ -353,8 +353,8 @@ describe("buildHubTimeline", () => {
       { type: "user_message", messageId: "u1", text: "hi", seq: 1 },
       {
         type: "mcp_server_status",
-        serverId: "srv-qlik",
-        serverName: "qlik-stage",
+        serverId: "srv-acme",
+        serverName: "acme-stage",
         status: "error",
         message: "Unauthorized",
         authRequired: true,
@@ -375,7 +375,7 @@ describe("buildHubTimeline", () => {
     const turn = timeline[1];
     if (turn?.kind !== "assistant_turn") throw new Error("expected an assistant turn");
     expect(turn.mcpServerIssues).toEqual([
-      { serverId: "srv-qlik", serverName: "qlik-stage", message: "Unauthorized", authRequired: true },
+      { serverId: "srv-acme", serverName: "acme-stage", message: "Unauthorized", authRequired: true },
     ]);
   });
 
@@ -384,8 +384,8 @@ describe("buildHubTimeline", () => {
       { type: "user_message", messageId: "u1", text: "hi", seq: 1 },
       {
         type: "mcp_server_status",
-        serverId: "srv-qlik",
-        serverName: "qlik-mreimitz",
+        serverId: "srv-acme",
+        serverName: "acme-demo",
         status: "connected",
         seq: 2,
       },
@@ -403,16 +403,16 @@ describe("buildHubTimeline", () => {
       { type: "user_message", messageId: "u1", text: "hi", seq: 1 },
       {
         type: "mcp_server_status",
-        serverId: "srv-qlik",
-        serverName: "qlik-mreimitz",
+        serverId: "srv-acme",
+        serverName: "acme-demo",
         status: "error",
         message: "first",
         seq: 2,
       },
       {
         type: "mcp_server_status",
-        serverId: "srv-qlik",
-        serverName: "qlik-mreimitz",
+        serverId: "srv-acme",
+        serverName: "acme-demo",
         status: "error",
         message: "second",
         seq: 3,

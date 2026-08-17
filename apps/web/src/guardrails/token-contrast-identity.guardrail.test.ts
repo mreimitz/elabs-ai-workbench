@@ -9,7 +9,7 @@
  * RED. It asserts four independent things:
  *
  *   1. D-IC1 — every `--<role>` ⇄ `--<role>-foreground` fill pair clears WCAG AA 4.5:1 in BOTH
- *      qlik themes, computed on the EFFECTIVE tokens (vendored themes.css base + app.css override
+ *      acme themes, computed on the EFFECTIVE tokens (vendored themes.css base + app.css override
  *      layered on top, same resolution the browser does). Remove the override → contrast goes red.
  *   2. D-IC2 — `--success !== --primary` AND `--ring !== --info` in both themes (the semantic split
  *      that a naive re-merge collapses back to byte-identical values).
@@ -139,7 +139,7 @@ function token(theme: string, name: string): string {
 
 // ── 1. D-IC1 — on-fill contrast (effective tokens, both themes) ──────────────────────────────────
 
-describe("GUARDRAIL D-IC1 — on-fill contrast ≥ 4.5:1 (effective tokens, both qlik themes)", () => {
+describe("GUARDRAIL D-IC1 — on-fill contrast ≥ 4.5:1 (effective tokens, both acme themes)", () => {
   describe.each(THEMES)("%s", (theme) => {
     it.each(FILL_ROLES)("--%s ⇄ --%s-foreground clears AA", (role) => {
       const ratio = contrast(token(theme, `--${role}-foreground`), token(theme, `--${role}`));
@@ -153,7 +153,7 @@ describe("GUARDRAIL D-IC1 — on-fill contrast ≥ 4.5:1 (effective tokens, both
 
 // ── 2. D-IC2 — semantic identity split (effective tokens, both themes) ────────────────────────────
 
-describe("GUARDRAIL D-IC2 — role identity split (effective tokens, both qlik themes)", () => {
+describe("GUARDRAIL D-IC2 — role identity split (effective tokens, both acme themes)", () => {
   it.each(THEMES)("%s: --success is not byte-identical to --primary", (theme) => {
     expect(
       token(theme, "--success"),
@@ -172,7 +172,7 @@ describe("GUARDRAIL D-IC2 — role identity split (effective tokens, both qlik t
 // ── 3. STRUCTURAL — the override block is present AND wins the cascade ─────────────────────────────
 
 describe("GUARDRAIL D-IC1/D-IC2 — app.css override block present + after the token import", () => {
-  it("defines a [data-theme] override block for BOTH qlik themes", () => {
+  it("defines a [data-theme] override block for BOTH acme themes", () => {
     for (const theme of THEMES) {
       expect(
         themeBlockBodies(appCss, theme).length,

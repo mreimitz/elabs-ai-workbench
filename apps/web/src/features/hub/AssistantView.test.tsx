@@ -195,8 +195,8 @@ function renderView(initialEntry = "/assistant") {
 }
 
 describe("AssistantView — not configured", () => {
-  test("no hub-eligible provider credential shows the not-configured gate, never the composer", async () => {
-    vi.mocked(api.listProviders).mockResolvedValue([credential({ kind: "qlik_answers" })]);
+  test("no usable provider credential shows the not-configured gate, never the composer", async () => {
+    vi.mocked(api.listProviders).mockResolvedValue([]);
     vi.mocked(api.listHubSessions).mockResolvedValue([]);
 
     renderView();

@@ -100,7 +100,7 @@ export function registerCodeIntel(
     getFilePaths: () => filePaths,
   });
 
-  // SI9 — bare-word tool-name completions (`qlik_` on a blank line now suggests). Registered ONCE;
+  // SI9 — bare-word tool-name completions (`acme_` on a blank line now suggests). Registered ONCE;
   // reads `boundTools` lazily per request, so the async-arriving list (and every re-scan) is picked
   // up with no re-registration. Backticked contexts defer to WP 8.2's provider below — exactly one
   // completion source per context.

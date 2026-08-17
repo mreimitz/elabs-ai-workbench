@@ -111,9 +111,6 @@ import { OAuthRepository } from "./oauth/repository.js";
 import { registerOAuthRoutes } from "./oauth/routes.js";
 import { OAuthService } from "./oauth/service.js";
 import { registerObservabilityRoutes } from "./observability/routes.js";
-import { buildFacadeDeps } from "./openai-facade/deps.js";
-import { registerOpenAiFacade } from "./openai-facade/index.js";
-import { McpServerLinkedAuth } from "./providers/linked-auth.js";
 import { PricingRepository } from "./providers/pricing-repository.js";
 import { registerPricingRoutes } from "./providers/pricing-routes.js";
 import { installPricingResolver } from "./providers/pricing.js";
@@ -128,7 +125,6 @@ import { ScanRepository } from "./scans/repository.js";
 import { registerScanRoutes } from "./scans/routes.js";
 import { ScanService } from "./scans/service.js";
 import { loadSecretKey, SecretStore } from "./secrets/secret-store.js";
-import { probeServerAnswers } from "./servers/qlik-answers-probe.js";
 import { ServerRepository } from "./servers/repository.js";
 import { registerServerRoutes } from "./servers/routes.js";
 import { ServerTypeRepository } from "./server-types/repository.js";
@@ -194,14 +190,7 @@ if (migratedSecretRows > 0) {
     "Migrated plaintext MCP server secrets to encrypted storage",
   );
 }
-// OAuth repo is created BEFORE the provider repo because a Qlik Answers provider credential (WP 0.2,
-// D-QA1) may reuse a linked MCP server's OAuth token / auth headers instead of its own key — the
-// linked-auth resolver reads from `servers` (headers/tenant origin) + `oauthRepository` (access token).
 const oauthRepository = new OAuthRepository(db, secretStore);
-// Shared linked-auth resolver: turns a server's OAuth token / auth headers into a bearer + tenant
-// origin. Reused by the provider repo (WP 0.2) AND the Qlik Answers list-only availability probe
-// (WP 2.1) so both resolve the four auth flavors identically.
-const linkedAuth = new McpServerLinkedAuth(servers, oauthRepository);
 // Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS7) — the assistant credential store is
 // constructed HERE (ahead of its usual home near the session engine below) so a `claude_subscription`
 // provider credential can resolve its auth from the SAME signed-in subscription (`assistant_credentials`)
@@ -210,7 +199,7 @@ const linkedAuth = new McpServerLinkedAuth(servers, oauthRepository);
 // `ProviderRepository` for its fallback-pointer validation and is still constructed later).
 const assistantRepository = new AssistantRepository(db, secretStore);
 const subscriptionAuth = new AssistantSubscriptionAuth(assistantRepository);
-const providerRepository = new ProviderRepository(db, secretStore, linkedAuth, subscriptionAuth);
+const providerRepository = new ProviderRepository(db, secretStore, subscriptionAuth);
 const migratedProviderKeyRows = providerRepository.migratePlaintextSecrets();
 if (migratedProviderKeyRows > 0) {
   server.log.info(
@@ -266,12 +255,7 @@ const failedOrphanScans = scans.abortOrphanedScans();
 if (failedOrphanScans > 0) {
   server.log.warn({ failedOrphanScans }, "Marked orphaned running scans as failed on startup");
 }
-// Qlik Answers (WP 2.1) — the connectivity preflight folds in a list-only assistants availability
-// check for a Qlik-tenant server (never consumes a question). `checkConnectivity` gates this on the
-// URL, so the prober only runs for a Qlik tenant.
-const scanService = new ScanService(servers, scans, oauthService, (serverId) =>
-  probeServerAnswers({ servers, auth: linkedAuth }, serverId),
-);
+const scanService = new ScanService(servers, scans, oauthService);
 
 // --- Skills registry (Phase 1) — created before the scenario/run services so Phase 2 attachment
 // resolution (`resolveAllowedSkills`) + the read-only `read_skill_file` disclosure tool can read
@@ -282,9 +266,7 @@ const skillBindings = new SkillBindingRepository(db);
 
 // --- Testing (WP 2.1): scenario & test CRUD + attachments + resolution helpers ---
 const scenarioRepository = new ScenarioRepository(db);
-// Qlik Answers (WP 1.4, D-QA6 layer 1) — `providerRepository` lets create/update reject a
-// `qlik_answers` scenario that still carries MCP servers/skills (a cheap, non-secret kind lookup).
-const scenarioService = new ScenarioService(scenarioRepository, scans, skills, providerRepository);
+const scenarioService = new ScenarioService(scenarioRepository, scans, skills);
 const testRepository = new TestRepository(db);
 const testService = new TestService(testRepository);
 
@@ -1163,7 +1145,6 @@ const runService = new RunService(
   undefined,
   skills,
   gradeService,
-  undefined,
   ratingIssueService,
   // Claude subscription run path (roadmap/claude-subscription/, WP 1.2). The run driver is the SAME
   // raw Agent-SDK driver kind the Auto-Rating CLI judge uses (a fresh instance — one driver per run).
@@ -1230,10 +1211,6 @@ const suiteOrchestrator = new SuiteOrchestrator(
   skills,
   // WP 4.1 — the post-`finish()` suite-report hook (never blocks/fails/mutates the suite run).
   (suiteRunId) => suiteReportService.generate(suiteRunId),
-  // Qlik Answers (WP 1.4, D-QA6) — clean-session plan-time enforcement: skip an incompatible member
-  // (attachments/systemPromptOverride/legacy servers-or-skills against a qlik_answers environment)
-  // instead of running it, and reject a skill-effect variant plan that targets the kind outright.
-  { scenarios: scenarioRepository, tests: testRepository, providers: providerRepository },
 );
 // --- Benchmarks (WP 3.5, B9.4): OPT-IN failure-bucket clustering. Now on the SAME CLI-first judge
 // chain as every other LLM grading surface (AR2 — the signed-in Claude CLI is the default judge
@@ -1412,7 +1389,7 @@ server.get(
   }),
 );
 
-await registerServerRoutes(server, servers, scanService, oauthService, linkedAuth);
+await registerServerRoutes(server, servers, scanService, oauthService);
 await registerServerTypeRoutes(server, serverTypes);
 await registerProviderRoutes(server, providers, subscriptionModelResolver);
 await registerPricingRoutes(server, pricingRepository);
@@ -1434,13 +1411,10 @@ await registerMaintenanceRoutes(
 );
 await registerCompareRoutes(server, scans);
 // UX overhaul WP 3.5 (G7, D-UX12) — advisory run-plan cost preview (reads footprints + pricing; no key).
-// Qlik Answers (WP 3.2) — `providers` added so the estimate can flag `qlik_answers` environments and
-// roll up `answersQuestions`.
 await registerEstimateRoutes(server, {
   scenarios: scenarioService,
   tests: testService,
   scans,
-  providers: providerRepository,
 });
 await registerCompatibilityRoutes(server, scans);
 await registerRunCompatibilityRoutes(server, runRepository, scenarioService);
@@ -1669,24 +1643,6 @@ await registerHubRoutes(server, {
   // above reads from.
   evictHubMcpSession: (serverId) => hubMcpSessions.evict(serverId),
 });
-// --- Unified Sessions (WP5.1, D-US12): the OpenAI-compatible facade at `/openai/v1`. External interop
-// ONLY — it makes a configured `qlik_answers` assistant selectable from any OpenAI-compatible client
-// (Open WebUI, LiteLLM, another harness); internal runs never route through it (the qlik executor is
-// untouched). Real deps are wired from the provider layer (`buildFacadeDeps`): a locally-minted 0600
-// key (`DATA_DIR/openai-facade.key`, mirroring `mcp-secret.key`; `OPENAI_FACADE_KEY` overrides), the
-// `qlik_answers` roster via `providers.listModels`, and the SAME `getDecrypted { apiKey, baseUrl }`
-// tenant-auth resolution `RunService.resolveAnswers` uses — never re-exposing the stored credential.
-// `fetchImpl`/`tokenProfile`/`cache`/`now` keep their documented defaults.
-await registerOpenAiFacade(
-  server,
-  buildFacadeDeps({
-    providerRepository,
-    providers,
-    dataDirectory: config.dataDirectory,
-    explicitKey: process.env.OPENAI_FACADE_KEY,
-  }),
-);
-
 if (fs.existsSync(config.webDistPath)) {
   await server.register(fastifyStatic, {
     root: config.webDistPath,

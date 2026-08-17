@@ -901,11 +901,11 @@ test("auto-title (D-AS26): the first user message sets a deterministic title (on
   const thread = h.manager.createThread({});
   assert.equal(thread.title, "New thread", "a fresh thread starts at the default title");
 
-  await h.manager.sendMessage(thread.id, "How many tools does the Qlik server expose?");
+  await h.manager.sendMessage(thread.id, "How many tools does the Acme server expose?");
   const titled = h.repo.getThread(thread.id);
   assert.notEqual(titled.title, "New thread", "the first message set a real title");
   assert.ok(titled.title.length <= 60, "the deterministic title is capped at 60 chars");
-  assert.match(titled.title, /Qlik/, "the title is derived from the message text");
+  assert.match(titled.title, /Acme/, "the title is derived from the message text");
 });
 
 test("auto-title: a user-renamed thread is never overwritten by the deterministic title", async () => {
@@ -962,7 +962,7 @@ test("updated_at is bumped on send (so the switcher's ordering + relative age st
 // A main-session script that ALSO answers the title one-shot (routed by its `maxTurns: 1`).
 const titleRefineScript: TurnScript = ({ text, turn, emit, options }) => {
   if (options.maxTurns === 1) {
-    emit({ type: "assistant_message", text: "Qlik tool count" });
+    emit({ type: "assistant_message", text: "Acme tool count" });
     emit({ type: "turn_done", turnIndex: 0 });
     return;
   }
@@ -981,7 +981,7 @@ test("auto-title refine (D-AS26): after the first successful turn a NON-cap-coun
   const h = makeHarness(titleRefineScript, { autoTitle: true });
   const thread = h.manager.createThread({});
 
-  await h.manager.sendMessage(thread.id, "How many tools does the Qlik server expose?");
+  await h.manager.sendMessage(thread.id, "How many tools does the Acme server expose?");
   // The deterministic title lands immediately on send…
   assert.notEqual(
     h.repo.getThread(thread.id).title,
@@ -989,10 +989,10 @@ test("auto-title refine (D-AS26): after the first successful turn a NON-cap-coun
     "the deterministic title is set on send",
   );
   // …then the one-shot refines it after the turn completes.
-  await waitFor(() => h.repo.getThread(thread.id).title === "Qlik tool count");
+  await waitFor(() => h.repo.getThread(thread.id).title === "Acme tool count");
   assert.equal(
     h.repo.getThread(thread.id).title,
-    "Qlik tool count",
+    "Acme tool count",
     "the refined title was PATCHed",
   );
 
@@ -1037,7 +1037,7 @@ test("auto-title refine: with the feature flag off, no title one-shot is attempt
   const h = makeHarness(titleRefineScript, { autoTitle: false });
   const thread = h.manager.createThread({});
 
-  await h.manager.sendMessage(thread.id, "How many tools does the Qlik server expose?");
+  await h.manager.sendMessage(thread.id, "How many tools does the Acme server expose?");
   await waitFor(() => h.repo.listEvents(thread.id).some((e) => e.type === "turn_done"));
   await waitFor(() => !h.manager.isLive(thread.id));
   await delay(20); // give any (erroneous) refine a chance to have started
@@ -1045,7 +1045,7 @@ test("auto-title refine: with the feature flag off, no title one-shot is attempt
   assert.equal(h.driver.starts.length, 1, "no title one-shot when autoTitle is off");
   assert.equal(
     h.repo.getThread(thread.id).title,
-    deterministicTitle("How many tools does the Qlik server expose?"),
+    deterministicTitle("How many tools does the Acme server expose?"),
     "the deterministic title stands (no refine)",
   );
 });

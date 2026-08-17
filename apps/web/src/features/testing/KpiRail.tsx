@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import type {
   GuardrailConfig,
   RunStep,
-  SessionAssistantIdentity,
   SessionCapabilities,
 } from "@mcp-token-footprint/shared";
 import {
@@ -49,19 +48,14 @@ import { deriveHotspots, type Hotspot, type HotspotKind } from "./hotspots";
  *
  * WP 3.2 (Unified Sessions, D-US4) — the tile list is built DECLARATIVELY from the run's
  * {@link SessionCapabilities} manifest instead of forking on `providerKind`:
- *   - the **Context** tile shows iff `capabilities.contextWindow`, UNLESS `capabilities.identity` is
- *     present — a first-class named assistant (Qlik) gets the {@link AnswersIdentityCard} in that
- *     slot instead (there is no meaningful context window to show alongside a named assistant);
- *   - the **Tokens ↑ / ↓** tiles show unless `capabilities.tokens === "none"`; `"estimated"` fidelity
- *     marks their description "(estimated)" instead of "(provider-actual)";
- *   - the **Est. cost** tile hides entirely when `capabilities.costBasis === "none"`; its VALUE is
- *     unit-aware — a dollar figure for `api_exact`/`subscription_reference` (the latter also carries
- *     the shared {@link SubscriptionCostMarker} "est." badge), or the raw `<N> questions` count for
- *     `"questions"` (Qlik's real cost unit — the tenant's shared monthly quota, not currency);
+ *   - the **Context** tile shows iff `capabilities.contextWindow`;
+ *   - the **Tokens ↑ / ↓** tiles show unless `capabilities.tokens === "none"`;
+ *   - the **Est. cost** tile hides entirely when `capabilities.costBasis === "none"`; a
+ *     `subscription_reference` figure also carries the shared {@link SubscriptionCostMarker} "est." badge;
  *   - the **Tool calls** tile shows iff `capabilities.toolCalls`;
  *   - **Turns** always shows (no capability gates it).
  *
- * Every current backend (the five chat-completions kinds, `claude_subscription`, `qlik_answers`)
+ * Every current backend (the five chat-completions kinds, `claude_subscription`)
  * renders exactly the tile set its declared manifest implies; a FUTURE backend with a new capability
  * combination renders correctly with zero new branches here — the whole point of D-US4.
  *
@@ -91,14 +85,6 @@ export type KpiRailProps = {
    */
   capabilities: SessionCapabilities;
   /**
-   * Live count of "questions" consumed so far — the run's real cost unit when
-   * `capabilities.costBasis === "questions"` (Qlik's shared monthly quota; summed by the caller off
-   * each settled `llm_response` step's `AnswersStepPayload.questionsConsumed`). NOT part of the static
-   * capability manifest (a live, per-run figure), so it rides as a separate prop; ignored for every
-   * other `costBasis`.
-   */
-  questionsConsumed?: number;
-  /**
    * Observability (WP 3.2) — the run's steps, read ONLY to derive the "hotspots" strip (jump-links to
    * the slowest step, the costliest step, and the largest single context-window jump — up to one per
    * kind, capability-gated, never a `providerKind` fork). Omit (or pass an empty array) to hide the
@@ -126,7 +112,6 @@ export function KpiRail({
   guardrails,
   currentContextTokens = 0,
   capabilities,
-  questionsConsumed = 0,
   steps = [],
   kpiByStepId = null,
   onSelectStep,
@@ -142,12 +127,7 @@ export function KpiRail({
   const costUsd = kpis?.costUsd ?? 0;
 
   const isSubscriptionCost = capabilities.costBasis === "subscription_reference";
-  const isQuestionsCost = capabilities.costBasis === "questions";
-  // The identity card takes the Context slot whenever the backend has a first-class named assistant —
-  // even a hypothetical future kind with BOTH an identity AND a real context window would show the
-  // identity card here (the assistant's identity is the more useful headline for that kind of run).
-  const showIdentity = capabilities.identity != null;
-  const showContext = !showIdentity && capabilities.contextWindow;
+  const showContext = capabilities.contextWindow;
   const showTokens = capabilities.tokens !== "none";
   const showCost = capabilities.costBasis !== "none";
   const showToolCalls = capabilities.toolCalls;
@@ -167,17 +147,16 @@ export function KpiRail({
     : formatNumber(turns);
 
   // The cost tile's lead description word: subscription runs are honestly a shadow-price REFERENCE
-  // (never a billed charge, D-CS8); every other basis (incl. "questions") is our own estimate.
+  // (never a billed charge, D-CS8); every other basis is our own estimate.
   const costLead = isSubscriptionCost ? "subscription reference" : "estimated";
   const costDescription = guardrails.maxCostUsd
     ? `${costLead} · of ${formatCostUsd(guardrails.maxCostUsd)} cap`
     : costLead;
-  const questionsValue = `${formatNumber(questionsConsumed)} question${questionsConsumed === 1 ? "" : "s"}`;
 
   // High utilisation is *bad* — flip the delta-direction semantics so a rising headline reads as risk.
   const headlineDirection: "up" | "neutral" = utilization != null && utilization >= 90 ? "up" : "neutral";
 
-  const tokenFidelityLabel = capabilities.tokens === "estimated" ? "estimated" : "provider-actual";
+  const tokenFidelityLabel = "provider-actual";
 
   // Observability (WP 3.2) — the hotspots strip. Capability-gated inside `deriveHotspots` (never a
   // `providerKind` fork): the costliest hotspot needs a real per-step cost basis, the context-jump
@@ -203,9 +182,7 @@ export function KpiRail({
   return (
     <section aria-label="Run KPIs">
       <div className="grid grid-cols-2 gap-3">
-        {showIdentity && capabilities.identity ? (
-          <AnswersIdentityCard identity={capabilities.identity} />
-        ) : showContext ? (
+        {showContext ? (
           <MetricCard
             className="min-w-0"
             emphasis="headline"
@@ -241,9 +218,7 @@ export function KpiRail({
             icon={<Coins aria-hidden />}
             label="Est. cost"
             value={
-              isQuestionsCost ? (
-                <span className="tabular-nums">{questionsValue}</span>
-              ) : isSubscriptionCost ? (
+              isSubscriptionCost ? (
                 <span className="inline-flex items-center gap-1.5">
                   <span className="tabular-nums">{formatCostUsd(costUsd)}</span>
                   <SubscriptionCostMarker />
@@ -402,54 +377,6 @@ function HotspotsStrip({
         </ul>
       </CardContent>
     </Card>
-  );
-}
-
-/**
- * WP 3.2 (D-US4) — replaces the Context tile for a backend with a first-class named assistant
- * (`capabilities.identity` present — today only `qlik_answers`) with the run's actual identity:
- * name, the bound Qlik Sense app (when app-backed), the assistant's version (an Etag-based drift
- * signal), and the environment's transport override. Composed from `MetricCard` (the same header
- * rhythm as every other rail tile) with a compact `Descriptions` block in its `evidence` slot for the
- * secondary facts. Any field the manifest hasn't settled yet is simply omitted — never a
- * permanently-unfulfilled placeholder.
- */
-function AnswersIdentityCard({ identity }: { identity: SessionAssistantIdentity }) {
-  const transportLabel =
-    identity.transport === "stream"
-      ? "Streaming"
-      : identity.transport === "invoke"
-        ? "Invoke"
-        : undefined;
-  const displayName = identity.name ?? identity.assistantId;
-  const hasDetail = Boolean(identity.appId || identity.version || transportLabel);
-
-  return (
-    <MetricCard
-      className="min-w-0"
-      icon={<IdCard aria-hidden />}
-      label="Assistant"
-      value={
-        <span className="block min-w-0 break-words" title={displayName}>
-          {displayName}
-        </span>
-      }
-      evidence={
-        hasDetail ? (
-          <Descriptions columns={1} layout="horizontal" className="gap-y-1">
-            {identity.appId ? (
-              <DescriptionsItem label="App">{identity.appId}</DescriptionsItem>
-            ) : null}
-            {identity.version ? (
-              <DescriptionsItem label="Version">{identity.version}</DescriptionsItem>
-            ) : null}
-            {transportLabel ? (
-              <DescriptionsItem label="Transport">{transportLabel}</DescriptionsItem>
-            ) : null}
-          </Descriptions>
-        ) : undefined
-      }
-    />
   );
 }
 

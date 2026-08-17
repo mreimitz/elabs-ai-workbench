@@ -28,7 +28,7 @@ const DEFAULT_STATUS: ServerTypeStatus = "production";
  * sets its members to Untyped, it never deletes servers).
  *
  * One self-contained `@brand/ui` `Dialog` that swaps between a list mode and a create/edit form mode
- * (mirroring `QlikAnswersOfferDialog`'s single-dialog / multi-phase shape), plus a nested
+ * (mirroring `AcmeAnswersOfferDialog`'s single-dialog / multi-phase shape), plus a nested
  * `ConfirmDialog` for the destructive delete (the established AlertDialog-over-Dialog pattern). After
  * any successful create/update/delete it fires `onChanged` so the app refreshes BOTH its server-types
  * AND its servers (a delete re-types members to Untyped).
@@ -239,7 +239,7 @@ export function ManageServerTypesDialog(props: {
               autoComplete="off"
               spellCheck={false}
               aria-invalid={Boolean(nameError)}
-              placeholder="e.g. Qlik-SaaS…"
+              placeholder="e.g. Acme-SaaS…"
               onChange={(event) => {
                 setName(event.target.value);
                 if (nameError) setNameError(null);

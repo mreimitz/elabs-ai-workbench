@@ -37,7 +37,6 @@ import type {
   NotificationListQuery,
   NotificationListResult,
   NotificationReadAllResult,
-  QlikTenantProbe,
   RunFilter,
   RunMetricsGroupBy,
   RunMetricsMeasure,
@@ -185,16 +184,6 @@ export const checkConnectivity = (serverId: string): Promise<ConnectivityRespons
 /** Full discover round-trip (the "Test" button + the reauth modal's post-sign-in verification). */
 export const testServerConnection = (serverId: string): Promise<ServerTestResponse> =>
   apiPost<ServerTestResponse>(`/api/servers/${serverId}/test`, {});
-
-/**
- * Qlik Answers onboarding (WP 2.2) — the free, list-only tenant-assistants availability check for a
- * SAVED server (`POST /api/servers/:id/qlik/answers-probe`, WP 2.1). Degrades to
- * `answersAvailable:false` for any non-Qlik-tenant server or any probe failure — it never throws for
- * "not a Qlik tenant", only for a genuine network/HTTP failure talking to THIS app's own API. Drives
- * both the post-save wizard offer and the server-detail "Answers available" badge/CTA.
- */
-export const probeServerAnswers = (serverId: string): Promise<QlikTenantProbe> =>
-  apiPost<QlikTenantProbe>(`/api/servers/${serverId}/qlik/answers-probe`, {});
 
 export async function apiPost<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(path, {

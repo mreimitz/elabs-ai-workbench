@@ -20,7 +20,7 @@ function session(): HubSession {
     title: "Top RMs in 2026",
     titleState: "final",
     mode: "auto",
-    model: "qlik-answers:fast",
+    model: "acme-answers:fast",
     status: "completed",
     costUsd: 0.0123,
     tokensIn: 100,
@@ -46,7 +46,7 @@ function events(): HubEvent[] {
     {
       type: "assistant_message",
       messageId: "m2",
-      model: "qlik-answers:fast",
+      model: "acme-answers:fast",
       parts: [{ type: "text", text: "Your top 3 RMs are A, B, C." }],
       citations: [],
       artifactsTouched: [],
@@ -79,7 +79,7 @@ test("Markdown report renders the spine in order + every structural event (nothi
   // Header metadata.
   assert.match(md, /# Assistant session transcript/);
   assert.match(md, /Top RMs in 2026/);
-  assert.match(md, /qlik-answers:fast/);
+  assert.match(md, /acme-answers:fast/);
   // The conversational spine, in order.
   assert.match(md, /### 1 · User[\s\S]*who are my top 3 RMs\?/);
   assert.match(md, /### 2 · Question[\s\S]*Which app should I use\?/);

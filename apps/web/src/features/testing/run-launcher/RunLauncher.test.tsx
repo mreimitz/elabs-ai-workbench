@@ -56,15 +56,6 @@ const ANTHROPIC_PROVIDER: ProviderCredential = {
   updatedAt: "2026-01-01T00:00:00Z",
 };
 
-const QLIK_PROVIDER: ProviderCredential = {
-  id: "prov-qlik",
-  kind: "qlik_answers",
-  label: "Tenant Assistant",
-  hasKey: true,
-  createdAt: "2026-01-01T00:00:00Z",
-  updatedAt: "2026-01-01T00:00:00Z",
-};
-
 function scenario(overrides: Partial<Scenario> & { id: string; name: string }): Scenario {
   return {
     providerId: ANTHROPIC_PROVIDER.id,
@@ -83,13 +74,6 @@ function scenario(overrides: Partial<Scenario> & { id: string; name: string }): 
 }
 
 const API_ENV = scenario({ id: "scn-api", name: "API env" });
-const QLIK_ENV = scenario({
-  id: "scn-qlik",
-  name: "Qlik env",
-  providerId: QLIK_PROVIDER.id,
-  model: "asst-123",
-  answersMode: { transport: "invoke" },
-});
 const CAPPED_ENV = scenario({
   id: "scn-capped",
   name: "Capped env",
@@ -119,7 +103,7 @@ const ESTIMATE: RunPlanEstimate = {
   environments: [],
 };
 
-function mockHarness(scenarios: Scenario[], providers: ProviderCredential[] = [ANTHROPIC_PROVIDER, QLIK_PROVIDER]) {
+function mockHarness(scenarios: Scenario[], providers: ProviderCredential[] = [ANTHROPIC_PROVIDER]) {
   vi.mocked(api.listSuites).mockResolvedValue([] as Suite[]);
   vi.mocked(api.listTests).mockResolvedValue([TEST_1]);
   vi.mocked(api.listScenarios).mockResolvedValue(scenarios);
@@ -153,7 +137,7 @@ async function openToConfigureStep(scenarios: Scenario[], envName: string) {
 }
 
 /** A `KpiStat`'s value lives in the `<dd>` sibling of the `<dt>` carrying its label — scoped lookup
- *  so e.g. two stats that happen to both read "10m 0s" (stall timeout vs. a non-Qlik wait budget)
+ *  so e.g. two stats that happen to both read "10m 0s" (stall timeout vs. the wait budget)
  *  never collide under a bare `getByText`. */
 function kpiValue(label: string): string {
   const dt = screen.getByText(label);
@@ -163,16 +147,9 @@ function kpiValue(label: string): string {
 }
 
 describe("RunLauncher — effective-limits summary (WP3.4, D-US3/D-US7)", () => {
-  test("a Qlik Answers environment shows the longer 30-minute wait budget", async () => {
-    await openToConfigureStep([QLIK_ENV], "Qlik env");
-    expect(screen.getByText("Effective limits")).toBeInTheDocument();
-    expect(kpiValue("Stall timeout")).toBe("10m 0s");
-    expect(kpiValue("Wait budget")).toBe("30m 0s");
-    expect(kpiValue("Wall cap")).toBe("No cap");
-  });
-
   test("a plain api environment shows the 10-minute default wait budget", async () => {
     await openToConfigureStep([API_ENV], "API env");
+    expect(screen.getByText("Effective limits")).toBeInTheDocument();
     expect(kpiValue("Stall timeout")).toBe("10m 0s");
     expect(kpiValue("Wait budget")).toBe("10m 0s");
     expect(kpiValue("Wall cap")).toBe("No cap");

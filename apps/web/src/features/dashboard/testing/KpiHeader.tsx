@@ -7,7 +7,7 @@ import type { TestingKpis } from "./metrics-derive";
 /**
  * KpiHeader — the Testing dashboard's window-level MetricCard row (WP 2.2 spec §Design): runs,
  * error rate, active p95 duration, plus ONE card per cost-basis class present (never a blended $
- * figure across classes, D-OB14) and a Questions card when the window has any `qlik_answers`
+ * figure across classes, D-OB14) and a Questions card when the window has any `acme_answers`
  * activity. All figures are derived client-side from data the panels already fetched (see
  * `metrics-derive.ts#buildTestingKpis`) — no extra network round trip for this row.
  *
@@ -51,14 +51,6 @@ export function KpiHeader({ kpis, extra }: { kpis: TestingKpis; extra?: ReactNod
           value={formatCostUsd(c.total)}
         />
       ))}
-      {kpis.questionsTotal > 0 ? (
-        <MetricCard
-          icon={<Coins aria-hidden />}
-          label="Questions"
-          value={formatNumber(kpis.questionsTotal)}
-          description="Qlik Answers usage unit"
-        />
-      ) : null}
       {extra}
     </MetricGrid>
   );

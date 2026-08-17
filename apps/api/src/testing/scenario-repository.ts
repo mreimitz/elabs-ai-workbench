@@ -14,10 +14,6 @@ import type { ScenarioRow, ScenarioServerRow, ScenarioSkillRow } from "../db/row
 import { httpError } from "../utils/errors.js";
 import { parseJsonObject, stableStringify } from "../utils/json.js";
 
-// `packages/shared` inlines this shape on `Scenario`/`ScenarioInput` rather than exporting it as a
-// standalone type — derive it locally instead of adding a shared export (WP 2.3 is additive-only).
-type AnswersMode = NonNullable<Scenario["answersMode"]>;
-
 export class ScenarioRepository {
   constructor(private readonly db: AppDatabase) {}
 
@@ -42,10 +38,10 @@ export class ScenarioRepository {
         .prepare(
           `INSERT INTO scenarios (
             id, name, provider_id, model, params_json, system_prompt,
-            default_profiles_json, guardrails_json, tool_loading_mode, answers_mode, created_at, updated_at
+            default_profiles_json, guardrails_json, tool_loading_mode, created_at, updated_at
           ) VALUES (
             @id, @name, @providerId, @model, @paramsJson, @systemPrompt,
-            @defaultProfilesJson, @guardrailsJson, @toolLoadingMode, @answersModeJson, @createdAt, @updatedAt
+            @defaultProfilesJson, @guardrailsJson, @toolLoadingMode, @createdAt, @updatedAt
           )`,
         )
         .run({
@@ -58,8 +54,6 @@ export class ScenarioRepository {
           defaultProfilesJson: stableStringify(parsed.defaultProfiles),
           guardrailsJson: stableStringify(parsed.guardrails),
           toolLoadingMode: parsed.toolLoadingMode,
-          // Qlik Answers (WP 2.3): JSON-serialize when present; NULL when omitted (non-qlik scenarios).
-          answersModeJson: parsed.answersMode ? stableStringify(parsed.answersMode) : null,
           createdAt: now,
           updatedAt: now,
         });
@@ -87,7 +81,6 @@ export class ScenarioRepository {
                 default_profiles_json = @defaultProfilesJson,
                 guardrails_json = @guardrailsJson,
                 tool_loading_mode = @toolLoadingMode,
-                answers_mode = @answersModeJson,
                 updated_at = @updatedAt
           WHERE id = @id`,
         )
@@ -101,8 +94,6 @@ export class ScenarioRepository {
           defaultProfilesJson: stableStringify(parsed.defaultProfiles),
           guardrailsJson: stableStringify(parsed.guardrails),
           toolLoadingMode: parsed.toolLoadingMode,
-          // Qlik Answers (WP 2.3): JSON-serialize when present; NULL when omitted (non-qlik scenarios).
-          answersModeJson: parsed.answersMode ? stableStringify(parsed.answersMode) : null,
           updatedAt: now,
         });
       if (result.changes === 0) {
@@ -196,11 +187,6 @@ export class ScenarioRepository {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
-    // Qlik Answers (WP 2.3): NULL column stays omitted (non-qlik scenarios, or one that never set it) —
-    // the run engine's own `answersMode?.transport ?? "stream"` default then applies (D-QA2).
-    if (row.answers_mode) {
-      scenario.answersMode = parseJsonObject<AnswersMode>(row.answers_mode, { transport: "stream" });
-    }
     return scenario;
   }
 

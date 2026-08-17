@@ -55,7 +55,7 @@ responds. Based on that, it tells you what's needed:
 Whatever method you use, **credentials are encrypted before they're saved** and are never
 returned by the app afterward.
 
-> **Qlik Cloud note:** Qlik Cloud MCP requires a pre-registered OAuth client. Create one in
+> **Note:** some providers require a pre-registered OAuth client. Create one in
 > your tenant's admin UI with the scopes `user_default` and `mcp:execute`, add the app's
 > callback URL as an allowed redirect, and enter the resulting Client ID in the wizard. Leave
 > the Client Secret empty for Native or Single-page clients; enter it only for Web clients.

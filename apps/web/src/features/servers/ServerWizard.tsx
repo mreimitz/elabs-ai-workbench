@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   OAuthClientInput,
   OAuthStartResponse,
-  QlikTenantProbe,
   ServerAuthInput,
   ServerAuthType,
   ServerConfig,
@@ -54,9 +53,7 @@ import { SERVER_TYPE_STATUS_LABELS } from "./serverTypeStatus";
 const UNTYPED_OPTION = "__untyped__";
 
 type TestResult = { ok: boolean; tools: number; durationMs: number; errorMessage?: string };
-// "offer" (Qlik Answers, WP 2.2) is a post-save-only interstitial — never part of the numbered
-// connection/auth/review flow, so it's deliberately excluded from the `steps` indicator array below.
-type WizardStep = "connection" | "auth" | "review" | "offer";
+type WizardStep = "connection" | "auth" | "review";
 
 type FormState = {
   name: string;
@@ -117,23 +114,6 @@ export function ServerWizard(props: {
    */
   onComplete?: (serverId: string) => void;
   /**
-   * Qlik Answers onboarding (WP 2.2) — the free, list-only tenant-assistants availability check, run
-   * ONCE right after a brand-new streamable-HTTP server is saved (never on an edit/reauth of an
-   * existing server — that path is the server-detail "Answers available" CTA instead). Optional so a
-   * caller that doesn't wire it simply skips the check (every save behaves exactly as before).
-   */
-  onProbeAnswers?: (serverId: string) => Promise<QlikTenantProbe>;
-  /**
-   * Fired when the user ACCEPTS the post-save "set up Qlik Answers" offer (never on decline — that's
-   * a silent no-op by design). The caller owns opening the actual setup flow
-   * (`QlikAnswersOfferDialog`); this wizard only shows the consent panel and hands off.
-   */
-  onOfferAnswers?: (input: {
-    serverId: string;
-    serverName: string;
-    probe: QlikTenantProbe;
-  }) => void;
-  /**
    * P0 reauth (audit finding / T7). When an OAuth token expires mid-op, this same dialog is reused
    * to sign in again — but as `reason:"reauth"` it must NOT read as "your config is wrong". It
    * retitles to "Sign in again to {server}", explains the expired session + the interrupted action,
@@ -157,9 +137,6 @@ export function ServerWizard(props: {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [connErrors, setConnErrors] = useState<ConnectionErrors>({});
-  // Qlik Answers onboarding (WP 2.2) — set only when the post-save probe reports `answersAvailable`;
-  // drives the "offer" step's copy (assistant count) and is handed to `onOfferAnswers` on accept.
-  const [answersProbe, setAnswersProbe] = useState<QlikTenantProbe | null>(null);
   // A snapshot of the form at open, for the dirty check.
   const [baseline, setBaseline] = useState<string>("");
 
@@ -172,7 +149,6 @@ export function ServerWizard(props: {
   const reauthProviderLabel = props.reauthContext?.provider ?? reauthServerName;
   const reauthActionLabel = props.reauthContext?.action ?? "what you started";
   const callbackUrl = `${window.location.origin}/api/oauth/callback`;
-  const oauthClientIdRequired = form.authType === "oauth" && isLikelyQlikMcpUrl(form.url);
   const steps = useMemo(
     () =>
       form.transport === "streamable_http"
@@ -217,7 +193,6 @@ export function ServerWizard(props: {
     setBusy(null);
     setError(null);
     setConnErrors({});
-    setAnswersProbe(null);
   }, [props.open, props.server, isReauth]);
 
   /**
@@ -295,25 +270,9 @@ export function ServerWizard(props: {
   /**
    * The single "this save is done" exit path — replaces the old direct
    * `onComplete?.(id); onOpenChange(false)` at all three completion sites (plain save, OAuth
-   * already-authorized, OAuth post-login verify). For a BRAND-NEW streamable-HTTP server only (never
-   * an edit/reauth — `editing` is true there), runs the free Qlik Answers availability probe; if the
-   * tenant has assistants, the wizard stays open on a consent "offer" step instead of closing. Any
-   * probe failure (network hiccup, non-Qlik server) silently falls through to the normal close — this
-   * ancillary check must never block a successful save from completing.
+   * already-authorized, OAuth post-login verify).
    */
   async function finishAfterSave(serverId: string) {
-    if (!editing && form.transport === "streamable_http" && props.onProbeAnswers) {
-      try {
-        const result = await props.onProbeAnswers(serverId);
-        if (result.answersAvailable) {
-          setAnswersProbe(result);
-          setStep("offer");
-          return;
-        }
-      } catch {
-        // Never block the save's success on this ancillary check.
-      }
-    }
     props.onComplete?.(serverId);
     props.onOpenChange(false);
   }
@@ -335,13 +294,6 @@ export function ServerWizard(props: {
     setBusy("oauth");
     setError(null);
     try {
-      if (oauthClientIdRequired && !form.oauthClientId.trim()) {
-        setError(
-          "Qlik Cloud MCP requires an OAuth Client ID. Register this app callback URL in Qlik Cloud and enter the Client ID.",
-        );
-        document.getElementById("wizard-oauth-id")?.focus();
-        return;
-      }
       if (form.oauthClientSecret.trim() && !form.oauthClientId.trim()) {
         setError("OAuth Client Secret requires an OAuth Client ID.");
         document.getElementById("wizard-oauth-id")?.focus();
@@ -381,26 +333,6 @@ export function ServerWizard(props: {
     } finally {
       setBusy(null);
     }
-  }
-
-  /** The "offer" step's two exits — both close the wizard; only "accept" hands off to the setup flow
-   *  (via `onOfferAnswers`). Reuses `activeServer` since the server was already saved by this point. */
-  function declineAnswersOffer() {
-    if (activeServer) {
-      props.onComplete?.(activeServer.id);
-      props.onOpenChange(false);
-    }
-  }
-
-  function acceptAnswersOffer() {
-    if (activeServer && answersProbe) {
-      props.onOfferAnswers?.({
-        serverId: activeServer.id,
-        serverName: resolvedName(form),
-        probe: answersProbe,
-      });
-    }
-    declineAnswersOffer();
   }
 
   function setFormValue<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -720,7 +652,7 @@ export function ServerWizard(props: {
             a pre-registered client.
           </Text>
           <div className="grid gap-4 sm:grid-cols-2">
-            <FieldRow id="wizard-oauth-id" label="OAuth Client ID" required={oauthClientIdRequired}>
+            <FieldRow id="wizard-oauth-id" label="OAuth Client ID">
               <Input
                 id="wizard-oauth-id"
                 value={form.oauthClientId}
@@ -791,64 +723,27 @@ export function ServerWizard(props: {
     </div>
   );
 
-  // Qlik Answers onboarding (WP 2.2) — a consent-gated offer, shown ONLY when the post-save probe
-  // found tenant assistants. Accepting hands off to `QlikAnswersOfferDialog` (the caller's job, via
-  // `onOfferAnswers`); declining just finishes the save like before.
-  const offerContent =
-    step === "offer" && answersProbe ? (
-      <div className="flex flex-col gap-3">
-        <Alert variant="info">
-          <Sparkles aria-hidden />
-          <AlertDescription>
-            This server is on a Qlik Cloud tenant with {answersProbe.assistantCount} Qlik Answers{" "}
-            {answersProbe.assistantCount === 1 ? "assistant" : "assistants"}. Set{" "}
-            {answersProbe.assistantCount === 1 ? "it" : "them"} up as test targets?
-          </AlertDescription>
-        </Alert>
-        <Text variant="meta" tone="muted">
-          Each assistant becomes its own locked test environment (no MCP servers or skills
-          attached). Running tests against it consumes the tenant&apos;s question quota.
-        </Text>
-      </div>
-    ) : null;
-
-  // One WideDialog section per wizard step (the rail is the step indicator + backward nav). The
-  // post-save "offer" interstitial is NOT a numbered step, so it collapses the rail to a single
-  // section while it's shown.
-  const stepSections: WideDialogSection[] = steps.map((s) => ({
+  // One WideDialog section per wizard step (the rail is the step indicator + backward nav).
+  const sections: WideDialogSection[] = steps.map((s) => ({
     id: s.id,
     label: s.label,
     content:
       s.id === "connection" ? connectionContent : s.id === "auth" ? authContent : reviewContent,
   }));
-  const sections: WideDialogSection[] =
-    step === "offer"
-      ? [{ id: "offer", label: "Qlik Answers", content: offerContent }]
-      : stepSections;
 
   // Backward-only rail navigation: a linear wizard can't skip forward past an un-validated step, so
   // the rail only lets you jump to an EARLIER step (equivalent to the Back button). Never while busy
   // or on the post-save interstitial.
   const stepOrder = steps.map((s) => s.id);
   function handleSectionChange(id: string) {
-    if (busy || step === "offer") return;
+    if (busy) return;
     const currentIndex = stepOrder.indexOf(step);
     const targetIndex = stepOrder.indexOf(id);
     if (targetIndex !== -1 && targetIndex < currentIndex) setStep(id as WizardStep);
   }
 
   const footer =
-    step === "offer" ? (
-      <div className="flex w-full items-center justify-end gap-2">
-        <Button variant="outline" onClick={declineAnswersOffer}>
-          Not now
-        </Button>
-        <Button onClick={acceptAnswersOffer}>
-          <Sparkles aria-hidden />
-          <span>Set up {answersProbe?.assistantCount === 1 ? "assistant" : "assistants"}</span>
-        </Button>
-      </div>
-    ) : (
+    (
       // Back grouped LEFT; Cancel + the step's forward/commit action grouped right (kit footer rule).
       <div className="flex w-full items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -1064,15 +959,6 @@ function isValidHttpUrl(raw: string): boolean {
   try {
     const parsed = new URL(raw);
     return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function isLikelyQlikMcpUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    return parsed.hostname.endsWith(".qlikcloud.com") && parsed.pathname.includes("/api/ai/mcp");
   } catch {
     return false;
   }

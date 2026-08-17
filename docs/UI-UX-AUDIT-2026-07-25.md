@@ -242,21 +242,21 @@ An operator who learns filtering on the Runs feed (add-then-configure, ✕ to re
 
 `CompatibilityView.tsx:212-306` spreads six controls as bare siblings into `ViewToolbar left` — a fragment, no wrapper div, no `flex-wrap`, no overflow strategy. Below ~1300px they will collide rather than wrap.
 
-The host-client `Select` (`:296`) is the real problem: its visible text is **"None"**. Nothing on screen says it is about the host client. Its `aria-label="Host client"` means a screen-reader user is better informed than a sighted one — the inverse of the usual failure. The scan select reads `qlik-mreimitz · Jul 21,…` truncated mid-date; the model picker reads `5 models · De…`.
+The host-client `Select` (`:296`) is the real problem: its visible text is **"None"**. Nothing on screen says it is about the host client. Its `aria-label="Host client"` means a screen-reader user is better informed than a sighted one — the inverse of the usual failure. The scan select reads `acme-demo · Jul 21,…` truncated mid-date; the model picker reads `5 models · De…`.
 
 **Fix.** Wrap in `<div className="flex min-w-0 flex-wrap items-center gap-2">`. Give the host-client select `<SelectValue placeholder="Host client" />` and render the empty state as "Host client: none" rather than "None". Widen the scan select or shorten its option label to `<server> · <date>`.
 
 ## C-4 · Compare bar: the discriminating token is the one that's truncated — **S2**
 
-![The compare bar — both server selects read "· qlik-saas · Pro…"](ui-audit-2026-07-25/03-compare-bar-truncation.png)
+![The compare bar — both server selects read "· acme-saas · Pro…"](ui-audit-2026-07-25/03-compare-bar-truncation.png)
 
-The Server A / Server B selects hold `qlik-mreimitz · qlik-saas · Production` — 38 characters — in a **131px** box. Measured `scrollWidth` 129 against a 131px client width, so it is fully clipped. What renders is `· qlik-saas · Pro…`: the leading separator and the type/environment, with **the server name — the only thing that distinguishes A from B on a comparison screen — cut off.**
+The Server A / Server B selects hold `acme-demo · acme-saas · Production` — 38 characters — in a **131px** box. Measured `scrollWidth` 129 against a 131px client width, so it is fully clipped. What renders is `· acme-saas · Pro…`: the leading separator and the type/environment, with **the server name — the only thing that distinguishes A from B on a comparison screen — cut off.**
 
 Neither select carries a `title`, so there is no hover recovery. (The scan selects beside them *do* — `title="33 eligible scans"` — which is the less useful of the two.)
 
 Eleven controls sit in this one row with only `A`/`B` letter chips and `Earlier`/`Later` as orientation.
 
-**Fix.** Put the server name first and let the rest go: `qlik-mreimitz` with type/environment as a secondary `Badge` outside the select. Add `title` with the full value. Widen to `w-56` — there is horizontal room, the row ends at x≈1490.
+**Fix.** Put the server name first and let the rest go: `acme-demo` with type/environment as a secondary `Badge` outside the select. Add `title` with the full value. Widen to `w-56` — there is horizontal room, the row ends at x≈1490.
 
 ## C-5 · Count readouts: five renderings of one idea — **S3**
 
@@ -471,7 +471,7 @@ So this doesn't drift a third time:
 
 **Walked:** `/dashboard` (Scans · Testing · Issues), `/servers` + detail, `/scans`, `/compare/scans`, `/skills` + inspector, `/testing/collections`, `/testing/runs` + console + `/new` + `/compare`, `/testing/compatibility`, `/testing/environments`, `/assistant`, `/assistant/sessions`, `/assistant/agents`, `/assistant/projects`, `/assistant/audit`, `/settings`, run launcher wizard. Both themes.
 
-**Not covered — needs a real workload or credentials:** suite-run console with a live suite, SkillFlow Design/Trace canvas, Qlik Answers surfaces, watch rules and review rubrics with data, OAuth flows, responsive behaviour below 1200px, full keyboard-only traversal, screen-reader pass.
+**Not covered — needs a real workload or credentials:** suite-run console with a live suite, SkillFlow Design/Trace canvas, the vendor assistant surfaces, watch rules and review rubrics with data, OAuth flows, responsive behaviour below 1200px, full keyboard-only traversal, screen-reader pass.
 
 **Retracted during verification** — stated here so the record is honest:
 - "Breadcrumbs are inconsistent because Agents/Projects/Audit are children of Assistant" — **wrong**, they are sidebar peers; the code anticipates this objection at `AppShell.tsx:167-170`. Reduced to B-4.

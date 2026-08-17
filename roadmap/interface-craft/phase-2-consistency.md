@@ -23,7 +23,7 @@ One meaning per color, one recovery per truncation, one elevation per card, one 
 in-repo `AgentBriefPreview.tsx:13-33` pattern (`line-clamp-2` + `title` + a `HoverCard` with the full
 text):
 - `RunTableRow.tsx` Environment cell (`max-w-[12rem] truncate`, no `title`) — add `title={value}` (the
-  live-DOM confirmed clip was `Qlik Answers — ontime-assistant`).
+  live-DOM confirmed clip was `the vendor assistant — ontime-assistant`).
 - `CollectionsView.tsx` bound-path line — `title` on the clipped path (keep `font-mono` for bound paths).
 - `CrewCard.tsx` `line-clamp-2` crew description — add `title` (recovery). **`AgentCard.tsx` already has
   `title`** (toolbar-reach touch-up, `:186`/`:234`) — **verify, do not re-apply, don't touch it** (out

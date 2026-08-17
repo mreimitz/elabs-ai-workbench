@@ -22,7 +22,7 @@ READ FIRST (authoritative)
 - Reference implementation to generalize: apps/api/src/grading/claude-cli-judge.ts
   (drives the subscription CLI as an LLM via the AgentSessionDriver — ~80% of the executor).
 - Pattern to mirror for a "selectable model that runs on its own branch + marks estimated metrics":
-  the qlik_answers executor (apps/api/src/testing/*qlik-answers* + the fork at
+  the vendor_assistant executor (apps/api/src/testing/*vendor-assistant* + the fork at
   apps/api/src/testing/run-service.ts:398-406, and registry.modelFor throwing for the kind).
 - CLAUDE.md + .claude/rules/* (contract-first in packages/shared; brand-ui only; secrets stay in
   the API; quality gate = pnpm typecheck && pnpm test && pnpm build && pnpm lint).
@@ -47,7 +47,7 @@ Then VALIDATE each returned WP yourself before ticking:
 KEY DECISIONS TO HOLD (do not re-litigate)
 - Internal kind = claude_subscription; executor module = claude-subscription-executor. NEVER bare
   "assistant" (collides with apps/api/src/assistant/*), NEVER claude_cli (already the judge provider id).
-- It is a NEW executor branch (like qlik_answers), NOT a modelFor entry — the Agent SDK is not an
+- It is a NEW executor branch (like vendor_assistant), NOT a modelFor entry — the Agent SDK is not an
   AI-SDK LanguageModel.
 - Auth = the signed-in subscription only, resolved from assistant_credentials at run time; not
   signed in → "auth broken" + honest run error, never a fake result.

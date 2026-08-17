@@ -46,7 +46,7 @@ function seedIssue(issues: RatingIssueRepository): string {
   const issue = issues.insert({
     targetKind: "mcp_server",
     targetId: "srv-1",
-    targetName: "Qlik MCP",
+    targetName: "Acme MCP",
     title: "run_query rejects a date filter",
     summary: "schema-validation error",
     bucket: "mcp_server",

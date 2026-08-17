@@ -61,7 +61,7 @@ export type ToolCallOutcome = {
  * Observability (WP3.1, D-OB17) — the MCP request/response sizes + timing of ONE `tools/call`, i.e. the
  * payload a `tool_io` CHILD step carries UNDER its parent `tool_call` step (D-OB17's "MCP roundtrip
  * detail"). Derived purely from a settled {@link ToolCallOutcome} by {@link toolIoDetail}; ENGINE-PATH
- * only (the subscription child owns its MCP internally; `qlik_answers` has no tools — its capability
+ * only (the subscription child owns its MCP internally; a backend with no tools has its capability
  * manifest already says so). This is the tool-bridge's contribution to the step tree; a sink pairs it
  * with the parent `tool_call` step's id via `RunStep.parentStepId` to persist the child.
  */

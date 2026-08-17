@@ -8,7 +8,6 @@ import {
   parseAnthropicModels,
   parseGoogleModels,
   parseOpenAiModels,
-  parseQlikAnswersAssistants,
 } from "../src/providers/model-catalog.js";
 
 // These lock the pure provider-response normalizers behind GET /api/providers/:id/models. They are
@@ -133,201 +132,6 @@ test("isChatModelId rejects non-chat modalities and accepts real chat models", (
   }
 });
 
-// --- Qlik Answers assistants roster (WP 0.3) ---------------------------------------------------
-// listAvailableModels() is normally thin fetch/pagination glue (untested elsewhere, per the file
-// header). qlik_answers gets full coverage here because it must NEVER touch a real tenant — every
-// call goes through the injectable `fetchImpl` seam, stubbed with fixtures shaped like the public
-// Qlik Answers assistants API (`GET /api/v1/assistants` — verified against the qlik.dev OpenAPI
-// spec + the generated `qlik-oss/qlik-api-ts` types).
-
-test("parseQlikAnswersAssistants maps id + name and skips entries without an id", () => {
-  const payload = [
-    { id: "a1", name: "Sales Assistant", spaceId: "space-1" },
-    { id: "a2" }, // no name → displayName undefined
-    { name: "no id — dropped" },
-    "garbage", // non-object → dropped
-  ];
-  assert.deepEqual(parseQlikAnswersAssistants(payload), [
-    { id: "a1", displayName: "Sales Assistant" },
-    { id: "a2", displayName: undefined },
-  ]);
-});
-
-test("parseQlikAnswersAssistants returns [] for empty / malformed payloads", () => {
-  for (const bad of [null, undefined, {}, "nope", 42]) {
-    assert.deepEqual(parseQlikAnswersAssistants(bad), []);
-  }
-});
-
-/** Builds a stub `fetchImpl` from an ordered list of `{ status, body }` responses, one per call. */
-function stubFetch(responses: Array<{ status: number; body: unknown }>): FetchLike {
-  let call = 0;
-  return (async (_url: string | URL, _init?: RequestInit) => {
-    const next = responses[call];
-    call += 1;
-    if (!next) throw new Error("stubFetch called more times than fixtures were provided");
-    return new Response(JSON.stringify(next.body), {
-      status: next.status,
-      headers: { "content-type": "application/json" },
-    });
-  }) as FetchLike;
-}
-
-test("listAvailableModels(qlik_answers) fetches the roster with a bearer token and maps it", async () => {
-  const calls: string[] = [];
-  const fetchImpl = (async (url: string | URL) => {
-    calls.push(String(url));
-    return new Response(
-      JSON.stringify({
-        data: [
-          { id: "a1", name: "Sales Assistant" },
-          { id: "a2", name: "Support Assistant" },
-        ],
-        links: {},
-        meta: { countTotal: 2 },
-      }),
-      { status: 200, headers: { "content-type": "application/json" } },
-    );
-  }) as FetchLike;
-
-  const models = await listAvailableModels(
-    { kind: "qlik_answers", baseUrl: "https://mytenant.us.qlikcloud.com", apiKey: "tenant-key" },
-    fetchImpl,
-  );
-
-  assert.deepEqual(models, [
-    { id: "a1", displayName: "Sales Assistant" },
-    { id: "a2", displayName: "Support Assistant" },
-  ]);
-  assert.equal(calls.length, 1);
-  assert.match(
-    calls[0] ?? "",
-    /^https:\/\/mytenant\.us\.qlikcloud\.com\/api\/v1\/assistants\?limit=100$/,
-  );
-});
-
-test("listAvailableModels(qlik_answers) follows links.next.href across pages and accumulates", async () => {
-  const fetchImpl = stubFetch([
-    {
-      status: 200,
-      body: {
-        data: [{ id: "a1", name: "Page 1 Assistant" }],
-        links: {
-          next: {
-            href: "https://mytenant.us.qlikcloud.com/api/v1/assistants?limit=100&next=cursor-2",
-          },
-        },
-      },
-    },
-    {
-      status: 200,
-      body: {
-        data: [{ id: "a2", name: "Page 2 Assistant" }],
-        links: {}, // no next → pagination stops
-      },
-    },
-  ]);
-
-  const models = await listAvailableModels(
-    { kind: "qlik_answers", baseUrl: "https://mytenant.us.qlikcloud.com", apiKey: "tenant-key" },
-    fetchImpl,
-  );
-
-  assert.deepEqual(models, [
-    { id: "a1", displayName: "Page 1 Assistant" },
-    { id: "a2", displayName: "Page 2 Assistant" },
-  ]);
-});
-
-test("listAvailableModels(qlik_answers) surfaces a 401/403 with a check-the-API-key hint", async () => {
-  const fetchImpl = stubFetch([
-    { status: 401, body: { errors: [{ code: "AE-3", title: "Unauthorized" }] } },
-  ]);
-
-  await assert.rejects(
-    () =>
-      listAvailableModels(
-        { kind: "qlik_answers", baseUrl: "https://mytenant.us.qlikcloud.com", apiKey: "bad-key" },
-        fetchImpl,
-      ),
-    (error: unknown) => {
-      assert.ok(error instanceof Error);
-      assert.match(error.message, /Qlik Answers returned 401/);
-      assert.match(error.message, /check the API key/);
-      return true;
-    },
-  );
-});
-
-// H-10 / 06-security-review.md M3 — the roster fetch used to carry an UNGATED
-// `console.error("[QA-DEBUG roster]", ...)` (a self-labeled "TEMP DEBUG — REMOVE" leftover) that
-// dumped up to 6 KB of the raw tenant assistant payload to stderr on EVERY roster fetch — unlike its
-// sibling `qaDebug()` helper, which only logs when `QLIK_ANSWERS_DEBUG` is set. It has been deleted.
-// Lock that: a roster fetch must never emit a `console.error` carrying that marker (or, as a stronger
-// bar, must never call `console.error` at all when `QLIK_ANSWERS_DEBUG` is unset).
-test("listAvailableModels(qlik_answers) never dumps the raw roster to stderr (H-10 debug leftover removed)", async (t) => {
-  // Bracket-accessed via a variable (not a literal) key — matches the pattern already used by
-  // assistant-env.test.ts's `freshConfig` helper, which the `noDelete`/`useLiteralKeys` lint pair
-  // allows for a genuinely dynamic env-var unset/restore (a literal `delete obj.prop` does not).
-  const debugEnvKey = "QLIK_ANSWERS_DEBUG";
-  const originalDebugEnv = process.env[debugEnvKey];
-  delete process.env[debugEnvKey];
-  t.after(() => {
-    if (originalDebugEnv === undefined) delete process.env[debugEnvKey];
-    else process.env[debugEnvKey] = originalDebugEnv;
-  });
-
-  const errorCalls: unknown[][] = [];
-  t.mock.method(console, "error", (...args: unknown[]) => {
-    errorCalls.push(args);
-  });
-
-  const fetchImpl = (async (url: string | URL) => {
-    return new Response(
-      JSON.stringify({
-        data: [
-          {
-            id: "a1",
-            name: "Sales Assistant",
-            // Exactly the kind of raw tenant metadata H-10 flagged as leaking (knowledgeBases/spaceId).
-            spaceId: "space-1",
-            knowledgeBases: ["kb-1", "kb-2"],
-          },
-        ],
-        links: {},
-      }),
-      { status: 200, headers: { "content-type": "application/json" } },
-    );
-  }) as FetchLike;
-
-  await listAvailableModels(
-    { kind: "qlik_answers", baseUrl: "https://mytenant.us.qlikcloud.com", apiKey: "tenant-key" },
-    fetchImpl,
-  );
-
-  assert.equal(errorCalls.length, 0, "console.error must not fire at all with QLIK_ANSWERS_DEBUG unset");
-  assert.ok(
-    !errorCalls.some((args) => String(args[0]).includes("QA-DEBUG roster")),
-    "the removed [QA-DEBUG roster] marker must never be logged",
-  );
-});
-
-test("listAvailableModels(qlik_answers) requires baseUrl and apiKey", async () => {
-  const fetchImpl = stubFetch([]);
-  await assert.rejects(
-    () => listAvailableModels({ kind: "qlik_answers", apiKey: "k" }, fetchImpl),
-    /requires a base URL/,
-  );
-  await assert.rejects(
-    () =>
-      listAvailableModels(
-        { kind: "qlik_answers", baseUrl: "https://mytenant.us.qlikcloud.com" },
-        fetchImpl,
-      ),
-    /has no API key/,
-  );
-});
-
 // --- Claude subscription roster (roadmap/claude-subscription/, WP 0.3, D-CS5) -------------------
 // No REST call, no API key/baseUrl — the roster is the same static ASSISTANT_DEFAULT_MODEL_ROSTER
 // the embedded Assistant dock's model picker falls back to. A stub fetchImpl that throws on any
@@ -338,7 +142,7 @@ test("listAvailableModels(claude_subscription) returns the Assistant's static ro
     throw new Error("must not be called for claude_subscription");
   }) as FetchLike;
 
-  const models = await listAvailableModels({ kind: "claude_subscription" }, fetchImpl);
+  const models = await listAvailableModels({ kind: "claude_subscription" });
 
   assert.deepEqual(
     models.map((m) => m.id),
@@ -362,11 +166,7 @@ test("listAvailableModels(claude_subscription) returns the LIVE list from an inj
     { id: "claude-sonnet-5", displayName: "Sonnet 5" },
   ];
   const subscriptionModels = { resolve: async () => live };
-  const fetchImpl = (async () => {
-    throw new Error("must not be called for claude_subscription");
-  }) as FetchLike;
-
-  const models = await listAvailableModels({ kind: "claude_subscription" }, fetchImpl, subscriptionModels);
+  const models = await listAvailableModels({ kind: "claude_subscription" }, subscriptionModels);
 
   // The resolver's live roster is passed through verbatim (order + displayName), never the static list.
   assert.deepEqual(models, live);

@@ -401,7 +401,6 @@ test("D-CS10/orchestrator: a suite with a claude_subscription member runs it via
     undefined, // sessionOpener
     skills,
     undefined, // grades — no LLM judge fires
-    undefined, // answersFetch
     undefined, // issues
     driver, // subscriptionDriver (the stub — NO real child)
     () => AUTH, // subscriptionAuth

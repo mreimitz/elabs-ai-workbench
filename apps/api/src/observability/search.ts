@@ -364,7 +364,7 @@ export class RunSearchIndex {
       const errStr = payloadField(step.payload, "error");
       if (typeof errStr === "string") this.putDoc(runId, stepId, "error", errStr);
     }
-    // Any step carrying assistant prose (an `llm_response`, incl. a Qlik answer) → assistant class.
+    // Any step carrying assistant prose (an `llm_response`) → assistant class.
     if (typeof step.assistantText === "string" && step.assistantText.length > 0) {
       this.putDoc(runId, stepId, "assistant", step.assistantText);
     }

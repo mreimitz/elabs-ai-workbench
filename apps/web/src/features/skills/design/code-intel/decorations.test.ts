@@ -34,13 +34,13 @@ function inlineClasses(decorations: DeltaDecoration[]): string[] {
     .filter((name): name is string => typeof name === "string");
 }
 
-const KNOWN = ["qlik_search", "qlik_get_data_model"];
+const KNOWN = ["acme_search", "acme_get_data_model"];
 
 describe("computeTextDecorations — tool references", () => {
   it("decorates BOTH backticked and bare known refs with the known class", () => {
     const decorations = computeTextDecorations(
       monacoApi,
-      stubModel("Use `qlik_search` then qlik_search again."),
+      stubModel("Use `acme_search` then acme_search again."),
       KNOWN,
     );
     const toolClasses = inlineClasses(decorations).filter((c) => c.includes("skill-ci-tool-ref"));
@@ -53,7 +53,7 @@ describe("computeTextDecorations — tool references", () => {
   it("gives a backticked unknown-toollike span the warning class when tools are known", () => {
     const decorations = computeTextDecorations(
       monacoApi,
-      stubModel("Call `qlik_serach` first."),
+      stubModel("Call `acme_serach` first."),
       KNOWN,
     );
     expect(inlineClasses(decorations)).toEqual(["skill-ci-tool-ref skill-ci-tool-ref--unknown"]);
@@ -68,7 +68,7 @@ describe("computeTextDecorations — tool references", () => {
   it("keeps a toollike span NEUTRAL when the known list is empty (unbound — nothing to validate)", () => {
     const decorations = computeTextDecorations(
       monacoApi,
-      stubModel("Call `qlik_search` first."),
+      stubModel("Call `acme_search` first."),
       [],
     );
     expect(inlineClasses(decorations)).toEqual(["skill-ci-tool-ref"]);
@@ -86,14 +86,14 @@ describe("computeTextDecorations — tool references", () => {
   it("decorates a known ref inside a heading (the SI7 flakiness case)", () => {
     const decorations = computeTextDecorations(
       monacoApi,
-      stubModel("## Search via qlik_search"),
+      stubModel("## Search via acme_search"),
       KNOWN,
     );
     expect(inlineClasses(decorations)).toEqual(["skill-ci-tool-ref skill-ci-tool-ref--known"]);
   });
 
   it("reflects a changed tool list over the SAME text (the async-arrival recompute)", () => {
-    const model = stubModel("Use `qlik_search`.");
+    const model = stubModel("Use `acme_search`.");
     // Before the bound tools land: neutral.
     expect(inlineClasses(computeTextDecorations(monacoApi, model, []))).toEqual([
       "skill-ci-tool-ref",

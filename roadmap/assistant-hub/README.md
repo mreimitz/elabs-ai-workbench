@@ -37,7 +37,7 @@ Two sentences the whole workstream must honor:
 ## 2. Why the app is ready for this
 
 - **Multi-model is already real:** 7 provider kinds (`anthropic`, `openai`, `google`,
-  `openai_compatible`, `ollama`, `qlik_answers`, `claude_subscription`) with encrypted
+  `openai_compatible`, `ollama`, `vendor_assistant`, `claude_subscription`) with encrypted
   credentials, per-provider model catalogs, `MODEL_PRICING`, and — via the shipped
   `claude-subscription` workstream — a zero-marginal-cost Claude path with exact token counts.
 - **A real agent loop exists:** the AI-SDK engine (`streamText` + MCP tool bridge + skills +
@@ -59,7 +59,7 @@ Two sentences the whole workstream must honor:
 | **D-AH1** | **Identity: general-purpose.** The Assistant answers ANY question/task; its powers come from the registered MCP servers, skills and configured models. App data (scans, runs, skills) is one more knowledge source (read tools arrive in a later wave), not the center of gravity. |
 | **D-AH2** | **Naming.** UI label **"Assistant"**, nav item **directly below Dashboard**, route family **`/assistant`**. Internal domain namespace is **`hub`** (dirs `apps/api/src/hub/`, `apps/web/src/features/hub/`, routes `/api/hub/*`, tables `hub_*`, env `HUB_*`, shared types `Hub*`) — never bare `assistant` (taken by the dock) and never "Claude Code" (policy, D-AS9 applies here too). The dock's visible label becomes **"App assistant"** (copy-only change; its engine, routes and decisions D-AS1…33 are untouched). Workstream folder: `roadmap/assistant-hub/`. |
 | **D-AH3** | **Own domain, shared primitives.** New `hub_*` tables + a hub **turn engine** composed from the existing inference primitives — `providers/registry.modelFor` (AI-SDK kinds), the `AgentSessionDriver` path for `claude_subscription` (shared child semaphore), the MCP tool-bridge translation, token counting, `MODEL_PRICING`, and the Unified-Sessions shared modules (`SessionClock`, `terminalFor`, capability manifest). The Hub **never writes testing tables**; runs/suites/grading and the dock engine are untouched. |
-| **D-AH4** | **Model surface at launch:** all five AI-SDK kinds + `claude_subscription`, selectable per session (default) and **switchable per message**; capability manifest gates the UI per kind (planner-derived; owner may veto). `qlik_answers` is **not** a hub model in v1 (clean-session/no-tools mismatch) — revisit later. |
+| **D-AH4** | **Model surface at launch:** all five AI-SDK kinds + `claude_subscription`, selectable per session (default) and **switchable per message**; capability manifest gates the UI per kind (planner-derived; owner may veto). `vendor_assistant` is **not** a hub model in v1 (clean-session/no-tools mismatch) — revisit later. |
 | **D-AH5** | **Session modes, chosen at session start:** `chat` (plain multi-model chat) · `research` (search-grounded, citations-first) · `mission` (the harness). Mission config adds **topology** (`parallel` · `pipeline` · `debate` · `best_of_n`) and **autonomy**, and may start **from a saved crew**. Modes shape the system prompt, default tools and UI emphasis. |
 | **D-AH6** | **Harness flow: propose → approve → run → synthesize.** A planner model analyzes the prompt and proposes a team — roles, per-agent task briefs, models, tool grants, budgets, topology, rationale, cost estimate — rendered as an **editable plan card**. On approval the agents run as parallel child sessions; a synthesizer composes the final answer from their structured reports, **citing each agent's contribution** (and their citations). **Autonomy dial** per session: `always_ask` · `threshold` (agent count / est. cost) · `auto`. |
 | **D-AH7** | **Roles are fully customizable.** A role defines: name, **system prompt**, default **model**, **MCP servers AND individual tools** within them, **skills**, a **main target** (objective) and an **expected outcome** (structured output contract), plus budgets. A curated, user-editable **role library** lives in a dedicated Agents view; the planner draws from the library **and may compose ad-hoc roles** within mission policy. **Saved crews** = named teams (roles + overrides + topology) instantiable by the user or the planner. |
@@ -114,7 +114,7 @@ Five waves — full WP detail, file ownership, dependency graph and the orchestr
   inbox + notifications is a flagged future extension).
 - **Cross-session auto-learned knowledge base** (owner-rejected; memory is explicit — D-AH11).
 - **Policy-controls UI / data-lifecycle suite** (D-AH13; delete + prune only).
-- **`qlik_answers` as a hub model** (D-AH4; revisit with the OpenAI facade experience).
+- **`vendor_assistant` as a hub model** (D-AH4; revisit with the OpenAI facade experience).
 - **Dock changes beyond the label** (D-AH2; D-AS decisions stand; D-US10's dock exclusion stands).
 - **Multi-user / team semantics** (single-owner rules; `team-server` implications decided there).
 - **Recursive agent spawning** (depth 1 in v1 — D-AH9).
@@ -130,7 +130,7 @@ Five waves — full WP detail, file ownership, dependency graph and the orchestr
 
 - **Hot-file contention:** `packages/shared/src/*`, `AppShell.tsx`, `config/env.ts`, Docker files
   are touched by Unified Sessions/Observability too — the orchestrator claims them only when no
-  sibling session is writing (same discipline as the qlik-answers/claude-subscription ledgers).
+  sibling session is writing (same discipline as the vendor-assistant/claude-subscription ledgers).
 - **Unified-Sessions module homes:** `SessionClock`/`terminalFor`/capabilities land under
   `apps/api/src/testing/` in US Wave 1. The Hub imports them cross-domain; if that import feels
   wrong in practice, the fix is a **move to a neutral module** (e.g. `apps/api/src/sessions/`)

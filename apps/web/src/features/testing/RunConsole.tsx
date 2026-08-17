@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import type {
-  AnswersSnapshot,
   AssertionResult,
   GuardrailConfig,
   RunDetail,
@@ -71,7 +70,6 @@ import {
   type TrippedMeter,
 } from "./RunBar";
 import {
-  answersPayloadOf,
   buildTimeline,
   INITIAL_ANNOUNCE_GATE,
   stepAnnounceGate,
@@ -89,9 +87,6 @@ import { KpiRail } from "./KpiRail";
 import { ContextChart } from "./ContextChart";
 // WP 3.2 — the turn index in the rail + the cross-representation navigation contract.
 import { TurnIndex } from "./TurnIndex";
-// WP 7.1 (qlik-answers Phase 7) — the rail "Insights" roll-up (the snapshot evidence, de-duped here
-// from the chat's SourcesPanel), with the reverse leg of the chip↔insight bidirectional link.
-import { RailInsightsPanel } from "./RailInsightsPanel";
 import type { ConsoleNavRef, ConsoleNavTarget, ConsolePane } from "./console-anchors";
 // WP 3.6 — the RIGHT bottom zone: virtualized step/packet log + the packet inspector.
 import { StepLog } from "./StepLog";
@@ -629,44 +624,6 @@ export function RunConsole({
     return baselineContextTokens || (viewStream.kpis?.contextTokens ?? 0);
   }, [viewStream.steps, viewStream.kpis, baselineContextTokens]);
 
-  // Unified Sessions WP 3.2 (D-US4) — the KPI rail's cost tile needs the run's total "questions"
-  // consumed whenever `capabilities.costBasis === "questions"` (Qlik's real cost unit), summed off
-  // each settled `llm_response` step's `AnswersStepPayload.questionsConsumed` (the SAME source
-  // `SourcesPanel`/`ConversationPane` already read via `answersPayloadOf`). Reads `viewStream.steps`
-  // so it honors the as-of-k replay slice (S1); a step only carries this payload once settled
-  // (loading-states: never derive from a mid-stream step). Zero for every other cost basis, so
-  // `<KpiRail>` below simply ignores the prop (it's gated on the SAME capability).
-  const questionsConsumed = useMemo(() => {
-    if (capabilities.costBasis !== "questions") return 0;
-    let total = 0;
-    for (const step of viewStream.steps) {
-      if (step.type !== "llm_response") continue;
-      const answers = answersPayloadOf(step.payload);
-      if (!answers) continue;
-      total += answers.questionsConsumed ?? 0;
-    }
-    return total;
-  }, [capabilities.costBasis, viewStream.steps]);
-
-  // WP 7.1 (qlik-answers Phase 7) — the rail "Insights" roll-up: each settled assistant turn's
-  // `Qlik.Snapshot` evidence, flattened in turn order for `RailInsightsPanel`. Derived off the SAME
-  // `viewStream.timeline` the chat renders (so it honors the as-of-k replay slice, S1) — a turn's
-  // `answersPayload` (and thus its `snapshots`) only exists once the `llm_response` step has settled,
-  // so this is loading-safe (never a mid-stream read). Gated on `capabilities.identity` (WP 3.2 —
-  // "this backend has a first-class named assistant", the same facet the identity card gates on) so
-  // it's declarative rather than a raw `providerKind` check; empty for any run whose turns produced no
-  // snapshots (a document/plain answer), so the panel stays gated off either way.
-  const qlikInsightTurns = useMemo<{ turnIndex: number; snapshots: AnswersSnapshot[] }[]>(() => {
-    if (!capabilities.identity) return [];
-    const result: { turnIndex: number; snapshots: AnswersSnapshot[] }[] = [];
-    for (const item of viewStream.timeline) {
-      if (item.kind !== "assistant_turn") continue;
-      const snapshots = item.answersPayload?.snapshots ?? [];
-      if (snapshots.length > 0) result.push({ turnIndex: item.turnIndex, snapshots });
-    }
-    return result;
-  }, [capabilities.identity, viewStream.timeline]);
-
   const identity: RunIdentity = {
     testName: target.test.name,
     scenarioName: scenario.name,
@@ -1100,7 +1057,6 @@ export function RunConsole({
                 guardrails={guardrails}
                 currentContextTokens={currentContextTokens}
                 capabilities={capabilities}
-                questionsConsumed={questionsConsumed}
                 // Observability (WP 3.2) — the hotspots strip: jump-links to the slowest/costliest/
                 // largest-context-jump step. `kpiByStepId` is the SAME replay-only cumulative snapshot
                 // map `StepLog`'s per-step economics chips read below (null while a run is still live —
@@ -1111,7 +1067,7 @@ export function RunConsole({
               />
               {/* Unified Sessions WP 3.2 (D-US4) — both context-window surfaces are gated on
                   `capabilities.contextWindow` instead of a `providerKind` check: a backend with no
-                  meaningful context window (today `qlik_answers` and `claude_subscription`) never gets
+                  meaningful context window (today `acme_answers` and `claude_subscription`) never gets
                   a turn-0 baseline that can't fulfill its promise, or a chart with nothing real to
                   plot. Every kind that declares `contextWindow:true` renders both, byte-identically. */}
               {isPreRun && capabilities.contextWindow ? (
@@ -1135,19 +1091,6 @@ export function RunConsole({
                   onSelectTurn={(turnIndex) => navigateTo("chat", { kind: "turn", turnIndex })}
                 />
               )}
-              {/* WP 7.1 (qlik-answers Phase 7) — the rail Insights roll-up: the snapshot evidence,
-                  de-duped here from the chat. Gated on the kind + at least one snapshot-bearing turn.
-                  "Show in answer" fires the REVERSE leg of the bidirectional link: `navigateTo("chat",
-                  { kind: "insight", … })` reveals the Chat tab and scrolls to the matching citation
-                  chip (falling back to the turn when a snapshot is cited by no text block). */}
-              {capabilities.identity && qlikInsightTurns.length > 0 ? (
-                <RailInsightsPanel
-                  turns={qlikInsightTurns}
-                  onCiteInsight={(turnIndex, snapshotIndex) =>
-                    navigateTo("chat", { kind: "insight", turnIndex, snapshotIndex })
-                  }
-                />
-              ) : null}
               {/* WP 5.1 — gate assertion results (completed run whose test declared assertions). */}
               {runId && assertionResults && assertionResults.length > 0 ? (
                 <AssertionResults results={assertionResults} runId={runId} />

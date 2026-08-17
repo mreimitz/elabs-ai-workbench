@@ -2,13 +2,13 @@
 
 Analysis of hub session `o8cK7ICodepdc5JvlI4QB` ("Full-Answers-subagents", mode `mission`, model `claude-sonnet-4-6`, 82 events) against the current code on `feat/assistant-hub-ux`. Four reported issues, each traced to a concrete root cause in code, plus the collateral defects found on the way and a proposed fix slate.
 
-Note on wording: "the facade" below means the OpenAI-compatible facade that serves Qlik Answers assistants as models with ids like `assistant|hsbc|sales-analytics`.
+Note on wording: "the facade" below means the OpenAI-compatible facade that serves the vendor assistant assistants as models with ids like `assistant|hsbc|sales-analytics`.
 
 ## TL;DR
 
 | # | Symptom | Root cause | Fix direction |
 |---|---|---|---|
-| 1 | Main session cannot access sub-agent results ("Missing Agent Outputs") | (a) Synthesis ran on `plan.agents[0].model`, here a Qlik Answers facade model that drops the system prompt carrying the whole reports digest. (b) Later turns reconstruct context from `user_message` and `assistant_message` events only; `agent_report` events are never model-visible and no builtin can read them. | Synthesis model guard + persist a mission digest into model context + `mission.report` read builtin + structured follow-ups |
+| 1 | Main session cannot access sub-agent results ("Missing Agent Outputs") | (a) Synthesis ran on `plan.agents[0].model`, here a the vendor assistant facade model that drops the system prompt carrying the whole reports digest. (b) Later turns reconstruct context from `user_message` and `assistant_message` events only; `agent_report` events are never model-visible and no builtin can read them. | Synthesis model guard + persist a mission digest into model context + `mission.report` read builtin + structured follow-ups |
 | 2 | Pasted follow-up questions produced fake "agents" via `tasks.create` instead of a second mission | Mission planning is unreachable after mission #1: the client only proposes when no mission exists yet, `mission` mode maps to a plain `chat` prompt, and `mission.propose_plan` is granted only in `auto` mode. The model improvised with the task board. | Grant + route `mission.propose_plan` in mission mode once the prior mission is terminal; add an explicit "never simulate agents" rule; seed the planner with conversation and prior-mission context |
 | 3 | Emoji / AI-slop icons everywhere despite "the system prompt forbids it" | No such rule exists. The hub prompt stack contains zero style rules about emoji, icons, or slop phrasing, in any layer, for any session kind. | Add a style-contract layer injected into every prompt (main, planner, synthesizer, agents, critic) + optional deterministic strip at the artifact/GenUI boundary |
 | 4 | Web search cannot answer "weather today in NY" | `web.search` is provider-native only (anthropic/openai/google). Subscription, openai_compatible, ollama and facade models never get it; any custom tool scope silently kills the default; there is no fallback and no search-first freshness rule. | App-level search fallback builtin + scope-default fix + freshness rule in the prompt + honest "I have no search tool" behavior |
@@ -22,7 +22,7 @@ The common thread: **the model's context and the user's UI have diverged**. The 
 ### What happened in the session
 
 1. Events 10–13: all four agents returned proper structured reports. Together they carried **23 open questions** (5 + 7 + 6 + 5), exactly what the user later wanted to drill into.
-2. Event 16: the "synthesis" message. Metered at **30 tokens in / 514 out, $0.00**, model `assistant|hsbc|sales-analytics`. Its content is a fresh Qlik Answers analysis (its own "Understanding → sub-questions → data_analyst_agent" routing), not a synthesis. It contains none of the four reports' findings and none of the 23 open questions. It also carries stream-duplication artifacts ("visualizations:izations:izations:", "substantive content." repeated 8 times).
+2. Event 16: the "synthesis" message. Metered at **30 tokens in / 514 out, $0.00**, model `assistant|hsbc|sales-analytics`. Its content is a fresh the vendor assistant analysis (its own "Understanding → sub-questions → data_analyst_agent" routing), not a synthesis. It contains none of the four reports' findings and none of the 23 open questions. It also carries stream-duplication artifacts ("visualizations:izations:izations:", "substantive content." repeated 8 times).
 3. Events 32–34: asked to "pick 1 open question each", the model correctly reported it does not have the reports: "the prior conversation only shows a summary paragraph you wrote". It was honest. The reports genuinely were not in its context.
 
 ### Root cause A: the synthesis ran on the wrong model
@@ -33,11 +33,11 @@ The common thread: **the model's context and the user's UI have diverged**. The 
 const model = mission.plan.agents[0]?.model ?? this.deps.repository.getSession(mission.sessionId).model;
 ```
 
-The planner had assigned all four agents to `assistant|hsbc|sales-analytics` (sensible: they need the Qlik data). So the synthesis inherited the facade model.
+The planner had assigned all four agents to `assistant|hsbc|sales-analytics` (sensible: they need the the vendor data). So the synthesis inherited the facade model.
 
 `missions/synthesis.ts` builds a correct digest (`buildReportsDigest` includes every finding and every open question, lines 153–174) and then, on the turn path, puts **the entire synthesizer instruction + digest + source list into `systemPromptOverride`** (lines 274–292). The reconstructed history's last user turn is just the original mission ask.
 
-A Qlik Answers assistant is single-shot: it accepts a question, not a system prompt. The facade forwards the user question and drops the rest. Evidence: 30 input tokens is precisely the original ask ("create a report about my sales performance…"). The digest (thousands of tokens) never reached any model. The "synthesis" is a coincidence-shaped fresh answer.
+A the vendor assistant assistant is single-shot: it accepts a question, not a system prompt. The facade forwards the user question and drops the rest. Evidence: 30 input tokens is precisely the original ask ("create a report about my sales performance…"). The digest (thousands of tokens) never reached any model. The "synthesis" is a coincidence-shaped fresh answer.
 
 Contrast with the guard that already exists for report extraction: `missions/roster.ts:75–77`, `isStructuredOutputModel(modelId) { return !modelId.startsWith("assistant|") }`, added precisely because facade models cannot do structured output. The synthesis path has no equivalent guard.
 

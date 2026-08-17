@@ -120,7 +120,7 @@ export const DEFAULT_HUB_OUTPUT_CAP: OutputCapConfig = { warnTokens: 10_000, cap
 /**
  * The result of resolving a session's (per-message) model id (the model-resolution BRANCH POINT). For
  * the five AI-SDK kinds it carries a `buildModel()` factory + the metering keys; for `claude_subscription`
- * it carries only the kind (the service branches to the subscription executor). `qlik_answers` is refused
+ * it carries only the kind (the service branches to the subscription executor). `acme_answers` is refused
  * up front (a hub non-goal — D-AH4).
  */
 export type HubModelResolution = {

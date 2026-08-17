@@ -137,7 +137,7 @@ export function useTestingMetrics(controls: TestingDashboardControls): UseTestin
         signal,
       ),
       getRunMetrics({ filter, ...window, bucket, measures: ["tokensIn", "tokensOut"] }, signal),
-      getRunMetrics({ filter, ...window, bucket, measures: ["costUsd", "questions"] }, signal),
+      getRunMetrics({ filter, ...window, bucket, measures: ["costUsd"] }, signal),
       getRunMetrics({ filter, ...window, bucket, measures: ["meanScore"] }, signal),
       getRunMetrics(
         { filter, ...window, bucket: "week", groupBy: "test", measures: ["count", "errorRate"] },

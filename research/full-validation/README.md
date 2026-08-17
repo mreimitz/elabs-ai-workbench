@@ -53,7 +53,7 @@ Ranked by risk. Full detail + fix in the linked doc.
    start` the DB is never closed and MCP / Agent-SDK child processes are orphaned, so every deploy
    relies on crash-recovery reconciliation. *(02 H-9)*
 4. **Leftover live debug dump** — `providers/model-catalog.ts:300-301` unconditionally
-   `console.error`s up to ~6 KB of raw Qlik tenant assistant metadata on **every**
+   `console.error`s up to ~6 KB of raw the vendor tenant assistant metadata on **every**
    `GET /api/providers/:id/models`; self-labeled "REMOVE", not env-gated like its siblings.
    *(02 H-10 / 05 #1 / 06 M3)*
 5. **Resource leaks** — `openSession` leaks the MCP stdio child on a failed connect
@@ -105,8 +105,8 @@ shutdown / debug-dump / leak Highs are the true RC gate.
 
 - **Nothing visual / live** — no running app, no both-theme walk, no keyboard/a11y pass against the
   real UI (the roadmap ledgers already track owner-acceptance for those).
-- **No live provider/tenant paths** — anything needing a real API key or Qlik Cloud tenant (LLM
-  judge grades, Qlik Answers runs, PTY assistant sign-in) was read, not executed.
+- **No live provider/tenant paths** — anything needing a real API key or the vendor cloud tenant (LLM
+  judge grades, the vendor assistant runs, PTY assistant sign-in) was read, not executed.
 - **Exact historical test counts** in the docs (1511/566) — the current suite is 1532/751; the doc
   numbers are stale snapshots, not validated point-in-time.
 - The gate was run on Linux, not the owner's macOS; JS results transfer, native-binary specifics may

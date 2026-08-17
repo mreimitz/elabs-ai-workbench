@@ -6,7 +6,6 @@ import type {
   SuiteVariant,
   TokenProfileRef,
 } from "@mcp-token-footprint/shared";
-import type { ProviderRepository } from "../providers/repository.js";
 import type { ScanRepository } from "../scans/repository.js";
 import type { SkillRepository } from "../skills/repository.js";
 import { httpError } from "../utils/errors.js";
@@ -32,15 +31,6 @@ export class ScenarioService {
      * server/tool resolution keep working; when absent, `resolveAllowedSkills` returns `[]`.
      */
     private readonly skills?: SkillRepository,
-    /**
-     * Qlik Answers (WP 1.4, D-QA6 layer 1 — write-time) — used ONLY to look up a scenario's provider
-     * KIND so `create`/`update` can reject a `qlik_answers` scenario that still carries MCP servers or
-     * skills. `ProviderRepository.get` is the CHEAP path: it reads the redacted row (kind/label/etc.)
-     * without decrypting the API key, so this check never touches a secret. Optional so existing
-     * callers/tests that don't exercise this kind keep working unchanged; when absent, no kind-aware
-     * check runs (production always wires it — see `index.ts`).
-     */
-    private readonly providers?: ProviderRepository,
   ) {}
 
   list(): Scenario[] {
@@ -52,12 +42,10 @@ export class ScenarioService {
   }
 
   create(input: ScenarioInput): Scenario {
-    this.assertCleanSession(input);
     return this.scenarios.create(input);
   }
 
   update(id: string, input: ScenarioInput): Scenario {
-    this.assertCleanSession(input);
     return this.scenarios.update(id, input);
   }
 
@@ -166,32 +154,6 @@ export class ScenarioService {
       annotations: tool.annotations,
       raw: tool.rawTool,
     }));
-  }
-
-  /**
-   * Qlik Answers (WP 1.4, D-QA6 layer 1 — write-time) — reject a scenario whose provider is
-   * `qlik_answers` if it carries any MCP servers or skills. An environment with zero servers/skills is
-   * already the norm (`allowedServers`/`allowedSkills` default `[]`); this only forbids the OPPOSITE
-   * for this kind — the Answers API is a RAG product endpoint, not an agent loop, so it structurally
-   * cannot attach tools or skills (see `roadmap/research/qlik-answers-as-model.md` §5). A no-op when
-   * `providers` isn't wired, when the arrays are already empty, or when the referenced provider doesn't
-   * (yet) resolve — an unknown `providerId` is the repository's own concern (its own validation/FK
-   * surfaces that honestly); this check only ever ADDS a rejection, never masks an unrelated one.
-   */
-  private assertCleanSession(input: ScenarioInput): void {
-    if (!this.providers) return;
-    if (input.allowedServers.length === 0 && input.allowedSkills.length === 0) return;
-    let kind: string;
-    try {
-      kind = this.providers.get(input.providerId).kind;
-    } catch {
-      return;
-    }
-    if (kind !== "qlik_answers") return;
-    throw httpError(
-      400,
-      "A Qlik Answers environment can't have MCP servers or skills attached — it's a RAG product endpoint, not an agent loop.",
-    );
   }
 }
 

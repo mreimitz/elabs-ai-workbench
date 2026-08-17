@@ -1,8 +1,8 @@
-# 12 — Runs as one product: a unified session contract for the API, CLI and Qlik Answers executors
+# 12 — Runs as one product: a unified session contract for the API, CLI and the vendor assistant executors
 
 Investigation + proposal. The owner reported two problems with runs: (1) **every session feels and
 looks different** depending on whether it executes over a provider API, the Claude subscription CLI,
-or the Qlik Answers wrapper; (2) **longer runs get stopped**. Part A is the verified current-state
+or the the vendor assistant wrapper; (2) **longer runs get stopped**. Part A is the verified current-state
 analysis (file:line evidence, spot-checked first-hand). Part B is the proposal: one *session
 contract* — a shared lifecycle, a shared timeout policy, and a capability manifest that drives the
 UI — so all three executors (and any future one) produce the same end-user experience. Part C is a
@@ -19,7 +19,7 @@ wave plan in the repo's conventions.
 | Path | Executor | Mechanism |
 |---|---|---|
 | `claude_subscription` | `claude-subscription-executor.ts` | Claude **Agent SDK** child process via the injected `AgentSessionDriver` seam; MCP servers spawned *inside* the child from a translated `mcpServers` config (subscription-tools.ts:76-108) |
-| `qlik_answers` | `qlik-answers-executor.ts` | Internal `/api/v1/cloud-assistants/` REST + SSE card-patch stream; thread per run; settled answer re-fetched from `…/messages` (executor:763-921) |
+| `vendor_assistant` | `vendor-assistant-executor.ts` | Internal `/api/v1/cloud-assistants/` REST + SSE card-patch stream; thread per run; settled answer re-fetched from `…/messages` (executor:763-921) |
 | everything else (anthropic, openai, google, openai_compatible, ollama) | `engine.ts` `runAgentLoop` | AI-SDK `streamText` multi-step loop + server-side `McpSession` tool bridge |
 
 `registry.ts:67-77` throws for the two special kinds, so they can never reach the engine.
@@ -32,7 +32,7 @@ types.ts:1366-1422) through the **same choke point** `RunManager.emit` (run-mana
 stamps monotonic `seq`/`step.index`, keeps a bounded live replay buffer, and fans out to persistence
 + SSE. One console (`RunConsole`) renders all three kinds; persistence, replay, grading, suites and
 Compare are kind-agnostic. The Answers executor was explicitly designed to "render identically"
-(qlik-answers-executor.ts:29-30), as was the subscription path (D-CS3).
+(vendor-assistant-executor.ts:29-30), as was the subscription path (D-CS3).
 
 **The divergence is not in the wire format. It is in lifecycle semantics, timeout policy, and
 presentation policy — three places where each executor made its own local decision.**
@@ -41,11 +41,11 @@ presentation policy — three places where each executor made its own local deci
 
 #### A3.1 The same cause produces a different terminal per executor (verified first-hand)
 
-| Cause | API engine | CLI subscription | Qlik Answers |
+| Cause | API engine | CLI subscription | the vendor assistant |
 |---|---|---|---|
 | 30-min wall clock fires | `stopped` / `stopped_guardrail` (engine.ts:814-827) | `stopped` / `stopped_guardrail` (executor:997-1002) | **`aborted` / `aborted`** (executor:273-289 — comment admits "duration cap and a user stop both map to `aborted`, distinguished only by the free-form stopReason") |
 | Interactive session ends cleanly | idle timeout → `stopped` / `stopped_guardrail` (engine.ts:831-844) | `aborted` ("Run aborted by user") (executor:995-1002) | `aborted` (executor:505-519) |
-| Interactive run ever `completed`? | never (idle timeout or stop) | never — by design "the session was ended, not completed" | never — accepted deviation (qlik STATUS.md:586-592) |
+| Interactive run ever `completed`? | never (idle timeout or stop) | never — by design "the session was ended, not completed" | never — accepted deviation (vendor STATUS.md:586-592) |
 | Waiting on subscription concurrency permit | n/a | **invisible** — `status: running` only emitted *after* `gate.acquire()` (executor:855-856); until then the run sits `pending` with a dead console | n/a |
 | Waiting for user input / ask_user answer | stays `running`, no distinct state (use-run-stream.ts:182-186) | stays `running` | stays `running` |
 
@@ -76,20 +76,20 @@ badge directly.
 #### A3.3 Per-kind UI forks are scattered, keyed on `providerKind`, and fragile
 
 Eleven+ branch sites fork the console by kind rather than by what the run *can do*:
-- `KpiRail.tsx:125-345`: qlik → Context tile becomes an identity card, Context "N/A", both token
+- `KpiRail.tsx:125-345`: vendor → Context tile becomes an identity card, Context "N/A", both token
   tiles dropped, "Tool calls" renamed "Questions"; subscription → context % becomes cumulative
   tokens, "est. · subscription" marker.
-- `RunConsole.tsx:779-812`: `ContextChart` and baseline suppressed for qlik; `RailInsightsPanel`
-  only for qlik.
+- `RunConsole.tsx:779-812`: `ContextChart` and baseline suppressed for vendor; `RailInsightsPanel`
+  only for vendor.
 - `ConversationPane.tsx:400-544`: `AnswersReasoning` / `AnswersAnswerView` / `SourcesPanel` for
-  qlik; verbatim reasoning + `ChatMarkdown` otherwise.
+  vendor; verbatim reasoning + `ChatMarkdown` otherwise.
 - `ToolCallCard.tsx:57-61`: strips the `mcp__server__` prefix that only the subscription path produces.
 - Reasoning visibility: engine streams a `reasoning` delta channel; **the subscription executor
-  never emits one** (executor:724-729); qlik streams reasoning but renders it structured.
+  never emits one** (executor:724-729); vendor streams reasoning but renders it structured.
 
 The kind itself is re-derived client-side from the credential because the one flag that should
 mark estimated tokens (`estimatedTokens`) is stripped by the persistence redaction heuristic
-(qlik STATUS.md:599-603; use-run-stream.ts:296-314). Every new executor kind means another round of
+(vendor STATUS.md:599-603; use-run-stream.ts:296-314). Every new executor kind means another round of
 scattered `if (providerKind === …)` forks — this is exactly why each new integration "looks
 different" by default.
 
@@ -98,7 +98,7 @@ different" by default.
 There is exactly **one** wall-clock guard, and it is a hard-coded default:
 
 1. **`DEFAULT_MAX_RUN_DURATION_MS = 30 * 60_000`** (engine.ts:114) applies to *all three* executors
-   (engine.ts:440; subscription executor:850/931; qlik executor:202/398). Override exists **only**
+   (engine.ts:440; subscription executor:850/931; vendor executor:202/398). Override exists **only**
    as `scenario.guardrails.maxRunDurationMs` per environment — no app setting, no env var, no
    launcher field, no UI hint that a cap exists. When it fires it aborts the in-flight stream
    mid-turn via `AbortController`, with **no warning and no grace period**, and the terminal it
@@ -106,7 +106,7 @@ There is exactly **one** wall-clock guard, and it is a hard-coded default:
    killed the same as a hung one.
 2. **Idle timeout is engine-only and unconfigurable in practice.** `DEFAULT_IDLE_TIMEOUT_MS = 10 min`
    (engine.ts:112); `cfg.idleTimeoutMs` is never wired from the scenario in `resolve()`
-   (run-service.ts:1265-1296), so 10 minutes always. Subscription and qlik interactive sessions have
+   (run-service.ts:1265-1296), so 10 minutes always. Subscription and vendor interactive sessions have
    **no idle timeout at all** — a walked-away session burns the 30-min wall clock and then reports
    `aborted`/`stopped_guardrail`.
 3. **The wall clock keeps burning while the run waits on a human.** Interactive turn waits and
@@ -142,7 +142,7 @@ Normative phases: `queued → starting → running ⇄ waiting_input → reviewi
 
 - Additive event `{type: "phase", phase: "queued" | "waiting_input" | …, detail?}` emitted at
   transitions. `RunStatus` stays untouched (no migration); the phase event is presentation-level
-  truth. Emitters: subscription gate wait (`queued`, with queue position in `detail`), engine/qlik
+  truth. Emitters: subscription gate wait (`queued`, with queue position in `detail`), engine/vendor
   `nextTurn` + `ask_user` waits (`waiting_input`), all executors on permit/start.
 - **One terminal mapping shared by all executors.** Extract a `terminalFor(cause)` helper into a
   shared module (`testing/session-terminal.ts`) with a closed cause union, and make all three
@@ -159,7 +159,7 @@ Normative phases: `queued → starting → running ⇄ waiting_input → reviewi
 | provider/transport failure | `error` / `error` | `provider_error` / `auth` / `rate_limit` |
 
 - Add `stopReasonCode` (machine-readable) alongside the existing human `stopReason` on the `status`
-  event and the runs row. This retires `guardrailFromReason`'s string-sniffing and fixes the qlik
+  event and the runs row. This retires `guardrailFromReason`'s string-sniffing and fixes the vendor
   `aborted`-on-deadline mismatch (A3.1) in one move.
 - **"End session" button** on interactive runs (all kinds): finalizes as `completed`/`session_ended`.
   Interactive sessions stop being the only runs that can never succeed.
@@ -178,7 +178,7 @@ owned by run-service and injected into every executor. Policy:
    bounds a waiting session is the **idle timeout, uniformly**: one configurable value (default
    10 min) applied to `nextTurn` *and* `ask_user` waits on *all three* executors — wiring
    `idleTimeoutMs` from the scenario at last (it exists in the engine signature and is dead today),
-   adding it to the subscription/qlik interactive loops' `nextTurnOrStop` race.
+   adding it to the subscription/vendor interactive loops' `nextTurnOrStop` race.
 3. **Warn, then extend, then stop.** At T−5 min the clock emits `{type:"phase", phase:"deadline_warning"}`;
    RunBar shows a countdown chip with one-click **"+15 min"** (new `POST /api/runs/:id/extend`,
    which the SessionClock honors and audits into the run's step log as a `context_event`). A run
@@ -206,20 +206,20 @@ type SessionCapabilities = {
   costBasis: "api_exact" | "subscription_reference" | "questions" | "none";
   followUps: boolean;                     // POST /turns supported while live
   askUser: boolean;
-  identity?: { kind: "qlik_assistant"; assistantId; appId; threadMode; transport }; // rail card
+  identity?: { kind: "vendor_assistant"; assistantId; appId; threadMode; transport }; // rail card
 };
 ```
 
 Current values: engine → `{liveReasoning:"raw", tokens:"exact", contextWindow:true, costBasis:"api_exact", …}`;
 subscription → `{liveReasoning:"none", tokens:"exact", contextWindow:false, costBasis:"subscription_reference"}`;
-qlik → `{toolCalls:false, tokens:"estimated", contextWindow:false, costBasis:"questions", liveReasoning:"structured"}`.
+vendor → `{toolCalls:false, tokens:"estimated", contextWindow:false, costBasis:"questions", liveReasoning:"structured"}`.
 
 The UI then renders **one console with per-capability degradation**:
 - `KpiRail` assembles its tiles from a declarative list driven by capabilities (context tile iff
   `contextWindow`; token tiles labelled "est." iff `tokens==="estimated"`, hidden iff `"none"`;
-  cost tile knows its unit — `$`, `$ est. · subscription`, or `N questions`). The qlik identity
+  cost tile knows its unit — `$`, `$ est. · subscription`, or `N questions`). The vendor identity
   card renders iff `identity` is present.
-- `ContextChart`/baseline gate on `contextWindow`, not `providerKind === "qlik_answers"`.
+- `ContextChart`/baseline gate on `contextWindow`, not `providerKind === "vendor_assistant"`.
 - `ConversationPane` picks the reasoning renderer from `liveReasoning`, and the answer renderer
   from the payload (as it already does via `promptMode` — formalized instead of inferred).
 - The composer/QuestionPrompt gate on `followUps`/`askUser` (also fixes the current
@@ -259,7 +259,7 @@ single vocabulary (labels finalize with the owner):
 
 ### B6. Quick wins (shippable independently, before the full contract)
 
-1. Fix the qlik deadline terminal to `stopped`/`stopped_guardrail` (one-line-ish, kills the worst
+1. Fix the vendor deadline terminal to `stopped`/`stopped_guardrail` (one-line-ish, kills the worst
    A3.1 inconsistency).
 2. Wire `scenario.guardrails.idleTimeoutMs` through `resolve()` (the engine already accepts it).
 3. Emit `status: running` (or a `queued` context_event) before `gate.acquire()` on the subscription
@@ -277,7 +277,7 @@ changes additive; no migration of persisted runs (missing fields default: `phase
 `capabilities` re-derived from credential exactly as today).
 
 - **Wave 1 — contract + clock (api, shared).**
-  W1.1 `stopReasonCode` + shared `terminalFor` table adopted by all three executors (incl. qlik
+  W1.1 `stopReasonCode` + shared `terminalFor` table adopted by all three executors (incl. vendor
   deadline fix, "End session" terminal). W1.2 `SessionClock` extraction: pause-in-waiting_input,
   uniform idle timeout, deadline warning event, `POST /api/runs/:id/extend`, stall detector.
   W1.3 `phase` events (queued / waiting_input / deadline_warning) + subscription queue visibility +

@@ -634,7 +634,7 @@ function ManualReviewCallout() {
 }
 
 // C-3: the option label used to be `<server> · <full date+time> · <N> tools` — in the trigger's
-// w-56 box that truncated MID-DATE (`qlik-mreimitz · Jul 21,…`), cutting off the one thing that
+// w-56 box that truncated MID-DATE (`acme-demo · Jul 21,…`), cutting off the one thing that
 // distinguishes scans of the same server. Shorten to `<server> · <date>` (date only, no time) so
 // it fits without clipping a token; the dropped time + tool count are recoverable via `scanTitle`
 // on the trigger (hover), not lost.

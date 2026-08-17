@@ -162,7 +162,7 @@ By category: perf 10 · bug 12 · dead-code 11 · duplication 15 · hardcoded 4 
 - **Path:** `apps/web/src/routes/` — verified empty (routing lives in `App.tsx`). Delete it.
 
 ### L2 · perf — `SourcesPanel` fetches the entire run history per answer turn
-- **File:** `apps/web/src/features/testing/SourcesPanel.tsx:277` (`useVersionDrift`) — each rendered panel independently fetches `/api/runs` (full history) + a `getRun(previous.id)`; a multi-turn `qlik_answers` run mounts several. Hoist to the pane or cache.
+- **File:** `apps/web/src/features/testing/SourcesPanel.tsx:277` (`useVersionDrift`) — each rendered panel independently fetches `/api/runs` (full history) + a `getRun(previous.id)`; a multi-turn `vendor_assistant` run mounts several. Hoist to the pane or cache.
 
 ### L3 · duplication — Terminal-run-status predicate copies
 - `isTerminalRunStatus` identical in `features/testing/RunConsole.tsx:1028` and `RunConsoleRoute.tsx:245`, inlined again in `AnalyticsPanel.tsx:114-118`; `use-run-stream.ts:152` has a separate exhaustive `isTerminalStatus`. Export one shared helper. Related: `runs/SuiteTableRows.tsx:48` `TERMINAL_SUITE_STATUSES` is (per its own comment) a hand-synced copy of the suite console's set.

@@ -86,10 +86,10 @@ test("extraction: fenced code blocks and frontmatter are skipped", () => {
 });
 
 test("extraction: namespaced server:tool shape is recognized", () => {
-  const refs = extractToolReferences("# S\n\nInvoke the `qlik:list_apps` tool.\n");
+  const refs = extractToolReferences("# S\n\nInvoke the `acme:list_apps` tool.\n");
   assert.deepEqual(
     refs.map((r) => r.name),
-    ["qlik:list_apps"],
+    ["acme:list_apps"],
   );
 });
 

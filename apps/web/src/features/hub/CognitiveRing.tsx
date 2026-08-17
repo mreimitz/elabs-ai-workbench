@@ -11,7 +11,7 @@ import "./CognitiveRing.css";
  * empty assistant session.
  *
  * Design discipline (see CognitiveRing.css): every colour resolves through the semantic
- * `@brand/tokens` layer via a scoped `--ring-*` accent set — the Qlik green maps to `--primary`,
+ * `@brand/tokens` layer via a scoped `--ring-*` accent set — the Acme green maps to `--primary`,
  * the brand cyan is defined once as a documented scoped token — so it reads correctly in both
  * `qlik-bright` and `qlik-dark` with no raw literal and no `dark:` override.
  *

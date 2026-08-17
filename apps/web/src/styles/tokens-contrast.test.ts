@@ -136,7 +136,7 @@ function token(theme: string, name: string): string {
 
 // ── The gate ─────────────────────────────────────────────────────────────────────────────────────
 
-describe("app token contrast — WCAG AA on-fill pairs (both qlik themes)", () => {
+describe("app token contrast — WCAG AA on-fill pairs (both acme themes)", () => {
   describe.each(THEMES)("%s", (theme) => {
     it.each(FILL_ROLES)("--%s ⇄ --%s-foreground ≥ 4.5:1", (role) => {
       const ratio = contrast(token(theme, `--${role}-foreground`), token(theme, `--${role}`));
@@ -148,7 +148,7 @@ describe("app token contrast — WCAG AA on-fill pairs (both qlik themes)", () =
   });
 });
 
-describe("app token semantic split — distinct role values (both qlik themes)", () => {
+describe("app token semantic split — distinct role values (both acme themes)", () => {
   it.each(THEMES)("%s: --success !== --primary", (theme) => {
     expect(
       token(theme, "--success"),

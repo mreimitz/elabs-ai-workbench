@@ -6,7 +6,7 @@ import { listProviderModels, listProviders } from "../../lib/api";
 /**
  * Assistant Hub (WP1.3) — the hub's model surface (D-AH4), mirrored LOCALLY from the API's
  * `apps/api/src/hub/capabilities.ts` `HUB_MODEL_KINDS` (the six hub-eligible provider kinds; `apps/web`
- * cannot import `apps/api`). `qlik_answers` is never a hub model (a non-goal in v1).
+ * cannot import `apps/api`).
  */
 export const HUB_ELIGIBLE_PROVIDER_KINDS: readonly ProviderKind[] = [
   "anthropic",
@@ -307,8 +307,7 @@ export type HubModelFamily = { kind: ProviderKind; label: string; models: HubMod
  * `PROVIDER_KIND_META` is a `Record` over every {@link ProviderKind}, so a newly-added kind fails
  * `pnpm typecheck` there until it is classified.
  *
- * The old map and the registry agree on every label EXCEPT `qlik_answers` ("Qlik" → "Qlik Answers"),
- * and `qlik_answers` is never a hub model (D-AH4, {@link HUB_ELIGIBLE_PROVIDER_KINDS}) — so no
+ * The old map and the registry agree on every label, so no
  * family chip this picker can actually render changes text. Where a chip is too tight for a full
  * name, `providerKindShortLabel(kind)` is the intended escape.
  */

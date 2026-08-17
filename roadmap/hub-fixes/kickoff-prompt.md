@@ -40,7 +40,7 @@ sub-agents, validate, integrate, and record. Run it with the **`next-wp` skill**
   genuine contradiction, mark the WP blocked with a note; do not improvise policy.
 - **Additive contracts:** `packages/shared` changes are additive only; event-log replay of pre-fix
   sessions must keep rendering. `HUB_AGENT_RUNNER=structured` stays as rollback for one release.
-- **Honest reporting:** anything only provable live (real Qlik call, real web search, both-theme
+- **Honest reporting:** anything only provable live (real the vendor call, real web search, both-theme
   visual walks) goes to the ledger's **Owner-acceptance** list, never faked, never ticked as tested.
 - **Secrets:** never in git, never in shared/web code. No new runtime dependencies without a
   decision note in the README.
@@ -57,7 +57,7 @@ files changed, gate output, per-item pass/fail, and anything unverifiable. It ne
 1. Confirm gates in `STATUS.md` (clean tree, no competing workstream in `hub/**`).
 2. Dispatch **Batch 1**: WP 0.1, WP 1.1, WP 1.2, WP 3.1.
 3. When WP 0.1 lands, tell the owner: recreate the container (`docker compose up -d --build`) and
-   verify the mitigation manually (scoped session → a Qlik tool call goes through, approval-gated).
+   verify the mitigation manually (scoped session → a the vendor tool call goes through, approval-gated).
 4. Proceed batch by batch (README order), integrating validated branches one at a time; after each
    batch update `STATUS.md` + summarize ticked / in-refine / blocked, and offer the next batch.
 

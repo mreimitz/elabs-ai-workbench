@@ -91,9 +91,9 @@ export function deriveHotspots(
   const slowest = deriveSlowestStep(steps);
   if (slowest) hotspots.push(slowest);
 
-  // "questions" (Qlik's shared-quota unit) has no honest PER-STEP dollar figure — same basis-aware
-  // exclusion `StepLog`'s cost-delta chip applies (`showsCostChip`); "none" has no cost figure at all.
-  if (capabilities.costBasis !== "none" && capabilities.costBasis !== "questions" && perStepEconomics) {
+  // "none" has no cost figure at all — the same basis-aware exclusion `StepLog`'s cost-delta chip
+  // applies (`showsCostChip`).
+  if (capabilities.costBasis !== "none" && perStepEconomics) {
     const costliest = deriveCostliestStep(steps, perStepEconomics);
     if (costliest) hotspots.push(costliest);
   }

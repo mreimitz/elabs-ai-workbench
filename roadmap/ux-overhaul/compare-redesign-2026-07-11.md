@@ -59,7 +59,7 @@ Severity: ● critical · ◐ major · ○ minor. "Where" = file under `apps/web
 | --- | --- | --- | --- |
 | F1 | ● | `min-w-max` → B column invisible; side-by-side never side-by-side (P2/R1) | `flow/FlowLanes.tsx:67` |
 | F2 | ● | Flow not the vertical scroller → broken sticky lane header, h-scrollbar below the fold, lens strip scrolls away (R2) | `CompareWorkspace.tsx:160`, `flow/FlowLanes.tsx:66` |
-| F3 | ◐ | No "changes only" / collapse-unchanged affordance — the audited trace is ~85% unchanged rows (9 identical `qlik_create_data_object` cards in one turn ≈ 460px of no signal) | `flow/FlowLanes.tsx`, `flow/align.ts` |
+| F3 | ◐ | No "changes only" / collapse-unchanged affordance — the audited trace is ~85% unchanged rows (9 identical `acme_create_data_object` cards in one turn ≈ 460px of no signal) | `flow/FlowLanes.tsx`, `flow/align.ts` |
 | F4 | ◐ | Node cards: only the title text is the click target (~16px strip in a 44–68px card); no cursor/hover affordance on the card | `flow/LaneCell.tsx:111–127` |
 | F5 | ◐ | Turn headers + "Runs diverge here" banner live in the scrolling width — clipped mid-word when h-scrolled (seen: "ge here"); gutter rail not sticky-left | `flow/FlowLanes.tsx:151–233` |
 | F6 | ○ | 3-line card layout (title / repeated opaque id subtitle / badges) where 1 line would do; identical subtitle repeated 20× | `flow/LaneCell.tsx` |

@@ -3,7 +3,7 @@
 // When a session scopes in saved Agents & Crews (its "roster") but is created/edited with a narrow
 // (non-null) tool scope, a reused server-bound role's MCP server must still be REACHABLE from the session
 // — otherwise the plan-grant clamp strips it at plan time and the mission agent runs tool-less (the
-// original "the Qlik agent can't use its Qlik server" bug). This module resolves a roster to its concrete
+// original "the Acme agent can't use its Acme server" bug). This module resolves a roster to its concrete
 // roles and unions their server grants into the scope (the pure join lives in `tools/grants.ts`). Used at
 // session CREATE (session-service) and session PATCH (routes).
 

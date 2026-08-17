@@ -266,19 +266,6 @@ export function EnvironmentEditor(props: {
     }
   }
 
-  // Qlik Answers (WP 2.3): a tenant assistant has no MCP tools/skills (clean-session invariant) and
-  // honors only the run-duration guardrail — gate the irrelevant sections/fields on the kind.
-  const isQlikAnswers = selectedProvider?.kind === "qlik_answers";
-
-  // If the credential changes mid-edit from qlik_answers to something else (or vice versa) while the
-  // now-hidden "Servers & skills" tab is active, fall back to Model rather than leaving a stale/absent
-  // active section (WideDialog itself falls back to sections[0], but this keeps the rail highlight sane).
-  useEffect(() => {
-    if (isQlikAnswers && activeSection === "allow") {
-      setActiveSection(MODEL_SECTION_ID);
-    }
-  }, [isQlikAnswers, activeSection]);
-
   // Picker options: the provider's LIVE roster when it loaded (`liveModels`), otherwise the curated
   // known-models list filtered to the provider kind (offline fallback). Either way we append the
   // current `form.model` if missing — a custom id, or a model the live list / kind filter omits — so
@@ -688,24 +675,6 @@ export function EnvironmentEditor(props: {
         ) : null}
       </DialogSection>
 
-      {isQlikAnswers ? (
-        <DialogSection
-          title="Qlik Answers transport"
-          description="How this environment calls the tenant assistant."
-        >
-          <SegmentedField
-            id="scenario-answers-transport"
-            label="Transport"
-            value={form.answersMode?.transport ?? "stream"}
-            onChange={(value) => patch("answersMode", { transport: value as "stream" | "invoke" })}
-            options={[
-              { value: "stream", label: "Stream" },
-              { value: "invoke", label: "Invoke" },
-            ]}
-            help="Stream shows live deltas as the assistant answers (default). Invoke waits for the full answer in one synchronous call — a fallback for tenants where streaming isn’t available."
-          />
-        </DialogSection>
-      ) : null}
     </div>
   );
 
@@ -715,34 +684,28 @@ export function EnvironmentEditor(props: {
       description="Hard stops for a run. Leave a field empty for no limit on that dimension."
     >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Qlik Answers (WP 2.3): a tenant assistant has no turns/tool-calls/context-window in the
-            agent-loop sense (clean-session invariant) — these three guardrails never apply to it. */}
-        {!isQlikAnswers ? (
-          <FieldRow id="gr-turns" label="Max turns">
-            <BoundedNumber
-              id="gr-turns"
-              value={form.guardrails.maxTurns ?? null}
-              min={1}
-              step={1}
-              unit="turns"
-              aria-label="Max turns"
-              onChange={(value) => patchGuardrail("maxTurns", value)}
-            />
-          </FieldRow>
-        ) : null}
-        {!isQlikAnswers ? (
-          <FieldRow id="gr-toolcalls" label="Max tool calls">
-            <BoundedNumber
-              id="gr-toolcalls"
-              value={form.guardrails.maxToolCalls ?? null}
-              min={1}
-              step={1}
-              unit="calls"
-              aria-label="Max tool calls"
-              onChange={(value) => patchGuardrail("maxToolCalls", value)}
-            />
-          </FieldRow>
-        ) : null}
+        <FieldRow id="gr-turns" label="Max turns">
+          <BoundedNumber
+            id="gr-turns"
+            value={form.guardrails.maxTurns ?? null}
+            min={1}
+            step={1}
+            unit="turns"
+            aria-label="Max turns"
+            onChange={(value) => patchGuardrail("maxTurns", value)}
+          />
+        </FieldRow>
+        <FieldRow id="gr-toolcalls" label="Max tool calls">
+          <BoundedNumber
+            id="gr-toolcalls"
+            value={form.guardrails.maxToolCalls ?? null}
+            min={1}
+            step={1}
+            unit="calls"
+            aria-label="Max tool calls"
+            onChange={(value) => patchGuardrail("maxToolCalls", value)}
+          />
+        </FieldRow>
         <FieldRow id="gr-tokens" label="Max tokens">
           <BoundedNumber
             id="gr-tokens"
@@ -754,19 +717,17 @@ export function EnvironmentEditor(props: {
             onChange={(value) => patchGuardrail("maxTokens", value)}
           />
         </FieldRow>
-        {!isQlikAnswers ? (
-          <FieldRow id="gr-ctx" label="Max context tokens">
-            <BoundedNumber
-              id="gr-ctx"
-              value={form.guardrails.maxContextTokens ?? null}
-              min={1}
-              step={1000}
-              unit="tokens"
-              aria-label="Max context tokens"
-              onChange={(value) => patchGuardrail("maxContextTokens", value)}
-            />
-          </FieldRow>
-        ) : null}
+        <FieldRow id="gr-ctx" label="Max context tokens">
+          <BoundedNumber
+            id="gr-ctx"
+            value={form.guardrails.maxContextTokens ?? null}
+            min={1}
+            step={1000}
+            unit="tokens"
+            aria-label="Max context tokens"
+            onChange={(value) => patchGuardrail("maxContextTokens", value)}
+          />
+        </FieldRow>
         <FieldRow id="gr-cost" label="Max cost">
           <BoundedNumber
             id="gr-cost"
@@ -779,12 +740,10 @@ export function EnvironmentEditor(props: {
             onChange={(value) => patchGuardrail("maxCostUsd", value)}
           />
         </FieldRow>
-        {/* The only guardrail a Qlik Answers run honors (qlik-answers-executor.ts) — always shown,
-            for every kind, since the agent loop (engine.ts) enforces it too. Unified Sessions
-            (roadmap/unified-sessions/, D-US3) — this is the wall CAP, opt-in only: leave it empty for
-            no cap (the app default), matching the session clock's actual behavior (the previous
-            "30 min default" placeholder here was stale — the engine/subscription/Qlik executors all
-            went cap-less by default once WP1.3–1.7 adopted the SessionClock). */}
+        {/* Unified Sessions (roadmap/unified-sessions/, D-US3) — this is the wall CAP, opt-in only:
+            leave it empty for no cap (the app default), matching the session clock's actual behavior
+            (the previous "30 min default" placeholder here was stale — both executors went cap-less by
+            default once WP1.3–1.7 adopted the SessionClock). */}
         <FieldRow id="gr-duration" label="Max run duration">
           <BoundedNumber
             id="gr-duration"
@@ -803,24 +762,14 @@ export function EnvironmentEditor(props: {
             either (only `maxRunDurationMs`, wired above), and the engine's `sessionClockOptions` seam
             that WOULD carry a per-environment override is never populated from scenario data today —
             see the WP3.4 report for the full backend-gap writeup. These figures mirror
-            `apps/api/src/testing/session-clock.ts`'s `DEFAULT_STALL_MS`/`DEFAULT_WAIT_BUDGET_MS` and,
-            for Qlik Answers, `session-capabilities.ts`'s `QLIK_ANSWERS_WAIT_BUDGET_MS`. */}
+            `apps/api/src/testing/session-clock.ts`'s `DEFAULT_STALL_MS`/`DEFAULT_WAIT_BUDGET_MS`. */}
         <KpiStat label="Stall timeout" value="10 min" />
-        <KpiStat label="Wait budget" value={isQlikAnswers ? "30 min" : "10 min"} />
+        <KpiStat label="Wait budget" value="10 min" />
       </div>
       <Text variant="meta" tone="muted" className="text-pretty">
         Stall timeout and wait budget are fixed app-wide defaults — there’s no per-environment
         override yet; only the max run duration above is configurable per environment.
-        {isQlikAnswers
-          ? " Qlik Answers environments default to a longer 30-minute wait budget."
-          : ""}
       </Text>
-      {isQlikAnswers ? (
-        <Text variant="meta" tone="muted">
-          Qlik Answers runs only honor the run-duration cap above — per-turn, tool-call, and
-          context-window guardrails don’t apply to a tenant assistant call.
-        </Text>
-      ) : null}
     </DialogSection>
   );
 
@@ -1060,18 +1009,12 @@ export function EnvironmentEditor(props: {
       icon: <Shield aria-hidden />,
       content: guardrailsSection,
     },
-    // Qlik Answers (WP 2.3): clean-session invariant — a tenant assistant never attaches MCP
-    // servers/tools or skills, so this section is meaningless (and misleading) for the kind.
-    ...(isQlikAnswers
-      ? []
-      : [
-          {
-            id: "allow",
-            label: "Servers & skills",
-            icon: <ServerCog aria-hidden />,
-            content: allowSection,
-          },
-        ]),
+    {
+      id: "allow",
+      label: "Servers & skills",
+      icon: <ServerCog aria-hidden />,
+      content: allowSection,
+    },
   ];
 
   return (

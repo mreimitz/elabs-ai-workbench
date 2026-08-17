@@ -22,7 +22,7 @@ a stall detector. Persist the duration split (D-OB5).
      (MIGRATION — claim next free version) and returned (types from 0.1).
   3. Idle timeout uniform (D-OB8): one configurable value (default 10 min) applied to `nextTurn`
      AND `ask_user` waits on ALL executors — wire `idleTimeoutMs` through `resolve()` at last;
-     add the wait-race to subscription + qlik interactive loops. Idle fire →
+     add the wait-race to subscription + vendor interactive loops. Idle fire →
      `terminalFor("idle")`.
   4. Warn-then-stop: at T−5 min emit `phase: deadline_warning`; `POST /api/runs/:id/extend`
      (+15 min per call, adopted default) honored by the clock, audited as a `context_event` step,
@@ -35,7 +35,7 @@ a stall detector. Persist the duration split (D-OB5).
 ## Files
 
 - `apps/api/src/testing/session-clock.ts` (new) + `apps/api/test/session-clock.test.ts`
-- `apps/api/src/testing/{engine,claude-subscription-executor,qlik-answers-executor,run-service}.ts`
+- `apps/api/src/testing/{engine,claude-subscription-executor,vendor-assistant-executor,run-service}.ts`
 - `apps/api/src/testing/routes.ts` (extend endpoint), `apps/api/src/testing/ask-user-tool.ts`
 - `packages/shared` (launch-override + extend wire — additive; coordinate: this WP owns shared
   for its batch)

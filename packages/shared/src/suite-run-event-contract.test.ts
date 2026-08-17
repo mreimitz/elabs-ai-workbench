@@ -33,7 +33,7 @@ const OLD_EVENTS: SuiteRunEvent[] = [
   },
   {
     type: "cell",
-    cell: { testId: "t1", scenarioId: "s2", repetition: 0, status: "skipped", skipped: "incompatible" },
+    cell: { testId: "t1", scenarioId: "s2", repetition: 0, status: "error" },
     seq: 2,
   },
   {

@@ -21,7 +21,7 @@ forward-only, replay-safe, enabling true per-subtree rollups (3.2).
     children (`judge_call`) carrying model/duration/token detail where known.
   - MCP tool bridge emits optional `tool_io` child steps (request/response sizes + timing)
     under the existing tool-call step — engine path only (subscription child owns its MCP
-    internally; qlik has no tools — capabilities already say so).
+    internally; vendor has no tools — capabilities already say so).
   - Compatibility probe runs attach their probe steps under a `probe` parent.
 - Ordering invariant: children carry normal monotonic `seq`/`index`; the tree is a rendering of
   parent links, never a reordering. Replay of mixed old/new runs stays stable.

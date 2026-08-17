@@ -29,7 +29,7 @@ export type ConsolePane = "chat" | "trace";
  * A semantic navigation reference. A `turn` targets an assistant turn (0-based `turnIndex`, matching
  * `TimelineAssistantTurn.turnIndex`). A `tool` targets a specific tool call by its `toolCallId`, with
  * an optional `turnIndex` fallback for panes that only anchor at turn granularity (the chat pane).
- * An `insight` (WP 7.1, D-QA9) targets a `Qlik.Snapshot` insight cited in a `qlik_answers` answer —
+ * An `insight` (WP 7.1, D-QA9) targets a `Acme.Snapshot` insight cited in a `acme_answers` answer —
  * the REVERSE leg of the rail↔chat link: a rail insight row resolves to the matching citation chip
  * in the chat ({@link citationAnchorValue}), falling back to the whole turn when that snapshot is
  * cited by no text block. A `user` (Observability WP3.4) targets a USER turn (the opener prompt or an
@@ -61,7 +61,7 @@ export function toolAnchorValue(toolCallId: string): string {
 }
 
 /**
- * Qlik Answers (WP 5.3 · WP 7.1, D-QA9) — the anchor value for a `Qlik.Snapshot` insight, now
+ * Acme Answers (WP 5.3 · WP 7.1, D-QA9) — the anchor value for a `Acme.Snapshot` insight, now
  * TURN-QUALIFIED (`insight:<turnIndex>:<snapshotIndex>`). `snapshotIndex` is 0-based into that turn's
  * `AnswersStepPayload.snapshots`; the turn prefix is what makes the value unique across a multi-turn
  * run (a bare `insight:0` collided on every turn's first snapshot). Mirrors
@@ -85,7 +85,7 @@ export function userAnchorValue(stepId: string): string {
 }
 
 /**
- * Qlik Answers (WP 7.1, D-QA9) — the anchor value for a citation chip in the answer text
+ * Acme Answers (WP 7.1, D-QA9) — the anchor value for a citation chip in the answer text
  * (`citation:<turnIndex>:<snapshotIndex>`). This is the REVERSE scroll TARGET: a rail insight row's
  * "Show in answer" resolves an `insight` {@link ConsoleNavRef} to this value (via
  * {@link anchorValueForRef}) so the chat scrolls to the matching chip; it falls back to the turn
@@ -194,7 +194,7 @@ export function scrollToConsoleAnchorValue(container: HTMLElement | null, value:
 }
 
 /**
- * Qlik Answers (WP 7.1, D-QA9) — scroll from a citation chip (`source`) in the ANSWER to its insight
+ * Acme Answers (WP 7.1, D-QA9) — scroll from a citation chip (`source`) in the ANSWER to its insight
  * row in the RAIL ({@link insightAnchorValue}). The FORWARD leg of the rail↔chat link. The target now
  * lives in the OTHER pane, so the lookup is DOCUMENT-WIDE (`source.ownerDocument.body`); the anchor is
  * turn-qualified (`insight:<turnIndex>:<snapshotIndex>`), so a document-wide search still hits exactly
