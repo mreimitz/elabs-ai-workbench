@@ -5,7 +5,7 @@ import type { PromptGetResult } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 vi.mock("../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api")>();

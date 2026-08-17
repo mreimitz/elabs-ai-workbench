@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Separator, Text, cn } from "@brand/ui";
+import { Separator, Text, cn } from "@elabs-ai/components-ui";
 
 /**
  * The numbered step rail for the two full-page wizards (ServerWizard, SkillWizard), where it was

@@ -1,5 +1,5 @@
 import type { SuiteAggregates } from "@mcp-token-footprint/shared";
-import { MetricCard } from "@brand/ui";
+import { MetricCard } from "@elabs-ai/components-ui";
 import { Coins, Gauge, Gavel, Hash, LayoutGrid, MessageCircleQuestion, Target } from "lucide-react";
 import { formatCostUsd, formatNumber, formatPercent } from "../../../lib/format";
 import { formatGradePercent } from "../grade-format";

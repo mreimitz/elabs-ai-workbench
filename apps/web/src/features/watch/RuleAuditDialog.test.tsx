@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { WatchRule, WatchRuleEvent } from "@mcp-token-footprint/shared";
-import { TooltipProvider, toast } from "@brand/ui";
+import { TooltipProvider, toast } from "@elabs-ai/components-ui";
 
 vi.mock("../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api")>();

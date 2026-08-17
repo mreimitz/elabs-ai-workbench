@@ -10,7 +10,7 @@ import {
   SelectValue,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   HUB_SESSION_MODES,
   type HubProject,

@@ -2,7 +2,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { RunSummary, Scenario, Test } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { RunsFeedData } from "./runs/runs-api";
 
 // ── toolbar-reach WP0.2 (A-2) ────────────────────────────────────────────────────────────────────
@@ -17,7 +17,7 @@ vi.mock("./run-launcher/RunLauncher", () => ({
 }));
 
 // RunsView imports `suiteStatusBadge` from `./suites/SuiteRunConsole`, whose chart children pull
-// `@brand/charts` (@visx) — which jsdom cannot resolve (see MEMORY: "Chart tests mock @brand/charts
+// `@elabs-ai/components-charts` (@visx) — which jsdom cannot resolve (see MEMORY: "Chart tests mock @elabs-ai/components-charts
 // as no-op"). It is only used in the populated table branch (never the empty branch under test), so a
 // no-op stub cuts the chart chain without affecting what we assert.
 vi.mock("./suites/SuiteRunConsole", () => ({

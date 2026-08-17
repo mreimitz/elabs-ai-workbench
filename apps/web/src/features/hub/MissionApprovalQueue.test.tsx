@@ -1,17 +1,17 @@
 // Assistant Hub — hub-fixes WP2.5 (D-HF6): the mission board's `always_ask` APPROVAL QUEUE. The board
 // reconstructs its pending approvals from the parent event log ALONE (R-SES1) — the `agent_approval_*`
-// board-mirror events — and reuses the `@brand/ai` `ApprovalCard`; Approve/Deny route to the CHILD
-// session's own `/approvals` endpoint via `decideHubApproval`. The heavy `@brand/ai` surface is stubbed
+// board-mirror events — and reuses the `@elabs-ai/components-ai` `ApprovalCard`; Approve/Deny route to the CHILD
+// session's own `/approvals` endpoint via `decideHubApproval`. The heavy `@elabs-ai/components-ai` surface is stubbed
 // via the shared hub mock; `lib/api` is spied so no real fetch fires. The live round-trip + both-theme
 // look are owner-acceptance.
 
 import type { HubEvent, HubMissionPlan } from "@mcp-token-footprint/shared";
 import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ReactElement } from "react";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 // MissionBoard renders `IconButton`s (D-TB5), which wrap every control in a Radix `Tooltip` — that
 // throws without an ancestor `TooltipProvider` (the app root mounts one; this file's render doesn't

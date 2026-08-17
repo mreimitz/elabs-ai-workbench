@@ -33,7 +33,7 @@ import {
   StatePanel,
   Text,
   Textarea,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Cpu, Loader2, Plus, ServerCog, Shield, Sparkles, Trash2, Wifi } from "lucide-react";
 import { WideDialog, type WideDialogSection, DialogSection } from "../../components/dialogs";
 import { StatusBadge } from "../../components/StatusBadge";

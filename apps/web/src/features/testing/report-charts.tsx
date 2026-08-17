@@ -7,12 +7,12 @@ import {
   Ring,
   RingCenter,
   RingChart,
-} from "@brand/charts";
+} from "@elabs-ai/components-charts";
 import { formatGradePercent, SCORE_TONE_CHART_COLOR, scoreTone } from "./grade-format";
 
 /**
  * The Report tab's two score visuals (owner feedback 2026-07-12), kept in their OWN module so the
- * `@brand/charts` (visx) bundle stays out of any jsdom test that imports `ReportTab`/`RunConsole` —
+ * `@elabs-ai/components-charts` (visx) bundle stays out of any jsdom test that imports `ReportTab`/`RunConsole` —
  * the same convention `ContextChart`/`SuiteScatter` follow (tests stub this module). Both are pure
  * presentation; every fill is a chart-token reference via {@link SCORE_TONE_CHART_COLOR} (never a raw
  * color), so both themes read correctly.
@@ -22,7 +22,7 @@ import { formatGradePercent, SCORE_TONE_CHART_COLOR, scoreTone } from "./grade-f
 export type RadarAxisScore = { key: GraderId; label: string; score: number };
 
 /**
- * A compact score donut (the dead space right of a detail card's quotes): one `@brand/charts` ring at
+ * A compact score donut (the dead space right of a detail card's quotes): one `@elabs-ai/components-charts` ring at
  * the score's percent, filled with the {@link scoreTone} threshold color, percent as the center
  * label. Sits RIGHT of a detail card's text (the cards stack it below on narrow widths via their own
  * `sm:flex-row`).

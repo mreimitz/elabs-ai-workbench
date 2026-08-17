@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Text, cn } from "@brand/ui";
+import { Button, Text, cn } from "@elabs-ai/components-ui";
 import { ChevronsUpDown, Flag } from "lucide-react";
 import { StatusBadge } from "../../../../components/StatusBadge";
 import { runStatusBadgeView } from "../../RunBar";

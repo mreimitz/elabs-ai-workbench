@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Text, cn } from "@brand/ui";
+import { Badge, Text, cn } from "@elabs-ai/components-ui";
 import { Loader2 } from "lucide-react";
 import {
   type CountTone,
@@ -12,12 +12,12 @@ import {
 // The ONE status chip for the whole app (audit §S3). Every state chip — scan success/failed, run
 // completed/aborted/stopped_guardrail, tool-call complete, trace ok — renders through here so one
 // concept has one rendering. The wire-value → {label, tone} decision lives in `lib/status.ts`
-// (conventions §3, copied exactly); this file only turns a tone into `@brand/tokens` utilities so
+// (conventions §3, copied exactly); this file only turns a tone into `@elabs-ai/components-tokens` utilities so
 // both themes read correctly.
 //
-// Built by composing the `@brand/ui` `Badge` pill (geometry + typography) and layering semantic tone
-// tokens — the same way `@brand/ui`'s own `StatusBadge` composes Badge internally. We do NOT use
-// `@brand`'s closed 7-state `StatusBadge` enum directly because this app's vocabulary needs states it
+// Built by composing the `@elabs-ai/components-ui` `Badge` pill (geometry + typography) and layering semantic tone
+// tokens — the same way `@elabs-ai/components-ui`'s own `StatusBadge` composes Badge internally. We do NOT use
+// `@elabs-ai/components-*`'s closed 7-state `StatusBadge` enum directly because this app's vocabulary needs states it
 // doesn't express (gray-outline `aborted`, amber-outline `stopped_guardrail`, dashed `pending`).
 //
 // D-TB11 (audit D-3): density is a `quiet` PROP, not an inline exception. A dense list (e.g. the
@@ -29,9 +29,9 @@ import {
 
 /** tone → semantic-token classes. `-text` foregrounds + alpha washes are AA-checked in both themes. */
 const TONE_CLASS: Record<StatusTone, string> = {
-  // green outline (calm success wash — mirrors @brand StatusBadge `complete`)
+  // green outline (calm success wash — mirrors brand-ui StatusBadge `complete`)
   success: "border-success/40 bg-success/10 text-success-text",
-  // red FILLED — real failure grabs the eye (mirrors @brand `failed`)
+  // red FILLED — real failure grabs the eye (mirrors brand-ui `failed`)
   danger: "border-transparent bg-destructive text-destructive-foreground",
   // amber outline
   warning: "border-warning/50 bg-warning/10 text-warning-text",

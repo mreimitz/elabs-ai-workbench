@@ -1,4 +1,4 @@
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { describe, expect, test, vi } from "vitest";

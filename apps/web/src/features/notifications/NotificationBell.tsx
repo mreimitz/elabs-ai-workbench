@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Badge, Button, Popover, PopoverContent, PopoverTrigger, ScrollArea, Text, cn } from "@brand/ui";
+import { Badge, Button, Popover, PopoverContent, PopoverTrigger, ScrollArea, Text, cn } from "@elabs-ai/components-ui";
 import type { Notification, WatchNotifySeverity } from "@mcp-token-footprint/shared";
 import { Bell, Clock } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
@@ -15,11 +15,11 @@ import { useNotifications } from "./use-notifications";
 // WP note): no toast is ever fired for a notification of any severity — the badge count + this
 // popover are the whole surface.
 //
-// `@brand/ui` ships a purpose-built `NavNotifications` composite, but its shape (`{id, fallback, text,
+// `@elabs-ai/components-ui` ships a purpose-built `NavNotifications` composite, but its shape (`{id, fallback, text,
 // time}` — a people/avatar mention list) has no room for severity/read-state/deep-link/late, all of
 // which this app's WP4.3 spec requires — so this composes `Popover` + `Badge` + `StatusBadge` (the
 // app's own severity/status chip primitive) directly, per library-first.md's "compose from existing
-// @brand primitives" guidance rather than force-fitting a component built for a different shape.
+// brand-ui primitives" guidance rather than force-fitting a component built for a different shape.
 //
 // design-remediation T5 (item 9): this center is named "Notification center" — NOT "Notifications" —
 // so its accessible name does not collide with Sonner's toast viewport region (whose default

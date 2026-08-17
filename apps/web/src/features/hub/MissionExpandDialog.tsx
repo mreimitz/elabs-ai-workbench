@@ -29,7 +29,7 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Gavel, Maximize2, Sparkles, Users } from "lucide-react";
 import { AgentTranscript } from "./AgentTranscript";
 import { RoleAvatar } from "./agents/RoleAvatar";

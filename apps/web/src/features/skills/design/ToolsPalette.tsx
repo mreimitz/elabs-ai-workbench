@@ -18,9 +18,9 @@ import {
   TooltipContent,
   TooltipTrigger,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { IconButton } from "../../../components/IconButton";
-import { SearchInput } from "@brand/data";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   CircleDashed,
   GripVertical,

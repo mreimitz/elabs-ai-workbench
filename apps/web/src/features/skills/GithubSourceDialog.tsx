@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import type { Skill } from "@mcp-token-footprint/shared";
-import { Alert, AlertDescription, AlertTitle, Input, Label, Switch, Text } from "@brand/ui";
+import { Alert, AlertDescription, AlertTitle, Input, Label, Switch, Text } from "@elabs-ai/components-ui";
 import { AlertTriangle } from "lucide-react";
 import { updateSkill } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

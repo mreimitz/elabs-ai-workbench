@@ -20,7 +20,7 @@ import {
   TooltipTrigger,
   cn,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ChevronDown, ExternalLink, FileText, RotateCcw, Sparkles } from "lucide-react";
 import { getRunGrades, regradeRun } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

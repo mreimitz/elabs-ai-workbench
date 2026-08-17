@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Skill } from "@mcp-token-footprint/shared";
-import { Checkbox, Label, Spinner, Text } from "@brand/ui";
-import { SearchInput } from "@brand/data";
+import { Checkbox, Label, Spinner, Text } from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import { listSkills } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 

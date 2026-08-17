@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Collection } from "@mcp-token-footprint/shared";
-import { Badge, Button, Heading, StatePanel, Tabs, TabsContent, TabsList, TabsTrigger, Text, toast } from "@brand/ui";
+import { Badge, Button, Heading, StatePanel, Tabs, TabsContent, TabsList, TabsTrigger, Text, toast } from "@elabs-ai/components-ui";
 import {
   ArrowLeft,
   FolderGit2,

@@ -1,5 +1,5 @@
 import { LineChart } from "lucide-react";
-import { StatePanel } from "@brand/ui";
+import { StatePanel } from "@elabs-ai/components-ui";
 import type { RunModeProps } from "./compare-runs";
 
 /**

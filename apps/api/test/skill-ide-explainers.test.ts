@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { SKILL_GRAPH_NODE_KINDS } from "@mcp-token-footprint/shared";
 import type { QualityReport, SkillGraph, ToolDiagnostic } from "@mcp-token-footprint/shared";
 // Skill IDE WP 9.4 (I10.5) — the education layer's LOAD-BEARING guarantees. We import the EXACT web
-// modules the IDE renders from (both pure — no React/@brand — like WP 9.3's snippet test), so this
+// modules the IDE renders from (both pure — no React/brand-ui — like WP 9.3's snippet test), so this
 // test and the running UI can never drift:
 //   • the explainer registry (`explainers.ts`) — the SINGLE source every education surface resolves
 //     through (code hovers, node-panel "What is this?", canvas legend, problems panel), and

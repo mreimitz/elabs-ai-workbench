@@ -16,7 +16,7 @@ import {
   Text,
   Textarea,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Plus, Trash2 } from "lucide-react";
 import { FormDialog } from "../../components/dialogs/FormDialog";
 import { DialogSection } from "../../components/dialogs/DialogSection";
@@ -61,7 +61,7 @@ function serializeDraft(name: string, instructions: string, keys: DraftKey[]): s
 /**
  * Create/edit a review rubric (Observability WP4.5, D-OB22) — a persisted, named checklist of keys
  * (each thumbs/scale5/note). Mirrors the `FormDialog` (Tier 2) list/manage pattern used across the app
- * (e.g. `WatchRulesView`'s `RuleEditorDialog`); the dynamic key rows compose `@brand/ui` primitives
+ * (e.g. `WatchRulesView`'s `RuleEditorDialog`); the dynamic key rows compose `@elabs-ai/components-ui` primitives
  * directly (Input/Select/Textarea + Trash2/Plus), the SAME building blocks `ListEditor` uses, just for
  * a 3-field row instead of a bare string.
  */

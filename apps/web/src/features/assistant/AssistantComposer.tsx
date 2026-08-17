@@ -13,8 +13,8 @@ import {
   PromptInputTextarea,
   PromptInputTools,
   PromptInputButton,
-} from "@brand/ai";
-import { Badge } from "@brand/ui";
+} from "@elabs-ai/components-ai";
+import { Badge } from "@elabs-ai/components-ui";
 import { ArrowUp, Globe, PenLine, Sparkles, TriangleAlert } from "lucide-react";
 import type { AssistantThread } from "@mcp-token-footprint/shared";
 import { getErrorMessage } from "../../lib/errors";
@@ -33,7 +33,7 @@ export type AssistantComposerPrefill = { nonce: number; text: string };
  * wrapper uses (status strip + recessed `PromptInput` well) restores the real send-state machine:
  * ready → ArrowUp, submitted → Spinner, streaming → stop square that calls `onStop`. This is the
  * sanctioned library-first path for an upstream gap (see .claude/rules/library-first.md); if a
- * `@brand/ai` release forwards `sendStatus` icons through `Composer`, fold this back onto it.
+ * `@elabs-ai/components-ai` release forwards `sendStatus` icons through `Composer`, fold this back onto it.
  *
  * Reference-alignment (owner request 2026-07-12):
  * - The auto-accept ("write mode") control is an icon-only `PromptInputButton` you CLICK to flip —

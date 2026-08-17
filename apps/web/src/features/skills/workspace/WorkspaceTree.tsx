@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { ScrollArea, Text, Tree, type TreeNode } from "@brand/ui";
-import { SearchInput } from "@brand/data";
+import { ScrollArea, Text, Tree, type TreeNode } from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   FileCode2,
   FilePlus2,
@@ -18,8 +18,8 @@ import type { WorkEntry } from "./workspace-model";
 import { dirOf, isContentDirty, isSkillMd } from "./workspace-model";
 
 // ── the workspace tree (interactive) ────────────────────────────────────────────────────────────
-// Built on `@brand/ui` `Tree` (roving-tabindex keyboard nav + single selection + expand/collapse) —
-// chosen over the display-only `@brand/ai` FileTree because the workspace tree is INTERACTIVE. Per-
+// Built on `@elabs-ai/components-ui` `Tree` (roving-tabindex keyboard nav + single selection + expand/collapse) —
+// chosen over the display-only `@elabs-ai/components-ai` FileTree because the workspace tree is INTERACTIVE. Per-
 // node actions live in a toolbar that acts on the current SELECTION (a `Tree` row is a div, and its
 // label span doesn't stretch, so a reliably right-aligned per-row action menu isn't available — the
 // selection toolbar is the accessible, un-conflicting affordance).
@@ -90,7 +90,7 @@ function fileIcon(entry: WorkEntry): ReactNode {
   return <FileText className={`size-4 ${tone}`} />;
 }
 
-/** Map the nested WorkNodes to `@brand/ui` `TreeNode`s (id = path; folders carry children). */
+/** Map the nested WorkNodes to `@elabs-ai/components-ui` `TreeNode`s (id = path; folders carry children). */
 function toTreeNodes(nodes: WorkNode[]): TreeNode[] {
   return nodes.map((node) =>
     node.type === "folder"

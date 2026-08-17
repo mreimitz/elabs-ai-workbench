@@ -10,7 +10,7 @@
 // It NEVER throws and NEVER renders an unknown component/prop/unsafe URL (the shared `validateGenuiSpec`
 // + the allowlisted registry guarantee this).
 
-import { Shimmer } from "@brand/ai";
+import { Shimmer } from "@elabs-ai/components-ai";
 import { validateGenuiSpec, type HubToolPart } from "@mcp-token-footprint/shared";
 import { GenUiNode } from "./GenUiNode.js";
 import { GenuiRecoveryCard } from "./RecoveryCard.js";

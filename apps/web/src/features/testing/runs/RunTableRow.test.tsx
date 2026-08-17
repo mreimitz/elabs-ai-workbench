@@ -2,7 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, test, vi } from "vitest";
 import type { RunSummary } from "@mcp-token-footprint/shared";
-import { Table, TableBody, TooltipProvider } from "@brand/ui";
+import { Table, TableBody, TooltipProvider } from "@elabs-ai/components-ui";
 import { RunTableRow } from "./RunTableRow";
 import { SESSION_TABLE_COLUMNS, toVisibleColumnSet } from "./run-columns";
 

@@ -5,18 +5,18 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { createContext, isValidElement, cloneElement, useContext } from "react";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 
 /**
- * A **faithful** `@brand/ai` ModelSelector stand-in for the ONE test that must exercise REAL cmdk
+ * A **faithful** `@elabs-ai/components-ai` ModelSelector stand-in for the ONE test that must exercise REAL cmdk
  * (model-identity WP 4.1 / D-MI7).
  *
- * `@brand/ai`'s `ModelSelector*` family is a thin wrapper over `@brand/ui`'s `Command*` (which is a
+ * `@elabs-ai/components-ai`'s `ModelSelector*` family is a thin wrapper over `@elabs-ai/components-ui`'s `Command*` (which is a
  * thin wrapper over cmdk) plus a Radix `Dialog` for chrome. This module keeps the cmdk half REAL —
  * `ModelSelectorItem` **is** `CommandItem` — and replaces only the Dialog with a plain conditional,
- * so jsdom never has to load the rest of the `@brand/ai` barrel (xterm/monaco/shiki/mermaid) just to
+ * so jsdom never has to load the rest of the `@elabs-ai/components-ai` barrel (xterm/monaco/shiki/mermaid) just to
  * assert on keyboard navigation.
  *
  * WHY IT EXISTS. The general-purpose `brand-ai-mock.tsx` re-implements filtering; it therefore

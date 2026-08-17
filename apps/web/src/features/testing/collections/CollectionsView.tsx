@@ -30,8 +30,8 @@ import {
   Text,
   buttonVariants,
   toast,
-} from "@brand/ui";
-import { SearchInput } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   ClipboardCheck,
   ClipboardList,

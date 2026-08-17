@@ -4,7 +4,7 @@ import { MemoryRouter, useSearchParams } from "react-router-dom";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import type { RunStep, Scenario, SessionCapabilities, Test } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 // Type-only — erased before runtime, so this never touches the `vi.mock("./use-run-stream", ...)`
 // module mock below.
 import type { RunStreamState } from "./use-run-stream";
@@ -16,24 +16,24 @@ import type { RunStreamState } from "./use-run-stream";
  * context yet" turn-0 empty state) and the `<BaselineFootprint>` turn-0 card — because that kind has
  * no context window at all. Every manifest with `contextWindow: true` still renders both. This is
  * proven by mounting RunConsole in its lightest (pre-run) state with only the THREE module-load-heavy
- * children stubbed (ConversationPane, AnalyticsPanel — both pull `@brand/ai`/`@brand/charts` that
+ * children stubbed (ConversationPane, AnalyticsPanel — both pull `@elabs-ai/components-ai`/`@elabs-ai/components-charts` that
  * jsdom can't load — and ContextChart, stubbed to a sentinel so its presence/absence is directly
  * assertable). `BaselineFootprint` is a function LOCAL to RunConsole.tsx (unmockable), so it's
  * asserted by its real "Turn-0 baseline" text.
  */
 
 // The context chart is the surface under test — stub it to a sentinel so we assert mount/absence
-// directly (and so its real `@brand/charts` dependency never enters the jsdom bundle).
+// directly (and so its real `@elabs-ai/components-charts` dependency never enters the jsdom bundle).
 vi.mock("./ContextChart", () => ({
   ContextChart: () => <div data-testid="context-chart" />,
 }));
-// Heavy siblings imported at module load (they pull `@brand/ai` / `@brand/charts`) — neutralized so
+// Heavy siblings imported at module load (they pull `@elabs-ai/components-ai` / `@elabs-ai/components-charts`) — neutralized so
 // importing RunConsole doesn't drag Monaco/markdown/visx into jsdom. They never render in pre-run
 // (ConversationPane is only on the running/replay left pane; AnalyticsPanel is a left tab), but the
 // import still executes, so they must be stubbed.
 vi.mock("./ConversationPane", () => ({ ConversationPane: () => <div /> }));
 vi.mock("./AnalyticsPanel", () => ({ AnalyticsPanel: () => <div /> }));
-// Right-pane bottom-zone + trace children that transitively pull `@brand/editor`/`@brand/ai` (the
+// Right-pane bottom-zone + trace children that transitively pull `@elabs-ai/components-editor`/`@elabs-ai/components-ai` (the
 // CodeSnippet / ArtifactPreview / markdown surfaces — a milkdown/monaco CSS import jsdom can't load).
 // None are under test here; stub them so the import graph stays jsdom-safe.
 vi.mock("./TraceTimeline", () => ({ TraceTimeline: () => <div /> }));
@@ -47,16 +47,16 @@ vi.mock("./PacketInspector", () => ({
 }));
 vi.mock("./ConsolePanel", () => ({ ConsolePanel: () => <div /> }));
 vi.mock("./ApplicationPanel", () => ({ ApplicationPanel: () => <div /> }));
-// ReportTab's donut/radar module pulls `@brand/charts` (visx) — stubbed so importing RunConsole
+// ReportTab's donut/radar module pulls `@elabs-ai/components-charts` (visx) — stubbed so importing RunConsole
 // (→ ReportTab → report-charts) stays jsdom-safe.
 vi.mock("./report-charts", () => ({
   ScoreDonut: () => <div />,
   ScoreRadar: () => <div />,
 }));
-// KpiRail (rendered unmocked here) now pulls `@brand/ai` for the Context usage popover — and the
-// @brand/ai barrel imports xyflow CSS jsdom can't load. Stub the six Context parts it uses; the
+// KpiRail (rendered unmocked here) now pulls `@elabs-ai/components-ai` for the Context usage popover — and the
+// @elabs-ai/components-ai barrel imports xyflow CSS jsdom can't load. Stub the six Context parts it uses; the
 // rail's own tile text stays real and assertable.
-vi.mock("@brand/ai", () => ({
+vi.mock("@elabs-ai/components-ai", () => ({
   Context: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   ContextTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   ContextContent: () => null,
@@ -146,7 +146,7 @@ import {
 import type { ConsolePane } from "./console-anchors";
 
 beforeAll(() => {
-  // The @brand/ui layout (AdaptivePanelGroup → useIsMobile; ResizablePanelGroup) reads matchMedia +
+  // The @elabs-ai/components-ui layout (AdaptivePanelGroup → useIsMobile; ResizablePanelGroup) reads matchMedia +
   // ResizeObserver, which jsdom doesn't implement. Minimal no-op stubs so the split can mount.
   if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({

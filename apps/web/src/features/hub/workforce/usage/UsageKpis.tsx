@@ -1,4 +1,4 @@
-import { MetricCard, MetricGrid } from "@brand/charts";
+import { MetricCard, MetricGrid } from "@elabs-ai/components-charts";
 import type { HubPlanAcceptanceMetric } from "@mcp-token-footprint/shared";
 import { formatCostUsd, formatNumber, formatPercent } from "../../../../lib/format";
 import type { UsageTotals } from "./usage-derive";

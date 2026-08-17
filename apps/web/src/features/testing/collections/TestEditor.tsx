@@ -27,7 +27,7 @@ import {
   Text,
   Textarea,
   type UploadFile,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ClipboardCheck, FileText, Paperclip, Plus, Tags, Trash2, X } from "lucide-react";
 import { AssertionsEditor } from "../AssertionsEditor";
 import { TokenProfileField } from "../TokenProfileField";

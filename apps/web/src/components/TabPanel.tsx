@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Tabs, TabsContent, TabsTrigger, Text, cn } from "@brand/ui";
+import { Tabs, TabsContent, TabsTrigger, Text, cn } from "@elabs-ai/components-ui";
 import { ScrollableTabsList } from "./ScrollableTabsList";
 
 /**
@@ -17,7 +17,7 @@ import { ScrollableTabsList } from "./ScrollableTabsList";
  *   2. ONE STRIP→CONTENT OFFSET — a single 16px gap between the strip and the content region on
  *      every tab (`gap-4` on the column).
  *   3. FULL-WIDTH CENTERED TAB BAR (D-UX16) — the strip is a full-width row (`w-full`) with the
- *      `@brand/ui` `TabsList` (recessed muted track) CENTERED in it; it stays pinned and horizontally
+ *      `@elabs-ai/components-ui` `TabsList` (recessed muted track) CENTERED in it; it stays pinned and horizontally
  *      scrolls (never clips) when the tabs exceed the width. (Superseded the earlier left-aligned
  *      shrink-to-content pills after owner acceptance.)
  *   4. PER-TAB DESCRIPTION + ACTIONS on one row directly under the strip (owned by
@@ -95,7 +95,7 @@ export function TabPanel({
       <div className="flex shrink-0 flex-col gap-4">
         {header}
         {/* D-UX16 (owner re-walk, WP 6.8): a TRULY full-width tab BAR with the triggers CENTERED
-            within it — the `fullWidth` prop makes the scroll container `w-full` and the `@brand/ui`
+            within it — the `fullWidth` prop makes the scroll container `w-full` and the `@elabs-ai/components-ui`
             recessed track `w-full justify-center-safe`, so the bar spans the content width and the
             triggers sit centered (not a shrink-to-content pill group floating in empty space). The
             container's `overflow-x-auto` still scrolls horizontally when the tabs exceed the width

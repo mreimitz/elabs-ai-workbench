@@ -1,5 +1,5 @@
 import type { HubMemory } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";

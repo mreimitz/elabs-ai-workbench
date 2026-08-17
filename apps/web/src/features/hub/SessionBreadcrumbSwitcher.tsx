@@ -1,15 +1,15 @@
 // Assistant Hub end-user UX pass — the session identity control, relocated from the workspace toolbar
 // into the breadcrumb (`Home › Assistant › [Session ▾]`). Clicking the crumb opens a popover that
 // leads with THIS session, then a searchable list of every other session — the richer switcher the
-// flat `@brand/ui` Combobox (one flat group, no per-row status, no pinned footer) couldn't express, so
-// it's composed here from `Popover` + `@brand/data` `SearchInput` + the app's one `StatusBadge`.
+// flat `@elabs-ai/components-ui` Combobox (one flat group, no per-row status, no pinned footer) couldn't express, so
+// it's composed here from `Popover` + `@elabs-ai/components-data` `SearchInput` + the app's one `StatusBadge`.
 //
 // This supersedes the toolbar `SessionSwitcher` (removed from `AssistantView`'s ViewToolbar): the
 // session title + its live status now live in the breadcrumb as the leaf crumb.
 
 import { useMemo, useState } from "react";
-import { Badge, Button, Popover, PopoverContent, PopoverTrigger, Text, cn } from "@brand/ui";
-import { SearchInput } from "@brand/data";
+import { Badge, Button, Popover, PopoverContent, PopoverTrigger, Text, cn } from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import type { HubSession } from "@mcp-token-footprint/shared";
 import { ChevronDown, Plus } from "lucide-react";
 import { StatusBadge } from "../../components/StatusBadge";

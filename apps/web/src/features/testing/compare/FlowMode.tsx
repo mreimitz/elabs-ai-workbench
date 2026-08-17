@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { RunDetail } from "@mcp-token-footprint/shared";
-import { StatePanel, Switch, Text, ToggleGroup, ToggleGroupItem, cn } from "@brand/ui";
+import { StatePanel, Switch, Text, ToggleGroup, ToggleGroupItem, cn } from "@elabs-ai/components-ui";
 import { getRun } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 import type { RunModeProps } from "./compare-runs";

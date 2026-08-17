@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // server B could let A's (slower) response resolve AFTER B's and overwrite the tool list with the
 // wrong server's tools. Locks the request-token fix: the latest pick always wins.
 
-// jsdom omits matchMedia — Radix (Dialog/Select) + @brand/data's DataTable toolbar read it.
+// jsdom omits matchMedia — Radix (Dialog/Select) + @elabs-ai/components-data's DataTable toolbar read it.
 if (typeof window.matchMedia !== "function") {
   window.matchMedia = ((query: string) => ({
     matches: false,

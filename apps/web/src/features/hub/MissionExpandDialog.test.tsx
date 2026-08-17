@@ -1,5 +1,5 @@
-// hub-fixes WP4.3 (RC6.2/RC6.4) — the expand modal + selectable topology + per-node panel. `@brand/ai`
-// is the shared hub stub; `@brand/flow`'s CanvasShell is stubbed to a FAITHFUL DOM (each node a
+// hub-fixes WP4.3 (RC6.2/RC6.4) — the expand modal + selectable topology + per-node panel. `@elabs-ai/components-ai`
+// is the shared hub stub; `@elabs-ai/components-flow`'s CanvasShell is stubbed to a FAITHFUL DOM (each node a
 // `.react-flow__node[data-id]` element wired to `onNodeClick`) so both node-CLICK selection and the
 // KEYBOARD capture handlers (`onKeyDownCapture` → Enter selects) can be driven deterministically in
 // jsdom — the same "mock the canvas, assert the model/interaction" posture as
@@ -16,10 +16,10 @@ import type {
 import type { HubSseFrame } from "../../lib/api";
 import { act, fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ReactElement } from "react";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 // MissionBoard/MissionExpandDialog render `IconButton`s (D-TB5), which wrap every control in a
 // Radix `Tooltip` — that throws without an ancestor `TooltipProvider` (the app root mounts one;
@@ -28,10 +28,10 @@ function render(ui: ReactElement) {
   return rtlRender(<TooltipProvider>{ui}</TooltipProvider>);
 }
 
-// A faithful @brand/flow stub: renders each node as the SAME DOM contract the real canvas exposes
+// A faithful @elabs-ai/components-flow stub: renders each node as the SAME DOM contract the real canvas exposes
 // (`.react-flow__node[data-id]`, focusable) and wires `onNodeClick`, so the WP's real selection code
 // (click handler + the section's keyboard/focus capture handlers) is exercised, not mocked away.
-vi.mock("@brand/flow", () => ({
+vi.mock("@elabs-ai/components-flow", () => ({
   FlowNode: () => null,
   ZoomControls: () => null,
   CanvasShell: ({

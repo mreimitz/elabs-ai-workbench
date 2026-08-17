@@ -2,16 +2,16 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
 
-// The Scans tab renders `MetricGrid` (`@brand/charts`), and the Testing tab (WP 2.2) renders the
+// The Scans tab renders `MetricGrid` (`@elabs-ai/components-charts`), and the Testing tab (WP 2.2) renders the
 // rest of the package's chart surface — importing ANY named export from that package's barrel under
 // Vitest/jsdom resolves a broken deep `@visx/gradient` subpath used by its (unrelated, unused here)
 // Gantt chart, a pre-existing environment-only issue confirmed for every export, not just
 // `MetricGrid` (see `ScansTab.test.tsx`'s longer note; `RunConsole.test.tsx`/`TestingTab.test.tsx`
 // mock around the same class of issue). A thin pass-through per export mounts both real tab bodies.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   MetricGrid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   MetricCard: ({ label, value }: { label: string; value: string }) => (
     <div>

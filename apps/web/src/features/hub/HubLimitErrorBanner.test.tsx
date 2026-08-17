@@ -4,9 +4,9 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
 // model-identity WP 4.1 — the banner's "retry with a different model" field is now the shared
-// `HubModelPicker`, which composes `@brand/ai`'s ModelSelector; stub the barrel like every other hub
+// `HubModelPicker`, which composes `@elabs-ai/components-ai`'s ModelSelector; stub the barrel like every other hub
 // suite does so jsdom never loads xyflow/monaco/shiki (see `test-support/brand-ai-mock.tsx`).
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import { HubLimitErrorBanner } from "./HubLimitErrorBanner";
 import type { HubModelOption } from "./use-hub-models";

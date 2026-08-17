@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Button, ErrorState } from "@brand/ui";
+import { Button, ErrorState } from "@elabs-ai/components-ui";
 
 type ErrorBoundaryProps = { children: ReactNode };
 type ErrorBoundaryState = { error: Error | null };

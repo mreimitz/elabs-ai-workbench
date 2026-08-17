@@ -10,8 +10,8 @@ import {
   SeriesBar,
   XAxis,
   YAxis,
-} from "@brand/charts";
-import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@brand/ui";
+} from "@elabs-ai/components-charts";
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@elabs-ai/components-ui";
 import type { HubUsageRow } from "@mcp-token-footprint/shared";
 import { formatCostUsd } from "../../../../lib/format";
 import { rankByCost } from "./usage-derive";

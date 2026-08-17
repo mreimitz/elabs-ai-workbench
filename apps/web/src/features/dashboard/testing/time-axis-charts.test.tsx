@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { render as rtlRender } from "@testing-library/react";
 import type { RunMetricsSeries, ScanMetricsPoint, ScanMetricsSeries } from "@mcp-token-footprint/shared";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { defaultControls } from "./dashboard-url-state";
 import { pivotToRows } from "./metrics-derive";
 
@@ -16,14 +16,14 @@ function render(ui: ReactNode) {
 /**
  * REGRESSION — the Testing dashboard crashed the whole tab into the error boundary with
  * `RangeError: Invalid time value` (owner-reported, reproduced live). Root cause: the time-scale
- * charts (`@brand/charts` `LineChart`/`AreaChart`/`ComposedChart`) DEFAULT `xDataKey` to `"date"`
+ * charts (`@elabs-ai/components-charts` `LineChart`/`AreaChart`/`ComposedChart`) DEFAULT `xDataKey` to `"date"`
  * (verified in the package's `index.d.ts`), but the pivoted rows carry the timestamp under `x` (a
  * `Date`) with NO `"date"` field. Any panel that forgot `xDataKey="x"` therefore fed the chart an
  * `undefined` x → `new Date(undefined)` → Invalid Date → the axis' `.toISOString()` threw. This
  * suite locks the fix: every time-scale panel must set `xDataKey="x"` over rows whose `x` is a valid
  * `Date`.
  *
- * The other panel suites stub `@brand/charts` with INERT no-ops, so they never reproduce the crash.
+ * The other panel suites stub `@elabs-ai/components-charts` with INERT no-ops, so they never reproduce the crash.
  * This suite stubs it FAITHFULLY at the one contract that matters — a time-scale chart builds its x
  * from `row[xDataKey]` and calls `.toISOString()` on it — so a mis-wired panel throws here (test
  * FAILS pre-fix) and a correctly-wired one renders clean (test PASSES post-fix). The crash lives in
@@ -34,7 +34,7 @@ function render(ui: ReactNode) {
 
 const captured = vi.hoisted(() => ({ xDataKeys: [] as (string | undefined)[] }));
 
-vi.mock("@brand/charts", () => {
+vi.mock("@elabs-ai/components-charts", () => {
   // Faithful time-scale chart: xDataKey defaults to "date" (matching the real component), and each
   // row's x is run through the same `new Date(...).toISOString()` a time axis performs — an
   // undefined/invalid x throws "Invalid time value", exactly as the real chart does.

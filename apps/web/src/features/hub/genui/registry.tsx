@@ -1,13 +1,13 @@
-// Assistant Hub (WP2.6, R-GUI1/2/8) — the ALLOWLISTED renderer registry: `$type` → a `@brand`-part-backed
+// Assistant Hub (WP2.6, R-GUI1/2/8) — the ALLOWLISTED renderer registry: `$type` → a `@elabs-ai/components-*`-part-backed
 // React renderer. This map IS the render-time security boundary (R-GUI2): a `$type` not present here is
 // never rendered. Every renderer reads DATA only from the (already-sanitized) `props` — no colors/styles
-// reach a component (R-GUI8); look comes exclusively from `@brand` variants + tokens.
+// reach a component (R-GUI8); look comes exclusively from `@elabs-ai/components-*` variants + tokens.
 //
-// Components are backed by the LIVE `@brand` library (verified via the vendored `.d.ts`, not guessed):
-//   charts  → `@brand/charts` AutoChart (ChartSpec adopted as-is, never-throws)
-//   tables  → `@brand/ai` MessageTable (the model-emittable table, never-throws)
-//   forms   → `@brand/ai` MessageForm (in-message form + validation, never-throws)
-//   stats   → `@brand/ui` MetricCard · data → Descriptions · content → Heading/Text/Alert · layout → Card + flex
+// Components are backed by the LIVE `@elabs-ai/components-*` library (verified via the vendored `.d.ts`, not guessed):
+//   charts  → `@elabs-ai/components-charts` AutoChart (ChartSpec adopted as-is, never-throws)
+//   tables  → `@elabs-ai/components-ai` MessageTable (the model-emittable table, never-throws)
+//   forms   → `@elabs-ai/components-ai` MessageForm (in-message form + validation, never-throws)
+//   stats   → `@elabs-ai/components-ui` MetricCard · data → Descriptions · content → Heading/Text/Alert · layout → Card + flex
 //
 // The consistency test (`genui-renderer.test.tsx`) asserts this registry covers EXACTLY the shared
 // `HUB_GENUI_CATALOG` ids — so the prompt, the validator, and the renderer can never drift (R-GUI1).
@@ -30,16 +30,16 @@ import {
   Text,
   cn,
   type HeadingLevel,
-} from "@brand/ui";
-import { MessageForm, MessageTable, type FormValues } from "@brand/ai";
-import type { ChartSpec } from "@brand/charts";
+} from "@elabs-ai/components-ui";
+import { MessageForm, MessageTable, type FormValues } from "@elabs-ai/components-ai";
+import type { ChartSpec } from "@elabs-ai/components-charts";
 import { isSafeGenuiUrl, type SanitizedGenuiNode } from "@mcp-token-footprint/shared";
 import type { GenuiRenderContext } from "./use-genui-state.js";
 
-// `@brand/charts` pulls in the heavy `@visx/*` tree — lazy-load it so it is only fetched when a Chart
+// `@elabs-ai/components-charts` pulls in the heavy `@visx/*` tree — lazy-load it so it is only fetched when a Chart
 // actually renders (keeps the transcript's initial bundle light and keeps `@visx` out of the eager
 // import graph for consumers/tests that never render a chart).
-const AutoChart = lazy(() => import("@brand/charts").then((m) => ({ default: m.AutoChart })));
+const AutoChart = lazy(() => import("@elabs-ai/components-charts").then((m) => ({ default: m.AutoChart })));
 
 export type GenuiRendererArgs = {
   node: SanitizedGenuiNode;
@@ -78,7 +78,7 @@ function deltaDirection(delta?: string): "up" | "down" | "neutral" {
   return "neutral";
 }
 
-// ── field/spec mappers (my catalog shape → the @brand `FormSpec`/`TableSpec` shapes) ─────────────────
+// ── field/spec mappers (my catalog shape → the brand-ui `FormSpec`/`TableSpec` shapes) ─────────────────
 
 type BrandFieldType = "string" | "number" | "boolean" | "enum";
 
@@ -209,7 +209,7 @@ export const GENUI_RENDERERS: Record<string, GenuiRenderer> = {
       </div>
     );
   },
-  // chart (lazy — @brand/charts + @visx are loaded on demand)
+  // chart (lazy — @elabs-ai/components-charts + @visx are loaded on demand)
   Chart: ({ node }) => (
     <Suspense
       fallback={

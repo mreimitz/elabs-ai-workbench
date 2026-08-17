@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { StatePanel, cn } from "@brand/ui";
+import { StatePanel, cn } from "@elabs-ai/components-ui";
 
 /**
  * TabEmptyState — the ONE empty-state placement for a tab's content region (audit §S21.6 / §S22).
@@ -18,7 +18,7 @@ import { StatePanel, cn } from "@brand/ui";
  * PUBLIC API (a thin, typed pass-through to `StatePanel kind="empty"` + the centring frame)
  *   title        : ReactNode              — required. The headline ("No prompts").
  *   description? : ReactNode              — one muted line under the title.
- *   icon?        : ReactNode              — optional glyph above the title (lucide / @brand/icons).
+ *   icon?        : ReactNode              — optional glyph above the title (lucide / @elabs-ai/components-icons).
  *   actions?     : ReactNode              — optional primary/secondary buttons (e.g. "Run scan").
  *   size?        : "sm" | "md" | "lg"     — StatePanel size. Default "md".
  *   className?   : string                 — layout-only classes for the centring frame.

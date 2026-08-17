@@ -1,6 +1,6 @@
-import { useReducedMotion } from "@brand/tokens";
-import { Suggestion, Suggestions } from "@brand/ai";
-import { Heading, Text, cn } from "@brand/ui";
+import { useReducedMotion } from "@elabs-ai/components-tokens";
+import { Suggestion, Suggestions } from "@elabs-ai/components-ai";
+import { Heading, Text, cn } from "@elabs-ai/components-ui";
 import { type ReactNode, useEffect, useRef } from "react";
 import { CognitiveRing } from "./CognitiveRing";
 import { HUB_STARTER_SUGGESTIONS } from "./ConversationPane";
@@ -69,7 +69,7 @@ export interface EmptySessionIntroProps {
  * (the greeting fades in place up top; the composer glides down beneath it).
  *
  * `motion-reduce` is a hard rule, not a nicety (D-HUX13) — but it governs ANIMATION ONLY, never
- * CONTENT: `useReducedMotion` (`@brand/tokens`, provider-optional) drops the transform/opacity
+ * CONTENT: `useReducedMotion` (`@elabs-ai/components-tokens`, provider-optional) drops the transform/opacity
  * transitions (the slide + fade play instantly instead of over ~240/200ms) while leaving the dock
  * STATE exactly as it would otherwise be — a fresh reduced-motion session still opens with the
  * greeting + starter chips (visible, interactive, never `aria-hidden`), just with no glide; a

@@ -5,7 +5,7 @@
 // Skill IDE WP 8.5). This dialog does NOT opt into the destructive confirm, so it runs exactly as it
 // always has.
 import type { TokenProfileId } from "@mcp-token-footprint/shared";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@brand/ui";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@elabs-ai/components-ui";
 import { ToolRunner } from "../../components/ToolRunner";
 import type { ToolParam } from "../../lib/schema-params";
 

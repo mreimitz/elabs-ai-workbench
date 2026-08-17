@@ -2,7 +2,7 @@ import type { DragEvent, ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { HubAgentRole, HubCrew, HubCrewMember } from "@mcp-token-footprint/shared";
-import { SearchInput } from "@brand/data";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   Badge,
   Button,
@@ -18,7 +18,7 @@ import {
   cn,
   toast,
   useTreeKeyboard,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   AlertTriangle,
   Archive,
@@ -151,7 +151,7 @@ function roleTitleFor(role: HubAgentRole): { title: string; roleTitle?: string }
 }
 
 /**
- * Crew nesting (WP4.2) — the keyboard-traversal TREE MODEL (`@brand/ui`'s `TreeNode<never>`,
+ * Crew nesting (WP4.2) — the keyboard-traversal TREE MODEL (`@elabs-ai/components-ui`'s `TreeNode<never>`,
  * `label: null` throughout since `useTreeKeyboard` only ever reads `.id`/`.children`) mirroring the
  * JSX rendered below, recursively, cycle-safe (the SAME ancestor-path + depth-cap guard `renderMember`
  * uses — a cyclic/dangling/over-depth member is simply absent from BOTH, since neither renders an
@@ -270,7 +270,7 @@ export function OrgRail(props: {
     return crews.filter((crew) => crew.name.toLowerCase().includes(q));
   }, [crews, search]);
 
-  // ── Keyboard traversal (WP4.2 / WP2.R precedent) — `@brand/ui`'s `useTreeKeyboard` gives arrow-key/
+  // ── Keyboard traversal (WP4.2 / WP2.R precedent) — `@elabs-ai/components-ui`'s `useTreeKeyboard` gives arrow-key/
   // Home/End/type-ahead navigation across arbitrary depth WITHOUT migrating onto the `Tree` component
   // (rejected: `Tree`'s row click conflates select+expand, which would regress this rail's deliberately
   // independent select/expand UX — see the WP's design note). Existing per-row click semantics are
@@ -796,7 +796,7 @@ function BranchRow(props: {
         // interface-craft WP 4.3 FIX 3 (P1): the active row is a primary-tinted CHIP, not a neutral
         // `bg-accent` tint carrying `text-primary` body text (that measured 4.28:1, below AA). The
         // label now stays at the default foreground (~12:1 on this light chip) and the primary/active
-        // read moves to the tint + the primary icon below. qlik-dark stays high-contrast (foreground
+        // read moves to the tint + the primary icon below. dark stays high-contrast (foreground
         // on a subtle dark tint).
         props.active && "bg-primary/10",
         props.drop?.active && "bg-accent ring-1 ring-inset ring-ring",

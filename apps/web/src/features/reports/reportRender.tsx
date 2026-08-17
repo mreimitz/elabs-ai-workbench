@@ -20,7 +20,7 @@ import {
   type Explanation,
   type StatusKey,
 } from "@mcp-token-footprint/shared";
-import { Badge, Text } from "@brand/ui";
+import { Badge, Text } from "@elabs-ai/components-ui";
 import { formatNumber } from "../../lib/format";
 import { KpiStat } from "../../components/KpiStat";
 import { OUTCOME_META, SEVERITY_META } from "../compatibility/meta";
@@ -32,7 +32,7 @@ import { EvidenceChip } from "../compatibility/EvidenceChip";
 // (severity ordering, the detail filter, per-model grouping) + figure formatting now live in
 // @mcp-token-footprint/shared — ONE source of truth shared by the live tabs, the PDF report, and the
 // Markdown export, so they never drift on severity colours/labels or finding grouping. This module
-// owns only the @brand/ui rendering; the moved symbols are re-exported below so existing
+// owns only the @elabs-ai/components-ui rendering; the moved symbols are re-exported below so existing
 // `./reportRender` imports keep resolving unchanged.
 
 export {

@@ -21,7 +21,7 @@
  *                   role is a distinct, ordered step (title == body was the h3-reads-as-body defect).
  *   4. LOCKSTEP   — the raw Tailwind steps moved with the roles: --text-2xl (the raw h1 rung the
  *                   critique measured at 18px) tracks display, and --text-3xl tracks the KPI rung —
- *                   so @brand/* components that consume the raw steps directly grow in step with the
+ *                   so @elabs-ai/components-* components that consume the raw steps directly grow in step with the
  *                   semantic roles instead of drifting back to the old compressed values.
  */
 import { readFileSync } from "node:fs";

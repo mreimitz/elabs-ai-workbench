@@ -19,7 +19,7 @@ import {
   TableCell,
   TableRow,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { IconButton } from "../../../components/IconButton";
 import { StatusBadge as AppStatusBadge } from "../../../components/StatusBadge";
 import {

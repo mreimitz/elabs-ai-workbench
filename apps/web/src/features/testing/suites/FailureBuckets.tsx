@@ -21,7 +21,7 @@ import {
   TableRow,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { CircleDollarSign, Info, Loader2, Sparkles, TriangleAlert } from "lucide-react";
 import { triggerFailureBuckets } from "../../../lib/api";
 import { InlineError } from "../../../components/InlineError";

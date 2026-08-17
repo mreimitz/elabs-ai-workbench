@@ -300,7 +300,7 @@ describe("isReviewPending", () => {
 });
 
 describe("CLOSED_BADGE_STATUS_TONE — the legacy-enum bridge", () => {
-  test("covers every value of the closed @brand/ui-style status enum", () => {
+  test("covers every value of the closed @elabs-ai/components-ui-style status enum", () => {
     expect(CLOSED_BADGE_STATUS_TONE).toEqual({
       pending: "pending",
       running: "info",

@@ -92,7 +92,7 @@ export type ProviderKindMeta = {
   label: string;
   /** Compact form for badges/chips where the full label would wrap. */
   shortLabel: string;
-  /** `ModelSelectorLogo`'s `provider` slug (`@brand/ai`). It accepts a closed set of known slugs plus
+  /** `ModelSelectorLogo`'s `provider` slug (`@elabs-ai/components-ai`). It accepts a closed set of known slugs plus
    *  an arbitrary fallback string, so an unrecognized value renders a generic glyph rather than
    *  throwing. `claude_subscription` reuses the Anthropic mark — it IS Claude. */
   logoProvider: string;

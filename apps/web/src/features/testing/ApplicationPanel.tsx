@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import type { RunStep } from "@mcp-token-footprint/shared";
-import { SplitPanel, StatePanel, Text, Tree } from "@brand/ui";
-import type { TreeNode } from "@brand/ui";
+import { SplitPanel, StatePanel, Text, Tree } from "@elabs-ai/components-ui";
+import type { TreeNode } from "@elabs-ai/components-ui";
 import { ArrowDownToLine, Hammer, PackageOpen } from "lucide-react";
 import { ArtifactPreview, lastLlmResponseIndex } from "./ArtifactPreview";
 import { firstProfileTokens, stepTypeMeta } from "./StepLog";

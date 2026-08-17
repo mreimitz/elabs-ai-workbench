@@ -26,9 +26,9 @@ import {
   StatePanel,
   Text,
   toast,
-} from "@brand/ui";
-import type { Edge } from "@brand/flow";
-import { InspectorPanel } from "@brand/flow";
+} from "@elabs-ai/components-ui";
+import type { Edge } from "@elabs-ai/components-flow";
+import { InspectorPanel } from "@elabs-ai/components-flow";
 import { PlayCircle, Server } from "lucide-react";
 import { getSkillUsage } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";

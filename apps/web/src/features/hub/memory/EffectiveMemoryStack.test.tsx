@@ -2,7 +2,7 @@ import type { HubEffectiveMemory } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { EffectiveMemoryStack } from "./EffectiveMemoryStack";
 
 function stack(overrides: Partial<HubEffectiveMemory> = {}): HubEffectiveMemory {

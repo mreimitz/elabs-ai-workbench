@@ -1,20 +1,20 @@
 // Assistant Hub (WP2.6, R-GUI1–8) — the web declarative-GenUI renderer: the allowlisted registry (the
 // render-time security boundary), streaming/recovery states, and the two-tier interactivity state hook.
-// `@brand/charts` (AutoChart → @visx crashes in jsdom) + the heavy `@brand/ai` message parts are stubbed
-// with faithful DIV/SPAN stubs (no raw table/button — brand-ui-only applies to test files too); `@brand/ui`
+// `@elabs-ai/components-charts` (AutoChart → @visx crashes in jsdom) + the heavy `@elabs-ai/components-ai` message parts are stubbed
+// with faithful DIV/SPAN stubs (no raw table/button — brand-ui-only applies to test files too); `@elabs-ai/components-ui`
 // is REAL (Card/Alert/Heading/Text/MetricCard render fine in jsdom). Interactivity is exercised via the
 // pure `useGenuiWidgetState` hook (renderHook), not by driving the stubbed MessageForm.
 import { act, render, renderHook, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   AutoChart: ({ spec }: { spec: { type?: string } }) => (
     <div data-testid="chart">chart:{spec?.type ?? "auto"}</div>
   ),
 }));
 
-vi.mock("@brand/ai", () => ({
+vi.mock("@elabs-ai/components-ai", () => ({
   Shimmer: ({ children }: { children?: ReactNode }) => <output>{children}</output>,
   MessageTable: ({
     spec,
@@ -89,7 +89,7 @@ describe("GenUiPart rendering", () => {
     expect(screen.getByTestId("table")).toBeTruthy();
     expect(screen.getByText("Jan")).toBeTruthy();
     expect(screen.getByText("$42k")).toBeTruthy();
-    // The chart lazy-loads @brand/charts — resolve the Suspense boundary before asserting.
+    // The chart lazy-loads @elabs-ai/components-charts — resolve the Suspense boundary before asserting.
     expect((await screen.findByTestId("chart")).textContent).toContain("bar");
   });
 

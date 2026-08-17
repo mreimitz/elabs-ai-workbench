@@ -17,7 +17,7 @@ import {
   Text,
   Textarea,
   type UploadFile,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Download } from "lucide-react";
 import { SelectField } from "../../../components/SelectField";
 import { importInsightBench, type InsightBenchImportResult } from "../../../lib/api";

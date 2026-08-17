@@ -1,10 +1,10 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { Select, SelectContent, SelectItem, SelectValue } from "@brand/ui";
+import { Select, SelectContent, SelectItem, SelectValue } from "@elabs-ai/components-ui";
 import { TitledSelectTrigger } from "./TitledSelectTrigger";
 
 // Locks the D-IC10 fix (interface-craft WP 2.1, `roadmap/interface-craft/upstream-gaps.md` #4):
-// @brand/ui's `SelectTrigger` clips its value with no recovery. `TitledSelectTrigger` derives the
+// @elabs-ai/components-ui's `SelectTrigger` clips its value with no recovery. `TitledSelectTrigger` derives the
 // trigger's `title` from a single `selectedLabel` prop so the recovery can't be forgotten, and
 // optionally pairs it with a `HoverCard` for a user-authored value (the `AgentBriefPreview`
 // pattern).

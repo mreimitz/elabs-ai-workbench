@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { DigestReport } from "@mcp-token-footprint/shared";
-import { Badge, Button, MetricCard, PageShell, StatePanel, Text } from "@brand/ui";
+import { Badge, Button, MetricCard, PageShell, StatePanel, Text } from "@elabs-ai/components-ui";
 import { ArrowLeft, Clock, Download } from "lucide-react";
 import { getDigestMarkdown, getDigestReport } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

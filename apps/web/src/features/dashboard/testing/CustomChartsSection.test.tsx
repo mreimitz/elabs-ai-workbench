@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { DashboardChart, RunMetricsResponse, ScanMetricsResponse } from "@mcp-token-footprint/shared";
 
-// jsdom can't resolve @brand/charts' @visx deep imports — the established DurationPanel.test.tsx
+// jsdom can't resolve @elabs-ai/components-charts' @visx deep imports — the established DurationPanel.test.tsx
 // precedent. Production is untouched; the real build proves the real chart.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   LineChart: ({ children }: { children: ReactNode }) => <div data-testid="line-chart">{children}</div>,
   Line: () => null,
   XAxis: () => null,

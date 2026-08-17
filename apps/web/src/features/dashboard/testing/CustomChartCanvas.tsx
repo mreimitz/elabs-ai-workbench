@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { Bar, BarChart, BarXAxis, ChartTooltip, Grid, Line, LineChart, XAxis } from "@brand/charts";
-import { Skeleton } from "@brand/ui";
+import { Bar, BarChart, BarXAxis, ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
+import { Skeleton } from "@elabs-ai/components-ui";
 import type { DashboardChartType } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../../components/InlineError";
 import { formatCostUsd, formatDuration, formatNumber, formatPercent } from "../../../lib/format";
@@ -10,7 +10,7 @@ import { ChartBox, PanelEmptyState } from "./panel-shell";
 /**
  * Custom chart composer (WP 2.7) — the ONE rendering surface shared by BOTH the composer dialog's
  * live preview and the persisted `CustomChartPanel`, driven entirely by `useCustomChartData`'s output.
- * `chartType` picks the mark: `line` needs real `Date` x values (the `@brand/charts` GOTCHA — `rows`
+ * `chartType` picks the mark: `line` needs real `Date` x values (the `@elabs-ai/components-charts` GOTCHA — `rows`
  * from `useCustomChartData`/`pivotToRows` already carry one); `bar`/`stacked` are CATEGORICAL (string
  * x), built here from each row's `bucketStart`.
  */

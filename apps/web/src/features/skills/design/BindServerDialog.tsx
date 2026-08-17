@@ -20,7 +20,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { AlertTriangle, Link2, Server, Tags } from "lucide-react";
 import { apiGet } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";

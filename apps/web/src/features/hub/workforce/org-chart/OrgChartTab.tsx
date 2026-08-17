@@ -1,7 +1,7 @@
 // Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX5/8/9) — the workforce "Org chart" tab.
 // Fills `WorkforceView`'s `orgChartTab` slot (see that file's frame-API doc): it reads the org rail's
 // `?scope` itself (nothing threaded in as props), fetches the crew + role library, and renders the
-// pure {@link buildOrgChartModel} on a read-only `@brand/flow` canvas — crew containers tinted by
+// pure {@link buildOrgChartModel} on a read-only `@elabs-ai/components-flow` canvas — crew containers tinted by
 // crew color, members drawing each crew's real topology, an Unassigned/Archived lane, `FlowMiniMap` +
 // `ZoomControls`, a Legend, and an `InspectorPanel` summary. Select = inspector; double-click (or the
 // inspector's "Open profile") = navigate to the entity's profile modal route (D-HUX9 v1: read + navigate).
@@ -18,8 +18,8 @@ import {
   useEdgesState,
   useNodesState,
   ZoomControls,
-} from "@brand/flow";
-import { Badge, Button, cn, EmptyState, Spinner, Text } from "@brand/ui";
+} from "@elabs-ai/components-flow";
+import { Badge, Button, cn, EmptyState, Spinner, Text } from "@elabs-ai/components-ui";
 import type { Edge, Node, ReactFlowInstance } from "@xyflow/react";
 import { AlertTriangle, GitFork, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -419,7 +419,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-/** Canvas legend (D-HUX9 workstep 5): crew colors (via `@brand/flow` `Legend`) + topology edge meaning. */
+/** Canvas legend (D-HUX9 workstep 5): crew colors (via `@elabs-ai/components-flow` `Legend`) + topology edge meaning. */
 export function OrgLegend({ model }: { model: OrgChartModel }) {
   const hasCrewColors = model.legendCrews.length > 0;
   return (

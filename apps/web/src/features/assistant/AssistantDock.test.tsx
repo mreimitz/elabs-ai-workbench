@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
-import { Button, TooltipProvider } from "@brand/ui";
+import { Button, TooltipProvider } from "@elabs-ai/components-ui";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
@@ -13,7 +13,7 @@ import {
 } from "@mcp-token-footprint/shared";
 
 // Dock integration test (WP 2.1) — mirrors WP 1.3's `vi.mock("../../lib/api")` harness. The heavy
-// `@brand/ai` surface (shiki/mermaid) and `ChatMarkdown` are stubbed to keep jsdom light; the SSE
+// `@elabs-ai/components-ai` surface (shiki/mermaid) and `ChatMarkdown` are stubbed to keep jsdom light; the SSE
 // stream is driven through the mocked `openAssistantStream` (no real EventSource). We assert the two
 // WP 2.1 wire effects: the auto-accept toggle PATCHes the thread, and Allow POSTs the decision.
 
@@ -24,7 +24,7 @@ const hoisted = vi.hoisted(() => ({
   onReplayComplete: null as (() => void) | null,
 }));
 
-// Stub every @brand/ai component the dock tree renders as a passthrough (children-only), so no
+// Stub every @elabs-ai/components-ai component the dock tree renders as a passthrough (children-only), so no
 // shiki/mermaid enters the bundle. ToolInput → a plain JSON preview.
 //
 // WP R3.2 — two of these stubs are no longer bare passthroughs:
@@ -32,11 +32,11 @@ const hoisted = vi.hoisted(() => ({
 //     node) instead of silently dropping it, so a starter-chip click's prefill is observable —
 //     otherwise `initialInput` would vanish into the mock with no way to assert on it (the REAL
 //     `Composer`/`PromptInput` below it is also stubbed to `null`, so nothing else would render it).
-//   - `Suggestion`/`Suggestions` render as a real, clickable `@brand/ui` `Button` (imported below —
+//   - `Suggestion`/`Suggestions` render as a real, clickable `@elabs-ai/components-ui` `Button` (imported below —
 //     lightweight, already used unmocked elsewhere in this suite for `NavigateProbe`) rather than an
 //     inert `Pass` div, so a test can actually click a chip and observe `onClick` firing — mirroring
-//     the REAL `Suggestion` (`@brand/ai/src/suggestion.tsx`), which is itself just a styled `Button`.
-vi.mock("@brand/ai", () => {
+//     the REAL `Suggestion` (`@elabs-ai/components-ai/src/suggestion.tsx`), which is itself just a styled `Button`.
+vi.mock("@elabs-ai/components-ai", () => {
   const Pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
   const ChatShell = ({
     header,
@@ -54,7 +54,7 @@ vi.mock("@brand/ai", () => {
     AgentStep: Pass,
     AgentTimeline: Pass,
     ChatShell,
-    // CodeSnippet (the permission card's diff preview) is now @brand/ai's CodeBlock (shiki — heavy).
+    // CodeSnippet (the permission card's diff preview) is now @elabs-ai/components-ai's CodeBlock (shiki — heavy).
     CodeBlock: ({ code }: { code: string }) => <pre>{code}</pre>,
     Conversation: Pass,
     ConversationContent: Pass,
@@ -131,9 +131,9 @@ vi.mock("../testing/ChatMarkdown", () => ({
 }));
 
 // WP 2.2 — the dock now renders AssistantDiffCard, which reuses SkillDiffView.tsx's DeltaStrip; that
-// file ALSO statically imports @brand/editor's Monaco CodeEditor/DiffEditor for its own (unused-here)
+// file ALSO statically imports @elabs-ai/components-editor's Monaco CodeEditor/DiffEditor for its own (unused-here)
 // per-file viewer. Stub it out so Monaco never enters this jsdom suite (same posture as elsewhere).
-vi.mock("@brand/editor", () => ({ CodeEditor: () => null, DiffEditor: () => null }));
+vi.mock("@elabs-ai/components-editor", () => ({ CodeEditor: () => null, DiffEditor: () => null }));
 
 vi.mock("../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api")>();
@@ -976,7 +976,7 @@ describe("AssistantDock — WP R1.5 scope chip (D-AS23)", () => {
 });
 
 // WP R3.2 (D-AS27/D-AS28/D-AS29) — session-starter chips in the dock's empty state: fetched for the
-// current envelope, rendered as `@brand/ai` `Suggestion` chips, click → prefill (never send), graceful
+// current envelope, rendered as `@elabs-ai/components-ai` `Suggestion` chips, click → prefill (never send), graceful
 // fallback to today's plain empty state on loading/error/empty, and a refetch on envelope change.
 function starterFixture(overrides: Partial<AssistantStarter> = {}): AssistantStarter {
   return {

@@ -1,5 +1,5 @@
 import type { HubAgentRole, HubCrewMember } from "@mcp-token-footprint/shared";
-import { EmptyState, Label, Switch, Text } from "@brand/ui";
+import { EmptyState, Label, Switch, Text } from "@elabs-ai/components-ui";
 import { DialogSection } from "../../../../components/dialogs";
 import { BudgetsFields, budgetsFromWire, budgetsToWire } from "../../agents/BudgetsFields";
 import { RoleAvatar } from "../../agents/RoleAvatar";

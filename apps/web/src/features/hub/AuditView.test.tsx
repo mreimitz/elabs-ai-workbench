@@ -1,20 +1,20 @@
 import type { HubAgentRole, HubAuditEntry, HubAuditPage, HubCrew } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // AuditView imports `accentFor` (a pure function) from `workforce/AgentCard.tsx` for D-HUX8 crew-dot
-// resolution; that module also imports `@brand/charts`' `Sparkline` for its OWN (unrendered-here)
+// resolution; that module also imports `@elabs-ai/components-charts`' `Sparkline` for its OWN (unrendered-here)
 // usage strip. `@visx/gradient`'s ESM export resolution breaks under vitest/node (the established
-// `DirectoryTab.test.tsx` finding — @brand/charts can't render under jsdom), so it's mocked the same
+// `DirectoryTab.test.tsx` finding — @elabs-ai/components-charts can't render under jsdom), so it's mocked the same
 // way even though this view never mounts a Sparkline itself.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   Sparkline: () => <div data-testid="sparkline" />,
 }));
-// AgentCard's RoleAvatar renders `@brand/ai`'s `Persona`, which pulls in heavy transitive deps
+// AgentCard's RoleAvatar renders `@elabs-ai/components-ai`'s `Persona`, which pulls in heavy transitive deps
 // (xterm/flow) that don't resolve under vitest/jsdom — the same `DirectoryTab.test.tsx` finding.
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 // Spy on the download side-effect while keeping the pure `toCsv` real (mirrors `ExpandableTable.test.tsx`'s
 // established posture for this exact helper pair).
@@ -321,7 +321,7 @@ describe("AuditView (WP3.2, D-HUX2/D-HUX8/D-HUX14)", () => {
     renderView();
     await waitFor(() => expect(screen.getByText("scan_server")).toBeInTheDocument());
 
-    // FacetFilter (@brand/data) is a DropdownMenu of DropdownMenuItems — Radix's trigger only listens
+    // FacetFilter (@elabs-ai/components-data) is a DropdownMenu of DropdownMenuItems — Radix's trigger only listens
     // for pointerdown/keydown, not click (the established SessionsView.test.tsx precedent).
     fireEvent.keyDown(screen.getByRole("button", { name: /^kind$/i }), { key: "Enter" });
     fireEvent.click(await screen.findByRole("menuitem", { name: /tool call/i }));

@@ -1,11 +1,11 @@
 // Assistant Hub (WP1.4, §1.7 / R-UX5) — the citation surfaces (inline `[n]` chips + per-message Sources
-// + session rail). Rendered with the REAL `@brand/ai` citation vocabulary (light HoverCard/Collapsible —
+// + session rail). Rendered with the REAL `@elabs-ai/components-ai` citation vocabulary (light HoverCard/Collapsible —
 // no Streamdown/shiki), which is the point: the chips resolve, and an unresolved marker never becomes a
 // chip (the UI half of the resolve-test).
 
 import type { HubCitation } from "@mcp-token-footprint/shared";
 import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { describe, expect, test } from "vitest";
 import {
   citationMarkdownComponents,
@@ -102,7 +102,7 @@ describe("citationMarkdownComponents (WP3.1, RC4 — the markdown-node weaver)",
     expect(within(heading).getByLabelText("Source 1: Heading source")).toBeInTheDocument();
   });
 
-  test("table/th/td overrides render real @brand/ui Table structure with cells woven", () => {
+  test("table/th/td overrides render real @elabs-ai/components-ui Table structure with cells woven", () => {
     const components = citationMarkdownComponents([citation("1", { title: "Table source" })]);
     const Table_ = components.table as (props: { children?: unknown }) => JSX.Element;
     const Thead = components.thead as (props: { children?: unknown }) => JSX.Element;

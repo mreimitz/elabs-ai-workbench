@@ -8,7 +8,7 @@ import type {
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import {
   ConversationPane,
@@ -263,7 +263,7 @@ describe("ConversationPane — R-SES2 ordered parts + R-UX1 tool state machine",
 
 // a11y (critique 2026-07-25T20-00-10Z item 5): the trailing turn gets its OWN small, scoped status
 // region (an `<output>`, implicit role=status — separate from the transcript-wide `role="log"` on
-// `<Conversation>`, which the shared `@brand/ai` test-support mock drops all props from — see
+// `<Conversation>`, which the shared `@elabs-ai/components-ai` test-support mock drops all props from — see
 // `AssistantTurnWithVariants` in ConversationPane.tsx) so a screen reader hears "responding…"/
 // "finished" instead of the whole transcript being re-announced on every token. Scoped to the
 // TRAILING turn only — an earlier, settled turn never changes again and gets no status region of its own.

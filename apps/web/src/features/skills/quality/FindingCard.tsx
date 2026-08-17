@@ -1,5 +1,5 @@
 import type { QualityFinding } from "@mcp-token-footprint/shared";
-import { Badge, Button, Card, Text, Tooltip, TooltipContent, TooltipTrigger } from "@brand/ui";
+import { Badge, Button, Card, Text, Tooltip, TooltipContent, TooltipTrigger } from "@elabs-ai/components-ui";
 import { ArrowUpRight, HelpCircle, Wrench } from "lucide-react";
 import { guideAnchorFor, SEVERITY_META } from "./quality-meta";
 

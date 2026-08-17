@@ -1,13 +1,13 @@
 import { useLayoutEffect, type MouseEventHandler, type ReactNode, type RefObject } from "react";
-import type { ColumnDef } from "@brand/data";
-import { Button, cn } from "@brand/ui";
+import type { ColumnDef } from "@elabs-ai/components-data";
+import { Button, cn } from "@elabs-ai/components-ui";
 
 const numberFormat = new Intl.NumberFormat("en-US");
 
 /** Which edge a column is pinned to inside a horizontally-scrolling table. */
 export type PinSide = "left" | "right";
 
-/** Concise column helper for @brand/data DataTable.
+/** Concise column helper for @elabs-ai/components-data DataTable.
  *  `value` is the raw sortable/filterable key (return a number for numeric columns so sorting is
  *  numeric); `cell` overrides display. Numeric columns right-align, use tabular-nums, and
  *  auto-format integers when no `cell` is given. `pin` keeps the column stuck to the left/right
@@ -29,7 +29,7 @@ export function col<T>(opts: {
     id: opts.id,
     accessorFn: (row) => opts.value(row),
     enableSorting: true,
-    // Label-in-Name (WCAG 2.5.3 — critique 2026-07-25T20-00-10Z item 1): @brand/data's sort <button>
+    // Label-in-Name (WCAG 2.5.3 — critique 2026-07-25T20-00-10Z item 1): @elabs-ai/components-data's sort <button>
     // announces `Sort by ${headerLabel}`, and `headerLabel` falls back to the raw `column.id` (e.g.
     // "lastScan") whenever `columnDef.header` ISN'T a literal string — see the vendored
     // `data-table.tsx`'s `headerLabel = typeof header.column.columnDef.header === "string" ? … :
@@ -97,7 +97,7 @@ export function actionsCol<T>(opts: {
   };
 }
 
-/** A name/entity column that doubles as the row-click navigation slot (@brand/data's DataTable has
+/** A name/entity column that doubles as the row-click navigation slot (@elabs-ai/components-data's DataTable has
  *  no `onRowClick`, so a full-cell click target is the house pattern). Renders a ghost Button that
  *  fills the cell; `onSelect` fires on click, `isActive` marks the current row (`aria-current`).
  *  `cell` renders the button's inner content (e.g. a two-line name + meta).
@@ -128,7 +128,7 @@ export function navCol<T>(opts: {
     enableSorting: true,
     // Label-in-Name — same fix and same rationale as `col()` above: a plain string header (no
     // visual change for a non-pinned column — `min-w-0` alone is inert on a flex item with no
-    // sibling to shrink against) gets the sort button's real accessible name from @brand/data
+    // sibling to shrink against) gets the sort button's real accessible name from @elabs-ai/components-data
     // instead of falling back to `column.id`.
     header: opts.pin ? () => <div className={cn("min-w-0", pinHead)}>{opts.header}</div> : opts.header,
     cell: ({ row }) => {
@@ -159,7 +159,7 @@ export function navCol<T>(opts: {
 }
 
 /** ui-wave U7 (owner feedback): the fill `col`/`navCol`/`actionsCol` pass to `pinnedCellClass`.
- *  The old hard-coded `bg-card` painted an opaque patch over @brand/data's zebra/tinted rows, which
+ *  The old hard-coded `bg-card` painted an opaque patch over @elabs-ai/components-data's zebra/tinted rows, which
  *  read as a floating white pill around the title and the row menu. Below `lg` a plain list table now
  *  DOES scroll horizontally (`RESPONSIVE_TABLE_SCROLL_CLASS` below fixes the P0 mobile defect this
  *  comment used to describe — 8 of 9 columns silently unreachable at 390px); at `lg` and up it still
@@ -171,15 +171,15 @@ const LIST_PIN_BG = "bg-transparent";
 
 /**
  * P0 mobile audit T4 (2026-07-25 critique, `.impeccable/critique/2026-07-25T20-00-10Z__127-0-0-1.md`):
- * fixes the PLAIN (non-virtualized) `@brand/data` DataTable's own inner scroll box, which is hard-coded
+ * fixes the PLAIN (non-virtualized) `@elabs-ai/components-data` DataTable's own inner scroll box, which is hard-coded
  * `overflow-hidden` — see the doc on `LIST_PIN_BG` above. Below `lg`, that doesn't just block
  * scrolling — it SILENTLY DELETES every column that doesn't fit (measured: the Issues triage table had
  * 8 of 9 columns gone at 390px inside a `clientWidth: 336` wrapper — not scrollable, just clipped, with
  * no visual hint anything was missing; the dashboard footprint table lost Δ vs previous / Largest tool
  * / Last scan / Open server the same way).
  *
- * `@brand/data` exposes no prop for that inner box's own classes (`DataTableProps`' `className`/`rest`
- * only reach the OUTER wrapper div — see `apps/web/node_modules/@brand/data/src/data-table/data-table.tsx`,
+ * `@elabs-ai/components-data` exposes no prop for that inner box's own classes (`DataTableProps`' `className`/`rest`
+ * only reach the OUTER wrapper div — see `apps/web/node_modules/@elabs-ai/components-data/src/data-table/data-table.tsx`,
  * which is vendored and must not be edited, `vendor/brand/brand-data-1.9.0.tgz`). This reaches the
  * inner box via a Tailwind arbitrary-variant descendant selector on the outer wrapper instead — the
  * same "target the vendor component's own internal div" technique already used for `RunConsole`'s
@@ -210,7 +210,7 @@ export const RESPONSIVE_TABLE_SCROLL_CLASS =
   "[&>div:first-child]:overflow-x-auto! lg:[&>div:first-child]:overflow-hidden!";
 
 /** Sticky classes for a pinned first/last column. Uses a negative-margin bleed so the cell's
- *  background fills @brand/data's own `td`/`th` padding (`px-3`) — otherwise sibling cells
+ *  background fills @elabs-ai/components-data's own `td`/`th` padding (`px-3`) — otherwise sibling cells
  *  scroll through the padding gutter. The header variant sits above body cells so the pinned
  *  header corner stays on top of both the sticky header row and the scrolling body.
  *
@@ -220,7 +220,7 @@ export const RESPONSIVE_TABLE_SCROLL_CLASS =
  *  through instead of a white pill. This is the "optional `bg` param" gap the Runs feed's
  *  `pinning.ts` documented.
  *
- *  NOTE (upstream gap): @brand/data's DataTable owns its `<th>`/`<td>` and applies no column-pinning
+ *  NOTE (upstream gap): @elabs-ai/components-data's DataTable owns its `<th>`/`<td>` and applies no column-pinning
  *  styles, so pinning is expressed from inside the cell content. It reads correctly for a name/actions
  *  column against a solid `bg-card` row; verify per wide-table adoption (Phase 2, S2). */
 export function pinnedCellClass(side: PinSide, opts?: { header?: boolean; bg?: string }): string {
@@ -242,7 +242,7 @@ export function pinnedCellClass(side: PinSide, opts?: { header?: boolean; bg?: s
 const ROW_NAV_SUPPRESS_SELECTOR =
   "button, a, input, select, textarea, label, [role='menu'], [role='menuitem'], [role='checkbox'], [role='dialog']";
 
-/** Delegated row click for `clickableRowTableProps` (ui-wave U7, owner feedback). @brand/data's
+/** Delegated row click for `clickableRowTableProps` (ui-wave U7, owner feedback). @elabs-ai/components-data's
  *  DataTable owns its `<tr>`s (no `onRowClick`, no row class hook), so the wrapper div listens
  *  instead and re-dispatches a click on the row's `data-row-nav` control — the SAME semantic
  *  button `navCol` renders, so navigation targets can never drift apart. Clicks that originate on
@@ -289,7 +289,7 @@ export function clickableRowTableProps(className?: string): {
  *  revealed on row hover, on any focus inside the row (keyboard users see it before reaching it),
  *  on its own focus, while its menu is open (Radix `data-state`), and permanently on coarse
  *  pointers (touch has no hover to reveal with). The `tr:*_&` variants stand in for the usual
- *  `group-hover` because @brand/data owns the `<tr>` — we cannot put a `group` class on it.
+ *  `group-hover` because @elabs-ai/components-data owns the `<tr>` — we cannot put a `group` class on it.
  *  Mirrors the `ServerRail`/`SkillRail` list-row precedent. */
 export const rowMenuTriggerClass = cn(
   "text-muted-foreground",
@@ -302,7 +302,7 @@ export const rowMenuTriggerClass = cn(
 );
 
 /** DataTable props that make the header row stick while the body scrolls inside a bounded region
- *  (S22 scroll contract). Row virtualization is what gives @brand/data its sticky `thead`, so this
+ *  (S22 scroll contract). Row virtualization is what gives @elabs-ai/components-data its sticky `thead`, so this
  *  bundles the opt-in with a bounded body height. Spread onto a `<DataTable {...} />`. */
 export function stickyScrollTableProps(opts?: {
   maxBodyHeight?: string;
@@ -319,7 +319,7 @@ export function stickyScrollTableProps(opts?: {
   };
 }
 
-/** Whether client-side pagination chrome should show. @brand/data renders "Page 1 of 1" with
+/** Whether client-side pagination chrome should show. @elabs-ai/components-data renders "Page 1 of 1" with
  *  disabled Previous/Next even for a single page (S10), so gate `enablePagination` on this: it is
  *  `true` only when the row count exceeds one page. */
 export function shouldPaginate(rowCount: number, pageSize: number): boolean {
@@ -328,7 +328,7 @@ export function shouldPaginate(rowCount: number, pageSize: number): boolean {
 
 // ── Table semantics: caption + column-header scope (critique 2026-07-25T20-00-10Z item 3) ──────────
 //
-// @brand/data's DataTable owns its own `<table>`/`<thead>`/`<th>` rendering with no `caption` prop and
+// @elabs-ai/components-data's DataTable owns its own `<table>`/`<thead>`/`<th>` rendering with no `caption` prop and
 // no per-column head-cell hook (see the `NOTE (upstream gap)` on `pinnedCellClass` above for the same
 // constraint on pinning) — so neither a real `<caption>` nor a `scope="col"` attribute can be handed
 // to it as a prop. `DataTableProps` DOES extend `Omit<React.HTMLAttributes<HTMLDivElement>, "children">`
@@ -366,7 +366,7 @@ export function tableCaptionProps(id: string): { role: "region"; "aria-labelledb
 
 /** Sets `scope="col"` on every header cell inside a `DataTable`'s rendered `<thead>`. Pure DOM write —
  *  safe to call repeatedly (idempotent) and cheap (bounded by column count). `container` is the ref
- *  target — @brand/data's `DataTable` forwards a `ref` to its OUTERMOST wrapper div (see the module
+ *  target — @elabs-ai/components-data's `DataTable` forwards a `ref` to its OUTERMOST wrapper div (see the module
  *  doc above), so a `ref` passed straight to `<DataTable ref={...} />` is a valid container here. */
 export function applyColumnHeaderScope(container: HTMLElement | null): void {
   if (!container) return;

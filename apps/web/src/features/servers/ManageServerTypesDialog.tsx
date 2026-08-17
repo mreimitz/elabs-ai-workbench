@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ServerType, ServerTypeStatus } from "@mcp-token-footprint/shared";
-import { Badge, Button, EmptyState, Input, Text, Textarea, toast } from "@brand/ui";
+import { Badge, Button, EmptyState, Input, Text, Textarea, toast } from "@elabs-ai/components-ui";
 import { ArrowLeft, Pencil, Plus, Tags, Trash2 } from "lucide-react";
 import { FieldRow } from "../../components/FieldRow";
 import { IconButton } from "../../components/IconButton";
@@ -27,7 +27,7 @@ const DEFAULT_STATUS: ServerTypeStatus = "production";
  * delete server types, with member counts and a delete-DETACHES confirmation (D-ST4 — deleting a type
  * sets its members to Untyped, it never deletes servers).
  *
- * One self-contained `@brand/ui` `Dialog` that swaps between a list mode and a create/edit form mode
+ * One self-contained `@elabs-ai/components-ui` `Dialog` that swaps between a list mode and a create/edit form mode
  * (mirroring `AcmeAnswersOfferDialog`'s single-dialog / multi-phase shape), plus a nested
  * `ConfirmDialog` for the destructive delete (the established AlertDialog-over-Dialog pattern). After
  * any successful create/update/delete it fires `onChanged` so the app refreshes BOTH its server-types

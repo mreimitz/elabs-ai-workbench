@@ -1,5 +1,5 @@
 // Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX8/9) — the PURE Org chart model builder.
-// Given the crew + role library and the org rail's `?scope`, it produces the full `@brand/flow`
+// Given the crew + role library and the org rail's `?scope`, it produces the full `@elabs-ai/components-flow`
 // node/edge model: one `FlowGroupNode` per crew (tinted by its crew color, member `FlowNode`s
 // re-parented inside drawing the crew's real topology), plus an Unassigned / Archived lane. Lanes are
 // packed into rows deterministically; every MEMBER position comes from the library's dagre
@@ -13,11 +13,11 @@
 // cycle-safe via an ancestor-path check + a defensive absolute depth cap, same posture as the org
 // rail's tree. A dangling or cyclic reference renders a distinct, non-recursing placeholder box.
 //
-// Framework-free apart from `@brand/flow`'s pure layout helpers + `@xyflow/react` types (the
+// Framework-free apart from `@elabs-ai/components-flow`'s pure layout helpers + `@xyflow/react` types (the
 // `OrgRailScope` import is TYPE-only, erased at build — it never pulls OrgRail's React runtime in), so
 // the whole model is unit-testable without a live canvas.
 
-import { FLOW_ALL_SIDE_HANDLES, type FlowGroupNodeData, type FlowNodeData, layoutGraph } from "@brand/flow";
+import { FLOW_ALL_SIDE_HANDLES, type FlowGroupNodeData, type FlowNodeData, layoutGraph } from "@elabs-ai/components-flow";
 import type { HubAgentRole, HubCrew, HubCrewColor, HubTopology } from "@mcp-token-footprint/shared";
 import type { Edge, Node } from "@xyflow/react";
 import type { CSSProperties } from "react";
@@ -169,7 +169,7 @@ function groupStyle(contentW: number, contentH: number, color?: HubCrewColor): C
   const height = GROUP_HEADER_H + Math.max(contentH, EMPTY_CONTENT_H) + GROUP_PAD_BOTTOM;
   // Redirect the component's OWN border token to the crew's theme-aware chart token — a token→token
   // redirect (D-HUX8 "tinted border on the crew container"), never a raw color. Both themes carry
-  // --chart-1…5, so it stays correct in qlik-bright and qlik-dark.
+  // --chart-1…5, so it stays correct in light and dark.
   const tint: Record<string, string> = color ? { "--flow-group-border": `var(--${color})` } : {};
   return { width, height, ...tint } as CSSProperties;
 }
@@ -485,7 +485,7 @@ function packLanes(lanes: Lane[]): void {
 // ── The builder ──────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Build the Org chart's `@brand/flow` model for the given `scope` (D-HUX5's rail scoping):
+ * Build the Org chart's `@elabs-ai/components-flow` model for the given `scope` (D-HUX5's rail scoping):
  *   • default / "all" → every crew as a tinted group + an Unassigned lane (active roles in no crew).
  *   • `crew:<id>`     → that one crew (focused).
  *   • "unassigned"    → the Unassigned lane only.

@@ -2,12 +2,12 @@ import type { ComponentProps, ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { WatchRule, WatchWindowPreview } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// jsdom can't resolve @brand/charts' @visx deep imports (the established `GuardrailStopsPanel.test`/
+// jsdom can't resolve @elabs-ai/components-charts' @visx deep imports (the established `GuardrailStopsPanel.test`/
 // dashboard-panel precedent) — the Preview section's `WindowPreviewStrip` renders a real `BarChart`,
 // so it's stubbed the same way here. Production is untouched; the real build proves the real chart.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   BarChart: ({ children }: { children: ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => null,
   BarXAxis: () => null,
@@ -148,7 +148,7 @@ describe("RuleEditorDialog — windowed save is gated behind the historical prev
 
     // Changing the threshold after a preview invalidates it again (the signature no longer matches) —
     // back to the Trigger tab, where the window config lives. `NumberInput` only COMMITS on blur
-    // (its `onChange` just updates the displayed text — see @brand/ui's `handleBlur`), so the change
+    // (its `onChange` just updates the displayed text — see @elabs-ai/components-ui's `handleBlur`), so the change
     // must be followed by a blur for the new value to actually reach the form state.
     fireEvent.click(screen.getByRole("button", { name: "Trigger" }));
     const thresholdInput = screen.getByLabelText("Threshold");

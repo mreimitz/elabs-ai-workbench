@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { HubProject } from "@mcp-token-footprint/shared";
-import { Badge, Button, Checkbox, EmptyState, Label, Spinner, Text, cn, toast } from "@brand/ui";
-import { SearchInput } from "@brand/data";
+import { Badge, Button, Checkbox, EmptyState, Label, Spinner, Text, cn, toast } from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import { Archive, Folder, Plus } from "lucide-react";
 import { ConfirmDialog } from "../../../components/dialogs";
 import {

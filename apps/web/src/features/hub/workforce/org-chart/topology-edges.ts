@@ -5,7 +5,7 @@
 // debate as an ORDER CHAIN (RC6.1 — matches the mission board's real execution order, not the old
 // facing-pair depiction), best-of-N as a fan-in" is defined in exactly one place.
 //
-// Deliberately framework-free (no React, no `@brand/flow`, no `@xyflow/react`) so it is unit-tested
+// Deliberately framework-free (no React, no `@elabs-ai/components-flow`, no `@xyflow/react`) so it is unit-tested
 // in isolation and stays dependency-light for WP2.4 to import without pulling the whole canvas.
 //
 // The four shapes (D-HUX9 / concept §7.3), operating on the crew's members IN ORDER:

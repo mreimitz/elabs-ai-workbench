@@ -6,7 +6,7 @@
 //   ["…", "…"]                LAST settled assistant turn (click = send). Stripped from the prose.
 //   ```
 //
-//   ```metrics              → 2–6 headline numbers, rendered as a grid of `@brand/ui` MetricCards
+//   ```metrics              → 2–6 headline numbers, rendered as a grid of `@elabs-ai/components-ui` MetricCards
 //   [{"label","value",…}]     in place of a bullet list of numbers.
 //   ```
 //

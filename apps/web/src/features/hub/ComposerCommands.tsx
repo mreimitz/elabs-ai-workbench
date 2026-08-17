@@ -5,7 +5,7 @@ import {
   PromptInputCommandGroup,
   PromptInputCommandItem,
   PromptInputCommandList,
-} from "@brand/ai";
+} from "@elabs-ai/components-ai";
 import {
   Badge,
   Button,
@@ -18,7 +18,7 @@ import {
   Input,
   Label,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type { PromptGetResult, ScanDetail, Skill } from "@mcp-token-footprint/shared";
 import { BookOpen, MessageSquareText } from "lucide-react";
 import { apiGet, apiPost, listServers, listSkills } from "../../lib/api";
@@ -49,10 +49,10 @@ import { getErrorMessage } from "../../lib/errors";
  *    playground uses) and injects only after it resolves.
  *
  *  Deliberately does NOT import from `features/scans/ResourcePromptRun.tsx` even though it already
- *  exports an equivalent `parsePromptArgs` — that file also imports `@brand/editor` (Monaco/Milkdown)
+ *  exports an equivalent `parsePromptArgs` — that file also imports `@elabs-ai/components-editor` (Monaco/Milkdown)
  *  at module scope for its result viewer, and pulling that transitively into every hub test that
  *  renders the composer breaks under vitest/jsdom (`Unknown file extension ".css"` from Milkdown's
- *  prosemirror stylesheet — `@brand/editor` is only ever meant to load behind the `?worker` Vite
+ *  prosemirror stylesheet — `@elabs-ai/components-editor` is only ever meant to load behind the `?worker` Vite
  *  prebundle wired in `main.tsx`, per `dependencies.md`). `parseMcpPromptArgs` below is a small,
  *  independent duplicate of the exact same ~15-line parse (both read the identical MCP
  *  `PromptArgument[]` wire shape), kept in sync by inspection rather than a shared import.
@@ -299,7 +299,7 @@ export function ComposerCommandList({
 
   return (
     // Not a manually-authored ARIA widget: `PromptInputCommand`/`*List`/`*Item` are cmdk primitives
-    // (via `@brand/ai`) that already own the correct listbox/option roles + aria-selected internally —
+    // (via `@elabs-ai/components-ai`) that already own the correct listbox/option roles + aria-selected internally —
     // this wrapper is pure positioning, so it stays a plain `<div>` rather than a second, conflicting
     // set of roles layered on top.
     <div

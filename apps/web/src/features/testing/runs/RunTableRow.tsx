@@ -13,7 +13,7 @@ import {
   TableCell,
   TableRow,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ChevronDown, ChevronRight, MoreHorizontal, Pin, PinOff, RotateCcw } from "lucide-react";
 import {
   formatCostUsd,
@@ -343,12 +343,12 @@ export function RunTableRow({
 }
 
 /**
- * P0 mobile audit T4 (2026-07-25 critique) — one standalone run as a tappable `@brand/ui` Card, for
+ * P0 mobile audit T4 (2026-07-25 critique) — one standalone run as a tappable `@elabs-ai/components-ui` Card, for
  * the Runs feed's mobile (< 768px) card list (`RunsView.tsx`'s `MobileRunCards`). Measured defect: at
  * 390px the desktop table's pinned Name/Actions columns kept their sticky geometry over a horizontal-
  * scroll region nobody could reach (the companion fix in `lib/table.tsx` addresses the OTHER wide
- * table on this surface, the dashboard/issues DataTables — this table is `@brand/ui` `Table`, not
- * `@brand/data` DataTable, so it gets a dedicated mobile layout instead), and multiple runs of the same
+ * table on this surface, the dashboard/issues DataTables — this table is `@elabs-ai/components-ui` `Table`, not
+ * `@elabs-ai/components-data` DataTable, so it gets a dedicated mobile layout instead), and multiple runs of the same
  * test read identically once every other column scrolled out of reach ("three consecutive rows read
  * 'barc-flights' with nothing to distinguish them"). This card renders the SAME primitives
  * `RunTableRow` uses (`runStatusBadgeView`, `GradeChip`, `BaseVerdictChip`, `formatCostUsd`) so a run

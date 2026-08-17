@@ -20,7 +20,7 @@ describe("ProseCardDescription — measure-capped CardDescription (D-IC9)", () =
     expect(el.tagName).toBe("P");
     // CardDescription's own visual is untouched. NOTE: `text-muted-foreground` is present in
     // vendor CardDescription's source (`cn("text-sm text-muted-foreground text-wrap-balance", …)`)
-    // but is merged away by @brand/ui's own tailwind-merge config even with NO wrapper/className at
+    // but is merged away by @elabs-ai/components-ui's own tailwind-merge config even with NO wrapper/className at
     // all (a pre-existing upstream quirk, reproduced independently of this wrapper) — so this only
     // asserts the classes that do survive, to avoid asserting a false regression.
     expect(el.className).toContain("text-sm");

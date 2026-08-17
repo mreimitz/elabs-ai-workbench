@@ -1,12 +1,12 @@
 import { type ComponentProps } from "react";
-import { TabsList, cn } from "@brand/ui";
+import { TabsList, cn } from "@elabs-ai/components-ui";
 
 export type ScrollableTabsListProps = ComponentProps<typeof TabsList> & {
   /** Layout classes for the scroll container (e.g. `self-start` where the strip shouldn't stretch). */
   containerClassName?: string;
   /**
    * When true, render a FULL-WIDTH tab bar with CENTERED triggers: the scroll container spans the
-   * content width (`w-full`) and the `@brand/ui` `TabsList` (recessed muted track) becomes
+   * content width (`w-full`) and the `@elabs-ai/components-ui` `TabsList` (recessed muted track) becomes
    * `w-full justify-center-safe`, so the track fills the row and the triggers sit centered within it.
    * `justify-center-safe` (`justify-content: safe center`) is visually identical to `justify-center`
    * while the triggers fit, but falls back to START alignment the moment they overflow — so the

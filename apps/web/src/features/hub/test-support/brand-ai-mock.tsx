@@ -15,15 +15,15 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { Button } from "@brand/ui";
+import { Button } from "@elabs-ai/components-ui";
 
 /**
- * A SHARED `@brand/ai` stub for the hub feature's test suites, mirroring the "stub every heavy
- * @brand/ai component the tree renders" posture every other suite that touches `@brand/ai` already
+ * A SHARED `@elabs-ai/components-ai` stub for the hub feature's test suites, mirroring the "stub every heavy
+ * @elabs-ai/components-ai component the tree renders" posture every other suite that touches `@elabs-ai/components-ai` already
  * uses (`AssistantDock.test.tsx`, `RunConsole.test.tsx`, `AssistantView.test.tsx`) — jsdom never has
  * to load the real shiki/mermaid/streamdown dependency chain. Reused across `ConversationPane.test.tsx`,
  * `Composer.test.tsx`, `NewSessionDialog.test.tsx`, and `AssistantView.test.tsx` via
- * `vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"))` so the ~40-component surface
+ * `vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"))` so the ~40-component surface
  * this feature composes isn't duplicated per file.
  *
  * A handful of stubs are NOT bare passthroughs because a test needs to observe their real behavior:
@@ -247,7 +247,7 @@ export const ApprovalCardApprove = ({
 }: { children?: ReactNode } & Record<string, unknown>) => (
   <button type="button" {...props}>
     {" "}
-    {/* brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx) */}
+    {/* brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx) */}
     {children}
   </button>
 );
@@ -257,7 +257,7 @@ export const ApprovalCardDeny = ({
 }: { children?: ReactNode } & Record<string, unknown>) => (
   <button type="button" {...props}>
     {" "}
-    {/* brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx) */}
+    {/* brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx) */}
     {children}
   </button>
 );
@@ -306,7 +306,7 @@ export const PromptInput = ({
 export const PromptInputBody = Pass;
 export const PromptInputFooter = Pass;
 export const PromptInputTools = Pass;
-export const PromptInputTextarea = (props: Record<string, unknown>) => <textarea {...props} />; // brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx)
+export const PromptInputTextarea = (props: Record<string, unknown>) => <textarea {...props} />; // brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx)
 export const PromptInputButton = ({
   children,
   tooltip: _tooltip,
@@ -314,7 +314,7 @@ export const PromptInputButton = ({
 }: { children?: ReactNode; tooltip?: unknown } & Record<string, unknown>) => (
   <button type="button" {...props}>
     {" "}
-    {/* brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx) */}
+    {/* brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx) */}
     {children}
   </button>
 );
@@ -356,7 +356,7 @@ export const PromptInputSubmit = ({
       {...props}
     >
       {" "}
-      {/* brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx) */}
+      {/* brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx) */}
       {children ?? "Send"}
     </button>
   );
@@ -457,7 +457,7 @@ export const PromptInputProvider = ({
           event.target.value = "";
         }}
       />{" "}
-      {/* brand-ui-allow: test-only @brand/ai stub — mirrors PromptInput's own internal hidden file input */}
+      {/* brand-ui-allow: test-only @elabs-ai/components-ai stub — mirrors PromptInput's own internal hidden file input */}
       {children}
     </PromptInputControllerContext.Provider>
   );
@@ -540,7 +540,7 @@ export const PromptInputCommandGroup = ({
 export const PromptInputCommandEmpty = ({ children }: { children?: ReactNode }) => (
   <div data-testid="command-empty">{children}</div>
 );
-export const PromptInputCommandInput = (props: Record<string, unknown>) => <input {...props} />; // brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx)
+export const PromptInputCommandInput = (props: Record<string, unknown>) => <input {...props} />; // brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx)
 export const PromptInputCommandItem = ({
   children,
   onSelect,
@@ -552,11 +552,11 @@ export const PromptInputCommandItem = ({
 >) => (
   <button type="button" onClick={() => onSelect?.(value ?? "")} {...props}>
     {" "}
-    {/* brand-ui-allow: test-only @brand/ai stub */}
+    {/* brand-ui-allow: test-only @elabs-ai/components-ai stub */}
     {children}
   </button>
 );
-export const PromptInputCommandSeparator = () => <hr />; // brand-ui-allow: test-only @brand/ai stub
+export const PromptInputCommandSeparator = () => <hr />; // brand-ui-allow: test-only @elabs-ai/components-ai stub
 
 // ── SpeechInput (WP2.5 voice input) — a plain button; clicking it simulates ONE final transcript so a
 // test can drive "dictate → text appended" without any Web Speech API/MediaRecorder in jsdom.
@@ -567,7 +567,7 @@ export const SpeechInput = ({
 }: { onTranscriptionChange?: (text: string) => void } & Record<string, unknown>) => (
   <button type="button" onClick={() => onTranscriptionChange?.("mock transcript")} {...props}>
     {" "}
-    {/* brand-ui-allow: test-only @brand/ai stub */}
+    {/* brand-ui-allow: test-only @elabs-ai/components-ai stub */}
     Voice input
   </button>
 );
@@ -583,7 +583,7 @@ export const MessageAction = ({
 }: { children?: ReactNode; label?: string; tooltip?: string } & Record<string, unknown>) => (
   <button type="button" aria-label={label || tooltip} {...props}>
     {" "}
-    {/* brand-ui-allow: test-only @brand/ai stub */}
+    {/* brand-ui-allow: test-only @elabs-ai/components-ai stub */}
     {children}
   </button>
 );
@@ -648,13 +648,13 @@ export const MessageBranchSelector = ({ children }: { children?: ReactNode }) =>
 export const MessageBranchPrevious = (props: Record<string, unknown>) => {
   const { goToPrevious } = useMessageBranchCtx();
   return (
-    <button type="button" aria-label="Previous branch" onClick={goToPrevious} {...props} /> // brand-ui-allow: test-only @brand/ai stub
+    <button type="button" aria-label="Previous branch" onClick={goToPrevious} {...props} /> // brand-ui-allow: test-only @elabs-ai/components-ai stub
   );
 };
 export const MessageBranchNext = (props: Record<string, unknown>) => {
   const { goToNext } = useMessageBranchCtx();
   return (
-    <button type="button" aria-label="Next branch" onClick={goToNext} {...props} /> // brand-ui-allow: test-only @brand/ai stub
+    <button type="button" aria-label="Next branch" onClick={goToNext} {...props} /> // brand-ui-allow: test-only @elabs-ai/components-ai stub
   );
 };
 export const MessageBranchPage = () => {
@@ -740,7 +740,7 @@ export const ModelSelectorTrigger = ({
     });
   }
   return (
-    <button type="button" disabled={disabled} onClick={() => ctx?.setOpen(true)}> {/* brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx) */}
+    <button type="button" disabled={disabled} onClick={() => ctx?.setOpen(true)}> {/* brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx) */}
       {children}
     </button>
   );
@@ -755,7 +755,7 @@ export const ModelSelectorInput = ({
 }: { placeholder?: string } & Record<string, unknown>) => {
   const ctx = useContext(ModelSelectorContext);
   return (
-    // brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx)
+    // brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx)
     <input
       {...props}
       aria-label="Search models"
@@ -810,7 +810,7 @@ export const ModelSelectorItem = ({
   }, [setMatch, id, matched]);
   if (!matched) return null;
   return (
-    // brand-ui-allow: test-only @brand/ai stub (mirrors AssistantDock.test.tsx)
+    // brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx)
     <button
       type="button"
       // Deliberately still a plain `button` (not cmdk's real `role="option"`): every existing hub
@@ -840,7 +840,7 @@ export const ArtifactTitle = ({
 }: { children?: ReactNode; className?: string }) => <p className={className}>{children}</p>;
 export const ArtifactDescription = Pass;
 export const ArtifactActions = Pass;
-// `forwardRef` so Radix's `DropdownMenuTrigger asChild` (a REAL, unmocked `@brand/ui` component in
+// `forwardRef` so Radix's `DropdownMenuTrigger asChild` (a REAL, unmocked `@elabs-ai/components-ui` component in
 // every test that renders the export menu) can compose its own click/aria handlers onto this stub
 // exactly as it would the real `ArtifactAction` (a `Button` under the hood, which also forwards refs).
 // Typed against real `ButtonHTMLAttributes` (not a `Record<string, unknown>` catch-all) so the runtime
@@ -852,7 +852,7 @@ export const ArtifactAction = forwardRef<
   return (
     <button ref={ref} type="button" aria-label={label || tooltip} {...rest}>
       {" "}
-      {/* brand-ui-allow: test-only @brand/ai stub, mirrors AssistantDock.test.tsx */}
+      {/* brand-ui-allow: test-only @elabs-ai/components-ai stub, mirrors AssistantDock.test.tsx */}
       {children}
     </button>
   );
@@ -866,7 +866,7 @@ export const ArtifactClose = ({
 }) => (
   <button type="button" onClick={onClick} aria-label="Close">
     {" "}
-    {/* brand-ui-allow: test-only @brand/ai stub, mirrors AssistantDock.test.tsx */}
+    {/* brand-ui-allow: test-only @elabs-ai/components-ai stub, mirrors AssistantDock.test.tsx */}
     {children ?? "Close"}
   </button>
 );

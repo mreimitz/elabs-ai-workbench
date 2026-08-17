@@ -6,7 +6,7 @@ import {
   type GraderId,
   type RunGrade,
 } from "@mcp-token-footprint/shared";
-import type { Status } from "@brand/ui";
+import type { Status } from "@elabs-ai/components-ui";
 
 /**
  * Presentational helpers shared by the grade panel (run console), the grade chips (runs list + run
@@ -136,7 +136,7 @@ export const SCORE_TONE_TEXT_CLASS: Record<ScoreTone, string> = {
 };
 
 /**
- * A score tone as a chart fill — a CSS token reference for `@brand/charts` `color` props (the same
+ * A score tone as a chart fill — a CSS token reference for `@elabs-ai/components-charts` `color` props (the same
  * `var(--…)` convention `ContextChart`/`SuiteScatter` use). Never a raw color literal.
  */
 export const SCORE_TONE_CHART_COLOR: Record<ScoreTone, string> = {

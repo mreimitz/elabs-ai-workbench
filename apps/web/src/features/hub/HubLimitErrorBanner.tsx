@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { Link } from "react-router-dom";
-import { Alert, AlertDescription, AlertTitle, Button, Label, Text } from "@brand/ui";
+import { Alert, AlertDescription, AlertTitle, Button, Label, Text } from "@elabs-ai/components-ui";
 import { Settings } from "lucide-react";
 import type { HubLimitRetrySource } from "@mcp-token-footprint/shared";
 import { HubModelPicker } from "./HubModelPicker";

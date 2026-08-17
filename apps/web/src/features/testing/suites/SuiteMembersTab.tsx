@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { SuiteRunMember } from "@mcp-token-footprint/shared";
-import { EmptyState, Skeleton, Table, TableBody, TableHeader } from "@brand/ui";
+import { EmptyState, Skeleton, Table, TableBody, TableHeader } from "@elabs-ai/components-ui";
 import { ListTree } from "lucide-react";
 import { InlineError } from "../../../components/InlineError";
 import { RunsCompareBar } from "../runs/RunsCompareBar";
@@ -122,7 +122,7 @@ export function SuiteMembersTab({
         onCompareSuites={() => {}}
         onClear={() => setSelectedRunIds(new Set())}
       />
-      {/* The @brand/ui Table renders its own scroll wrapper; pin Name (left) + Actions (right) via the
+      {/* The @elabs-ai/components-ui Table renders its own scroll wrapper; pin Name (left) + Actions (right) via the
           shared header. Matches the feed's table scaffold (hand-rolled Table primitives, not DataTable). */}
       <div className="overflow-x-auto rounded-md border border-border bg-card">
         <Table className="w-full">

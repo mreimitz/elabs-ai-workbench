@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { HubMemory, HubMemoryKind } from "@mcp-token-footprint/shared";
-import { Badge, EmptyState, Spinner, Text } from "@brand/ui";
+import { Badge, EmptyState, Spinner, Text } from "@elabs-ai/components-ui";
 import { DialogSection } from "../../../../components/dialogs";
 import { InlineError } from "../../../../components/InlineError";
 import { listHubMemory } from "../../../../lib/api";

@@ -65,7 +65,7 @@ export const DELTA_CELL_WASH: Record<DeltaOutcome, string> = {
   neutral: "bg-muted/40 hover:bg-muted/60",
 };
 
-/** Outcome → `@brand/ui` `Badge` variant (the pinned net-delta summary chip). */
+/** Outcome → `@elabs-ai/components-ui` `Badge` variant (the pinned net-delta summary chip). */
 export const DELTA_BADGE_VARIANT: Record<DeltaOutcome, "success" | "warning" | "secondary"> = {
   better: "success",
   worse: "warning",

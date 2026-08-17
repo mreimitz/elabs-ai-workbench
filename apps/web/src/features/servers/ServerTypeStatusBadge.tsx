@@ -1,10 +1,10 @@
 import type { ServerTypeStatus } from "@mcp-token-footprint/shared";
-import { Badge } from "@brand/ui";
+import { Badge } from "@elabs-ai/components-ui";
 
 // The lifecycle-status chip for a server TYPE (roadmap/server-types, D-ST1). This is a distinct
 // vocabulary from the app's process-status chip (`components/StatusBadge` over `lib/status`, which
 // maps scan/run outcomes) — production/RC/beta/deprecated describe a fleet's maturity, not a run's
-// result — so it composes the `@brand/ui` `Badge` with its built-in tone variants directly rather
+// result — so it composes the `@elabs-ai/components-ui` `Badge` with its built-in tone variants directly rather
 // than routing through that closed process-status table. No raw colours: the variant carries the
 // tone in both themes. Reused by the servers rail headers (WP 2.1) and later the toolbar/profile +
 // Manage-types surfaces (WP 2.2).

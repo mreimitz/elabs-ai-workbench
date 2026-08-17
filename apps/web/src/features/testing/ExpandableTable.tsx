@@ -5,19 +5,19 @@ import {
   DialogHeader,
   DialogTitle,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Download, Maximize2 } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { downloadCsv, toCsv } from "../../lib/csv";
 
 /**
- * Acme Answers (WP 6.1) — the ONE clean `@brand` data table used everywhere in the answer surface,
+ * Acme Answers (WP 6.1) — the ONE clean `@elabs-ai/components-*` data table used everywhere in the answer surface,
  * carrying the two affordances the streaming Streamdown table had (CSV download + expand) but the
- * settled `@brand` tables lacked. It wraps a caller's `@brand/ui` `Table*` subtree, rendering it
+ * settled `@elabs-ai/components-*` tables lacked. It wraps a caller's `@elabs-ai/components-ui` `Table*` subtree, rendering it
  * INLINE unchanged, and floats a small toolbar over its top-right corner — a **download** button
  * (CSV of the table's data) and an **expand** button (opens the SAME table in a `Dialog` MODAL, not
  * a fullscreen takeover). WP 6.2 routes the live-reasoning tables through this too, so it becomes the
- * single table everywhere. ui-wave U2 (owner feedback): the modal is the app's normal `@brand/ui`
+ * single table everywhere. ui-wave U2 (owner feedback): the modal is the app's normal `@elabs-ai/components-ui`
  * Dialog — max-w-5xl / max-h-[85vh], titled, Escape-to-close — and repeats the download action in its
  * header so the CSV stays reachable while the inline toolbar is behind the overlay.
  *
@@ -36,7 +36,7 @@ import { downloadCsv, toCsv } from "../../lib/csv";
  */
 export type ExpandableTableProps = {
   /**
-   * The `@brand/ui` `Table*` subtree to show. Rendered inline as-is (no look change) AND re-rendered
+   * The `@elabs-ai/components-ui` `Table*` subtree to show. Rendered inline as-is (no look change) AND re-rendered
    * inside the expand modal. Pass the raw `<Table>…</Table>` (or a caller-owned scroll wrapper via
    * {@link ExpandableTableProps.scrollClassName}); the `<table>` DOM it produces is what the
    * DOM/children CSV path reads.
@@ -135,7 +135,7 @@ export function ExpandableTable({
       </div>
 
       <Dialog open={expanded} onOpenChange={setExpanded}>
-        {/* ui-wave U2 (owner feedback) — the expand target is the app's NORMAL `@brand/ui` Dialog
+        {/* ui-wave U2 (owner feedback) — the expand target is the app's NORMAL `@elabs-ai/components-ui` Dialog
             (backdrop, rounded corners, title, close button, Escape + focus trap via Radix), never a
             raw fullscreen takeover. Sized to the owner's ask: max-w-5xl (over size="xl"'s max-w-3xl —
             wide tables are exactly what gets expanded) at max-h-[85vh], body scrolls inside. No

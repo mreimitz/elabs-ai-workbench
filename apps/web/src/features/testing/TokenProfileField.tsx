@@ -1,6 +1,6 @@
 import type { TokenProfileRef } from "@mcp-token-footprint/shared";
 import { TOKEN_PROFILES } from "@mcp-token-footprint/shared";
-import { ToggleGroup, ToggleGroupItem, Tooltip, TooltipContent, TooltipTrigger } from "@brand/ui";
+import { ToggleGroup, ToggleGroupItem, Tooltip, TooltipContent, TooltipTrigger } from "@elabs-ai/components-ui";
 import { TOKEN_PROFILE_META } from "./environment-model-caps";
 
 /**
@@ -8,7 +8,7 @@ import { TOKEN_PROFILE_META } from "./environment-model-caps";
  * o200k vs cl100k vs estimate vs rough mean and when to pick which (the exact S19 gap: "the group
  * caption explains the group, not the choices"). Wraps each `ToggleGroupItem` in a `Tooltip`
  * carrying the one-line "when to use" copy from {@link TOKEN_PROFILE_META}; it stays a composition
- * of `@brand/*` primitives (no hand-rolled chips), so keyboard/focus come from the library.
+ * of `@elabs-ai/components-*` primitives (no hand-rolled chips), so keyboard/focus come from the library.
  */
 export function TokenProfileField(props: {
   value: TokenProfileRef[];

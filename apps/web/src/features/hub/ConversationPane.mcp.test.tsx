@@ -1,14 +1,14 @@
 // Assistant Hub (WP1.4) — the MCP-interaction depth rendered in the transcript: annotation-informed
 // approvals (R-MCP3), elicitation form + URL modes (R-MCP4), progress + cancel (R-MCP5), typed
 // structured output (R-MCP6), the output-cap spill card (R-MCP7), and per-server chips (R-MCP11). The
-// `@brand/ai` surface is stubbed (the shared hub mock) so jsdom never loads streamdown/shiki; the
-// depth widgets themselves are `@brand/ui` (Alert/Progress/Descriptions/Badge) and render for real.
+// `@elabs-ai/components-ai` surface is stubbed (the shared hub mock) so jsdom never loads streamdown/shiki; the
+// depth widgets themselves are `@elabs-ai/components-ui` (Alert/Progress/Descriptions/Badge) and render for real.
 
 import type { HubSession, HubToolPart, HubToolPartState } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 // WP3.4 — the produced-assets panel's promote action calls this; every test that never clicks an
 // item never triggers it.

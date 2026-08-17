@@ -11,7 +11,7 @@ import {
   ContextContentFooter,
   ContextContentHeader,
   ContextTrigger,
-} from "@brand/ai";
+} from "@elabs-ai/components-ai";
 import {
   Button,
   Card,
@@ -22,7 +22,7 @@ import {
   DescriptionsItem,
   MetricCard,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ArrowDown,
   ArrowUp,
@@ -190,7 +190,7 @@ export function KpiRail({
             label="Context"
             value={<span className="tabular-nums">{contextValue}</span>}
             description={
-              // The `@brand/ai` `Context` breakdown backs the tile's description whenever the limit is
+              // The `@elabs-ai/components-ai` `Context` breakdown backs the tile's description whenever the limit is
               // known — the tile stays the grid's MetricCard; the description becomes the
               // expand/collapse trigger for the usage breakdown (%, used/max, progress bar, token
               // rows, est. cost).
@@ -381,7 +381,7 @@ function HotspotsStrip({
 }
 
 /**
- * The Context tile's usage-breakdown popover — the `@brand/ai` `Context` component (2026-07-12
+ * The Context tile's usage-breakdown popover — the `@elabs-ai/components-ai` `Context` component (2026-07-12
  * brand-ui alignment): the canonical token-usage surface (`ContextContentHeader` renders the %,
  * `used / max` and a progress bar off the same `usedTokens`/`maxTokens` the tile shows, so the two
  * can never disagree). **Expandable/collapsible by owner requirement:** the hover card is CONTROLLED —

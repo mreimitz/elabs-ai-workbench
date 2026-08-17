@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Handle, type Node, type NodeProps, Position } from "@xyflow/react";
-import { Text, cn } from "@brand/ui";
+import { Text, cn } from "@elabs-ai/components-ui";
 import { Users } from "lucide-react";
 import type { TopoNodeState } from "./topology-graph";
 
@@ -10,7 +10,7 @@ import type { TopoNodeState } from "./topology-graph";
  * (where a profile card's "Follow" button sits), the agent's real NAME, a muted TECHNICAL/model line,
  * and a 2-line PROMPT (brief) preview — no "AGENT" eyebrow. Registered as the `missionAgent` node type
  * ONLY for the mission graphs (`TopologyGraph variant="mission"`); the synthesis/judge/terminal nodes
- * and every crew-preview node keep the plain `@brand/flow` `FlowNode`. The brief preview is a plain
+ * and every crew-preview node keep the plain `@elabs-ai/components-flow` `FlowNode`. The brief preview is a plain
  * 2-line clamp (NOT a HoverCard) — a non-portalled popover would be clipped/zoom-scaled by the RF
  * canvas; the full prompt lives on the report card's hover instead.
  *
@@ -40,7 +40,7 @@ export type MissionAgentNodeData = {
 
 export type MissionAgentRFNode = Node<MissionAgentNodeData, "missionAgent">;
 
-/** Border/ring tint per state (mirrors `@brand/flow` `FlowNode`'s tone→ring idea, token-driven). */
+/** Border/ring tint per state (mirrors `@elabs-ai/components-flow` `FlowNode`'s tone→ring idea, token-driven). */
 const STATUS_RING: Record<TopoNodeState, string> = {
   idle: "border-border",
   waiting: "border-border",

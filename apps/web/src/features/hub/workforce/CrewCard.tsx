@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { HubAgentRole, HubCrew } from "@mcp-token-footprint/shared";
-import { Sparkline } from "@brand/charts";
-import { Badge, Skeleton, Text, cn } from "@brand/ui";
+import { Sparkline } from "@elabs-ai/components-charts";
+import { Badge, Skeleton, Text, cn } from "@elabs-ai/components-ui";
 import { Users } from "lucide-react";
 import { getHubUsageSummary } from "../../../lib/api";
 import { loadableData, useLoadable } from "../../../lib/loadable";

@@ -2,11 +2,11 @@ import type { HubProject, HubSessionCreateInput } from "@mcp-token-footprint/sha
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-// The redesigned modal renders `ModelSelectorLogo` from `@brand/ai` for each family — stub the heavy
-// `@brand/ai` surface (it pulls in @xyflow/shiki/mermaid CSS jsdom can't load), same as the other hub
+// The redesigned modal renders `ModelSelectorLogo` from `@elabs-ai/components-ai` for each family — stub the heavy
+// `@elabs-ai/components-ai` surface (it pulls in @xyflow/shiki/mermaid CSS jsdom can't load), same as the other hub
 // component tests (AssistantView/Composer). The stub's `ModelSelectorLogo` is a no-op, so the family
 // buttons are still matched by their text label.
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 // The Agents & Crews tab's picker self-fetches the saved roles + crews — stub those two listers (keep the
 // rest of the api module real; nothing else in this dialog's render calls it).
@@ -233,7 +233,7 @@ describe("NewSessionDialog", () => {
     );
   });
 
-  // The D-MI7 search fix, exercised through the repaired `@brand/ai` mock (which filters items on
+  // The D-MI7 search fix, exercised through the repaired `@elabs-ai/components-ai` mock (which filters items on
   // `value` + `keywords`, the same two inputs cmdk's default `commandScore` consumes). Before WP 4.1
   // no keywords were passed at all, so typing a PROVIDER name matched nothing.
   test("the palette is searchable by provider name, not just by model id", async () => {

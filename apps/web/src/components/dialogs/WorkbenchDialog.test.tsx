@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { Button } from "@brand/ui";
+import { Button } from "@elabs-ai/components-ui";
 import { describe, expect, test, vi } from "vitest";
 import { WorkbenchDialog } from "./WorkbenchDialog";
 

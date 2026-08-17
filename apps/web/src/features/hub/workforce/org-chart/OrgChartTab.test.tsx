@@ -1,14 +1,14 @@
 import type { HubAgentRole, HubCrew } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { makeCrew, makeRole } from "./test-fixtures";
 
-// The tab's import chain now reaches the REAL `@brand/ai` (whose index.js imports
+// The tab's import chain now reaches the REAL `@elabs-ai/components-ai` (whose index.js imports
 // `@xyflow/react/dist/style.css`, unresolvable under the jsdom ESM loader) — mock it with the shared
 // hub stub, exactly as TopologyGraph.test / Mission.test do for the same chain.
-vi.mock("@brand/ai", () => import("../../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../../test-support/brand-ai-mock"));
 
 // Mock the API module the tab (and the org rail it imports for `parseOrgRailScope`) pull from.
 const listHubAgentRoles = vi.fn<() => Promise<HubAgentRole[]>>();

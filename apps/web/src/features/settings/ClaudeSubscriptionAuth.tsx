@@ -36,7 +36,7 @@ import {
   Text,
   cn,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Copy, ExternalLink, Info, KeyRound, RotateCcw, Sparkles } from "lucide-react";
 import { ConfirmDialog } from "../../components/dialogs";
 import { IconButton } from "../../components/IconButton";

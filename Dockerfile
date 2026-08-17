@@ -17,7 +17,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
-COPY vendor ./vendor
 # pnpm.patchedDependencies (root package.json) points at patches/node-pty@1.1.0.patch — a fix for
 # an upstream node-pty packaging bug (published prebuilds ship spawn-helper without the executable
 # bit, so PTY spawn fails at runtime with "posix_spawnp failed" even though install succeeds
@@ -28,7 +27,7 @@ RUN pnpm install --frozen-lockfile
 
 # Production-only dependency tree for the runtime image. Same manifests + native toolchain as
 # `deps`, but installed with --prod so devDependencies are skipped. Because the web's build-time
-# toolchain (vite, @vitejs/plugin-react, the @brand/* design-system tarballs) now lives in
+# toolchain (vite, @vitejs/plugin-react, the @elabs-ai/components-* design system) now lives in
 # apps/web/devDependencies, none of it is installed here — the web ships as a prebuilt static
 # `dist`, so the runtime never needs it. This keeps `apps/*/dist` paths identical to the build
 # stage (no WEB_DIST_PATH juggling) while dropping the heavy dev toolchain from the final image.
@@ -42,7 +41,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
 COPY packages/shared/package.json packages/shared/package.json
-COPY vendor ./vendor
 # See the `deps` stage above for why patches/ must be copied before `pnpm install`.
 COPY patches ./patches
 
@@ -50,7 +48,7 @@ RUN pnpm install --frozen-lockfile --prod
 
 FROM deps AS build
 
-# The web build bundles Monaco + Milkdown + Mermaid (@brand/editor/charts) and is memory-hungry;
+# The web build bundles Monaco + Milkdown + Mermaid (@elabs-ai/components-editor / -charts) and is memory-hungry;
 # the default V8 heap OOMs on constrained builders. Scoped to the build stage only — not carried
 # into the runtime image. Mirrors the host gate's NODE_OPTIONS=--max-old-space-size=3400.
 ENV NODE_OPTIONS=--max-old-space-size=3400
@@ -72,8 +70,9 @@ ENV DATABASE_PATH=/data/app.sqlite
 
 WORKDIR /app
 
-# Production-only node_modules (from prod-deps) — the web dev toolchain / @brand/* tarballs are
-# NOT shipped. The web is served from its prebuilt static dist below, which needs no node_modules.
+# Production-only node_modules (from prod-deps) — the web dev toolchain / @elabs-ai/components-*
+# packages are NOT shipped. The web is served from its prebuilt static dist below, which needs no
+# node_modules.
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=prod-deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=prod-deps /app/packages/shared/node_modules ./packages/shared/node_modules

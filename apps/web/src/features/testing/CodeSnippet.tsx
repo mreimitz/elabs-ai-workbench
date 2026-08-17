@@ -1,13 +1,13 @@
 import type { ComponentProps } from "react";
-import { CodeBlock } from "@brand/ai";
-import { Text } from "@brand/ui";
+import { CodeBlock } from "@elabs-ai/components-ai";
+import { Text } from "@elabs-ai/components-ui";
 
 /**
  * A compact, read-only code/JSON viewer for the inline tool-call args/results inside the
- * conversation pane (WP 3.4) and the permission/inspector cards. Now the `@brand/ai` `CodeBlock`
+ * conversation pane (WP 3.4) and the permission/inspector cards. Now the `@elabs-ai/components-ai` `CodeBlock`
  * (Shiki-tokenized, `wrap` for narrow embeds) — the lightweight library code component this file's
  * previous `<pre>`-in-`ScrollArea` escape predated. The heavyweight Monaco `CodeEditor`
- * (`@brand/editor`) remains reserved for full editor surfaces (e.g. `features/scans/ToolDetailPanel`);
+ * (`@elabs-ai/components-editor`) remains reserved for full editor surfaces (e.g. `features/scans/ToolDetailPanel`);
  * mounting Monaco per streaming card is still wrong here — `CodeBlock` is purely presentational and
  * token-themed, so it reads in both themes.
  *

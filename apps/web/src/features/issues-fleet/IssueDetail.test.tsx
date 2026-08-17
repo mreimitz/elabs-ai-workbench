@@ -2,11 +2,11 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// `@brand/charts` — the occurrences panel + sparkline pull real chart components; jsdom breaks on the
+// `@elabs-ai/components-charts` — the occurrences panel + sparkline pull real chart components; jsdom breaks on the
 // barrel's deep `@visx/gradient` import (see `DashboardView.test.tsx`'s note). Thin pass-throughs.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   Bar: () => null,
   BarChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   BarXAxis: () => null,

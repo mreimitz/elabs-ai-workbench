@@ -1,12 +1,12 @@
 import type { HubTaskItem } from "@mcp-token-footprint/shared";
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ReactElement } from "react";
 
-// Mirrors ArtifactCanvas.test.tsx's posture: stub the `@brand/ai`
+// Mirrors ArtifactCanvas.test.tsx's posture: stub the `@elabs-ai/components-ai`
 // surface this section composes (`Task*`, and — indirectly, none here) with the shared hub stub.
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
 
 import type { MissionBoardView } from "../MissionBoard";
 import { ProgressSection } from "./ProgressSection";

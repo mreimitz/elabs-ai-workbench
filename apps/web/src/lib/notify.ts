@@ -1,4 +1,4 @@
-import { toast } from "@brand/ui";
+import { toast } from "@elabs-ai/components-ui";
 
 type ToastErrorMessage = Parameters<typeof toast.error>[0];
 type ToastErrorOptions = Parameters<typeof toast.error>[1];

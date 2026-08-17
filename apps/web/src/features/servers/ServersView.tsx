@@ -11,8 +11,8 @@ import type {
   ToolFindingsReport,
   ToolScan,
 } from "@mcp-token-footprint/shared";
-import { DataTable, SearchInput, type ColumnDef } from "@brand/data";
-import { AreaChart, Area, Grid, XAxis, ChartTooltip } from "@brand/charts";
+import { DataTable, SearchInput, type ColumnDef } from "@elabs-ai/components-data";
+import { AreaChart, Area, Grid, XAxis, ChartTooltip } from "@elabs-ai/components-charts";
 import {
   Badge,
   Button,
@@ -34,7 +34,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   Box,
   FileText,

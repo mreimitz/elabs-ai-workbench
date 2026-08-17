@@ -39,7 +39,7 @@ const shots = [
   { name: "hub-agents", url: "/assistant/agents" },
 ];
 
-const themes = process.argv[2] ? [process.argv[2]] : ["qlik-bright", "qlik-dark"];
+const themes = process.argv[2] ? [process.argv[2]] : ["light", "dark"];
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -62,10 +62,10 @@ const run = async () => {
       [THEME_KEY, "mcp-token-footprint.theme-preference", theme],
     );
     const page = await ctx.newPage();
-    const suffix = theme === "qlik-bright" ? "" : "-dark";
+    const suffix = theme === "light" ? "" : "-dark";
     for (const shot of shots) {
       // dark theme: only re-capture a curated subset for variety
-      if (theme === "qlik-dark" && !["dashboard", "run-console", "scan-footprint"].includes(shot.name)) {
+      if (theme === "dark" && !["dashboard", "run-console", "scan-footprint"].includes(shot.name)) {
         continue;
       }
       try {

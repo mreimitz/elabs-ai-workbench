@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { MetricCard, cn } from "@brand/ui";
+import { MetricCard, cn } from "@elabs-ai/components-ui";
 import { Check, Copy } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { ChatMarkdown, type MdComponents } from "../testing/ChatMarkdown";
@@ -14,7 +14,7 @@ import { notifyError } from "../../lib/notify";
 /**
  * Assistant gen-UI (dock chat enhancement, 2026-07) — renders one parsed assistant message:
  * flowing markdown (via the shared `ChatMarkdown`) interleaved with `metrics` segments as a compact
- * grid of `@brand/ui` `MetricCard` tiles. Two dock-specific upgrades over the raw run-console render:
+ * grid of `@elabs-ai/components-ui` `MetricCard` tiles. Two dock-specific upgrades over the raw run-console render:
  *
  *  1. INTERNAL LINKS NAVIGATE IN-APP: the system prompt teaches the model to reference entities as
  *     markdown links to their app routes (`/testing/runs/<id>`, `/skills/<id>`, …). A Streamdown

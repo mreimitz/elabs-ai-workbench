@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { PromptScan, ResourceScan } from "@mcp-token-footprint/shared";
-import type { ColumnDef } from "@brand/data";
-import { Badge, Button, Text } from "@brand/ui";
+import type { ColumnDef } from "@elabs-ai/components-data";
+import { Badge, Button, Text } from "@elabs-ai/components-ui";
 import { Download, Play } from "lucide-react";
 import { col } from "../../lib/table";
 import { formatPercent } from "../../lib/format";

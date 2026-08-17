@@ -1,5 +1,5 @@
 import type { ScanDetail, ScanSummary } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -8,10 +8,10 @@ import { describe, expect, it, vi } from "vitest";
 // `/scans/:scanId` transitions to master-detail. These tests lock that mode split, the deep-link /
 // stale guard (loading pane, not a flashed wrong scan), and the mode-aware Δ column visibility.
 
-// ScansView transitively imports @brand/editor (Monaco, via ToolDetailPanel / ResourcePromptRun) —
+// ScansView transitively imports @elabs-ai/components-editor (Monaco, via ToolDetailPanel / ResourcePromptRun) —
 // far too heavy for jsdom and irrelevant to the layout under test. Stub it (mirrors the convention
 // in ResourcePromptRun.test.tsx / LiveSkillWorkspaceView.test.tsx).
-vi.mock("@brand/editor", () => ({
+vi.mock("@elabs-ai/components-editor", () => ({
   CodeEditor: (props: { value?: string; ariaLabel?: string }) => (
     <div data-testid="code-editor" aria-label={props.ariaLabel}>
       {props.value}

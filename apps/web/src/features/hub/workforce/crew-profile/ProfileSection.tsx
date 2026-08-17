@@ -1,5 +1,5 @@
 import type { HubCrewColor } from "@mcp-token-footprint/shared";
-import { Input, Label, Textarea } from "@brand/ui";
+import { Input, Label, Textarea } from "@elabs-ai/components-ui";
 import { DialogSection } from "../../../../components/dialogs";
 import { FieldRow } from "../../../../components/FieldRow";
 import { IconPicker } from "../../agents/IconPicker";

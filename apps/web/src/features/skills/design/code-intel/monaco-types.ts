@@ -1,7 +1,7 @@
-import type { CodeEditorProps } from "@brand/editor";
+import type { CodeEditorProps } from "@elabs-ai/components-editor";
 
 // Skill IDE WP 9.3 (I10.5) — the monaco type aliases the code-intel module derives OFF the
-// `@brand/editor` `CodeEditor.onMount(editor, monacoApi)` prop, so nothing here imports `monaco-editor`
+// `@elabs-ai/components-editor` `CodeEditor.onMount(editor, monacoApi)` prop, so nothing here imports `monaco-editor`
 // directly (the same anti-direct-import trick WP 8.2's `use-bound-tools.ts` + WP 5.2's marker plumbing
 // use). Every import is `import type` → erased at build time (zero runtime cost, no bundler coupling).
 

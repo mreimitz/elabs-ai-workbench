@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Button, Tooltip, TooltipContent, TooltipTrigger, cn } from "@brand/ui";
+import { Badge, Button, Tooltip, TooltipContent, TooltipTrigger, cn } from "@elabs-ai/components-ui";
 import { Info, X } from "lucide-react";
 import { IconButton } from "./IconButton";
 
@@ -83,7 +83,7 @@ export interface ActiveFilterChip {
  *                                the head of the row — the single home for a description worth keeping.
  *   className?    : string     — layout-only escape hatch for the row wrapper.
  *
- * Every visible element is `@brand/ui` or a `lucide-react` glyph; semantic tokens only; `className`
+ * Every visible element is `@elabs-ai/components-ui` or a `lucide-react` glyph; semantic tokens only; `className`
  * is layout-only. The info tooltip needs the app-root `TooltipProvider` (already mounted).
  *
  * MINIMAL USAGE (literally what `EnvironmentsView` now does — the canonical B-2 fix)

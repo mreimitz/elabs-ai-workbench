@@ -19,7 +19,7 @@ import {
   SheetTitle,
   Spinner,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubAgentRole,
   HubApprovalResolution,
@@ -86,7 +86,7 @@ import { useHubStream } from "./use-hub-stream";
 import { notifyError } from "../../lib/notify";
 
 // WP1.8 integration — the full artifact experience (`ArtifactCanvas`) is opened on demand from the meta
-// rail's Outputs section, so it is code-split: it pulls in the heavy `@brand/editor` Monaco/Milkdown
+// rail's Outputs section, so it is code-split: it pulls in the heavy `@elabs-ai/components-editor` Monaco/Milkdown
 // stack, which only needs to load the first time the owner opens an artifact — never on the workspace's
 // first paint. (Keeping it out of the static import graph also keeps this view's unit tests light.)
 const ArtifactCanvas = lazy(() =>

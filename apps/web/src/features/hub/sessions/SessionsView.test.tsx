@@ -2,12 +2,12 @@ import type { HubProject, HubSession, ProviderCredential } from "@mcp-token-foot
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// The `NewSessionDialog` this view composes now renders `ModelSelectorLogo` from `@brand/ai`; stub the
-// heavy `@brand/ai` surface (it pulls in @xyflow/shiki/mermaid CSS jsdom can't load), same as the other
+// The `NewSessionDialog` this view composes now renders `ModelSelectorLogo` from `@elabs-ai/components-ai`; stub the
+// heavy `@elabs-ai/components-ai` surface (it pulls in @xyflow/shiki/mermaid CSS jsdom can't load), same as the other
 // hub component tests.
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
 
 // Mirrors AssistantView.test.tsx's posture — mock only the hub-session client functions this view
 // (and the `NewSessionDialog`/`useHubModelRoster` it composes) actually calls.
@@ -226,7 +226,7 @@ describe("SessionsView (WP1.4, D-HUX4)", () => {
     renderView();
     await waitFor(() => expect(screen.getByText("Running one")).toBeInTheDocument());
 
-    // `FacetFilter` (@brand/data) is a `DropdownMenu` of `DropdownMenuItem`s (role="menuitem"), each
+    // `FacetFilter` (@elabs-ai/components-data) is a `DropdownMenu` of `DropdownMenuItem`s (role="menuitem"), each
     // toggling on `onSelect` — not a listbox/combobox. Radix's `DropdownMenuTrigger` only listens for
     // pointerdown/keydown, not click (the established `AssistantDock.test.tsx`/`WatchRulesView.test.tsx`
     // precedent) — `fireEvent.click` alone never opens it in jsdom.
@@ -383,7 +383,7 @@ describe("SessionsView (WP1.4, D-HUX4)", () => {
     await waitFor(() => expect(screen.getByText("Expensive")).toBeInTheDocument());
 
     // Initial sort is `updated` desc (the default view), which ALSO happens to put "Expensive" first
-    // (it's the more-recently-updated row) — so a single click on Cost (which @brand/data's DataTable
+    // (it's the more-recently-updated row) — so a single click on Cost (which @elabs-ai/components-data's DataTable
     // toggles unsorted → DESCENDING first) wouldn't prove anything moved (cost-desc puts the pricier
     // row first too, same as today). Click twice to reach cost-ASCENDING, which provably differs.
     const sortByCost = screen.getByRole("button", { name: /sort by cost/i });

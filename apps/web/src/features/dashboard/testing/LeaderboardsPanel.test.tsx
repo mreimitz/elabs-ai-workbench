@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { parseRunFilter } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { defaultControls, drillDownHref } from "./dashboard-url-state";
 import { LeaderboardsPanel } from "./LeaderboardsPanel";
 import type { ExpensiveRunRow, FailingLeaderboardRow } from "./metrics-derive";

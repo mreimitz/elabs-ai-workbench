@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { LineChart } from "lucide-react";
-import { ScrollArea, Skeleton } from "@brand/ui";
+import { ScrollArea, Skeleton } from "@elabs-ai/components-ui";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../components/InlineError";
 import { TabEmptyState } from "../../components/TabEmptyState";

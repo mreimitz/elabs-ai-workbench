@@ -10,7 +10,7 @@ import {
   Spinner,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type { HubToolGrants } from "@mcp-token-footprint/shared";
 import { updateHubSession } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";

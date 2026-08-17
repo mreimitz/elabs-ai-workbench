@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 
 // `ModelSelectorLogo` is a Rive/WebGL surface jsdom can't render — stub it with an identifiable marker.
 // (RoleAvatar no longer uses `Persona`; the fallback is a plain lucide `Bot` svg.)
-vi.mock("@brand/ai", () => ({
+vi.mock("@elabs-ai/components-ai", () => ({
   ModelSelectorLogo: (props: { provider?: string }) => (
     <div data-testid="model-logo" data-provider={props.provider} />
   ),

@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-// jsdom can't resolve @brand/charts' @visx deep imports — the established DurationPanel.test.tsx /
+// jsdom can't resolve @elabs-ai/components-charts' @visx deep imports — the established DurationPanel.test.tsx /
 // GuardrailStopsPanel.test.tsx precedent: stub the mark components, keep production untouched (the
 // real build proves the real chart).
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   LineChart: ({ children }: { children: ReactNode }) => <div data-testid="line-chart">{children}</div>,
   Line: () => null,
   XAxis: () => null,

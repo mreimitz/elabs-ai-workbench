@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { RunFilter } from "@mcp-token-footprint/shared";
-import { Text, Tooltip, TooltipContent, TooltipTrigger } from "@brand/ui";
+import { Text, Tooltip, TooltipContent, TooltipTrigger } from "@elabs-ai/components-ui";
 import { getRunMetrics } from "../../../lib/api";
 import { formatDuration } from "../../../lib/format";
 import { KpiStat } from "../../../components/KpiStat";

@@ -10,7 +10,7 @@ import {
   Spinner,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { FormDialog } from "../../components/dialogs";
 import { FieldRow } from "../../components/FieldRow";
 import { listCollections, promoteRunToTest } from "../../lib/api";

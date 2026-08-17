@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import type { HubMemory } from "@mcp-token-footprint/shared";
-import { Badge, EmptyState, Spinner, Text } from "@brand/ui";
+import { Badge, EmptyState, Spinner, Text } from "@elabs-ai/components-ui";
 import { Brain } from "lucide-react";
 import { listHubMemory } from "../../../../lib/api";
 import { getErrorMessage } from "../../../../lib/errors";

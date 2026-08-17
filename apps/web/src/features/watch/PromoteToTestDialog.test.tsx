@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Collection } from "@mcp-token-footprint/shared";
-import { TooltipProvider, toast } from "@brand/ui";
+import { TooltipProvider, toast } from "@elabs-ai/components-ui";
 
 // The console's promote flow is STUBBED (no real `POST /api/runs/:id/promote-to-test` route exists
 // yet — see `lib/api.ts`'s `promoteRunToTest` doc) — this test proves the WEB side (dialog, the

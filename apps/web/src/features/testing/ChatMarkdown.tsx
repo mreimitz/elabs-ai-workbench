@@ -12,8 +12,8 @@ import {
   TableHeader,
   TableRow,
   cn,
-} from "@brand/ui";
-import { MessageResponse } from "@brand/ai";
+} from "@elabs-ai/components-ui";
+import { MessageResponse } from "@elabs-ai/components-ai";
 import { ChevronRight } from "lucide-react";
 import { ExpandableTable } from "./ExpandableTable";
 
@@ -23,10 +23,10 @@ import { ExpandableTable } from "./ExpandableTable";
  * wrapped every `h2`–`h6` section in its own bordered `Card`, which fragmented an answer into
  * widget-looking boxes and clipped `ol` markers against the card's `overflow-hidden`.)
  *
- * What this keeps doing on top of plain Streamdown (`@brand/ai` `MessageResponse`):
+ * What this keeps doing on top of plain Streamdown (`@elabs-ai/components-ai` `MessageResponse`):
  *
  *  1. RESPONSIVE TABLES (no Streamdown chrome): a `components` override maps `table`/`thead`/… onto
- *     `@brand/ui` `Table*`, replacing Streamdown's bordered table-block + copy/download/fullscreen
+ *     `@elabs-ai/components-ui` `Table*`, replacing Streamdown's bordered table-block + copy/download/fullscreen
  *     toolbar with a clean, token-styled, horizontally-scrolling table.
  *  2. CHAT-SCALE TYPOGRAPHY: {@link MD_PROSE} re-targets the raw tags Streamdown emits — headings
  *     step down proportionately (`h1` a step above body, `h2+` bold body-size) with breathing room
@@ -128,7 +128,7 @@ function CatalogFold({ block, components }: { block: CatalogBlock; components: M
 }
 
 /**
- * Streamdown component overrides: render markdown tables as `@brand/ui` `Table*` instead of
+ * Streamdown component overrides: render markdown tables as `@elabs-ai/components-ui` `Table*` instead of
  * Streamdown's bordered table block + copy/download/fullscreen toolbar. `Table` already wraps itself
  * in a `relative w-full overflow-auto` container, so the table scrolls horizontally on overflow with
  * no extra wrapper. `node` is react-markdown's hast node (not a DOM attribute) — strip it before
@@ -141,7 +141,7 @@ export type MdComponents = NonNullable<ComponentProps<typeof MessageResponse>["c
  * control that portals a raw edge-to-edge takeover (`fixed inset-0`, no backdrop/title/chrome). Every
  * surface that renders assistant markdown through a bare `MessageResponse` (hub transcript, agent
  * transcript) passes this map instead, so tables everywhere get the ONE `ExpandableTable` toolbar
- * whose expand opens the app's normal `@brand/ui` Dialog. Module-scope constant → stable reference
+ * whose expand opens the app's normal `@elabs-ai/components-ui` Dialog. Module-scope constant → stable reference
  * (`MessageResponse` callers must pass stable `components`).
  */
 export const MD_TABLE_COMPONENTS: MdComponents = {
@@ -190,7 +190,7 @@ const MD_PROSE = [
   "[&_ul]:my-1 [&_ol]:my-1 [&_ul]:ps-5 [&_ol]:ps-5 [&_li]:my-0.5",
   "[&_p]:my-1.5",
   "[&_hr]:my-3",
-  // Spacing only — borders/overflow/size come from @brand/ui Table.
+  // Spacing only — borders/overflow/size come from @elabs-ai/components-ui Table.
   "[&_table]:my-1.5",
 ].join(" ");
 

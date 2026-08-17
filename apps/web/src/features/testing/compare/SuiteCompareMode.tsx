@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button, Heading, StatePanel, Text } from "@brand/ui";
+import { Button, Heading, StatePanel, Text } from "@elabs-ai/components-ui";
 import { Download, GitCompareArrows } from "lucide-react";
 import { getErrorMessage } from "../../../lib/errors";
 import type { SuiteModeProps } from "./compare-runs";

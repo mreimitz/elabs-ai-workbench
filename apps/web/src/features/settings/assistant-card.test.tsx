@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // WP 0.2 — the Settings "Assistant" section (a pane of the settings modal). The api module is
 // mocked so the on-mount status + providers fetch resolves deterministically and no real request

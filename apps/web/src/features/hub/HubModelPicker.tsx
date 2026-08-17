@@ -10,8 +10,8 @@ import {
   ModelSelectorLogo,
   ModelSelectorName,
   ModelSelectorTrigger,
-} from "@brand/ai";
-import { Alert, AlertDescription, Badge, Button, Skeleton, Text, cn } from "@brand/ui";
+} from "@elabs-ai/components-ai";
+import { Alert, AlertDescription, Badge, Button, Skeleton, Text, cn } from "@elabs-ai/components-ui";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   buildHubModelGroups,
@@ -59,8 +59,8 @@ import {
  * `aria-describedby`, so it reaches assistive tech (the `icon-affordances.md` posture; no native
  * `title` anywhere in this file).
  *
- * Every visible element is `@brand/*`; `className` is layout-only; semantic tokens only, so both
- * `qlik-bright` and `qlik-dark` are covered without a single `dark:` override.
+ * Every visible element is `@elabs-ai/components-*`; `className` is layout-only; semantic tokens only, so both
+ * `light` and `dark` are covered without a single `dark:` override.
  */
 export type HubModelPickerProps = {
   /** The live roster (`useHubModelRoster().models`). */
@@ -96,7 +96,7 @@ export type HubModelPickerProps = {
   className?: string;
   /**
    * A custom trigger (rendered `asChild`), for surfaces with their own chrome — the composer's
-   * icon-only `PromptInputButton`, for instance. It must accept `onClick`/`ref` (any `@brand/ui`
+   * icon-only `PromptInputButton`, for instance. It must accept `onClick`/`ref` (any `@elabs-ai/components-ui`
    * `Button`-shaped element does).
    */
   trigger?: ReactNode;

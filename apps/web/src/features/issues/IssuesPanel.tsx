@@ -7,7 +7,7 @@ import type {
   RatingIssueTargetKind,
   RootCauseBucket,
 } from "@mcp-token-footprint/shared";
-import { Badge, Button, Skeleton, Text, toast } from "@brand/ui";
+import { Badge, Button, Skeleton, Text, toast } from "@elabs-ai/components-ui";
 import {
   CheckCircle2,
   Download,

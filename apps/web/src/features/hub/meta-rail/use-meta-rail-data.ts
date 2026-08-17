@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "@brand/ui";
+import { toast } from "@elabs-ai/components-ui";
 import type {
   HubContextInspector,
   HubEffectiveMemory,

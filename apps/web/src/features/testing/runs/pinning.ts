@@ -1,13 +1,13 @@
-import { cn } from "@brand/ui";
+import { cn } from "@elabs-ai/components-ui";
 
 /**
  * Column-pinning classes for the Runs feed's genuinely-wide table (S2 · WP 2.4).
  * =============================================================================
  *
  * The 1.4 `lib/table.tsx` `pinnedCellClass` helper is the reference technique — `position: sticky`
- * on the cell plus a negative-margin "bleed" that eats @brand's `px-3` cell padding so the opaque
+ * on the cell plus a negative-margin "bleed" that eats brand-ui's `px-3` cell padding so the opaque
  * fill spans the full column and sibling cells scroll cleanly behind it. It works, and this mirrors
- * its exact geometry (@brand/ui `Table` cells are `px-3 py-2`, same as @brand/data's).
+ * its exact geometry (@elabs-ai/components-ui `Table` cells are `px-3 py-2`, same as @elabs-ai/components-data's).
  *
  * The ONE thing it can't do for this feed: `pinnedCellClass` hard-codes `bg-card`. The Runs table has
  * THREE row surfaces (single/member runs on the card surface, suite summary rows tinted `bg-muted`,

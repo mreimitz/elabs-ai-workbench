@@ -1,9 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { ThemeProvider } from "@brand/tokens";
-import { Toaster, TooltipProvider } from "@brand/ui";
-// Wire Monaco's web workers (completions/diagnostics/folding) for the @brand/editor CodeEditor.
+import { ThemeProvider } from "@elabs-ai/components-tokens";
+import { Toaster, TooltipProvider } from "@elabs-ai/components-ui";
+// Wire Monaco's web workers (completions/diagnostics/folding) for the @elabs-ai/components-editor CodeEditor.
 // Must be imported once, at the app entry, before any editor mounts.
 //
 // Kept eager here on purpose (code-splitting, research 03-web-review H1): this module imports ONLY
@@ -13,11 +13,11 @@ import { Toaster, TooltipProvider } from "@brand/ui";
 // dock) boundaries in App.tsx, so they load only when an editor surface is actually opened. Moving
 // this worker wiring to first-editor-mount is finicky (the `?worker` prebundle is fragile — see the
 // repo notes) and would buy nothing for the entry chunk, so it stays where it reliably works.
-import "@brand/editor/monaco-environment";
-// @brand/flow's CanvasShell wraps React Flow (@xyflow/react) and its .d.ts REQUIRES consumers to
+import "@elabs-ai/components-editor/monaco-environment";
+// @elabs-ai/components-flow's CanvasShell wraps React Flow (@xyflow/react) and its .d.ts REQUIRES consumers to
 // import this stylesheet once at the app root (it drives the node/edge/viewport positioning classes
 // the canvas relies on). The Design tab (features/skills/design/SkillDesignView.tsx) is its first
-// consumer — see dependencies.md: "@brand/flow ... installed today with zero imports".
+// consumer — see dependencies.md: "@elabs-ai/components-flow ... installed today with zero imports".
 import "@xyflow/react/dist/style.css";
 import { App } from "./App";
 import { AssistantProvider } from "./features/assistant/assistant-context";
@@ -29,7 +29,7 @@ import {
 } from "./lib/theme";
 import "./styles/app.css";
 
-// @brand/tokens ships three themes (qlik-bright, qlik-dark, blueprint), but this
+// @elabs-ai/components-tokens ships three themes (light, dark, blueprint), but this
 // app exposes only the two shipped themes (plus a "System" preference that resolves to
 // one of them). ThemeProvider has no allow-list prop and will re-apply any persisted
 // theme on mount — including a previously selected `blueprint`. Before the provider
@@ -51,7 +51,7 @@ try {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <ThemeProvider defaultTheme="qlik-bright" defaultDensity="compact">
+    <ThemeProvider defaultTheme="light" defaultDensity="compact">
       <TooltipProvider delayDuration={200}>
         <BrowserRouter>
           {/* Mounted inside the router (it derives the current envelope from `useLocation`) and near
@@ -68,10 +68,10 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             which forces `duration: Infinity` per-call — overriding this default so errors (and the
             one action-bearing toast) stay until the operator dismisses them. */}
         {/* Interface Craft WP 4.3 FIX 2 (P1): `richColors` was DROPPED. Sonner's rich-colors palette
-            is hardcoded and theme-agnostic — its error plate measured 4.35:1 in qlik-bright (below AA),
+            is hardcoded and theme-agnostic — its error plate measured 4.35:1 in light (below AA),
             and since D-IC7 errors now persist it was on screen longer. Instead the per-type toast plates
             are mapped onto the app's SEMANTIC token pairs, which WP 0.1 already tuned to clear AA (the
-            `tokens-contrast.test.ts` gate). The vendored `@brand/ui` Toaster spreads `...props` AFTER its
+            `tokens-contrast.test.ts` gate). The vendored `@elabs-ai/components-ui` Toaster spreads `...props` AFTER its
             own `toastOptions`, so passing `toastOptions` REPLACES it wholesale — hence description/action/
             cancel are re-declared here. Color lives ONLY on the per-type keys (`success`/`error`/`warning`/
             `info`) + `default`, never on the shared `toast` base, so no two `bg-*` utilities ever compete

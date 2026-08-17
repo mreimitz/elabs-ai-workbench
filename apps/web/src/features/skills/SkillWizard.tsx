@@ -19,7 +19,7 @@ import {
   ToggleGroupItem,
   cn,
   type UploadFile,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { FileArchive, FilePlus2, Github, Save, Search, ServerCog, Upload } from "lucide-react";
 import { formatBytes } from "../../lib/format";
 import { getErrorMessage } from "../../lib/errors";
@@ -77,7 +77,7 @@ export type SkillWizardProps = {
 /**
  * The add-skill wizard (UI plan §3): a multi-step `Dialog` mirroring `ServerWizard`.
  * - Step 1 (Source): an Upload / GitHub / Blank `ToggleGroup`.
- * - Step 2a (Upload): a `@brand` `FileUpload` dropzone (`.zip` or `SKILL.md`) + optional display name.
+ * - Step 2a (Upload): a `@elabs-ai/components-*` `FileUpload` dropzone (`.zip` or `SKILL.md`) + optional display name.
  * - Step 2b (GitHub): repo URL + ref + optional PAT → "Discover" (`probe`) → pick a candidate subpath.
  * - Step 2c (Blank, SkillFlow D3): name + description (+ optional display name) — the API scaffolds
  *   a minimal, spec-valid `SKILL.md` and registers it as version 1, immediately inspectable.
@@ -93,7 +93,7 @@ export function SkillWizard(props: SkillWizardProps) {
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
 
-  // Upload state — the @brand FileUpload is controlled; we read the single picked File from it.
+  // Upload state — the brand-ui FileUpload is controlled; we read the single picked File from it.
   const [files, setFiles] = useState<UploadFile[]>([]);
   const pickedFile = files[0]?.file ?? null;
 

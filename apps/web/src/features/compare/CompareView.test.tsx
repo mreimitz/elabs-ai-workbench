@@ -7,7 +7,7 @@ import type {
   ServerConfig,
   ServerType,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // CompareView self-fetches server types via `listServerTypes` (WP 4.1) — stub it so the test never
 // makes a real request (mirrors EnvironmentEditor.test.tsx's api mock).

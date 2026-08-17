@@ -10,7 +10,7 @@ import {
   DialogTitle,
   Spinner,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 
 /**
  * Tier 2 of the modal system (audit §S17) — the SIMPLE FORM tier.

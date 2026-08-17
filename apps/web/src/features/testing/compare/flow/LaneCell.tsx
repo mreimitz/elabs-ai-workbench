@@ -1,4 +1,4 @@
-import { Badge, Button, Popover, PopoverContent, PopoverTrigger, Text, cn } from "@brand/ui";
+import { Badge, Button, Popover, PopoverContent, PopoverTrigger, Text, cn } from "@elabs-ai/components-ui";
 import {
   AlertTriangle,
   Brain,

@@ -22,7 +22,7 @@ import {
   StatusBadge,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ArrowLeft, Layers, ListChecks, Loader2, Pencil, PlayCircle, Trash2 } from "lucide-react";
 import {
   ApiError,

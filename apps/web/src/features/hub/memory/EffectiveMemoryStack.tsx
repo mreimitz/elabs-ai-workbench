@@ -6,7 +6,7 @@ import type {
   HubEffectiveMemoryOverride,
   HubMemoryScope,
 } from "@mcp-token-footprint/shared";
-import { Badge, Button, Text, Tooltip, TooltipContent, TooltipTrigger } from "@brand/ui";
+import { Badge, Button, Text, Tooltip, TooltipContent, TooltipTrigger } from "@elabs-ai/components-ui";
 import { ChevronDown, ChevronRight, SquareArrowOutUpRight } from "lucide-react";
 import { IconButton } from "../../../components/IconButton";
 

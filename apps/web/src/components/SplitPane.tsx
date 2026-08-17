@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, ResizableHandle, ResizablePanel, Text, cn } from "@brand/ui";
+import { Badge, ResizableHandle, ResizablePanel, Text, cn } from "@elabs-ai/components-ui";
 import { AdaptivePanelGroup } from "./AdaptivePanelGroup";
 
 /**

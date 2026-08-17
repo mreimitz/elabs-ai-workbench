@@ -20,8 +20,8 @@ import {
   SelectValue,
   Text,
   cn,
-} from "@brand/ui";
-import { SearchInput } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import { MoreHorizontal, Pencil, Play, Plus, Tags, Trash2, Wifi } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { StatusBadge } from "../../components/StatusBadge";

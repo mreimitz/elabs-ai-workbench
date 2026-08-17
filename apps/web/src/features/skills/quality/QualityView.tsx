@@ -18,7 +18,7 @@ import {
   EmptyState,
   StatePanel,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { CheckCircle2, RefreshCw } from "lucide-react";
 import { getErrorMessage } from "../../../lib/errors";
 import { InlineError } from "../../../components/InlineError";

@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { RefreshCw } from "lucide-react";
 import { IconButton } from "./IconButton";
 
@@ -24,7 +24,7 @@ async function focus(el: HTMLElement) {
 }
 
 describe("IconButton — the one icon affordance (D-TB5)", () => {
-  test("renders a @brand Button with the icon child and an aria-label from `label`", () => {
+  test("renders a brand-ui Button with the icon child and an aria-label from `label`", () => {
     renderIconButton(
       <IconButton label="Refresh scans" onClick={() => {}}>
         <RefreshCw aria-hidden data-testid="glyph" />
@@ -64,7 +64,7 @@ describe("IconButton — the one icon affordance (D-TB5)", () => {
     expect(btn).not.toBeDisabled();
     await focus(btn);
     expect(btn).toHaveFocus();
-    // The ring is inherited from `@brand/ui` Button's base variant (token-driven, both themes).
+    // The ring is inherited from `@elabs-ai/components-ui` Button's base variant (token-driven, both themes).
     expect(btn.className).toContain("focus-visible:ring-ring");
   });
 

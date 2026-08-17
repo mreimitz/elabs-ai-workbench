@@ -10,17 +10,17 @@ import {
   TableRow,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { getRunGrades } from "../../../lib/api";
 import { BASE_VERDICT_LABELS, BaseVerdictBadge } from "../BaseVerdictChip";
 import { pickBaseVerdictEvidence } from "../grade-format";
 
 /**
  * The suite-run matrix — rows = tests × cols = scenarios, each cell rolling up that (test, scenario)'s
- * repetitions into one status chip. Built on `@brand/ui` `Table*` with a sticky first column (the same
+ * repetitions into one status chip. Built on `@elabs-ai/components-ui` `Table*` with a sticky first column (the same
  * shape as the compatibility `HeatmapGrid`), so it scrolls horizontally inside its own container and
  * never pushes the page sideways. Cell fills are SEMANTIC tokens only (success/warning/destructive/
- * info/muted) — colour = the cell's status. Cells with a resolved child `runId` are `@brand/ui`
+ * info/muted) — colour = the cell's status. Cells with a resolved child `runId` are `@elabs-ai/components-ui`
  * `Button`s that drill through to that run's console; unstarted cells are inert.
  *
  * Cells BUILD UP live: a cell first arrives `running`, then flips to its child's settled status. The
@@ -231,7 +231,7 @@ function MatrixCell({
   const scoreText = roll.meanScore === null ? null : roll.meanScore.toFixed(2);
 
   // The token-coloured surface is a child layout <span> (colour = status); the interactive control is a
-  // @brand/ui Button so keyboard + focus come for free (matches the heatmap HeatCell pattern).
+  // @elabs-ai/components-ui Button so keyboard + focus come for free (matches the heatmap HeatCell pattern).
   const surface = (
     <span
       className={cn(

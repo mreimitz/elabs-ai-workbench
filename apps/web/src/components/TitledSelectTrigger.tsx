@@ -5,7 +5,7 @@ import {
   HoverCardTrigger,
   SelectTrigger,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 
 /**
  * TitledSelectTrigger — the one recovery mechanism for a clipped `<Select>` value (D-IC10,
@@ -13,7 +13,7 @@ import {
  * =============================================================================================
  *
  * WHY IT EXISTS
- *   `@brand/ui`'s `SelectTrigger` ships `[&>span]:line-clamp-1` (`vendor select.tsx:22`) with no
+ *   `@elabs-ai/components-ui`'s `SelectTrigger` ships `[&>span]:line-clamp-1` (`vendor select.tsx:22`) with no
  *   `title`, so EVERY select in the app clips its selected value with no way to read the full
  *   text — including composed labels like `${server} · ${date} · ${n} tools`
  *   (interface review finding 10). This wrapper derives the trigger's `title` from one
@@ -22,7 +22,7 @@ import {
  *   (D-TB5) and `AgentBriefPreview`.
  *
  * WHAT IT IS
- *   A thin wrapper around `@brand/ui`'s `SelectTrigger` that sets `title={selectedLabel}` on the
+ *   A thin wrapper around `@elabs-ai/components-ui`'s `SelectTrigger` that sets `title={selectedLabel}` on the
  *   trigger element (a native, zero-JS hover recovery reachable without a mouse via the OS
  *   tooltip). When `hoverCard` is set — for a genuinely USER-AUTHORED value (a name/description
  *   the operator typed, not a fixed short enum label) — it additionally wraps the trigger in a
@@ -38,7 +38,7 @@ import {
  *     <SelectContent>…</SelectContent>
  *   </Select>
  *
- * Every visible element is `@brand/ui`; `className` stays layout-only. `hoverCard` needs the
+ * Every visible element is `@elabs-ai/components-ui`; `className` stays layout-only. `hoverCard` needs the
  * app-root `TooltipProvider`/Radix portal root already mounted (same requirement as
  * `AgentBriefPreview`).
  */

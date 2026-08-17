@@ -1,5 +1,5 @@
 import { forwardRef, useId, type ReactNode } from "react";
-import { Button, type ButtonProps, Tooltip, TooltipContent, TooltipTrigger, cn } from "@brand/ui";
+import { Button, type ButtonProps, Tooltip, TooltipContent, TooltipTrigger, cn } from "@elabs-ai/components-ui";
 
 /**
  * IconButton — the ONE affordance for an icon-only control (D-TB5, icon-affordances rule).
@@ -15,7 +15,7 @@ import { Button, type ButtonProps, Tooltip, TooltipContent, TooltipTrigger, cn }
  *   `title` prop / escape hatch (the type omits it).
  *
  * WHAT IT IS
- *   A `@brand/ui` `Button` (icon child, `size="icon"` by default, visible focus ring inherited)
+ *   A `@elabs-ai/components-ui` `Button` (icon child, `size="icon"` by default, visible focus ring inherited)
  *   wrapped in a Radix `Tooltip`. The `TooltipTrigger` is a thin wrapper `<span>`, NOT the Button
  *   itself, so the tooltip still fires on a **disabled** control: a disabled Button carries
  *   `disabled:pointer-events-none`, so hover falls through to the wrapper span, and when a
@@ -41,7 +41,7 @@ import { Button, type ButtonProps, Tooltip, TooltipContent, TooltipTrigger, cn }
  *     <Download aria-hidden />
  *   </IconButton>
  *
- * Every visible element is `@brand/ui` or a `lucide-react` / `@brand/icons` glyph; semantic tokens
+ * Every visible element is `@elabs-ai/components-ui` or a `lucide-react` / `@elabs-ai/components-icons` glyph; semantic tokens
  * only; `className` is layout-only. Needs the app-root `TooltipProvider` (already mounted).
  *
  * TOUCH TARGET FLOOR (P0 mobile audit T4, 2026-07-25 critique)
@@ -67,7 +67,7 @@ export type IconButtonProps = Omit<
    */
   label: string;
   /**
-   * The icon glyph — a `lucide-react` / `@brand/icons` element. Mark it `aria-hidden` at the call
+   * The icon glyph — a `lucide-react` / `@elabs-ai/components-icons` element. Mark it `aria-hidden` at the call
    * site; the accessible name comes from `label`, not the glyph.
    */
   children: ReactNode;

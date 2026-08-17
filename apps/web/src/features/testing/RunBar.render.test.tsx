@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { Button, TooltipProvider, toast } from "@brand/ui";
+import { Button, TooltipProvider, toast } from "@elabs-ai/components-ui";
 import { deriveRunBarView, RunBar, type RunIdentity } from "./RunBar";
 
 // Unified Sessions (WP3.3) — component-level coverage the pure-function `RunBar.test.ts` can't reach:

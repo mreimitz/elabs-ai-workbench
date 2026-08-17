@@ -1,5 +1,5 @@
-import { DataTable, type ColumnDef } from "@brand/data";
-import { Button, EmptyState, Text } from "@brand/ui";
+import { DataTable, type ColumnDef } from "@elabs-ai/components-data";
+import { Button, EmptyState, Text } from "@elabs-ai/components-ui";
 import type { HubUsageRow } from "@mcp-token-footprint/shared";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";

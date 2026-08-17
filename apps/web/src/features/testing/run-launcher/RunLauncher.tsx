@@ -46,8 +46,8 @@ import {
   WizardSteps,
   cn,
   toast,
-} from "@brand/ui";
-import { SearchInput } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   ChevronLeft,
   ChevronRight,
@@ -85,7 +85,7 @@ import { getCredentialHealth } from "../credential-health";
  * {@link RunLauncherIntent}.
  *
  * **Shape:** a wider-than-high modal (≈1080×640, WideDialog-tier sizing: fixed height, header and
- * footer pinned, only the step body scrolls). The `@brand/ui` Wizard runs CONTROLLED with a
+ * footer pinned, only the step body scrolls). The `@elabs-ai/components-ui` Wizard runs CONTROLLED with a
  * vertical step rail on the left; the footer owns Back / Next / Run so the primary action lives in
  * the sticky footer, per the modal-system convention.
  *

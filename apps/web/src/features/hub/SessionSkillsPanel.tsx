@@ -18,7 +18,7 @@ import {
   SelectValue,
   Spinner,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubSessionSkillsView,
   HubSkillAttachmentInput,

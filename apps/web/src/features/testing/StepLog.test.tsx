@@ -59,7 +59,7 @@ describe("StepLog — FLAT legacy run renders the ORIGINAL DataTable branch, byt
   });
 
   // NOTE: the flat branch's row-level click interaction (`onSelectStep`) is UNCHANGED source (not
-  // touched by this WP) but can't be exercised here: `@brand/data` `DataTable`'s row virtualizer
+  // touched by this WP) but can't be exercised here: `@elabs-ai/components-data` `DataTable`'s row virtualizer
   // (`enableRowVirtualization`, pre-existing — not introduced by this WP) needs real layout
   // measurement that jsdom doesn't provide, so the body renders an empty placeholder row instead of
   // actual cells in this test environment (confirmed via a throwaway debug render — the SAME behavior

@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { Badge, Descriptions, DescriptionsItem, Heading, Text } from "@brand/ui";
+import { Badge, Descriptions, DescriptionsItem, Heading, Text } from "@elabs-ai/components-ui";
 import { StatusBadge } from "../../components/StatusBadge";
 import { deriveIssueLifecycleView } from "../../lib/status";
 import { formatDateTime } from "../../lib/format";

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { RunStep } from "@mcp-token-footprint/shared";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Text } from "@brand/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Text } from "@elabs-ai/components-ui";
 import { AlertTriangle, ListOrdered } from "lucide-react";
 import { formatNumber } from "../../lib/format";
 import { deriveTurnRows } from "./turn-index";

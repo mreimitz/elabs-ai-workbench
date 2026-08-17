@@ -95,7 +95,7 @@ function renderPalette(
           scans={[SCAN]}
           skills={[SKILL]}
           collections={[COLLECTION]}
-          themePreference="qlik-bright"
+          themePreference="light"
           onThemePreferenceChange={onThemePreferenceChange}
           onAddServer={onAddServer}
           onAddSkill={onAddSkill}
@@ -213,7 +213,7 @@ describe("CommandPalette", () => {
     expect(within(brightOption).getByText("Current")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("option", { name: /Switch to Dark theme/ }));
-    expect(onThemePreferenceChange).toHaveBeenCalledWith("qlik-dark");
+    expect(onThemePreferenceChange).toHaveBeenCalledWith("dark");
   });
 
   test("shows an empty state when nothing matches", async () => {

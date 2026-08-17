@@ -1,6 +1,6 @@
 // Assistant Hub (roadmap/assistant-hub/, WP2.2 · §1.9 · R-UX4) — the PURE mission-topology graph
 // derivation. Given a topology + its agents (each with a live state) it lays out a directed graph
-// (deterministic node positions + edges) that a `@brand/flow` canvas renders. Kept side-effect-free and
+// (deterministic node positions + edges) that a `@elabs-ai/components-flow` canvas renders. Kept side-effect-free and
 // framework-free so the layout is unit-tested in isolation (the React `TopologyGraph` component is a thin
 // renderer over this). Used by BOTH the live mission board (real agent state on the nodes) and the crew
 // builder preview (a static shape while a crew is defined).
@@ -10,7 +10,7 @@ import type { HubTopology } from "@mcp-token-footprint/shared";
 /** Live-state of one node (drives its tone + eyebrow). `winner` = the best_of_n judge's pick. */
 export type TopoNodeState = "idle" | "waiting" | "active" | "reported" | "missing" | "winner";
 
-/** A `@brand/flow` `FlowNodeData` tone (mirrors the upstream union — no runtime import needed here). */
+/** A `@elabs-ai/components-flow` `FlowNodeData` tone (mirrors the upstream union — no runtime import needed here). */
 export type TopoTone = "default" | "accent" | "success" | "warning" | "destructive";
 
 export type TopoGraphInputAgent = {

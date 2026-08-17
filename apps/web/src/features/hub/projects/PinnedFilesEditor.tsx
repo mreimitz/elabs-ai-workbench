@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button, Input, Spinner, Text, Textarea, toast } from "@brand/ui";
+import { Button, Input, Spinner, Text, Textarea, toast } from "@elabs-ai/components-ui";
 import type { HubFile } from "@mcp-token-footprint/shared";
 import { HUB_PINNED_FILE_FILENAME_MAX_LENGTH } from "@mcp-token-footprint/shared";
 import { FileText, Pin, Plus, Trash2 } from "lucide-react";

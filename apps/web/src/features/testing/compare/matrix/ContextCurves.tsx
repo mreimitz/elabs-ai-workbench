@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { Text } from "@brand/ui";
-import { ChartTooltip, Grid, Line, LineChart, XAxis, YAxis, type TooltipRow } from "@brand/charts";
+import { Text } from "@elabs-ai/components-ui";
+import { ChartTooltip, Grid, Line, LineChart, XAxis, YAxis, type TooltipRow } from "@elabs-ai/components-charts";
 import { RunLetterBadge } from "../RunLetterBadge";
 import { formatNumber } from "../../../../lib/format";
 import { relativeTime } from "../compare-runs";
@@ -12,12 +12,12 @@ import { buildContextCurveRows, curveLimit, type SummaryRun } from "../summary-d
  * per run in its series colour, x = turn progress, y = context tokens, with the **model context limit**
  * drawn as a reference line so "how close did each run get to the wall" is legible.
  *
- * MEMORY / crash-guard: the `@brand/charts` `LineChart` x-axis is a TIME scale — it coerces x to a
+ * MEMORY / crash-guard: the `@elabs-ai/components-charts` `LineChart` x-axis is a TIME scale — it coerces x to a
  * `Date`, and a string x (`"Turn 3"`) throws `RangeError: Invalid time value`. {@link buildContextCurveRows}
  * emits SYNTHETIC `Date` x-values (only the shape/order matters — there is no real calendar date here);
  * the tooltip always names the real turn ({@link tooltipRows}).
  *
- * S4 axis fix: `@brand/charts`' `XAxis` has no prop to print custom tick text (verified against the
+ * S4 axis fix: `@elabs-ai/components-charts`' `XAxis` has no prop to print custom tick text (verified against the
  * vendored `.d.ts` / bundle) — it always formats a tick via a **month+day** `Intl.DateTimeFormat` and
  * silently DROPS any tick whose formatted label duplicates an earlier one. `buildContextCurveRows`
  * spaces its synthetic x-values only a MINUTE apart, so every tick formats to the identical label and

@@ -6,7 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   Button,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ScopedMemoryList } from "./ScopedMemoryList";
 
 /**

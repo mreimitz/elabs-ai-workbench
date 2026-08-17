@@ -2,7 +2,7 @@
 // invocation-mode edit + remove, the L1 listing budget bar, and per-skill L1/L2/L3 usage.
 
 import type { HubSessionSkillsView, Skill } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, test, vi } from "vitest";

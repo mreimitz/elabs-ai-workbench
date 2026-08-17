@@ -3,7 +3,7 @@
 // the org-chart canvas) builds its recursive counts/membership from. `apps/api/src/hub/missions/
 // crew-resolution.ts`'s WP1.1 read-time rollup is the server-side sibling — it cannot be imported
 // here (architecture.md: no web→api source imports), so this is an independent, framework-free
-// (no React/@brand) reimplementation of the same posture: cycle-TOLERANT, never throws, never loops
+// (no React/brand-ui) reimplementation of the same posture: cycle-TOLERANT, never throws, never loops
 // forever, and mirrors its "memoize per crew id, skip a re-entry edge" simplification (a corrupt or
 // stale fetch gets a bounded, honest answer — never a 500-equivalent crash or an infinite recursion).
 //

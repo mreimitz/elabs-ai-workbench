@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { DataTable, FacetFilter, SearchInput, type FacetOption } from "@brand/data";
+import { DataTable, FacetFilter, SearchInput, type FacetOption } from "@elabs-ai/components-data";
 import {
   Badge,
   Button,
@@ -14,7 +14,7 @@ import {
   toast,
   type DateRange,
   type DateRangePreset,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   HUB_SESSION_MODES,
   RUN_STATUSES,

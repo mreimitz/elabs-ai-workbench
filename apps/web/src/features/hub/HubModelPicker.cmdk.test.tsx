@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-// REAL cmdk (via @brand/ui's Command*), with only @brand/ai's Dialog chrome stubbed — see the
+// REAL cmdk (via @elabs-ai/components-ui's Command*), with only @elabs-ai/components-ai's Dialog chrome stubbed — see the
 // module's docblock for why the general-purpose mock cannot answer these questions.
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-cmdk-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-cmdk-mock"));
 
 import { HubModelPicker } from "./HubModelPicker";
 import type { HubModelOption } from "./use-hub-models";

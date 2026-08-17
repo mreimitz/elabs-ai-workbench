@@ -1,7 +1,7 @@
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { Collection } from "@mcp-token-footprint/shared";
 
 // ── toolbar-reach WP 2.5 (C-7) ──────────────────────────────────────────────────────────────────

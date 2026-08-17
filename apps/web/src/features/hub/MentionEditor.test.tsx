@@ -3,9 +3,9 @@ import type { HubAgentRole } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-// The mention popup renders `PromptInputCommand*` from `@brand/ai` — stub the heavy surface (same as the
+// The mention popup renders `PromptInputCommand*` from `@elabs-ai/components-ai` — stub the heavy surface (same as the
 // other hub component tests).
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import {
   MentionEditor,

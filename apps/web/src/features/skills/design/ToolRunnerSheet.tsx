@@ -7,7 +7,7 @@ import {
   SheetHeader,
   SheetTitle,
   StatePanel,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { apiGet } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 import { parseParams, sortParams } from "../../../lib/schema-params";

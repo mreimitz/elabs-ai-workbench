@@ -4,7 +4,7 @@ import type { RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
 import { defaultControls } from "./dashboard-url-state";
 
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   BarChart: ({ children }: { children: ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => null,
   BarXAxis: () => null,

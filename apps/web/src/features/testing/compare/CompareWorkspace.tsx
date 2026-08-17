@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { RunGrade } from "@mcp-token-footprint/shared";
-import { Button, Heading, StatePanel } from "@brand/ui";
+import { Button, Heading, StatePanel } from "@elabs-ai/components-ui";
 import { GitCompareArrows } from "lucide-react";
 import { PageShell } from "../../../components/PageShell";
 import { ViewToolbar } from "../../../components/ViewToolbar";

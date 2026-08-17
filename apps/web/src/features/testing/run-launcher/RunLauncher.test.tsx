@@ -9,7 +9,7 @@ import type {
   Suite,
   Test,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // Unified Sessions (roadmap/unified-sessions/, WP3.4) — the launcher's Configure step fetches its
 // harness on open (suites/tests/environments/providers/collections) and debounces a cost-preview

@@ -1,5 +1,5 @@
-import { useReducedMotion } from "@brand/tokens";
-import { cn } from "@brand/ui";
+import { useReducedMotion } from "@elabs-ai/components-tokens";
+import { cn } from "@elabs-ai/components-ui";
 import { type CSSProperties, useEffect, useRef } from "react";
 import "./CognitiveRing.css";
 
@@ -11,9 +11,9 @@ import "./CognitiveRing.css";
  * empty assistant session.
  *
  * Design discipline (see CognitiveRing.css): every colour resolves through the semantic
- * `@brand/tokens` layer via a scoped `--ring-*` accent set — the Acme green maps to `--primary`,
+ * `@elabs-ai/components-tokens` layer via a scoped `--ring-*` accent set — the Acme green maps to `--primary`,
  * the brand cyan is defined once as a documented scoped token — so it reads correctly in both
- * `qlik-bright` and `qlik-dark` with no raw literal and no `dark:` override.
+ * `light` and `dark` with no raw literal and no `dark:` override.
  *
  * Purely decorative: `aria-hidden` and NOT focusable — the greeting text next to it carries all the
  * meaning, so the ring adds nothing for assistive tech and must not become a keyboard stop. The

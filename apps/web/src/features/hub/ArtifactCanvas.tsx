@@ -12,8 +12,8 @@ import {
   type MarkdownViewProps,
   WebPreview,
   WebPreviewBody,
-} from "@brand/ai";
-import { DiffEditor } from "@brand/editor";
+} from "@elabs-ai/components-ai";
+import { DiffEditor } from "@elabs-ai/components-editor";
 import {
   Badge,
   Button,
@@ -39,7 +39,7 @@ import {
   TabsTrigger,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubAgentRole,
   HubArtifact,
@@ -87,11 +87,11 @@ import { notifyError } from "../../lib/notify";
  * Assistant Hub (WP1.6 + WP3.5, §1.9 / R-UX13 / D-AH12 / D-AH7) — the artifact canvas: a side panel
  * (mounted as `ChatShell`'s `aside`, see `AssistantView.tsx`) that lists the session's artifacts,
  * renders the selected one across three tabs — **Content** (kind-aware view, WP1.6), **Diff**
- * (version-to-version, `@brand/editor` `DiffEditor`, WP3.5), **Review** (the critic review workflow on
+ * (version-to-version, `@elabs-ai/components-editor` `DiffEditor`, WP3.5), **Review** (the critic review workflow on
  * `AI/ChangeReview`, WP3.5) — a version list with a per-version **Revert** action (the R-UX7 undo
  * pairing), and export actions (md/html/json + the self-contained `share.html`).
  *
- * Why `MarkdownView` (fenced) for `code`/`json` instead of `@brand/ai`'s `CodeBlock`: `CodeBlock`'s
+ * Why `MarkdownView` (fenced) for `code`/`json` instead of `@elabs-ai/components-ai`'s `CodeBlock`: `CodeBlock`'s
  * `language` prop is a Shiki `BundledLanguage` literal union, and a hub artifact carries no language
  * field (the contract is kind-only) — fabricating a language guess would be actively misleading.
  * `MarkdownView`'s fenced-code path already goes through the same Shiki-backed `@streamdown/code`
@@ -145,7 +145,7 @@ const NO_ROLE_VALUE = "__none__";
  * chrome), which is exactly the pattern the owner rejected. `MarkdownView` deliberately blocks a
  * `components` override (its prose map is library-owned), so the table can't be re-routed through
  * `ExpandableTable` here — instead the raw-fullscreen control is switched OFF (copy/download stay)
- * and the canvas gets its own Expand action opening the app's NORMAL `@brand/ui` Dialog below.
+ * and the canvas gets its own Expand action opening the app's NORMAL `@elabs-ai/components-ui` Dialog below.
  */
 const MD_CONTROLS: MarkdownViewProps["controls"] = { table: { fullscreen: false } };
 
@@ -947,7 +947,7 @@ export function ArtifactCanvas({
       ) : null}
 
       <Dialog open={expanded} onOpenChange={setExpanded}>
-        {/* ui-wave U2 (owner feedback) — the expanded outputs view: the app's normal `@brand/ui`
+        {/* ui-wave U2 (owner feedback) — the expanded outputs view: the app's normal `@elabs-ai/components-ui`
             Dialog at the owner's ask (max-w-5xl / max-h-[85vh], body scrolls inside), titled with the
             ARTIFACT title, with the export/copy actions repeated in the header so they stay reachable
             while the canvas behind the overlay is inert. No description → aria-describedby opt-out

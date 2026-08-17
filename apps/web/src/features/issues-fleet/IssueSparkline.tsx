@@ -1,5 +1,5 @@
-import { Sparkline } from "@brand/charts";
-import { Text } from "@brand/ui";
+import { Sparkline } from "@elabs-ai/components-charts";
+import { Text } from "@elabs-ai/components-ui";
 import type { FleetIssue } from "./issue-lib";
 import { sparklineValues } from "./issue-lib";
 

@@ -15,7 +15,7 @@ import {
   Label,
   Spinner,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { apiGet, ApiError, listServers } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 

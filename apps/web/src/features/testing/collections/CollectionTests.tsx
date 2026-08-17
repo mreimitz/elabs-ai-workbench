@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Collection, Test, TestAttachmentInput, TestInput } from "@mcp-token-footprint/shared";
-import { type ColumnDef, DataTable, SearchInput } from "@brand/data";
+import { type ColumnDef, DataTable, SearchInput } from "@elabs-ai/components-data";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +20,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { HelpCircle, ListChecks, Pencil, PlayCircle, Plus, Trash2 } from "lucide-react";
 import {
   addTestAttachment,

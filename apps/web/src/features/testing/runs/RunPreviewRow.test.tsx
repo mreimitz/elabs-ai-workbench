@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import type { RunSummary } from "@mcp-token-footprint/shared";
-import { Table, TableBody } from "@brand/ui";
+import { Table, TableBody } from "@elabs-ai/components-ui";
 import { RunPreviewRow } from "./RunPreviewRow";
 
 function makeRun(over: Partial<RunSummary> = {}): RunSummary {

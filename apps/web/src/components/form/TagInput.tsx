@@ -1,4 +1,4 @@
-import { Badge, Input, cn } from "@brand/ui";
+import { Badge, Input, cn } from "@elabs-ai/components-ui";
 import { X } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
 import { IconButton } from "../IconButton";

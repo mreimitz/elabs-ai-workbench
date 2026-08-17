@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Alert, AlertDescription, AlertTitle, Badge, Button, Text, cn } from "@brand/ui";
+import { Alert, AlertDescription, AlertTitle, Badge, Button, Text, cn } from "@elabs-ai/components-ui";
 import { AlertTriangle, ChevronDown, Sparkles } from "lucide-react";
 import type { CompareCaveat, CompareVerdict } from "./compare-runs";
 

@@ -1,5 +1,5 @@
 import type { RunSummary, SessionCapabilities } from "@mcp-token-footprint/shared";
-import { Badge, Text, Tooltip, TooltipContent, TooltipTrigger } from "@brand/ui";
+import { Badge, Text, Tooltip, TooltipContent, TooltipTrigger } from "@elabs-ai/components-ui";
 import { formatDateTime, formatDuration, formatRelativeTime } from "../../../lib/format";
 import { activeOrWallDuration, lastActivityAt, waitingTimeMs } from "./session-columns";
 

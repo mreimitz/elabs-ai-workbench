@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
   TooltipProvider,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 
 // Spy on the download side-effect while keeping the pure `toCsv` real, so we can assert the exact CSV
 // each path (structured vs DOM-extraction) hands to the util.
@@ -21,7 +21,7 @@ import { downloadCsv, toCsv } from "../../lib/csv";
 import { ExpandableTable } from "./ExpandableTable";
 
 /**
- * WP 6.1 — the one clean `@brand` table wrapper carrying the CSV-download + expand-to-modal
+ * WP 6.1 — the one clean `@elabs-ai/components-*` table wrapper carrying the CSV-download + expand-to-modal
  * affordances. Proven: it renders its children inline; the toolbar exposes keyboard-reachable,
  * accessibly-named download + expand buttons; expand opens a Dialog re-rendering the same table;
  * download serializes the STRUCTURED data when given AND falls back to extracting the rendered
@@ -30,7 +30,7 @@ import { ExpandableTable } from "./ExpandableTable";
  */
 
 beforeAll(() => {
-  // The @brand/ui Dialog (Radix) reads matchMedia + ResizeObserver on open, which jsdom lacks.
+  // The @elabs-ai/components-ui Dialog (Radix) reads matchMedia + ResizeObserver on open, which jsdom lacks.
   if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
       matches: false,
@@ -52,7 +52,7 @@ beforeAll(() => {
   }
 });
 
-/** A tiny structured `@brand/ui` table used by the structured-path cases. */
+/** A tiny structured `@elabs-ai/components-ui` table used by the structured-path cases. */
 function StructuredTable() {
   return (
     // The toolbar's download/expand controls are `IconButton`s (D-TB5), which render a Radix

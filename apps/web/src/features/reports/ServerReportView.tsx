@@ -35,7 +35,7 @@ import {
   TableHeader,
   TableRow,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ArrowLeft, CheckCircle2, Download, Printer } from "lucide-react";
 import { getServerReport } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

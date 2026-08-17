@@ -1,9 +1,9 @@
-import { HoverCard, HoverCardContent, HoverCardTrigger, Text, cn } from "@brand/ui";
+import { HoverCard, HoverCardContent, HoverCardTrigger, Text, cn } from "@elabs-ai/components-ui";
 
 /**
  * Assistant Hub — a compact preview of the prompt (brief) a mission agent received: two clamped lines
  * that reveal the FULL text in a hover popover (owner request). Mirrors `SourcesPanel`'s
- * `InlineCitationChip` HoverCard pattern (`@brand/ui` `HoverCard`, no provider needed); the trigger is
+ * `InlineCitationChip` HoverCard pattern (`@elabs-ai/components-ui` `HoverCard`, no provider needed); the trigger is
  * a `<span>` (not a raw `<button>`) with a native `title` fallback so the full text is reachable
  * without hover too. Plain-DOM only — the HoverCard content is not portalled, so it must NOT be used
  * inside a transformed/overflow-clipped React Flow canvas (the graph node shows the clamped preview

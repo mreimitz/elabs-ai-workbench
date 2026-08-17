@@ -10,7 +10,7 @@ import type {
   SkillVersion,
 } from "@mcp-token-footprint/shared";
 import { providerKindLabel } from "@mcp-token-footprint/shared";
-import { DataTable, SearchInput } from "@brand/data";
+import { DataTable, SearchInput } from "@elabs-ai/components-data";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import {
   StatePanel,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { FlaskConical, Loader2, Pencil, Plus, Trash2, Wifi } from "lucide-react";
 import {
   apiGet,

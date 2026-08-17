@@ -1,8 +1,8 @@
-import { Gallery, ToolResultCard, type GalleryImage } from "@brand/ai";
+import { Gallery, ToolResultCard, type GalleryImage } from "@elabs-ai/components-ai";
 
 /**
- * Render the managed image assets a tool returned (UI §D2) as a `@brand/ai` `ToolResultCard` whose
- * produced artifact (its `children`) is the `@brand/ai` `Gallery`: a responsive grid for multiple
+ * Render the managed image assets a tool returned (UI §D2) as a `@elabs-ai/components-ai` `ToolResultCard` whose
+ * produced artifact (its `children`) is the `@elabs-ai/components-ai` `Gallery`: a responsive grid for multiple
  * assets (with a "+N more" overflow tile) or a standalone tile for one, each expandable into a
  * Dialog lightbox (a swipeable Carousel) with a metadata panel. Gallery reserves each tile's box
  * with `AspectRatio` and shows a `Skeleton` until the image loads (no layout shift).

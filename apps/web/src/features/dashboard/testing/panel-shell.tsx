@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@brand/ui";
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@elabs-ai/components-ui";
 
 /**
  * Shared chart-panel framing for the Testing dashboard (WP 2.2) — mirrors the `ChartGrid`/

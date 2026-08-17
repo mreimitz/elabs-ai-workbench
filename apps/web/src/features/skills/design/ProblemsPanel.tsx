@@ -12,7 +12,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ChevronDown,
   Code2,

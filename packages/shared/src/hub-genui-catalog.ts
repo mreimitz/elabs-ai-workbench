@@ -7,7 +7,7 @@
 //   • the prompt catalog       — compact one-line typed signatures + notes/anti-patterns  (API `genui/compile-prompt.ts`)
 //   • the runtime validator    — the allowlist + typed-error repair hints                 (this file's `validateGenuiSpec`)
 //   • the flat JSON schema     — `$type` enum + `$key` + `children` recursion             (API `genui/json-schema.ts`)
-//   • the web renderer registry — `$type` → a `@brand`-part-backed React component        (web `genui/registry.tsx`)
+//   • the web renderer registry — `$type` → a `@elabs-ai/components-*`-part-backed React component        (web `genui/registry.tsx`)
 //
 // The VALIDATOR lives HERE (not in the API) on purpose: the render-time allowlist check IS the security
 // boundary (R-GUI2), so the browser must run the exact same validation the server used to drive the
@@ -18,7 +18,7 @@
 // R-GUI8 (tokens only): props carry STRUCTURE + DATA only — never colors, CSS, or pixel layout. There is
 // no style-bearing prop kind in this catalog; because the validator rejects any prop a component does not
 // declare, a model-invented `color`/`style`/`className` prop is a typed error, never rendered. The only
-// look-ish props are closed enums that map to `@brand` component variants (already token-driven).
+// look-ish props are closed enums that map to `@elabs-ai/components-*` component variants (already token-driven).
 
 import { HUB_GENUI_SPEC_VERSION } from "./constants.js";
 
@@ -26,7 +26,7 @@ import { HUB_GENUI_SPEC_VERSION } from "./constants.js";
 
 /** The kind of a catalog prop — how the validator checks it and how the prompt renders its signature.
  *  `text` is a multi-line string (rendered as prose); `url` is a string validated by {@link isSafeGenuiUrl};
- *  `chartSpec` is the adopted-as-is `@brand/charts` `ChartSpec` (validated shallowly — AutoChart never
+ *  `chartSpec` is the adopted-as-is `@elabs-ai/components-charts` `ChartSpec` (validated shallowly — AutoChart never
  *  throws); `items` is an array of objects whose fields are themselves primitive-typed. */
 export type GenuiPropKind =
   | "string"
@@ -86,9 +86,9 @@ export interface GenuiComponentSpec {
 const FIELD_TYPE_VALUES = ["text", "number", "select", "checkbox", "textarea"] as const;
 
 /**
- * The curated component catalog. Each entry is backed by a `@brand` part (verified against the live
+ * The curated component catalog. Each entry is backed by a `@elabs-ai/components-*` part (verified against the live
  * library, never hand-rolled): layout → `Card`/flex; content → `Heading`/`Text`/`Alert`; data →
- * `Descriptions`/`Table`/`MetricCard`; chart → `@brand/charts` `AutoChart` (`ChartSpec` adopted as-is);
+ * `Descriptions`/`Table`/`MetricCard`; chart → `@elabs-ai/components-charts` `AutoChart` (`ChartSpec` adopted as-is);
  * media → `<img>`/`<a>` in token-styled frames; input → the schema→form kit + `Button`.
  */
 export const HUB_GENUI_CATALOG: readonly GenuiComponentSpec[] = [
@@ -226,7 +226,7 @@ export const HUB_GENUI_CATALOG: readonly GenuiComponentSpec[] = [
         kind: "chartSpec",
         required: true,
         description:
-          "A @brand/charts ChartSpec: type? (line|area|bar|pie|scatter|radar|funnel), data (flat rows), x (field name), series (field names). Colors are token-only and chosen by the app.",
+          "A @elabs-ai/components-charts ChartSpec: type? (line|area|bar|pie|scatter|radar|funnel), data (flat rows), x (field name), series (field names). Colors are token-only and chosen by the app.",
       },
     },
     notes: ["The chart itself carries the numbers — add at most one sentence of insight in a sibling Text."],

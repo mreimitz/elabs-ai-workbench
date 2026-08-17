@@ -148,7 +148,7 @@ describe("runStatusBadgeStatus — the coarse bucket (facets/rollups/decorative 
 // Unified Sessions (roadmap/unified-sessions/, WP3.1) — `deriveRunBarView` now ALSO returns a
 // `statusView` computed via the ONE locked-table derivation (`lib/status.ts` `deriveRunStatusView`),
 // which `RunBar`'s own badge renders through the app-local `StatusBadge` (replacing the previous
-// `@brand/ui`-closed-enum + hand-typed `PHASE_LABEL` render). This locks that adoption, the WP1.1
+// `@elabs-ai/components-ui`-closed-enum + hand-typed `PHASE_LABEL` render). This locks that adoption, the WP1.1
 // `ended` stub's real fix (its own phase + "Ended" label, distinct from `completed`), and that the old
 // `guardrailFromReason` free-text sniff is gone (trippedMeter now reads the machine-readable
 // `stopReasonCode`, not a substring match on the human `stopReason`).

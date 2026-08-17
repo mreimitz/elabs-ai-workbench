@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
-import { Heading, StatePanel } from "@brand/ui";
+import { Heading, StatePanel } from "@elabs-ai/components-ui";
 import { PageShell } from "../../components/PageShell";
 import { TabPanel, TabPanelContent } from "../../components/TabPanel";
 import { IssuesFleetTab } from "../issues-fleet/IssuesFleetTab";

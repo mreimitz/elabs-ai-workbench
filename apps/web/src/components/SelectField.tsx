@@ -1,4 +1,4 @@
-import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@brand/ui";
+import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@elabs-ai/components-ui";
 
 /**
  * Label-above stack — for **dialogs and form bodies** only. Importing this into a toolbar module

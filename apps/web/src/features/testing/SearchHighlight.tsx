@@ -3,7 +3,7 @@ import { Fragment, type ReactNode } from "react";
 /**
  * Observability (WP3.4) — renders the ONE bracket-delimited snippet convention `run-search.ts`
  * produces (`…before[match]after…`, mirroring the WP1.3 FTS5 `snippet()` shape) with the matched span
- * wrapped in a token-backed `<mark>`. No `@brand` component covers inline text highlighting (checked
+ * wrapped in a token-backed `<mark>`. No `@elabs-ai/components-*` component covers inline text highlighting (checked
  * via the brand-ui MCP `search "mark highlight"` — none), so this is a minimal, semantic-token-only
  * composition (`bg-primary/20` + `text-foreground` — no raw color), not a hand-rolled UI primitive.
  */

@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
-import { DataTable, type ColumnDef } from "@brand/data";
-import { Badge, Button, Card, CardContent, CardHeader, MetricCard, Text } from "@brand/ui";
-import { MetricGrid } from "@brand/charts";
+import { DataTable, type ColumnDef } from "@elabs-ai/components-data";
+import { Badge, Button, Card, CardContent, CardHeader, MetricCard, Text } from "@elabs-ai/components-ui";
+import { MetricGrid } from "@elabs-ai/components-charts";
 import {
   AlertTriangle,
   CheckCircle2,

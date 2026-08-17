@@ -1,4 +1,4 @@
-import { Text, cn } from "@brand/ui";
+import { Text, cn } from "@elabs-ai/components-ui";
 import { Check, X } from "lucide-react";
 import { runChipLabel } from "../compare-runs";
 import { RunLetterBadge } from "../RunLetterBadge";

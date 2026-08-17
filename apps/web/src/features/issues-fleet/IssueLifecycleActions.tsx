@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { CheckCircle2, EyeOff, RotateCcw } from "lucide-react";
-import { Button, Label, Textarea, toast } from "@brand/ui";
+import { Button, Label, Textarea, toast } from "@elabs-ai/components-ui";
 import { ConfirmDialog } from "../../components/dialogs";
 import { ignoreIssue, reopenIssue, resolveIssue } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

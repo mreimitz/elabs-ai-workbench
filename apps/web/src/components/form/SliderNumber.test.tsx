@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeAll, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { SliderNumber } from "./SliderNumber";
 
 // jsdom has no ResizeObserver; the Radix Slider observes its track size. Stub it for these tests.

@@ -1,5 +1,5 @@
-import { DecorationProvider, type DecorationLevel } from "@brand/tokens";
-import { cn } from "@brand/ui";
+import { DecorationProvider, type DecorationLevel } from "@elabs-ai/components-tokens";
+import { cn } from "@elabs-ai/components-ui";
 import { PanelRight } from "lucide-react";
 import type { ReactNode } from "react";
 import { IconButton } from "../../components/IconButton";
@@ -23,7 +23,7 @@ import {
  * component adds no scroll container of its own — one scroll owner stays the transcript's).
  *
  * Decoration-gated per D-HUX12 ("off at minimal"): the grid is wrapped in a LOCAL `DecorationProvider`
- * (`@brand/tokens`'s scoped `data-decoration` override, not the document-level `useDecoration()`
+ * (`@elabs-ai/components-tokens`'s scoped `data-decoration` override, not the document-level `useDecoration()`
  * setting — see `CHAT_CANVAS_DECORATION_LEVEL`'s doc for why a local override is the right tool
  * here) and is not rendered at all when `decorationLevel` is `0` ("minimal") — a real DOM removal,
  * not just a CSS fade, so a decoration-minimal caller (or a future decoration-density setting) can

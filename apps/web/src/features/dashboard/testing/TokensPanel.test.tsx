@@ -4,12 +4,12 @@ import type { RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
 import { defaultControls } from "./dashboard-url-state";
 
-// `@brand/charts`'s barrel breaks under Vitest/jsdom regardless of which named export is used (a
+// `@elabs-ai/components-charts`'s barrel breaks under Vitest/jsdom regardless of which named export is used (a
 // deep `@visx/gradient` subpath its Gantt chart pulls in fails to resolve — confirmed empirically;
 // see `ScansTab.test.tsx`'s longer note for the same class of issue). Chart internals aren't what
-// this test asserts on (the legend/DrillList rows live OUTSIDE the chart, as plain `@brand/ui`
+// this test asserts on (the legend/DrillList rows live OUTSIDE the chart, as plain `@elabs-ai/components-ui`
 // markup) — a thin pass-through keeps those real while no-op'ing the chart primitives.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   BarChart: ({ children }: { children: ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => null,
   BarXAxis: () => null,

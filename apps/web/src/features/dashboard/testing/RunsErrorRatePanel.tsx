@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Activity } from "lucide-react";
-import { ChartTooltip, ComposedChart, Grid, Line, SeriesBar, XAxis, YAxis } from "@brand/charts";
+import { ChartTooltip, ComposedChart, Grid, Line, SeriesBar, XAxis, YAxis } from "@elabs-ai/components-charts";
 import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { formatNumber, formatPercent } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
@@ -11,11 +11,11 @@ import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 /**
  * Panel 1 — Runs & error rate over time. Grouped run-count bars (stacked by the dashboard's global
  * `groupBy`) + an OVERALL error-rate line on a secondary axis, via `ComposedChart` (the vendored
- * `@brand/charts` "mixed bar columns + lines on a shared time scale" chart — confirmed via the MCP
+ * `@elabs-ai/components-charts` "mixed bar columns + lines on a shared time scale" chart — confirmed via the MCP
  * `docs`/`search` tools + `vendor/brand-ui-agent-kit`). `x` is fed real `Date` objects (the
  * Line/ComposedChart GOTCHA — a string x throws "Invalid time value").
  *
- * Drill-down: `@brand/charts` v1.6.0 exposes no per-bar/point `onClick` (verified — see the WP
+ * Drill-down: `@elabs-ai/components-charts` v1.6.0 exposes no per-bar/point `onClick` (verified — see the WP
  * report), so the click surface is the `DrillList` underneath — one row per bucket, opening the
  * runs feed scoped to exactly that bucket's window (an "error-rate point").
  */

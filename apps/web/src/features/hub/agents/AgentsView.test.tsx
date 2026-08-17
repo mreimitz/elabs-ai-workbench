@@ -1,5 +1,5 @@
 import type { HubAgentRole, HubCrew, HubUsageAggregates } from "@mcp-token-footprint/shared";
-import { Button, TooltipProvider } from "@brand/ui";
+import { Button, TooltipProvider } from "@elabs-ai/components-ui";
 import { useEffect } from "react";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router-dom";
@@ -7,14 +7,14 @@ import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 // WP2.1/2.3/2.4 — AgentsView is a thin shell over WorkforceView (self-fetches via OrgRail). The
 // agent node route mounts AgentProfileModal; the crew node route mounts CrewProfileModal — both
-// title avatars use @brand/ai's Persona (Rive/WebGL2, unrenderable in jsdom), so stub the surface
+// title avatars use @elabs-ai/components-ai's Persona (Rive/WebGL2, unrenderable in jsdom), so stub the surface
 // with the shared mock, and mock the hub list/detail calls so the rail + modals settle
 // deterministically. Frame/URL mechanics are covered in WorkforceView.test.tsx; each modal's
 // behavior in AgentProfileModal/CrewProfileModal tests — this file proves the thin-shell WIRING.
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
-// @brand/charts pulls in @visx (unresolvable/unrenderable under vitest) — stub it inert. Sparkline
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
+// @elabs-ai/components-charts pulls in @visx (unresolvable/unrenderable under vitest) — stub it inert. Sparkline
 // backs the profile Usage sections; the rest back the WP2.8-wired Usage TAB (mounted when active).
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   Sparkline: () => null,
   MetricGrid: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   MetricCard: ({ label, value }: { label?: React.ReactNode; value?: React.ReactNode }) => (

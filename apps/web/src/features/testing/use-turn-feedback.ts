@@ -12,7 +12,7 @@ import { listRunFeedback } from "../../lib/api";
  * each turn's `FeedbackControl` so a write updates this shared map in place.
  *
  * Extracted into its own module (rather than living inside `ConversationPane.tsx`, where it started)
- * so a caller that only needs the DATA — not the full chat surface and its `@brand/ai` weight — can
+ * so a caller that only needs the DATA — not the full chat surface and its `@elabs-ai/components-ai` weight — can
  * import it without pulling that in. `ConversationPane` and `TurnsLens` are mutually exclusive console
  * tabs (only one is ever mounted at a time), so each mounting its own instance is never a redundant
  * simultaneous fetch — just the same batched-lookup shape reused per-mount.

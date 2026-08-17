@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { BoundTool, ToolDiagnostic } from "@mcp-token-footprint/shared";
-import { Badge, Button, StatePanel, Text } from "@brand/ui";
-import { CodeEditor, type CodeEditorProps } from "@brand/editor";
+import { Badge, Button, StatePanel, Text } from "@elabs-ai/components-ui";
+import { CodeEditor, type CodeEditorProps } from "@elabs-ai/components-editor";
 import { Download, FileWarning } from "lucide-react";
 import { getErrorMessage } from "../../../lib/errors";
 import { formatBytes } from "../../../lib/format";

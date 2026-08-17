@@ -1,7 +1,7 @@
 import type { HubArtifact, HubFile, HubWorkspaceSnapshot } from "@mcp-token-footprint/shared";
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ReactElement } from "react";
 import { OutputsSection } from "./OutputsSection";
 

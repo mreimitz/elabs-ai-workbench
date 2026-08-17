@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // jsdom omits matchMedia/ResizeObserver — `IssueFilters`' `DateRangePicker`/`FacetFilter` (Radix
 // popovers) reads matchMedia; ResizeObserver is already globally polyfilled in `vitest.setup.ts`
@@ -21,7 +21,7 @@ if (typeof window.matchMedia !== "function") {
 }
 
 // Same jsdom/@visx/gradient workaround as `DashboardView.test.tsx` — thin pass-throughs.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   Bar: () => null,
   BarChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   BarXAxis: () => null,

@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
   EmptyState,
   Heading,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { BarChart3, ChevronDown, GitFork, LayoutGrid, Plus } from "lucide-react";
 import { PageShell } from "../../../components/PageShell";
 import { TabPanel, TabPanelContent } from "../../../components/TabPanel";

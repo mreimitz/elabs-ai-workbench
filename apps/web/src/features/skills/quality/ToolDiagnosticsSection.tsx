@@ -12,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { TriangleAlert } from "lucide-react";
 import { apiGet } from "../../../lib/api";
 import { formatToolDiagnosticMessage } from "../skills-inspector-api";

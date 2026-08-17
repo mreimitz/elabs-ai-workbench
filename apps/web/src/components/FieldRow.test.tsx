@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { Input, Text } from "@brand/ui";
+import { Input, Text } from "@elabs-ai/components-ui";
 import { FieldRow } from "./FieldRow";
 
 // Locks finding 4 / D-IC6: FieldRow associates its error message with the control it labels, once,

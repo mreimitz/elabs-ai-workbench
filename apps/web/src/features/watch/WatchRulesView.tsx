@@ -25,7 +25,7 @@ import {
   Text,
   buttonVariants,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Bell, Copy, ListChecks, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { PageShell } from "../../components/PageShell";

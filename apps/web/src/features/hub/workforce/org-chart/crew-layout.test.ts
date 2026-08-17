@@ -1,4 +1,4 @@
-import type { FlowNodeData } from "@brand/flow";
+import type { FlowNodeData } from "@elabs-ai/components-flow";
 import type { HubAgentRole } from "@mcp-token-footprint/shared";
 import { describe, expect, test } from "vitest";
 import {

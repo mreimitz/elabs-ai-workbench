@@ -1,12 +1,12 @@
 import type { HubAgentRole, HubCrew } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-// The rail's agent rows render `RoleAvatar` → `@brand/ai`'s `ModelSelectorLogo` (a logo surface
+// The rail's agent rows render `RoleAvatar` → `@elabs-ai/components-ai`'s `ModelSelectorLogo` (a logo surface
 // jsdom can't render) — stub the whole package with the shared mock, mirroring DirectoryTab.test.
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
 vi.mock("../../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api")>();
   return {

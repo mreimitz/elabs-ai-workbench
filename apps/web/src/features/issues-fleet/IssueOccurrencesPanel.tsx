@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp } from "lucide-react";
-import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@brand/charts";
+import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../components/InlineError";
 import { getRunMetrics } from "../../lib/api";

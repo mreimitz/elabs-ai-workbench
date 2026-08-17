@@ -1,5 +1,5 @@
 import type { RunGrade } from "@mcp-token-footprint/shared";
-import { StatusBadge } from "@brand/ui";
+import { StatusBadge } from "@elabs-ai/components-ui";
 import {
   formatGradePercent,
   GRADE_STATUS_TO_BRAND,

@@ -16,7 +16,7 @@
 //     carve-out for text-bearing elements. `<Button title="Delete">Delete</Button>` is fine.
 //   • A button whose child is a `{expression}` that may render text (`<Button title=…>{label}</…>`)
 //     — treated as potentially-text, left alone (conservative: never a false positive).
-//   • `@brand/ai` `PromptInputButton` and any other `*Button`-suffixed component — NOT matched
+//   • `@elabs-ai/components-ai` `PromptInputButton` and any other `*Button`-suffixed component — NOT matched
 //     (the element name must be exactly `Button` or `IconButton`).
 //   • Non-`apps/web/src` files, non-`.ts(x)` files, and test/spec fixtures (JSX-in-strings).
 // Escape hatch: `brand-ui-allow` in a comment on the opening-tag's line (same as enforce-brand-ui).

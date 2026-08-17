@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Alert, AlertDescription, AlertTitle, Button } from "@brand/ui";
+import { Alert, AlertDescription, AlertTitle, Button } from "@elabs-ai/components-ui";
 import { Settings } from "lucide-react";
 import type {
   AssistantAuthSource,

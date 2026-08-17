@@ -3,14 +3,14 @@ import type { RunStep } from "@mcp-token-footprint/shared";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-// `@brand/charts`' real `Gantt` transitively pulls `@visx/gradient`, whose ESM export map Vitest/jsdom
+// `@elabs-ai/components-charts`' real `Gantt` transitively pulls `@visx/gradient`, whose ESM export map Vitest/jsdom
 // can't resolve (a pre-existing environment limitation — see the SAME posture in every
 // `apps/web/src/features/dashboard/testing/*Panel.test.tsx` and `DashboardView.test.tsx`, which all
-// stub `@brand/charts` rather than fight it). The stub renders each `GanttTask`'s `name` + `parentId`
+// stub `@elabs-ai/components-charts` rather than fight it). The stub renders each `GanttTask`'s `name` + `parentId`
 // as plain, assertable DOM — enough to prove the NESTING (WP 3.2's `parentId` wiring) without needing
 // the real chart's internals.
 type GanttTaskLike = { id: string; name: ReactNode; parentId?: string };
-vi.mock("@brand/charts", () => {
+vi.mock("@elabs-ai/components-charts", () => {
   function Gantt({ tasks, children }: { tasks: GanttTaskLike[]; children?: ReactNode }) {
     return (
       <div data-testid="gantt">

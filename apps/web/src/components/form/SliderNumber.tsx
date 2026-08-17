@@ -1,4 +1,4 @@
-import { Badge, NumberInput, Slider, cn } from "@brand/ui";
+import { Badge, NumberInput, Slider, cn } from "@elabs-ai/components-ui";
 import { RotateCcw } from "lucide-react";
 import { decimalsFromStep, normalizeNumber } from "./numeric";
 import { IconButton } from "../IconButton";

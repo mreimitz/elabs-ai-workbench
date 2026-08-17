@@ -7,7 +7,7 @@ import type {
   ScanSummary,
   ToolScan,
 } from "@mcp-token-footprint/shared";
-import { ColumnPicker, DataTable, FacetFilter, SearchInput } from "@brand/data";
+import { ColumnPicker, DataTable, FacetFilter, SearchInput } from "@elabs-ai/components-data";
 import {
   Alert,
   AlertDescription,
@@ -31,7 +31,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ArrowLeft,
   Box,

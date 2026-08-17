@@ -1,15 +1,15 @@
 import type { TraceVerdictStatus } from "@mcp-token-footprint/shared";
-import type { LegendItem } from "@brand/flow";
+import type { LegendItem } from "@elabs-ai/components-flow";
 
 /**
  * Shared verdict → { label, badge variant, legend color } mapping for the Trace tab (WP 2.3) — the
  * single place the canvas legend, the summary strip, and the evidence pane read from, so the three
  * surfaces can never drift. Colors are SEMANTIC TOKEN references only (the same tokens the
- * `@brand/flow` `FlowNode` tones resolve to); never raw literals.
+ * `@elabs-ai/components-flow` `FlowNode` tones resolve to); never raw literals.
  */
 export type TraceVerdictMeta = {
   label: string;
-  /** `@brand/ui` `Badge` variant for the summary strip / evidence header. */
+  /** `@elabs-ai/components-ui` `Badge` variant for the summary strip / evidence header. */
   badgeVariant: "success" | "destructive" | "outline";
   /** Legend swatch — a token reference, never a raw color literal. */
   color: string;

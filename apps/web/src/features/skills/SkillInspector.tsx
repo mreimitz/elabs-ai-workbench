@@ -20,7 +20,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   Download,
   ExternalLink,
@@ -36,7 +36,7 @@ import { DiscardChangesDialog } from "../../components/UnsavedChangesGuard";
 import { IconButton } from "../../components/IconButton";
 // The app's page frame (audit §S16) — carries the toolbar standard's `headerVariant="toolbar"`
 // slot (`bg-card` + border-b lift) that hosts `ViewToolbar`. This view previously used the raw
-// `@brand/ui` PageShell, which has no such slot; switched to the local frame like every other view.
+// `@elabs-ai/components-ui` PageShell, which has no such slot; switched to the local frame like every other view.
 import { PageShell } from "../../components/PageShell";
 import { ViewToolbar } from "../../components/ViewToolbar";
 // `useAssistant()` is read-only here: the Files-tab live-workspace mirror keys off the active

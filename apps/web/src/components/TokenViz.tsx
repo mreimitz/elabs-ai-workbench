@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Button, Text, cn } from "@brand/ui";
+import { Button, Text, cn } from "@elabs-ai/components-ui";
 import { formatNumber } from "../lib/format";
 
 /** Chart-token classes for composition segments — theme-aware, no raw colors. */

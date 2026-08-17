@@ -16,7 +16,7 @@ import {
   SheetTitle,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { formatBytes, formatNumber } from "../../lib/format";
 import { KpiStat } from "../../components/KpiStat";
 import { BAND_META, SEVERITY_META, VERDICT_META } from "./meta";

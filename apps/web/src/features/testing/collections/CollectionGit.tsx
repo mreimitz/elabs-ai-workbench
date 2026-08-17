@@ -16,7 +16,7 @@ import {
   StatePanel,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { GitBranch, KeyRound, Lock, Pencil, RefreshCw, RotateCw } from "lucide-react";
 import { getCollectionStatus, syncCollection, updateCollection } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";

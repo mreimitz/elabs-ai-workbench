@@ -36,8 +36,8 @@ import {
   Toggle,
   toast,
   useIsMobile,
-} from "@brand/ui";
-import { FacetFilter, SearchInput } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { FacetFilter, SearchInput } from "@elabs-ai/components-data";
 import { ClipboardCheck, GitCompareArrows, GitFork, Layers, PlayCircle, Plus } from "lucide-react";
 import { deleteRun, deleteSuiteRun, getRunGrades, listServers, listSkills, pinRun, unpinRun } from "../../lib/api";
 import { formatCostUsd, formatDateTime, formatNumber, formatPercent, formatRelativeTime } from "../../lib/format";
@@ -297,10 +297,10 @@ function RunsFeedPanel() {
   }, [data, servers, skills]);
 
   // The table's horizontal-scroll box. We CAP its width to the space actually available to the right of
-  // the sidebar (`innerWidth − box.left`) and let @brand/ui `Table`'s own `overflow-auto` wrapper scroll
+  // the sidebar (`innerWidth − box.left`) and let @elabs-ai/components-ui `Table`'s own `overflow-auto` wrapper scroll
   // the wide table INSIDE that cap — so the pinned Name (left) + Actions (right) columns stay on screen
   // at every width. Without the cap the table's natural (nowrap) min-content blows the box past the
-  // viewport, because `@brand/ui` AppShell's content inset (`SidebarInset`) is a flex item WITHOUT
+  // viewport, because `@elabs-ai/components-ui` AppShell's content inset (`SidebarInset`) is a flex item WITHOUT
   // `min-width:0` (a shell-level gap — reported to the PM; a one-line `min-w-0` there removes the need
   // for this measurement). The same measured width pins the expanded suite KPI rail to the viewport (T2).
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -901,7 +901,7 @@ function RunsFeedPanel() {
           )}
         </div>
       ) : (
-        // @brand/ui `Table` renders its OWN `relative w-full overflow-auto` scroll wrapper; we bound it
+        // @elabs-ai/components-ui `Table` renders its OWN `relative w-full overflow-auto` scroll wrapper; we bound it
         // into the remaining height with `[&>div]` (mirrors the merged Compatibility heatmap, CP2) and
         // let it be the single both-axis scroll box. `w-full` (no `min-w-max`) keeps the table WITHIN
         // the viewport — it fits at ≥1500 (no scroll) and only overflows when narrower, where the
@@ -1222,7 +1222,7 @@ function SuiteSummaryCard({ item, onOpen }: { item: FeedSuiteItem; onOpen: () =>
   return (
     <Card
       interactive
-      // biome-ignore lint/a11y/useSemanticElements: `@brand/ui` Card is a div-only primitive (no
+      // biome-ignore lint/a11y/useSemanticElements: `@elabs-ai/components-ui` Card is a div-only primitive (no
       // "render as button" prop) — role="button" + tabIndex + a manual Enter handler is the same
       // escape hatch `RunSummaryCard`/`AgentCard.tsx` use for a whole-card tap target.
       role="button"
@@ -1258,7 +1258,7 @@ function SuiteSummaryCard({ item, onOpen }: { item: FeedSuiteItem; onOpen: () =>
  * P0 mobile audit T4 (2026-07-25 critique) — below `md` (768px) the wide interactive table doesn't
  * fit a phone (measured: 8+ columns unreachable at 390px inside a 336px-wide clipped wrapper, and
  * pinned columns kept their sticky geometry over content nobody could scroll to). Below `md` the SAME
- * `groups` (already sorted/grouped/filtered for the desktop table) render instead as one `@brand/ui`
+ * `groups` (already sorted/grouped/filtered for the desktop table) render instead as one `@elabs-ai/components-ui`
  * Card per run/suite — `RunSummaryCard` (`RunTableRow.tsx`) for a standalone run, `SuiteSummaryCard`
  * above for a suite. The desktop `<Table>` this replaces is untouched (see `RenderGroup` below).
  */

@@ -19,8 +19,8 @@ import {
   TabsTrigger,
   Text,
   cn,
-} from "@brand/ui";
-import { CodeEditor } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { CodeEditor } from "@elabs-ai/components-editor";
 import { Check, Maximize2, Play } from "lucide-react";
 import { ScrollableTabsList } from "../../components/ScrollableTabsList";
 import { SegmentedBar } from "../../components/TokenViz";

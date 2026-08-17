@@ -1,4 +1,4 @@
-import { NumberInput, Text, cn } from "@brand/ui";
+import { NumberInput, Text, cn } from "@elabs-ai/components-ui";
 import { decimalsFromStep, normalizeNumber } from "./numeric";
 
 export interface BoundedNumberProps {
@@ -28,7 +28,7 @@ export interface BoundedNumberProps {
  * A bounded numeric field that treats **empty as a real state** — "No limit" / "No cap" — instead of
  * a stepper you increment away from `∞` (S12: guardrail Max turns/tokens/cost, launcher cost cap).
  *
- * Wraps `@brand/ui` `NumberInput` (clamps to `[min,max]` on blur, never per-keystroke, so typing a
+ * Wraps `@elabs-ai/components-ui` `NumberInput` (clamps to `[min,max]` on blur, never per-keystroke, so typing a
  * long token budget isn't fought). Clearing the field emits `null`. An optional `unit` suffix and a
  * `decimals`/`step`-derived precision keep the display clean.
  */

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { ShieldAlert } from "lucide-react";
-import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@brand/charts";
+import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import type { RunFilter, RunMetricsSeries, StopReasonCode } from "@mcp-token-footprint/shared";
 import { formatNumber } from "../../../lib/format";
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";

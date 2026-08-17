@@ -1,10 +1,10 @@
 import { ChevronRight } from "lucide-react";
-import { Text } from "@brand/ui";
+import { Text } from "@elabs-ai/components-ui";
 import { IconButton } from "../../../components/IconButton";
 
 /**
  * DrillList — the ONE click-through breakdown list every Testing-dashboard panel uses for
- * drill-down (WP 2.2). `@brand/charts` v1.6.0 has no per-datapoint/legend `onClick` (Bar/Line/Area
+ * drill-down (WP 2.2). `@elabs-ai/components-charts` v1.6.0 has no per-datapoint/legend `onClick` (Bar/Line/Area
  * only expose hover-tooltip interaction — confirmed against the vendored `.d.ts` and the MCP
  * `docs`/`search` tools; see the WP report), so each chart's actual click surface is this compact,
  * keyboard-reachable list underneath it — one row per bucket/class/group, each opening the

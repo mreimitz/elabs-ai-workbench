@@ -6,7 +6,7 @@ import type {
   TestSkillGate,
   TestSkillRoute,
 } from "@mcp-token-footprint/shared";
-import { Button, Label, Switch, Text } from "@brand/ui";
+import { Button, Label, Switch, Text } from "@elabs-ai/components-ui";
 import { Plug, Plus, X } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { SelectField } from "../../components/SelectField";

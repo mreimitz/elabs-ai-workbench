@@ -67,7 +67,7 @@ describe("no-title-on-icon-button hook — IGNORES legitimate title (no false po
     expect(runHook(WEB, `<SplitPanePanel title="Detail">{children}</SplitPanePanel>`).status).toBe(0);
   });
 
-  it("an @brand/ai PromptInputButton (only exact Button/IconButton are targeted)", () => {
+  it("an @elabs-ai/components-ai PromptInputButton (only exact Button/IconButton are targeted)", () => {
     expect(
       runHook(WEB, `<PromptInputButton title="Send"><Send aria-hidden /></PromptInputButton>`).status,
     ).toBe(0);

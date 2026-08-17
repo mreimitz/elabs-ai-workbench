@@ -1,10 +1,10 @@
 import { describe, expect, test, vi } from "vitest";
 
-// `@brand/charts`'s barrel import triggers a broken deep `@visx/gradient` subpath under
+// `@elabs-ai/components-charts`'s barrel import triggers a broken deep `@visx/gradient` subpath under
 // Vitest/jsdom (see `IssueTriageTable.test.tsx`'s identical note) — importing
 // `IssueOccurrencesPanel.tsx` for its pure `formatOccurrenceBucketLabel` export still evaluates
 // that import at module-load time, so the same stub is needed even though this test renders nothing.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   Bar: () => null,
   BarChart: () => null,
   BarXAxis: () => null,
@@ -20,7 +20,7 @@ import { formatOccurrenceBucketLabel } from "./IssueOccurrencesPanel";
  * formatted with `toLocaleDateString()` (date only). For an "hour" bucket, many same-day bars then
  * rendered the identical label back to back. This only tests the pure formatter (not the chart
  * itself, which is stubbed out in the component tests) — see `IssueTriageTable.test.tsx`/
- * `IssueDetail.test.tsx` for the `@brand/charts` mocking recipe this codebase uses for the chart.
+ * `IssueDetail.test.tsx` for the `@elabs-ai/components-charts` mocking recipe this codebase uses for the chart.
  */
 // Month+day (± the local timezone shifting a UTC instant's calendar day by ±1) — deliberately NOT
 // pinned to an exact day number so this test is stable under whatever TZ the runner uses.

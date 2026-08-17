@@ -23,7 +23,7 @@ import { matchToolReferences } from "./tool-references";
 //     debounced projection or on a `tool_ref` node's single anchor line, so bare occurrences, repeat
 //     occurrences, and heading/bold occurrences all decorate, immediately.
 //
-// No fetch in either pass. Every colour is a semantic `@brand/tokens` var driven through the CSS
+// No fetch in either pass. Every colour is a semantic `@elabs-ai/components-tokens` var driven through the CSS
 // classes below (`decorations.css`) — never a raw literal.
 
 // ── CSS class names (styled in `decorations.css`, token-backed) ─────────────────────────────────────

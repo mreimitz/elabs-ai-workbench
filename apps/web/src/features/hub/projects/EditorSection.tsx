@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Heading, Text, cn } from "@brand/ui";
+import { Heading, Text, cn } from "@elabs-ai/components-ui";
 
 /**
  * ui-wave U6 (owner feedback) — the ONE section-card recipe for the project detail pane: a

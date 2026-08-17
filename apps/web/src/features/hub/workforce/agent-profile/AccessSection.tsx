@@ -16,8 +16,8 @@ import {
   Label,
   Spinner,
   Text,
-} from "@brand/ui";
-import { SearchInput } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import { AlertTriangle, Coins } from "lucide-react";
 import { ApiError, apiGet, listServers } from "../../../../lib/api";
 import { getErrorMessage } from "../../../../lib/errors";

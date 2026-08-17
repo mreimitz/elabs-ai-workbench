@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { WatchWindowPreview } from "@mcp-token-footprint/shared";
-import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@brand/charts";
-import { Alert, AlertDescription, Button, EmptyState, Spinner, Text } from "@brand/ui";
+import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
+import { Alert, AlertDescription, Button, EmptyState, Spinner, Text } from "@elabs-ai/components-ui";
 import { PlayCircle } from "lucide-react";
 import { formatDateTime, formatNumber } from "../../lib/format";
 

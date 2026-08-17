@@ -1,6 +1,6 @@
-import type { DateRange, DateRangePreset } from "@brand/ui";
-import { DateRangePicker } from "@brand/ui";
-import { FacetFilter, type FacetOption } from "@brand/data";
+import type { DateRange, DateRangePreset } from "@elabs-ai/components-ui";
+import { DateRangePicker } from "@elabs-ai/components-ui";
+import { FacetFilter, type FacetOption } from "@elabs-ai/components-data";
 import type { RatingIssueLifecycle } from "@mcp-token-footprint/shared";
 import { RATING_ISSUE_LIFECYCLES } from "@mcp-token-footprint/shared";
 import type { IssueTriageFilters } from "./issue-lib";

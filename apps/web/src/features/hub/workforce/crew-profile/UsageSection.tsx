@@ -1,5 +1,5 @@
-import { Sparkline } from "@brand/charts";
-import { Button, EmptyState, MetricCard, Spinner, Text } from "@brand/ui";
+import { Sparkline } from "@elabs-ai/components-charts";
+import { Button, EmptyState, MetricCard, Spinner, Text } from "@elabs-ai/components-ui";
 import type { HubUsageSummary } from "@mcp-token-footprint/shared";
 import { useNavigate } from "react-router-dom";
 import { DialogSection } from "../../../../components/dialogs";

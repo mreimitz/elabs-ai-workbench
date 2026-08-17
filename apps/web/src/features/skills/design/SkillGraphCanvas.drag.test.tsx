@@ -1,6 +1,6 @@
 import { act, render } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import type { Edge } from "@brand/flow";
+import type { Edge } from "@elabs-ai/components-flow";
 import {
   applyPositionOverrides,
   nodeGeometrySignature,
@@ -13,7 +13,7 @@ import {
 // auto-layout output), resets when the graph's structural geometry — or the skill/version — changes,
 // never re-triggers the auto-fit (whose signature is computed from the PRE-override positions), and
 // never reaches the draft (no callback prop fires, so no op / dirty flag / persistence can happen).
-// Harness mirrors SkillGraphCanvas.selection.test.tsx: `@brand/flow` is mocked with a props-capturing
+// Harness mirrors SkillGraphCanvas.selection.test.tsx: `@elabs-ai/components-flow` is mocked with a props-capturing
 // CanvasShell + a useState-backed useNodesState, so the nodes the shell receives ARE the live nodes.
 
 const h = vi.hoisted(() => {
@@ -35,7 +35,7 @@ const h = vi.hoisted(() => {
   };
 });
 
-vi.mock("@brand/flow", async () => {
+vi.mock("@elabs-ai/components-flow", async () => {
   const react = await import("react");
   return {
     CanvasShell: (props: Record<string, unknown>) => {

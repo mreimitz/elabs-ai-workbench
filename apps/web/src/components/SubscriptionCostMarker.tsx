@@ -1,5 +1,5 @@
 import type { CostBasis } from "@mcp-token-footprint/shared";
-import { Badge, Tooltip, TooltipContent, TooltipTrigger, cn } from "@brand/ui";
+import { Badge, Tooltip, TooltipContent, TooltipTrigger, cn } from "@elabs-ai/components-ui";
 
 /**
  * Claude subscription (roadmap/claude-subscription/, WP 3.1, D-CS4) — the shared accuracy marker for a
@@ -14,8 +14,8 @@ import { Badge, Tooltip, TooltipContent, TooltipTrigger, cn } from "@brand/ui";
  * (`api_exact`/absent) run shows no marker.
  *
  * A11y: the `Badge` is made keyboard-reachable (`tabIndex={0}` + `aria-label`) so the Radix tooltip
- * opens on focus, not hover alone. `@brand/*`-only, semantic tokens (Badge `secondary` variant reads
- * correctly in both `qlik-bright` + `qlik-dark`); `className` is layout-only.
+ * opens on focus, not hover alone. `@elabs-ai/components-*`-only, semantic tokens (Badge `secondary` variant reads
+ * correctly in both `light` + `dark`); `className` is layout-only.
  */
 
 /** The exact D-CS8 marker value that flags a subscription shadow-price cost. */

@@ -2,12 +2,12 @@ import type { HubAgentRole, HubCrew } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// The view's import chain now reaches the REAL `@brand/ai` (whose index.js imports
+// The view's import chain now reaches the REAL `@elabs-ai/components-ai` (whose index.js imports
 // `@xyflow/react/dist/style.css`, unresolvable under the jsdom ESM loader) — mock it with the shared
 // hub stub, exactly as TopologyGraph.test / Mission.test do for the same chain.
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
 
 // WorkforceView's org rail self-fetches (`OrgRail.tsx`) — mock the two hub list calls so every test
 // settles deterministically instead of hitting `fetch` against nothing in jsdom.

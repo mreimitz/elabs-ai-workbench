@@ -25,7 +25,7 @@ import {
   Text,
   Textarea,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { WideDialog, DialogSection, type WideDialogSection } from "../../components/dialogs";
 import { FieldRow } from "../../components/FieldRow";
 import { SegmentedField } from "../../components/form";
@@ -606,7 +606,7 @@ function ActionsSection({
             onChange={(event) => patch("run_grader", { ...actions.run_grader, graderId: event.target.value })}
           />
           {/* brand-ui-allow: a native datalist pairs with the Input above for autocomplete —
-              no @brand equivalent exists, and a custom grader id (not in the roster) is a
+              no brand-ui equivalent exists, and a custom grader id (not in the roster) is a
               documented, valid value (packages/shared GraderId doc: "a custom id is allowed"). */}
           <datalist id="grader-id-options">
             {GRADER_IDS.map((id) => (

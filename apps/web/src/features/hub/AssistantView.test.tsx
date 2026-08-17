@@ -10,13 +10,13 @@ import { type ReactNode, useState } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { BreadcrumbSlotProvider } from "../../components/breadcrumb-slot";
 
-// WP1.1/WP1.3 — mirrors AssistantDock.test.tsx / RunConsole.test.tsx: stub the heavy `@brand/ai`
+// WP1.1/WP1.3 — mirrors AssistantDock.test.tsx / RunConsole.test.tsx: stub the heavy `@elabs-ai/components-ai`
 // surface (shiki/mermaid/streamdown never enter jsdom) with a shared, reusable stub (see
 // `test-support/brand-ai-mock.tsx`'s doc comment for what's a real passthrough vs. a working stand-in).
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 vi.mock("../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api")>();
@@ -177,7 +177,7 @@ function BreadcrumbHarness({ children }: { children: ReactNode }) {
 
 function renderView(initialEntry = "/assistant") {
   return render(
-    // `AutonomyDial`'s helper text now rides a real `@brand/ui` `Tooltip` (WP1.1's clipping fix) —
+    // `AutonomyDial`'s helper text now rides a real `@elabs-ai/components-ui` `Tooltip` (WP1.1's clipping fix) —
     // Radix's `Tooltip` primitive requires a `TooltipProvider` ancestor (the app root mounts one for
     // real; this mirrors that for the standalone render, same as `ViewToolbar.test.tsx`'s own info
     // tooltip).
@@ -385,7 +385,7 @@ describe("AssistantView — workspace shell & toolbar (WP1.1)", () => {
       expect(screen.getByRole("button", { name: "Autonomy: Ask every time" })).toBeInTheDocument(),
     );
 
-    // Open the composer-footer mode menu (a real @brand/ui Popover) and pick "Auto". `\b` keeps the
+    // Open the composer-footer mode menu (a real @elabs-ai/components-ui Popover) and pick "Auto". `\b` keeps the
     // auto row's accessible name (`/^Auto\b/`) from also matching the trigger's "Autonomy: Ask every
     // time" (hub-fixes WP6.2/RC7 — the "Autonomy:" prefix).
     fireEvent.click(screen.getByRole("button", { name: "Autonomy: Ask every time" }));

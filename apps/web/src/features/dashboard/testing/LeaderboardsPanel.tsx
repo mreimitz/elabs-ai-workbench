@@ -1,5 +1,5 @@
 import { AlertOctagon, DollarSign, Server, TestTube2 } from "lucide-react";
-import { Text } from "@brand/ui";
+import { Text } from "@elabs-ai/components-ui";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import { formatCostUsd, formatDateTime, formatPercent } from "../../../lib/format";
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";

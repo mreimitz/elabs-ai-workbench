@@ -1,4 +1,4 @@
-import { Badge } from "@brand/ui";
+import { Badge } from "@elabs-ai/components-ui";
 import { Navigation } from "lucide-react";
 import { resolveAssistantUiAction } from "@mcp-token-footprint/shared";
 import type { AssistantTimelineUiAction } from "./use-assistant-stream";

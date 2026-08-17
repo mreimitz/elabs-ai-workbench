@@ -1,5 +1,5 @@
-import { DataTable, type ColumnDef } from "@brand/data";
-import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@brand/ui";
+import { DataTable, type ColumnDef } from "@elabs-ai/components-data";
+import { Badge, Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@elabs-ai/components-ui";
 import {
   PROVIDER_KIND_BILLING_LABELS,
   providerKindLabel,

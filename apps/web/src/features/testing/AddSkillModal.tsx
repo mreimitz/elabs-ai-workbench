@@ -19,7 +19,7 @@ import {
   Wizard,
   WizardStep,
   WizardSteps,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { formatNumber } from "../../lib/format";
 

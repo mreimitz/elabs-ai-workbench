@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RunStep } from "@mcp-token-footprint/shared";
-import { EmptyState } from "@brand/ui";
-import { Gantt, type GanttStatus, type GanttTask } from "@brand/charts";
+import { EmptyState } from "@elabs-ai/components-ui";
+import { Gantt, type GanttStatus, type GanttTask } from "@elabs-ai/components-charts";
 import { GanttChartSquare } from "lucide-react";
 import type { RunStreamState } from "./use-run-stream";
 
 /**
  * Track D — the run timeline (findings/09 §4.4), mounted by `AnalyticsPanel`'s Timeline sub-tab. A
- * `@brand/charts` `Gantt` built from the steps that carry Track-E wall-clock timing
+ * `@elabs-ai/components-charts` `Gantt` built from the steps that carry Track-E wall-clock timing
  * (`startedAt`/`endedAt`): one bar per `llm_response` turn and one per `tool_call`, on a fixed
  * wall-clock domain so sub-second tool calls stay visible. Bars are colored by the SEMANTIC `Status`
  * union ONLY (never `--chart-N`, per the Gantt rule):
@@ -19,7 +19,7 @@ import type { RunStreamState } from "./use-run-stream";
  * guard for that and show an EmptyState rather than an empty axis.
  *
  * Observability (WP 3.2) — a timed `tool_io` CHILD step (WP3.1's `spanKind`, the MCP roundtrip detail
- * under its `tool_call` parent) becomes a NESTED lane via `GanttTask.parentId` — `@brand/charts`' `Gantt`
+ * under its `tool_call` parent) becomes a NESTED lane via `GanttTask.parentId` — `@elabs-ai/components-charts`' `Gantt`
  * already renders `parentId` as a collapsible child row, so no new chart primitive is needed. The
  * `tool_io` child's `parentStepId` already equals the SURVIVING `:mcp:` tool-call task's id (both are
  * emitted from the same MCP-sink call — see `dedupeToolCalls` below, which keeps the `:mcp:` step as the

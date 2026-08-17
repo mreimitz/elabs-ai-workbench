@@ -2,12 +2,12 @@ import { buildHubAgentAnalyzePrompt, type HubAgentRole, type HubUsageSummary } f
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ReactElement } from "react";
 
-// The modal's title avatar is `@brand/ai`'s `Persona` (Rive/WebGL2 — jsdom can't render it); stub it
+// The modal's title avatar is `@elabs-ai/components-ai`'s `Persona` (Rive/WebGL2 — jsdom can't render it); stub it
 // with the shared hub test-support mock, as every other hub suite does.
-vi.mock("@brand/ai", () => import("../../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../../test-support/brand-ai-mock"));
 
 // Assistant operability WP 3.2 (D-AO5) — the "Ask the assistant" header action. `useAssistant` is
 // mocked so the click's effect (`openAssistant`) is observed directly, without standing up the whole

@@ -9,7 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   buttonVariants,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 
 /**
  * A tiny reusable "warn before discarding unsaved input" guard for the editor/wizard dialogs

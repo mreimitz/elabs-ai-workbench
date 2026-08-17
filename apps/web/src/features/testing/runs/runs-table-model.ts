@@ -1,4 +1,4 @@
-import type { DateRange } from "@brand/ui";
+import type { DateRange } from "@elabs-ai/components-ui";
 
 /**
  * The interactive Runs-table view-model (Testing IA — Runs table rebuild). The unified feed
@@ -6,7 +6,7 @@ import type { DateRange } from "@brand/ui";
  * suite-run summaries; this module turns each into a flat, primitive {@link TopRowVM} and provides the
  * PURE search / facet / date / sort / group operations the table runs on.
  *
- * Deliberately free of React and the `@brand/*` component graph (only a type-only `DateRange` import,
+ * Deliberately free of React and the `@elabs-ai/components-*` component graph (only a type-only `DateRange` import,
  * erased at compile time) so it is unit-testable in isolation — the view derives the VMs (resolving
  * names + status via the component helpers) and feeds them through these functions. Suite MEMBER runs
  * are never top-level rows here: they stay nested under their suite (rendered from the FeedSuiteItem),
@@ -64,7 +64,7 @@ export type TopRowVM = {
   testId: string | null;
   /** Type facet key. */
   typeKey: "single" | "suite";
-  /** Coarse `@brand` status value (`complete`/`running`/`pending`/`failed`/`denied`) — the status facet. */
+  /** Coarse `@elabs-ai/components-*` status value (`complete`/`running`/`pending`/`failed`/`denied`) — the status facet. */
   statusFacet: string;
   /** Precise status label (for the global search haystack). */
   statusLabel: string;

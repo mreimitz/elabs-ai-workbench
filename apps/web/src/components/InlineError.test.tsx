@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import { InlineError } from "./InlineError";
 
 // a11y (critique 2026-07-25T20-00-10Z, T9 item 7): InlineError is the app's one "a fetch failed"
-// surface — it must announce as an alert (role=alert, via @brand/ui's Alert default) and its title
+// surface — it must announce as an alert (role=alert, via @elabs-ai/components-ui's Alert default) and its title
 // must be a REAL, correctly-levelled heading (via AlertHeading, item 2), not always a bare <h5>.
 
 describe("InlineError — alert association + heading level (a11y)", () => {

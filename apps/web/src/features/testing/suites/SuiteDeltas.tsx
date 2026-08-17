@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SuiteDeltaRow, SuiteRunStatus, SuiteVariant } from "@mcp-token-footprint/shared";
-import { Badge, EmptyState, Skeleton, Text } from "@brand/ui";
-import { DataTable } from "@brand/data";
+import { Badge, EmptyState, Skeleton, Text } from "@elabs-ai/components-ui";
+import { DataTable } from "@elabs-ai/components-data";
 import { GitCompareArrows, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { getSuiteDeltas } from "../../../lib/api";
 import { deltaTextTone } from "../../../lib/delta";

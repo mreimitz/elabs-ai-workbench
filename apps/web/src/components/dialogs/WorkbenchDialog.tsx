@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogTitle, cn } from "@brand/ui";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, cn } from "@elabs-ai/components-ui";
 import { DiscardChangesDialog, useUnsavedChangesGuard } from "../UnsavedChangesGuard";
 
 /**

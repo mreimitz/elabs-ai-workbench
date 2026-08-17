@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Check, ChevronDown } from "lucide-react";
 
 export type ModelPickerOption = { value: string; label: string };
@@ -15,9 +15,9 @@ export type ModelPickerOption = { value: string; label: string };
 /**
  * The model-column picker for the compatibility heatmap (CP3).
  *
- * Replaces the @brand/data `FacetFilter` here: in this view the roster is a *required* control, but
+ * Replaces the @elabs-ai/components-data `FacetFilter` here: in this view the roster is a *required* control, but
  * FacetFilter's dashed, chevron-less pill read as a disabled input (audit CP3). This is a real,
- * clearly-interactive picker composed from @brand/ui primitives — a solid outline trigger carrying
+ * clearly-interactive picker composed from @elabs-ai/components-ui primitives — a solid outline trigger carrying
  * an explicit count + a `▾` affordance, opening a multi-select menu with a "reset to default" action.
  *
  * Empty selection is meaningful: it means "use the server's default column set" (the request omits

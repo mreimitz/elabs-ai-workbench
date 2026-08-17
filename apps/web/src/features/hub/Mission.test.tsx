@@ -1,6 +1,6 @@
 // Assistant Hub (roadmap/assistant-hub/, WP1.7) — the mission UI: the event-log reducer
 // (`reconstructMissionBoard`, R-SES1), the editable plan card (D-AH6/R-UX6), the live board
-// (R-UX4/R-UX9), and the in-band ConversationPane integration. The heavy `@brand/ai` surface is
+// (R-UX4/R-UX9), and the in-band ConversationPane integration. The heavy `@elabs-ai/components-ai` surface is
 // stubbed via the shared hub mock (see `test-support/brand-ai-mock.tsx`).
 
 import type {
@@ -9,16 +9,16 @@ import type {
   HubMissionPlan,
   HubPlannedAgent,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
-// ui-wave U1 — the SAME faithful @brand/flow stub MissionExpandDialog.test uses: real DOM contract
+// ui-wave U1 — the SAME faithful @elabs-ai/components-flow stub MissionExpandDialog.test uses: real DOM contract
 // (`[data-id]` nodes wired to `onNodeClick`) so the board's graph-driven selection is exercised.
-vi.mock("@brand/flow", () => ({
+vi.mock("@elabs-ai/components-flow", () => ({
   FlowNode: () => null,
   ZoomControls: () => null,
   CanvasShell: ({
@@ -62,7 +62,7 @@ function render(ui: ReactElement) {
 
 /** Radix `TabsTrigger` (the detail box's Status/Report strip, hub-fixes WP4.2) activates on mousedown
  *  — `fireEvent.click` alone never switches it in jsdom (mirrors `ArtifactCanvas.test.tsx`'s own
- *  verified pattern for the same `@brand/ui` component). */
+ *  verified pattern for the same `@elabs-ai/components-ui` component). */
 function activateTab(container: HTMLElement, name: RegExp): void {
   const tab = within(container).getByRole("tab", { name });
   fireEvent.mouseDown(tab, { button: 0 });

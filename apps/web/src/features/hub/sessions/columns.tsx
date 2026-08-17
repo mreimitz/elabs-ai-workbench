@@ -1,4 +1,4 @@
-import type { ColumnDef } from "@brand/data";
+import type { ColumnDef } from "@elabs-ai/components-data";
 import {
   Badge,
   DropdownMenu,
@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type { HubSession, HubSessionMode } from "@mcp-token-footprint/shared";
 import { Archive, ArchiveRestore, MoreHorizontal, Pencil, TriangleAlert } from "lucide-react";
 import { StatusBadge } from "../../../components/StatusBadge";
@@ -46,7 +46,7 @@ export type SessionColumnDeps = {
  * The Sessions table's column set (WP1.4, D-HUX4 §7.2): title · status · mode · project · model ·
  * turns · tokens in/out · cost · updated · last error · a rename/archive overflow menu. Title is the
  * `navCol` semantic control and — ui-wave U7 (owner feedback) — the WHOLE row is the click target
- * (`SessionsView` spreads `clickableRowTableProps()` onto the DataTable; `@brand/data` DataTable has
+ * (`SessionsView` spreads `clickableRowTableProps()` onto the DataTable; `@elabs-ai/components-data` DataTable has
  * no `onRowClick` — this is the house pattern, see `lib/table.tsx`); the overflow menu carries the
  * ONLY other row actions (rename, archive — P4: archive-only, no hard delete).
  */

@@ -4,10 +4,10 @@
 // source — `hub/citations.ts`), so a marker with no matching citation renders as PLAIN TEXT, never a
 // dangling chip (the resolve-test's UI half).
 //
-// Composition note (library-first): `@brand/ai` ships `InlineCitation*`/`Sources*` sugar, but its
+// Composition note (library-first): `@elabs-ai/components-ai` ships `InlineCitation*`/`Sources*` sugar, but its
 // `InlineCitationCardTrigger` renders a DOMAIN chip, not the numbered `[n]` R-UX5 mandates, and the
-// `@brand/ai` barrel pulls `@xyflow/react`'s CSS (which the Vitest/node loader can't parse). So these
-// surfaces are composed from the SAME underlying `@brand/ui` primitives those wrappers use — `HoverCard`
+// `@elabs-ai/components-ai` barrel pulls `@xyflow/react`'s CSS (which the Vitest/node loader can't parse). So these
+// surfaces are composed from the SAME underlying `@elabs-ai/components-ui` primitives those wrappers use — `HoverCard`
 // for the inline chip, `Collapsible` for the panels — giving a real `[n]` label and mock-free tests.
 //
 // WP3.1 (RC4) — `citationMarkdownComponents` is the OTHER half: a Streamdown `components` override map
@@ -19,7 +19,7 @@
 // an `InlineCitationChip`; nested elements (`strong`/`em`/`a`/`code`) pass through untouched — a marker
 // literally nested inside emphasis is the one case this doesn't weave, an acceptable, documented limit
 // given the live synthesis shape never does that. `table`/`thead`/`tbody`/`tr` are also re-pointed at
-// `@brand/ui` `Table*` (brand-ui-only — Streamdown's own built-in table chrome is a second UI kit) using
+// `@elabs-ai/components-ui` `Table*` (brand-ui-only — Streamdown's own built-in table chrome is a second UI kit) using
 // the SAME styling `ChatMarkdown.tsx` uses for its table override, kept independent here rather than
 // importing it (a citation-bearing table needs the weave-then-style compose that a straight re-export
 // can't express). ui-wave U2 (owner feedback): the cited `table` override now ALSO wraps in
@@ -44,8 +44,8 @@ import {
   TableHeader,
   TableRow,
   Text,
-} from "@brand/ui";
-import type { MessageResponse } from "@brand/ai";
+} from "@elabs-ai/components-ui";
+import type { MessageResponse } from "@elabs-ai/components-ai";
 import type { HubCitation } from "@mcp-token-footprint/shared";
 import { ChevronDown, ExternalLink, Quote } from "lucide-react";
 import { createElement, type ComponentProps, type ReactNode } from "react";
@@ -211,7 +211,7 @@ const WOVEN_BLOCK_TAGS = ["p", "li", "blockquote", "h1", "h2", "h3", "h4", "h5",
  * {@link InlineCitationChip}s wherever Streamdown put them — flowing prose, list items, blockquotes,
  * headings, and table cells — instead of `renderCitedText`'s old whole-message array that forced
  * `ConversationPane` out of markdown rendering entirely (RC4). Table structure is re-pointed at
- * `@brand/ui` `Table*` alongside the weave (brand-ui-only — Streamdown's own table chrome is a second
+ * `@elabs-ai/components-ui` `Table*` alongside the weave (brand-ui-only — Streamdown's own table chrome is a second
  * UI kit). Returns `{}` when there are no citations, so merging it into a caller's own overrides is a
  * true no-op for an uncited message (the byte-identical-before-this-WP guarantee).
  */

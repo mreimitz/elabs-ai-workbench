@@ -72,7 +72,7 @@ const run = async () => {
         window.localStorage.setItem(prefKey, value);
       } catch {}
     },
-    ["brand-ui-theme", "mcp-token-footprint.theme-preference", "qlik-bright"],
+    ["brand-ui-theme", "mcp-token-footprint.theme-preference", "light"],
   );
   const page = await ctx.newPage();
   for (const shot of shots) {

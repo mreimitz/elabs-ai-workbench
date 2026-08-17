@@ -4,8 +4,8 @@
 // pure `buildCrewMemberLayout` + `buildCrewTopologyEdges`, so it stays dependency-light: WP2.4 imports
 // it WITHOUT pulling the Org chart tab's fetching / scope / inspector machinery.
 
-import { CanvasShell, FlowNode, FlowSmartEdge, ZoomControls } from "@brand/flow";
-import { Text } from "@brand/ui";
+import { CanvasShell, FlowNode, FlowSmartEdge, ZoomControls } from "@elabs-ai/components-flow";
+import { Text } from "@elabs-ai/components-ui";
 import type { HubAgentRole, HubCrew } from "@mcp-token-footprint/shared";
 import { useMemo } from "react";
 import { buildCrewMemberLayout } from "./crew-layout";
@@ -26,7 +26,7 @@ export type CrewTopologyGraphProps = {
 };
 
 /**
- * Render one crew's execution topology on a read-only `@brand/flow` canvas. An empty crew renders a
+ * Render one crew's execution topology on a read-only `@elabs-ai/components-flow` canvas. An empty crew renders a
  * muted hint (not a blank canvas). Read-and-navigate only — no drag / connect / select (D-HUX9 v1).
  */
 export function CrewTopologyGraph({ crew, roles, ariaLabel, className }: CrewTopologyGraphProps) {

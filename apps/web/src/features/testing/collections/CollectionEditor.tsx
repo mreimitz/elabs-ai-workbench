@@ -17,7 +17,7 @@ import {
   Spinner,
   Switch,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { KeyRound, Save } from "lucide-react";
 import { FieldRow } from "../../../components/FieldRow";
 import { getErrorMessage } from "../../../lib/errors";
@@ -38,7 +38,7 @@ export type CollectionEditorSubmit = {
 };
 
 /**
- * Create / bind a Collection — a Dialog over `@brand/ui` parts (contract-validated with
+ * Create / bind a Collection — a Dialog over `@elabs-ai/components-ui` parts (contract-validated with
  * `collectionInputSchema`, mirroring the ServerWizard/SuiteEditor form pattern). A collection binds a
  * set of tests/suites to a git repo. The PAT is WRITE-ONLY: the field is a `type="password"` input
  * with `autoComplete="off"` that NEVER shows a stored value — on edit we render only a "PAT set"

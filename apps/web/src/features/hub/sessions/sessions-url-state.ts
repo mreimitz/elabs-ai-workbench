@@ -1,4 +1,4 @@
-import type { DateRange } from "@brand/ui";
+import type { DateRange } from "@elabs-ai/components-ui";
 import { HUB_SESSION_MODES, RUN_STATUSES } from "@mcp-token-footprint/shared";
 
 /**

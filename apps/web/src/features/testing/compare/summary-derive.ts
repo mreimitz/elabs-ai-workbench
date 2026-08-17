@@ -1,7 +1,7 @@
 // Pure comparison math for the Compare Workspace Summary mode (audit §H3 / §G13.2–4). Split out of
 // the React mode file (like `analytics-derive.ts`) so the baseline-Δ math, the honest metric
 // selection, the token-slice verdict decomposition, and the context-curve Date-x invariant are all
-// unit tested WITHOUT rendering `@brand/charts`. No chart/React imports — node-testable.
+// unit tested WITHOUT rendering `@elabs-ai/components-charts`. No chart/React imports — node-testable.
 //
 // This module ABSORBS the reusable delta/context-curve logic from the deleted `compare-derive.ts`
 // (radar removed per D-UX10) and `compare-curve.ts`: per-run metric rollups (peak-context %,

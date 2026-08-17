@@ -12,7 +12,7 @@ import {
   TabsList,
   TabsTrigger,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { DiscardChangesDialog, useUnsavedChangesGuard } from "../UnsavedChangesGuard";
 
 /**

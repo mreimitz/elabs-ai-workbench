@@ -7,7 +7,7 @@ import type {
   SuiteRun,
   Test,
 } from "@mcp-token-footprint/shared";
-import { Button, ErrorState, Spinner } from "@brand/ui";
+import { Button, ErrorState, Spinner } from "@elabs-ai/components-ui";
 import { getSuite, getSuiteRun, listProviders, listScenarios, listTests } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 import { SuiteRunConsole } from "./SuiteRunConsole";

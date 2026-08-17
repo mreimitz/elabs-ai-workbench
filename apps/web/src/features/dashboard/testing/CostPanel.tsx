@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Coins, ExternalLink } from "lucide-react";
-import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@brand/charts";
-import { Button, Separator, Text, cn } from "@brand/ui";
+import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
+import { Button, Separator, Text, cn } from "@elabs-ai/components-ui";
 import type { RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { formatCostUsd, formatNumber } from "../../../lib/format";
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";

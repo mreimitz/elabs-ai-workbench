@@ -15,9 +15,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
   Text,
-} from "@brand/ui";
-import type { LegendItem } from "@brand/flow";
-import { Legend } from "@brand/flow";
+} from "@elabs-ai/components-ui";
+import type { LegendItem } from "@elabs-ai/components-flow";
+import { Legend } from "@elabs-ai/components-flow";
 import {
   Bot,
   ChevronDown,

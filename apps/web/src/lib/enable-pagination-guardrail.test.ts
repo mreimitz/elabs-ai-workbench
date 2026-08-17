@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 // Toolbar-reach WP 4.1 · guardrail 1 (audit §F, finding C-8) — "so this doesn't drift a THIRD time".
 // ------------------------------------------------------------------------------------------------
-// `@brand/data`'s DataTable renders "Page 1 of 1" with two DISABLED Previous/Next buttons the moment
+// `@elabs-ai/components-data`'s DataTable renders "Page 1 of 1" with two DISABLED Previous/Next buttons the moment
 // `enablePagination` is set — even for a single page (S10). `lib/table.tsx` ships `shouldPaginate()`
 // exactly to gate that: `enablePagination={shouldPaginate(rows.length, PAGE_SIZE)}`. This has drifted
 // twice; this test fails on ANY bare `enablePagination` / `enablePagination={true}` / any non-

@@ -10,9 +10,9 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 // The chart-prop stub lives in UsageCharts.test.tsx; here the chart internals are irrelevant to the
-// KPI/table reconciliation and URL-state behavior under test, so @brand/charts is stubbed inert
+// KPI/table reconciliation and URL-state behavior under test, so @elabs-ai/components-charts is stubbed inert
 // (the same posture every non-chart-focused suite in this app takes).
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   MetricGrid: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
   MetricCard: ({ label, value }: { label?: ReactNode; value?: ReactNode }) => (
     <div>

@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import type { SuiteRunMember } from "@mcp-token-footprint/shared";
-import { Badge, StatusBadge, TableCell, TableRow, Text } from "@brand/ui";
+import { Badge, StatusBadge, TableCell, TableRow, Text } from "@elabs-ai/components-ui";
 import { ChevronDown, ChevronRight, FlaskConical } from "lucide-react";
 import { IconButton } from "../../../components/IconButton";
 import { formatCostUsd, formatDateTime, formatDuration, formatNumber } from "../../../lib/format";

@@ -4,11 +4,11 @@ import type { HubUsageRow } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
 
 /**
- * The repo-wide chart-prop stub: jsdom can't render `@visx` (the real `@brand/charts` internals), so
+ * The repo-wide chart-prop stub: jsdom can't render `@visx` (the real `@elabs-ai/components-charts` internals), so
  * every other chart test in this app mocks the package as an inert no-op — which means a mis-wired
  * chart (wrong/missing `xDataKey`, a string x fed to a time-scale chart) still passes a green gate
  * and only crashes the REAL running app (see `.claude/CLAUDE.md`'s chart rules doc + the memory note
- * "Chart tests mock @brand/charts as no-op"). This suite is the FAITHFUL stub instead
+ * "Chart tests mock @elabs-ai/components-charts as no-op"). This suite is the FAITHFUL stub instead
  * (`dashboard/testing/time-axis-charts.test.tsx`'s own recipe, reused here): `ComposedChart` defaults
  * `xDataKey` to `"date"` (matching the real component's `.d.ts`) and runs each row's x through the
  * SAME `new Date(...).toISOString()` a real time axis performs — an undefined/invalid x throws
@@ -23,7 +23,7 @@ const captured = vi.hoisted(() => ({
   barChartXDataKeys: [] as (string | undefined)[],
 }));
 
-vi.mock("@brand/charts", () => {
+vi.mock("@elabs-ai/components-charts", () => {
   const ComposedChart = ({
     data = [],
     xDataKey = "date",

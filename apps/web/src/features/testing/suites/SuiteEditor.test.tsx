@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { Suite } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { SuiteEditor } from "./SuiteEditor";
 
 // jsdom omits matchMedia — Radix (Dialog) reads it (mirrors RunLauncher.test.tsx's identical stub).

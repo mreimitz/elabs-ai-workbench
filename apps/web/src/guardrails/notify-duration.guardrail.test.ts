@@ -10,7 +10,7 @@
  * Paired with the `.claude/hooks/no-bare-toast-error.mjs` static guard, which stops a NEW call site
  * from bypassing `notifyError` entirely by calling `toast.error(` directly.
  */
-import { toast } from "@brand/ui";
+import { toast } from "@elabs-ai/components-ui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { notifyError } from "../lib/notify";
 

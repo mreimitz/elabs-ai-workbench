@@ -13,8 +13,8 @@ import {
   Text,
   Tree,
   type TreeNode,
-} from "@brand/ui";
-import { CodeEditor, DiffEditor } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { CodeEditor, DiffEditor } from "@elabs-ai/components-editor";
 import { FileCode2, FileText, Folder, Sparkles } from "lucide-react";
 import { ApiError, getAssistantWorkspaceFile } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

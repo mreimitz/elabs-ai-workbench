@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { useTheme } from "@brand/tokens";
+import { useTheme } from "@elabs-ai/components-tokens";
 import { readThemePreference, writeThemePreference, type ThemePreference } from "./theme";
 
 /**
- * Bridges the app's theme *preference* (`qlik-bright` | `qlik-dark` | `system`) onto `@brand/tokens`
+ * Bridges the app's theme *preference* (`light` | `dark` | `system`) onto `@elabs-ai/components-tokens`
  * `ThemeProvider`, which only understands concrete themes.
  *
  * - A concrete preference is applied directly via `setTheme`.
- * - `"system"` resolves to `qlik-dark`/`qlik-bright` from `prefers-color-scheme` AND installs a
+ * - `"system"` resolves to `dark`/`light` from `prefers-color-scheme` AND installs a
  *   `matchMedia` listener so an OS light/dark switch re-resolves live.
  *
  * Mount this ONCE at the app root (App) so the OS listener stays active regardless of the current
@@ -26,7 +26,7 @@ export function useThemePreference(): {
       return;
     }
     const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const apply = () => setTheme(media.matches ? "qlik-dark" : "qlik-bright");
+    const apply = () => setTheme(media.matches ? "dark" : "light");
     apply();
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);

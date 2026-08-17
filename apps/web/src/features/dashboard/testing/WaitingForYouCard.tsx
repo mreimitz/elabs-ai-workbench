@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Clock } from "lucide-react";
-import { MetricCard } from "@brand/charts";
+import { MetricCard } from "@elabs-ai/components-charts";
 import { queryRunsFiltered } from "../../../lib/api";
 import { formatNumber } from "../../../lib/format";
 import { WAITING_FOR_YOU_FILTER } from "../../testing/runs/run-filter-url";

@@ -11,7 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Columns3 } from "lucide-react";
 import {
   PREVIEW_MODES,
@@ -29,7 +29,7 @@ export type RunColumnChooserProps = {
 
 /**
  * Column visibility + preview-cell chooser (Observability WP 2.3 DESIGN: "Column chooser + preview
- * cell: persisted per view"). `@brand/data` `ColumnPicker` binds to a TanStack `Table` instance, which
+ * cell: persisted per view"). `@elabs-ai/components-data` `ColumnPicker` binds to a TanStack `Table` instance, which
  * the Runs feed's hand-built (nested suite-summary + pinned-column) table deliberately does not use —
  * see `RunsView`'s own doc comment — so this composes `DropdownMenu` + `Checkbox`/`Select` primitives
  * directly (library-first: no TanStack table backing exists here to hand `ColumnPicker`).

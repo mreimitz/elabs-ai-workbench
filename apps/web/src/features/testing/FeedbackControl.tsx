@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { MessageSquareText, ThumbsDown, ThumbsUp } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { deleteRunFeedback, putRunFeedback } from "../../lib/api";

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Clock } from "lucide-react";
-import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@brand/charts";
-import { Alert, AlertDescription, AlertTitle } from "@brand/ui";
+import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
+import { Alert, AlertDescription, AlertTitle } from "@elabs-ai/components-ui";
 import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { formatDuration } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";

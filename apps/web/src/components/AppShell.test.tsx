@@ -21,7 +21,7 @@ vi.mock("../features/notifications/NotificationBell", () => ({
   NotificationBell: () => null,
 }));
 
-// jsdom omits `matchMedia`, which `@brand/ui`'s `useIsMobile` (SidebarProvider) reads — mirrors the
+// jsdom omits `matchMedia`, which `@elabs-ai/components-ui`'s `useIsMobile` (SidebarProvider) reads — mirrors the
 // polyfill in ScansView.test / RunsView.test. `matches: false` + the default 1024px innerWidth keep
 // the shell in its DESKTOP layout (the mobile Sheet branches don't render).
 if (typeof window.matchMedia !== "function") {
@@ -53,7 +53,7 @@ const FOCUSABLE_SELECTOR = [
 function renderShell() {
   return render(
     <MemoryRouter initialEntries={["/dashboard"]}>
-      <AppShell themePreference="qlik-bright" onThemePreferenceChange={() => {}}>
+      <AppShell themePreference="light" onThemePreferenceChange={() => {}}>
         <div data-testid="page-content">Dashboard content</div>
       </AppShell>
     </MemoryRouter>,

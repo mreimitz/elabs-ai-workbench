@@ -7,12 +7,12 @@ import type {
 } from "@mcp-token-footprint/shared";
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ReactElement } from "react";
 
-// ProgressSection composes `Task*` from `@brand/ai` — stub the shared surface (mirrors every other
-// hub test that touches `@brand/ai`, e.g. `ArtifactCanvas.test.tsx`/`Mission.test.tsx`).
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
+// ProgressSection composes `Task*` from `@elabs-ai/components-ai` — stub the shared surface (mirrors every other
+// hub test that touches `@elabs-ai/components-ai`, e.g. `ArtifactCanvas.test.tsx`/`Mission.test.tsx`).
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
 
 import type { MetaRailContextProps, MetaRailOutputsProps, MetaRailProgressProps } from "./MetaRail";
 import { MetaRail } from "./MetaRail";

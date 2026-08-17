@@ -25,7 +25,7 @@ vi.mock("../../lib/api", async (importOriginal) => {
   };
 });
 
-// The donut/radar module pulls `@brand/charts` (visx), which jsdom can't load — stubbed to sentinels
+// The donut/radar module pulls `@elabs-ai/components-charts` (visx), which jsdom can't load — stubbed to sentinels
 // (the ContextChart convention) so their mount/absence stays directly assertable.
 vi.mock("./report-charts", () => ({
   ScoreDonut: ({ score, label }: { score: number; label: string }) => (
@@ -36,7 +36,7 @@ vi.mock("./report-charts", () => ({
   ),
 }));
 
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import * as api from "../../lib/api";
 import { ReportTab } from "./ReportTab";
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, EmptyState, Heading, Skeleton, toast } from "@brand/ui";
+import { Button, EmptyState, Heading, Skeleton, toast } from "@elabs-ai/components-ui";
 import { LineChart as LineChartIcon, Plus } from "lucide-react";
 import type { DashboardChart } from "@mcp-token-footprint/shared";
 import { ConfirmDialog } from "../../../components/dialogs";

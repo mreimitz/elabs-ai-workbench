@@ -1,24 +1,24 @@
-import type { ThemeName } from "@brand/tokens";
+import type { ThemeName } from "@elabs-ai/components-tokens";
 
 /**
  * The themes this app exposes, in display order.
  *
- * `@brand/tokens` v1.9.0 still ships three themes (`THEMES = ["qlik-bright",
- * "qlik-dark", "blueprint"]`, with `qlik-bright`/`qlik-dark` on the canonical Acme
+ * `@elabs-ai/components-tokens` v1.9.0 still ships three themes (`THEMES = ["light",
+ * "dark", "blueprint"]`, with `light`/`dark` on the canonical Acme
  * palette), but this app
  * intentionally restricts the UI to the two Acme themes — `blueprint` must not be
  * selectable anywhere. Typed against `ThemeName` so it stays in sync if upstream
  * renames a theme.
  */
-export const ALLOWED_THEMES = ["qlik-bright", "qlik-dark"] as const satisfies readonly ThemeName[];
+export const ALLOWED_THEMES = ["light", "dark"] as const satisfies readonly ThemeName[];
 
 /** The theme this app falls back to (also `ThemeProvider`'s `defaultTheme`). */
-export const DEFAULT_ALLOWED_THEME: ThemeName = "qlik-bright";
+export const DEFAULT_ALLOWED_THEME: ThemeName = "light";
 
 /**
- * The localStorage key `ThemeProvider` (`@brand/tokens`) uses to persist the
+ * The localStorage key `ThemeProvider` (`@elabs-ai/components-tokens`) uses to persist the
  * selected theme. This is the provider's default `storageKey` (confirmed in the
- * vendored `@brand/tokens` build); we read it in `main.tsx` to coerce any
+ * vendored `@elabs-ai/components-tokens` build); we read it in `main.tsx` to coerce any
  * previously persisted disallowed theme (e.g. `blueprint`) before the provider
  * mounts and re-applies it.
  */
@@ -31,8 +31,8 @@ export function isAllowedTheme(theme: string): theme is (typeof ALLOWED_THEMES)[
 
 /**
  * The user's theme *preference*: one of the two allowed themes, or `"system"` — an OS-preference
- * follower that resolves to `qlik-dark` when the OS reports `prefers-color-scheme: dark`, else
- * `qlik-bright`. `"system"` is NOT a brand theme; it never reaches `ThemeProvider`, which only ever
+ * follower that resolves to `dark` when the OS reports `prefers-color-scheme: dark`, else
+ * `light`. `"system"` is NOT a brand theme; it never reaches `ThemeProvider`, which only ever
  * sees a resolved allowed theme. (Note: `blueprint` and other brand themes remain filtered out.)
  */
 export type ThemePreference = (typeof ALLOWED_THEMES)[number] | "system";
@@ -45,7 +45,7 @@ export const THEME_PREFERENCE_STORAGE_KEY = "mcp-token-footprint.theme-preferenc
  * ordered list, so the two can never drift. **"System" is listed FIRST** (audit ST2/S12: the
  * OS-follower is the leading choice, not a trailing dropdown afterthought), then the two concrete
  * Acme themes in `ALLOWED_THEMES` order. `blueprint` is intentionally absent — the app never offers
- * it. Concrete-theme labels come from `@brand/tokens` `THEME_META` at the call site.
+ * it. Concrete-theme labels come from `@elabs-ai/components-tokens` `THEME_META` at the call site.
  */
 export const THEME_PREFERENCE_ORDER: readonly ThemePreference[] = [
   "system",
@@ -62,7 +62,7 @@ export function resolveSystemTheme(): ThemeName {
     typeof window !== "undefined" &&
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-color-scheme: dark)").matches;
-  return prefersDark ? "qlik-dark" : DEFAULT_ALLOWED_THEME;
+  return prefersDark ? "dark" : DEFAULT_ALLOWED_THEME;
 }
 
 /** A preference → the concrete allowed theme to apply. */

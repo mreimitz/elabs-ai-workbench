@@ -1,6 +1,6 @@
 // PostToolUse(Edit|Write|MultiEdit): enforce "brand-ui components only" in the web app.
 // Flags raw interactive/component HTML and imports from the retired local adapter so the agent
-// switches to @brand/* components. exit 2 surfaces the message (non-destructive nudge).
+// switches to @elabs-ai/components-* components. exit 2 surfaces the message (non-destructive nudge).
 // Escape hatch: put `brand-ui-allow` in a comment on the same line. See .claude/rules/brand-ui-only.md
 import fs from "node:fs";
 
@@ -37,32 +37,32 @@ if (!text) process.exit(0);
 const rules = [
   {
     re: /<button(\s|>|\/)/,
-    msg: "raw <button> -> use <Button> from @brand/ui (Button asChild for links)",
+    msg: "raw <button> -> use <Button> from @elabs-ai/components-ui (Button asChild for links)",
   },
   {
     re: /<input(\s|>|\/)/,
-    msg: "raw <input> -> use <Input>/<NumberInput>/<Checkbox>/<Switch> from @brand/ui",
+    msg: "raw <input> -> use <Input>/<NumberInput>/<Checkbox>/<Switch> from @elabs-ai/components-ui",
   },
   {
     re: /<select(\s|>|\/)/,
-    msg: "raw <select> -> use <Select> (Select/SelectTrigger/SelectContent/SelectItem) from @brand/ui",
+    msg: "raw <select> -> use <Select> (Select/SelectTrigger/SelectContent/SelectItem) from @elabs-ai/components-ui",
   },
-  { re: /<textarea(\s|>|\/)/, msg: "raw <textarea> -> use <Textarea> from @brand/ui" },
+  { re: /<textarea(\s|>|\/)/, msg: "raw <textarea> -> use <Textarea> from @elabs-ai/components-ui" },
   {
     re: /<table(\s|>|\/)/,
-    msg: "raw <table> -> use <DataTable> (@brand/data) or Table* (@brand/ui)",
+    msg: "raw <table> -> use <DataTable> (@elabs-ai/components-data) or Table* (@elabs-ai/components-ui)",
   },
   {
     re: /<(thead|tbody|tfoot|tr|th|td)(\s|>|\/)/,
-    msg: "raw table element -> use DataTable (@brand/data) or Table* (@brand/ui)",
+    msg: "raw table element -> use DataTable (@elabs-ai/components-data) or Table* (@elabs-ai/components-ui)",
   },
   {
     re: /<dialog(\s|>|\/)/,
-    msg: "raw <dialog> -> use <Dialog>/<Sheet>/<AlertDialog> from @brand/ui",
+    msg: "raw <dialog> -> use <Dialog>/<Sheet>/<AlertDialog> from @elabs-ai/components-ui",
   },
   {
     re: /from\s+["']@mcp-token-footprint\/brand-ui["']/,
-    msg: "import from the RETIRED local adapter -> import from @brand/ui, @brand/data, @brand/icons, @brand/tokens",
+    msg: "import from the RETIRED local adapter -> import from @elabs-ai/components-ui, @elabs-ai/components-data, @elabs-ai/components-icons, @elabs-ai/components-tokens",
   },
 ];
 
@@ -78,7 +78,7 @@ for (const line of text.split("\n")) {
 
 if (offenders.length > 0) {
   process.stderr.write(
-    "brand-ui-only: this app MUST use @brand/* components (see .claude/rules/brand-ui-only.md).\n",
+    "brand-ui-only: this app MUST use @elabs-ai/components-* components (see .claude/rules/brand-ui-only.md).\n",
   );
   for (const o of [...new Set(offenders)].slice(0, 8)) process.stderr.write("    " + o + "\n");
   process.exit(2);

@@ -1,4 +1,4 @@
-import { Label, Text, ToggleGroup, ToggleGroupItem, cn } from "@brand/ui";
+import { Label, Text, ToggleGroup, ToggleGroupItem, cn } from "@elabs-ai/components-ui";
 import type { ReactNode } from "react";
 
 export interface SegmentedOption {
@@ -25,7 +25,7 @@ export interface SegmentedFieldProps {
 /**
  * Label + segmented control + help slot — the S12 fix for ordered/small-cardinality scales rendered
  * as dropdowns (reasoning effort, tool loading eager/deferred, theme, difficulty). Built on
- * `@brand/ui` `ToggleGroup` (single-select). Selection is sticky: clicking the active segment does
+ * `@elabs-ai/components-ui` `ToggleGroup` (single-select). Selection is sticky: clicking the active segment does
  * not clear it (Radix would emit `""`), so there's always exactly one choice.
  */
 export function SegmentedField({

@@ -23,7 +23,7 @@ import {
   PopoverTrigger,
   ScrollArea,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   BrandFlowNode,
   Connection,
@@ -33,9 +33,9 @@ import type {
   LegendItem,
   Node,
   NodeProps,
-} from "@brand/flow";
-import { CanvasShell, FlowNode, useNodesState, useReactFlow, ZoomControls } from "@brand/flow";
-// `@brand/flow` does not re-export these React Flow building blocks, so they come from the direct
+} from "@elabs-ai/components-flow";
+import { CanvasShell, FlowNode, useNodesState, useReactFlow, ZoomControls } from "@elabs-ai/components-flow";
+// `@elabs-ai/components-flow` does not re-export these React Flow building blocks, so they come from the direct
 // `@xyflow/react` dependency: `Handle` because the brand `FlowNode` hardcodes its handles to
 // Top/Bottom (an upstream gap — it ignores a node's `sourcePosition`/`targetPosition`, see
 // `CanvasNodeView`), the smoothstep path for the LR edge, and the store hook for pane dimensions.
@@ -102,7 +102,7 @@ function flowIdOf(item: { flowId?: string }): string {
 // The overlay is a pure input: verdict → `FlowNode` tone (`ok`→"success", `fracture`→"destructive",
 // `unvisited`→tone "default" dimmed via a layout-only opacity utility), visit-count badge on visited
 // nodes, the fracture reason in the node subtitle, and traversal counts on traversed edges' labels.
-// All verdict color comes from the `@brand/flow` tone tokens — no raw colors anywhere here.
+// All verdict color comes from the `@elabs-ai/components-flow` tone tokens — no raw colors anywhere here.
 
 /** Per-node execution overlay derived from a `TraceAlignment` verdict + visit count. */
 export type TraceNodeOverlay = {
@@ -119,7 +119,7 @@ export type TraceCanvasOverlay = {
   edgeTraversals: Map<string, number>;
 };
 
-/** A tiny, non-interactive node used ONLY to render an edge's label text (`@brand/flow`'s
+/** A tiny, non-interactive node used ONLY to render an edge's label text (`@elabs-ai/components-flow`'s
  *  `FlowEdge` draws the path but never renders a label — see the WP 1.3 report for why). */
 type ConditionLabelNode = Node<{ text: string }, "label">;
 
@@ -233,7 +233,7 @@ function CanvasNodeView(props: NodeProps<CanvasBrandNode>) {
 
 /**
  * WP 7.2 — the skill canvas edge: a SMOOTHSTEP path (orthogonal with rounded corners) in the same
- * brand skin as `@brand/flow`'s `FlowEdge` (identical `--flow-edge` token stroke — `FlowEdge` only
+ * brand skin as `@elabs-ai/components-flow`'s `FlowEdge` (identical `--flow-edge` token stroke — `FlowEdge` only
  * draws beziers, an upstream gap to raise: a `pathType` variant). Horizontal LR connections read as
  * clean orthogonal runs, and a SAME-ROW edge that skips over intermediate ranks (a gatekeeper
  * "goto" branch) is arced `SKIP_EDGE_ARC` above the row so it never cuts straight through the
@@ -772,7 +772,7 @@ export type SkillGraphCanvasProps = {
 };
 
 /**
- * The one canvas both inspector modes render: a `@brand/flow` `CanvasShell` — pan/zoom,
+ * The one canvas both inspector modes render: a `@elabs-ai/components-flow` `CanvasShell` — pan/zoom,
  * keyboard-reachable node selection (via React Flow's `onSelectionChange`, which fires for both
  * pointer and keyboard-driven selection), a `Legend`, and `ZoomControls`.
  *

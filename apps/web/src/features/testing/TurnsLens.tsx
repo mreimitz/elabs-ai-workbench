@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { RunFeedback, RunStep } from "@mcp-token-footprint/shared";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@brand/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@elabs-ai/components-ui";
 import { AlertTriangle, ArrowRight, ListOrdered, Loader2 } from "lucide-react";
 import { formatDuration, formatNumber } from "../../lib/format";
 import { FeedbackControl } from "./FeedbackControl";

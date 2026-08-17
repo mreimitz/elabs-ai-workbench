@@ -12,7 +12,7 @@ import {
   Textarea,
   cn,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Brain, Check, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ConfirmDialog } from "../../../components/dialogs";
 import { FieldRow } from "../../../components/FieldRow";

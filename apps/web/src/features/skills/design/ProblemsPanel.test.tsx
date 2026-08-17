@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SkillGraph } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { getToolDiagnostics } from "../skills-inspector-api";
 import { formatUnknownToolWarning } from "./code-intel/tool-references";
 import { ProblemsPanel } from "./ProblemsPanel";

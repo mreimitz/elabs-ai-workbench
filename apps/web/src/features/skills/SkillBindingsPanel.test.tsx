@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { BoundTool, ServerType, SkillServerBinding } from "@mcp-token-footprint/shared";
 import { SkillBindingsPanel } from "./SkillBindingsPanel";
 

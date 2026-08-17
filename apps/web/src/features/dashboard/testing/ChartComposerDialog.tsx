@@ -35,7 +35,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { DialogSection, type WideDialogSection, WideDialog } from "../../../components/dialogs";
 import { FieldRow } from "../../../components/FieldRow";
 import { SegmentedField } from "../../../components/form";

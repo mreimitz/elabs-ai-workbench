@@ -6,14 +6,14 @@
 // role's "(deleted role · …)" fallback or the agent-only overrides).
 
 import type { HubAgentRole, HubCrew, HubCrewMember } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 
-// `RoleAvatar` imports `ModelSelectorLogo` from `@brand/ai` — mocked exactly like
+// `RoleAvatar` imports `ModelSelectorLogo` from `@elabs-ai/components-ai` — mocked exactly like
 // `CrewProfileModal.test.tsx` (and every other suite that renders `RoleAvatar`) does.
-vi.mock("@brand/ai", () => import("../../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../../test-support/brand-ai-mock"));
 
 beforeAll(() => {
   if (typeof window.matchMedia !== "function") {

@@ -1,4 +1,4 @@
-// Shared read-only Monaco (`@brand/editor` CodeEditor) configuration — the single source for what
+// Shared read-only Monaco (`@elabs-ai/components-editor` CodeEditor) configuration — the single source for what
 // used to be five near-identical `READ_ONLY_OPTIONS` copies (ToolDetailPanel, ArtifactPreview,
 // TraceLeafDetail, SkillFileExplorer, SkillDiffView) and two `EXT_LANG` maps (the two skills views).
 // Every JSON/code viewer in the app reads identically: folding + search, no minimap, soft wrap.

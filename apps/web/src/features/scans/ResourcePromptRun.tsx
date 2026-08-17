@@ -1,5 +1,5 @@
 // Resource "Read" + Prompt "Get" consoles — read-only siblings of ToolRunDialog. Each is a Dialog
-// showing the live result (JSON) in a @brand/editor CodeEditor with an ok/error Badge, a copy
+// showing the live result (JSON) in a @elabs-ai/components-editor CodeEditor with an ok/error Badge, a copy
 // button, and a full-width footer of token/byte/time KPIs computed from the result. They execute
 // resources/read and prompts/get on the API (which owns the MCP connection). No destructive confirm
 // — both are read-only operations.
@@ -28,8 +28,8 @@ import {
   Separator,
   StatePanel,
   Text,
-} from "@brand/ui";
-import { CodeEditor } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { CodeEditor } from "@elabs-ai/components-editor";
 import { Check, Copy, Download, KeyRound, Play } from "lucide-react";
 import { useMcpAuth } from "../servers/McpAuthProvider";
 import { AdaptivePanelGroup } from "../../components/AdaptivePanelGroup";

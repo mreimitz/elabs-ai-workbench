@@ -5,9 +5,9 @@ import type { SkillDiff } from "@mcp-token-footprint/shared";
 import type { AssistantTimelineToolCall } from "./use-assistant-stream";
 
 // `AssistantDiffCard` reuses `DeltaStrip` from `SkillDiffView.tsx`, which ALSO statically imports
-// `@brand/editor`'s Monaco `CodeEditor`/`DiffEditor` for its (unused-here) per-file viewer — far too
+// `@elabs-ai/components-editor`'s Monaco `CodeEditor`/`DiffEditor` for its (unused-here) per-file viewer — far too
 // heavy for jsdom. Stub it the same way `design-chrome.test.tsx` / the smoke tests do.
-vi.mock("@brand/editor", () => ({ CodeEditor: () => null, DiffEditor: () => null }));
+vi.mock("@elabs-ai/components-editor", () => ({ CodeEditor: () => null, DiffEditor: () => null }));
 
 import { AssistantDiffCard, extractCommitWorkspaceDiff } from "./AssistantDiffCard";
 

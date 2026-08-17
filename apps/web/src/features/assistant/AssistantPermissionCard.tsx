@@ -1,16 +1,16 @@
-import { Alert, AlertDescription, AlertTitle, Badge, Button, Text } from "@brand/ui";
-import { ToolInput } from "@brand/ai";
+import { Alert, AlertDescription, AlertTitle, Badge, Button, Text } from "@elabs-ai/components-ui";
+import { ToolInput } from "@elabs-ai/components-ai";
 import { Check, ShieldAlert, X } from "lucide-react";
 import { CodeSnippet } from "../testing/CodeSnippet";
 import type { AssistantTimelinePermission } from "./use-assistant-stream";
 
 /**
- * A write-approval round-trip (WP 2.1, D-AS4) rendered in the dock transcript. Composed from `@brand/*`
- * primitives (`Alert`/`Button`/`Badge`/`Text` + `@brand/ai` `ToolInput`) rather than `@brand/ai`'s
+ * A write-approval round-trip (WP 2.1, D-AS4) rendered in the dock transcript. Composed from `@elabs-ai/components-*`
+ * primitives (`Alert`/`Button`/`Badge`/`Text` + `@elabs-ai/components-ai` `ToolInput`) rather than `@elabs-ai/components-ai`'s
  * `ApprovalCard` — that component is wired to the AI-SDK `useChat` `ToolUIPart` approval STATE MACHINE
  * (specific `state` strings like `"approval-responded"`), which this app doesn't use: the dock drives its
  * own `AssistantEvent` model over SSE. Same compose-from-primitives reasoning as `AssistantToolCallCard`;
- * every element is still a `@brand` component.
+ * every element is still a `@elabs-ai/components-*` component.
  *
  * Two states, keyed off whether the `permission_decision` has settled:
  *  - PENDING (no `decision`) → an actionable card: tool name + argument summary + an optional diff

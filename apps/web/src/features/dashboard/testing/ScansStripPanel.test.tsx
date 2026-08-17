@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ScanMetricsSeries } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   LineChart: ({ children }: { children: ReactNode }) => <div data-testid="line-chart">{children}</div>,
   Line: () => null,
   XAxis: () => null,

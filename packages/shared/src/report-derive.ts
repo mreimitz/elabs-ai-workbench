@@ -1,7 +1,7 @@
 // Pure, framework-free derivation helpers + display data for the server compatibility report.
 // These were extracted from `apps/web/src/features/reports/reportRender.tsx` + `features/compatibility/meta.ts`
 // so BOTH the web renderer (PDF) and the API markdown builder share ONE source of truth. Nothing here
-// touches React or @brand — the colour/label *variant* maps (SEVERITY_META/OUTCOME_META) stay in web's
+// touches React or brand-ui — the colour/label *variant* maps (SEVERITY_META/OUTCOME_META) stay in web's
 // meta.ts; this module owns only the logic (severity ordering, the detail filter, per-model grouping)
 // and the plain text/data the report is built from. `reportRender.tsx` re-exports these symbols so the
 // web's existing `./reportRender` imports are unchanged.

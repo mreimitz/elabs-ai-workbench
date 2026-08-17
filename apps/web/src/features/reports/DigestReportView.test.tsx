@@ -5,10 +5,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 // Observability WP5.5 (D-OB22) — the routed digest view: fetches the structured JSON (KPI header)
 // + the Markdown twin (rendered inline via the shared ChatMarkdown), reusing the "existing report
-// render path" per the WP spec. `@brand/ai`'s Streamdown (`MessageResponse`) can't load in jsdom
+// render path" per the WP spec. `@elabs-ai/components-ai`'s Streamdown (`MessageResponse`) can't load in jsdom
 // (mirrors ChatMarkdown.test.tsx's own mock) — mocked to a passthrough that exposes the raw markdown
 // text so this test can assert on it without exercising the real markdown engine.
-vi.mock("@brand/ai", () => ({
+vi.mock("@elabs-ai/components-ai", () => ({
   MessageResponse: ({ children }: { children?: ReactNode }) => (
     <div data-testid="markdown-body">{children}</div>
   ),

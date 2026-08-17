@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { DataTable, FacetFilter, SearchInput, type ColumnDef, type FacetOption } from "@brand/data";
+import { DataTable, FacetFilter, SearchInput, type ColumnDef, type FacetOption } from "@elabs-ai/components-data";
 import {
   Badge,
   Button,
@@ -13,7 +13,7 @@ import {
   cn,
   type DateRange,
   type DateRangePreset,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubAgentRole,
   HubAuditEntry,

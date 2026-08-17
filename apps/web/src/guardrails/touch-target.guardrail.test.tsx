@@ -17,7 +17,7 @@
  */
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { RefreshCw } from "lucide-react";
 import { IconButton } from "../components/IconButton";
 

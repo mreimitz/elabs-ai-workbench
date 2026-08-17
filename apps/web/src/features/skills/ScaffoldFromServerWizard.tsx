@@ -22,8 +22,8 @@ import {
   Text,
   Textarea,
   cn,
-} from "@brand/ui";
-import { DataTable, SearchInput, type ColumnDef } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { DataTable, SearchInput, type ColumnDef } from "@elabs-ai/components-data";
 import { Server, Sparkles, Tags } from "lucide-react";
 import { apiGet, listServerTypes } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
@@ -65,7 +65,7 @@ export type ScaffoldFromServerWizardProps = {
 /**
  * The "New skill from server…" wizard (Skill IDE WP 8.4 / I9.4): start a skill FROM a registered
  * server's tool surface. Three steps — pick a server (only servers WITH a completed scan are offered)
- * → multi-select its tools (a `@brand/data` DataTable with per-tool token costs) → name/slug (+ optional
+ * → multi-select its tools (a `@elabs-ai/components-data` DataTable with per-tool token costs) → name/slug (+ optional
  * display name/description). "Create" POSTs to `/api/skills/scaffold-from-server`; the API reads the
  * server's latest completed scan itself (persisted reads only — never a live probe), composes the
  * SKILL.md (one `##` section + one `tool_ref` per selected tool), creates the skill (v1) + the

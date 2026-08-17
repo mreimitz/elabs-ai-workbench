@@ -1,13 +1,13 @@
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // `CollectionDetail` statically imports `CollectionGit` -> `ConflictResolution`, which pulls in
-// `@brand/editor`'s Monaco/Milkdown `CodeEditor`/`DiffEditor` — same stubbing convention as
+// `@elabs-ai/components-editor`'s Monaco/Milkdown `CodeEditor`/`DiffEditor` — same stubbing convention as
 // `LiveSkillWorkspaceView.test.tsx` (a `.css` deep-import there doesn't resolve under vitest's ESM
 // loader). Never rendered by the branches under test (both return before the Tabs mount).
-vi.mock("@brand/editor", () => ({
+vi.mock("@elabs-ai/components-editor", () => ({
   CodeEditor: () => null,
   DiffEditor: () => null,
 }));

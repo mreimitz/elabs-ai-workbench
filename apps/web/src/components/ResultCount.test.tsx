@@ -31,7 +31,7 @@ describe("ResultCount — the stable count readout (interface-craft WP 1.2, find
     expect(after).toHaveTextContent("33 of 90 rows");
   });
 
-  test("renders the standard tabular-nums count-badge visual (a @brand/ui Badge) inside the status region", () => {
+  test("renders the standard tabular-nums count-badge visual (a @elabs-ai/components-ui Badge) inside the status region", () => {
     render(<ResultCount>90 scans</ResultCount>);
     const status = screen.getByRole("status");
     // The live-region role comes from the semantic `<output>` element itself (implicit role, no raw

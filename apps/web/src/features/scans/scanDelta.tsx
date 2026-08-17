@@ -1,5 +1,5 @@
 import type { ScanSummary } from "@mcp-token-footprint/shared";
-import { cn, Text } from "@brand/ui";
+import { cn, Text } from "@elabs-ai/components-ui";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { deltaTextTone } from "../../lib/delta";
 import { formatNumber } from "../../lib/format";

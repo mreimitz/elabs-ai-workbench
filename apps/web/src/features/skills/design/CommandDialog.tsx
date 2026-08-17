@@ -11,7 +11,7 @@ import {
   Label,
   Text,
   Textarea,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Plus, Wand2 } from "lucide-react";
 
 /**

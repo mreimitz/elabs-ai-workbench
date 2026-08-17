@@ -22,9 +22,9 @@ import {
   TabsTrigger,
   Text,
   cn,
-} from "@brand/ui";
-import { Bar, BarChart, BarXAxis, ChartTooltip, Grid, MetricCard, MetricGrid } from "@brand/charts";
-import { DataTable } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { Bar, BarChart, BarXAxis, ChartTooltip, Grid, MetricCard, MetricGrid } from "@elabs-ai/components-charts";
+import { DataTable } from "@elabs-ai/components-data";
 import {
   AlertTriangle,
   BarChart3,

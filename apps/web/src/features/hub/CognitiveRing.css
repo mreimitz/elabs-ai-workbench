@@ -1,12 +1,12 @@
 /*
  * CognitiveRing.css — token-backed styling for the Assistant Hub's fresh-session welcome ring
  * (CognitiveRing.tsx). Follows the same discipline as skills/design/code-intel/decorations.css:
- * EVERY visible colour is a semantic @brand/tokens variable, resolved through a small scoped
- * --ring-* accent layer, so the illustration reads correctly in BOTH themes (qlik-bright /
- * qlik-dark) with no raw literal and no `dark:` override.
+ * EVERY visible colour is a semantic @elabs-ai/components-tokens variable, resolved through a small scoped
+ * --ring-* accent layer, so the illustration reads correctly in BOTH themes (light /
+ * dark) with no raw literal and no `dark:` override.
  *
  * The concept's identity is the design system's brand green + cyan. The green maps 1:1 to the app's --primary
- * (which IS the brand green). The cyan has no semantic @brand/tokens equivalent, so it is defined
+ * (which IS the brand green). The cyan has no semantic @elabs-ai/components-tokens equivalent, so it is defined
  * ONCE here as a scoped closed token (the pattern the planned packages/illustrations --illus-* layer
  * will generalise). Alpha shades are composed with color-mix() over these tokens rather than baked
  * as literals, so a theme change re-tints the whole ring for free.
@@ -15,7 +15,7 @@
  * alpha-based — the hue is irrelevant; only "opaque = show / transparent = hide" matters), so masks
  * carry no raw color either.
  *
- * brand-ui-allow: --ring-cyan/--ring-cyan-soft are the design system's brand cyan; no semantic @brand/tokens
+ * brand-ui-allow: --ring-cyan/--ring-cyan-soft are the design system's brand cyan; no semantic @elabs-ai/components-tokens
  * color matches it. Scoped to .cognitive-ring, documented, owner-approved for the welcome
  * illustration (see the accent-palette decision in the build conversation).
  */

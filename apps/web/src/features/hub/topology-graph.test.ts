@@ -1,5 +1,5 @@
 // Assistant Hub (roadmap/assistant-hub/, WP2.2) — the PURE topology-graph derivation (no React, no
-// @brand/flow). Proves the four shapes + live-state tone mapping + the best_of_n judge/winner nodes.
+// @elabs-ai/components-flow). Proves the four shapes + live-state tone mapping + the best_of_n judge/winner nodes.
 
 import type { HubTopology } from "@mcp-token-footprint/shared";
 import { describe, expect, test } from "vitest";

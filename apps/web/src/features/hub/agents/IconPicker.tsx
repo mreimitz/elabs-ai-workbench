@@ -15,8 +15,8 @@ import {
   TabsTrigger,
   Text,
   cn,
-} from "@brand/ui";
-import { SearchInput } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import { ImagePlus, Trash2 } from "lucide-react";
 import { IconButton } from "../../../components/IconButton";
 import { HUB_ICON_GROUPS } from "./hub-icon-library";
@@ -31,7 +31,7 @@ import { notifyError } from "../../../lib/notify";
  *   3. clear it → the avatar falls back to the model provider logo, then the `Persona` glyph.
  *
  * Value in/out is the encoded `icon` string ({@link parseHubIcon}); the picker owns no persistence.
- * Composed entirely from `@brand/*` parts (Tabs / FileUpload / Button / SearchInput) + the shared
+ * Composed entirely from `@elabs-ai/components-*` parts (Tabs / FileUpload / Button / SearchInput) + the shared
  * {@link RoleAvatar} for a live preview that exactly matches the rendered avatar.
  */
 
@@ -64,7 +64,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 const ICON_INSET = 0;
 
 /** CONTAIN-fit the whole source image into a centered square and rasterize to a small PNG data-URI
- *  (imperative canvas — not markup — so no `@brand` component applies). Unlike a cover-crop this keeps
+ *  (imperative canvas — not markup — so no `@elabs-ai/components-*` component applies). Unlike a cover-crop this keeps
  *  the ENTIRE image (a logo isn't cut off); the canvas stays transparent (no baked background — the
  *  avatar supplies a theme-token backing, so it reads correctly in both themes). Throws on a
  *  canvas-unavailable / decode failure. */

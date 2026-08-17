@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import type { HubAgentRole, HubCrew } from "@mcp-token-footprint/shared";
-import { SearchInput } from "@brand/data";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   Button,
   EmptyState,
@@ -12,7 +12,7 @@ import {
   SelectValue,
   Spinner,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Bot, Plus, Users } from "lucide-react";
 import { InlineError } from "../../../components/InlineError";
 import {

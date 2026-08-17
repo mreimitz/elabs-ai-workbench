@@ -1,12 +1,12 @@
 import { forwardRef, type HTMLAttributes } from "react";
-import { cn } from "@brand/ui";
+import { cn } from "@elabs-ai/components-ui";
 
 /**
  * SectionCardTitle — a card title that is a REAL heading (D-IC5 / interface-review finding 6).
  * =============================================================================================
  *
  * WHY IT EXISTS
- *   `@brand/ui` `CardTitle` renders `<div className="text-title leading-none">` (vendor
+ *   `@elabs-ai/components-ui` `CardTitle` renders `<div className="text-title leading-none">` (vendor
  *   card.tsx:262) — it carries no heading semantics. Retiring the visible page H1 (D-TB1) left the
  *   busiest screens (Dashboard, Servers, Runs) with exactly ONE heading each — the `sr-only` h1 —
  *   so a card that titles a genuine section contributes nothing to the document outline and a
@@ -24,10 +24,10 @@ import { cn } from "@brand/ui";
  *   App-side override for upstream gap #3 (roadmap/interface-craft/upstream-gaps.md). The classes
  *   mirror `CardTitle` (vendor card.tsx:262) rather than composing it, because `CardTitle` is a bare
  *   `<div>` with no `as`/`asChild` seam to swap the tag. Delete this wrapper and pass `as`/`level`
- *   to `CardTitle` directly once `@brand/ui` `CardTitle` accepts a heading level upstream.
+ *   to `CardTitle` directly once `@elabs-ai/components-ui` `CardTitle` accepts a heading level upstream.
  *
  * Every visible element stays a semantic-token utility (`text-title`, `leading-none`); no raw
- * colour; `className` is layout-only. Reads correctly in both `qlik-bright` and `qlik-dark`.
+ * colour; `className` is layout-only. Reads correctly in both `light` and `dark`.
  */
 
 /** Heading level a section title may render at. Sections nest at most one level deep in this app,
@@ -45,7 +45,7 @@ export interface SectionCardTitleProps extends HTMLAttributes<HTMLHeadingElement
 export const SectionCardTitle = forwardRef<HTMLHeadingElement, SectionCardTitleProps>(
   function SectionCardTitle({ level = 2, className, ...props }, ref) {
     const Tag = `h${level}` as const;
-    // Classes mirror `@brand/ui` CardTitle exactly (vendor card.tsx:262) — same look, real heading.
+    // Classes mirror `@elabs-ai/components-ui` CardTitle exactly (vendor card.tsx:262) — same look, real heading.
     return <Tag ref={ref} className={cn("text-title leading-none", className)} {...props} />;
   },
 );

@@ -3,11 +3,11 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { WatchRule, WatchRuleEvent } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// jsdom can't resolve @brand/charts' @visx deep imports — see RuleEditorDialog.test.tsx's identical
+// jsdom can't resolve @elabs-ai/components-charts' @visx deep imports — see RuleEditorDialog.test.tsx's identical
 // note (the editor dialog this view mounts pulls in the Preview section's BarChart).
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   BarChart: ({ children }: { children: ReactNode }) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => null,
   BarXAxis: () => null,

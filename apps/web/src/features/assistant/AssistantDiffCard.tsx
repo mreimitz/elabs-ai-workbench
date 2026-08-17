@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { SkillDiff } from "@mcp-token-footprint/shared";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@brand/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle } from "@elabs-ai/components-ui";
 import { ArrowRight, FileDiff } from "lucide-react";
 import { DeltaStrip } from "../skills/SkillDiffView";
 import type { AssistantTimelineToolCall } from "./use-assistant-stream";
@@ -67,7 +67,7 @@ export function extractCommitWorkspaceDiff(
  * `skills_commit_workspace` tool result carries a diff payload (the commit actually minted a new
  * version — not the `unchanged: true` dedup path, which has nothing to show). Composed from the
  * EXISTING skills-diff building block (`DeltaStrip`, exported by `SkillDiffView.tsx` — the SAME
- * rollup-tile layout the Skill Diff tab renders) plus plain `@brand/ui` primitives; no bespoke
+ * rollup-tile layout the Skill Diff tab renders) plus plain `@elabs-ai/components-ui` primitives; no bespoke
  * visualization. Links to the skill's inspector (`/skills/:id`), which opens on the CURRENT version by
  * default — i.e. the version this card is reporting.
  */

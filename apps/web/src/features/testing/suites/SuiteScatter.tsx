@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import type { SuiteAnalytics, SuiteCell, SuiteScatterPoint } from "@mcp-token-footprint/shared";
 import { GRADER_IDS } from "@mcp-token-footprint/shared";
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Text, cn } from "@brand/ui";
-import { ChartTooltip, Grid, Scatter, ScatterChart, YAxis } from "@brand/charts";
+import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Text, cn } from "@elabs-ai/components-ui";
+import { ChartTooltip, Grid, Scatter, ScatterChart, YAxis } from "@elabs-ai/components-charts";
 import { ExternalLink, ScatterChart as ScatterIcon } from "lucide-react";
 import { SelectField } from "../../../components/SelectField";
 import { formatCostUsd, formatNumber, formatPercent } from "../../../lib/format";
@@ -10,7 +10,7 @@ import { GRADER_LABELS } from "../grade-format";
 import type { SuiteMatrixRef } from "./SuiteMatrix";
 
 /**
- * Suite-run QUALITY × COST scatter (WP 3.4, B9.3) — one `@brand/charts` ScatterChart point per
+ * Suite-run QUALITY × COST scatter (WP 3.4, B9.3) — one `@elabs-ai/components-charts` ScatterChart point per
  * (test × scenario) subject (repetitions AVERAGED, server-computed). X toggles between mean tokens and
  * mean cost; Y is the mean score under the SELECTED grade dimension (the `grader` selector re-fetches
  * the analytics upstream). Points are colored by scenario (`--chart-1..5`). A subject with no graded rep

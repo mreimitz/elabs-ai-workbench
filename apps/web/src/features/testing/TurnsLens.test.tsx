@@ -1,5 +1,5 @@
 import type { RunStep } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { TimelineItem } from "./use-run-stream";
@@ -26,7 +26,7 @@ function step(over: Partial<RunStep>): RunStep {
   };
 }
 
-// `FeedbackControl` (mounted per turn card) uses `@brand/ui` `Tooltip` internally — every render needs
+// `FeedbackControl` (mounted per turn card) uses `@elabs-ai/components-ui` `Tooltip` internally — every render needs
 // a `TooltipProvider` ancestor (mirrors `RunConsole.test.tsx`'s own wrapping).
 function renderLens(props: TurnsLensProps) {
   return render(

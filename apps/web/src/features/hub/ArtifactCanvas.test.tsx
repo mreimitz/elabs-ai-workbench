@@ -4,19 +4,19 @@ import type {
   HubArtifactVersion,
   HubReview,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
-// WP1.6 — mirrors AssistantView.test.tsx: stub the heavy `@brand/ai` surface with the shared,
+// WP1.6 — mirrors AssistantView.test.tsx: stub the heavy `@elabs-ai/components-ai` surface with the shared,
 // reusable stub (see `test-support/brand-ai-mock.tsx`'s doc comment).
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
-// WP3.5's Diff tab statically imports `@brand/editor`'s Monaco `DiffEditor` — far too heavy for jsdom
+// WP3.5's Diff tab statically imports `@elabs-ai/components-editor`'s Monaco `DiffEditor` — far too heavy for jsdom
 // (pulls in `@milkdown/kit`'s ProseMirror CSS, which vitest can't transform). Stub it the same way
 // `AssistantDiffCard.test.tsx` / `design-chrome.test.tsx` do.
-vi.mock("@brand/editor", () => ({ CodeEditor: () => null, DiffEditor: () => null }));
+vi.mock("@elabs-ai/components-editor", () => ({ CodeEditor: () => null, DiffEditor: () => null }));
 
 vi.mock("../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api")>();
@@ -87,7 +87,7 @@ function review(overrides: Partial<HubReview> = {}): HubReview {
 }
 
 beforeAll(() => {
-  // ui-wave U2 — the expand modal is a REAL @brand/ui Dialog (Radix), which reads matchMedia +
+  // ui-wave U2 — the expand modal is a REAL @elabs-ai/components-ui Dialog (Radix), which reads matchMedia +
   // ResizeObserver on open; jsdom lacks both (mirrors ExpandableTable.test.tsx's own polyfill).
   if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
@@ -114,7 +114,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-/** Radix's `DropdownMenuTrigger` (real, unmocked — `@brand/ui`) only listens for pointerdown/keydown,
+/** Radix's `DropdownMenuTrigger` (real, unmocked — `@elabs-ai/components-ui`) only listens for pointerdown/keydown,
  *  not `click` — `fireEvent.click` alone never opens it in jsdom (mirrors AssistantDock.test.tsx's own
  *  verified pattern for the same component). */
 function openExportMenu(): void {
@@ -356,7 +356,7 @@ describe("ArtifactCanvas — Diff tab", () => {
 
     activateTab("Diff");
 
-    // `DiffEditor` itself is stubbed (jsdom can't run Monaco); the compare picker is real @brand/ui.
+    // `DiffEditor` itself is stubbed (jsdom can't run Monaco); the compare picker is real @elabs-ai/components-ui.
     await waitFor(() => expect(screen.getByText("→ v2")).toBeInTheDocument());
     expect(screen.getByRole("combobox", { name: "Compare" })).toHaveTextContent("v1");
   });

@@ -13,7 +13,7 @@ import {
   StatusBadge,
   Text,
   type Status,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ExternalLink } from "lucide-react";
 
 /**

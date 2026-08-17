@@ -1,15 +1,15 @@
 // Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX9) — the PURE, shared per-crew member
-// layout: it turns one crew (+ the role library it draws from) into positioned `@brand/flow`
+// layout: it turns one crew (+ the role library it draws from) into positioned `@elabs-ai/components-flow`
 // member nodes and topology-true edges, arranged by the library's own dagre auto-layout
 // (`layoutFlow` — NO hand-placed coordinates, D-HUX9). Both {@link buildOrgChartModel} (the Org
 // chart tab) and {@link CrewTopologyGraph} (WP2.4's crew-profile Topology section) consume this, so
 // a crew reads identically wherever it's drawn.
 //
-// It imports `@brand/flow`'s pure `layoutFlow` (dagre, "safe to call anywhere, incl. a test") +
+// It imports `@elabs-ai/components-flow`'s pure `layoutFlow` (dagre, "safe to call anywhere, incl. a test") +
 // `@xyflow/react` types only — no React — so the produced node/edge MODEL is unit-testable without a
 // live canvas (canvas libs render empty geometry under jsdom; we assert the model, not the DOM).
 
-import { FLOW_ALL_SIDE_HANDLES, type FlowLayoutDirection, type FlowNodeData, layoutFlow } from "@brand/flow";
+import { FLOW_ALL_SIDE_HANDLES, type FlowLayoutDirection, type FlowNodeData, layoutFlow } from "@elabs-ai/components-flow";
 import type { HubAgentRole, HubCrew, HubCrewMember, HubTopology } from "@mcp-token-footprint/shared";
 import { type Edge, MarkerType, type Node } from "@xyflow/react";
 import { buildCrewTopologyEdges, memberTopologyRole } from "./topology-edges";

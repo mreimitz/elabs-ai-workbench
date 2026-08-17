@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from "vitest";
 // The repaired shared stub (model-identity WP 4.1): its `ModelSelectorItem` now filters on
 // `value` + `keywords` and honours `disabled`, so search/filter/disabled behaviour is actually
 // observable here. Real cmdk keyboard semantics are locked separately in `HubModelPicker.cmdk.test.tsx`.
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import { HubModelPicker } from "./HubModelPicker";
 import type { HubModelCredentialIssue, HubModelOption } from "./use-hub-models";

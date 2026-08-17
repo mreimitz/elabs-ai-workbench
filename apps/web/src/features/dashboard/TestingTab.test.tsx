@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { act, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type {
   RunMetricsResponse,
   RunMetricsSeries,
@@ -16,11 +16,11 @@ import type {
 import { parseRunFilter } from "@mcp-token-footprint/shared";
 
 // Same class of jsdom/Vitest issue `ScansTab.test.tsx`/`RunConsole.test.tsx` already document: the
-// `@brand/charts` barrel pulls in a broken deep `@visx/gradient` subpath (via its Gantt chart) that
+// `@elabs-ai/components-charts` barrel pulls in a broken deep `@visx/gradient` subpath (via its Gantt chart) that
 // fails to resolve under Vitest — confirmed empirically for EVERY named export, not just `MetricGrid`
 // (see the WP report). None of this test's assertions touch chart internals (they read the
-// legend/DrillList/KPI markup, which is plain `@brand/ui`), so a thin pass-through is sufficient.
-vi.mock("@brand/charts", () => ({
+// legend/DrillList/KPI markup, which is plain `@elabs-ai/components-ui`), so a thin pass-through is sufficient.
+vi.mock("@elabs-ai/components-charts", () => ({
   MetricGrid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   MetricCard: ({ label, value, description }: { label: string; value: string; description?: string }) => (
     <div>

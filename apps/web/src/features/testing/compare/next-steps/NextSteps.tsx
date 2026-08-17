@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Button, Card, CardContent, CardHeader, CardTitle, Text, cn } from "@brand/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, Text, cn } from "@elabs-ai/components-ui";
 import { AlertTriangle, ArrowRight, Info, Lightbulb } from "lucide-react";
 import type { NextStep, NextStepTone } from "./next-steps-derive";
 

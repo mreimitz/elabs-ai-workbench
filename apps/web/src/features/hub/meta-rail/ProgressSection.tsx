@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Task, TaskContent, TaskItem, TaskTrigger } from "@brand/ai";
-import { Badge, Button, Card, EmptyState, Input, Progress, Text } from "@brand/ui";
+import { Task, TaskContent, TaskItem, TaskTrigger } from "@elabs-ai/components-ai";
+import { Badge, Button, Card, EmptyState, Input, Progress, Text } from "@elabs-ai/components-ui";
 import type { HubMissionBudgets, HubTaskItem } from "@mcp-token-footprint/shared";
 import { ListTodo, OctagonX, Send } from "lucide-react";
 import { StatusBadge } from "../../../components/StatusBadge";

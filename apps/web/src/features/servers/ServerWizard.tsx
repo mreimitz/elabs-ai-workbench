@@ -26,7 +26,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ExternalLink,
   KeyRound,

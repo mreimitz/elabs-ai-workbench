@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ShieldCheck } from "lucide-react";
-import type { FacetOption } from "@brand/data";
-import { SearchInput } from "@brand/data";
+import type { FacetOption } from "@elabs-ai/components-data";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   Sheet,
   SheetContent,
@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
   StatePanel,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { InlineError } from "../../components/InlineError";
 import { ResultCount } from "../../components/ResultCount";
 import { TabEmptyState } from "../../components/TabEmptyState";
@@ -39,7 +39,7 @@ const ISSUE_PARAM = "issue";
  * triage table (`IssueTriageTable`, the same dense-table spirit as `RunsView`'s runs feed) instead
  * of the original `SplitPane` master-detail — the narrow left pane a two-pane split forced onto a
  * 9-column table caused real overflow (titles spilling, dates wrapping character-by-character; see
- * `IssueTriageTable.tsx`'s own doc). A row click opens `IssueDetail` in a `@brand/ui` `Sheet`
+ * `IssueTriageTable.tsx`'s own doc). A row click opens `IssueDetail` in a `@elabs-ai/components-ui` `Sheet`
  * (a right-side slide-in drawer built on Radix Dialog — focus trap, Esc-close, and focus-return to
  * the row all come from Radix for free, no hand-rolled modal logic here) instead of a permanently
  * docked side pane.

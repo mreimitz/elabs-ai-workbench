@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeAll, describe, expect, test } from "vitest";
-import { Button } from "@brand/ui";
+import { Button } from "@elabs-ai/components-ui";
 import { TabPanel, TabPanelContent } from "./TabPanel";
 import { SplitPane, SplitPanePanel } from "./SplitPane";
 import { TabEmptyState } from "./TabEmptyState";

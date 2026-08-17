@@ -25,7 +25,7 @@ import {
   Input,
   Label,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Bookmark, Check, ChevronDown, Save, Trash2 } from "lucide-react";
 import { createRunView, deleteRunView, listRunViews, updateRunView } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";

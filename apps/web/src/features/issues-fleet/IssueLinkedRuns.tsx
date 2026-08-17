@@ -1,6 +1,6 @@
 import { ExternalLink, ListFilter } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button, Text } from "@brand/ui";
+import { Button, Text } from "@elabs-ai/components-ui";
 import { FailureEvidence } from "../../components/FailureEvidence";
 import { drillDownHref } from "../dashboard/testing/dashboard-url-state";
 import { formatDateTime, formatNumber } from "../../lib/format";

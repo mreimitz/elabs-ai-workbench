@@ -14,7 +14,7 @@ import {
   ErrorState,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   AgentMessage,
   ChatShell,
@@ -33,7 +33,7 @@ import {
   TaskContent,
   TaskTrigger,
   UserMessage,
-} from "@brand/ai";
+} from "@elabs-ai/components-ai";
 import { ArrowUp, Check, Copy, FileText, MessageSquare } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { apiGet } from "../../lib/api";
@@ -125,7 +125,7 @@ export type ConversationPaneProps = {
 /**
  * Left pane (UI §3): the streaming conversation as a SEQUENCED AGENTIC TIMELINE. We consume Wave-1's
  * ordered, turn-segmented `stream.timeline` ({@link TimelineItem}) and render it as a FLAT SERIES OF
- * SIBLING BLOCKS inside `ConversationContent` (the `@brand/ai` reference sequences a turn flat — not
+ * SIBLING BLOCKS inside `ConversationContent` (the `@elabs-ai/components-ai` reference sequences a turn flat — not
  * one wrapping card). Per timeline item:
  *   - a user turn (opener prompt or interactive follow-up) → `UserMessage` > `MessageContent`;
  *   - each assistant turn IN CHRONOLOGICAL ORDER → its `Reasoning` disclosure, then its prose
@@ -134,7 +134,7 @@ export type ConversationPaneProps = {
  *     while in-flight with nothing to show yet, a `Shimmer` "Thinking…" affordance.
  *
  * The terminal/error notices + the empty/pending state render as foot-of-transcript siblings. Each
- * tool block keeps the cross-pane Inspect (a composed `@brand/ui` Button, lifted `selectedStepId`).
+ * tool block keeps the cross-pane Inspect (a composed `@elabs-ai/components-ui` Button, lifted `selectedStepId`).
  * Data is the accumulated stream — no fabricated content, only what the run actually emitted.
  */
 export function ConversationPane({
@@ -355,7 +355,7 @@ function ChatAnchorScroller({
 }
 
 /**
- * A user turn — the opener prompt or an interactive follow-up — as `@brand/ai` `UserMessage` >
+ * A user turn — the opener prompt or an interactive follow-up — as `@elabs-ai/components-ai` `UserMessage` >
  * `MessageContent`. The opener's attachment chips (the test's attachments) render as `Badge`s inside;
  * follow-ups pass no attachments (the v1 `sendTurn` wire is text-only).
  */
@@ -414,7 +414,7 @@ function UserTurn({
  * already completed, ABOVE the sentence that announced it.)
  *
  * Tool calls render as one-line collapsed {@link ToolCallCard} rows. Two or more calls in a turn
- * fold into a `@brand/ai` `Task` ("Used N tools · duration") — open while the turn is live so the
+ * fold into a `@elabs-ai/components-ai` `Task` ("Used N tools · duration") — open while the turn is live so the
  * activity streams in view, collapsed when reviewing a finished run. While the turn is streaming
  * with nothing to show yet, a `Shimmer` stands in.
  */
@@ -491,7 +491,7 @@ function AssistantTurn({
     >
       {reasoning && reasoning.length > 0 ? (
         // WP 6.2 (item A) — while a turn is LIVE we no longer force the disclosure closed. Passing
-        // `defaultOpen={undefined}` lets `@brand/ai` `Reasoning` use its own `defaultOpen ?? isStreaming`
+        // `defaultOpen={undefined}` lets `@elabs-ai/components-ai` `Reasoning` use its own `defaultOpen ?? isStreaming`
         // → open while streaming, auto-collapse ~1s after it settles (its intended behavior). A
         // finished/REPLAYED turn (`streaming` false at mount, never streamed) keeps `defaultOpen={false}`
         // so review opens collapsed, exactly as before. Applies to every run kind (the library default).
@@ -577,7 +577,7 @@ function AssistantTurn({
 
 /**
  * The assistant message's hover-revealed action row: copy the whole message's raw markdown to the
- * clipboard (`@brand/ai` `MessageActions`/`MessageAction`). Revealed on message hover AND on
+ * clipboard (`@elabs-ai/components-ai` `MessageActions`/`MessageAction`). Revealed on message hover AND on
  * keyboard focus (`group-focus-within`), so it stays reachable without a pointer; the icon flips to
  * a check for a moment as confirmation, and a clipboard failure surfaces as a toast (never silent).
  */
@@ -652,7 +652,7 @@ function useServerNames(): Record<string, string> {
   return names;
 }
 
-/** Honest empty/pending state before the first item of the timeline — the `@brand/ai`
+/** Honest empty/pending state before the first item of the timeline — the `@elabs-ai/components-ai`
  *  `ConversationEmptyState` (the chat-specific empty state; replaces the generic `EmptyState`,
  *  2026-07-12 brand-ui alignment). */
 function PendingAssistant({ phase }: { phase: Phase }) {

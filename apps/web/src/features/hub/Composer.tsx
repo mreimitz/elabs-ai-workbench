@@ -14,8 +14,8 @@ import {
   PromptInputTools,
   SpeechInput,
   usePromptInputController,
-} from "@brand/ai";
-import { Button, cn, Popover, PopoverContent, PopoverTrigger, Text } from "@brand/ui";
+} from "@elabs-ai/components-ai";
+import { Button, cn, Popover, PopoverContent, PopoverTrigger, Text } from "@elabs-ai/components-ui";
 import type {
   HubAutonomyLevel,
   HubSendMessageInput,
@@ -95,7 +95,7 @@ import { notifyError } from "../../lib/notify";
  * The whole thing is wrapped in `PromptInputProvider` so a sibling component (here, the inline command
  * list + keyboard handling) can read/write the SAME live text the textarea shows via
  * `usePromptInputController()` — required for slash-trigger detection and command insertion; the
- * textarea becomes a normal CONTROLLED input once a provider is present (`@brand/ai`'s own documented
+ * textarea becomes a normal CONTROLLED input once a provider is present (`@elabs-ai/components-ai`'s own documented
  * behavior), so passing `value`/`onChange` here is correct in both the real library and this feature's
  * tests (`test-support/brand-ai-mock.tsx`'s `PromptInputTextarea` stub has no context awareness of its
  * own — the explicit `value`/`onChange` below is what makes it controlled either way).
@@ -395,7 +395,7 @@ function ComposerInner({
     setSending(true);
     // OPTIMISTIC clear: free the composer immediately for follow-up typing (queue-while-running) so the
     // just-sent message never lingers and fast keystrokes aren't wiped by a late clear. It also keeps
-    // the editor aligned with `@brand/ai` PromptInput, which clears the controller synchronously on a
+    // the editor aligned with `@elabs-ai/components-ai` PromptInput, which clears the controller synchronously on a
     // button submit. Restored below if the send fails.
     editorRef.current?.clear();
     setInput("");
@@ -487,7 +487,7 @@ function ComposerInner({
             // `onSubmit` directly (a contenteditable never submits the form). `submit` reads the editor.
             void submit();
           }}
-          // `h-auto` is REQUIRED: the underlying `@brand/ui` InputGroup only grows past its fixed `h-9`
+          // `h-auto` is REQUIRED: the underlying `@elabs-ai/components-ui` InputGroup only grows past its fixed `h-9`
           // when it detects a real `<textarea>` (`has-[textarea]:h-auto`). MentionEditor is a
           // contenteditable, so we force the grow here — otherwise `overflow-hidden` clips the editor +
           // the whole footer row (attach/model/…/Send). owner-feedback (2026-07-26): the InputGroup now

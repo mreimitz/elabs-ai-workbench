@@ -1,6 +1,6 @@
 /*
  * Skill IDE WP 9.3 (I10.5) — token-backed styling for the code-mode decorations (decorations.ts).
- * Every colour is a semantic @brand/tokens CSS variable (--chart-1..5, --primary, --muted-foreground,
+ * Every colour is a semantic @elabs-ai/components-tokens CSS variable (--chart-1..5, --primary, --muted-foreground,
  * --border) so the decorations read correctly in BOTH themes with no raw colour literal and no `dark:`
  * override. Imported once by UnifiedEditor.tsx.
  */

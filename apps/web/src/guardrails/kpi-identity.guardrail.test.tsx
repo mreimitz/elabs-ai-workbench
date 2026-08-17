@@ -22,7 +22,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { KpiStat } from "../components/KpiStat";
 
-/** The @brand/ui `Text` size ROLES (variant → `text-<role>`); NOT color/utility `text-*` classes. */
+/** The @elabs-ai/components-ui `Text` size ROLES (variant → `text-<role>`); NOT color/utility `text-*` classes. */
 const SIZE_ROLES = ["kpi", "display", "title", "subtitle", "body", "caption", "meta", "code"] as const;
 type SizeRole = (typeof SIZE_ROLES)[number];
 

@@ -34,7 +34,7 @@ vi.mock("../../lib/api", async (importOriginal) => {
   };
 });
 
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { createServerType, deleteServerType } from "../../lib/api";
 import { ManageServerTypesDialog } from "./ManageServerTypesDialog";
 

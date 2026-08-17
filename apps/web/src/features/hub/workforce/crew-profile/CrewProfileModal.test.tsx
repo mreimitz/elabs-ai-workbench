@@ -9,14 +9,14 @@ import {
   type HubSession,
   type HubUsageSummary,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
-// `RoleAvatar` reaches for the real `@brand/ai` Persona (Rive/WebGL2 — unavailable in jsdom); mock it
+// `RoleAvatar` reaches for the real `@elabs-ai/components-ai` Persona (Rive/WebGL2 — unavailable in jsdom); mock it
 // exactly like `CrewEditor.test.tsx`/`TopologyGraph.test.tsx` do.
-vi.mock("@brand/ai", () => import("../../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../../test-support/brand-ai-mock"));
 
 // Assistant operability WP 3.2 (D-AO5) — the "Ask the assistant" header action. `useAssistant` is
 // mocked so the click's effect (`openAssistant`) is observed directly — same pattern as
@@ -30,8 +30,8 @@ vi.mock("../../../assistant/assistant-context", () => ({
 
 // `UsageSection`'s `Sparkline` pulls in `@visx/gradient`, which fails to resolve under vitest/jsdom
 // (a genuine module-resolution break, not a jsdom-capability gap) — every other chart-touching test
-// in this repo mocks `@brand/charts` rather than render the real thing (see e.g. `CostPanel.test.tsx`).
-vi.mock("@brand/charts", () => ({
+// in this repo mocks `@elabs-ai/components-charts` rather than render the real thing (see e.g. `CostPanel.test.tsx`).
+vi.mock("@elabs-ai/components-charts", () => ({
   Sparkline: ({ label }: { label?: string }) => <div data-testid="usage-sparkline">{label}</div>,
 }));
 

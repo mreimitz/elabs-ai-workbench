@@ -1,5 +1,5 @@
 import { RefreshCw, TriangleAlert } from "lucide-react";
-import { Alert, AlertDescription, Button, cn } from "@brand/ui";
+import { Alert, AlertDescription, Button, cn } from "@elabs-ai/components-ui";
 import { AlertHeading, type AlertHeadingLevel } from "./AlertHeading";
 
 /**
@@ -8,11 +8,11 @@ import { AlertHeading, type AlertHeadingLevel } from "./AlertHeading";
  * empty result ("no findings" vs "couldn't load findings"). Render this in the `error` arm of a
  * `loading | error | data` state so the three are visually distinct.
  *
- * Uses `@brand/ui` `Alert variant="destructive"` (semantic `role="alert"`, both themes) with an
+ * Uses `@elabs-ai/components-ui` `Alert variant="destructive"` (semantic `role="alert"`, both themes) with an
  * inline `Retry` `Button` in its `actions` slot — NOT a fake `EmptyState`. Keep it small: a title
  * (what failed) + an optional detail (the error message) + retry.
  *
- * The title renders via `AlertHeading` (not `@brand/ui`'s `AlertTitle` directly) so it lands at the
+ * The title renders via `AlertHeading` (not `@elabs-ai/components-ui`'s `AlertTitle` directly) so it lands at the
  * correct outline level instead of always jumping to `<h5>` — see `AlertHeading.tsx` (critique
  * 2026-07-25T20-00-10Z item 2). `level` defaults to 5 (AlertTitle's own hardcoded level), so an
  * existing call site that doesn't pass one renders byte-identical to before; pass the level that

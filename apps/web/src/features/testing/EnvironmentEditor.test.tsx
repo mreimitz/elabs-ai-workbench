@@ -7,7 +7,7 @@ import type {
   ServerConfig,
   ServerType,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // WP 2.3 — the editor fetches the live model roster via `listProviderModels`; stub it so the test
 // never makes a real request (mirrors GradePanel.test.tsx's api mock).

@@ -16,7 +16,7 @@ import {
   Text,
   Textarea,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Folder, MoreHorizontal, Pencil, Save, Trash2, Undo2 } from "lucide-react";
 import { ConfirmDialog } from "../../../components/dialogs";
 import { IconButton } from "../../../components/IconButton";

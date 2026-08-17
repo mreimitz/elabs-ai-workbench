@@ -11,7 +11,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { MoreHorizontal, Rocket } from "lucide-react";
 import { IconButton } from "../../../components/IconButton";
 import { CrewCard } from "./CrewCard";

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { RunStep } from "@mcp-token-footprint/shared";
-import { StatePanel, Text } from "@brand/ui";
-import { CodeEditor } from "@brand/editor";
+import { StatePanel, Text } from "@elabs-ai/components-ui";
+import { CodeEditor } from "@elabs-ai/components-editor";
 import { safeJson } from "../../lib/format";
 import { READ_ONLY_OPTIONS } from "../../lib/monaco";
 

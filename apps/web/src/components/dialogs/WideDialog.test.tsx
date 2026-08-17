@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { Button } from "@brand/ui";
+import { Button } from "@elabs-ai/components-ui";
 import { WideDialog, type WideDialogSection } from "./WideDialog";
 
 const sections: WideDialogSection[] = [

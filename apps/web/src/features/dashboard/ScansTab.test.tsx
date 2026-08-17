@@ -2,17 +2,17 @@ import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
 
-// `MetricGrid` is a real `@brand/charts` export, but importing ANYTHING from that package's barrel
+// `MetricGrid` is a real `@elabs-ai/components-charts` export, but importing ANYTHING from that package's barrel
 // under Vitest/jsdom resolves a broken deep `@visx/gradient` subpath used by its (unrelated, unused
 // here) Gantt chart — a pre-existing, environment-only issue (confirmed: `import { MetricGrid } from
-// "@brand/charts"` alone fails identically in a scratch test; `AreaChart` from the same package does
-// not). `RunConsole.test.tsx` hits the same class of issue ("AnalyticsPanel — pulls `@brand/charts`
+// "@elabs-ai/components-charts"` alone fails identically in a scratch test; `AreaChart` from the same package does
+// not). `RunConsole.test.tsx` hits the same class of issue ("AnalyticsPanel — pulls `@elabs-ai/components-charts`
 // that jsdom can't load") and mocks around it; mirrored here. A trivial pass-through keeps the real
-// `MetricCard`/`@brand/ui` children (and this test's assertions on them) intact.
-vi.mock("@brand/charts", () => ({
+// `MetricCard`/`@elabs-ai/components-ui` children (and this test's assertions on them) intact.
+vi.mock("@elabs-ai/components-charts", () => ({
   MetricGrid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 

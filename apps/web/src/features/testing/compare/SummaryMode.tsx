@@ -15,7 +15,7 @@ import {
   Text,
   ToggleGroup,
   ToggleGroupItem,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   AlertTriangle,
   ArrowRight,

@@ -2,7 +2,7 @@ import type { HubTaskStatus, HubToolPart } from "@mcp-token-footprint/shared";
 
 /**
  * Assistant Hub (WP1.3) — pure adapters between the hub's wire shapes ({@link HubToolPart},
- * {@link HubTaskStatus}) and the `@brand/ai` component contracts (`Tool*`/`ApprovalCard`/`TaskItem`),
+ * {@link HubTaskStatus}) and the `@elabs-ai/components-ai` component contracts (`Tool*`/`ApprovalCard`/`TaskItem`),
  * kept import-light (no components) so they unit-test in a plain node environment — mirrors
  * `features/testing/tool-call-view.ts`.
  */
@@ -15,7 +15,7 @@ export function prettyToolName(name: string): string {
 }
 
 /**
- * The `@brand/ai` `ApprovalCard`/`Confirmation` `approval` prop, built from a {@link HubToolPart}'s
+ * The `@elabs-ai/components-ai` `ApprovalCard`/`Confirmation` `approval` prop, built from a {@link HubToolPart}'s
  * {@link HubToolApproval} (R-MCP3/R-UX1). Only a SETTLED resolution carries `approved`/`reason` — the
  * AI-SDK `ToolUIPartApproval` union's pending shape is `{id}` alone (no `reason` until a decision
  * exists), so `note` is surfaced only once `resolution` is set. Returns `undefined` when the part
@@ -49,7 +49,7 @@ export function isApprovalRelevantState(state: HubToolPart["state"]): boolean {
   );
 }
 
-/** `TaskItem`'s `status` prop (`@brand/ui`'s closed 7-state `Status`) mapped from the R-SES4 task
+/** `TaskItem`'s `status` prop (`@elabs-ai/components-ui`'s closed 7-state `Status`) mapped from the R-SES4 task
  *  vocabulary. `blocked`/`cancelled` both read as `skipped` (closest semantic — not actively being
  *  worked, distinct from `failed`); the task's own title/note carries the finer distinction. */
 export function taskStatusToStatus(

@@ -7,7 +7,7 @@ import {
   DialogTitle,
   Spinner,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type { HubFile } from "@mcp-token-footprint/shared";
 import { getHubProjectFile } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
@@ -15,7 +15,7 @@ import { getErrorMessage } from "../../lib/errors";
 /**
  * Assistant Hub UX (WP1.8 integration) — the light, read-only viewer for a project's pinned file,
  * opened from the meta rail's Context section (`onOpenPinnedFile`). The retired `SessionContextPanel`
- * drilled into a pinned file's full text via `@brand/ai`'s `ContextPanel` detail pane; the rail's
+ * drilled into a pinned file's full text via `@elabs-ai/components-ai`'s `ContextPanel` detail pane; the rail's
  * Context section is pure and "lists — the caller shows", so this dialog IS the "show". Deliberately
  * minimal (fetch-on-open + a scrollable monospace preview) — the full pinned-file management (add /
  * remove / re-pin) stays on the Projects page, unchanged.

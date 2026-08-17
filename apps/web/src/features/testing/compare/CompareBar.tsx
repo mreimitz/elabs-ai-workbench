@@ -24,8 +24,8 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
-} from "@brand/ui";
-import { SearchInput } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   AlertTriangle,
   Anchor,
@@ -237,7 +237,7 @@ function RunChip({
     run.run.phase,
   );
   const statusLabel = statusView.kind === "chip" ? statusView.label : "—";
-  // The trigger's decorative dot (`StatusIcon`, aria-hidden) is `@brand/ui`'s closed 7-state enum —
+  // The trigger's decorative dot (`StatusIcon`, aria-hidden) is `@elabs-ai/components-ui`'s closed 7-state enum —
   // it structurally can't express the locked table's full vocabulary, so it stays on the coarse
   // bucket; the adjacent `aria-label` + the popover's full chip below carry the precise state.
   const coarseStatus = runStatusBadgeStatus(run.run.status, run.run.outcome, run.run.ratingState);
@@ -424,7 +424,7 @@ function ExportMenu({ runs, disabled }: { runs: WorkspaceRun[]; disabled: boolea
   );
 }
 
-/** The Summary|Flow|Metrics segmented control — `@brand/ui` `ToggleGroup` (single-select, sticky).
+/** The Summary|Flow|Metrics segmented control — `@elabs-ai/components-ui` `ToggleGroup` (single-select, sticky).
  *  A `soon` mode (D2 — {@link MODE_SOON}) stays fully clickable; a small muted `Badge` beside its
  *  label sets the expectation before the click, so its honest "coming soon" content is a confirmation
  *  rather than a surprise. */

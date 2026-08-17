@@ -1,10 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// `@brand/charts` barrel import triggers a broken deep `@visx/gradient` subpath under Vitest/jsdom
+// `@elabs-ai/components-charts` barrel import triggers a broken deep `@visx/gradient` subpath under Vitest/jsdom
 // (see `DashboardView.test.tsx`'s longer note) — `IssueSparkline` only needs `Sparkline` stubbed.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   Sparkline: ({ values, label }: { values: number[]; label?: string }) => (
     <svg role="img" aria-label={label} data-values={values.join(",")} />
   ),

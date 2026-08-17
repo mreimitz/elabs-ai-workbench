@@ -1,10 +1,10 @@
 import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ReactElement } from "react";
 
-// RoleAvatar (the picker's live preview) reaches for `@brand/ai`'s Rive/WebGL `Persona` — stub it.
-vi.mock("@brand/ai", () => ({
+// RoleAvatar (the picker's live preview) reaches for `@elabs-ai/components-ai`'s Rive/WebGL `Persona` — stub it.
+vi.mock("@elabs-ai/components-ai", () => ({
   Persona: () => <div data-testid="persona" />,
   ModelSelectorLogo: () => <div data-testid="model-logo" />,
 }));

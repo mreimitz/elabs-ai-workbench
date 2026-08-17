@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { HubUsageSummary } from "@mcp-token-footprint/shared";
-import { MetricCard, Spinner, Text } from "@brand/ui";
+import { MetricCard, Spinner, Text } from "@elabs-ai/components-ui";
 import { apiGet } from "../../../../lib/api";
 import { getErrorMessage } from "../../../../lib/errors";
 

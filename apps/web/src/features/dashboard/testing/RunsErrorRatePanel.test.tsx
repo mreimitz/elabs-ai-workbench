@@ -2,10 +2,10 @@ import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { parseRunFilter, type RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { defaultControls, drillDownHref } from "./dashboard-url-state";
 
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   ComposedChart: ({ children }: { children: ReactNode }) => <div data-testid="composed-chart">{children}</div>,
   SeriesBar: () => null,
   Line: () => null,

@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
 import type { RunOutcome, RunStatus, RunStep } from "@mcp-token-footprint/shared";
-import { DataTable, FacetFilter, FilterBar, SearchInput } from "@brand/data";
-import { Badge, Button, Switch, Text, cn } from "@brand/ui";
+import { DataTable, FacetFilter, FilterBar, SearchInput } from "@elabs-ai/components-data";
+import { Badge, Button, Switch, Text, cn } from "@elabs-ai/components-ui";
 import {
   AlertTriangle,
   ArrowDownToLine,
@@ -40,7 +40,7 @@ import type { RunDeltas } from "./use-run-stream";
  * maps to a `RunStep` lifts the SHARED `selectedStepId` (no second selection state), which opens the
  * packet inspector (WP 3.6) and cross-highlights the left tool card (WP 3.4).
  *
- * Smoothness at 50+ events comes from `@brand/data` `DataTable`'s opt-in row virtualization
+ * Smoothness at 50+ events comes from `@elabs-ai/components-data` `DataTable`'s opt-in row virtualization
  * (single-column "log" mode): only the visible window of rows mounts, so a long, rapidly-growing log
  * never mounts hundreds of rows or thrashes layout. There is NO per-row `getBoundingClientRect` /
  * `offsetHeight` measurement anywhere here — the only per-row work is reading already-derived fields.

@@ -1,13 +1,13 @@
 import type { ReactElement } from "react";
 import type { HubAgentRole, HubCrew } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   Sparkline: () => <div data-testid="sparkline" />,
 }));
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
 vi.mock("../../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api")>();
   return { ...actual, getHubUsageSummary: vi.fn() };

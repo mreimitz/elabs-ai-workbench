@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import type { RunForkRef } from "@mcp-token-footprint/shared";
-import { Badge, Button, Text } from "@brand/ui";
+import { Badge, Button, Text } from "@elabs-ai/components-ui";
 import { GitFork } from "lucide-react";
 
 /** Short id for display — the run ids are nanoids; the first 8 chars are plenty to recognize. */

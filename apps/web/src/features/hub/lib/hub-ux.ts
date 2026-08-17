@@ -75,7 +75,7 @@ export function crewAccentClasses(colorKey?: ChartColorKey | null): {
   }
   // Accent classes use the chart-N token directly.
   // Example: "chart-1" → "ring-[var(--chart-1)]", "border-t-[var(--chart-1)]"
-  // (Tailwind's arbitrary value support; @brand/tokens provides the CSS variable)
+  // (Tailwind's arbitrary value support; @elabs-ai/components-tokens provides the CSS variable)
   const chartVar = `var(--${colorKey})`;
   return {
     ring: `ring-[${chartVar}]`,
@@ -205,7 +205,7 @@ export function composerClearancePx(composerHeightPx: number): number {
 
 /**
  * Transcript fade scrims — the transcript dissolves into the page ground at its top and bottom edges
- * (the same immersive-chat treatment the run console gets from `@brand/ai`'s `ChatShell variant="bare"`)
+ * (the same immersive-chat treatment the run console gets from `@elabs-ai/components-ai`'s `ChatShell variant="bare"`)
  * instead of hitting a hard edge or sliding visibly BEHIND the floating docked composer. Two inert
  * (`pointer-events-none`, `aria-hidden`) `from-background to-transparent` overlays sit above the
  * scrolling content: a fixed-height top scrim, and a bottom scrim sized to the SAME band the floating
@@ -256,9 +256,9 @@ export function resolveIntroDockState(input: {
 
 /**
  * D-HUX12 (WP1.3): `ChatCanvas`'s own default decoration ambient for the dot-grid layer, applied
- * via a LOCAL `DecorationProvider` (`@brand/tokens`'s scoped `data-decoration` override — see its
+ * via a LOCAL `DecorationProvider` (`@elabs-ai/components-tokens`'s scoped `data-decoration` override — see its
  * own doc: "give a diagram, panel, page, or modal a uniform […] level without changing the document
- * theme"). Both of the app's live themes (qlik-bright/qlik-dark) carry a document-level decoration
+ * theme"). Both of the app's live themes (light/dark) carry a document-level decoration
  * of 0 — only the unused `blueprint` theme defaults higher — so the chat canvas establishes its own
  * "normal" level locally rather than inheriting the (currently always-0) document ambient; a caller
  * passes `decorationLevel={0}` ("minimal") to drop the grid entirely, matching D-HUX12's "off at

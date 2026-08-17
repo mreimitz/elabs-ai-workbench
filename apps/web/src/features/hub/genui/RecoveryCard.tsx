@@ -2,7 +2,7 @@
 // repair loop (or is unrenderable at the root). It never pretends a widget rendered; it points the reader
 // at the assistant's text answer. Token-driven `Alert` variant only (R-GUI8).
 
-import { Alert, AlertDescription, AlertTitle } from "@brand/ui";
+import { Alert, AlertDescription, AlertTitle } from "@elabs-ai/components-ui";
 
 export function GenuiRecoveryCard({ reason }: { reason?: string }) {
   return (

@@ -44,9 +44,9 @@ import {
   TooltipTrigger,
   cn,
   useIsMobile,
-} from "@brand/ui";
-import { AppIcon } from "@brand/icons";
-import { THEME_META } from "@brand/tokens";
+} from "@elabs-ai/components-ui";
+import { AppIcon } from "@elabs-ai/components-icons";
+import { THEME_META } from "@elabs-ai/components-tokens";
 import {
   Bell,
   Bot,
@@ -81,7 +81,7 @@ import { IconButton } from "./IconButton";
  * `children` (Assistant Hub UX WP3.1, D-HUX15) is optional and additive — every OTHER nav group
  * stays a flat array (no group has ever needed nesting before). Only the Assistant item uses it,
  * for its single Sessions child. Rendered as a static, always-visible `SidebarMenuSub` (no
- * expand/collapse chrome) since there's exactly one child today — no `@brand/ui` `Collapsible`
+ * expand/collapse chrome) since there's exactly one child today — no `@elabs-ai/components-ui` `Collapsible`
  * wiring needed for that.
  */
 type NavItem = {
@@ -200,7 +200,7 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
 
 /**
  * The active nav-item state cue (design-remediation T5, item 4). brand-ui's default active style is
- * `bg-sidebar-accent` only, which measured a 1.17:1 wash against the rail in qlik-bright (1.29:1 in
+ * `bg-sidebar-accent` only, which measured a 1.17:1 wash against the rail in light (1.29:1 in
  * dark) with the SAME text color as inactive items — WCAG 1.4.11 wants ≥3:1 for a non-text state
  * indicator, and a same-grey wash gives a keyboard / low-vision operator nothing to lock onto in a
  * 16-item rail. This layers a token-driven accent LEFT-BAR (`bg-primary` against `bg-sidebar` is
@@ -604,7 +604,7 @@ export function AppShell({
         </a>
         {/* The main navigation always renders at COMFORTABLE density, regardless of the app-wide
           `compact` setting — there's plenty of room in this rail. `data-density` resets `--spacing`
-          to the identity for the whole sidebar subtree (see @brand/tokens density.css), which also
+          to the identity for the whole sidebar subtree (see @elabs-ai/components-tokens density.css), which also
           fixes the collapsed icon buttons: their `size-8`/`p-2` scale with `--spacing`, so under
           compact they shrank below the fixed 3rem icon rail and sat visibly off-center. */}
         <Sidebar collapsible="icon" data-density="comfortable" className={chromePrintClass}>
@@ -885,7 +885,7 @@ export function AppShell({
 }
 
 /**
- * The dock's edge resize handle. Deliberately NOT `@brand/ui`'s `ResizableHandle`: that component
+ * The dock's edge resize handle. Deliberately NOT `@elabs-ai/components-ui`'s `ResizableHandle`: that component
  * only works inside a `ResizablePanelGroup`, whose flex-basis sizing cannot TRANSITION — and the
  * whole point of the dock's layout is that its width animates open/closed exactly like the left
  * navigation sidebar. A thin separator with pointer-drag + arrow-key resizing (the dock sits on the
@@ -979,11 +979,11 @@ function BreadcrumbItemFragment({ crumb, isLast }: { crumb: Crumb; isLast: boole
 /** Glyph per theme preference — the trigger shows the active one; the menu labels each choice. */
 const THEME_PREFERENCE_ICON: Record<ThemePreference, typeof Sun> = {
   system: Monitor,
-  "qlik-bright": Sun,
-  "qlik-dark": Moon,
+  "light": Sun,
+  "dark": Moon,
 };
 
-/** Human label for a preference — "System" plus the two concrete Acme labels from `@brand/tokens`. */
+/** Human label for a preference — "System" plus the two concrete Acme labels from `@elabs-ai/components-tokens`. */
 function themePreferenceLabel(preference: ThemePreference): string {
   return preference === "system" ? "System" : (THEME_META[preference]?.label ?? preference);
 }
@@ -991,7 +991,7 @@ function themePreferenceLabel(preference: ThemePreference): string {
 /**
  * The top-bar theme control (F0/ST2). A compact icon-trigger dropdown over the app's three theme
  * PREFERENCES — System (first) · Qlik Bright · Qlik Dark — reachable in two clicks from any route.
- * It's a thin view over `useThemePreference` (lifted to App), NOT the uncontrolled `@brand/ui`
+ * It's a thin view over `useThemePreference` (lifted to App), NOT the uncontrolled `@elabs-ai/components-ui`
  * ThemeSwitcher: the app's single source of truth is the preference key that `main.tsx` re-applies
  * on boot, so driving the switch through that keeps the Settings mirror in sync, persists across
  * reload, and guarantees `blueprint` is never reachable.

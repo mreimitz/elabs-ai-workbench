@@ -13,7 +13,7 @@ import type {
   Test,
 } from "@mcp-token-footprint/shared";
 import { MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
-import { SearchInput } from "@brand/data";
+import { SearchInput } from "@elabs-ai/components-data";
 import {
   Alert,
   AlertDescription,
@@ -40,7 +40,7 @@ import {
   TabsTrigger,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ArrowLeft,
   ChevronDown,

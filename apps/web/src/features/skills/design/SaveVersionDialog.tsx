@@ -19,7 +19,7 @@ import {
   Spinner,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { ApiError } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";

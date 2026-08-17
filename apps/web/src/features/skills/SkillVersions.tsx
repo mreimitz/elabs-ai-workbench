@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { SkillVersion } from "@mcp-token-footprint/shared";
-import { DataTable } from "@brand/data";
-import { Badge, Button, Checkbox, Spinner, StatePanel } from "@brand/ui";
+import { DataTable } from "@elabs-ai/components-data";
+import { Badge, Button, Checkbox, Spinner, StatePanel } from "@elabs-ai/components-ui";
 import { ArrowRight, GitBranch, RotateCcw, Upload } from "lucide-react";
 import { ConfirmDialog } from "../../components/dialogs";
 import { actionsCol, col, shouldPaginate } from "../../lib/table";

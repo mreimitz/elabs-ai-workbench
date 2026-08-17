@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Text, cn } from "@brand/ui";
+import { Badge, Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Text, cn } from "@elabs-ai/components-ui";
 import { ChevronDown } from "lucide-react";
 
 /**

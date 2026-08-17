@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@brand/cli": "file:vendor/brand/brand-cli-1.9.0.tgz",
+    "@elabs-ai/components-cli": "^4.0.0",
     "@playwright/test": "1.56.0",
     "@types/node": "^22.20.0",
     "typescript": "^5.6.3"

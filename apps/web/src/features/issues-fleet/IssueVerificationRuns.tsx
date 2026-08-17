@@ -1,6 +1,6 @@
 import { ExternalLink, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button, Skeleton, Text } from "@brand/ui";
+import { Button, Skeleton, Text } from "@elabs-ai/components-ui";
 import { InlineError } from "../../components/InlineError";
 import { StatusBadge } from "../../components/StatusBadge";
 import { type IssueVerificationRun, listIssueVerificationRuns } from "../../lib/api";

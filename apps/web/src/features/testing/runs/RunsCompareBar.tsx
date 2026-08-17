@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, Text } from "@brand/ui";
+import { Button, Card, CardContent, Text } from "@elabs-ai/components-ui";
 import { GitCompareArrows, Layers, Trash2 } from "lucide-react";
 
 /**

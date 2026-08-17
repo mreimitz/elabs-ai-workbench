@@ -1,5 +1,5 @@
 import { HUB_AGENT_NAME_MAX_LENGTH } from "@mcp-token-footprint/shared";
-import { Input, Spinner, Text, Textarea } from "@brand/ui";
+import { Input, Spinner, Text, Textarea } from "@elabs-ai/components-ui";
 import { FieldRow } from "../../../../components/FieldRow";
 import { BudgetsFields } from "../../agents/BudgetsFields";
 import { HubModelPicker } from "../../HubModelPicker";

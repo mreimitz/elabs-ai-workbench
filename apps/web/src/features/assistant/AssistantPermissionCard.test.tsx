@@ -2,14 +2,14 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { AssistantTimelinePermission } from "./use-assistant-stream";
 
-// `@brand/ai`'s ToolInput pulls in shiki/mermaid — far too heavy for jsdom and irrelevant here. Stub
+// `@elabs-ai/components-ai`'s ToolInput pulls in shiki/mermaid — far too heavy for jsdom and irrelevant here. Stub
 // it to a plain JSON preview so this test exercises the CARD's own logic (allow/deny, diff, inert
-// replay), not the vendored JSON renderer. Same "mock heavy @brand modules" posture as the smoke tests.
-vi.mock("@brand/ai", () => ({
+// replay), not the vendored JSON renderer. Same "mock heavy brand-ui modules" posture as the smoke tests.
+vi.mock("@elabs-ai/components-ai", () => ({
   ToolInput: ({ input }: { input: unknown }) => (
     <pre data-testid="tool-input">{JSON.stringify(input)}</pre>
   ),
-  // CodeSnippet (the diff preview) is now @brand/ai's CodeBlock — same heavy-module posture (shiki).
+  // CodeSnippet (the diff preview) is now @elabs-ai/components-ai's CodeBlock — same heavy-module posture (shiki).
   CodeBlock: ({ code }: { code: string }) => <pre>{code}</pre>,
 }));
 

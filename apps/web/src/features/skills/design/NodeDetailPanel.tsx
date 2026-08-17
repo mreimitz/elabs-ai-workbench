@@ -39,9 +39,9 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@brand/ui";
-import { InspectorPanel } from "@brand/flow";
-import { CodeEditor, type CodeEditorProps } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { InspectorPanel } from "@elabs-ai/components-flow";
+import { CodeEditor, type CodeEditorProps } from "@elabs-ai/components-editor";
 import { Link } from "react-router-dom";
 import {
   AlertTriangle,
@@ -1089,7 +1089,7 @@ function ToolRefCard({
 }
 
 /**
- * The Design tab's detail panel (WP 1.3, edit mode added in WP 4.2): `@brand/flow`'s `InspectorPanel`
+ * The Design tab's detail panel (WP 1.3, edit mode added in WP 4.2): `@elabs-ai/components-flow`'s `InspectorPanel`
  * shell, the selected node's kind/label/source, its kind-specific fields, its in/out edges, and the
  * anchored `SKILL.md` excerpt. In edit mode, section nodes ALSO get a rename field, an editable body,
  * an annotation control, and a remove button; validation gates get an editable expectation; edges

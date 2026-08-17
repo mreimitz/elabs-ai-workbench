@@ -131,7 +131,7 @@ test("skill inspector → publish-to-GitHub wizard (both themes)", async ({ page
   const skill = (await created.json()) as { id: string; slug: string };
   expect(skill.id).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     // Force the theme (both the resolved-theme + preference keys), then reload so it applies pre-mount.
     await page.evaluate((t) => {
@@ -175,7 +175,7 @@ test("skill inspector → Quality tab (both themes)", async ({ page, request }) 
   const skill = (await created.json()) as { id: string };
   expect(skill.id).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     // Force the theme (both the resolved-theme + preference keys), then reload so it applies pre-mount.
     await page.evaluate((t) => {
@@ -243,7 +243,7 @@ test("skill editor → bound-tool completion from a bound server's scan (both th
   ).json()) as Array<{ toolName: string; serverName: string; definitionTokens: number }>;
   expect(boundTools.some((t) => t.toolName === "echo")).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     await page.evaluate((t) => {
       localStorage.setItem("brand-ui-theme", t);
@@ -338,7 +338,7 @@ test.skip("skill design → Tools palette + tool_ref detail card (both themes)",
   );
   expect(edited.ok(), `POST edits failed: ${edited.status()}`).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     await page.evaluate((t) => {
       localStorage.setItem("brand-ui-theme", t);
@@ -384,7 +384,7 @@ test("skills → New skill from server wizard (both themes)", async ({ page, req
   const scanned = await request.post(`/api/servers/${server.id}/scan`, { data: {} });
   expect(scanned.ok(), `scan failed: ${scanned.status()}`).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto("/skills");
     await page.evaluate((t) => {
       localStorage.setItem("brand-ui-theme", t);
@@ -499,7 +499,7 @@ test.skip("skill design → inline tool-runner unbound disabled state (both them
   );
   expect(edited.ok(), `POST edits failed: ${edited.status()}`).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     await page.evaluate((t) => {
       localStorage.setItem("brand-ui-theme", t);
@@ -584,7 +584,7 @@ test.skip("skill design → unified editor Flow | Code | Split (both themes)", a
   const code = page.locator('[aria-label="Show code"]');
   const split = page.locator('[aria-label="Split view"]');
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     // Force the theme (resolved + preference keys), then reload so it applies pre-mount.
     await page.evaluate((t) => {
@@ -675,7 +675,7 @@ test.skip("skill design → code-mode decorations + construct hover (both themes
   });
   expect(saved.ok(), `save-draft failed: ${saved.status()}`).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     // Force the theme (resolved + preference keys), then reload so it applies pre-mount.
     await page.evaluate((t) => {
@@ -754,7 +754,7 @@ test.skip("skill design → education layer: problems panel + legend + what-is-t
   });
   expect(saved.ok(), `save-draft failed: ${saved.status()}`).toBeTruthy();
 
-  for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+  for (const theme of ["light", "dark"] as const) {
     await page.goto(`/skills/${skill.id}`);
     await page.evaluate((t) => {
       localStorage.setItem("brand-ui-theme", t);
@@ -853,7 +853,7 @@ test.describe("Unified Sessions (WP3.R) — seeded session states", () => {
   test("runs feed → Needs attention section renders locked-table session chips (both themes)", async ({
     page,
   }) => {
-    for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+    for (const theme of ["light", "dark"] as const) {
       await page.goto("/testing/runs");
       await page.evaluate((t) => {
         localStorage.setItem("brand-ui-theme", t);
@@ -893,7 +893,7 @@ test.describe("Unified Sessions (WP3.R) — seeded session states", () => {
   test("run console → an `ended` session renders the locked 'Ended' chip (both themes)", async ({
     page,
   }) => {
-    for (const theme of ["qlik-bright", "qlik-dark"] as const) {
+    for (const theme of ["light", "dark"] as const) {
       await page.goto("/testing/runs/us-engine-ended");
       await page.evaluate((t) => {
         localStorage.setItem("brand-ui-theme", t);
@@ -1076,7 +1076,7 @@ test.describe("Assistant Hub (WP4.4 + WP4.1) — stubbed-model smoke", () => {
     // instead (the same handle T9's `focusComposer` uses); `fill()` works on `[contenteditable]`.
     const composer = page.getByTestId("mention-editor");
     await composer.fill(HUB_E2E_ARTIFACT_MESSAGE);
-    // The Composer's send control is `@brand/ai` `PromptInputSubmit`, whose accessible name is "Send
+    // The Composer's send control is `@elabs-ai/components-ai` `PromptInputSubmit`, whose accessible name is "Send
     // message" (not "Submit") — this predates the def8205b baseline (Composer.tsx's send button is
     // unchanged by the remediation).
     await page.getByRole("button", { name: "Send message" }).click();
@@ -1132,7 +1132,7 @@ test.describe("Assistant Hub (WP4.4 + WP4.1) — stubbed-model smoke", () => {
     await expect(page.getByText(HUB_E2E_SYNTHESIS_TEXT)).toBeVisible({ timeout: 10_000 });
 
     // hub-fixes WP3.2 (RC4, D-HF4): the synthesis ran as a REAL turn of the parent session with the GenUI
-    // `present` tool granted, so the final answer renders a widget (a StatGroup → `@brand/ui` MetricCard)
+    // `present` tool granted, so the final answer renders a widget (a StatGroup → `@elabs-ai/components-ui` MetricCard)
     // inline with the cited prose — the answer is no longer markdown-only. Its distinctive KPI-tile label
     // is proof the genui part settled on the synthesis message and rendered through the GenUiPart path.
     await expect(page.getByText(HUB_E2E_SYNTHESIS_STAT_LABEL).first()).toBeVisible({ timeout: 10_000 });

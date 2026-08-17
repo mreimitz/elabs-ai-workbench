@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { HubAgentRole, HubCrewMember, HubTopology } from "@mcp-token-footprint/shared";
 import { HUB_TOPOLOGIES } from "@mcp-token-footprint/shared";
-import { Text } from "@brand/ui";
+import { Text } from "@elabs-ai/components-ui";
 import { DialogSection } from "../../../../components/dialogs";
 import { FieldRow } from "../../../../components/FieldRow";
 import { SelectField } from "../../../../components/SelectField";
@@ -20,7 +20,7 @@ import { TopologyGraph } from "../../TopologyGraph";
  * ================================================================================================
  * CROSS-COMPONENT SLOT: `topologyRenderer` (built in parallel by WP2.5, `workforce/org-chart/*`)
  * ================================================================================================
- * WP2.5 owns the Org chart tab's `@brand/flow` canvas rendering EVERY crew's topology at once
+ * WP2.5 owns the Org chart tab's `@elabs-ai/components-flow` canvas rendering EVERY crew's topology at once
  * (`CanvasShell` + `FlowGroupNode` + `FlowNode`, D-HUX9). At Wave-2 integration, pass a
  * `topologyRenderer` node here — built from WP2.5's own node/edge builders scoped to just THIS crew —
  * to replace the default `TopologyGraph` preview below with the same visual language the org chart

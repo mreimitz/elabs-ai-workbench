@@ -1,7 +1,7 @@
 /**
  * active-nav-contrast.guardrail.test.ts — design-remediation T5 (item 4) guardrail.
  *
- * The active sidebar item used to be a 1.17:1 grey wash in qlik-bright (1.29:1 in dark) with the
+ * The active sidebar item used to be a 1.17:1 grey wash in light (1.29:1 in dark) with the
  * SAME text color as inactive items — WCAG 1.4.11 wants ≥3:1 for a non-text state indicator, and a
  * same-grey wash gives a keyboard / low-vision operator nothing to lock onto in a 16-item rail. The
  * fix layers a token-driven ACCENT left-bar (`bg-primary` against `bg-sidebar` — high-contrast in

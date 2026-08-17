@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { DEFAULT_RUN_COLUMNS_PREFERENCE, RUN_TABLE_COLUMNS } from "./run-columns";
 import { RunColumnChooser } from "./RunColumnChooser";
 

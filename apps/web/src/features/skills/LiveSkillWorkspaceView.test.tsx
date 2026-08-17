@@ -22,11 +22,11 @@ beforeAll(() => {
   }
 });
 
-// Stub Monaco (`@brand/editor`) — far too heavy for jsdom, and irrelevant to what this WP verifies
+// Stub Monaco (`@elabs-ai/components-editor`) — far too heavy for jsdom, and irrelevant to what this WP verifies
 // (the diff-vs-base WIRING, not Monaco rendering itself). Capture the props each call received so
 // tests can assert exactly what content/language reached the editor, mirroring
 // `AssistantDiffCard.test.tsx` / `design-chrome.test.tsx`'s stubbing convention.
-vi.mock("@brand/editor", () => ({
+vi.mock("@elabs-ai/components-editor", () => ({
   CodeEditor: (props: { value: string; language: string; ariaLabel?: string }) => (
     <div data-testid="code-editor" data-language={props.language} aria-label={props.ariaLabel}>
       {props.value}

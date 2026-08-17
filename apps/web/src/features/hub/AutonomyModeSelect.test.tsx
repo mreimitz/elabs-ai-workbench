@@ -2,10 +2,10 @@ import type { HubAutonomyLevel } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-// The trigger is a `@brand/ai` `PromptInputButton` (footer styling); mock the heavy `@brand/ai`
-// barrel exactly as every other hub suite does. The `@brand/ui` `Popover`/`Button` stay REAL — the
+// The trigger is a `@elabs-ai/components-ai` `PromptInputButton` (footer styling); mock the heavy `@elabs-ai/components-ai`
+// barrel exactly as every other hub suite does. The `@elabs-ai/components-ui` `Popover`/`Button` stay REAL — the
 // real Radix Popover renders fine under jsdom (proven by FeedbackControl/NotificationBell tests).
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import { AUTONOMY_TOOLTIP, AutonomyModeSelect } from "./AutonomyModeSelect";
 

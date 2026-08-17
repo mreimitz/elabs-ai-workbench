@@ -1,18 +1,18 @@
 import { parseHubIcon } from "@mcp-token-footprint/shared";
-import { ModelSelectorLogo } from "@brand/ai";
-import { cn } from "@brand/ui";
+import { ModelSelectorLogo } from "@elabs-ai/components-ai";
+import { cn } from "@elabs-ai/components-ui";
 import { Bot } from "lucide-react";
 import { inferModelLogoProvider } from "../use-hub-models";
 import { HUB_ICON_BY_NAME } from "./hub-icon-library";
 
 /**
  * Assistant Hub — the agent/crew avatar. Resolution order (owner request: "real icons for my agents"):
- *   1. `icon` is an uploaded image (`data:` URI)     → render the image (`@brand/ui` `Avatar`).
+ *   1. `icon` is an uploaded image (`data:` URI)     → render the image (`@elabs-ai/components-ui` `Avatar`).
  *   2. `icon` is a known curated glyph (`lucide:<n>`) → render that glyph in a tinted circle.
  *   3. otherwise, if `model` maps to a provider       → the model provider logo (`ModelSelectorLogo`).
  *   4. fallback                                       → a generic `Bot` glyph in a tinted circle.
  *
- * `icon`/`model` are OPTIONAL and additive. The fallback used to be `@brand/ai`'s animated `Persona`
+ * `icon`/`model` are OPTIONAL and additive. The fallback used to be `@elabs-ai/components-ai`'s animated `Persona`
  * (a Rive/WebGL glyph), but on a dense surface — e.g. a mission with many agents rendered across the
  * graph nodes, report cards, detail box and rail at once — the WebGL contexts get exhausted and the
  * canvas paints as a large EMPTY circle. The deterministic `Bot`-in-a-circle below always renders at
@@ -65,7 +65,7 @@ export function RoleAvatar({
           className,
         )}
       >
-        {/* brand-ui-allow: no @brand circular image-avatar reliably renders a CONTAINED (uncropped)
+        {/* brand-ui-allow: no brand-ui circular image-avatar reliably renders a CONTAINED (uncropped)
             uploaded logo at an explicit size; the plain <img> is the minimal correct primitive here. */}
         <img src={parsed.src} alt="" className="size-[70%] object-contain" />
       </span>

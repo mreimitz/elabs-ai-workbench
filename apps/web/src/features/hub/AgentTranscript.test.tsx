@@ -1,14 +1,14 @@
 // hub-fixes WP4.3 (RC6.4) — the slim read-only child-session transcript. Driven by a FAKE EventSource
 // (the `use-hub-stream.test.ts` harness) so the streaming path, the tool-call card, the terminal-only
 // error slot, and — critically — the unsubscribe-on-unmount (no polling loop left behind) are all
-// proven with stubs, no real network. `@brand/ai` is the shared hub stub (jsdom never loads shiki/
-// streamdown); `@brand/ui` stays real.
+// proven with stubs, no real network. `@elabs-ai/components-ai` is the shared hub stub (jsdom never loads shiki/
+// streamdown); `@elabs-ai/components-ui` stays real.
 
 import type { HubSseFrame } from "../../lib/api";
 import { render, screen, act } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import { AgentTranscript } from "./AgentTranscript";
 

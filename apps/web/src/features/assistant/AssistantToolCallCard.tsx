@@ -1,4 +1,4 @@
-import type { Status } from "@brand/ui";
+import type { Status } from "@elabs-ai/components-ui";
 import {
   Collapsible,
   CollapsibleContent,
@@ -6,8 +6,8 @@ import {
   StatusBadge,
   Text,
   cn,
-} from "@brand/ui";
-import { ToolInput, ToolOutput } from "@brand/ai";
+} from "@elabs-ai/components-ui";
+import { ToolInput, ToolOutput } from "@elabs-ai/components-ai";
 import { ChevronRight, Wrench } from "lucide-react";
 import { mcpErrorText, summarizeArgs, unwrapToolResult } from "../testing/tool-call-view";
 import type { AssistantTimelineToolCall } from "./use-assistant-stream";
@@ -17,7 +17,7 @@ import type { AssistantTimelineToolCall } from "./use-assistant-stream";
  * (`features/testing/ToolCallCard.tsx`, so the two chat surfaces read identically): a SINGLE collapsed
  * row whose whole width is the disclosure trigger — chevron + wrench + the (namespace-stripped) tool
  * name + a muted one-line args summary. Success is QUIET (no badge); only `running`/`failed` surface a
- * `StatusBadge`. Parameters / Result (via `@brand/ai` `ToolInput`/`ToolOutput`) live one click behind
+ * `StatusBadge`. Parameters / Result (via `@elabs-ai/components-ai` `ToolInput`/`ToolOutput`) live one click behind
  * the row, with the MCP result envelope UNWRAPPED ({@link unwrapToolResult}) so the tool's real payload
  * shows — `structuredContent`/pretty-parsed JSON, not the escaped `{ content: [{ text }] }` wire frame.
  */

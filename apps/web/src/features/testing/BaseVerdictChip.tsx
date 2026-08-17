@@ -3,7 +3,7 @@ import type {
   AnswerValidationVerdict,
   RunGrade,
 } from "@mcp-token-footprint/shared";
-import { Badge, type BadgeProps } from "@brand/ui";
+import { Badge, type BadgeProps } from "@elabs-ai/components-ui";
 import { pickBaseVerdictEvidence } from "./grade-format";
 
 /**

@@ -3,12 +3,12 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RunSummary } from "@mcp-token-footprint/shared";
 
-// `MetricCard` is a real `@brand/charts` export, but importing ANYTHING from that package's barrel
+// `MetricCard` is a real `@elabs-ai/components-charts` export, but importing ANYTHING from that package's barrel
 // under Vitest/jsdom resolves a broken deep `@visx/gradient` subpath used by its (unrelated, unused
 // here) Gantt chart — a pre-existing, environment-only issue (see `ScansTab.test.tsx`'s longer note;
 // `DashboardView.test.tsx`/`TestingTab.test.tsx` mock around the same class of issue). A thin
 // pass-through keeps this test's assertions on label/value/description/link intact.
-vi.mock("@brand/charts", () => ({
+vi.mock("@elabs-ai/components-charts", () => ({
   MetricCard: ({ label, value, description }: { label: string; value: string; description?: string }) => (
     <div>
       <span>{label}</span>

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RunFeedback, RunFeedbackSummary } from "@mcp-token-footprint/shared";
-import { TooltipProvider, toast } from "@brand/ui";
+import { TooltipProvider, toast } from "@elabs-ai/components-ui";
 import { FeedbackChips, FeedbackControl, FeedbackSummaryChip } from "./FeedbackControl";
 
 // WP 2.5 (D-OB15) — `FeedbackControl` is a CONTROLLED component: it never fetches on its own (the

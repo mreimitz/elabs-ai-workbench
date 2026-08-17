@@ -14,7 +14,7 @@ import {
   Spinner,
   StatePanel,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Save, Undo2 } from "lucide-react";
 import { AdaptivePanelGroup } from "../../components/AdaptivePanelGroup";
 import { InlineError } from "../../components/InlineError";

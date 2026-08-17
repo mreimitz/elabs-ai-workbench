@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Text, cn } from "@brand/ui";
+import { Text, cn } from "@elabs-ai/components-ui";
 
 /**
  * One compact label/value stat — the single replacement for the six ad-hoc re-implementations
@@ -8,7 +8,7 @@ import { Text, cn } from "@brand/ui";
  * the label and value are semantically associated (screen readers announce them together) rather
  * than being two unlabeled sibling `Text` nodes.
  *
- * When a full metric *card* is wanted (icon, delta, trend visual) use `@brand/ui` `MetricCard`
+ * When a full metric *card* is wanted (icon, delta, trend visual) use `@elabs-ai/components-ui` `MetricCard`
  * instead — this is only the inline/stacked text pattern.
  */
 export interface KpiStatProps {

@@ -1,14 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { AlertTitle } from "@brand/ui";
+import { AlertTitle } from "@elabs-ai/components-ui";
 import { AlertHeading } from "./AlertHeading";
 
-// Locks the fix for critique 2026-07-25T20-00-10Z item 2 (T9): `@brand/ui` AlertTitle always renders
+// Locks the fix for critique 2026-07-25T20-00-10Z item 2 (T9): `@elabs-ai/components-ui` AlertTitle always renders
 // a literal <h5>, producing H1→H5 jumps. AlertHeading renders a REAL heading at the level the call
 // site asks for, with the exact AlertTitle visual, so the outline stays correct with no visual change.
 
 describe("AlertHeading — alert titles at the correct outline level", () => {
-  test("defaults to <h5> (aria-level 5) — matches @brand/ui AlertTitle's own hardcoded level", () => {
+  test("defaults to <h5> (aria-level 5) — matches @elabs-ai/components-ui AlertTitle's own hardcoded level", () => {
     render(<AlertHeading>Something failed</AlertHeading>);
     const heading = screen.getByRole("heading", { name: "Something failed", level: 5 });
     expect(heading.tagName).toBe("H5");
@@ -26,7 +26,7 @@ describe("AlertHeading — alert titles at the correct outline level", () => {
     expect(heading.tagName).toBe("H3");
   });
 
-  test("carries the exact visual of @brand/ui AlertTitle (same look, real + correct heading level)", () => {
+  test("carries the exact visual of @elabs-ai/components-ui AlertTitle (same look, real + correct heading level)", () => {
     const { container: headingContainer } = render(<AlertHeading level={2}>Findings</AlertHeading>);
     const heading = screen.getByRole("heading", { name: "Findings" });
     expect(heading.className).toContain("font-medium");

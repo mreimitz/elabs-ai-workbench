@@ -82,7 +82,7 @@ const HUB_E2E_SYNTHESIS_MARKER = "[[e2e-synthesis]]";
  *  dot, so the hub passes it through unsanitized). */
 const HUB_E2E_PRESENT_TOOL_NAME = "present";
 /** hub-fixes WP3.2 — a distinctive StatGroup tile label the synthesis `present` widget renders, so the
- *  smoke test can assert the GenUI part actually rendered (via `@brand/ui` MetricCard). */
+ *  smoke test can assert the GenUI part actually rendered (via `@elabs-ai/components-ui` MetricCard). */
 export const HUB_E2E_SYNTHESIS_STAT_LABEL = "Agents reporting";
 
 // hub-fixes WP6.1 (RC7) — `auto`-mode routing markers. An `auto` session runs a NORMAL chat turn per

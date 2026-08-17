@@ -1,5 +1,5 @@
 import type { RunStep } from "@mcp-token-footprint/shared";
-import { Badge, Card, EmptyState, Text } from "@brand/ui";
+import { Badge, Card, EmptyState, Text } from "@elabs-ai/components-ui";
 import { Bot, User, Wrench } from "lucide-react";
 import { formatDuration } from "../../lib/format";
 

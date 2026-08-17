@@ -22,8 +22,8 @@ import {
   Text,
   cn,
   toast,
-} from "@brand/ui";
-import { MessageResponse } from "@brand/ai";
+} from "@elabs-ai/components-ui";
+import { MessageResponse } from "@elabs-ai/components-ai";
 import {
   AlertTriangle,
   ArrowRight,
@@ -42,7 +42,7 @@ import { SkillBindingsPanel } from "./SkillBindingsPanel";
 import { getSkillFile, getSkillTriggers, postSkillEdits } from "./skills-inspector-api";
 import { notifyError } from "../../lib/notify";
 
-// O5 — document-scale prose for the rendered SKILL.md (the @brand/ai `MessageResponse` renderer emits
+// O5 — document-scale prose for the rendered SKILL.md (the @elabs-ai/components-ai `MessageResponse` renderer emits
 // real HTML tags). Unlike the chat renderer this PRESERVES heading hierarchy so the doc reads like a
 // document, not a flat wall of text. Semantic tokens only; `!` beats MessageResponse's own prose root.
 const SKILL_MD_PROSE = [
@@ -526,7 +526,7 @@ export function SkillOverview({
         </BentoGridItem>
       </BentoGrid>
 
-      {/* O5 — Rendered SKILL.md: the @brand/ai markdown renderer, a borderless SCROLLABLE box (no
+      {/* O5 — Rendered SKILL.md: the @elabs-ai/components-ai markdown renderer, a borderless SCROLLABLE box (no
           wrapping Card border). Full width below the two card rows. */}
       <section aria-label="SKILL.md" className="flex min-w-0 flex-col gap-2">
         <div className="flex items-center gap-1.5">

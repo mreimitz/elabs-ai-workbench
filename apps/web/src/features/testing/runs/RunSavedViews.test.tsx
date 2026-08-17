@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RunView } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // jsdom omits matchMedia — Radix (Dialog/DropdownMenu/AlertDialog) reads it.
 if (typeof window.matchMedia !== "function") {

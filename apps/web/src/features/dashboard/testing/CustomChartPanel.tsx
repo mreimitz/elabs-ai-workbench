@@ -4,7 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ArrowDown, ArrowUp, Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { DashboardChart } from "@mcp-token-footprint/shared";
 import { IconButton } from "../../../components/IconButton";

@@ -17,7 +17,7 @@ import {
   Spinner,
   Switch,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   AgentMessage,
   ChatShell,
@@ -32,7 +32,7 @@ import {
   TaskContent,
   TaskTrigger,
   UserMessage,
-} from "@brand/ai";
+} from "@elabs-ai/components-ai";
 import { Check, ChevronDown, MessageSquare, Pencil, Plus, Settings, Sparkles } from "lucide-react";
 import {
   ASSISTANT_TOKEN_EXPIRY_WARNING_DAYS,
@@ -82,8 +82,8 @@ import {
 import { notifyError } from "../../lib/notify";
 
 /**
- * The global Assistant dock (UI §3.5) — built from `@brand/ai` (`ChatShell`, `Conversation*`,
- * `Composer`, `Shimmer`) + `@brand/ui`, styled/behaving like the run console's `ConversationPane.tsx`
+ * The global Assistant dock (UI §3.5) — built from `@elabs-ai/components-ai` (`ChatShell`, `Conversation*`,
+ * `Composer`, `Shimmer`) + `@elabs-ai/components-ui`, styled/behaving like the run console's `ConversationPane.tsx`
  * (this WP's explicit style/behavior reference). Gated on auth: renders nothing chat-shaped while
  * signed out (D-AS-alignment — the dock/toggle are hidden entirely at the `AppShell` level too; this
  * inner gate is defense-in-depth for the rarer case where auth status changes while the dock is open).
@@ -899,7 +899,7 @@ function AssistantTurnBlock({
   return (
     <div className="flex min-w-0 flex-col gap-4">
       {/* Tool calls render as one-line collapsed rows (AssistantToolCallCard), mirroring the run
-          console. A single call shows directly; two or more fold into a `@brand/ai` `Task`
+          console. A single call shows directly; two or more fold into a `@elabs-ai/components-ai` `Task`
           ("Used N tools") — open while the turn is live so streamed activity stays in view, collapsed
           once settled (uncontrolled after mount, so the owner's own toggle always wins). */}
       {turn.toolCalls.length === 1 ? (
@@ -1009,7 +1009,7 @@ function toolTaskTitle(turn: AssistantTimelineTurn): string {
 
 /**
  * WP R3.2 (D-AS27/D-AS28/D-AS29) — the dock's empty state. Below the existing title/description, a
- * row of `@brand/ai` `Suggestion` chips (session starters, curated + data-aware per the current page)
+ * row of `@elabs-ai/components-ai` `Suggestion` chips (session starters, curated + data-aware per the current page)
  * prefills the composer on click — never sends (`openAssistant({prompt, entity})` only ever fills the
  * composer; see `assistant-context.tsx`). Chips are additive: while loading, on a fetch error, or when
  * the endpoint returns zero starters, `actions` stays `undefined` and today's plain empty state renders
@@ -1031,7 +1031,7 @@ function PendingPanel({ hasThread }: { hasThread: boolean }) {
     [openAssistant, entityKind, entityId],
   );
 
-  // The chat-specific `@brand/ai` `ConversationEmptyState` (2026-07-12 brand-ui alignment; replaces
+  // The chat-specific `@elabs-ai/components-ai` `ConversationEmptyState` (2026-07-12 brand-ui alignment; replaces
   // the generic `EmptyState`). It has no `actions` slot (passing `children` would REPLACE its whole
   // icon/title/description face), so the starter-chip row renders as a SIBLING below it inside the
   // same centering column.
@@ -1048,7 +1048,7 @@ function PendingPanel({ hasThread }: { hasThread: boolean }) {
         }
       />
       {!loading && starters.length > 0 ? (
-        // NOT `@brand/ai`'s `Suggestions` here: that wrapper is a horizontal `ScrollArea` whose
+        // NOT `@elabs-ai/components-ai`'s `Suggestions` here: that wrapper is a horizontal `ScrollArea` whose
         // inner row is `w-max` with a HIDDEN scrollbar — at the dock's narrow default width the
         // chips visibly overflowed both edges with no way to reach them. A wrapping row keeps
         // every chip visible at any dock width instead.

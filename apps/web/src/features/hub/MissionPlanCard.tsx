@@ -1,6 +1,6 @@
 // Assistant Hub (roadmap/assistant-hub/, WP1.7 · D-AH6/D-AH7 · R-UX6) — the editable MISSION PLAN
 // card, rendered IN-BAND when the planner has proposed a team (`plan_proposed`) and the mission is
-// still awaiting approval. Composes `@brand/ai`'s `Plan*` shell + `@brand/ui` primitives (brand-ui
+// still awaiting approval. Composes `@elabs-ai/components-ai`'s `Plan*` shell + `@elabs-ai/components-ui` primitives (brand-ui
 // only, both themes). Each agent shows its role, model chip, target, brief, per-agent RATIONALE
 // (R-UX6 — "because your prompt asks…"), budget and tool grants; the footer approves, adjusts (removes
 // an agent → a `PATCH`), or cancels. Hard caps are enforced server-side regardless of any edit here.
@@ -28,7 +28,7 @@
 // (WP 5.1 acknowledgement) softens the copy — an MCP server stays the pluralistic upgrade (multi-engine,
 // custom sources, page fetch) even once the model's own `web.search` covers the basic case.
 
-import { Plan, PlanContent, PlanDescription, PlanFooter, PlanHeader, PlanTitle } from "@brand/ai";
+import { Plan, PlanContent, PlanDescription, PlanFooter, PlanHeader, PlanTitle } from "@elabs-ai/components-ai";
 import {
   Alert,
   AlertDescription,
@@ -45,7 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubBudgets,
   HubCrew,

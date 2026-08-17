@@ -24,8 +24,8 @@ import {
   ToolHeader,
   ToolInput,
   ToolOutput,
-} from "@brand/ai";
-import { Alert, AlertDescription, AlertTitle, Badge, Skeleton, Text } from "@brand/ui";
+} from "@elabs-ai/components-ai";
+import { Alert, AlertDescription, AlertTitle, Badge, Skeleton, Text } from "@elabs-ai/components-ui";
 import type { HubMessagePart, HubToolPart } from "@mcp-token-footprint/shared";
 import { MD_TABLE_COMPONENTS } from "../testing/ChatMarkdown";
 import { mcpErrorText, summarizeArgs, unwrapToolResult } from "../testing/tool-call-view";

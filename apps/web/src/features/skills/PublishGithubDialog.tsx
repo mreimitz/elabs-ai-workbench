@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { GITHUB_REPO_NAME_PATTERN, type PublishToGithubResult } from "@mcp-token-footprint/shared";
-import { Alert, AlertDescription, AlertTitle, Badge, Card, Input, Label, Switch, Text } from "@brand/ui";
+import { Alert, AlertDescription, AlertTitle, Badge, Card, Input, Label, Switch, Text } from "@elabs-ai/components-ui";
 import { AlertTriangle, CheckCircle2, GitBranch } from "lucide-react";
 import { ApiError } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

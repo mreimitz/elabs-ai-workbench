@@ -13,7 +13,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubContextHistoryLayer,
   HubContextInspector,
@@ -57,7 +57,7 @@ import { notifyError } from "../../../lib/notify";
  * section's OWN header action (next to the "Effective memory" label) — §7.5's "Memory · manage" entry
  * point onto `ProfileMemoryDialog`.
  *
- * The component does NOT fetch its own data and does NOT wrap content in `@brand/ai`'s `ContextPanel`
+ * The component does NOT fetch its own data and does NOT wrap content in `@elabs-ai/components-ai`'s `ContextPanel`
  * (that owns its own width-animated collapse + a root/detail drill-in — chrome this rail's own
  * `RailSection` collapse already provides). It receives already-resolved props (self-contained,
  * testable with fixtures) and delegates "open a pinned file" / "manage skills" / "manage memory"

@@ -12,7 +12,7 @@ import type {
   Test,
 } from "@mcp-token-footprint/shared";
 import { supportsMidRunFork } from "@mcp-token-footprint/shared";
-import { Button, ErrorState, Spinner } from "@brand/ui";
+import { Button, ErrorState, Spinner } from "@elabs-ai/components-ui";
 import { GitFork } from "lucide-react";
 import { getRun, listProviders, listScenarios, listTests } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

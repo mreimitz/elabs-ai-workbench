@@ -38,9 +38,9 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   toast,
-} from "@brand/ui";
-import type { Connection, Edge } from "@brand/flow";
-import { CodeEditor, type CodeEditorProps } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import type { Connection, Edge } from "@elabs-ai/components-flow";
+import { CodeEditor, type CodeEditorProps } from "@elabs-ai/components-editor";
 import {
   AlertTriangle,
   ArrowRight,
@@ -898,7 +898,7 @@ export function writePanelCollapsed(panelKey: string, collapsed: boolean): void 
 }
 
 /** The slice of react-resizable-panels' imperative handle this chrome drives (typed locally — the
- *  full `ImperativePanelHandle` type isn't re-exported by `@brand/ui`). */
+ *  full `ImperativePanelHandle` type isn't re-exported by `@elabs-ai/components-ui`). */
 type PanelHandle = { collapse: () => void; expand: () => void; isCollapsed: () => boolean };
 
 /**

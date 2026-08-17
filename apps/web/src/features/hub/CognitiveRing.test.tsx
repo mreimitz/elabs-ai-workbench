@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test } from "vitest";
 
 import { CognitiveRing } from "./CognitiveRing";
 
-// jsdom omits matchMedia; `useReducedMotion` (@brand/tokens) calls it unconditionally on mount, so
+// jsdom omits matchMedia; `useReducedMotion` (@elabs-ai/components-tokens) calls it unconditionally on mount, so
 // every test needs a stub. `reducedMotionMatches` lets a test control the OS preference the hook
 // resolves to.
 let reducedMotionMatches = false;

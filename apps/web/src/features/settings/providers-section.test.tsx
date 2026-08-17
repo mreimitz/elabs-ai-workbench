@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // Providers — per-credential settings open in a MODAL (owner decision 2026-07-28; they used to
 // render as an inline form under the list). For an `claude_subscription` credential (WP 0.3,

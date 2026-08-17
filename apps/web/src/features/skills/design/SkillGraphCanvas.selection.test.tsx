@@ -1,8 +1,8 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { Button } from "@brand/ui";
-import type { Edge } from "@brand/flow";
+import { Button } from "@elabs-ai/components-ui";
+import type { Edge } from "@elabs-ai/components-flow";
 import { resolveSeededFocus, SkillGraphCanvas, type SkillCanvasNode } from "./SkillGraphCanvas";
 
 // ── SI14 regression — minified React #185 on the problems panel's "Show node" ──────────────────────
@@ -36,7 +36,7 @@ const h = vi.hoisted(() => {
   };
 });
 
-vi.mock("@brand/flow", async () => {
+vi.mock("@elabs-ai/components-flow", async () => {
   const react = await import("react");
   return {
     /** Captures every render's props and mimics @xyflow/react's `SelectionListenerInner`: the

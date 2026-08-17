@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, type ReactNode } from "react";
-import { Label, Text, cn } from "@brand/ui";
+import { Label, Text, cn } from "@elabs-ai/components-ui";
 
 /** The subset of ARIA props `FieldRow` injects onto the control child. */
 type ControlAriaProps = {

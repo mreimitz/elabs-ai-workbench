@@ -1,4 +1,4 @@
-import { Button, Input, Text, cn } from "@brand/ui";
+import { Button, Input, Text, cn } from "@elabs-ai/components-ui";
 import { Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { IconButton } from "../IconButton";

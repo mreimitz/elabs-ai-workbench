@@ -1,11 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { CardTitle } from "@brand/ui";
+import { CardTitle } from "@elabs-ai/components-ui";
 import { SectionCardTitle } from "./SectionCardTitle";
 
 // Locks the D-IC5 contract (interface-review finding 6): a section title is a REAL heading — an
 // `<h2>`/`<h3>` exposing `role="heading"` at the chosen `aria-level` — while keeping the exact
-// `text-title` visual of `@brand/ui` CardTitle (so the outline gains structure with no visual
+// `text-title` visual of `@elabs-ai/components-ui` CardTitle (so the outline gains structure with no visual
 // change). Decorative titles keep `CardTitle`; that split is what this component makes queryable.
 
 describe("SectionCardTitle — section titles are semantic headings (D-IC5)", () => {
@@ -24,7 +24,7 @@ describe("SectionCardTitle — section titles are semantic headings (D-IC5)", ()
     expect(heading.tagName).toBe("H3");
   });
 
-  test("carries the exact `text-title` visual of @brand/ui CardTitle (same look, real heading)", () => {
+  test("carries the exact `text-title` visual of @elabs-ai/components-ui CardTitle (same look, real heading)", () => {
     const { container: sectionContainer } = render(<SectionCardTitle>Findings</SectionCardTitle>);
     const heading = screen.getByRole("heading", { name: "Findings" });
     // The visual is the CardTitle look: `text-title leading-none`.

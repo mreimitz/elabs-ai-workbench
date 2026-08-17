@@ -7,7 +7,7 @@ import type {
   ServerType,
   ToolScan,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 import { AddServerModal } from "./AddServerModal";
 

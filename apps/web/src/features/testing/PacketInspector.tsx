@@ -29,7 +29,7 @@ import {
   TabsTrigger,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Check, Copy } from "lucide-react";
 import { ScrollableTabsList } from "../../components/ScrollableTabsList";
 import { SegmentedBar } from "../../components/TokenViz";

@@ -261,7 +261,7 @@ export function useHubModelRoster(): HubModelRoster {
 }
 
 /**
- * `ModelSelectorLogo`'s `provider` prop (`@brand/ai`) accepts a closed set of known slugs plus an
+ * `ModelSelectorLogo`'s `provider` prop (`@elabs-ai/components-ai`) accepts a closed set of known slugs plus an
  * arbitrary fallback string (`(string & {})`) — an unrecognized kind still renders (a generic
  * fallback glyph), never throws. `anthropic`/`openai`/`google` map straight through;
  * `claude_subscription` reuses the Anthropic mark (it IS Claude); `openai_compatible`/`ollama` pass

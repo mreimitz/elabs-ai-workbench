@@ -11,14 +11,14 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { HubAgentRole } from "@mcp-token-footprint/shared";
-import { cn } from "@brand/ui";
+import { cn } from "@elabs-ai/components-ui";
 import {
   PromptInputCommand,
   PromptInputCommandEmpty,
   PromptInputCommandGroup,
   PromptInputCommandItem,
   PromptInputCommandList,
-} from "@brand/ai";
+} from "@elabs-ai/components-ai";
 import { AtSign } from "lucide-react";
 import { listHubAgentRoles } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
@@ -26,7 +26,7 @@ import { getErrorMessage } from "../../lib/errors";
 // Assistant Hub (end-user UX pass) — the `@AgentName` mention composer input. OWNER-APPROVED exception to
 // the brand-ui-only rule: the design system has no mention-capable rich input (its `PromptInput` is a
 // plain `<textarea>`, which can't hold inline chips), so the editable surface is a bespoke
-// `contenteditable`. Every VISIBLE part is still `@brand/*` + semantic tokens — the popup is the
+// `contenteditable`. Every VISIBLE part is still `@elabs-ai/components-*` + semantic tokens — the popup is the
 // `PromptInputCommand*` cmdk family (mirroring `ComposerCommands.tsx`), the chip is a Badge-styled span.
 // The contenteditable DOM is managed IMPERATIVELY (React renders it empty once and never re-renders its
 // children); all content mutations are manual DOM ops so React never clobbers the caret/chips.
@@ -54,7 +54,7 @@ export function detectMentionQuery(
 /**
  * Combobox wiring (a11y — the `@` popup contract): reads the REAL DOM `id` of the currently-
  * highlighted popup option, POSITIONALLY (the Nth `[role="option"]` inside the popup container
- * matches `filtered[index]`, since options render in that same order every time). Real `@brand/ai`
+ * matches `filtered[index]`, since options render in that same order every time). Real `@elabs-ai/components-ai`
  * (cmdk under the hood) generates its own opaque per-item `id` via `useId()`, and its `CommandItem`
  * spreads incoming props BEFORE its own hardcoded `id`/`role`/`aria-selected` (see the vendored cmdk
  * source, `cmdk/dist/index.mjs`, the `he` item factory) — so those three attributes can't be forced
@@ -62,7 +62,7 @@ export function detectMentionQuery(
  * (rather than a cmdk-specific `[cmdk-item]` attribute) means this ALSO resolves correctly against
  * this file's own test-support mock (`PromptInputCommandItem` there is a passthrough `<button>`, so
  * the explicit `role`/`id` props this component sets on each item DO stick there) — the wiring is
- * exercised by a real test without touching the shared `@brand/ai` mock. Returns `undefined` (never a
+ * exercised by a real test without touching the shared `@elabs-ai/components-ai` mock. Returns `undefined` (never a
  * dangling id) when there's no container, no options yet, or the index is out of range.
  */
 export function resolveActiveOptionId(
@@ -123,7 +123,7 @@ export function serializeMentionEditor(root: HTMLElement): {
 /** The label shown on a popup row + chip. */
 const agentLabel = (agent: HubAgentRole): string => agent.displayName ?? agent.name;
 
-/** Build a non-editable inline chip DOM node styled like a `@brand/ui` Badge (secondary variant), so a
+/** Build a non-editable inline chip DOM node styled like a `@elabs-ai/components-ui` Badge (secondary variant), so a
  *  mention renders inline in the contenteditable. Token classes only (no raw colors). */
 function createChipElement(agent: HubAgentRole): HTMLSpanElement {
   const chip = document.createElement("span");

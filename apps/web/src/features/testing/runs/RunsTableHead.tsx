@@ -1,4 +1,4 @@
-import { Button, Checkbox, TableHead, TableRow, cn } from "@brand/ui";
+import { Button, Checkbox, TableHead, TableRow, cn } from "@elabs-ai/components-ui";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import type { RunTableColumnKey } from "./run-columns";
 import type { SortDir, SortKey } from "./runs-table-model";

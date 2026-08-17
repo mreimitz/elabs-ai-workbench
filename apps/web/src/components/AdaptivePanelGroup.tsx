@@ -1,5 +1,5 @@
 import { type ComponentProps } from "react";
-import { ResizablePanelGroup, useIsMobile } from "@brand/ui";
+import { ResizablePanelGroup, useIsMobile } from "@elabs-ai/components-ui";
 
 export type AdaptivePanelGroupProps = Omit<
   ComponentProps<typeof ResizablePanelGroup>,

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { cn } from "@brand/ui";
+import { cn } from "@elabs-ai/components-ui";
 
 /**
  * PageShell — the ONE page frame every route mounts into (audit §S16 page-shell + §S22 scroll

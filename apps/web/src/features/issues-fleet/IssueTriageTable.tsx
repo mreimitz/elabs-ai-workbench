@@ -1,6 +1,6 @@
 import { Sparkles } from "lucide-react";
-import { DataTable, type ColumnDef } from "@brand/data";
-import { Badge, Tooltip, TooltipContent, TooltipTrigger } from "@brand/ui";
+import { DataTable, type ColumnDef } from "@elabs-ai/components-data";
+import { Badge, Tooltip, TooltipContent, TooltipTrigger } from "@elabs-ai/components-ui";
 import { StatusBadge } from "../../components/StatusBadge";
 import { deriveIssueLifecycleView } from "../../lib/status";
 import { formatDateTime, formatNumber, formatRelativeTime } from "../../lib/format";
@@ -25,7 +25,7 @@ import { IssueSparkline } from "./IssueSparkline";
  * full absolute timestamp still on hover via `title=`) instead of the long `formatDateTime` string
  * that used to wrap character-by-character in a cramped column ("Jul 13, 202" / "7:2" / "PM").
  *
- * The table itself is the plain (non-virtualized) `@brand/data` `DataTable` `ScansTab`/`ServersView`
+ * The table itself is the plain (non-virtualized) `@elabs-ai/components-data` `DataTable` `ScansTab`/`ServersView`
  * already use for a full-width inventory. P0 mobile audit T4 (2026-07-25 critique): below `lg` its
  * inner scroll box is now `overflow-x-auto` (`RESPONSIVE_TABLE_SCROLL_CLASS`, `lib/table.tsx`) instead
  * of `overflow-hidden`, so all 9 columns — including the two pinned ones — stay reachable by a

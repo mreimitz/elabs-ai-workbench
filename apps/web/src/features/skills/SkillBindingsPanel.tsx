@@ -18,7 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { AlertTriangle, CircleDashed, Link2, Server, Tags, X } from "lucide-react";
 import { apiGet, apiPost, listServerTypes } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

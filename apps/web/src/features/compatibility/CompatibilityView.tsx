@@ -37,7 +37,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Info, LayoutGrid, Wrench } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { PageShell } from "../../components/PageShell";
@@ -396,7 +396,7 @@ function HeatmapGrid({
   onSelectCell: (cell: CompatibilityCell, subjectLabel: string) => void;
 }) {
   // CP2 — the heatmap must keep its model-column headers AND the subject/tool first column visible
-  // while 60 tool rows scroll. @brand/ui `Table` owns its scroll wrapper (`relative w-full
+  // while 60 tool rows scroll. @elabs-ai/components-ui `Table` owns its scroll wrapper (`relative w-full
   // overflow-auto`) but exposes no height cap, so `[&>div]` targets that wrapper to bound it into a
   // single both-axis scroll box; `position: sticky` then resolves against it. The header row sticks
   // top, the first column sticks left, and the corner cell sticks to both (higher z so it clears
@@ -491,7 +491,7 @@ function HeatCell({
     cell.band === "red" &&
     cell.results.some((r) => r.verdict === "fail" && r.severity === "blocker");
   const scoreSpoken = cell.score === null ? "not scored" : String(cell.score);
-  // @brand/ui Button is the interactive control (keyboard + focus); the band surface is a child
+  // @elabs-ai/components-ui Button is the interactive control (keyboard + focus); the band surface is a child
   // layout <span>. The glyph + hatch make the band legible without colour (colour-blind / greyscale
   // safe); the accessible name decodes the band + uses the model's DISPLAY name (Label-in-Name).
   return (

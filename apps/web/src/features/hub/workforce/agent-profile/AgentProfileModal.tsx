@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { buildHubAgentAnalyzePrompt, type HubAgentRole } from "@mcp-token-footprint/shared";
-import { Button, StatePanel, toast } from "@brand/ui";
+import { Button, StatePanel, toast } from "@elabs-ai/components-ui";
 import {
   BarChart3,
   Brain,

@@ -28,7 +28,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Clock, Lock, LogOut, MoreHorizontal, Square, TestTube2 } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -217,9 +217,9 @@ function guardrailFromStopReasonCode(code: StopReasonCode | undefined): TrippedM
   }
 }
 
-/** Map a display phase onto the `@brand/ui` `StatusBadge` closed status enum — still used by the
+/** Map a display phase onto the `@elabs-ai/components-ui` `StatusBadge` closed status enum — still used by the
  *  legacy `runStatusBadgeStatus`/`runStatusBadgeView` bridge for surfaces this WP doesn't own (they
- *  render via `@brand/ui`'s own `StatusBadge`, not the app-local one `RunBar`'s own badge now uses). */
+ *  render via `@elabs-ai/components-ui`'s own `StatusBadge`, not the app-local one `RunBar`'s own badge now uses). */
 function phaseStatus(phase: RunPhase): "pending" | "running" | "complete" | "failed" | "denied" {
   switch (phase) {
     case "pending":
@@ -247,7 +247,7 @@ function phaseStatus(phase: RunPhase): "pending" | "running" | "complete" | "fai
 }
 
 /**
- * Map a raw run status (+ optional outcome) onto the `@brand/ui` closed-enum `StatusBadge`/`StatusIcon`
+ * Map a raw run status (+ optional outcome) onto the `@elabs-ai/components-ui` closed-enum `StatusBadge`/`StatusIcon`
  * status — the COARSE 5-value bucket a few surfaces genuinely need on purpose: the Runs-table
  * `statusFacet` (a closed filter value space this WP doesn't own, `runs-table-model.ts`
  * `STATUS_FACETS`), the suite-rollup aggregate (`TestGroupRow`/`SuiteTableRows`' "· N error" count and
@@ -311,7 +311,7 @@ export const REVIEWING_BADGE = { status: "running", label: "Reviewing…" } as c
  * optional so every pre-existing 2–3-arg call site keeps compiling and rendering exactly as before,
  * just with the label/tone corrected wherever the richer facets are available). Returns the full
  * {@link StatusView} (label + tone + spinner/dashed) — render it via the app-local `StatusBadge`'s
- * `view` prop (`components/StatusBadge.tsx`), NEVER `@brand/ui`'s own closed 7-state `StatusBadge`
+ * `view` prop (`components/StatusBadge.tsx`), NEVER `@elabs-ai/components-ui`'s own closed 7-state `StatusBadge`
  * (its enum can't express `stopped_guardrail`'s amber or `aborted`'s gray-outline, see
  * `brand-ui-only.md`). Before this widening, callers built their OWN coarse label via
  * {@link runOutcomeLabel} (the GENERIC vocabulary, blind to `stopReasonCode`/`phase`) — the WP3.R
@@ -401,7 +401,7 @@ export function RunBar({
 }: RunBarProps) {
   const showReviewing = reviewing && !view.isLive;
   // Unified Sessions (WP3.1) — the ONE locked-table derivation (`lib/status.ts`), rendered through the
-  // app-local `StatusBadge` (no more bypassing it via `@brand/ui`'s own closed-enum StatusBadge here).
+  // app-local `StatusBadge` (no more bypassing it via `@elabs-ai/components-ui`'s own closed-enum StatusBadge here).
   // The "Reviewing…" overlay short-circuits to the same shared constant every other reviewing surface
   // uses; otherwise the label/tone come straight off `view.statusView` (computed in `deriveRunBarView`
   // from the same status/outcome/stopReasonCode), with the live elapsed-time suffix appended for Running.

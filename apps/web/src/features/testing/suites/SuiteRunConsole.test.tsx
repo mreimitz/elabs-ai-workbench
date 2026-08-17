@@ -33,7 +33,7 @@ vi.mock("./use-suite-members", () => ({
 vi.mock("./use-suite-analytics", () => ({
   useSuiteAnalytics: () => ({ analytics: null, loading: false, error: null, reload: vi.fn() }),
 }));
-// Heavy analytics children pull `@brand/charts` (visx) at module load — neutralized so importing the
+// Heavy analytics children pull `@elabs-ai/components-charts` (visx) at module load — neutralized so importing the
 // console doesn't drag the chart bundle into jsdom (mirrors RunConsole.test.tsx's convention). They
 // never render here anyway (their tabs are inactive; analytics is null).
 vi.mock("./SuiteScatter", () => ({ SuiteScatter: () => <div /> }));

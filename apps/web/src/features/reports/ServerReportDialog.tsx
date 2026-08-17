@@ -19,7 +19,7 @@ import {
   SelectValue,
   StatePanel,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { getCompatibilityModels, type CompatibilityModelOption } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
 import { formatNumber } from "../../lib/format";

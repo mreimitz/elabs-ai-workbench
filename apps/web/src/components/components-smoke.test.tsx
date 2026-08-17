@@ -3,8 +3,8 @@ import { describe, expect, test, vi } from "vitest";
 import { InlineError } from "./InlineError";
 import { KpiStat } from "./KpiStat";
 
-// Light render smoke tests proving the harness can mount `@brand/ui`-based components in jsdom.
-// (Heavy `@brand/editor`/`@brand/charts` surfaces are deliberately NOT exercised here.)
+// Light render smoke tests proving the harness can mount `@elabs-ai/components-ui`-based components in jsdom.
+// (Heavy `@elabs-ai/components-editor`/`@elabs-ai/components-charts` surfaces are deliberately NOT exercised here.)
 
 describe("InlineError", () => {
   test("renders the title + detail and wires the retry callback", () => {

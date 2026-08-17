@@ -74,6 +74,6 @@ describe("guardrail: no components/SelectField import in a *Toolbar*/*Filter* mo
     expect(importsSelectField(`// C-1 fix: this used to be a SelectField label-above stack`)).toBe(
       false,
     );
-    expect(importsSelectField(`import { Select } from "@brand/ui";`)).toBe(false);
+    expect(importsSelectField(`import { Select } from "@elabs-ai/components-ui";`)).toBe(false);
   });
 });

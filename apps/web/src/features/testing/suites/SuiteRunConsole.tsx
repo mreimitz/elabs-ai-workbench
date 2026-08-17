@@ -22,7 +22,7 @@ import {
   Skeleton,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ArrowLeft,
   ChevronDown,
@@ -99,7 +99,7 @@ const TERMINAL_SUITE_STATUSES = new Set<SuiteRunStatus>([
 type ConsoleTab = "runs" | "matrix" | "breakdowns" | "scatter" | "failures" | "delta" | "report";
 
 /**
- * Suite status → the `@brand/ui` StatusBadge status + a human label (capped/stopped/error read
+ * Suite status → the `@elabs-ai/components-ui` StatusBadge status + a human label (capped/stopped/error read
  * clearly). Auto-Rating (AR11): a TERMINAL suite run whose `ratingState` is still `pending`/`rating`
  * reads as a blue-spinner "Reviewing…" chip until the post-run suite review settles — a `failed`
  * review never turns the run red (the Report tab surfaces it); `skipped` behaves like settled.
@@ -280,7 +280,7 @@ export function SuiteRunConsole({
                 {suite.name}
               </Heading>
               {/* Unified Sessions (WP3.1) — the app-local `StatusBadge` (single renderer everywhere),
-                  not `@brand/ui`'s own closed-enum one. `suiteStatusBadge`'s logic/tests are UNCHANGED
+                  not `@elabs-ai/components-ui`'s own closed-enum one. `suiteStatusBadge`'s logic/tests are UNCHANGED
                   (a suite-run status is its own, smaller vocabulary — outside the run/session locked
                   table); only the CHIP TECHNOLOGY it renders through moves onto the shared component,
                   via `CLOSED_BADGE_STATUS_TONE` (the same bridge `RunBar`'s legacy helpers use). */}

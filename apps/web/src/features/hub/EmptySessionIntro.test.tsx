@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import { EmptySessionIntro } from "./EmptySessionIntro";
 
-// jsdom omits matchMedia; `useReducedMotion` (@brand/tokens) calls it unconditionally on mount (no
+// jsdom omits matchMedia; `useReducedMotion` (@elabs-ai/components-tokens) calls it unconditionally on mount (no
 // `typeof window.matchMedia === "function"` guard before the call), so every test in this file
 // needs a stub — not just the reduced-motion-specific ones. `reducedMotionMatches` lets each test
 // control the OS `prefers-reduced-motion` result the hook resolves to.

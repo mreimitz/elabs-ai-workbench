@@ -9,7 +9,7 @@ import {
   CollapsibleTrigger,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ChevronRight, MessageSquare } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { formatClock, formatCostUsd, formatDuration, formatNumber } from "../../lib/format";
@@ -29,7 +29,7 @@ const LANE_PX = 20;
  * status-tinted node dot. A `turn` row additionally draws a top rule, reading as the run's
  * "date separator".
  *
- * Expand/collapse is a controlled `@brand/ui` `Collapsible`; clicking a row ONLY toggles it — the
+ * Expand/collapse is a controlled `@elabs-ai/components-ui` `Collapsible`; clicking a row ONLY toggles it — the
  * Trace tab deliberately does NOT drive the shared `selectedStepId`, so it never pops the right-side
  * inspector Sheet. The per-leaf detail (args/result/response/…) is reached via its **Expand** button,
  * which opens a modal carrying the same inspector panel (`TraceLeafDetail`).

@@ -2,8 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import type { ComponentType } from "react";
 import type { LucideProps } from "lucide-react";
 import type { RunStep, RunStepType, SessionCostBasis, SpanKind } from "@mcp-token-footprint/shared";
-import { DataTable, FacetFilter, FilterBar, SearchInput, ColumnPicker } from "@brand/data";
-import type { Status, TreeNode } from "@brand/ui";
+import { DataTable, FacetFilter, FilterBar, SearchInput, ColumnPicker } from "@elabs-ai/components-data";
+import type { Status, TreeNode } from "@elabs-ai/components-ui";
 import {
   Button,
   EmptyState,
@@ -14,7 +14,7 @@ import {
   ToggleGroupItem,
   Tree,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ArrowDownToLine,
   ArrowLeftRight,
@@ -52,7 +52,7 @@ import {
 } from "./analytics-derive";
 
 /**
- * The right-pane step / packet log (WP 3.6, UI §4 Zone C). A virtualized `@brand/data` `DataTable`
+ * The right-pane step / packet log (WP 3.6, UI §4 Zone C). A virtualized `@elabs-ai/components-data` `DataTable`
  * of every `RunStep` in order — the "inspect every package" surface. Selecting a row lifts the
  * selection to `RunConsole` (`onSelectStep`), which opens the `PacketInspector` and cross-highlights
  * the matching left-pane tool card (WP 3.4 already reflects `selectedStepId`).
@@ -64,7 +64,7 @@ import {
  * value is computed from the step's tokens against the run's max, never from a measured DOM rect.
  *
  * Observability (WP 3.2) — once any step carries WP3.1's `parentStepId` (`hasStepHierarchy`), the log
- * renders as a COLLAPSIBLE TREE (`@brand/ui` `Tree`) instead of the flat table: span-kind icons, a
+ * renders as a COLLAPSIBLE TREE (`@elabs-ai/components-ui` `Tree`) instead of the flat table: span-kind icons, a
  * `rating`/`tool_io` default-collapsed state, and per-step token/cost/duration "economics" chips
  * (subtree-rolled-up on parents — see `analytics-derive.ts`). A run with NO hierarchy (every run
  * recorded before WP3.1, or any run whose executor emits none) renders EXACTLY as before — the
@@ -117,7 +117,7 @@ function spanOrTypeMeta(step: RunStep): StepTypeMeta {
   return override ?? stepTypeMeta(step.type);
 }
 
-/** Map a `RunStep.status` onto the closed `@brand/ui` `Status` enum used by `StatusBadge`. */
+/** Map a `RunStep.status` onto the closed `@elabs-ai/components-ui` `Status` enum used by `StatusBadge`. */
 export function stepBrandStatus(status: RunStep["status"]): Status {
   if (status === "error") return "failed";
   if (status === "running") return "running";
@@ -694,7 +694,7 @@ function StepTree({
   );
 }
 
-/** Build one `@brand/ui` `TreeNode` per step, recursively — the icon slot carries the span-kind/type
+/** Build one `@elabs-ai/components-ui` `TreeNode` per step, recursively — the icon slot carries the span-kind/type
  *  icon, the label slot carries the compact economics row (status + token/cost/duration chips, rolled
  *  up over the subtree via `rollupSubtreeEconomics`). */
 function toTreeNode(

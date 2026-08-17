@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Database } from "lucide-react";
-import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@brand/charts";
+import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
 import type { ScanMetricsSeries } from "@mcp-token-footprint/shared";
 import { formatNumber } from "../../../lib/format";
 import { DrillList } from "./DrillList";

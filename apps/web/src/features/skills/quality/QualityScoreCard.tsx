@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { QualityReport, QualitySeverity } from "@mcp-token-footprint/shared";
-import { Badge, Card, CardContent, MetricCard, Text } from "@brand/ui";
+import { Badge, Card, CardContent, MetricCard, Text } from "@elabs-ai/components-ui";
 import { SEVERITY_META, SEVERITY_ORDER } from "./quality-meta";
 
 /** Tally findings per severity (0 for a severity with none) so every band always renders a count. */

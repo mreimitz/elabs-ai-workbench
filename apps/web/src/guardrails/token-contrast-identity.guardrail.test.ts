@@ -14,13 +14,13 @@
  *   2. D-IC2 — `--success !== --primary` AND `--ring !== --info` in both themes (the semantic split
  *      that a naive re-merge collapses back to byte-identical values).
  *   3. STRUCTURAL — the app.css override block is present for both themes AND appears AFTER the
- *      `@import "@brand/tokens/styles.css"` (so it wins the cascade — moving it before the import
+ *      `@import "@elabs-ai/components-tokens/styles.css"` (so it wins the cascade — moving it before the import
  *      would silently un-fix everything while every value still "looks right" in the file).
  *   4. META — the WP 0.1 phase gate `tokens-contrast.test.ts` still exists and still carries its
  *      load-bearing assertions (the 4.5 threshold, both themes, all five fill roles, the two identity
  *      checks) — so the primary gate can't be quietly deleted or weakened out from under this one.
  *
- * The oklch→sRGB→WCAG math mirrors @brand/tokens' own color-contrast.ts (CSS Color 4 + WCAG 2.x),
+ * The oklch→sRGB→WCAG math mirrors @elabs-ai/components-tokens' own color-contrast.ts (CSS Color 4 + WCAG 2.x),
  * inlined because those helpers aren't part of the package's public export surface. Self-containment
  * is deliberate: a guardrail must not depend on the thing it guards.
  */
@@ -30,7 +30,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// ── oklch → sRGB → WCAG (mirror of @brand/tokens/src/color-contrast.ts) ──────────────────────────
+// ── oklch → sRGB → WCAG (mirror of @elabs-ai/components-tokens/src/color-contrast.ts) ──────────────────────────
 
 interface Oklch {
   l: number;
@@ -93,8 +93,8 @@ function contrast(fg: string, bg: string): number {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
-/** `@brand/tokens/styles.css` exports-maps to `dist/themes.css`. */
-const themesCssPath = require.resolve("@brand/tokens/styles.css");
+/** `@elabs-ai/components-tokens/styles.css` exports-maps to `dist/themes.css`. */
+const themesCssPath = require.resolve("@elabs-ai/components-tokens/styles.css");
 const baseCss = readFileSync(themesCssPath, "utf8");
 const appCssPath = join(__dirname, "..", "styles", "app.css");
 const appCss = readFileSync(appCssPath, "utf8");
@@ -122,7 +122,7 @@ function resolveTheme(name: string): Record<string, string> {
   return effective;
 }
 
-const THEMES = ["qlik-bright", "qlik-dark"] as const;
+const THEMES = ["light", "dark"] as const;
 const TOKENS: Record<string, Record<string, string>> = Object.fromEntries(
   THEMES.map((t) => [t, resolveTheme(t)]),
 );
@@ -181,11 +181,11 @@ describe("GUARDRAIL D-IC1/D-IC2 — app.css override block present + after the t
     }
   });
 
-  it("the override block layers AFTER @import '@brand/tokens/styles.css' (so it wins the cascade)", () => {
-    const importIdx = appCss.indexOf('@import "@brand/tokens/styles.css"');
-    const overrideIdx = appCss.indexOf('[data-theme="qlik-bright"]');
-    expect(importIdx, "app.css must import @brand/tokens/styles.css").toBeGreaterThanOrEqual(0);
-    expect(overrideIdx, "app.css must carry the qlik-bright override block").toBeGreaterThanOrEqual(0);
+  it("the override block layers AFTER @import '@elabs-ai/components-tokens/styles.css' (so it wins the cascade)", () => {
+    const importIdx = appCss.indexOf('@import "@elabs-ai/components-tokens/styles.css"');
+    const overrideIdx = appCss.indexOf('[data-theme="light"]');
+    expect(importIdx, "app.css must import @elabs-ai/components-tokens/styles.css").toBeGreaterThanOrEqual(0);
+    expect(overrideIdx, "app.css must carry the light override block").toBeGreaterThanOrEqual(0);
     expect(
       overrideIdx,
       "the [data-theme] override must appear AFTER the token @import to win same-specificity cascade",
@@ -193,15 +193,15 @@ describe("GUARDRAIL D-IC1/D-IC2 — app.css override block present + after the t
   });
 
   it("the override actually re-points the roles the split/contrast fix depends on", () => {
-    // qlik-bright: all four (primary/info/success/ring) are re-pointed in-block.
-    const bright = tokenMap(themeBlockBodies(appCss, "qlik-bright").join("\n"));
+    // light: all four (primary/info/success/ring) are re-pointed in-block.
+    const bright = tokenMap(themeBlockBodies(appCss, "light").join("\n"));
     for (const role of ["--primary", "--info", "--success", "--ring"]) {
-      expect(bright[role], `qlik-bright override must set ${role}`).toBeTruthy();
+      expect(bright[role], `light override must set ${role}`).toBeTruthy();
     }
-    // qlik-dark: the split roles + the destructive-ink fix.
-    const dark = tokenMap(themeBlockBodies(appCss, "qlik-dark").join("\n"));
+    // dark: the split roles + the destructive-ink fix.
+    const dark = tokenMap(themeBlockBodies(appCss, "dark").join("\n"));
     for (const role of ["--success", "--ring", "--destructive-foreground"]) {
-      expect(dark[role], `qlik-dark override must set ${role}`).toBeTruthy();
+      expect(dark[role], `dark override must set ${role}`).toBeTruthy();
     }
   });
 });
@@ -226,8 +226,8 @@ describe("GUARDRAIL D-IC1/D-IC2 — the phase gate tokens-contrast.test.ts stays
     expect(phaseTest).toMatch(/AA\s*=\s*4\.5/);
     expect(phaseTest).toMatch(/toBeGreaterThanOrEqual\(AA\)/);
     // Both themes.
-    expect(phaseTest).toContain("qlik-bright");
-    expect(phaseTest).toContain("qlik-dark");
+    expect(phaseTest).toContain("light");
+    expect(phaseTest).toContain("dark");
     // All five fill roles are enumerated in the gate.
     for (const role of FILL_ROLES) {
       expect(phaseTest, `phase gate must still cover the ${role} role`).toContain(`"${role}"`);

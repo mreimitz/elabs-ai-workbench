@@ -14,7 +14,7 @@ import {
   Label,
   Text,
   Textarea,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { GitFork } from "lucide-react";
 import { estimateRunPlan, rerunRun } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
@@ -42,7 +42,7 @@ function stepLabel(step: RunStep): string {
  * TERMINAL run into a NEW derived run: edit the final prompt / model / temperature / skill version, pick
  * a fork point (whole-run re-launch, or — capability-gated — AT a step so the conversation prefix is
  * reconstructed + seeded), preview the cost (`GET /api/estimate/run-plan`, ESTIMATE-FIRST), then launch
- * (`POST /api/runs/:id/rerun`) and navigate to the derived run. Every visible element is `@brand/*`.
+ * (`POST /api/runs/:id/rerun`) and navigate to the derived run. Every visible element is `@elabs-ai/components-*`.
  */
 export function ForkDialog(props: {
   open: boolean;

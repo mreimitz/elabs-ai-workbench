@@ -51,7 +51,7 @@ import {
   QueueItemDescription,
   QueueItemIndicator,
   QueueList,
-} from "@brand/ai";
+} from "@elabs-ai/components-ai";
 import {
   Badge,
   Button,
@@ -69,7 +69,7 @@ import {
   TabsTrigger,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubAgentReport,
   HubApprovalOptionKind,
@@ -813,7 +813,7 @@ export function MissionBoard({
 
 /**
  * hub-fixes WP2.5 (D-HF6) — the `always_ask` mission approval queue. Each pending child-agent tool call
- * (mirrored onto the parent log as an `agent_approval_requested`) renders a `@brand/ai` `ApprovalCard`;
+ * (mirrored onto the parent log as an `agent_approval_requested`) renders a `@elabs-ai/components-ai` `ApprovalCard`;
  * Approve/Deny route to the CHILD session's own `/approvals` endpoint via {@link decideHubApproval}
  * (the SAME mechanism the main console uses — the shared HITL coordinator resolves the paused child
  * turn). The card clears when the mirrored `agent_approval_responded` arrives over the parent SSE (the

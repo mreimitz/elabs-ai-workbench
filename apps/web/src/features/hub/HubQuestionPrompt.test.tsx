@@ -3,9 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { HubOpenQuestion } from "@mcp-token-footprint/shared";
 
-// `@brand/ai` can't load in jsdom — stub AgentMessage/MessageContent to passthroughs. `@brand/ui`
+// `@elabs-ai/components-ai` can't load in jsdom — stub AgentMessage/MessageContent to passthroughs. `@elabs-ai/components-ui`
 // (Button/Card/Textarea/Text/toast) loads fine and renders for real.
-vi.mock("@brand/ai", () => {
+vi.mock("@elabs-ai/components-ai", () => {
   const Pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
   return { AgentMessage: Pass, MessageContent: Pass };
 });

@@ -1,15 +1,15 @@
 import type { ElementType } from "react";
 import { fireEvent, render as rtlRender, screen, within } from "@testing-library/react";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 
 /**
- * WP 6.1 — the markdown-table override now wraps its `@brand/ui` `Table` in `ExpandableTable`, so a
- * markdown table gains the shared download/expand toolbar. `@brand/ai`'s Streamdown (`MessageResponse`)
+ * WP 6.1 — the markdown-table override now wraps its `@elabs-ai/components-ui` `Table` in `ExpandableTable`, so a
+ * markdown table gains the shared download/expand toolbar. `@elabs-ai/components-ai`'s Streamdown (`MessageResponse`)
  * can't load in jsdom, so we mock it to a minimal renderer that drives the `components.table` override
  * with a synthetic GFM table — exercising the real ChatMarkdown wrap without the markdown engine.
  */
-vi.mock("@brand/ai", () => ({
+vi.mock("@elabs-ai/components-ai", () => ({
   MessageResponse: ({ components }: { components?: Record<string, ElementType> }) => {
     const C = components ?? {};
     const T = C.table ?? "table";
@@ -47,7 +47,7 @@ const render = (
 ) => rtlRender(<TooltipProvider>{ui}</TooltipProvider>, options);
 
 beforeAll(() => {
-  // The @brand/ui Dialog (Radix) reads matchMedia + ResizeObserver on open, which jsdom lacks.
+  // The @elabs-ai/components-ui Dialog (Radix) reads matchMedia + ResizeObserver on open, which jsdom lacks.
   if (!window.matchMedia) {
     window.matchMedia = ((query: string) => ({
       matches: false,

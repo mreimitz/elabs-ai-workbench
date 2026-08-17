@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { BoundTool } from "@mcp-token-footprint/shared";
-import type { CodeEditorProps } from "@brand/editor";
+import type { CodeEditorProps } from "@elabs-ai/components-editor";
 import { getErrorMessage } from "../../lib/errors";
 import { getBoundTools } from "./skills-inspector-api";
 
@@ -9,7 +9,7 @@ import { getBoundTools } from "./skills-inspector-api";
 // framework helper that registers Monaco completion + hover providers from it. Read-only over
 // PERSISTED scans (the fetch never opens an MCP connection); the providers are ADVISORY overlays.
 //
-// The `onMount(editor, monacoApi)` callback of `@brand/editor`'s `CodeEditor` hands over the full
+// The `onMount(editor, monacoApi)` callback of `@elabs-ai/components-editor`'s `CodeEditor` hands over the full
 // monaco namespace + the standalone editor; deriving the two param types off the prop avoids a direct
 // `monaco-editor` import (the same pattern WP 5.2's marker plumbing uses).
 type CodeEditorMount = NonNullable<CodeEditorProps["onMount"]>;

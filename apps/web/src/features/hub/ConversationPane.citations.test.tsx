@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { HubCitation, HubSession } from "@mcp-token-footprint/shared";
 import { render as rtlRender, screen, within } from "@testing-library/react";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { describe, expect, test, vi } from "vitest";
 
 /**
@@ -17,9 +17,9 @@ import { describe, expect, test, vi } from "vitest";
  * a GFM table out of the markdown text itself, and — like the real Streamdown — looks up each tag in
  * the `components` override map it's handed, falling back to the native DOM tag when a tag has no
  * override. That means the REAL `citationMarkdownComponents` (`SourcesPanel.tsx`) production code runs
- * for real here, including its `@brand/ui` `Table*` styling — this file is not re-testing a fake.
+ * for real here, including its `@elabs-ai/components-ui` `Table*` styling — this file is not re-testing a fake.
  */
-vi.mock("@brand/ai", async () => {
+vi.mock("@elabs-ai/components-ai", async () => {
   const mock = await import("./test-support/brand-ai-mock");
 
   type Block =

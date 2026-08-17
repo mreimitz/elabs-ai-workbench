@@ -16,7 +16,7 @@ import {
   RadioGroupItem,
   Text,
   Textarea,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { AlertTriangle, CheckCircle2, ExternalLink } from "lucide-react";
 import { ApiError, getGithubAccount } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

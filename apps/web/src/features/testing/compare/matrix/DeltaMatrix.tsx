@@ -12,7 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { AlertTriangle, Info } from "lucide-react";
 import { DELTA_TEXT_TONE } from "../../../../lib/delta";
 import { StatusBadge } from "../../../../components/StatusBadge";

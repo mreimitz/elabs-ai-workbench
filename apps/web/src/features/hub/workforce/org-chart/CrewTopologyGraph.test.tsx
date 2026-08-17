@@ -1,4 +1,4 @@
-// Renders the REAL @brand/flow canvas under jsdom (the TopologyGraph precedent — ResizeObserver is
+// Renders the REAL @elabs-ai/components-flow canvas under jsdom (the TopologyGraph precedent — ResizeObserver is
 // polyfilled in vitest.setup), asserting member labels reach the DOM. Geometry is NOT asserted (canvas
 // libs render empty geometry under jsdom); the node/edge MODEL is covered by crew-layout.test.ts.
 import { render, screen } from "@testing-library/react";

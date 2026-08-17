@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button, StatePanel } from "@brand/ui";
+import { Button, StatePanel } from "@elabs-ai/components-ui";
 import type {
   HubPlanAcceptanceMetric,
   HubProject,

@@ -6,7 +6,7 @@ import { deriveAssistantScope } from "@mcp-token-footprint/shared";
  * assistant may WRITE to, derived from the CURRENT envelope via the R1.1 shared helper
  * (`deriveAssistantScope`, `packages/shared/src/assistant-scope.ts`). Pure and unit-tested without
  * React (mirrors `deriveAssistantEnvelope` in `assistant-context.tsx`) — `AssistantDock.tsx` just
- * calls {@link scopeChipCopy} on `currentEnvelope` and renders the result in a `@brand/ui` `Badge`.
+ * calls {@link scopeChipCopy} on `currentEnvelope` and renders the result in a `@elabs-ai/components-ui` `Badge`.
  * No migration, no new wire shape — this reads the R1.1 envelope/scope types as-is.
  *
  * `scenario` is the WIRE name for what the UI labels "Environment" (the Testing-IA rename is

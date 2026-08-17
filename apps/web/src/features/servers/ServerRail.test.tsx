@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import type { ScanSummary, ServerConfig, ServerType } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // jsdom omits matchMedia/ResizeObserver — Radix (Select/DropdownMenu) reads them.
 if (typeof window.matchMedia !== "function") {

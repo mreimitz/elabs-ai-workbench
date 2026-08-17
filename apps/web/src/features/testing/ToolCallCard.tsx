@@ -1,4 +1,4 @@
-import type { Status } from "@brand/ui";
+import type { Status } from "@elabs-ai/components-ui";
 import {
   Badge,
   Button,
@@ -8,8 +8,8 @@ import {
   StatusBadge,
   Text,
   cn,
-} from "@brand/ui";
-import { ToolInput, ToolOutput } from "@brand/ai";
+} from "@elabs-ai/components-ui";
+import { ToolInput, ToolOutput } from "@elabs-ai/components-ai";
 import { ChevronRight, ExternalLink, GitBranch, Wrench } from "lucide-react";
 import { formatDuration, formatNumber } from "../../lib/format";
 import { detectAssets } from "./asset-detect";
@@ -22,7 +22,7 @@ import type { TimelineToolCall } from "./use-run-stream";
  * a SINGLE collapsed line whose whole row is the disclosure trigger — chevron + tool name + a muted
  * one-line args summary + right-aligned duration/token meta. Success carries NO badge (quiet is the
  * default; only `failed`/`running` surface a `StatusBadge`), and the technical view (Parameters /
- * Result via `@brand/ai` `ToolInput`/`ToolOutput`, plus the cross-pane Inspect / View-in-trace
+ * Result via `@elabs-ai/components-ai` `ToolInput`/`ToolOutput`, plus the cross-pane Inspect / View-in-trace
  * actions) lives behind the row, one click away.
  *
  * The result payload is UNWRAPPED before display ({@link unwrapToolResult}): an MCP envelope

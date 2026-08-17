@@ -1,6 +1,6 @@
 // Assistant Hub (hub-fixes WP2.2, RC2.4) — the plan card's grant CHIPS, per-agent grant EDITOR (reusing
 // `ToolGrantPicker`, constrained to the parent's catalog), and half-configured-role WARNING badge. The
-// heavy `@brand/ai` `Plan*` surface is stubbed via the shared hub mock; `@brand/ui` (Badge/Dialog) and
+// heavy `@elabs-ai/components-ai` `Plan*` surface is stubbed via the shared hub mock; `@elabs-ai/components-ui` (Badge/Dialog) and
 // `ToolGrantPicker` render for real, so the picker's own `../../lib/api` reads are stubbed too.
 
 import type {
@@ -10,13 +10,13 @@ import type {
   ScanDetail,
   ServerConfig,
 } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 vi.mock("../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api")>();
   return { ...actual, listServers: vi.fn(), apiGet: vi.fn() };

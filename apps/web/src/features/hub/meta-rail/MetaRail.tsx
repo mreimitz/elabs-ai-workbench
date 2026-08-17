@@ -7,7 +7,7 @@ import {
   SheetTitle,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { FileOutput, Info, ListTodo, PanelRightClose } from "lucide-react";
 import { IconButton } from "../../../components/IconButton";
 import { META_RAIL_WIDTH_PX } from "../lib/hub-ux";

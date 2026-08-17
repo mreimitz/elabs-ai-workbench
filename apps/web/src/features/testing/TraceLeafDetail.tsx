@@ -8,8 +8,8 @@ import {
   DialogHeader,
   DialogTitle,
   Text,
-} from "@brand/ui";
-import { CodeEditor } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { CodeEditor } from "@elabs-ai/components-editor";
 import { READ_ONLY_OPTIONS } from "../../lib/monaco";
 import { Maximize2 } from "lucide-react";
 import { CodeSnippet } from "./CodeSnippet";
@@ -21,7 +21,7 @@ import { useTraceStep } from "./trace-context";
  * Prompt). It renders as a compact, **scrollable** read-only preview (the `<pre>`-in-`ScrollArea`
  * `CodeSnippet`) with a header row carrying the label and an **Expand** button in the top-right
  * corner. Expanding opens a near-fullscreen `Dialog`: the **whole** payload on the left in the
- * read-only Monaco `CodeEditor` (`@brand/editor`), and on the right the SAME detail panel
+ * read-only Monaco `CodeEditor` (`@elabs-ai/components-editor`), and on the right the SAME detail panel
  * (`PacketTabs`) the right-side inspector Sheet shows — resolved from the leaf's backing `RunStep`.
  *
  * SECURITY (`mcp-and-security.md`): the payload is UNTRUSTED, already-redacted tool/LLM output. It is

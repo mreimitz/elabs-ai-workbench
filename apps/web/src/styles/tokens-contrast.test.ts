@@ -3,22 +3,22 @@
  *
  * A deterministic, browser-free WCAG AA gate on the app's EFFECTIVE color tokens. It resolves each
  * `--<role>` / `--<role>-foreground` token the way the browser does — the vendored
- * `@brand/tokens` themes.css BASE, with this app's `apps/web/src/styles/app.css` override layered on
+ * `@elabs-ai/components-tokens` themes.css BASE, with this app's `apps/web/src/styles/app.css` override layered on
  * top (same specificity, later source order → the override wins the cascade) — then converts
  * oklch → sRGB → WCAG relative luminance and asserts:
  *
  *   1. all 5 role⇄foreground on-fill pairs (primary · success · info · destructive · warning) clear
- *      the AA 4.5:1 body-text threshold in BOTH `qlik-bright` and `qlik-dark`, and
+ *      the AA 4.5:1 body-text threshold in BOTH `light` and `dark`, and
  *   2. the two semantic splits hold: `--success !== --primary` and `--ring !== --info` in both themes.
  *
  * WHY IT READS BOTH FILES (fails-red-then-green): with the app.css override REMOVED it reads only the
- * vendored base, where `qlik-bright --primary` (4.29), `--success` (4.29), `--info` (3.74) and
- * `qlik-dark --destructive` (3.02) FAIL, and `--success === --primary` / `--ring === --info` are
+ * vendored base, where `light --primary` (4.29), `--success` (4.29), `--info` (3.74) and
+ * `dark --destructive` (3.02) FAIL, and `--success === --primary` / `--ring === --info` are
  * byte-identical — so the test is red on the pre-fix tokens. With the WP 0.1 override present it is
- * green. When @brand/tokens ships the fix upstream (upstream-gaps.md items 1–2) the override block is
+ * green. When @elabs-ai/components-tokens ships the fix upstream (upstream-gaps.md items 1–2) the override block is
  * deleted and this test still passes against the un-overridden base.
  *
- * The oklch→sRGB→WCAG math mirrors @brand/tokens' own color-contrast.ts (CSS Color 4 + WCAG 2.x);
+ * The oklch→sRGB→WCAG math mirrors @elabs-ai/components-tokens' own color-contrast.ts (CSS Color 4 + WCAG 2.x);
  * it is inlined here because those helpers are not part of the package's public export surface.
  */
 import { readFileSync } from "node:fs";
@@ -27,7 +27,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// ── oklch → sRGB → WCAG (mirror of @brand/tokens/src/color-contrast.ts) ──────────────────────────
+// ── oklch → sRGB → WCAG (mirror of @elabs-ai/components-tokens/src/color-contrast.ts) ──────────────────────────
 
 interface Oklch {
   l: number;
@@ -90,8 +90,8 @@ function contrast(fg: string, bg: string): number {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
-/** `@brand/tokens/styles.css` exports-maps to `dist/themes.css`. */
-const themesCssPath = require.resolve("@brand/tokens/styles.css");
+/** `@elabs-ai/components-tokens/styles.css` exports-maps to `dist/themes.css`. */
+const themesCssPath = require.resolve("@elabs-ai/components-tokens/styles.css");
 const baseCss = readFileSync(themesCssPath, "utf8");
 const appCss = readFileSync(join(__dirname, "app.css"), "utf8");
 
@@ -118,7 +118,7 @@ function resolveTheme(name: string): Record<string, string> {
   return effective;
 }
 
-const THEMES = ["qlik-bright", "qlik-dark"] as const;
+const THEMES = ["light", "dark"] as const;
 const TOKENS: Record<string, Record<string, string>> = Object.fromEntries(
   THEMES.map((t) => [t, resolveTheme(t)]),
 );

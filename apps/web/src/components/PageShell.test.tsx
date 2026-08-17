@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
-import { Heading } from "@brand/ui";
+import { Heading } from "@elabs-ai/components-ui";
 import { PageShell } from "./PageShell";
 
 // Locks the load-bearing contract of the page frame (audit §S22 scroll), so a later refactor can't

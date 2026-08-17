@@ -21,8 +21,8 @@ import {
   SelectValue,
   StatePanel,
   Text,
-} from "@brand/ui";
-import { CodeEditor, DiffEditor } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { CodeEditor, DiffEditor } from "@elabs-ai/components-editor";
 import { ArrowRight, FileCode2 } from "lucide-react";
 import { AdaptivePanelGroup } from "../../components/AdaptivePanelGroup";
 import { getErrorMessage } from "../../lib/errors";

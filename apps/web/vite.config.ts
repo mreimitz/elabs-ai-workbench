@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   // NOTE (code-splitting, research 03-web-review H1): no `build.rollupOptions.output.manualChunks`
   // here on purpose. The `React.lazy` route/dock boundaries in App.tsx already let Rollup split the
-  // heavy libraries — Monaco (`@brand/editor`), Mermaid, `@brand/charts`/`@visx`, `@xyflow/react` —
+  // heavy libraries — Monaco (`@elabs-ai/components-editor`), Mermaid, `@elabs-ai/components-charts`/`@visx`, `@xyflow/react` —
   // into their own on-demand chunks with NOTHING heavy preloaded on first paint. A naive
   // `manualChunks` that pins those packages by name was tried and REGRESSED first paint: it dragged
   // shared transitive code into the named vendor chunks, which turned them into static dependencies

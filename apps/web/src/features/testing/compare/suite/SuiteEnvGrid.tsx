@@ -11,7 +11,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { StatusBadge } from "../../../../components/StatusBadge";
 import {
   SUITE_TONE_CELL,

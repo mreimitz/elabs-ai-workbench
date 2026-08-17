@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { DataTable } from "@brand/data";
+import { DataTable } from "@elabs-ai/components-data";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import {
@@ -22,7 +22,7 @@ import {
  *  (`bg-card`, `bg-primary`, …) but not variant-prefixed ones like `hover:bg-accent`. */
 const SOLID_BG_AT_REST = /(?:^|\s)bg-(?:card|background|primary|secondary|accent|muted)\b/;
 
-// Render a column's header / cell in isolation. @brand/data hands the cell a
+// Render a column's header / cell in isolation. @elabs-ai/components-data hands the cell a
 // `{ row: { original } }` context and the header a header context we don't read here.
 function renderHeader(column: { header?: unknown }) {
   const header = column.header as (ctx: unknown) => JSX.Element;
@@ -107,10 +107,10 @@ describe("col — sortable data column", () => {
     expect(cell.className).not.toMatch(SOLID_BG_AT_REST);
   });
 
-  // Label-in-Name (WCAG 2.5.3 — critique 2026-07-25T20-00-10Z item 1): @brand/data's sort button
+  // Label-in-Name (WCAG 2.5.3 — critique 2026-07-25T20-00-10Z item 1): @elabs-ai/components-data's sort button
   // falls back to `column.id` for its accessible name whenever `columnDef.header` isn't a literal
   // string. See the vendored `data-table.tsx`'s `headerLabel` computation.
-  test("Label-in-Name: an unpinned column's header is a plain STRING — @brand/data can read it as the sort button's real name", () => {
+  test("Label-in-Name: an unpinned column's header is a plain STRING — @elabs-ai/components-data can read it as the sort button's real name", () => {
     const c = col<{ n: number }>({ id: "lastScan", header: "Last scan", value: (r) => r.n });
     expect(c.header).toBe("Last scan");
   });
@@ -125,7 +125,7 @@ describe("col — sortable data column", () => {
     expect(typeof c.header).toBe("function");
   });
 
-  test("Label-in-Name end-to-end: the real @brand/data sort button announces the visible header, not the column id", () => {
+  test("Label-in-Name end-to-end: the real @elabs-ai/components-data sort button announces the visible header, not the column id", () => {
     const columns = [col<{ n: number }>({ id: "lastScan", header: "Last scan", value: (r) => r.n })];
     render(<DataTable columns={columns} data={[{ n: 1 }]} />);
     expect(screen.getByRole("button", { name: "Sort by Last scan, not sorted" })).toBeInTheDocument();
@@ -269,7 +269,7 @@ describe("applyColumnHeaderScope / useTableColumnHeaderScope — scope=col on he
 describe("clickableRowTableProps — the whole row is the click target (ui-wave U7, owner feedback)", () => {
   function renderDelegatedTable(onSelect: () => void, onMenu: () => void) {
     const props = clickableRowTableProps();
-    // Mirrors the DOM @brand/data's DataTable renders around our column cells: a wrapper div
+    // Mirrors the DOM @elabs-ai/components-data's DataTable renders around our column cells: a wrapper div
     // (which receives the spread props) containing thead/tbody rows. The wrapper is not itself
     // interactive — the delegated handler only re-dispatches to the row's own semantic button —
     // so a bare div matches production shape.

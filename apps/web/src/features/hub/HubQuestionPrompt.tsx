@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import { Button, Card, CardContent, CardHeader, CardTitle, Text, Textarea } from "@brand/ui";
-import { AgentMessage, MessageContent } from "@brand/ai";
+import { Button, Card, CardContent, CardHeader, CardTitle, Text, Textarea } from "@elabs-ai/components-ui";
+import { AgentMessage, MessageContent } from "@elabs-ai/components-ai";
 import { HelpCircle, Send } from "lucide-react";
 import type { HubOpenQuestion } from "@mcp-token-footprint/shared";
 import { answerHubQuestion } from "../../lib/api";

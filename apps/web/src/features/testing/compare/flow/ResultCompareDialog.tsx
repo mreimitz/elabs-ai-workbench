@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Badge, Text, ToggleGroup, ToggleGroupItem } from "@brand/ui";
-import { CodeEditor, DiffEditor } from "@brand/editor";
+import { Badge, Text, ToggleGroup, ToggleGroupItem } from "@elabs-ai/components-ui";
+import { CodeEditor, DiffEditor } from "@elabs-ai/components-editor";
 import { ArrowRight } from "lucide-react";
 import { WorkbenchDialog } from "../../../../components/dialogs/WorkbenchDialog";
 import { READ_ONLY_OPTIONS } from "../../../../lib/monaco";

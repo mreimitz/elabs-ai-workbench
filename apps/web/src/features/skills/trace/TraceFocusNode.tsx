@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useReactFlow } from "@brand/flow";
+import { useReactFlow } from "@elabs-ai/components-flow";
 import { resolveFocusPoint } from "./trace-link";
 
 /**

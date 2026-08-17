@@ -1,6 +1,6 @@
 import type { CompatibilityEvidence } from "@mcp-token-footprint/shared";
 import { formatEvidenceValue } from "@mcp-token-footprint/shared";
-import { Badge } from "@brand/ui";
+import { Badge } from "@elabs-ai/components-ui";
 import { ExternalLink } from "lucide-react";
 import { CONFIDENCE_META } from "./meta";
 

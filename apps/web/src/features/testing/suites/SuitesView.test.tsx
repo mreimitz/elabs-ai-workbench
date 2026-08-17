@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RunPlanEstimate, Suite, SuiteRun } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 /**
  * Error Prevention (design-remediation T11, P1) — "Run" used to fire `runSuite` directly on click,
@@ -26,7 +26,7 @@ vi.mock("../../../lib/api", async (importOriginal) => {
     estimateRunPlan: vi.fn(),
   };
 });
-// `SuitesView` imports `suiteStatusBadge` from `./SuiteRunConsole`, which pulls heavy `@brand/charts`
+// `SuitesView` imports `suiteStatusBadge` from `./SuiteRunConsole`, which pulls heavy `@elabs-ai/components-charts`
 // (visx) children at module load — neutralized the same way `SuiteRunConsole.test.tsx` already does.
 vi.mock("./SuiteScatter", () => ({ SuiteScatter: () => <div /> }));
 vi.mock("./SuiteBreakdowns", () => ({ SuiteBreakdowns: () => <div /> }));

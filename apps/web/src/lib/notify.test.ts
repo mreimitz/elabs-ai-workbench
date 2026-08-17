@@ -1,4 +1,4 @@
-import { toast } from "@brand/ui";
+import { toast } from "@elabs-ai/components-ui";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { notifyError } from "./notify";
 

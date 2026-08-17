@@ -1,4 +1,4 @@
-import { cn } from "@brand/ui";
+import { cn } from "@elabs-ai/components-ui";
 
 /**
  * The workspace's run-identity token: a circular badge carrying a run's letter (Ⓐ/Ⓑ/Ⓒ …), ringed

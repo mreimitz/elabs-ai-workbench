@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { HubAgentRole, HubCrew, HubSessionRoster } from "@mcp-token-footprint/shared";
-import { Badge, Checkbox, Label, Spinner, Text } from "@brand/ui";
-import { SearchInput } from "@brand/data";
+import { Badge, Checkbox, Label, Spinner, Text } from "@elabs-ai/components-ui";
+import { SearchInput } from "@elabs-ai/components-data";
 import { listHubAgentRoles, listHubCrews } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 

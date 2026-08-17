@@ -25,14 +25,14 @@ import type {
   HubPlannedAgent,
 } from "@mcp-token-footprint/shared";
 import { HUB_MISSION_MAX_DEPTH } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeAll, describe, expect, test, vi } from "vitest";
 
-// `RoleAvatar` (rendered by MembersSection) imports `ModelSelectorLogo` from `@brand/ai` — mocked exactly
+// `RoleAvatar` (rendered by MembersSection) imports `ModelSelectorLogo` from `@elabs-ai/components-ai` — mocked exactly
 // as every other suite that renders `RoleAvatar` does.
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 beforeAll(() => {
   if (typeof window.matchMedia !== "function") {

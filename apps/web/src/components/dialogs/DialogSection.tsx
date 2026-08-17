@@ -7,7 +7,7 @@ import {
   SectionHeader,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ChevronRight } from "lucide-react";
 
 /**
@@ -15,14 +15,14 @@ import { ChevronRight } from "lucide-react";
  * `FormDialog` / `WideDialog` / `WorkbenchDialog` bodies:
  *
  *  - `DialogSection` — a labelled group of fields. Renders a real section heading (via the
- *    `@brand/ui` `SectionHeader`) so section labels are NOT the same size as field labels (the S17
+ *    `@elabs-ai/components-ui` `SectionHeader`) so section labels are NOT the same size as field labels (the S17
  *    defect: "section labels are plain field labels"). Mandatory fields go in the first section.
  *  - `AdvancedGroup` — a collapsible "Advanced" group, collapsed by default, that shows a one-line
  *    summary of its non-default values while collapsed (S17: "advanced collapsed by default,
  *    summary of non-default advanced values when collapsed"). Keeps expert options visually
  *    separated from the mandatory ones.
  *
- * Both are layout-only compositions of `@brand/*` primitives — no raw colours, tokens throughout.
+ * Both are layout-only compositions of `@elabs-ai/components-*` primitives — no raw colours, tokens throughout.
  */
 
 export function DialogSection(props: {
@@ -70,7 +70,7 @@ export function AdvancedGroup(props: {
       onOpenChange={setOpen}
       className={cn("rounded-lg border border-border bg-muted/30", props.className)}
     >
-      {/* CollapsibleTrigger is itself the interactive @brand element (Radix wires aria-expanded), so
+      {/* CollapsibleTrigger is itself the interactive brand-ui element (Radix wires aria-expanded), so
           we style it directly rather than nesting a raw interactive element inside it. */}
       <CollapsibleTrigger
         className={cn(

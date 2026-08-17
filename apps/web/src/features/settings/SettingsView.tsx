@@ -38,7 +38,7 @@ import {
   providerKindLabel,
   TOKEN_PROFILES,
 } from "@mcp-token-footprint/shared";
-import { THEME_META, useTheme } from "@brand/tokens";
+import { THEME_META, useTheme } from "@elabs-ai/components-tokens";
 import { getErrorMessage } from "../../lib/errors";
 import { ConfirmDialog, FormDialog } from "../../components/dialogs";
 import {
@@ -98,7 +98,7 @@ import {
   Textarea,
   cn,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   Bell,
   Bot,
@@ -758,7 +758,7 @@ function SubHeading(props: { title: string; description?: ReactNode }) {
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
 /** Human label for a theme preference — "System" plus the concrete theme labels from
- *  `@brand/tokens` `THEME_META`. Mirrors `AppShell.tsx`'s (unexported) `themePreferenceLabel` —
+ *  `@elabs-ai/components-tokens` `THEME_META`. Mirrors `AppShell.tsx`'s (unexported) `themePreferenceLabel` —
  *  both read the same `THEME_META` source, so the two entry points' wording can't diverge. */
 function themePreferenceLabel(preference: ThemePreference): string {
   return preference === "system" ? "System" : (THEME_META[preference]?.label ?? preference);
@@ -770,7 +770,7 @@ function GeneralSection(props: {
   themePreference: ThemePreference;
   onThemePreferenceChange: (preference: ThemePreference) => void;
 }) {
-  // Density lives in @brand/tokens' ThemeProvider, which owns the `data-density` attribute and
+  // Density lives in @elabs-ai/components-tokens' ThemeProvider, which owns the `data-density` attribute and
   // persists the choice. The app ships compact by default (see main.tsx); this is the opt-out.
   const { density, setDensity } = useTheme();
 

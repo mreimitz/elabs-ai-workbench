@@ -12,7 +12,7 @@ import {
   SheetTitle,
   StatusBadge,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ExternalLink } from "lucide-react";
 import { formatNumber, safeJson } from "../../../lib/format";
 import { deriveStatusView } from "../../../lib/status";

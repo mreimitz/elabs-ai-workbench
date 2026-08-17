@@ -11,9 +11,9 @@ vi.mock("../servers/McpAuthProvider", () => ({
   useMcpAuth: () => ({ requestReauth: vi.fn() }),
 }));
 
-// Stub Monaco (`@brand/editor`) — far too heavy for jsdom; irrelevant to the race being tested.
+// Stub Monaco (`@elabs-ai/components-editor`) — far too heavy for jsdom; irrelevant to the race being tested.
 // Mirrors LiveSkillWorkspaceView.test.tsx's stubbing convention.
-vi.mock("@brand/editor", () => ({
+vi.mock("@elabs-ai/components-editor", () => ({
   CodeEditor: (props: { value: string; ariaLabel?: string }) => (
     <div data-testid="code-editor" aria-label={props.ariaLabel}>
       {props.value}

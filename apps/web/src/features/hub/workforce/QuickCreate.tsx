@@ -6,7 +6,7 @@ import {
   HUB_CREW_NAME_MAX_LENGTH,
   HUB_TOPOLOGIES,
 } from "@mcp-token-footprint/shared";
-import { Input, Text, Textarea, toast } from "@brand/ui";
+import { Input, Text, Textarea, toast } from "@elabs-ai/components-ui";
 import { FormDialog } from "../../../components/dialogs";
 import { FieldRow } from "../../../components/FieldRow";
 import { SelectField } from "../../../components/SelectField";

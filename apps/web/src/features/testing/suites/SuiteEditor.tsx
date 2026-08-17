@@ -43,7 +43,7 @@ import {
   NumberInput,
   Text,
   Textarea,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   ArrowDown,
   ArrowUp,
@@ -62,7 +62,7 @@ import { getErrorMessage } from "../../../lib/errors";
 import { AddSkillModal } from "../AddSkillModal";
 
 /**
- * Create / edit a suite — a Dialog over `@brand/ui` parts (contract-validated with `suiteInputSchema`).
+ * Create / edit a suite — a Dialog over `@elabs-ai/components-ui` parts (contract-validated with `suiteInputSchema`).
  * A suite is an ORDERED set of tests × a scenario set × an execution config; the run matrix is their
  * cross product × repetitions. The test picker is order-sensitive (reordered with up/down `Button`s —
  * NO drag-and-drop dependency), scenarios are a Checkbox multi-select, and the config is bounded
@@ -725,7 +725,7 @@ export function SuiteEditor({
 /**
  * One skill-effect variant (WP 5.1): a label + scenario + its ± skill override. The attach picker reuses
  * the scenario `AddSkillModal` (converted to `{skillId, versionId}`); detach is a simple skill Select.
- * `className` is layout only; every control is a `@brand/*` component.
+ * `className` is layout only; every control is a `@elabs-ai/components-*` component.
  */
 function VariantCard({
   variant,

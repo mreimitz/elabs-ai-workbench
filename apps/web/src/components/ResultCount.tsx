@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Badge, cn } from "@brand/ui";
+import { Badge, cn } from "@elabs-ai/components-ui";
 
 /**
  * ResultCount — the ONE stable, always-present readout for a filtered result count (interface-craft

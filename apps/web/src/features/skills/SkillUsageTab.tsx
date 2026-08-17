@@ -10,8 +10,8 @@ import {
   CardTitle,
   StatePanel,
   Text,
-} from "@brand/ui";
-import { type ColumnDef, DataTable } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { type ColumnDef, DataTable } from "@elabs-ai/components-data";
 import { ExternalLink, PlayCircle, Server } from "lucide-react";
 import { getSkillUsage } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Copy, Wrench } from "lucide-react";
-import { Badge, Button, Text } from "@brand/ui";
+import { Badge, Button, Text } from "@elabs-ai/components-ui";
 import { BUCKET_LABELS, FIX_TARGET_META, type FleetIssue } from "./issue-lib";
 
 /** Local copy-with-feedback hook — mirrors `ResourcePromptRun.tsx`'s `useCopy` recipe exactly. */

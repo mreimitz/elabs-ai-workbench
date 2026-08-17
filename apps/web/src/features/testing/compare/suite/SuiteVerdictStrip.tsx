@@ -1,4 +1,4 @@
-import { Card, Heading, Text, cn } from "@brand/ui";
+import { Card, Heading, Text, cn } from "@elabs-ai/components-ui";
 import { ArrowRight } from "lucide-react";
 import { StatusBadge } from "../../../../components/StatusBadge";
 import { RunLetterBadge } from "../RunLetterBadge";

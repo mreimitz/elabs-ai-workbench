@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { ViewToolbar } from "./ViewToolbar";
 
 // Locks the toolbar-standard (TB.0) contract for the shared one-row primitive: the slots render

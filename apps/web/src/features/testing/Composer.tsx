@@ -1,13 +1,13 @@
 import { useCallback, useState } from "react";
-import { Alert, AlertDescription, AlertTitle, toast } from "@brand/ui";
-import { Composer as BrandComposer } from "@brand/ai";
+import { Alert, AlertDescription, AlertTitle, toast } from "@elabs-ai/components-ui";
+import { Composer as BrandComposer } from "@elabs-ai/components-ai";
 import { Lock } from "lucide-react";
 import { sendTurn } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
 import { notifyError } from "../../lib/notify";
 
 /**
- * The interactive composer (UI §3): the canonical `@brand/ai` `Composer` (v1.5.0) — the two-tone
+ * The interactive composer (UI §3): the canonical `@elabs-ai/components-ai` `Composer` (v1.5.0) — the two-tone
  * "double card" with a muted status strip over a recessed `PromptInput` well and a circular send —
  * wired to post the next user turn into a live interactive run via `sendTurn` (`lib/api.ts` —
  * imported, never re-implemented). We keep it text-only: the model is shown on the run-bar (so no

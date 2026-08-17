@@ -5,7 +5,7 @@ import { BoundedNumber } from "./BoundedNumber";
 // NOTE: the clamp/round MATH is exhaustively covered in numeric.test.ts (BoundedNumber emits
 // `normalizeNumber(...)`). These tests cover the composition this file owns: the no-limit empty
 // state, the unit suffix, value display, and the disabled state — not NumberInput's internal
-// keystroke/blur machinery (that's @brand's to test).
+// keystroke/blur machinery (that's brand-ui's to test).
 
 describe("BoundedNumber", () => {
   test("shows the no-limit placeholder when empty", () => {

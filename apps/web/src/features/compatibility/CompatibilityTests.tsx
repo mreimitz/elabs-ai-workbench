@@ -23,7 +23,7 @@ import {
   StatePanel,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { CheckCircle2 } from "lucide-react";
 import { getServerTests, getToolTests } from "../../lib/api";
 import { toolTestSavings } from "../../lib/optimize";

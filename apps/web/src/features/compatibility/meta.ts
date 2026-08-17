@@ -1,5 +1,5 @@
 // Shared display metadata for the compatibility heatmap (WP 5.4). Maps the engine's closed
-// vocabularies (band / verdict / severity) onto @brand/ui variants + token-backed utility classes.
+// vocabularies (band / verdict / severity) onto @elabs-ai/components-ui variants + token-backed utility classes.
 // All colour comes from SEMANTIC tokens (success/warning/destructive) — no raw colour literals.
 
 import type { CSSProperties } from "react";
@@ -81,7 +81,7 @@ export const BAND_META: Record<CompatibilityBand, BandMeta> = {
  * The diagonal-hatch texture for an `untested` cell — token-driven (uses the `--muted-foreground`
  * colour via CSS var, never a raw literal), applied as a low-opacity overlay so "not tested" reads
  * as a distinct texture rather than a flat tint a viewer could mistake for a faint pass. Decoration
- * only. Reads in both themes (muted-foreground is a mid grey in qlik-bright, a light grey in qlik-dark).
+ * only. Reads in both themes (muted-foreground is a mid grey in light, a light grey in dark).
  */
 export const HATCH_STYLE: CSSProperties = {
   backgroundImage:
@@ -162,6 +162,6 @@ export const CONFIDENCE_META: Record<string, { label: string; variant: BadgeVari
 };
 
 // Host-client targets + the manual-review concern list + `clientLabel` are plain display data (no
-// @brand/ui coupling) and now live in @mcp-token-footprint/shared so the API's Markdown report can
+// @elabs-ai/components-ui coupling) and now live in @mcp-token-footprint/shared so the API's Markdown report can
 // reuse them. Re-exported here so existing `../compatibility/meta` imports are unchanged.
 export { CLIENT_OPTIONS, MANUAL_REVIEW_CONCERNS, clientLabel } from "@mcp-token-footprint/shared";

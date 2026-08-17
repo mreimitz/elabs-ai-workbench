@@ -25,7 +25,7 @@ import {
   StatePanel,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Layers, Pencil, PlayCircle, Plus, Trash2 } from "lucide-react";
 import {
   createSuite,

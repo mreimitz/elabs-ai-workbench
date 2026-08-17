@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Star } from "lucide-react";
-import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@brand/charts";
+import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
 import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { formatPercent } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";

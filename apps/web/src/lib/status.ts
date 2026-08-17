@@ -20,7 +20,7 @@ import type {
 } from "@mcp-token-footprint/shared";
 
 /**
- * Visual tone buckets. These are semantic (not colours) — the component maps each to `@brand/tokens`
+ * Visual tone buckets. These are semantic (not colours) — the component maps each to `@elabs-ai/components-tokens`
  * utilities so both themes stay correct:
  * - `success` → green outline    - `danger` → red filled       - `warning` → amber outline
  * - `info`    → blue outline+spin - `neutral` → gray outline    - `pending` → gray dashed
@@ -272,7 +272,7 @@ export function deriveRunStatusView(input: RunStatusInput): StatusView {
   return deriveStatusView(outcome ?? status);
 }
 
-/** Tone for the LEGACY closed `@brand/ui` `StatusBadge` enum (`pending|running|complete|failed|denied|
+/** Tone for the LEGACY closed `@elabs-ai/components-ui` `StatusBadge` enum (`pending|running|complete|failed|denied|
  *  skipped`) that a few pre-WP3.1 helpers still return (e.g. `suiteStatusBadge`, `runStatusBadgeStatus`
  *  in `RunBar.tsx`) — bridges those call sites onto the app-local `StatusBadge` renderer so even a
  *  surface that can't yet supply the full {@link RunStatusInput} still renders through ONE component. */

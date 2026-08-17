@@ -37,8 +37,8 @@ import {
   Switch,
   Text,
   Textarea,
-} from "@brand/ui";
-import { CodeEditor } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { CodeEditor } from "@elabs-ai/components-editor";
 import { Check, Copy, Play } from "lucide-react";
 import { AdaptivePanelGroup } from "./AdaptivePanelGroup";
 import { SelectField } from "./SelectField";
@@ -340,7 +340,7 @@ export function ToolRunner({
           </ScrollArea>
         </ResizablePanel>
 
-        {/* Draggable resizer: @brand/ui's handle ships no resting cursor (reads as inert),
+        {/* Draggable resizer: @elabs-ai/components-ui's handle ships no resting cursor (reads as inert),
             so add the col-resize affordance here. Pointer drag handling comes from
             react-resizable-panels; this is the missing visual cue, not new behavior. */}
         <ResizableHandle

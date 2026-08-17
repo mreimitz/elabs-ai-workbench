@@ -1,5 +1,5 @@
 import type { RunSummary, SearchContentClass } from "@mcp-token-footprint/shared";
-import { Badge, TableCell, TableRow, Text } from "@brand/ui";
+import { Badge, TableCell, TableRow, Text } from "@elabs-ai/components-ui";
 import { formatCostUsd, formatNumber } from "../../../lib/format";
 import { FeedbackChips } from "../FeedbackControl";
 import { runStatusBadgeView } from "../RunBar";

@@ -15,7 +15,7 @@ import {
   Textarea,
   ToggleGroup,
   ToggleGroupItem,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ChevronDown, ChevronUp, ExternalLink, Network, UserPlus, UserRound, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";

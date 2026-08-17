@@ -11,8 +11,8 @@
  * discard guard (not silently applied), and only actually switches once confirmed.
  */
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { TooltipProvider } from "@brand/ui";
-import { ThemeProvider } from "@brand/tokens";
+import { TooltipProvider } from "@elabs-ai/components-ui";
+import { ThemeProvider } from "@elabs-ai/components-tokens";
 import type { GithubAccountStatus } from "@mcp-token-footprint/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -59,7 +59,7 @@ function renderSettings(overrides: Partial<Parameters<typeof SettingsDialog>[0]>
   const onSectionChange = vi.fn();
   const onOpenChange = vi.fn();
   render(
-    <ThemeProvider defaultTheme="qlik-bright">
+    <ThemeProvider defaultTheme="light">
       <TooltipProvider delayDuration={0}>
         <SettingsDialog
           open

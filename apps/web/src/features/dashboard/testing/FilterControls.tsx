@@ -1,4 +1,4 @@
-import type { DateRange, DateRangePreset } from "@brand/ui";
+import type { DateRange, DateRangePreset } from "@elabs-ai/components-ui";
 import {
   DateRangePicker,
   Select,
@@ -6,8 +6,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@brand/ui";
-import { FacetFilter, type FacetOption } from "@brand/data";
+} from "@elabs-ai/components-ui";
+import { FacetFilter, type FacetOption } from "@elabs-ai/components-data";
 import type { ProviderKind } from "@mcp-token-footprint/shared";
 import { PROVIDER_KINDS } from "@mcp-token-footprint/shared";
 import { ResultCount } from "../../../components/ResultCount";

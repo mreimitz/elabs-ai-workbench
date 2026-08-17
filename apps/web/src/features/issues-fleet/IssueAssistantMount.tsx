@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@brand/ui";
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@elabs-ai/components-ui";
 import { useAssistant } from "../assistant/assistant-context";
 import type { FleetIssue } from "./issue-lib";
 import { ISSUE_TRIAGE_STARTER_LABEL, buildIssueTriagePrompt } from "./issue-triage-prompt";

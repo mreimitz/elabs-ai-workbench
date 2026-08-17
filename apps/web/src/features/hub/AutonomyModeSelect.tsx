@@ -6,9 +6,9 @@
 // HARD budget caps are enforced server-side regardless of the mode — the footer note says so.
 //
 // This is the mode-menu form of the setting (replacing the old `ViewToolbar` `AutonomyDial` Select):
-// a trigger button (ShieldCheck + the current level's short label) that opens a `@brand/ui` `Popover`
+// a trigger button (ShieldCheck + the current level's short label) that opens a `@elabs-ai/components-ui` `Popover`
 // listing the three levels as selectable rows — each with its label + one-line hint and a check on the
-// active one — exactly like the Modes menu. brand-ui only + both themes: a `@brand/ui` `Popover`,
+// active one — exactly like the Modes menu. brand-ui only + both themes: a `@elabs-ai/components-ui` `Popover`,
 // `Button` rows, `Text`, a `ShieldCheck`/`Check` glyph; the composer's footer button (`PromptInputButton`)
 // as the trigger so it sits flush with the other footer controls (Plan first, model, commands).
 //
@@ -23,8 +23,8 @@
 // prefix, its `aria-label` names the active level in full, and its hover tooltip enumerates all three
 // levels (not just the one-line summary it had before) — no change to the governance/write behavior.
 
-import { PromptInputButton } from "@brand/ai";
-import { Button, Popover, PopoverContent, PopoverTrigger, Text, cn } from "@brand/ui";
+import { PromptInputButton } from "@elabs-ai/components-ai";
+import { Button, Popover, PopoverContent, PopoverTrigger, Text, cn } from "@elabs-ai/components-ui";
 import type { HubAutonomyLevel } from "@mcp-token-footprint/shared";
 import { Check, ShieldCheck } from "lucide-react";
 import { useState } from "react";
@@ -62,7 +62,7 @@ const HARD_CAP_NOTE = "Hard budget caps are always enforced, whatever the mode."
 
 /** hub-fixes WP6.2 (RC7) — the hover tooltip now names all three levels (not just a one-line summary),
  *  built from {@link AUTONOMY_OPTIONS} so it can never drift out of sync with the popover rows below.
- *  Exported for the unit test (the `@brand/ai` test stub swallows the `tooltip` prop, so the string's
+ *  Exported for the unit test (the `@elabs-ai/components-ai` test stub swallows the `tooltip` prop, so the string's
  *  content is asserted directly rather than through a DOM query). */
 export const AUTONOMY_TOOLTIP = `Autonomy — how freely the assistant may act without asking. ${AUTONOMY_OPTIONS.map(
   (option) => `${option.label}: ${option.hint}`,

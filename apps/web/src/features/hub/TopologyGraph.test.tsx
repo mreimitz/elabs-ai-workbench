@@ -1,15 +1,15 @@
 // Assistant Hub (roadmap/assistant-hub/, WP2.2 · R-UX4) — the topology-graph renderer + the live
-// mission-board mapping. Renders the REAL @brand/flow canvas under jsdom (the SkillGraphCanvas precedent
+// mission-board mapping. Renders the REAL @elabs-ai/components-flow canvas under jsdom (the SkillGraphCanvas precedent
 // — ResizeObserver is polyfilled in vitest.setup), asserting node labels reach the DOM.
 
 import type { HubEvent, HubMissionPlan, HubPlannedAgent, HubToolGrants } from "@mcp-token-footprint/shared";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-// The `./MissionBoard` import chain pulls the REAL `@brand/ai`, whose index.js imports
-// `@xyflow/react/dist/style.css` (unresolvable under the jsdom ESM loader). Mock `@brand/ai` (as
-// Mission.test does) so that chain stays clean; the graph itself renders the REAL `@brand/flow` canvas.
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+// The `./MissionBoard` import chain pulls the REAL `@elabs-ai/components-ai`, whose index.js imports
+// `@xyflow/react/dist/style.css` (unresolvable under the jsdom ESM loader). Mock `@elabs-ai/components-ai` (as
+// Mission.test does) so that chain stays clean; the graph itself renders the REAL `@elabs-ai/components-flow` canvas.
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import { missionBoardToTopoInput, reconstructMissionBoard } from "./MissionBoard";
 import { isTopoActivateKey, TopologyGraph, topoNodeIdFromEventTarget } from "./TopologyGraph";

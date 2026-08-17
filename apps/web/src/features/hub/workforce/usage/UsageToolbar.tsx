@@ -9,7 +9,7 @@ import {
   SelectValue,
   type DateRange,
   type DateRangePreset,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   HUB_USAGE_GROUP_BYS,
   type HubProject,
@@ -26,7 +26,7 @@ import type { UsageControls } from "./usage-url-state";
  * `PageShell`) — `WorkforceView` (WP2.1) already owns the page frame; this follows `ViewToolbar`'s
  * documented "(b) detail pane" usage, the same posture the Usage tab's host tab body takes.
  *
- * PROJECT FILTER IS SINGLE-SELECT, NOT `@brand/data`'s `FacetFilter` (deliberate): `/api/hub/usage/
+ * PROJECT FILTER IS SINGLE-SELECT, NOT `@elabs-ai/components-data`'s `FacetFilter` (deliberate): `/api/hub/usage/
  * rollup`'s `projectId` query param is one string, not an array (`hubUsageRollupQuerySchema`,
  * `apps/api/src/hub/routes.ts`) — a multi-select `FacetFilter` chip would silently only ever apply
  * the LAST checked value, which misrepresents what the control does. Both controls use bare `Select`

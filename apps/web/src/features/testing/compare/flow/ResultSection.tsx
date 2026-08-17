@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Badge, Button, Heading, Text } from "@brand/ui";
+import { Badge, Button, Heading, Text } from "@elabs-ai/components-ui";
 import { Maximize2 } from "lucide-react";
 import { RunLetterBadge } from "../RunLetterBadge";
 import { runChipLabel } from "../compare-runs";

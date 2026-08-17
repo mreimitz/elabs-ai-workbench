@@ -1,5 +1,5 @@
 import { fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { describe, expect, test, vi } from "vitest";
 import type { ServerConfig, ServerProbeResponse } from "@mcp-token-footprint/shared";
 import { ServerWizard } from "./ServerWizard";

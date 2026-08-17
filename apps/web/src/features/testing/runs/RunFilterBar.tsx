@@ -33,7 +33,7 @@ import {
   Text,
   cn,
   useIsMobile,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Plus, X } from "lucide-react";
 import { IconButton } from "../../../components/IconButton";
 

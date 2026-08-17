@@ -11,13 +11,13 @@ import {
   Spinner,
   buttonVariants,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 
 /**
  * Tier 1 of the modal system (audit §S17) — the CONFIRM tier.
  *
  * When to use: a yes/no decision with ≤2 actions and no fields (delete, discard, publish,
- * regenerate). Built on `@brand/ui` `AlertDialog`, which traps initial focus on the SAFE action —
+ * regenerate). Built on `@elabs-ai/components-ui` `AlertDialog`, which traps initial focus on the SAFE action —
  * the reason destructive confirms must NOT be a plain `Dialog` (brand-ui anti-pattern).
  *
  * Conventions baked in:

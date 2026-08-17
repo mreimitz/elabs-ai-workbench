@@ -6,7 +6,7 @@ import type {
   HubSession,
 } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 // hub-fixes WP1.2 (RC3) — the Tools header's "Manage tool scope" action renders the REAL

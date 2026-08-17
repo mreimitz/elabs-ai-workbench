@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import type { RunStep } from "@mcp-token-footprint/shared";
-import { EmptyState, ScrollArea, Text } from "@brand/ui";
+import { EmptyState, ScrollArea, Text } from "@elabs-ai/components-ui";
 import { GitBranch } from "lucide-react";
 import { buildTraceTree } from "./trace-tree";
 import { TraceNode } from "./TraceNode";

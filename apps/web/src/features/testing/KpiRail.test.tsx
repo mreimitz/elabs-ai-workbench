@@ -5,12 +5,12 @@ import { fileURLToPath } from "node:url";
 import { render, screen, within, fireEvent } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { GuardrailConfig, RunStep, SessionCapabilities } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// KpiRail now pulls `@brand/ai` (the Context usage popover behind the Context tile); the @brand/ai
+// KpiRail now pulls `@elabs-ai/components-ai` (the Context usage popover behind the Context tile); the @elabs-ai/components-ai
 // barrel imports xyflow CSS jsdom can't load, so stub it (the repo's standard posture). The popover's
 // hover/expand behavior is Radix's, not under test — these stubs keep the tile's own text assertable.
-vi.mock("@brand/ai", () => {
+vi.mock("@elabs-ai/components-ai", () => {
   const Pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
   return {
     Context: Pass,

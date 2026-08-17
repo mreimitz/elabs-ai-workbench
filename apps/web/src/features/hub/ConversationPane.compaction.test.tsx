@@ -7,7 +7,7 @@ import type { HubEvent, HubSession } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 import { ConversationPane, reconstructCompactionMarkers } from "./ConversationPane";
 import type { ConversationStream } from "./ConversationPane";

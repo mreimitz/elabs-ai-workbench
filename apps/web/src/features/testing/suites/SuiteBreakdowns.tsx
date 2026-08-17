@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { SuiteAnalytics, SuiteBreakdownSlice } from "@mcp-token-footprint/shared";
-import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text, cn } from "@brand/ui";
-import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@brand/charts";
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text, cn } from "@elabs-ai/components-ui";
+import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import { BarChart3, Layers } from "lucide-react";
 import { SelectField } from "../../../components/SelectField";
 import { formatCostUsd, formatPercent } from "../../../lib/format";
@@ -9,7 +9,7 @@ import type { SuiteMatrixRef } from "./SuiteMatrix";
 
 /**
  * Suite-run METADATA BREAKDOWNS (WP 3.4, B9.2) — for each metadata dimension present (category /
- * difficulty / each tag), a grouped `@brand/charts` BarChart with a categorical x (the dimension's
+ * difficulty / each tag), a grouped `@elabs-ai/components-charts` BarChart with a categorical x (the dimension's
  * values) and one series per scenario (`--chart-1..5`). One metric toggle (mean score % vs mean cost)
  * governs all charts. Server-computed + derived: every bar is a {@link SuiteBreakdownSlice}. BarChart is
  * categorical (string x is safe — unlike Line/Area which need Dates). Honest EmptyState when no test in

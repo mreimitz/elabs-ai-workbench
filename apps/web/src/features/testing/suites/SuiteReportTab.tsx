@@ -28,7 +28,7 @@ import {
   TableRow,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   AlertTriangle,
   CheckCircle2,

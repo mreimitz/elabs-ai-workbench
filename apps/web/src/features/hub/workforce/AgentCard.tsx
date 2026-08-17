@@ -1,6 +1,6 @@
 import type { KeyboardEvent, MouseEvent, Ref } from "react";
 import type { HubAgentRole, HubCrew, HubServerToolGrant } from "@mcp-token-footprint/shared";
-import { Sparkline } from "@brand/charts";
+import { Sparkline } from "@elabs-ai/components-charts";
 import {
   Badge,
   Card,
@@ -11,7 +11,7 @@ import {
   Skeleton,
   Text,
   cn,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Archive, ArchiveRestore, MoreHorizontal } from "lucide-react";
 import { IconButton } from "../../../components/IconButton";
 import { getHubUsageSummary } from "../../../lib/api";
@@ -97,8 +97,8 @@ export function AgentCard(props: {
   archiveBusy?: boolean;
   cardRef?: Ref<HTMLDivElement>;
   /** Grid virtualization for large directories (WP2.2 workstep 5, >50 cards): a native,
-   *  dependency-free stand-in for row/list virtualization — `@brand/data`'s `DataTable` owns THAT
-   *  for tabular data, but neither it nor `@brand/ai`'s `Gallery` (image-only) fits a card grid, so
+   *  dependency-free stand-in for row/list virtualization — `@elabs-ai/components-data`'s `DataTable` owns THAT
+   *  for tabular data, but neither it nor `@elabs-ai/components-ai`'s `Gallery` (image-only) fits a card grid, so
    *  every card gets `content-visibility: auto` (the browser then skips layout/paint work for
    *  whichever ones are actually off-screen) instead of mounting a new virtualizer dependency. */
   virtualizeHint?: boolean;

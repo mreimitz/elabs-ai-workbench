@@ -13,7 +13,7 @@ import {
   Spinner,
   Text,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { Send } from "lucide-react";
 import { listWatchRuleEvents, testFireWatchRule } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";

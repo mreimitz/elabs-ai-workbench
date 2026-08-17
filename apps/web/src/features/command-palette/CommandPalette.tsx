@@ -11,7 +11,7 @@ import {
   CommandShortcut,
   DialogDescription,
   DialogTitle,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   Folder,
   type LucideIcon,
@@ -60,7 +60,7 @@ export type CommandPaletteProps = {
  * The ⌘K / Ctrl+K global command palette — one keyboard-first surface to jump to any page, any
  * server / skill / collection / recent scan, or run a top-level action, without leaving the keyboard.
  *
- * Built on `@brand/ui`'s cmdk-based `Command*` family (the design system's own command primitive):
+ * Built on `@elabs-ai/components-ui`'s cmdk-based `Command*` family (the design system's own command primitive):
  * `CommandDialog` is a modal `Dialog` wrapping a `Command` listbox, `CommandInput` is the search box,
  * and cmdk does the fuzzy filtering client-side over each item's `value` + `keywords`. Item `value`s
  * are stable, unique slugs (so cmdk never conflates two same-named entities) while every searchable
@@ -388,6 +388,6 @@ type ThemeCommand = {
 /** The three theme preferences as runnable commands (System first — matches THEME_PREFERENCE_ORDER). */
 const THEME_COMMANDS: ThemeCommand[] = [
   { preference: "system", label: "Use system theme", icon: Monitor, keywords: ["system", "auto", "os"] },
-  { preference: "qlik-bright", label: "Switch to Bright theme", icon: Sun, keywords: ["light", "bright", "acme"] },
-  { preference: "qlik-dark", label: "Switch to Dark theme", icon: Moon, keywords: ["dark", "night", "acme"] },
+  { preference: "light", label: "Switch to Bright theme", icon: Sun, keywords: ["light", "bright", "acme"] },
+  { preference: "dark", label: "Switch to Dark theme", icon: Moon, keywords: ["dark", "night", "acme"] },
 ];

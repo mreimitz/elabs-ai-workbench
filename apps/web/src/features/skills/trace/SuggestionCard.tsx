@@ -5,7 +5,7 @@ import type {
   SkillSuggestion,
   SkillSuggestionRule,
 } from "@mcp-token-footprint/shared";
-import { Badge, Button, Text } from "@brand/ui";
+import { Badge, Button, Text } from "@elabs-ai/components-ui";
 import { Lightbulb, Wrench } from "lucide-react";
 import { describeEditOp } from "../design/use-edit-ops";
 

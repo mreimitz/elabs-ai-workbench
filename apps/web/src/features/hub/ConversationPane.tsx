@@ -44,7 +44,7 @@ import {
   UserMessage,
   type ContextAsset,
   type ContextAssetType,
-} from "@brand/ai";
+} from "@elabs-ai/components-ai";
 import {
   Alert,
   AlertDescription,
@@ -70,7 +70,7 @@ import {
   Text,
   Textarea,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import type {
   HubCitation,
   HubEvent,
@@ -1530,7 +1530,7 @@ function ResearchModelWebSearchProbe({
 // `spill` artifact (an output-cap-capped MCP result, R-MCP7) already rides the settled `tool_result`
 // event's `artifact` channel (`turn-engine.ts`'s WP3.4 wiring; `SpillCard`/`ToolOutputView` above
 // already render each one INLINE, at its own tool-call row) — this panel is the SESSION-WIDE summary
-// the real `@brand/ai` `ProducedAssetTree` renders, deduped by path across every turn so far. Selecting
+// the real `@elabs-ai/components-ai` `ProducedAssetTree` renders, deduped by path across every turn so far. Selecting
 // an entry promotes that workspace file to a versioned artifact (WP1.6 canvas) — additive, never
 // destructive, so a plain click (no confirmation dialog) is the right affordance here.
 
@@ -2157,14 +2157,14 @@ export function ConversationPane({
           onResolve={setModelSupportsWebSearch}
         />
       ) : null}
-      {/* a11y (critique 2026-07-25T20-00-10Z item 5): `@brand/ai`'s `Conversation` already carries a
+      {/* a11y (critique 2026-07-25T20-00-10Z item 5): `@elabs-ai/components-ai`'s `Conversation` already carries a
           bare `role="log"` (vendor `conversation.tsx`) with no name and no explicit `aria-live` —
           effectively an unnamed, implicit-only live region spanning the WHOLE (potentially very long)
           transcript. `aria-live`/`aria-label` mirror the same pattern `AgentTranscript.tsx` and
           `RunConsole.tsx`'s run-transcript wrapper already use; `aria-relevant="additions"` scopes
           announcements to newly-added turns (not text/attribute churn elsewhere in the subtree), and
           `aria-busy` mirrors the turn-running state so AT knows the region is mid-update. These are
-          all plain HTML-div props `@brand/ai`'s `Conversation` (`StickToBottomProps extends
+          all plain HTML-div props `@elabs-ai/components-ai`'s `Conversation` (`StickToBottomProps extends
           React.HTMLAttributes<HTMLDivElement>`) forwards straight through — no vendor edit. The
           TRAILING turn additionally gets its own small, scoped `role="status"` region (see
           `AssistantTurnWithVariants` below) so a streaming reply's start/stop is announced without

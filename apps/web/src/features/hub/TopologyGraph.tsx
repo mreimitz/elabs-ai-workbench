@@ -1,12 +1,12 @@
 // Assistant Hub (roadmap/assistant-hub/, WP2.2 · §1.9 · R-UX4) — the mission TOPOLOGY GRAPH renderer.
-// A thin `@brand/flow` canvas over the pure {@link deriveTopologyGraph} layout: it draws the mission's
+// A thin `@elabs-ai/components-flow` canvas over the pure {@link deriveTopologyGraph} layout: it draws the mission's
 // team as a directed graph (agents → synthesis / judge / resolver) with LIVE state coloured onto each
 // node (waiting → default, working → accent, reported → success, did-not-report → destructive; the
 // best_of_n winner reads success + a "winner" eyebrow). Read-only (no drag/connect/select) — it VISUALIZES
 // state, it never edits it. Rendered on the mission board and as the crew-builder preview. brand-ui only.
 
-import { CanvasShell, FlowNode, ZoomControls, type FlowNodeData } from "@brand/flow";
-import { Text } from "@brand/ui";
+import { CanvasShell, FlowNode, ZoomControls, type FlowNodeData } from "@elabs-ai/components-flow";
+import { Text } from "@elabs-ai/components-ui";
 import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
 import {
   useCallback,
@@ -33,7 +33,7 @@ const EDGE_LABEL_BG_STYLE = { fill: "var(--card)" } as const;
 
 // Two stable nodeTypes maps (React Flow warns/re-renders if these are re-created each render). The
 // `mission` variant adds the rich `missionAgent` node (avatar + status + brief) for AGENT nodes; the
-// default `plain` variant (crew previews) keeps every node on the compact `@brand/flow` FlowNode.
+// default `plain` variant (crew previews) keeps every node on the compact `@elabs-ai/components-flow` FlowNode.
 const nodeTypes = { brand: FlowNode } as const;
 const missionNodeTypes = { brand: FlowNode, missionAgent: MissionAgentNode } as const;
 
@@ -128,7 +128,7 @@ export type TopologyGraphProps = {
    *  overlapping avatar; in `plain` it's `FlowNode`'s small icon slot. */
   iconById?: Map<string, ReactNode>;
   /** `"mission"` renders AGENT nodes as the rich profile-style card (avatar + status + 2-line brief);
-   *  `"plain"` (default) keeps every node on the compact `@brand/flow` FlowNode (crew previews). */
+   *  `"plain"` (default) keeps every node on the compact `@elabs-ai/components-flow` FlowNode (crew previews). */
   variant?: TopologyGraphVariant;
   /** Mission-only: each agent's brief (the prompt it received) → node id → text, shown as the node's
    *  2-line preview. Keyed by agent session id (a debate rebuttal resolves to its base agent). */

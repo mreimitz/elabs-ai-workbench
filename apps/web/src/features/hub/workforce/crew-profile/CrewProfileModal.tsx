@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { buildHubCrewAnalyzePrompt, type HubAgentRole, type HubCrew } from "@mcp-token-footprint/shared";
-import { Button, Dialog, DialogContent, DialogTitle, Spinner, StatePanel, cn, toast } from "@brand/ui";
+import { Button, Dialog, DialogContent, DialogTitle, Spinner, StatePanel, cn, toast } from "@elabs-ai/components-ui";
 import { BarChart3, Brain, Gauge, GitFork, Rocket, Sparkles, UserRound, Users } from "lucide-react";
 import { WideDialog, type WideDialogSection } from "../../../../components/dialogs";
 import { getErrorMessage } from "../../../../lib/errors";
@@ -244,7 +244,7 @@ export function CrewProfileModal({ topologyRenderer, memorySection }: CrewProfil
 
   // WP2.8 cross-slots (both honour an externally-passed prop as an override):
   //  • Topology — the DEFAULT is now WP2.5's D-HUX9 `CrewTopologyGraph` (topology-true edges on the
-  //    same `@brand/flow` canvas the Org chart draws), fed a crew synthesised from the LIVE form so
+  //    same `@elabs-ai/components-flow` canvas the Org chart draws), fed a crew synthesised from the LIVE form so
   //    the preview updates as the user edits topology/members (matching the old `TopologyGraph`
   //    default's live behaviour). Imported from `../org-chart` — no edge logic duplicated here.
   //  • Memory — the DEFAULT is now WP2.7's `ScopedMemoryList scope="crew"` (grouped, provenance,

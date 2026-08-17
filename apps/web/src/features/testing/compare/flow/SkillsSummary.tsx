@@ -1,4 +1,4 @@
-import { Badge, Text } from "@brand/ui";
+import { Badge, Text } from "@elabs-ai/components-ui";
 import { runChipLabel } from "../compare-runs";
 import { RunLetterBadge } from "../RunLetterBadge";
 import { skillSummary } from "./flow-derive";

@@ -1,4 +1,4 @@
-import { Text, cn } from "@brand/ui";
+import { Text, cn } from "@elabs-ai/components-ui";
 import { DELTA_BAR_TONE, DELTA_TEXT_TONE } from "../../../../lib/delta";
 import { RunLetterBadge } from "../RunLetterBadge";
 import { deriveDeltaBars, type DeltaBar, type DeltaTone, type SummaryRun } from "../summary-derive";
@@ -15,7 +15,7 @@ import { summaryFormatters } from "./summary-format";
  * makes "which metric moved most" legible at a glance. Zero-information metrics (all-$0.00, all-equal)
  * **collapse to a single text line** instead of an empty plot (T9e).
  *
- * Built from token-backed layout primitives (the sanctioned `TokenViz` pattern) because `@brand/charts`
+ * Built from token-backed layout primitives (the sanctioned `TokenViz` pattern) because `@elabs-ai/components-charts`
  * cannot draw a diverging, per-value-signed, value-labelled bar with a centred zero — the honest shape
  * this metric needs. Semantic `--chart-N` + success/warning tokens only; reads in both themes.
  */

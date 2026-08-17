@@ -23,8 +23,8 @@ import {
   Spinner,
   Text,
   buttonVariants,
-} from "@brand/ui";
-import { CodeEditor, DiffEditor } from "@brand/editor";
+} from "@elabs-ai/components-ui";
+import { CodeEditor, DiffEditor } from "@elabs-ai/components-editor";
 import { GitMerge } from "lucide-react";
 import { resolveCollection, type ConflictResolutionInput } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";

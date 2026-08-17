@@ -1,4 +1,4 @@
-import { Heading } from "@brand/ui";
+import { Heading } from "@elabs-ai/components-ui";
 import { PageShell } from "../../../components/PageShell";
 import { ViewToolbar } from "../../../components/ViewToolbar";
 import { ProjectLibraryPanel } from "./ProjectLibraryPanel";

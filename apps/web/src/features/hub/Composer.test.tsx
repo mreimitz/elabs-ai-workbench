@@ -7,13 +7,13 @@ import type {
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-vi.mock("@brand/ai", () => import("./test-support/brand-ai-mock"));
+vi.mock("@elabs-ai/components-ai", () => import("./test-support/brand-ai-mock"));
 
 // hub-fixes WP6.2 — spy on `toast` (kept otherwise real, mirrors the `../../lib/api` partial-mock
 // pattern below) so the mode chip's rejected-switch path can assert a failure is actually SURFACED,
 // never a silent revert (interaction-guidelines.md's "never a silent failure").
-vi.mock("@brand/ui", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@brand/ui")>();
+vi.mock("@elabs-ai/components-ui", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@elabs-ai/components-ui")>();
   return { ...actual, toast: { ...actual.toast, error: vi.fn(), success: vi.fn() } };
 });
 
@@ -34,7 +34,7 @@ vi.mock("../../lib/api", async (importOriginal) => {
   };
 });
 
-import { toast } from "@brand/ui";
+import { toast } from "@elabs-ai/components-ui";
 import * as api from "../../lib/api";
 import {
   Composer,
@@ -581,7 +581,7 @@ describe("Composer — Autonomy as a mode (AutonomyModeSelect footer control)", 
       />,
     );
 
-    // Opens the mode menu (a real @brand/ui Popover), then selects "Auto". `\b` keeps the auto row's
+    // Opens the mode menu (a real @elabs-ai/components-ui Popover), then selects "Auto". `\b` keeps the auto row's
     // name (`/^Auto\b/`) from also matching the trigger button's "Autonomy: Ask above a threshold".
     fireEvent.click(screen.getByRole("button", { name: "Autonomy: Ask above a threshold" }));
     fireEvent.click(await screen.findByRole("button", { name: /^Auto\b/ }));

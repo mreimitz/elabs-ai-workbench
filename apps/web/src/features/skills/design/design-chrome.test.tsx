@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { Skill, SkillGraph, SkillVersion } from "@mcp-token-footprint/shared";
 import { formatVersionLabel, SkillInspector } from "../SkillInspector";
 import { readPanelCollapsed, writePanelCollapsed } from "./UnifiedEditor";
@@ -124,7 +124,7 @@ vi.mock("../use-bound-tools", () => ({
 }));
 
 // Monaco / code-intel never enter jsdom.
-vi.mock("@brand/editor", () => ({ CodeEditor: () => null }));
+vi.mock("@elabs-ai/components-editor", () => ({ CodeEditor: () => null }));
 vi.mock("./code-intel", () => ({
   registerCodeIntel: vi.fn(() => ({
     dispose: vi.fn(),

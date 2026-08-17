@@ -16,8 +16,8 @@ import {
   EmptyState,
   Text,
   cn,
-} from "@brand/ui";
-import { BarChart, BarXAxis, Bar, Grid, ChartTooltip, type TooltipRow } from "@brand/charts";
+} from "@elabs-ai/components-ui";
+import { BarChart, BarXAxis, Bar, Grid, ChartTooltip, type TooltipRow } from "@elabs-ai/components-charts";
 import { AlertTriangle, LineChart } from "lucide-react";
 import { formatNumber } from "../../lib/format";
 
@@ -30,14 +30,14 @@ import { formatNumber } from "../../lib/format";
  * column reveals its composition breakdown. The chart **starts from the turn-0 baseline** (system +
  * tool defs) so the static footprint shows before the model speaks.
  *
- * ## Built on `@brand/charts` (WP 0.1; doc 12 §3.3 — "no fallback needed")
- * `@brand/charts` v1.5.0 is **vendored**, so this is the real thing, not a hand-rolled renderer:
+ * ## Built on `@elabs-ai/components-charts` (WP 0.1; doc 12 §3.3 — "no fallback needed")
+ * `@elabs-ai/components-charts` v1.5.0 is **vendored**, so this is the real thing, not a hand-rolled renderer:
  * - **Stacked columns** = `<BarChart stacked xDataKey="step">` (the categorical/step-indexed chart,
  *   per `BarChartProps.xDataKey` "the categorical axis") with one `<Bar dataKey=… fill="var(--chart-N)">`
  *   per composition segment, in `CONTEXT_SEGMENTS` order (`Bar` stacks in child order at each x).
  * - **Series → `--chart-1..5`:** each `Bar` sets `fill="var(--chart-N)"` explicitly (charts do NOT
  *   auto-assign by child order — the library examples set the token per series), so the five segments
- *   read in both qlik-bright and qlik-dark.
+ *   read in both light and dark.
  * - **Limit line** = `<Grid highlightRowValues={[contextLimit]} …>` (a horizontal rule at a y value;
  *   `GridProps.highlightRowValues` + `highlightRowStroke*`). Because `BarChart` derives its y-domain
  *   purely from the max stacked total (`[0, max·1.1]`, no domain override prop), we add a token-styled
@@ -143,7 +143,7 @@ export type ContextChartProps = {
   currentContextTokens?: number;
   /**
    * WP 3.2 — reveal the chat and scroll it to a turn (0-based). Rendered as a clickable "jump to turn"
-   * strip beneath the columns: `@brand/charts` `BarChart` exposes no per-bar click handler, so this
+   * strip beneath the columns: `@elabs-ai/components-charts` `BarChart` exposes no per-bar click handler, so this
    * aligned, keyboard-reachable strip is the columns' click affordance. Omitted → no strip.
    */
   onSelectTurn?: (turnIndex: number) => void;
@@ -360,7 +360,7 @@ function toNumber(value: unknown): number {
 /**
  * WP 3.2 — the clickable "jump to turn" strip: one button per plotted TURN column (baseline / overflow
  * columns aren't turns, so they're skipped), evenly distributed so it aligns under the columns. Since
- * `@brand/charts` `BarChart` has no per-bar `onClick`, this is the columns' accessible click affordance:
+ * `@elabs-ai/components-charts` `BarChart` has no per-bar `onClick`, this is the columns' accessible click affordance:
  * clicking "N" reveals the chat and scrolls it to turn N. Renders nothing when there are no turns.
  */
 function TurnJumpStrip({

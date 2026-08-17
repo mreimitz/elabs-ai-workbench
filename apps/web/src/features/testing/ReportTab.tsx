@@ -36,7 +36,7 @@ import {
   TooltipTrigger,
   cn,
   toast,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import {
   AlertTriangle,
   Bug,
@@ -73,7 +73,7 @@ import {
   SCORE_TONE_TEXT_CLASS,
   scoreTone,
 } from "./grade-format";
-// The donut/radar live in their own module so `@brand/charts` (visx) stays out of jsdom test
+// The donut/radar live in their own module so `@elabs-ai/components-charts` (visx) stays out of jsdom test
 // bundles that import this tab (tests stub `./report-charts` — the ContextChart convention).
 import { ScoreDonut, ScoreRadar, type RadarAxisScore } from "./report-charts";
 import { isReviewInFlight } from "./RunBar";
@@ -88,7 +88,7 @@ import { notifyError } from "../../lib/notify";
  * step deep-links), the supplementary "Issues filed by this run" registry section (see
  * {@link RunIssuesSection}), the expectation grades, gate assertions, judge provenance, and a Re-rate
  * action — insights-first: verdict → answer/surplus → judge cards → forensics (+ issues) → grades →
- * assertions. Owner feedback 2026-07-12: every score-bearing card carries a compact `@brand/charts`
+ * assertions. Owner feedback 2026-07-12: every score-bearing card carries a compact `@elabs-ai/components-charts`
  * donut (threshold-toned, {@link scoreTone}), the summary card carries a graded-dimensions radar, and
  * the two LLM judges (outcome/trajectory) get their own {@link JudgeGradeCard} in the body.
  *

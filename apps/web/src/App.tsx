@@ -34,7 +34,7 @@ import type {
   TokenProfileId,
 } from "@mcp-token-footprint/shared";
 import { DEFAULT_TOKEN_PROFILE, TOKEN_PROFILES } from "@mcp-token-footprint/shared";
-import { Button, Spinner, StatePanel, toast } from "@brand/ui";
+import { Button, Spinner, StatePanel, toast } from "@elabs-ai/components-ui";
 import { AppShell, type Crumb } from "./components/AppShell";
 import { RouteCrumbProvider } from "./components/route-crumb";
 import { ConfirmDialog } from "./components/dialogs";
@@ -79,13 +79,13 @@ import { formatDateTime } from "./lib/format";
 import { notifyError } from "./lib/notify";
 
 // ── Code-splitting (research/full-validation 03-web-review H1 + M1) ──────────────────────────────
-// The heavy leaf surfaces are `React.lazy`-loaded so their code — Monaco (`@brand/editor`), React
-// Flow (`@xyflow/react` via `@brand/flow`), and charts (`@brand/charts`) — no longer lands in the
+// The heavy leaf surfaces are `React.lazy`-loaded so their code — Monaco (`@elabs-ai/components-editor`), React
+// Flow (`@xyflow/react` via `@elabs-ai/components-flow`), and charts (`@elabs-ai/components-charts`) — no longer lands in the
 // eager entry chunk. Each `lazy()` is a dynamic-import split point, so the vendor weight is pulled
 // only when the route that needs it is first visited. The parked Skill Design/Trace subtree (reached
 // through `SkillsView` → `SkillInspector`) rides along inside the `SkillsView` chunk, so parking it
 // costs zero first-paint bytes. Every lazy element renders under the `<Suspense>` boundary below
-// (routes) or its own (the assistant dock), whose fallbacks are `@brand/*` components.
+// (routes) or its own (the assistant dock), whose fallbacks are `@elabs-ai/components-*` components.
 const AssistantDock = lazy(() =>
   import("./features/assistant/AssistantDock").then((m) => ({ default: m.AssistantDock })),
 );
@@ -189,7 +189,7 @@ const RubricsView = lazy(() =>
   import("./features/review/RubricsView").then((m) => ({ default: m.RubricsView })),
 );
 
-/** Shared fallback for a lazy route while its chunk loads. `@brand/*` StatePanel (loading kind). */
+/** Shared fallback for a lazy route while its chunk loads. `@elabs-ai/components-*` StatePanel (loading kind). */
 function RouteFallback() {
   return (
     <div className="flex min-h-64 w-full items-center justify-center p-8">
@@ -429,7 +429,7 @@ export function App() {
   // First-load signal: true until the initial `refreshAll` settles, so landing views can show a
   // loading state that's visually distinct from a genuine "no data yet" empty state.
   const [initialLoading, setInitialLoading] = useState(true);
-  // Theme preference (qlik-bright | qlik-dark | system) → resolved theme on @brand/tokens' provider.
+  // Theme preference (light | dark | system) → resolved theme on @elabs-ai/components-tokens' provider.
   // Mounted here (always-on) so the OS prefers-color-scheme listener stays live across routes.
   const { preference: themePreference, setPreference: setThemePreference } = useThemePreference();
   const [defaultProfile, setDefaultProfileState] = useState<TokenProfileId>(() => {
@@ -1238,7 +1238,7 @@ export function App() {
             }
             dockContent={
               // The dock is `React.lazy` (it transitively pulls Monaco via the skill-diff card), so it
-              // no longer weighs on the entry chunk; a small `@brand/*` Spinner covers its chunk load.
+              // no longer weighs on the entry chunk; a small `@elabs-ai/components-*` Spinner covers its chunk load.
               <Suspense
                 fallback={
                   <div className="flex h-full w-full items-center justify-center p-6">
@@ -1254,7 +1254,7 @@ export function App() {
             {/* Rendered against the EFFECTIVE location — while the settings modal is open the router
               keeps showing the page behind it (see the settings block at the top of App). Every route
               element is `React.lazy` (see the lazy block above), so one Suspense boundary here catches
-              the chunk load for whichever route is active; the fallback is a `@brand/*` StatePanel. */}
+              the chunk load for whichever route is active; the fallback is a `@elabs-ai/components-*` StatePanel. */}
             <Suspense fallback={<RouteFallback />}>
               <Routes location={location}>
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -1604,7 +1604,7 @@ function ServersRoute(props: ComponentProps<typeof ServersView>) {
 /**
  * The router-level 404 (design-remediation T5, item 5). A mistyped or dead URL used to be a silent
  * `<Navigate to="/dashboard">` teleport — the operator's address vanished with no acknowledgement.
- * This renders a real not-found surface with a way back, reusing the SAME `@brand/ui` `StatePanel`
+ * This renders a real not-found surface with a way back, reusing the SAME `@elabs-ai/components-ui` `StatePanel`
  * error pattern the scan-not-found dead end (`/scans/:missing`) uses, inside the app shell (so the
  * whole nav is also available as a way out). The attempted path is echoed so the mistype is visible.
  */

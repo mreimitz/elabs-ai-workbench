@@ -2880,7 +2880,7 @@ export type ToolFindingsReport = {
 // profile + the scan footprint + every server-level test (findings AND passes) + the tool-findings
 // rollup + the full tool-test report for each FLAGGED tool (≥1 finding). Built by a pure function
 // over a ScanDetail (apps/api/src/reports/server-report.ts) and rendered by the web report view
-// from @brand/ui. Models are exactly the user-selected set, in column order.
+// from @elabs-ai/components-ui. Models are exactly the user-selected set, in column order.
 
 export type ServerReport = {
   generatedAt: string;

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Activity, AlertTriangle, Clock, Coins } from "lucide-react";
-import { MetricCard, MetricGrid } from "@brand/charts";
+import { MetricCard, MetricGrid } from "@elabs-ai/components-charts";
 import { formatCostUsd, formatDuration, formatNumber, formatPercent } from "../../../lib/format";
 import type { TestingKpis } from "./metrics-derive";
 

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // Observability WP5.4 acceptance #1 — the "Analyze with assistant" button opens the dock with the
 // documented triage prompt. `useAssistant` is mocked so the click's effect (openAssistant call) is

@@ -1,5 +1,5 @@
 import type { Skill } from "@mcp-token-footprint/shared";
-import { Button, StatePanel } from "@brand/ui";
+import { Button, StatePanel } from "@elabs-ai/components-ui";
 import { Plus, Sparkles } from "lucide-react";
 import { SkillInspector } from "./SkillInspector";
 

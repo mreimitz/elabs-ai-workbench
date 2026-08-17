@@ -79,7 +79,7 @@ export async function registerReportRoutes(
   });
 
   // ── Server-level Export Report (HTML → print-to-PDF). One typed payload the web report view
-  // renders with @brand/ui. `:scanId` is the scan to report on (the web picks the latest successful
+  // renders with @elabs-ai/components-ui. `:scanId` is the scan to report on (the web picks the latest successful
   // scan for a server, or a specific historical scan). A missing scan surfaces as a 404 via
   // `scans.getDetail`'s own throw. Reads only — redaction upheld by `servers.getPublic`. ─────────
   app.get("/api/reports/server/:scanId", async (request) => {

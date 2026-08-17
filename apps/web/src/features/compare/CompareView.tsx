@@ -14,7 +14,7 @@ import type {
   ToolMatchBasis,
 } from "@mcp-token-footprint/shared";
 import { DEFAULT_COMPARE_THRESHOLD } from "@mcp-token-footprint/shared";
-import { DataTable, FacetFilter, SearchInput } from "@brand/data";
+import { DataTable, FacetFilter, SearchInput } from "@elabs-ai/components-data";
 import {
   Alert,
   AlertDescription,
@@ -31,7 +31,7 @@ import {
   StatePanel,
   Switch,
   Text,
-} from "@brand/ui";
+} from "@elabs-ai/components-ui";
 import { ArrowLeftRight } from "lucide-react";
 import { PageShell } from "../../components/PageShell";
 import { TabPanel, TabPanelContent } from "../../components/TabPanel";
@@ -1150,7 +1150,7 @@ function DiffTable(props: {
         }
       />
       {/* The diff table fills the remaining height and scrolls internally (sticky header via
-          `stickyScrollTableProps` — row virtualization is what gives @brand/data its sticky thead;
+          `stickyScrollTableProps` — row virtualization is what gives @elabs-ai/components-data its sticky thead;
           it supersedes pagination, which is the intent under `scroll="fill"`). */}
       <div className="min-h-0 flex-1">
         <DataTable

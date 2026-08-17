@@ -3,8 +3,8 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 // model-identity WP 4.1 — the agent quick-create's model field is now the shared `HubModelPicker`
-// (`@brand/ai` ModelSelector); stub the barrel like every other hub suite.
-vi.mock("@brand/ai", () => import("../test-support/brand-ai-mock"));
+// (`@elabs-ai/components-ai` ModelSelector); stub the barrel like every other hub suite.
+vi.mock("@elabs-ai/components-ai", () => import("../test-support/brand-ai-mock"));
 
 vi.mock("../../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../lib/api")>();

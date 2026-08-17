@@ -1,5 +1,5 @@
 import type { HubCrewColor } from "@mcp-token-footprint/shared";
-import { Label, RadioGroup, RadioGroupItem, cn } from "@brand/ui";
+import { Label, RadioGroup, RadioGroupItem, cn } from "@elabs-ai/components-ui";
 import { CREW_COLOR_KEYS, crewAccentClasses } from "../../lib/hub-ux";
 
 /** Human labels for the five accent swatches. Deliberately neutral ("Color N") rather than a guessed

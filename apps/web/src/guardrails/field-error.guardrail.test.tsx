@@ -12,7 +12,7 @@
  * guardrail pins the two attributes that carry the a11y contract so they can't silently regress.
  */
 import { render, screen } from "@testing-library/react";
-import { Input } from "@brand/ui";
+import { Input } from "@elabs-ai/components-ui";
 import { describe, expect, it } from "vitest";
 import { FieldRow } from "../components/FieldRow";
 

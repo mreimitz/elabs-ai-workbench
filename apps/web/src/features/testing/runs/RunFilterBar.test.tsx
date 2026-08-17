@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { RunFilter } from "@mcp-token-footprint/shared";
-import { TooltipProvider } from "@brand/ui";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { EMPTY_RUN_FILTER_OPTIONS, RunFilterBar } from "./RunFilterBar";
 
 // jsdom omits matchMedia — Radix (Popover/DropdownMenu/Select) reads it. (ResizeObserver is already

@@ -1,4 +1,4 @@
-import { cn, Text } from "@brand/ui";
+import { cn, Text } from "@elabs-ai/components-ui";
 import { Braces, TriangleAlert } from "lucide-react";
 
 /**
@@ -11,7 +11,7 @@ import { Braces, TriangleAlert } from "lucide-react";
  * them) — the component renders NOTHING when neither is present, so a caller can always mount it
  * unconditionally. Values arrive already redacted + length-bounded from the API and are shown VERBATIM
  * in token-styled `<pre>` blocks (a structural element, no tokenizer): they wrap, scroll when tall, and
- * read in both themes. Deliberately dependency-light (no `@brand/ai`/Shiki) so it drops into any
+ * read in both themes. Deliberately dependency-light (no `@elabs-ai/components-ai`/Shiki) so it drops into any
  * surface without pulling a heavy render graph.
  */
 export function FailureEvidence({
