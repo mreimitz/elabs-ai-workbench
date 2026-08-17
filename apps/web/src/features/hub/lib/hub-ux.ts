@@ -258,11 +258,14 @@ export function resolveIntroDockState(input: {
  * D-HUX12 (WP1.3): `ChatCanvas`'s own default decoration ambient for the dot-grid layer, applied
  * via a LOCAL `DecorationProvider` (`@elabs-ai/components-tokens`'s scoped `data-decoration` override — see its
  * own doc: "give a diagram, panel, page, or modal a uniform […] level without changing the document
- * theme"). Both of the app's live themes (light/dark) carry a document-level decoration
- * of 0 — only the unused `blueprint` theme defaults higher — so the chat canvas establishes its own
- * "normal" level locally rather than inheriting the (currently always-0) document ambient; a caller
- * passes `decorationLevel={0}` ("minimal") to drop the grid entirely, matching D-HUX12's "off at
- * minimal." 10 is the top of the 0–10 dial — the library's own ink-alpha formulas (`themes.css`)
- * are calibrated assuming 10 reads as a tasteful maximum, not a literal full-strength value.
+ * theme"). Both reference themes carry a document-level decoration of 0, so the chat canvas
+ * establishes its own "normal" level locally rather than inheriting the (currently always-0)
+ * document ambient; a caller passes `decorationLevel={0}` ("minimal") to drop the grid entirely,
+ * matching D-HUX12's "off at minimal." 10 is the top of the 0–10 dial — the library's own ink-alpha
+ * formulas are calibrated assuming 10 reads as a tasteful maximum, not a literal full-strength value.
+ *
+ * Still correct after v4 narrowed the dial's scope to backgrounds and chart fills only (buttons,
+ * inputs, badges, menu items and timeline dots now render identically at 0 and 10): this layer IS a
+ * background, and it supplies its own `--canvas-grid`-driven paint, so the narrowing is a no-op here.
  */
 export const CHAT_CANVAS_DECORATION_LEVEL = 10;

@@ -262,7 +262,13 @@ export function SkillOverview({
   return (
     <div className="flex flex-col gap-6">
       {/* Overview cards as a bento grid (2026-07-12): fixed-height tiles keep sizing uniform, and
-          each tile's body scrolls (overflow-y-auto) so variable content never clips the fixed rows. */}
+          each tile's body scrolls (overflow-y-auto) so variable content never clips the fixed rows.
+
+          NO `spotlight`, deliberately. The cursor-following glow used to be BentoGrid's default and
+          arrived here for free; since v4 it is opt-in and the grid instead rests flat and lifts on
+          hover. This is a dense operator surface (a skill's frontmatter, token footprint and
+          security surface), so the flat resting state is the better read and the glow is not
+          re-enabled. Add `spotlight` on the grid — or on a single BentoGridItem — to bring it back. */}
       <BentoGrid>
         <BentoGridItem size="lg" className="flex min-w-0 flex-col">
           <CardHeader className="flex-none flex-row items-center justify-between gap-2">
