@@ -18,7 +18,7 @@ docker compose up --build
 When it finishes starting, open the app in your browser at:
 
 ```
-http://localhost:8080
+http://localhost:8081
 ```
 
 That's it — everything (the interface and the engine behind it) runs from that one address.

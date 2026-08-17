@@ -183,7 +183,9 @@ Package names are scoped `@mcp-token-footprint/{api,web,shared}` and wired with 
   (`@tailwindcss/vite`) with semantic **oklch tokens** from `@brand/tokens`. `cn()` from
   `@brand/ui`. See §8.
 - **Persistence:** one SQLite file at `data/app.sqlite` (`/data/app.sqlite` in Docker).
-- **Deploy target:** one Docker container exposing port **8080** (API serves the built web SPA).
+- **Deploy target:** one Docker container listening on **8080** internally, published on host port
+  **8081** (API serves the built web SPA). A separate, older checkout runs its own container on
+  8080 — see the note at the top of `docker-compose.yml`.
 
 There is **no Tauri** and no ESLint; linting/formatting is **Biome** (`biome.json`) via `pnpm lint`
 (`biome check`) and `pnpm format` (`biome format --write`), and the root
@@ -211,15 +213,15 @@ pnpm typecheck               # tsc --noEmit across all packages
 pnpm test                    # API tests (node test runner via tsx) + web tests (vitest; 97 files)
 pnpm lint                    # Biome lint (biome check --formatter-enabled=false)
 pnpm format                  # Biome formatter (biome format --write)
-docker compose up --build    # production-style single container at http://localhost:8080
+docker compose up --build    # production-style single container at http://localhost:8081
 ```
 
 **Quality gate / definition of done:** `pnpm typecheck && pnpm test && pnpm build` must pass, and
 `pnpm lint` must be clean (the same set the root `.github/workflows/ci.yml` runs). See
 [`.claude/rules/quality-gates.md`](./.claude/rules/quality-gates.md) and the `/quality` command.
 
-Dev URLs: API `http://127.0.0.1:8080`, Vite `http://127.0.0.1:5173`. The reference running
-instance is at `http://localhost:8080/`.
+Dev URLs: API `http://127.0.0.1:8080`, Vite `http://127.0.0.1:5173`. The containerized instance is
+at `http://localhost:8081/`.
 
 ---
 

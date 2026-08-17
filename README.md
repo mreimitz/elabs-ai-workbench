@@ -173,7 +173,8 @@ the top bar.
 docker compose up --build
 ```
 
-Then open **http://localhost:8080**. The single container runs the API, which serves the built web
+Then open **http://localhost:8081** (the container listens on 8080 internally; 8081 is the
+published host port — see `docker-compose.yml`). The single container runs the API, which serves the built web
 app. Keep the SQLite database and the generated encryption key on the same persistent `/data` volume.
 
 ### Local development
@@ -196,7 +197,8 @@ unauthenticated, and only if it returns `401`/`403` does it ask for auth — a b
 API-key header, custom headers, or OAuth. Bearer/API-key headers and OAuth tokens are encrypted
 before they're persisted.
 
-The default OAuth callback is `http://127.0.0.1:8080/api/oauth/callback` (override with
+The default OAuth callback is `http://127.0.0.1:8080/api/oauth/callback` for a local `pnpm dev`
+run; the Docker container publishes 8081 and sets `OAUTH_REDIRECT_URL` to match (override with
 `OAUTH_REDIRECT_URL`). Providers without Dynamic Client Registration need a pre-registered OAuth client id — create an
 OAuth client in the provider's admin UI with scopes
 `user_default` and `mcp:execute`, add the callback as an allowed redirect URL, and enter the Client

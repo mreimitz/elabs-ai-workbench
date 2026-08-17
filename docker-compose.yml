@@ -1,5 +1,13 @@
+# Pinned explicitly so the compose PROJECT identity never depends on the checkout's folder name.
+# A separate, older checkout (`qlabs-ai-benchmark/mcp-token-footprint`) runs its own container from
+# its own compose file on 127.0.0.1:8080 with its own `mcp-token-footprint_*` volume; that instance
+# is a DIFFERENT use case and must keep running untouched. Everything here — project name, service,
+# container, image, volume, and published port — is deliberately distinct from it, so
+# `docker compose up` in this repo can never recreate or overwrite that container or its data.
+name: elabs-ai-workbench
+
 services:
-  mcp-token-footprint:
+  ai-workbench:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,7 +19,10 @@ services:
       # Bind to loopback only (127.0.0.1). This tool has no auth (single-owner local) and must
       # stay off the network until planned team-server auth lands. Keep HOST=0.0.0.0 in the
       # container — that's required for the port map to reach Node.
-      - "127.0.0.1:8080:8080"
+      #
+      # HOST port 8081 (the container still listens on 8080 internally): 8080 is taken by the other
+      # checkout's long-running container — see the note at the top of this file.
+      - "127.0.0.1:8081:8080"
     environment:
       NODE_ENV: production
       PORT: "8080"
@@ -19,6 +30,11 @@ services:
       DATA_DIR: /data
       DATABASE_PATH: /data/app.sqlite
       DEFAULT_TOKEN_PROFILE: generic_o200k
+      # MUST be set explicitly here. The code default derives this from PORT — the container's
+      # INTERNAL 8080 — but this URL is where the provider redirects the operator's BROWSER, which
+      # reaches the app on the published host port. Left unset, every OAuth sign-in would come back
+      # to a port nothing is listening on.
+      OAUTH_REDIRECT_URL: http://127.0.0.1:8081/api/oauth/callback
       # Temporary mitigation (roadmap/hub-fixes/ WP 0.1, analysis.md RC1): the code default
       # ("deferred") never promotes any MCP tool to callable, so no MCP tool is ever usable in a
       # hub session. Force "eager" until WP 1.1 flips the code default to "auto" — then remove this
@@ -45,7 +61,10 @@ services:
       # output-cap spill, workspace snapshots; retained per HUB_SESSION_RETENTION_DAYS, see
       # .env.example / POST /api/maintenance/prune-hub). Uploaded hub file BYTES live in SQLite, not
       # on this tree.
-      - mcp-token-footprint-data:/data
+      #
+      # Named distinctly from the other checkout's `mcp-token-footprint-data`, so this instance gets
+      # its OWN database and never migrates or deletes rows in that one.
+      - ai-workbench-data:/data
 
 volumes:
-  mcp-token-footprint-data:
+  ai-workbench-data:
