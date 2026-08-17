@@ -610,11 +610,23 @@ export function AppShell({
         <Sidebar collapsible="icon" data-density="comfortable" className={chromePrintClass}>
           <SidebarHeader>
             <div className="flex items-center gap-2 px-2 py-1.5">
-              {/* AppIcon (v1.5.0) is the canonical app-chrome brand mark: theme-correct via
-                BrandLogo tokens, and with the default morph="auto" it shows the full
-                lockup and crossfades to the Q mark when this collapsible="icon" sidebar
-                collapses. aria-hidden because the product label below names the app. */}
-              <AppIcon height={20} aria-hidden className="shrink-0" />
+              {/* AppIcon is the canonical app-chrome brand mark: theme-correct via BrandLogo tokens.
+                morph="mark" pins it to the GLYPH ALONE. The default "auto" renders the full lockup —
+                glyph + a wordmark taken from `title`, which defaults to the literal string "Brand" —
+                and this app already renders its own product name in the block to the right, so the
+                lockup printed a stray "Brand" next to "AI Workbench". Mark-only also keeps the
+                collapsed state correct without the morph: the text block beside it is already hidden
+                by group-data-[collapsible=icon]:hidden. aria-hidden because that text names the app.
+                `title` still defaults to "Brand" and lands in the SVG <title> (the accessible name),
+                so it is set to the product name too — invisible either way, but nothing should read
+                "Brand" if the aria-hidden is ever lifted. */}
+              <AppIcon
+                morph="mark"
+                title="AI Workbench"
+                height={20}
+                aria-hidden
+                className="shrink-0"
+              />
               {/* Ink comes from the SIDEBAR token family, not the page's. `Text` has no sidebar
                 tone (its `tone` is default | primary | muted, all page-ink), and in the light theme
                 the rail is a DARK navy (`--sidebar` 0.3) while `--foreground` is a near-identical
@@ -629,7 +641,7 @@ export function AppShell({
                   variant="meta"
                   className="truncate leading-tight text-sidebar-muted-foreground"
                 >
-                  MCP analyzer
+                  elabs - systems
                 </Text>
               </div>
             </div>
