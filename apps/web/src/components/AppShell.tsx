@@ -615,9 +615,20 @@ export function AppShell({
                 lockup and crossfades to the Q mark when this collapsible="icon" sidebar
                 collapses. aria-hidden because the product label below names the app. */}
               <AppIcon height={20} aria-hidden className="shrink-0" />
+              {/* Ink comes from the SIDEBAR token family, not the page's. `Text` has no sidebar
+                tone (its `tone` is default | primary | muted, all page-ink), and in the light theme
+                the rail is a DARK navy (`--sidebar` 0.3) while `--foreground` is a near-identical
+                dark grey — so the default page ink rendered this wordmark invisible against its own
+                background. `--sidebar-foreground` / `--sidebar-muted-foreground` are the tokens the
+                surface actually defines, and every `SidebarMenuButton` below already uses them. */}
               <div className="flex min-w-0 flex-col group-data-[collapsible=icon]:hidden">
-                <Text className="truncate font-semibold leading-tight">AI Workbench</Text>
-                <Text variant="meta" tone="muted" className="truncate leading-tight">
+                <Text className="truncate font-semibold leading-tight text-sidebar-foreground">
+                  AI Workbench
+                </Text>
+                <Text
+                  variant="meta"
+                  className="truncate leading-tight text-sidebar-muted-foreground"
+                >
                   MCP analyzer
                 </Text>
               </div>
@@ -793,7 +804,11 @@ export function AppShell({
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
-            <Text variant="meta" tone="muted" className="px-2 group-data-[collapsible=icon]:hidden">
+            {/* Sidebar ink, not page ink — see the SidebarHeader note above. */}
+            <Text
+              variant="meta"
+              className="px-2 text-sidebar-muted-foreground group-data-[collapsible=icon]:hidden"
+            >
               Local / dev mode
             </Text>
           </SidebarFooter>
