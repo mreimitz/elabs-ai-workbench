@@ -38,7 +38,7 @@ import {
   providerKindLabel,
   TOKEN_PROFILES,
 } from "@mcp-token-footprint/shared";
-import { THEME_META, useTheme } from "@elabs-ai/components-tokens";
+import { BUILT_IN_THEME_META, useTheme } from "@elabs-ai/components-tokens";
 import { getErrorMessage } from "../../lib/errors";
 import { ConfirmDialog, FormDialog } from "../../components/dialogs";
 import {
@@ -752,16 +752,16 @@ function SubHeading(props: { title: string; description?: ReactNode }) {
  * explicit-save Grading section). Theme used to live SOLELY in the top bar (WP 6.7 / finding #8,
  * reconfirmed by the owner 2026-07-11, this pane only pointed at it) — **D-5 (owner, 2026-07-25)
  * SUPERSEDES that call**: "Settings hosts a pointer instead of a setting" (audit finding D-5) is a
- * real workflow dead end, so a real theme `Select` lives in this pane too (System · Qlik Bright ·
- * Qlik Dark), wired to the same theme preference the top-bar control drives. The top-bar shortcut
+ * real workflow dead end, so a real theme `Select` lives in this pane too (System · Light · Dark),
+ * wired to the same theme preference the top-bar control drives. The top-bar shortcut
  * stays — two entry points, one preference (toolbar-reach WP 4.4).
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
 /** Human label for a theme preference — "System" plus the concrete theme labels from
- *  `@elabs-ai/components-tokens` `THEME_META`. Mirrors `AppShell.tsx`'s (unexported) `themePreferenceLabel` —
- *  both read the same `THEME_META` source, so the two entry points' wording can't diverge. */
+ *  `@elabs-ai/components-tokens` `BUILT_IN_THEME_META`. Mirrors `AppShell.tsx`'s (unexported)
+ *  `themePreferenceLabel` — both read the same source, so the two entry points' wording can't diverge. */
 function themePreferenceLabel(preference: ThemePreference): string {
-  return preference === "system" ? "System" : (THEME_META[preference]?.label ?? preference);
+  return preference === "system" ? "System" : (BUILT_IN_THEME_META[preference]?.label ?? preference);
 }
 
 function GeneralSection(props: {

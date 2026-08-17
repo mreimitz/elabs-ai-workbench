@@ -388,6 +388,6 @@ type ThemeCommand = {
 /** The three theme preferences as runnable commands (System first — matches THEME_PREFERENCE_ORDER). */
 const THEME_COMMANDS: ThemeCommand[] = [
   { preference: "system", label: "Use system theme", icon: Monitor, keywords: ["system", "auto", "os"] },
-  { preference: "light", label: "Switch to Bright theme", icon: Sun, keywords: ["light", "bright", "acme"] },
-  { preference: "dark", label: "Switch to Dark theme", icon: Moon, keywords: ["dark", "night", "acme"] },
+  { preference: "light", label: "Switch to Light theme", icon: Sun, keywords: ["light", "bright", "day"] },
+  { preference: "dark", label: "Switch to Dark theme", icon: Moon, keywords: ["dark", "night"] },
 ];

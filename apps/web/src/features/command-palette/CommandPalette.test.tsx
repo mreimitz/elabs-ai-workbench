@@ -209,8 +209,8 @@ describe("CommandPalette", () => {
   test("runs a theme command and marks the current theme", async () => {
     const { onThemePreferenceChange } = renderPalette();
     // The active preference is annotated as "Current".
-    const brightOption = screen.getByRole("option", { name: /Switch to Bright theme/ });
-    expect(within(brightOption).getByText("Current")).toBeInTheDocument();
+    const lightOption = screen.getByRole("option", { name: /Switch to Light theme/ });
+    expect(within(lightOption).getByText("Current")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("option", { name: /Switch to Dark theme/ }));
     expect(onThemePreferenceChange).toHaveBeenCalledWith("dark");

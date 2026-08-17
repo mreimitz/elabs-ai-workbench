@@ -46,7 +46,7 @@ import {
   useIsMobile,
 } from "@elabs-ai/components-ui";
 import { AppIcon } from "@elabs-ai/components-icons";
-import { THEME_META } from "@elabs-ai/components-tokens";
+import { BUILT_IN_THEME_META } from "@elabs-ai/components-tokens";
 import {
   Bell,
   Bot,
@@ -983,14 +983,14 @@ const THEME_PREFERENCE_ICON: Record<ThemePreference, typeof Sun> = {
   "dark": Moon,
 };
 
-/** Human label for a preference — "System" plus the two concrete Acme labels from `@elabs-ai/components-tokens`. */
+/** Human label for a preference — "System" plus the two reference-theme labels from `@elabs-ai/components-tokens`. */
 function themePreferenceLabel(preference: ThemePreference): string {
-  return preference === "system" ? "System" : (THEME_META[preference]?.label ?? preference);
+  return preference === "system" ? "System" : (BUILT_IN_THEME_META[preference]?.label ?? preference);
 }
 
 /**
  * The top-bar theme control (F0/ST2). A compact icon-trigger dropdown over the app's three theme
- * PREFERENCES — System (first) · Qlik Bright · Qlik Dark — reachable in two clicks from any route.
+ * PREFERENCES — System (first) · Light · Dark — reachable in two clicks from any route.
  * It's a thin view over `useThemePreference` (lifted to App), NOT the uncontrolled `@elabs-ai/components-ui`
  * ThemeSwitcher: the app's single source of truth is the preference key that `main.tsx` re-applies
  * on boot, so driving the switch through that keeps the Settings mirror in sync, persists across
