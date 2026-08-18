@@ -10,16 +10,35 @@
 
 import { descriptionBloatRule } from "./rules/description-bloat.js";
 import { loadingModeComparisonRule } from "./rules/loading-mode.js";
+import { modelQualityBarRule } from "./rules/model-quality-bar.js";
+import { qualityValidatedTrimRule } from "./rules/quality-validated-trim.js";
+import { skillEffectRule } from "./rules/skill-effect.js";
 import { toolOverlapRule } from "./rules/tool-overlap.js";
 import { unusedToolTrimRule } from "./rules/unused-tool-trim.js";
 import type { AdvisorRule } from "./types.js";
 
-/** The registered product rules, in evaluation order (WP 1.2). */
+/**
+ * The registered product rules, in evaluation order (WP 1.2 deterministic, then WP 2.1 grade-aware).
+ *
+ * The three grade-aware rules are APPENDED after the four deterministic ones, deliberately: the
+ * order is the report's first-wins dedup tie-break, so a Phase 1 rule keeps its id against a Phase 2
+ * rule that ever emitted the same one. They cannot actually collide today (every recommendation id
+ * is prefixed with its own rule id), but the precedence is stated here rather than left to emerge
+ * from import order.
+ *
+ * `advisor.quality-validated-trim` sits alongside — NOT instead of — `advisor.unused-tool-trim`.
+ * They answer different questions (usage across every completed run vs. usage across the GRADED
+ * suite-run members whose score held), so a report may carry both for one environment/server pair,
+ * and when they disagree the grade-aware one is the conservative answer.
+ */
 export const ADVISOR_RULES: readonly AdvisorRule[] = [
   unusedToolTrimRule,
   descriptionBloatRule,
   loadingModeComparisonRule,
   toolOverlapRule,
+  qualityValidatedTrimRule,
+  skillEffectRule,
+  modelQualityBarRule,
 ];
 
 export type AdvisorRuleRegistry = {
