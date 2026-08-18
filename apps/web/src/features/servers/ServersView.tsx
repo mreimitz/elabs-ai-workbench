@@ -54,6 +54,8 @@ import { TabPanel, TabPanelContent } from "../../components/TabPanel";
 import { TabEmptyState } from "../../components/TabEmptyState";
 import { StackedContributorList, type ContributorRow } from "../../components/TokenViz";
 import { IconButton } from "../../components/IconButton";
+import { AdvisorPanel } from "../advisor/AdvisorPanel";
+import { advisorReportHref } from "../advisor/advisor-format";
 import { SectionCardTitle } from "../../components/SectionCardTitle";
 import { serverHealth } from "../../lib/optimize";
 import {
@@ -565,6 +567,10 @@ export function ServersView(props: {
             // Open-count badge only when > 0 — a clean server's Issues tab carries no number.
             count: openIssuesCount && openIssuesCount > 0 ? openIssuesCount : undefined,
           },
+          // Advisor (roadmap/advisor/ WP 1.3) — the inline recommendation panel for THIS server.
+          // Deliberately un-counted: a count would force the report to be fetched on every server
+          // page load just to badge a tab nobody opened.
+          { value: "advisor", label: "Advisor" },
         ]}
       >
         {/* ── TESTS — server-level compatibility tests × models (flat) ── */}
@@ -879,6 +885,18 @@ export function ServersView(props: {
             targetName={server.name}
             state={issuesState}
             onReload={reloadIssues}
+          />
+        </TabPanelContent>
+
+        {/* ── ADVISOR — evidenced recommendations scoped to THIS server (advisor WP 1.3). ── */}
+        <TabPanelContent
+          value="advisor"
+          description="Deterministic recommendations derived from this server's scans. Savings are estimates; nothing here is applied automatically."
+        >
+          <AdvisorPanel
+            query={{ scope: "server", id: server.id }}
+            scopeLabel={server.name}
+            fullReportHref={advisorReportHref({ scope: "server", id: server.id })}
           />
         </TabPanelContent>
       </TabPanel>
