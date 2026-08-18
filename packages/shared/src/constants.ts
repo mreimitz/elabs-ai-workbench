@@ -1955,6 +1955,25 @@ export const ADVISOR_SEVERITIES = ["high", "medium", "info"] as const;
 // comparator unit-major is what makes the "savings desc" tie-break a strict total order.
 export const ADVISOR_SAVINGS_UNITS = ["tokens_per_turn", "tokens", "usd_per_run"] as const;
 
+// --- Advisor — grade-aware rules (WP 2.1) -----------------------------------------------------
+// roadmap/advisor/phase-2-grade-aware/. Phase 2 joins the deterministic read model to the graded
+// side of the app (`run_grades` + `suite_runs`). Two things make that join honest:
+//   * a grade-aware finding carries `AdvisorGradeProvenance` — `GRADING_VERSION` plus the suite-run
+//     ids it read — so a recommendation computed under one grading version is never silently
+//     compared with one computed under another (the same discipline `ADVISOR_VERSION` applies to
+//     the rules themselves); and
+//   * a rule that has no graded evidence emits an `insufficientData` entry, never a suggestion.
+
+/**
+ * The score a run must reach to count as "quality held" (0..1, inclusive).
+ *
+ * NOT a new threshold: it is the SAME 0.5 the suite aggregates already treat as passing
+ * (`SuiteAggregates.passRateAt05`, computed as `score >= 0.5` in the suite orchestrator). The
+ * advisor reuses that number, and its `>=` comparison, so a "clears the quality bar" claim in a
+ * recommendation means exactly what a green pass-rate means everywhere else in the app.
+ */
+export const ADVISOR_QUALITY_BAR = 0.5;
+
 // --- Advisor — fleet report (WP 2.2) ----------------------------------------------------------
 // roadmap/advisor/phase-2-grade-aware/WP-2.2-fleet-report.md. `GET /api/reports/fleet/{json,
 // markdown}` is an aggregate of what the app has ALREADY measured — servers + scan drift,

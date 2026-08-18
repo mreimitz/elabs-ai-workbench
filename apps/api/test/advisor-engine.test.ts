@@ -27,16 +27,22 @@ import {
 import {
   AdvisorRuleContractError,
   type AdvisorContext,
+  type AdvisorGradePort,
   type AdvisorRule,
   type AdvisorRunPort,
   type AdvisorScanPort,
   type AdvisorScenarioPort,
   type AdvisorServerPort,
+  type AdvisorSkillPort,
+  type AdvisorSuiteRunPort,
 } from "../src/advisor/types.js";
+import type { GradeRepository } from "../src/grading/grade-repository.js";
 import type { RunRepository } from "../src/testing/run-repository.js";
 import type { ScanRepository } from "../src/scans/repository.js";
 import type { ScenarioRepository } from "../src/testing/scenario-repository.js";
 import type { ServerRepository } from "../src/servers/repository.js";
+import type { SkillRepository } from "../src/skills/repository.js";
+import type { SuiteRunRepository } from "../src/suites/suite-run-repository.js";
 
 // WP 1.1 (Advisor) — the wire contract + the deterministic rule-engine core. ZERO product rules
 // ship in this WP, so every rule here is a fixture that exercises the seam WP 1.2's four rules land
@@ -69,7 +75,15 @@ function stubContext(now: Date = FIXED_CLOCK): AdvisorContext {
       listRuns: forbidden("runs"),
       getRun: forbidden("runs"),
       getToolCallSequence: forbidden("runs"),
+      getSummary: forbidden("runs"),
+      getRunSkills: forbidden("runs"),
     },
+    // WP 2.1 — the grade-aware ports are forbidden here too: a rule under test that reaches for a
+    // grade it was not handed should fail loudly, not read an empty list and call it a measurement.
+    grades: { listByRun: forbidden("grades") },
+    suiteRuns: { listRuns: forbidden("suiteRuns"), listChildRunIds: forbidden("suiteRuns") },
+    skills: { list: forbidden("skills") },
+    models: { get: forbidden("models") },
     now: () => now,
   };
 }
@@ -93,7 +107,19 @@ function emptyContext(now: Date = FIXED_CLOCK): AdvisorContext {
       getDetail: missing("Scan"),
     },
     scenarios: { list: () => [], get: missing("Scenario"), listServers: () => [] },
-    runs: { listRuns: () => [], getRun: missing("Run"), getToolCallSequence: () => [] },
+    runs: {
+      listRuns: () => [],
+      getRun: missing("Run"),
+      getToolCallSequence: () => [],
+      getSummary: missing("Run"),
+      getRunSkills: () => [],
+    },
+    // WP 2.1 — an install that has never benchmarked anything: every grade-aware port answers, and
+    // answers with nothing, so the three grade-aware rules must produce honest gaps.
+    grades: { listByRun: () => [] },
+    suiteRuns: { listRuns: () => [], listChildRunIds: () => [] },
+    skills: { list: () => [] },
+    models: { get: () => null },
     now: () => now,
   };
 }
@@ -579,15 +605,19 @@ test("a published savings figure keeps its estimate marker and basis end to end"
 
 // ── Registry seam ────────────────────────────────────────────────────────────────────────────────
 
-test("the app registry exposes WP 1.2's four product rules, in registration order", () => {
+test("the app registry exposes the seven product rules, in registration order", () => {
   // WP 1.1 shipped this registry EMPTY (the engine seam only); WP 1.2 filled it with the four
-  // deterministic rules. Their order is part of the determinism contract — it is the tie-break the
-  // engine's first-wins dedup would use — so it is asserted here, once, against the registry itself.
+  // deterministic rules and WP 2.1 APPENDED the three grade-aware ones. Their order is part of the
+  // determinism contract — it is the tie-break the engine's first-wins dedup would use — so the full
+  // list is asserted here, once, against the registry itself.
   const expected = [
     "advisor.unused-tool-trim",
     "advisor.description-bloat",
     "advisor.loading-mode-comparison",
     "advisor.tool-overlap",
+    "advisor.quality-validated-trim",
+    "advisor.skill-effect",
+    "advisor.model-quality-bar",
   ];
   assert.deepEqual(
     ADVISOR_RULES.map((rule) => rule.id),
@@ -646,20 +676,37 @@ test("the real repositories structurally satisfy the advisor read ports", () => 
   const scans = undefined as unknown as ScanRepository;
   const scenarios = undefined as unknown as ScenarioRepository;
   const runs = undefined as unknown as RunRepository;
+  const grades = undefined as unknown as GradeRepository;
+  const suiteRuns = undefined as unknown as SuiteRunRepository;
+  const skills = undefined as unknown as SkillRepository;
 
   const serverPort: AdvisorServerPort = servers;
   const scanPort: AdvisorScanPort = scans;
   const scenarioPort: AdvisorScenarioPort = scenarios;
   const runPort: AdvisorRunPort = runs;
+  // WP 2.1 — the same compile-time proof for the three grade-aware ports.
+  const gradePort: AdvisorGradePort = grades;
+  const suiteRunPort: AdvisorSuiteRunPort = suiteRuns;
+  const skillPort: AdvisorSkillPort = skills;
 
   assert.deepEqual(
-    [serverPort, scanPort, scenarioPort, runPort],
-    [undefined, undefined, undefined, undefined],
+    [serverPort, scanPort, scenarioPort, runPort, gradePort, suiteRunPort, skillPort],
+    [undefined, undefined, undefined, undefined, undefined, undefined, undefined],
   );
 });
 
 test("the advisor context exposes no database handle for a rule to grab", () => {
   const ctx = stubContext();
-  assert.deepEqual(Object.keys(ctx).sort(), ["now", "runs", "scans", "scenarios", "servers"]);
+  assert.deepEqual(Object.keys(ctx).sort(), [
+    "grades",
+    "models",
+    "now",
+    "runs",
+    "scans",
+    "scenarios",
+    "servers",
+    "skills",
+    "suiteRuns",
+  ]);
   assert.equal("db" in ctx, false);
 });

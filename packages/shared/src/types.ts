@@ -7006,6 +7006,12 @@ export type AdvisorRecommendation = {
   savings?: AdvisorSavings;
   /** At least one — a recommendation with nothing to drill into is a contract violation. */
   evidence: AdvisorEvidenceRef[];
+  /**
+   * WP 2.1 — the grade-side provenance (`GRADING_VERSION` + the suite-run ids read). REQUIRED of a
+   * grade-aware rule (the engine refuses the finding without it) and absent on every deterministic
+   * Phase 1 rule, which reads no grades at all. See {@link AdvisorGradeProvenance}.
+   */
+  gradeProvenance?: AdvisorGradeProvenance;
   /** What the suggestion takes for granted, stated plainly (e.g. "the last 20 runs are
    *  representative of normal use"). May be empty when a rule genuinely assumes nothing. */
   assumptions: string[];
@@ -7037,6 +7043,28 @@ export type AdvisorReport = {
 export type AdvisorReportQuery = {
   scope: AdvisorScopeKind;
   id?: string;
+};
+
+// --- Advisor — grade-aware provenance (WP 2.1) ------------------------------------------------
+// roadmap/advisor/phase-2-grade-aware/. A Phase 2 rule reads GRADES, which are themselves versioned
+// and derived from specific suite runs. Recording both on the finding is what lets an operator (and
+// a later report) tell "this trim was validated against suite run X under grading version 1" apart
+// from "this trim rests on a newer, differently-computed grade" — the never-silently-compare rule
+// `ADVISOR_VERSION` / `TOKEN_COUNTING_VERSION` / `GRADING_VERSION` all follow.
+
+/**
+ * The grade-side provenance of one grade-aware recommendation.
+ *
+ * `suiteRunIds` are the EXACT suite runs whose members supplied the scores the finding rests on —
+ * ascending and deduped, so the same finding computed twice serializes identically. It is never
+ * empty: a rule with no suite-run evidence has nothing to be grade-aware ABOUT, and must emit an
+ * {@link AdvisorInsufficientData} entry instead of a recommendation.
+ */
+export type AdvisorGradeProvenance = {
+  /** `GRADING_VERSION` at the time the grades were written/read. */
+  gradingVersion: number;
+  /** The suite runs read, ascending + deduped. Always at least one. */
+  suiteRunIds: string[];
 };
 
 // --- Advisor — fleet report (WP 2.2) ----------------------------------------------------------

@@ -4275,6 +4275,17 @@ export const advisorSavingsSchema = z.object({
   basis: z.string().trim().min(1),
 });
 
+/**
+ * WP 2.1 — the grade-side provenance of a grade-aware finding. `suiteRunIds` is `.min(1)` for the
+ * same reason `evidence` is: a "validated against the suite score" claim that names no suite run is
+ * unverifiable. Ascending + deduped ordering is asserted by the engine, not here (zod cannot express
+ * "sorted" without a refinement that would duplicate the engine's determinism check).
+ */
+export const advisorGradeProvenanceSchema = z.object({
+  gradingVersion: z.number().int(),
+  suiteRunIds: z.array(z.string().min(1)).min(1),
+});
+
 /** `evidence` is `.min(1)`: every recommendation cites at least one real entity. */
 export const advisorRecommendationSchema = z.object({
   id: z.string().min(1),
@@ -4285,6 +4296,8 @@ export const advisorRecommendationSchema = z.object({
   savings: advisorSavingsSchema.optional(),
   evidence: z.array(advisorEvidenceRefSchema).min(1),
   assumptions: z.array(z.string()),
+  /** WP 2.1 — present only on a grade-aware finding (see {@link advisorGradeProvenanceSchema}). */
+  gradeProvenance: advisorGradeProvenanceSchema.optional(),
 });
 
 /** `reason` must name what was missing — a blank reason is not an honest gap. */

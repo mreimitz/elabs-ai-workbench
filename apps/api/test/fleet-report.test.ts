@@ -29,6 +29,7 @@ import { AppSettingsRepository } from "../src/grading/app-settings-repository.js
 import { RatingIssueRepository } from "../src/grading/issue-repository.js";
 import { registerReportRoutes } from "../src/reports/routes.js";
 import { ScanRepository } from "../src/scans/repository.js";
+import { SkillRepository } from "../src/skills/repository.js";
 import { SecretStore } from "../src/secrets/secret-store.js";
 import { ServerRepository } from "../src/servers/repository.js";
 import { SuiteRepository } from "../src/suites/repository.js";
@@ -67,6 +68,8 @@ type Harness = {
   runs: RunRepository;
   suiteRuns: SuiteRunRepository;
   suites: SuiteService;
+  grades: GradeRepository;
+  skills: SkillRepository;
 };
 
 function makeHarness(): Harness {
@@ -84,6 +87,10 @@ function makeHarness(): Harness {
     runs: new RunRepository(db),
     suiteRuns: new SuiteRunRepository(db),
     suites: new SuiteService(new SuiteRepository(db)),
+    // Advisor WP 2.1 widened the advisor read model with the graded side; the fleet report's
+    // embedded advisor section runs on the SAME ports as `GET /api/advisor/report`.
+    grades: new GradeRepository(db),
+    skills: new SkillRepository(db),
   };
 }
 
@@ -92,7 +99,15 @@ function makeHarness(): Harness {
 function makeDeps(h: Harness, posture?: FleetPostureProvider): FleetReportDeps {
   return {
     advisor: createAdvisorContext(
-      { servers: h.servers, scans: h.scans, scenarios: h.scenarios, runs: h.runs },
+      {
+        servers: h.servers,
+        scans: h.scans,
+        scenarios: h.scenarios,
+        runs: h.runs,
+        grades: h.grades,
+        suiteRuns: h.suiteRuns,
+        skills: h.skills,
+      },
       () => new Date(FIXED_NOW),
     ),
     suiteRuns: h.suiteRuns,
@@ -689,6 +704,9 @@ async function makeApp(h: Harness): Promise<string> {
     scans: h.scans,
     scenarios: h.scenarios,
     runs: h.runs,
+    grades: h.grades,
+    suiteRuns: h.suiteRuns,
+    skills: h.skills,
   };
   await registerAdvisorRoutes(app, advisorDeps);
   await registerReportRoutes(

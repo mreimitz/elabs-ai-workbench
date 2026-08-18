@@ -13,11 +13,14 @@ import type {
   AdvisorScope,
   AllowedServer,
   RunDetail,
+  RunGrade,
   RunSummary,
   ScanDetail,
   ScanSummary,
   Scenario,
   ServerConfig,
+  Skill,
+  SuiteRun,
 } from "@mcp-token-footprint/shared";
 import type { ListRunsFilter } from "../testing/run-repository.js";
 
@@ -47,6 +50,54 @@ export type AdvisorRunPort = {
   listRuns(filter?: ListRunsFilter): RunSummary[];
   getRun(runId: string): RunDetail;
   getToolCallSequence(runId: string): string[];
+  /** WP 2.1 — the run row WITHOUT its steps/events. A grade-aware rule walks a whole suite matrix,
+   *  so it must not pay `getRun`'s full-replay hydration per member. */
+  getSummary(runId: string): RunSummary;
+  /** WP 2.1 — the skills a run ACTUALLY resolved (`run_skills`). This is the immutable input the
+   *  benchmarks WP 5.1 variant attribution matches against; narrowed to the one column it reads so
+   *  a rule cannot drift into the rest of the row. */
+  getRunSkills(runId: string): { skill_id: string }[];
+};
+
+// --- WP 2.1 — the grade-aware side of the read model -------------------------------------------
+// Phase 2 rules join the Phase 1 footprint/behavior model to GRADES. Three more narrow ports, in the
+// same shape as the four above: read-only slices the concrete repositories satisfy structurally, so
+// a rule still cannot reach a DB handle, an MCP connection, or a secret.
+
+/** Read-only slice of `GradeRepository`. `run_grades` is APPEND-ONLY, so a rule reads the whole
+ *  history and picks the latest row per grader itself (the same selection the suite analytics use). */
+export type AdvisorGradePort = {
+  listByRun(runId: string): RunGrade[];
+};
+
+/** Read-only slice of `SuiteRunRepository` — the executed benchmark matrices a grade-aware finding
+ *  rests on, plus the child runs each one owns. */
+export type AdvisorSuiteRunPort = {
+  listRuns(suiteId?: string): SuiteRun[];
+  listChildRunIds(suiteRunId: string): string[];
+};
+
+/** Read-only slice of `SkillRepository` — names only. Deliberately `list()` rather than `get(id)`:
+ *  `getPublic` throws a 404 for a skill deleted after the run that used it, and a rule reports a gap
+ *  rather than throwing (the same reason `serversById` exists). */
+export type AdvisorSkillPort = {
+  list(): Skill[];
+};
+
+/** What a rule may know about a model from the bundled compatibility dataset. `contextWindowTokens`
+ *  is `null` when the dataset carries no window for the model — an unknown limit, never a zero. */
+export type AdvisorModelInfo = {
+  id: string;
+  displayName: string;
+  contextWindowTokens: number | null;
+};
+
+/** Read-only lookup over the bundled model dataset (`compatibility/dataset.ts`). Static JSON, not a
+ *  repository — behind a port anyway so a rule is testable with a fake and the compatibility engine
+ *  stays the one place that knows the dataset's shape. */
+export type AdvisorModelPort = {
+  /** The model, or `null` when the compatibility dataset does not know this id at all. */
+  get(modelId: string): AdvisorModelInfo | null;
 };
 
 /** Everything a rule may read, plus the engine's clock. There is deliberately no `db` here. */
@@ -55,6 +106,11 @@ export type AdvisorContext = {
   readonly scans: AdvisorScanPort;
   readonly scenarios: AdvisorScenarioPort;
   readonly runs: AdvisorRunPort;
+  /** WP 2.1 — the graded side of the read model. */
+  readonly grades: AdvisorGradePort;
+  readonly suiteRuns: AdvisorSuiteRunPort;
+  readonly skills: AdvisorSkillPort;
+  readonly models: AdvisorModelPort;
   /** The ONLY source of a report's `generatedAt`. Injected so a report is reproducible: two runs
    *  over the same inputs and the same clock are byte-identical, `generatedAt` included. */
   readonly now: () => Date;
@@ -79,6 +135,15 @@ export type AdvisorRule = {
    *  not a data gap). */
   appliesTo(scope: AdvisorScope): boolean;
   run(ctx: AdvisorContext, scope: AdvisorScope): AdvisorRuleResult;
+  /**
+   * WP 2.1 — this rule reads GRADES. The engine then REQUIRES an `AdvisorGradeProvenance` on every
+   * recommendation the rule emits (`GRADING_VERSION` + the suite-run ids read), so the Phase 2
+   * invariant is enforced by the engine rather than by each rule remembering to stamp it.
+   *
+   * Absent/`false` on every deterministic Phase 1 rule, which reads no grades and must NOT stamp
+   * grade provenance it does not have.
+   */
+  readonly gradeAware?: boolean;
 };
 
 /** Thrown when a rule violates the recommendation contract (no evidence, an unlabeled or

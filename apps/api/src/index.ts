@@ -1419,6 +1419,11 @@ await registerAdvisorRoutes(server, {
   scans,
   scenarios: scenarioRepository,
   runs: runRepository,
+  // WP 2.1 — the grade-aware side: suite runs + their members' grades + skill names. Still
+  // read-only, still no provider key (a grade is read from `run_grades`, never re-judged here).
+  grades: gradeRepository,
+  suiteRuns: suiteRunRepository,
+  skills,
 });
 // UX overhaul WP 3.5 (G7, D-UX12) — advisory run-plan cost preview (reads footprints + pricing; no key).
 await registerEstimateRoutes(server, {
@@ -1456,10 +1461,18 @@ await registerReportRoutes(
   suiteReportRepository,
   digestRepository,
   digestSchedule,
-  // Advisor WP 2.2 — the fleet report (`GET /api/reports/fleet/{json,markdown}`) reads the SAME four
-  // narrow advisor ports registered above, so its recommendations come from the one advisor service
-  // rather than a second copy of the rules.
-  { servers, scans, scenarios: scenarioRepository, runs: runRepository },
+  // Advisor WP 2.2 — the fleet report (`GET /api/reports/fleet/{json,markdown}`) reads the SAME
+  // advisor ports registered above (WP 2.1 widened them with the graded side), so its
+  // recommendations come from the one advisor service rather than a second copy of the rules.
+  {
+    servers,
+    scans,
+    scenarios: scenarioRepository,
+    runs: runRepository,
+    grades: gradeRepository,
+    suiteRuns: suiteRunRepository,
+    skills,
+  },
 );
 await registerOAuthRoutes(server, oauthService);
 await registerTestingRoutes(

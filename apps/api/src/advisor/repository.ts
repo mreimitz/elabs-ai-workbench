@@ -10,12 +10,17 @@
 // that owns its queries — re-querying those tables here would duplicate (and eventually contradict)
 // them.
 
+import { getModel } from "../compatibility/dataset.js";
 import type { AdvisorContext } from "./types.js";
 import type {
+  AdvisorGradePort,
+  AdvisorModelPort,
   AdvisorRunPort,
   AdvisorScanPort,
   AdvisorScenarioPort,
   AdvisorServerPort,
+  AdvisorSkillPort,
+  AdvisorSuiteRunPort,
 } from "./types.js";
 
 /**
@@ -29,7 +34,36 @@ export type AdvisorRepositories = {
   scans: AdvisorScanPort;
   scenarios: AdvisorScenarioPort;
   runs: AdvisorRunPort;
+  // WP 2.1 — the graded side. Same discipline: typed as the narrow ports, satisfied structurally by
+  // `GradeRepository` / `SuiteRunRepository` / `SkillRepository` at the `index.ts` call site.
+  grades: AdvisorGradePort;
+  suiteRuns: AdvisorSuiteRunPort;
+  skills: AdvisorSkillPort;
 };
+
+/**
+ * WP 2.1 — the model-limits port over the bundled compatibility dataset (static JSON, no DB).
+ *
+ * A separate builder rather than a member of {@link AdvisorRepositories} because it is not a
+ * repository: it is the compatibility engine's own lookup, adapted to the three fields a rule may
+ * read. `contextWindowTokens` stays `null` when the dataset carries no window — an UNKNOWN limit is
+ * never flattened to `0`, which a rule would read as "this model has no room" (invariant 3).
+ */
+export function createAdvisorModelPort(
+  lookup: (modelId: string) => ReturnType<typeof getModel> = getModel,
+): AdvisorModelPort {
+  return {
+    get(modelId) {
+      const model = lookup(modelId);
+      if (!model) return null;
+      return {
+        id: model.model_id,
+        displayName: model.display_name ?? model.model_id,
+        contextWindowTokens: model.context_window_tokens,
+      };
+    },
+  };
+}
 
 /**
  * Builds the context a report is computed over.
@@ -41,12 +75,17 @@ export type AdvisorRepositories = {
 export function createAdvisorContext(
   repositories: AdvisorRepositories,
   now: () => Date = () => new Date(),
+  models: AdvisorModelPort = createAdvisorModelPort(),
 ): AdvisorContext {
   return {
     servers: repositories.servers,
     scans: repositories.scans,
     scenarios: repositories.scenarios,
     runs: repositories.runs,
+    grades: repositories.grades,
+    suiteRuns: repositories.suiteRuns,
+    skills: repositories.skills,
+    models,
     now,
   };
 }
