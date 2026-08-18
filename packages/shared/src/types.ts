@@ -7029,3 +7029,12 @@ export type AdvisorReport = {
   recommendations: AdvisorRecommendation[];
   insufficientData: AdvisorInsufficientData[];
 };
+
+/** Query for `GET /api/advisor/report` (WP 1.2). `id` names the server/environment a scoped report
+ *  is computed over and is ABSENT for `fleet`. The zod partner rejects BOTH a missing id on a scoped
+ *  request and a stray id on a fleet one, so a caller can never get back a report over something
+ *  other than what they asked for. */
+export type AdvisorReportQuery = {
+  scope: AdvisorScopeKind;
+  id?: string;
+};

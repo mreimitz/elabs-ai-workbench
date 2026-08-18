@@ -4,6 +4,7 @@ import fastifyStatic from "@fastify/static";
 import { type GraderId, type HealthPayload } from "@mcp-token-footprint/shared";
 import Fastify from "fastify";
 import { ZodError } from "zod";
+import { registerAdvisorRoutes } from "./advisor/routes.js";
 import { AssistantAuthService } from "./assistant/auth-service.js";
 import {
   ClaudeOauthFlowManager,
@@ -1410,6 +1411,15 @@ await registerMaintenanceRoutes(
   { repository: hubRepository, dataDir: config.dataDirectory },
 );
 await registerCompareRoutes(server, scans);
+// Advisor (roadmap/advisor/, WP 1.2) — `GET /api/advisor/report`: deterministic, versioned
+// recommendations derived from data the app already persists (scans + runs + environments). Read-only;
+// the four rules see only the narrow read ports built here, never a DB handle or a secret.
+await registerAdvisorRoutes(server, {
+  servers,
+  scans,
+  scenarios: scenarioRepository,
+  runs: runRepository,
+});
 // UX overhaul WP 3.5 (G7, D-UX12) — advisory run-plan cost preview (reads footprints + pricing; no key).
 await registerEstimateRoutes(server, {
   scenarios: scenarioService,

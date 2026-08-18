@@ -4299,3 +4299,37 @@ export const advisorReportSchema = z.object({
   recommendations: z.array(advisorRecommendationSchema),
   insufficientData: z.array(advisorInsufficientDataSchema),
 });
+
+/**
+ * The query of `GET /api/advisor/report` (WP 1.2). The scope is REQUIRED — there is no default,
+ * because "the whole fleet" and "this one server" are different questions and guessing which one an
+ * operator meant would quietly answer the wrong one.
+ *
+ * The id/scope pairing is validated rather than tolerated: a `server`/`scenario` report with no id
+ * has nothing to report on, and a `fleet` report carrying an id would silently ignore it. Both are
+ * caller bugs, so both are 400s.
+ */
+export const advisorReportQuerySchema = z
+  .object({
+    scope: advisorScopeKindSchema,
+    id: z.string().trim().min(1).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.scope === "fleet") {
+      if (value.id !== undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["id"],
+          message: "The fleet scope covers everything and takes no id",
+        });
+      }
+      return;
+    }
+    if (value.id === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["id"],
+        message: `The ${value.scope} scope requires an id`,
+      });
+    }
+  });
