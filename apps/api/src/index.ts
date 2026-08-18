@@ -35,6 +35,8 @@ import { GithubAccountService } from "./github-account/service.js";
 import { registerGithubAccountRoutes } from "./github-account/routes.js";
 import { createAnswerValidationGrader } from "./grading/answer-validation.js";
 import { AppSettingsRepository } from "./grading/app-settings-repository.js";
+import { registerFeatureRoutes } from "./features/routes.js";
+import { FeatureFlagsService } from "./features/service.js";
 import { createClaudeCliJudgeGenerate } from "./grading/claude-cli-judge.js";
 import { createErrorForensicsGrader } from "./grading/error-forensics.js";
 import { FailureBucketService } from "./grading/failure-buckets.js";
@@ -325,6 +327,14 @@ const runReportService = new RunReportService(gradeRepository, runRepository);
 // run_grades judge_* ledger per B5; unconfigured → self-reports `unevaluable`, a no-op until a default
 // judge is set in grading settings). Other W3 WPs append their graders to THIS array.
 const appSettings = new AppSettingsRepository(db);
+// Settings › Features (feature flags) — the operator's on/off switches for whole app capabilities,
+// persisted in the SAME `app_settings` KV (key `app.features`; no table, no migration). Registered
+// FIRST, before any feature's own routes, because `registerFeatureRoutes` also installs the root
+// `onRequest` guard that 403s requests belonging to a disabled feature (`/api/assistant`, `/api/hub`
+// while the Assistant is off). Hiding the UI alone is not an off-switch — a stale tab or a direct
+// curl would still start sessions and spend provider tokens.
+const featureFlags = new FeatureFlagsService(appSettings);
+registerFeatureRoutes(server, featureFlags);
 // Auto-Rating (WP 2.3, AR2/AR3/AR16) — the ONE judge resolution chain shared by ALL FIVE LLM graders
 // (outcome/trajectory judges + the three mandatory base-rating graders): Claude CLI (subscription, if
 // signed in) → configured provider judge → none. Built ONCE here and passed to every LLM grader so the
@@ -1029,7 +1039,7 @@ const issueSweepService = new IssueSweepService({
       severity: "warning",
       title: `Issue regressed: ${notice.title}`,
       body: `A resolved recurring issue on ${notice.targetKind === "skill" ? "skill" : "MCP server"} "${notice.targetName}" reappeared in run ${notice.runId}.`,
-      linkPath: `/testing/observability/issues/${notice.issueId}`,
+      linkPath: `/dashboard?tab=issues&issue=${notice.issueId}`,
       runId: notice.runId,
     });
     notificationHub.publish(notification);
@@ -1596,7 +1606,7 @@ const hubNotify: HubNotifySink = (event) => {
         severity: "info",
         title: `Waiting for you: ${session.title}`,
         body,
-        linkPath: `/assistant/s/${event.sessionId}`,
+        linkPath: `/assistant?session=${event.sessionId}`,
       });
       notificationHub.publish(notification);
       return;
@@ -1614,7 +1624,7 @@ const hubNotify: HubNotifySink = (event) => {
         severity,
         title: `Mission ${event.status}: ${session.title}`,
         body,
-        linkPath: `/assistant/s/${event.sessionId}`,
+        linkPath: `/assistant?session=${event.sessionId}`,
       });
       notificationHub.publish(notification);
       return;
@@ -1624,7 +1634,7 @@ const hubNotify: HubNotifySink = (event) => {
       severity: "warning",
       title: `Budget limit hit: ${session.title}`,
       body: `The session stopped early after tripping its "${event.stopReasonCode}" budget.`,
-      linkPath: `/assistant/s/${event.sessionId}`,
+      linkPath: `/assistant?session=${event.sessionId}`,
     });
     notificationHub.publish(notification);
   } catch (error) {

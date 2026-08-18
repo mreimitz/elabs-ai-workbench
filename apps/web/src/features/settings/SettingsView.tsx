@@ -122,6 +122,7 @@ import {
   Settings2,
   Sparkles,
   Timer,
+  ToggleLeft,
   Trash2,
   X,
   type LucideIcon,
@@ -153,6 +154,7 @@ import {
   startGithubDeviceFlow,
   updateProvider,
 } from "../../lib/api";
+import { FeaturesSection } from "./FeaturesSection";
 import { notifyError } from "../../lib/notify";
 
 /* ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -165,6 +167,7 @@ import { notifyError } from "../../lib/notify";
 
 const SETTINGS_SECTION_IDS = [
   "general",
+  "features",
   "testing",
   "providers",
   "pricing",
@@ -206,6 +209,22 @@ const SECTION_GROUPS: { label: string; sections: SectionDef[] }[] = [
           "tokenizer",
           "scanning",
           "defaults",
+        ],
+      },
+      {
+        id: "features",
+        label: "Features",
+        icon: ToggleLeft,
+        keywords: [
+          "feature",
+          "flag",
+          "toggle",
+          "enable",
+          "disable",
+          "turn off",
+          "activate",
+          "deactivate",
+          "assistant",
         ],
       },
       {
@@ -618,6 +637,8 @@ export function SettingsDialog(props: {
                     themePreference={themePreference}
                     onThemePreferenceChange={onThemePreferenceChange}
                   />
+                ) : active === "features" ? (
+                  <FeaturesSection />
                 ) : active === "testing" ? (
                   <TestingSection
                     onOpenWatchRules={() =>

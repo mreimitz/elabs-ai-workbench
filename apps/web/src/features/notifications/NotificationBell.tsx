@@ -1,6 +1,18 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Badge, Button, Popover, PopoverContent, PopoverTrigger, ScrollArea, Text, cn } from "@elabs-ai/components-ui";
+import {
+  Badge,
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  ScrollArea,
+  Text,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
+} from "@elabs-ai/components-ui";
 import type { Notification, WatchNotifySeverity } from "@mcp-token-footprint/shared";
 import { Bell, Clock } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
@@ -154,38 +166,61 @@ function NotificationList({
   }
 
   return (
-    <ScrollArea className="max-h-96">
+    // The `[&>[data-radix-scroll-area-viewport]>div]:block!` override is load-bearing, not cosmetic:
+    // Radix renders the viewport's content wrapper as `display:table; min-width:100%`, a shrink-to-fit
+    // box that grows to the WIDEST row — so every `w-full`/`truncate` inside resolves against the
+    // longest title and clamping never fires, leaving long titles hard-cut mid-word by the root's
+    // `overflow-hidden`. Forcing it back to `block` re-anchors the rows to the popover's own width.
+    // Same fix + rationale as `features/testing/RunConsole.tsx` (see `lib/table.tsx`'s note).
+    <ScrollArea className="max-h-96 [&>[data-radix-scroll-area-viewport]>div]:block!">
       <ul className="flex flex-col">
         {items.map((notification) => (
-          <li key={notification.id}>
-            <Button
-              variant="ghost"
-              onClick={() => onSelect(notification)}
-              className={cn(
-                "h-auto w-full flex-col items-start gap-1 rounded-none px-3 py-2.5 text-left",
-                "border-b border-border last:border-b-0",
-                !notification.read && "bg-accent/40",
-              )}
-            >
-              <div className="flex w-full items-center gap-2">
-                <StatusBadge view={SEVERITY_VIEW[notification.severity]} />
-                <Text variant="body" className="min-w-0 flex-1 truncate font-medium">
-                  {notification.title}
-                </Text>
-                <Text variant="meta" tone="muted" className="shrink-0 tabular-nums">
-                  {formatRelativeTime(notification.at)}
-                </Text>
-              </div>
-              <Text variant="meta" tone="muted" className="w-full truncate whitespace-normal text-left">
-                {notification.body}
-              </Text>
-              {notification.late ? (
-                <Badge variant="outline" className="gap-1 border-border text-muted-foreground">
-                  <Clock aria-hidden className="size-3" />
-                  While you were away
-                </Badge>
-              ) : null}
-            </Button>
+          <li key={notification.id} className="min-w-0">
+            {/* A notification title carries an entity's own name verbatim (a mission's session title,
+                a rule name), so it is arbitrarily long: the row clamps to one line + two body lines,
+                and the FULL text is reachable on hover/focus via the tooltip — the same
+                affordance-with-an-accessible-name contract `IconButton` uses for icon-only controls
+                (D-TB5), never a native `title`. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  onClick={() => onSelect(notification)}
+                  className={cn(
+                    "h-auto w-full min-w-0 flex-col items-start gap-1 rounded-none px-3 py-2.5 text-left",
+                    "border-b border-border last:border-b-0",
+                    !notification.read && "bg-accent/40",
+                  )}
+                >
+                  <div className="flex w-full min-w-0 items-center gap-2">
+                    <StatusBadge view={SEVERITY_VIEW[notification.severity]} />
+                    <Text variant="body" className="min-w-0 flex-1 truncate font-medium">
+                      {notification.title}
+                    </Text>
+                    <Text variant="meta" tone="muted" className="shrink-0 tabular-nums">
+                      {formatRelativeTime(notification.at)}
+                    </Text>
+                  </div>
+                  <Text
+                    variant="meta"
+                    tone="muted"
+                    className="w-full min-w-0 whitespace-normal text-left line-clamp-2"
+                  >
+                    {notification.body}
+                  </Text>
+                  {notification.late ? (
+                    <Badge variant="outline" className="gap-1 border-border text-muted-foreground">
+                      <Clock aria-hidden className="size-3" />
+                      While you were away
+                    </Badge>
+                  ) : null}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left" align="start" className="max-w-80">
+                <span className="block font-medium">{notification.title}</span>
+                <span className="block whitespace-normal">{notification.body}</span>
+              </TooltipContent>
+            </Tooltip>
           </li>
         ))}
       </ul>

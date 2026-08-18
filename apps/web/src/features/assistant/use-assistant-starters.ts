@@ -11,6 +11,9 @@ export type AssistantStartersQuery = {
   entityId?: string;
   tab?: string;
   route?: string;
+  /** Settings › Features — when false the hook does not fetch at all and reports zero starters (the
+   *  Assistant feature is switched off, so `/api/assistant/*` answers 403). Defaults to true. */
+  enabled?: boolean;
 };
 
 /**
@@ -29,12 +32,17 @@ export function useAssistantStarters(query: AssistantStartersQuery): {
   starters: AssistantStarter[];
   loading: boolean;
 } {
-  const { entityKind, entityId, tab, route } = query;
+  const { entityKind, entityId, tab, route, enabled = true } = query;
   const [starters, setStarters] = useState<AssistantStarter[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+    if (!enabled) {
+      setStarters([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     getAssistantStarters({ entityKind, entityId, tab, route })
       .then((response) => {
@@ -49,7 +57,7 @@ export function useAssistantStarters(query: AssistantStartersQuery): {
     return () => {
       active = false;
     };
-  }, [entityKind, entityId, tab, route]);
+  }, [entityKind, entityId, tab, route, enabled]);
 
   return { starters, loading };
 }

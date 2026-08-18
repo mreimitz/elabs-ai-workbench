@@ -534,10 +534,10 @@ test("migration v39 — a fresh DB carries watch_rules.last_evaluated_at; LATEST
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    56,
+    57,
     "LATEST auto-derived to 55 (v39 = watch_rules.last_evaluated_at; v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
   assert.ok(
     columns(db, "watch_rules").includes("last_evaluated_at"),
     "fresh DB (schema.ts baseline) has the column",
@@ -566,7 +566,7 @@ test("migration v39 — a pre-v39 (v38) DB gains the column; a pre-existing rule
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    "stamped to LATEST (56) after v39+v40+v41+v42+v43+v44+v45+v46",
+    "stamped to LATEST (57) after v39+v40+v41+v42+v43+v44+v45+v46",
   );
   assert.ok(columns(db, "watch_rules").includes("last_evaluated_at"), "v39 added the column");
   const pre = db
@@ -575,5 +575,5 @@ test("migration v39 — a pre-v39 (v38) DB gains the column; a pre-existing rule
   assert.equal(pre.last_evaluated_at, null, "a pre-v39 rule reads the column back NULL (never backfilled)");
 
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v39+v40+v41+v42+v43+v44+v45+v46 is a no-op");
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "version unchanged after the re-run");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "version unchanged after the re-run");
 });

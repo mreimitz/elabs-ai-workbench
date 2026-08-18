@@ -15,6 +15,7 @@ import type {
 } from "@mcp-token-footprint/shared";
 import { resolveAssistantUiAction } from "@mcp-token-footprint/shared";
 import { getAssistantAuthStatus } from "../../lib/api";
+import { useFeatureEnabled } from "../feature-flags/feature-flags-context";
 
 const DOCK_OPEN_STORAGE_KEY = "mcp-token-footprint.assistant.dock-open";
 
@@ -233,17 +234,31 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   // WP R1.4 (D-AS22) — see `activeAssistantThreadId`'s doc on `AssistantContextValue`.
   const [activeAssistantThreadId, setActiveAssistantThreadId] = useState<string | null>(null);
 
+  // Settings › Features — the operator's Assistant on/off switch. While it is off the API answers
+  // 403 for `/api/assistant/*`, so this provider stops polling auth status entirely (a pointless
+  // request whose only outcome would be a rejection) and force-closes the dock below.
+  const assistantFeatureEnabled = useFeatureEnabled("assistant");
+
   const refreshAuthStatus = useCallback(async () => {
+    if (!assistantFeatureEnabled) {
+      setAuthStatus(null);
+      return;
+    }
     try {
       setAuthStatus(await getAssistantAuthStatus());
     } catch {
       // Best-effort — fail closed: the toggle/dock simply stay hidden until the next successful check.
     }
-  }, []);
+  }, [assistantFeatureEnabled]);
 
   useEffect(() => {
     void refreshAuthStatus();
   }, [refreshAuthStatus]);
+
+  // Turning the feature off with the dock open closes (and un-persists) it immediately.
+  useEffect(() => {
+    if (!assistantFeatureEnabled) setIsOpen(false);
+  }, [assistantFeatureEnabled]);
 
   useEffect(() => {
     writeStoredOpen(isOpen);
@@ -300,8 +315,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   // Global ⌘J / Ctrl+J — also reclaims the browser's own Ctrl+J (Downloads) binding, so it's only
   // wired once the feature is actually reachable (an invisible feature stealing a browser shortcut for
   // nothing would be a regression, not a convenience).
+  // Settings › Features adds a second condition: a switched-off Assistant must not keep the binding
+  // either — the shortcut would open a dock that is no longer mounted, and would still be stealing
+  // Ctrl+J from the browser.
   useEffect(() => {
-    if (!authConfigured) return;
+    if (!authConfigured || !assistantFeatureEnabled) return;
     function onKeyDown(event: KeyboardEvent): void {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "j") {
         event.preventDefault();
@@ -310,7 +328,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [authConfigured, toggleAssistant]);
+  }, [authConfigured, assistantFeatureEnabled, toggleAssistant]);
 
   const currentEnvelope = deriveAssistantEnvelope(location.pathname, location.search);
 

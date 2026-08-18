@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useState, type ReactNode } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
+import { useFeatureEnabled } from "../features/feature-flags/feature-flags-context";
 import {
   Badge,
   Breadcrumb,
@@ -341,11 +342,17 @@ export function AppShell({
   dockContent,
   dockOpen = false,
   onDockOpenChange,
-  dockAvailable = false,
+  dockAvailable: dockAvailableProp = false,
   dockHintCount = 0,
   children,
 }: AppShellProps) {
   const { pathname } = useLocation();
+  // Settings › Features — while the Assistant is switched off, its whole sidebar group AND the
+  // App-assistant dock (toggle, split column, mobile Sheet) are gone. Read here rather than drilled
+  // as a prop so every dock/nav site in this file agrees; outside a provider it reads ENABLED, so
+  // unit tests that render `AppShell` bare behave exactly like a stock install.
+  const assistantEnabled = useFeatureEnabled("assistant");
+  const dockAvailable = dockAvailableProp && assistantEnabled;
   // Only render a breadcrumb when there is real drill depth (≥2 crumbs): a top-level view + a
   // detail. On top-level views we render nothing (never a single crumb that repeats the page H1).
   const hasDrillDepth = breadcrumbs.length >= 2;
@@ -681,6 +688,9 @@ export function AppShell({
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
+              {/* Settings › Features — the whole Assistant nav group disappears while the feature is
+                  switched off (the routes still exist and explain themselves; see FeatureDisabledView). */}
+              {assistantEnabled ? (
               <SidebarGroup>
                 <SidebarGroupContent>
                   <SidebarMenu>
@@ -744,6 +754,7 @@ export function AppShell({
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
+              ) : null}
               <SidebarGroup>
                 {/* item 7: brand-ui's collapsed label is `opacity-0 -mt-8` — invisible but still
                     boxed, leaving a run of unexplained gaps in the icon rail. `hidden` takes it out

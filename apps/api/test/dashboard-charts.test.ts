@@ -523,10 +523,10 @@ test("migration v45 — a fresh DB carries dashboard_charts (schema.ts baseline)
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    56,
-    "LATEST_SCHEMA_VERSION auto-derived to 56 (v45 = dashboard_charts, custom chart composer; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v51 = hub_sessions.mode auto; v52 = hub_sessions.roster_json; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
+    57,
+    "LATEST_SCHEMA_VERSION auto-derived to 57 (v45 = dashboard_charts, custom chart composer; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v51 = hub_sessions.mode auto; v52 = hub_sessions.roster_json; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten))",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
   assert.ok(tableExists(db, "dashboard_charts"), "fresh DB has the dashboard_charts table");
   assert.ok(indexExists(db, "idx_dashboard_charts_position"), "fresh DB has idx_dashboard_charts_position");
 
@@ -553,7 +553,7 @@ test("migration v45 — a pre-v45 (v44) DB gains dashboard_charts; neighboring r
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "stamped to LATEST (56) after v45+v46");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "stamped to LATEST (57) after v45+v46");
   assert.ok(tableExists(db, "dashboard_charts"), "v45 created dashboard_charts on the existing (v44) DB");
   assert.ok(indexExists(db, "idx_dashboard_charts_position"), "v45 added idx_dashboard_charts_position");
   const provider = db.prepare("SELECT label FROM provider_credentials WHERE id = 'prov-pre45'").get() as
@@ -570,5 +570,5 @@ test("migration v45 — a pre-v45 (v44) DB gains dashboard_charts; neighboring r
 
   // Idempotent: re-running is a no-op and leaves the version unchanged.
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v45 is a no-op");
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "version unchanged after the re-run");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "version unchanged after the re-run");
 });

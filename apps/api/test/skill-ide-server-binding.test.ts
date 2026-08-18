@@ -102,10 +102,10 @@ test("migration v17 — a fresh DB stamps at LATEST (17) and carries skill_serve
 
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    56,
+    57,
     "LATEST auto-derived to 55 (…v19 suite-run member index + v20 assistant tables + v21 assistant_settings + v22 suite_run_reports + v23 provider_credentials server link + v24 scenarios.answers_mode + v25 server_types + v26 rating_issues + v27 rating_state + v28 provider_credentials claude_subscription kind + v29 runs.cost_basis + v30 rating_issue_occurrences concrete evidence + v31 unified-sessions runs columns + v32 observability metrics indexes; v33 observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
   assert.ok(
     tableExists(db, "skill_server_bindings"),
     "fresh DB has the skill_server_bindings table",
@@ -137,7 +137,7 @@ test("migration v17 — a v16 DB WITHOUT the table gains it when applyMigrations
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    "stamped to LATEST (56) after the v17 + v18 + v19 + v20 + v21 + v22 + v23 + v24 + v25 + v26 + v27 + v28 + v29 + v30 + v31 + v32 + v33 + v34 + v35 + v36 + v37 + v38 + v39 + v40 + v41 + v42 + v43 + v44 + v45 + v46 steps",
+    "stamped to LATEST (57) after the v17 + v18 + v19 + v20 + v21 + v22 + v23 + v24 + v25 + v26 + v27 + v28 + v29 + v30 + v31 + v32 + v33 + v34 + v35 + v36 + v37 + v38 + v39 + v40 + v41 + v42 + v43 + v44 + v45 + v46 steps",
   );
   assert.ok(
     tableExists(db, "skill_server_bindings"),

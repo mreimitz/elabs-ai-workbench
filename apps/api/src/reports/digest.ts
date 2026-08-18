@@ -264,7 +264,7 @@ function toIssueRef(issue: RatingIssue): DigestIssueRef {
     targetKind: issue.targetKind,
     targetName: issue.targetName,
     // Mirrors the fleet-regression notification's own deep link (`index.ts` `notifyRegression`).
-    linkPath: `/testing/observability/issues/${issue.id}`,
+    linkPath: `/dashboard?tab=issues&issue=${issue.id}`,
   };
 }
 

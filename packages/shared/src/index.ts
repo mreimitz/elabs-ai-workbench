@@ -3,6 +3,7 @@ export * from "./assistant-scope.js";
 export * from "./assistant-starters.js";
 export * from "./assistant-ui-registry.js";
 export * from "./constants.js";
+export * from "./feature-flags.js";
 export * from "./format.js";
 export * from "./hub-genui-catalog.js";
 export * from "./hub-icon.js";

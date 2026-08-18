@@ -14,6 +14,8 @@ import type {
   AssistantThreadUpdateInput,
   AssistantWorkspaceFileContent,
   AssistantWorkspaceFilesResponse,
+  AppFeatureFlagsResponse,
+  AppFeatureFlagsUpdate,
   AvailableModelsResponse,
   Collection,
   CollectionInput,
@@ -172,6 +174,20 @@ export async function getComparison(
   if (threshold !== undefined) params.set("threshold", String(threshold));
   return apiGet<ScanComparison>(`/api/compare?${params.toString()}`);
 }
+
+// ── App feature flags (Settings › Features) ─────────────────────────────────────────────────────
+// The operator's on/off switches for whole app capabilities. The API is the source of truth (it also
+// ENFORCES a disabled feature server-side, 403 `feature_disabled`); the web mirrors the map into a
+// context so the nav, the routes and the dock can hide the surfaces a disabled feature owns.
+
+/** Every feature's current on/off state. */
+export const getFeatureFlags = (signal?: AbortSignal): Promise<AppFeatureFlagsResponse> =>
+  apiGet<AppFeatureFlagsResponse>("/api/features", signal);
+
+/** Flip one or more switches. A PARTIAL patch — unmentioned features keep their current value. */
+export const updateFeatureFlags = (
+  patch: AppFeatureFlagsUpdate,
+): Promise<AppFeatureFlagsResponse> => apiPut<AppFeatureFlagsResponse>("/api/features", patch);
 
 // ── MCP server connectivity (reauth gate) ───────────────────────────────────────────────────────
 // The reauth gate's throttled preflight. All MCP/secret work stays in the API; the web only ever

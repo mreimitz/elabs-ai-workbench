@@ -43,7 +43,7 @@ const REPORT: DigestReport = {
       severity: "medium",
       targetKind: "mcp_server",
       targetName: "Server One",
-      linkPath: "/testing/observability/issues/issue-1",
+      linkPath: "/dashboard?tab=issues&issue=issue-1",
     },
   ],
   regressedIssues: [],

@@ -40,6 +40,8 @@ import { RouteCrumbProvider } from "./components/route-crumb";
 import { ConfirmDialog } from "./components/dialogs";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAssistant } from "./features/assistant/assistant-context";
+import { FeatureGate } from "./features/feature-flags/FeatureGate";
+import { useFeatureEnabled } from "./features/feature-flags/feature-flags-context";
 import { CommandPalette } from "./features/command-palette/CommandPalette";
 import { useAssistantStarters } from "./features/assistant/use-assistant-starters";
 import {
@@ -272,6 +274,10 @@ export function App() {
   const navigate = useNavigate();
   const rawLocation = useLocation();
   const assistant = useAssistant();
+  // Settings › Features — the Assistant on/off switch. Off means: no starter fetch (the endpoint
+  // answers 403), no dock, and every `/assistant/*` route renders the "turned off" panel instead
+  // (see the `FeatureGate` wrappers in the route table below).
+  const assistantEnabled = useFeatureEnabled("assistant");
   // The collapsed dock toggle's hint pill: how many suggested interactions (session starters) the
   // current page has. Fetched here (not in the dock, which is unmounted while collapsed) off the same
   // envelope primitives the dock's own empty state uses; best-effort by construction (see the hook).
@@ -280,6 +286,7 @@ export function App() {
     entityId: assistant.currentEnvelope.entityId,
     tab: assistant.currentEnvelope.tab,
     route: assistant.currentEnvelope.route,
+    enabled: assistantEnabled,
   });
 
   // ── Settings modal over the current view ─────────────────────────────────────────────────────
@@ -1240,7 +1247,7 @@ export function App() {
             themePreference={themePreference}
             onThemePreferenceChange={setThemePreference}
             onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-            dockAvailable={assistant.authConfigured}
+            dockAvailable={assistant.authConfigured && assistantEnabled}
             dockOpen={assistant.isOpen}
             onDockOpenChange={(open) =>
               open ? assistant.openAssistant() : assistant.closeAssistant()
@@ -1281,19 +1288,61 @@ export function App() {
                   }
                 />
                 {/* Assistant Hub (D-AH2) — WP 0.4 nav + shell scaffold; no transport/session logic yet. */}
-                <Route path="/assistant" element={<AssistantView />} />
+                <Route
+                  path="/assistant"
+                  element={
+                    <FeatureGate feature="assistant">
+                      <AssistantView />
+                    </FeatureGate>
+                  }
+                />
                 {/* Assistant Hub (WP2.1 D-AH7 / Assistant Hub UX WP2.1 D-HUX5) — the workforce
                 section: the bare route renders the Directory tab; the two node routes below open a
                 profile modal OVER it (agent/crew use distinct param names on purpose — see
                 `WorkforceView.tsx`'s frame-API doc comment). All three render the same thin
                 `<AgentsView />` shell — `WorkforceView` reads its own state from the URL. */}
-                <Route path="/assistant/agents" element={<AgentsView />} />
-                <Route path="/assistant/agents/agent/:agentId" element={<AgentsView />} />
-                <Route path="/assistant/agents/crew/:crewId" element={<AgentsView />} />
+                <Route
+                  path="/assistant/agents"
+                  element={
+                    <FeatureGate feature="assistant">
+                      <AgentsView />
+                    </FeatureGate>
+                  }
+                />
+                <Route
+                  path="/assistant/agents/agent/:agentId"
+                  element={
+                    <FeatureGate feature="assistant">
+                      <AgentsView />
+                    </FeatureGate>
+                  }
+                />
+                <Route
+                  path="/assistant/agents/crew/:crewId"
+                  element={
+                    <FeatureGate feature="assistant">
+                      <AgentsView />
+                    </FeatureGate>
+                  }
+                />
                 {/* Assistant Hub UX WP1.4 (D-HUX4) — session history table (replaces SessionRail). */}
-                <Route path="/assistant/sessions" element={<SessionsView />} />
+                <Route
+                  path="/assistant/sessions"
+                  element={
+                    <FeatureGate feature="assistant">
+                      <SessionsView />
+                    </FeatureGate>
+                  }
+                />
                 {/* Assistant Hub (WP3.1, D-AH11c) — the project library (instructions + pinned files). */}
-                <Route path="/assistant/projects" element={<ProjectsView />} />
+                <Route
+                  path="/assistant/projects"
+                  element={
+                    <FeatureGate feature="assistant">
+                      <ProjectsView />
+                    </FeatureGate>
+                  }
+                />
                 {/* Assistant Hub UX WP3.1 (D-HUX11/D-HUX15, P3) — Memory dissolved into scopes; the
                 old standalone page redirects to the workspace's profile-memory dialog deep link
                 (WP2.7 already wires `?memory=profile` in `AssistantView` to open it). */}
@@ -1309,7 +1358,14 @@ export function App() {
                   element={<Navigate to="/assistant/agents?tab=usage" replace />}
                 />
                 {/* Assistant Hub (WP4.2, D-AH13) — the global, filterable Audit timeline. */}
-                <Route path="/assistant/audit" element={<AuditView />} />
+                <Route
+                  path="/assistant/audit"
+                  element={
+                    <FeatureGate feature="assistant">
+                      <AuditView />
+                    </FeatureGate>
+                  }
+                />
                 <Route path="/servers" element={<ServersRoute {...serversRouteProps()} />} />
                 <Route
                   path="/servers/:serverId"

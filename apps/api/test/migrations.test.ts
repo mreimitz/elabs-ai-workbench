@@ -452,15 +452,15 @@ test("migration v18 — pre-v18 DB gains skill_versions.intent_log_json (additiv
 // v21 (assistant_settings), v22 (suite_run_reports), v23 (provider_credentials server link), and v24
 // (scenarios.answers_mode — both later reverted by v56).
 
-test("migration v20 — a fresh DB stamps LATEST (56) and carries the 3 assistant tables", () => {
+test("migration v20 — a fresh DB stamps LATEST (57) and carries the 3 assistant tables", () => {
   const db = openFresh();
 
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    56,
-    "LATEST_SCHEMA_VERSION auto-derived to 56 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
+    57,
+    "LATEST_SCHEMA_VERSION auto-derived to 57 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten))",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
   for (const table of ["assistant_credentials", "assistant_threads", "assistant_events"]) {
     assert.ok(tableExists(db, table), `fresh DB has ${table}`);
   }
@@ -551,8 +551,8 @@ test("migration v43 — a pre-v43 (v42) DB gains digest_reports; idempotent, imm
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    56,
-    "stamped to LATEST (56) after v43…v56",
+    57,
+    "stamped to LATEST (57) after v43…v56",
   );
   assert.ok(
     tableExists(db, "digest_reports"),
@@ -609,8 +609,8 @@ test("migration v44 — a pre-v44 (v43) DB gains model_pricing seeded from the c
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    56,
-    "stamped to LATEST (56) after v44…v56",
+    57,
+    "stamped to LATEST (57) after v44…v56",
   );
   assert.ok(tableExists(db, "model_pricing"), "v44 created model_pricing on the existing (v43) DB");
   assert.ok(indexExists(db, "idx_model_pricing_match"), "v44 added idx_model_pricing_match");
@@ -2477,7 +2477,7 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
 
 test("migration v55 — a fresh DB carries hub_sessions/hub_agents.provider_credential_id (schema.ts baseline)", () => {
   const db = openFresh();
-  assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
+  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
   assert.ok(
     columnExists(db, "hub_sessions", "provider_credential_id"),
     "the baseline DDL carries hub_sessions.provider_credential_id (a fresh DB SKIPS every migration)",
@@ -2532,7 +2532,7 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
   assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    56, "and latest is 56");
+    57, "and latest is 57");
   assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
   assert.ok(columnExists(db, "hub_sessions", "provider_credential_id"), "hub_sessions gained it");
   assert.ok(columnExists(db, "hub_agents", "provider_credential_id"), "hub_agents gained it");
@@ -2579,6 +2579,77 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
   );
 
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v55 is a no-op");
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    LATEST_SCHEMA_VERSION,
+    "version unchanged after the re-run",
+  );
+});
+
+// ══ v57 — persisted notification / digest deep links repaired ════════════════════════════════════
+// The emitters wrote routes that never existed (`/assistant/s/<id>`, `/testing/observability/issues/
+// <id>`), so every already-stored notification still deep-linked into the 404 catch-all after the
+// source fix. Proves: the legacy rows are rewritten to the real routes (`/assistant?session=<id>`,
+// `/dashboard?tab=issues&issue=<id>`), an already-correct row is untouched, the same link embedded in
+// a stored digest payload is rewritten too, and re-running is a no-op.
+
+function seedPreV57Database(): AppDatabase {
+  const db = track(new Database(":memory:"));
+  db.exec(`
+    CREATE TABLE notifications (
+      id TEXT PRIMARY KEY, at TEXT NOT NULL, severity TEXT NOT NULL, title TEXT NOT NULL,
+      body TEXT NOT NULL, link_path TEXT, rule_id TEXT, run_id TEXT,
+      read INTEGER NOT NULL DEFAULT 0, late INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE digest_reports (
+      id TEXT PRIMARY KEY, window_kind TEXT NOT NULL, window_from TEXT NOT NULL,
+      window_to TEXT NOT NULL, generated_at TEXT NOT NULL, late INTEGER NOT NULL DEFAULT 0,
+      report_json TEXT NOT NULL
+    );
+  `);
+  const insert = db.prepare(
+    `INSERT INTO notifications (id,at,severity,title,body,link_path) VALUES (@id,@at,'info',@title,'b',@link)`,
+  );
+  insert.run({ id: "n-mission", at: NOW, title: "Mission completed", link: "/assistant/s/sess-1" });
+  insert.run({ id: "n-issue", at: NOW, title: "Issue regressed", link: "/testing/observability/issues/iss-1" });
+  insert.run({ id: "n-run", at: NOW, title: "Run failed", link: "/testing/runs/run-1" });
+  insert.run({ id: "n-none", at: NOW, title: "No link", link: null });
+  db.prepare(
+    `INSERT INTO digest_reports (id,window_kind,window_from,window_to,generated_at,report_json)
+     VALUES ('d1','daily',@a,@b,@b,@json)`,
+  ).run({
+    a: NOW,
+    b: NOW,
+    json: JSON.stringify({ newIssues: [{ id: "iss-1", linkPath: "/testing/observability/issues/iss-1" }] }),
+  });
+  db.pragma("user_version = 56");
+  return db;
+}
+
+test("migration v57 — stale notification/digest deep links are rewritten to routes that exist; idempotent", () => {
+  const db = seedPreV57Database();
+  applyMigrations(db);
+
+  const linkOf = (id: string) =>
+    (db.prepare("SELECT link_path AS l FROM notifications WHERE id = ?").get(id) as { l: string | null }).l;
+
+  assert.equal(linkOf("n-mission"), "/assistant?session=sess-1", "a hub session link points at the workspace route");
+  assert.equal(
+    linkOf("n-issue"),
+    "/dashboard?tab=issues&issue=iss-1",
+    "a fleet-issue link points at the Dashboard's Issues tab",
+  );
+  assert.equal(linkOf("n-run"), "/testing/runs/run-1", "an already-valid link is untouched");
+  assert.equal(linkOf("n-none"), null, "a link-less notification stays link-less");
+
+  const payload = (
+    db.prepare("SELECT report_json AS j FROM digest_reports WHERE id = 'd1'").get() as { j: string }
+  ).j;
+  assert.match(payload, /\/dashboard\?tab=issues&issue=iss-1/, "the stored digest payload is rewritten too");
+  assert.doesNotMatch(payload, /observability\/issues/, "no legacy issue path survives in the payload");
+
+  assert.doesNotThrow(() => applyMigrations(db), "re-applying v57 is a no-op");
+  assert.equal(linkOf("n-mission"), "/assistant?session=sess-1", "the rewrite is not applied twice");
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,

@@ -21,6 +21,7 @@ import "@elabs-ai/components-editor/monaco-environment";
 import "@xyflow/react/dist/style.css";
 import { App } from "./App";
 import { AssistantProvider } from "./features/assistant/assistant-context";
+import { FeatureFlagsProvider } from "./features/feature-flags/feature-flags-context";
 import {
   ALLOWED_THEMES,
   DEFAULT_ALLOWED_THEME,
@@ -63,9 +64,14 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
         <BrowserRouter>
           {/* Mounted inside the router (it derives the current envelope from `useLocation`) and near
               the app root (owns the dock's open/close state — see `features/assistant/assistant-context.tsx`). */}
-          <AssistantProvider>
-            <App />
-          </AssistantProvider>
+          {/* Settings › Features — the app-wide feature-flag map (source of truth: the API, which
+              also enforces a disabled feature server-side). Mounted ABOVE AssistantProvider so the
+              nav, the routes and the dock all read one map. Unknown/failed reads mean ENABLED. */}
+          <FeatureFlagsProvider>
+            <AssistantProvider>
+              <App />
+            </AssistantProvider>
+          </FeatureFlagsProvider>
         </BrowserRouter>
         {/* WP 0.2 / S13: offset the toast viewport below the 56px (`h-14`) app header bar so a
             real toast never overlaps the header's controls (the false-completion toast that used to

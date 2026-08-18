@@ -298,7 +298,7 @@ test("digest composer: new/regressed/resolved fleet issues are window-filtered; 
   assert.deepEqual(report.newIssues.map((i) => i.id), ["issue-new"]);
   assert.deepEqual(report.regressedIssues.map((i) => i.id), ["issue-regressed"]);
   assert.deepEqual(report.resolvedIssues.map((i) => i.id), ["issue-resolved"]);
-  assert.equal(report.newIssues[0]?.linkPath, "/testing/observability/issues/issue-new");
+  assert.equal(report.newIssues[0]?.linkPath, "/dashboard?tab=issues&issue=issue-new");
   assert.equal(report.newIssues[0]?.targetName, "Server One");
 });
 

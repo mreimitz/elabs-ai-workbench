@@ -21,6 +21,26 @@ Switch the app's theme between:
 
 You can change the theme here or from the theme control in the top bar.
 
+## Features
+
+The **Features** section lets you switch whole parts of the app on and off.
+
+Today there is one switch: **Assistant**. Turning it off removes the Assistant, Sessions,
+Agents & Crews, Projects and Audit items from the sidebar, hides the App-assistant panel and its
+⌘J shortcut, and hides the "Ask the assistant" buttons on other pages. If you open a bookmarked
+Assistant page while it's off, the page explains that it's turned off and offers a link straight
+back to this switch.
+
+Two things worth knowing:
+
+- **The switch is app-wide, not per-browser.** It's stored with the rest of your data, so it
+  survives restarts and applies to anyone using this instance.
+- **Off really means off.** The server refuses Assistant requests too, so a tab you left open, or
+  anything else pointed at the app, can't keep an Assistant session running or spend tokens.
+
+Turning a feature off asks you to confirm first and lists exactly what will disappear. Nothing is
+deleted — turning it back on restores everything, immediately.
+
 ## Assistant sign-in
 
 Connect the [Assistant](./12-assistant.md) to Claude, using either your **Claude subscription**

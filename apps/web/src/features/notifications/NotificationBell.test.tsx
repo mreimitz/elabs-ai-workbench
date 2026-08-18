@@ -162,7 +162,9 @@ describe("NotificationBell", () => {
     );
     renderBell();
     fireEvent.click(await screen.findByRole("button", { name: /notification center/i }));
-    fireEvent.click(await screen.findByText("Run completed"));
+    // Query the ROW by role: the title also appears in the row's hover/focus tooltip (which Radix
+    // opens on focus at the test provider's zero delay), so a bare text query is ambiguous.
+    fireEvent.click(await screen.findByRole("button", { name: /Run completed/ }));
 
     await waitFor(() => expect(markNotificationReadMock).toHaveBeenCalledWith("n1"));
     await waitFor(() =>
@@ -176,7 +178,7 @@ describe("NotificationBell", () => {
     );
     renderBell();
     fireEvent.click(await screen.findByRole("button", { name: /notification center/i }));
-    fireEvent.click(await screen.findByText("Run completed"));
+    fireEvent.click(await screen.findByRole("button", { name: /Run completed/ }));
 
     expect(markNotificationReadMock).not.toHaveBeenCalled();
     await waitFor(() =>
@@ -208,5 +210,70 @@ describe("NotificationBell", () => {
     expect(streamClosed).toBe(false);
     unmount();
     expect(streamClosed).toBe(true);
+  });
+});
+
+// ══ Overflow + tooltip (reported defect) ═════════════════════════════════════════════════════════
+// A hub notification's title carries the SESSION title verbatim ("Mission completed: i need a full
+// market analysis of …"), which is arbitrarily long. Two things went wrong in the popover: rows were
+// laid out inside a Radix `ScrollArea`, whose viewport content wrapper is `display:table;
+// min-width:100%` — a shrink-to-fit box that grows to the widest row, so `truncate` never fired and
+// the ScrollArea root's `overflow-hidden` hard-CUT the title mid-word at the panel edge — and the
+// body used `truncate whitespace-normal` (the `whitespace-normal` cancels truncate's `nowrap`, so
+// the ellipsis was dead and the body wrapped unbounded). Full text is now reachable on hover/focus.
+describe("NotificationBell — long content is clamped, full text on hover", () => {
+  const LONG_TITLE =
+    "Mission completed: i need a full market analysis of the european business-intelligence tooling space";
+  const LONG_BODY =
+    "The mission finished and synthesized its results across every agent, tool call and cited source it gathered.";
+
+  async function openWithLongItem() {
+    listNotificationsMock.mockResolvedValue(
+      listResult([notification({ id: "n1", title: LONG_TITLE, body: LONG_BODY })]),
+    );
+    renderBell();
+    fireEvent.click(await screen.findByRole("button", { name: /notification center/i }));
+    return await screen.findByText(LONG_TITLE);
+  }
+
+  test("the title truncates to one line and the body clamps instead of growing the row", async () => {
+    const title = await openWithLongItem();
+    expect(title.className).toContain("truncate");
+    const body = screen.getByText(LONG_BODY);
+    expect(body.className).toContain("line-clamp-2");
+    // `whitespace-normal` cancels `truncate`'s `nowrap` — it must not be paired with it.
+    expect(body.className).not.toContain("truncate");
+  });
+
+  test("the scroll viewport is forced back to `block` so rows cannot size to their content", async () => {
+    await openWithLongItem();
+    // Radix's viewport content wrapper is `display:table` (shrink-to-fit); without this override the
+    // list is as wide as its longest row and every `truncate`/`w-full` inside it is inert.
+    const viewport = document.querySelector("[data-radix-scroll-area-viewport]");
+    expect(viewport).not.toBeNull();
+    const scrollRoot = viewport?.parentElement;
+    expect(scrollRoot?.className).toContain("[&>[data-radix-scroll-area-viewport]>div]:block!");
+  });
+
+  test("focusing a row reveals the full title and body in a tooltip", async () => {
+    await openWithLongItem();
+    const row = screen.getByRole("button", { name: new RegExp(LONG_TITLE.slice(0, 40), "i") });
+    await act(async () => {
+      row.focus();
+    });
+    const tip = await screen.findByRole("tooltip");
+    expect(tip).toHaveTextContent(LONG_TITLE);
+    expect(tip).toHaveTextContent(LONG_BODY);
+  });
+
+  test("the row still marks read and navigates with the tooltip wrapper in place", async () => {
+    listNotificationsMock.mockResolvedValue(
+      listResult([notification({ id: "n1", title: LONG_TITLE, linkPath: "/assistant?session=s-1" })]),
+    );
+    renderBell();
+    fireEvent.click(await screen.findByRole("button", { name: /notification center/i }));
+    fireEvent.click(await screen.findByRole("button", { name: new RegExp(LONG_TITLE.slice(0, 40), "i") }));
+    await waitFor(() => expect(markNotificationReadMock).toHaveBeenCalledWith("n1"));
+    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/assistant"));
   });
 });

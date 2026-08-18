@@ -1791,6 +1791,50 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
       }
     },
   },
+  {
+    // ── v57 ── Repair notification / digest deep links that point at routes which never existed ────
+    // `hubNotify` (index.ts) stamped `/assistant/s/<sessionId>` on every hub notification (mission
+    // terminal, waiting-for-you, budget trip) and the fleet-issue emitters stamped
+    // `/testing/observability/issues/<id>`. Neither is a declared `<Route>`: the hub workspace opens a
+    // session as `/assistant?session=<id>` and the issues surface is the Dashboard's Issues tab
+    // (`/dashboard?tab=issues&issue=<id>`), so clicking any such notification landed on the 404
+    // catch-all. The emitters are fixed at the source and pinned by
+    // `test/notification-link-paths.test.ts`, but the wrong paths were PERSISTED — this rewrites the
+    // rows that already carry them (and the same links embedded in stored digest report payloads).
+    // Data-only: no DDL, so nothing to rebuild, and it is idempotent (the LIKE no longer matches once
+    // rewritten). Bumps LATEST_SCHEMA_VERSION (auto-derived below) to 57.
+    version: 57,
+    up: (db) => {
+      const hasTable = (name: string) =>
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name) !==
+        undefined;
+
+      if (hasTable("notifications")) {
+        // substr() is 1-based, so the id starts one past the legacy prefix's length.
+        db.prepare(
+          `UPDATE notifications
+              SET link_path = '/assistant?session=' || substr(link_path, length('/assistant/s/') + 1)
+            WHERE link_path LIKE '/assistant/s/%'`,
+        ).run();
+        db.prepare(
+          `UPDATE notifications
+              SET link_path = '/dashboard?tab=issues&issue=' ||
+                              substr(link_path, length('/testing/observability/issues/') + 1)
+            WHERE link_path LIKE '/testing/observability/issues/%'`,
+        ).run();
+      }
+
+      // A digest report is a stored JSON payload whose issue rows carry the same (broken) link; the
+      // prefix is unambiguous inside the blob, so a plain string replace is safe here.
+      if (hasTable("digest_reports")) {
+        db.prepare(
+          `UPDATE digest_reports
+              SET report_json = replace(report_json, '/testing/observability/issues/', '/dashboard?tab=issues&issue=')
+            WHERE report_json LIKE '%/testing/observability/issues/%'`,
+        ).run();
+      }
+    },
+  },
 ];
 
 /** The baseline schema version: the current full schema (schema.ts + every migration step above). */
