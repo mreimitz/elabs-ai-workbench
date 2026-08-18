@@ -29,3 +29,6 @@ apps/*/vitest.config.ts.timestamp-*.mjs
 
 # Staged real-run payloads used as extraction fixtures (scratch — never committed)
 .qa-fixtures/
+
+# Transient git worktrees created by the /next-wp runner (one per work package).
+.worktrees/
