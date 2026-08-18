@@ -1,4 +1,8 @@
 import type {
+  ADVISOR_EVIDENCE_KINDS,
+  ADVISOR_SAVINGS_UNITS,
+  ADVISOR_SCOPE_KINDS,
+  ADVISOR_SEVERITIES,
   ANSWER_VALIDATION_VERDICTS,
   ASSERTION_RESULT_STATUSES,
   ASSISTANT_AUTH_SOURCES,
@@ -6950,3 +6954,78 @@ export type HubAuditEntry = {
 /** GET /api/hub/audit's page envelope — newest-first; `nextBefore` (the opaque cursor of the last row)
  *  is present only when more rows exist behind it. */
 export type HubAuditPage = { entries: HubAuditEntry[]; nextBefore?: string };
+
+// --- Advisor — evidenced recommendations (WP 1.1) ---------------------------------------------
+// roadmap/advisor/. Deterministic, versioned advice derived from persisted measurements. The app
+// NEVER auto-applies any of this: a report is a set of suggestions, each carrying the entities it
+// was derived from, the assumptions it rests on, and — where it claims a saving — an explicitly
+// labeled estimate plus the basis to reproduce that number by hand.
+
+export type AdvisorScopeKind = (typeof ADVISOR_SCOPE_KINDS)[number];
+export type AdvisorEvidenceKind = (typeof ADVISOR_EVIDENCE_KINDS)[number];
+export type AdvisorSeverity = (typeof ADVISOR_SEVERITIES)[number];
+export type AdvisorSavingsUnit = (typeof ADVISOR_SAVINGS_UNITS)[number];
+
+/** What a report was computed over. `id` is the server/scenario id; the `fleet` scope carries none. */
+export type AdvisorScope = {
+  kind: AdvisorScopeKind;
+  id?: string;
+};
+
+/** A typed pointer at a real, persisted entity a finding was derived from — enough for the UI to
+ *  render a drill-through link without a second lookup. `label` is display text only (a server or
+ *  tool name); `id` is the entity's real primary key. */
+export type AdvisorEvidenceRef = {
+  kind: AdvisorEvidenceKind;
+  id: string;
+  label: string;
+};
+
+/** An estimate envelope. `estimate` is the literal `true` — a savings number is ALWAYS an estimate
+ *  here and is labeled as one in the type itself, never inferred from context — and `basis` states
+ *  in one line how the number was computed, so an operator can reproduce it by hand from the cited
+ *  evidence (README invariant: "estimates are labeled ... and reproducible from the cited inputs"). */
+export type AdvisorSavings = {
+  value: number;
+  unit: AdvisorSavingsUnit;
+  /** Always `true`: the advisor never publishes a savings figure as a measurement. */
+  estimate: true;
+  /** How `value` was arrived at, e.g. "sum of the 12 never-called tools' definition tokens". */
+  basis: string;
+};
+
+/** One evidenced suggestion. `id` is the STABLE dedup key across rules and across reports (the same
+ *  finding computed twice must produce the same id); `ruleId` is the rule that emitted it. */
+export type AdvisorRecommendation = {
+  id: string;
+  ruleId: string;
+  title: string;
+  detail: string;
+  severity: AdvisorSeverity;
+  /** Present only when the rule can name a defensible estimate AND its basis. */
+  savings?: AdvisorSavings;
+  /** At least one — a recommendation with nothing to drill into is a contract violation. */
+  evidence: AdvisorEvidenceRef[];
+  /** What the suggestion takes for granted, stated plainly (e.g. "the last 20 runs are
+   *  representative of normal use"). May be empty when a rule genuinely assumes nothing. */
+  assumptions: string[];
+};
+
+/** An honest gap: the rule applied to this scope but could not run, and says exactly what was
+ *  missing. Never a guess, never a zero passed off as a measurement (README invariant 3). */
+export type AdvisorInsufficientData = {
+  ruleId: string;
+  reason: string;
+};
+
+/** The advisor's read-model response. Deterministic: the same inputs under the same
+ *  `advisorVersion` produce a byte-identical report, including the ordering of both arrays. */
+export type AdvisorReport = {
+  /** `ADVISOR_VERSION` — reports from different versions are never silently compared. */
+  advisorVersion: number;
+  /** ISO-8601 timestamp from the engine's injected clock. */
+  generatedAt: string;
+  scope: AdvisorScope;
+  recommendations: AdvisorRecommendation[];
+  insufficientData: AdvisorInsufficientData[];
+};

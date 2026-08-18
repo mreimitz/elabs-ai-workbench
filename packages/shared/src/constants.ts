@@ -1916,3 +1916,41 @@ export const HUB_REVIEW_MAX_COMMENTS = 12;
 // `HUB_MISSION_MAX_TOTAL_AGENTS`, via `apps/api/src/config/env.ts`) on top.
 export const HUB_MISSION_MAX_DEPTH = 2;
 export const HUB_MISSION_MAX_TOTAL_AGENTS = 24;
+
+// --- Advisor — deterministic recommendation contract (WP 1.1) ---------------------------------
+// roadmap/advisor/. The advisor is a READ MODEL over data the app already persists (`mcp_scans` /
+// `mcp_tool_scans`, `runs` / `run_steps`, `scenarios`, and later `run_grades`) that turns those
+// measurements into evidenced recommendations. This WP lands the wire contract + the rule-engine
+// seam ONLY — the four deterministic rules and `GET /api/advisor/*` are WP 1.2.
+
+// The advisor algorithm version, stamped on every `AdvisorReport` — mirrors
+// `TOKEN_COUNTING_VERSION` / `GRADING_VERSION` / `AUTO_RATING_VERSION`'s never-silently-compare
+// rule: recommendations produced under different advisor versions are never directly compared,
+// merged, or diffed. Bump whenever a rule's method, its savings arithmetic, or the report's
+// ordering/dedup semantics change.
+export const ADVISOR_VERSION = 1;
+
+// What an `AdvisorReport` was computed over: one server, one scenario, or the whole fleet.
+export const ADVISOR_SCOPE_KINDS = ["server", "scenario", "fleet"] as const;
+
+// The entity kinds an `AdvisorEvidenceRef` may point at. Every recommendation cites at least one —
+// the advisor never asserts a finding the operator cannot drill into (README invariant 1).
+export const ADVISOR_EVIDENCE_KINDS = [
+  "scan",
+  "tool_scan",
+  "run",
+  "scenario",
+  "server",
+  "skill",
+] as const;
+
+// A recommendation's severity. **The array order IS the sort rank** (index 0 sorts first), so the
+// engine's documented "severity desc" ordering derives from this one list rather than a re-hardcoded
+// map — append a new severity only where its rank belongs.
+export const ADVISOR_SEVERITIES = ["high", "medium", "info"] as const;
+
+// The unit an `AdvisorSavings` estimate is expressed in. **The array order IS the sort rank**: the
+// engine groups by unit before comparing values, because savings in different units are NEVER
+// converted into one another (no pricing is applied behind the operator's back). Keeping the
+// comparator unit-major is what makes the "savings desc" tie-break a strict total order.
+export const ADVISOR_SAVINGS_UNITS = ["tokens_per_turn", "tokens", "usd_per_run"] as const;
