@@ -236,7 +236,8 @@ async function makeReportApp(db: AppDatabase, clock: { ms: number }): Promise<{
   const servers = new ServerRepository(db, secrets);
   const runRepository = new RunRepository(db);
   const testService = new TestService(new TestRepository(db));
-  const scenarioService = new ScenarioService(new ScenarioRepository(db), scans);
+  const scenarioRepository = new ScenarioRepository(db);
+  const scenarioService = new ScenarioService(scenarioRepository, scans);
   const suiteRunRepository = new SuiteRunRepository(db);
   const gradeRepository = new GradeRepository(db);
   const suiteService = new SuiteService(new SuiteRepository(db));
@@ -275,6 +276,9 @@ async function makeReportApp(db: AppDatabase, clock: { ms: number }): Promise<{
     suiteReportRepository,
     digestRepository,
     digestSchedule,
+    // Advisor WP 2.2 — the fleet report's advisor read ports (unused by the digest routes under test
+    // here, but `registerReportRoutes` now wires `GET /api/reports/fleet/*` from them).
+    { servers, scans, scenarios: scenarioRepository, runs: runRepository },
   );
   await app.listen({ port: 0, host: "127.0.0.1" });
   apps.push(app);

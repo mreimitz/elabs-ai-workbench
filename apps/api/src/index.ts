@@ -1461,6 +1461,18 @@ await registerReportRoutes(
   suiteReportRepository,
   digestRepository,
   digestSchedule,
+  // Advisor WP 2.2 — the fleet report (`GET /api/reports/fleet/{json,markdown}`) reads the SAME
+  // advisor ports registered above (WP 2.1 widened them with the graded side), so its
+  // recommendations come from the one advisor service rather than a second copy of the rules.
+  {
+    servers,
+    scans,
+    scenarios: scenarioRepository,
+    runs: runRepository,
+    grades: gradeRepository,
+    suiteRuns: suiteRunRepository,
+    skills,
+  },
 );
 await registerOAuthRoutes(server, oauthService);
 await registerTestingRoutes(
