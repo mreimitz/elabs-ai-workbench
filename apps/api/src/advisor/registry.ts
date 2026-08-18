@@ -3,14 +3,24 @@
 // first-wins dedup (see `engine.ts`), so a rule's position in {@link ADVISOR_RULES} is part of the
 // deterministic contract, not an incidental detail.
 //
-// **This WP registers ZERO product rules.** The four deterministic rules (unused-tool trim,
-// description bloat, loading-mode comparison, overlap detection) land in WP 1.2 by appending to
-// {@link ADVISOR_RULES}; the engine and its tests exercise the seam with fixture rules.
+// WP 1.2 fills the seam with the four deterministic rules below. Their ORDER is the report's
+// tie-break order: each rule's recommendation ids are prefixed with its own rule id, so they cannot
+// actually collide today — but the order is still what a future rule would have to lose a dedup
+// against, so it is stated once, here, rather than emerging from import order.
 
+import { descriptionBloatRule } from "./rules/description-bloat.js";
+import { loadingModeComparisonRule } from "./rules/loading-mode.js";
+import { toolOverlapRule } from "./rules/tool-overlap.js";
+import { unusedToolTrimRule } from "./rules/unused-tool-trim.js";
 import type { AdvisorRule } from "./types.js";
 
-/** The registered product rules, in evaluation order. Empty until WP 1.2. */
-export const ADVISOR_RULES: readonly AdvisorRule[] = [];
+/** The registered product rules, in evaluation order (WP 1.2). */
+export const ADVISOR_RULES: readonly AdvisorRule[] = [
+  unusedToolTrimRule,
+  descriptionBloatRule,
+  loadingModeComparisonRule,
+  toolOverlapRule,
+];
 
 export type AdvisorRuleRegistry = {
   /** Registered rules in registration order. */
@@ -46,5 +56,5 @@ export function createAdvisorRuleRegistry(
   return registry;
 }
 
-/** The app-wide registry the API route (WP 1.2) reads. Empty in this WP. */
+/** The app-wide registry `GET /api/advisor/report` reads (via `runAdvisor`'s default). */
 export const advisorRuleRegistry = createAdvisorRuleRegistry();
