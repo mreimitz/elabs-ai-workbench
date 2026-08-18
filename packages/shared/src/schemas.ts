@@ -1,5 +1,9 @@
 import { z } from "zod";
 import {
+  ADVISOR_EVIDENCE_KINDS,
+  ADVISOR_SAVINGS_UNITS,
+  ADVISOR_SCOPE_KINDS,
+  ADVISOR_SEVERITIES,
   ANSWER_VALIDATION_VERDICTS,
   ASSERTION_RESULT_STATUSES,
   ASSISTANT_AUTH_SOURCES,
@@ -4238,4 +4242,60 @@ export const hubUsageSummarySchema = z.object({
     tokensOut: z.number(),
   }),
   strip: z.array(hubUsageBucketSchema),
+});
+
+// --- Advisor — evidenced recommendations (WP 1.1) ---------------------------------------------
+// zod partners of the `Advisor*` types. These are the contract's RUNTIME half: the type system
+// cannot stop an empty `evidence` array or a blank `basis` string, so the schemas encode both
+// invariants and the engine validates every emitted recommendation against them.
+
+export const advisorScopeKindSchema = z.enum(ADVISOR_SCOPE_KINDS);
+export const advisorEvidenceKindSchema = z.enum(ADVISOR_EVIDENCE_KINDS);
+export const advisorSeveritySchema = z.enum(ADVISOR_SEVERITIES);
+export const advisorSavingsUnitSchema = z.enum(ADVISOR_SAVINGS_UNITS);
+
+export const advisorScopeSchema = z.object({
+  kind: advisorScopeKindSchema,
+  id: z.string().min(1).optional(),
+});
+
+export const advisorEvidenceRefSchema = z.object({
+  kind: advisorEvidenceKindSchema,
+  id: z.string().min(1),
+  label: z.string().min(1),
+});
+
+/** `estimate` is pinned to the literal `true` and `basis` must be non-blank — a savings figure can
+ *  never be emitted unlabeled, and never without the one line that makes it reproducible. */
+export const advisorSavingsSchema = z.object({
+  value: z.number().finite(),
+  unit: advisorSavingsUnitSchema,
+  estimate: z.literal(true),
+  basis: z.string().trim().min(1),
+});
+
+/** `evidence` is `.min(1)`: every recommendation cites at least one real entity. */
+export const advisorRecommendationSchema = z.object({
+  id: z.string().min(1),
+  ruleId: z.string().min(1),
+  title: z.string().min(1),
+  detail: z.string(),
+  severity: advisorSeveritySchema,
+  savings: advisorSavingsSchema.optional(),
+  evidence: z.array(advisorEvidenceRefSchema).min(1),
+  assumptions: z.array(z.string()),
+});
+
+/** `reason` must name what was missing — a blank reason is not an honest gap. */
+export const advisorInsufficientDataSchema = z.object({
+  ruleId: z.string().min(1),
+  reason: z.string().trim().min(1),
+});
+
+export const advisorReportSchema = z.object({
+  advisorVersion: z.number().int(),
+  generatedAt: z.string().min(1),
+  scope: advisorScopeSchema,
+  recommendations: z.array(advisorRecommendationSchema),
+  insufficientData: z.array(advisorInsufficientDataSchema),
 });
