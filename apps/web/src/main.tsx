@@ -35,7 +35,7 @@ import "./styles/app.css";
 // whatever is in its own storage key on mount — so before the provider mounts, resolve the
 // preference to a concrete theme and write it into that key. That way the correct theme paints on
 // the first frame, with no flash when "System" resolves to the opposite of the last-applied theme.
-// A stale persisted slug (e.g. a pre-v4 `qlik-bright`) is rejected by the provider anyway; this also
+// A stale persisted slug (e.g. a renamed pre-v4 theme) is rejected by the provider anyway; this also
 // overwrites it so it can't linger. Wrapped in try/catch because localStorage can throw (private
 // mode / disabled storage). `useThemePreference` (mounted in App) then keeps the theme in sync with
 // the OS while the preference is "System".

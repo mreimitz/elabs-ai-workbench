@@ -19,7 +19,7 @@ export const DEFAULT_ALLOWED_THEME: BuiltInThemeName = DEFAULT_THEME as BuiltInT
  * writes the app's resolved preference into it before the provider mounts, so the correct theme
  * paints on the first frame.
  *
- * A stale value here (e.g. a pre-v4 `qlik-bright`) is rejected by the provider on boot and the app
+ * A stale value here (e.g. a renamed pre-v4 theme) is rejected by the provider on boot and the app
  * lands on `light`. That is expected and harmless — but this app also reads the key, so
  * `isAllowedTheme` below is what keeps a stale slug from being copied back into app state.
  */

@@ -31,7 +31,7 @@ Closes audit **§C4** and **north-star #4** ("diff across servers, including too
   "Exact 100.0%"**, 13 matched / Δ 0; (2) cross-server everything↔filesystem → Match "—", 14 added /
   13 removed / Δ +940, FacetFilter + Search + threshold-select re-fetch all work; (3) same-server
   cross-profile → Match column **hidden**, cross-profile **Alert** shown, 13 Increased / Δ +77; (4)
-  Qlik Dark renders cleanly with visible focus. All PASS.
+  the dark theme renders cleanly with visible focus. All PASS.
 
 ## Notes / optional polish (not blocking)
 

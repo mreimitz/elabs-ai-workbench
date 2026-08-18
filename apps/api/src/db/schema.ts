@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS provider_credentials (
   -- Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS6): 'claude_subscription' is
   -- admitted here. On an existing DB the CHECK is widened by migration v28's table rebuild (SQLite
   -- cannot ALTER a CHECK in place) and narrowed again by v56's rebuild, which drops the retired
-  -- 'qlik_answers' kind. A 'claude_subscription' row never carries an api_key_encrypted value — its
+  -- Answers-integration kind. A 'claude_subscription' row never carries an api_key_encrypted value — its
   -- auth resolves from assistant_credentials at run time (D-CS7).
   kind TEXT NOT NULL CHECK (kind IN ('anthropic','openai','google','openai_compatible','ollama','claude_subscription')),
   label TEXT NOT NULL,

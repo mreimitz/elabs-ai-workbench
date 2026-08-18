@@ -275,7 +275,7 @@ test("applyMigrations brings an OLD-schema DB up to the current schema and stamp
     columns(db, "scenarios").includes("tool_loading_mode"),
     "scenarios.tool_loading_mode added",
   );
-  // v24 added `scenarios.answers_mode` for the Qlik Answers transport override; v56 DROPPED it again
+  // v24 added `scenarios.answers_mode` for the Answers-integration transport override; v56 DROPPED it again
   // with the feature. A DB migrated all the way to LATEST must therefore NOT carry it.
   assert.ok(
     !columns(db, "scenarios").includes("answers_mode"),
@@ -458,7 +458,7 @@ test("migration v20 — a fresh DB stamps LATEST (56) and carries the 3 assistan
   assert.equal(
     LATEST_SCHEMA_VERSION,
     56,
-    "LATEST_SCHEMA_VERSION auto-derived to 56 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the qlik_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
+    "LATEST_SCHEMA_VERSION auto-derived to 56 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped))",
   );
   assert.equal(db.pragma("user_version", { simple: true }), 56, "fresh DB stamped at 56");
   for (const table of ["assistant_credentials", "assistant_threads", "assistant_events"]) {
@@ -1002,11 +1002,11 @@ test("migration v22 — a pre-v22 (v21) DB gains suite_run_reports and it is imm
   );
 });
 
-// ── Migrations v23/v24 → v56 — the retired `qlik_answers` provider kind, end to end ──────────────
+// ── Migrations v23/v24 → v56 — the retired Answers provider kind, end to end ─────────────────────
 //
-// v23 (a provider_credentials REBUILD: + `mcp_server_id`, `kind` CHECK widened to admit
-// 'qlik_answers') and v24 (`scenarios.answers_mode`) built the Qlik Answers feature's schema; v56
-// REMOVED it again when the feature was deleted from the product — purging every `qlik_answers`
+// v23 (a provider_credentials REBUILD: + `mcp_server_id`, `kind` CHECK widened to admit that kind)
+// and v24 (`scenarios.answers_mode`) built the Answers integration's schema; v56
+// REMOVED it again when the feature was deleted from the product — purging every such
 // credential together with the environments and runs that depended on it, narrowing the CHECK back to
 // the 6 live kinds, and dropping both columns.
 //
@@ -1105,7 +1105,7 @@ test("migrations v23…v56 — a pre-v23 DB replays the whole chain: rows + fall
         )
         .run({ now: NOW }),
     /CHECK constraint failed/,
-    "the narrowed CHECK rejects qlik_answers",
+    "the narrowed CHECK rejects the retired kind",
   );
   assert.doesNotThrow(() =>
     db
@@ -1123,7 +1123,7 @@ test("migrations v23…v56 — a pre-v23 DB replays the whole chain: rows + fall
   assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION);
 });
 
-test("migration v56 — a qlik_answers credential is purged together with its environments and runs; unrelated rows survive", () => {
+test("migration v56 — a retired-kind credential is purged together with its environments and runs; unrelated rows survive", () => {
   const db = track(new Database(":memory:"));
   db.pragma("foreign_keys = ON");
   db.exec(schemaSql);
@@ -1176,7 +1176,7 @@ test("migration v56 — a qlik_answers credential is purged together with its en
   applyMigrations(db);
 
   const ids = (sql: string) => (db.prepare(sql).all() as Array<{ id: string }>).map((r) => r.id);
-  assert.deepEqual(ids("SELECT id FROM provider_credentials"), ["prov-keep"], "the qlik credential is gone");
+  assert.deepEqual(ids("SELECT id FROM provider_credentials"), ["prov-keep"], "the retired-kind credential is gone");
   assert.deepEqual(ids("SELECT id FROM scenarios"), ["scn-keep"], "its environment went with it");
   assert.deepEqual(ids("SELECT id FROM runs"), ["run-keep"], "and its runs");
   assert.deepEqual(ids("SELECT id FROM run_steps"), ["step-keep"], "and their steps (no orphans)");

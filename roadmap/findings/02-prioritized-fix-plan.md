@@ -16,7 +16,7 @@ like the Server hub / Scan detail / Run console you already shipped," plus one g
 - In `AppShell.tsx`, add a **bottom-pinned nav group** (`SidebarFooter` / bottom `SidebarGroup`) holding
   **Settings** (gear) — and a profile/About slot for later. Settings leaves the main nav list.
 - On the **Settings page** (`SettingsView.tsx`): add the **full 6-theme** control (`Select` or segmented:
-  System · Qlik Bright · Qlik Dark · Light · Dark · Blueprint · High-contrast) wired to `ThemeProvider`,
+  System · Vendor Bright · Vendor Dark · Light · Dark · Blueprint · High-contrast) wired to `ThemeProvider`,
   plus the **density** toggle from P0.3. Render runtime info via `Descriptions`. Remove the duplicate
   "generic_o200k" pill.
 - Topbar keeps at most a single light/dark quick-toggle **iff** it shares the same theme state; otherwise

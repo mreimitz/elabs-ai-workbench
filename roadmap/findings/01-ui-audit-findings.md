@@ -49,9 +49,9 @@ which duplicates the theme button sitting immediately to its left — and (b) an
 button that navigates to the real Settings *view*. So: settings button → settings modal → "open
 settings" → settings page. Separately, **theme** is settable in **two** chrome spots (the topbar toggle and the modal's dropdown —
 `ThemeSwitcher` is rendered twice in `AppShell.tsx`, lines 182 + 199) but **not** on the Settings page
-(`SettingsView.tsx` has no theme control). The visible theme controls surface only **System / the vendor
-Bright / Qlik Dark** — the topbar toggle was observed cycling exactly those three, and the modal labels
-itself "System, Qlik Bright, or Qlik Dark." The other shipped themes (`light`, `dark`, `blueprint`,
+(`SettingsView.tsx` has no theme control). The visible theme controls surface only **System / Vendor
+Bright / Vendor Dark** — the topbar toggle was observed cycling exactly those three, and the modal labels
+itself "System, Vendor Bright, or Vendor Dark." The other shipped themes (`light`, `dark`, `blueprint`,
 `high-contrast`) render when set directly but appear **unexposed** to a normal user (see open item H).
 And **Settings** is a mid-list nav item, not pinned to the bottom.
 **Why it's wrong:** three nested "settings" affordances for two real controls; a theme system that

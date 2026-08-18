@@ -1,6 +1,6 @@
 # UI Audit — MCP Token Footprint
 
-> **Historical record.** This document reports what was observed on the date in its title, against the pre-v4 `@brand/*` design system, when the kit shipped six themes (`qlik-bright`, `qlik-dark`, `light`, `dark`, `blueprint`, `high-contrast`). The project now runs `@elabs-ai/components-*` v4, which ships exactly two — `light` (default) and `dark`. Theme names and counts below are preserved as observed and are NOT current. See [`.claude/rules/styling-and-tokens.md`](../../.claude/rules/styling-and-tokens.md).
+> **Historical record.** This document reports what was observed on the date in its title, against the pre-v4 `@brand/*` design system, when the kit shipped six themes (a vendor-branded bright/dark pair plus `light`, `dark`, `blueprint`, `high-contrast`). The project now runs `@elabs-ai/components-*` v4, which ships exactly two — `light` (default) and `dark`. Theme names and counts below are preserved as observed and are NOT current. See [`.claude/rules/styling-and-tokens.md`](../../.claude/rules/styling-and-tokens.md).
 
 Enterprise-grade UI/UX evaluation of the running app at `http://127.0.0.1:8080/`, conducted with the
 `brand-ui-enterprise` judgment framework and live browser inspection (visual + programmatic) of every

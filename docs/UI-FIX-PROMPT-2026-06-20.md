@@ -1,6 +1,6 @@
 # Coding-agent brief — rework the MCP Token Footprint UI
 
-> **Historical record.** This document reports what was observed on the date in its title, against the pre-v4 `@brand/*` design system, when the kit shipped six themes (`qlik-bright`, `qlik-dark`, `light`, `dark`, `blueprint`, `high-contrast`). The project now runs `@elabs-ai/components-*` v4, which ships exactly two — `light` (default) and `dark`. Theme names and counts below are preserved as observed and are NOT current. See [`.claude/rules/styling-and-tokens.md`](../.claude/rules/styling-and-tokens.md).
+> **Historical record.** This document reports what was observed on the date in its title, against the pre-v4 `@brand/*` design system, when the kit shipped six themes (a vendor-branded bright/dark pair plus `light`, `dark`, `blueprint`, `high-contrast`). The project now runs `@elabs-ai/components-*` v4, which ships exactly two — `light` (default) and `dark`. Theme names and counts below are preserved as observed and are NOT current. See [`.claude/rules/styling-and-tokens.md`](../.claude/rules/styling-and-tokens.md).
 
 _Hand this whole file to your coding agent. It is self-contained; companion detail lives in
 `UI-AUDIT-2026-06-20.md` (same repo)._
@@ -97,8 +97,8 @@ high-value Run feature; the token split is drawn as four stacked bars.
 
 ### 6 — [P1 theme / P2 settings] baseline chrome
 - Replace the light/dark toggle with the **library `<ThemeSwitcher />`** (its `themes` defaults
-  to the the vendor light/dark pair and `showSystem` defaults to `true`, so it renders **System /
-  Qlik Bright / Qlik Dark** out of the box). Confirm with `brand-ui docs ThemeSwitcher`.
+  to the vendor light/dark pair and `showSystem` defaults to `true`, so it renders **System /
+  Vendor Bright / Vendor Dark** out of the box). Confirm with `brand-ui docs ThemeSwitcher`.
 - Optional: add a quick settings `Dialog` (gear in the top bar) with an **Appearance** section
   hosting the theme switcher; keep the Settings route for deep config.
 

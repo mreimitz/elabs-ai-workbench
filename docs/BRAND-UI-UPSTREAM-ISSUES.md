@@ -5,7 +5,7 @@
 > This list was compiled on **2026-08-01 against brand-ui v1.9.0**, when the packages were still
 > private tarballs vendored under `vendor/brand/`. The project has since migrated to
 > **`@elabs-ai/components-*` v4.0.0** from public npm. Package names and theme slugs below have been
-> renamed for consistency (`@brand/x` → `@elabs-ai/components-x`, `qlik-bright`/`qlik-dark` →
+> renamed for consistency (`@brand/x` → `@elabs-ai/components-x`, the vendor bright/dark slugs →
 > `light`/`dark`), but **the findings themselves have not all been re-verified against v4.**
 >
 > **Verified CLOSED by v4** (re-measured during the migration, 2026-08-17):

@@ -526,9 +526,9 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v23 — Qlik Answers (WP 0.2, D-QA1): link a provider credential to a registered MCP server whose
-    // OAuth token / auth headers it reuses, AND admit the new `qlik_answers` kind. This is NOT an
-    // additive column: the `kind` CHECK must widen to include 'qlik_answers', and SQLite CANNOT ALTER a
+    // v23 — the Answers integration (WP 0.2, D-QA1): link a provider credential to a registered MCP
+    // server whose OAuth token / auth headers it reuses, AND admit its new provider kind. This is NOT
+    // an additive column: the `kind` CHECK must widen to admit that kind, and SQLite CANNOT ALTER a
     // CHECK constraint in place — so this is the documented 12-step TABLE REBUILD (mirrors v16's
     // `rebuildCollectionsForOptionalRepo`), not an `ensureColumn`.
     //
@@ -545,13 +545,13 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     up: (db) => rebuildProviderCredentialsForServerLink(db),
   },
   {
-    // v24 — Qlik Answers (WP 2.3, D-QA2 gap fix): persist the per-scenario `answersMode.transport`
+    // v24 — the Answers integration (WP 2.3, D-QA2 gap fix): persist the per-scenario `answersMode.transport`
     // override. WP 0.1 added the `Scenario.answersMode` type + `scenarioInputSchema` field, but no
     // column ever backed it, so it was silently dropped on save (surfaced by WP 1.2 as a gap; folded
     // into this WP). A single ADDITIVE nullable `ensureColumn` (the v2/v11/v21 pattern, NOT a table
     // rebuild — no CHECK/constraint involved): `scenarios.answers_mode TEXT` stores the JSON-serialized
-    // `answersMode` object (e.g. '{"transport":"invoke"}'), NULL for every non-qlik scenario and any
-    // qlik_answers scenario that never set it. `ensureColumn` no-ops on a fresh DB (schema.ts already
+    // `answersMode` object (e.g. '{"transport":"invoke"}'), NULL for every scenario on another
+    // provider kind and any Answers scenario that never set it. `ensureColumn` no-ops on a fresh DB (schema.ts already
     // added the column) and adds it on an existing (pre-v24) DB. Forward-safe: no existing table/column
     // is touched, so no rebuild. Bumps LATEST_SCHEMA_VERSION (auto-derived below) to 24.
     //
@@ -569,7 +569,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
   },
   {
     // v25 — Server types (roadmap/server-types, D-ST6): a first-class grouping entity for MCP
-    // servers ("Qlik-SaaS" = production fleet, "qlik-stage" = beta/RC). Lifecycle status lives ON
+    // servers ("SaaS" = production fleet, "stage" = beta/RC). Lifecycle status lives ON
     // the type (D-ST1); each server references at most one type. Fully ADDITIVE — a new table
     // (`CREATE TABLE IF NOT EXISTS`, no-op on a fresh DB where schema.ts already built it) plus one
     // nullable `ensureColumn` on `mcp_servers` with `REFERENCES server_types(id) ON DELETE SET
@@ -702,7 +702,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
   {
     // v28 — Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS6): widen
     // `provider_credentials.kind`'s CHECK to admit 'claude_subscription', mirroring v23's
-    // qlik_answers-add-kind rebuild (SQLite cannot ALTER a CHECK in place — the canonical widening is
+    // add-kind rebuild (SQLite cannot ALTER a CHECK in place — the canonical widening is
     // a table rebuild: create the new-shape table, copy every existing column verbatim, drop the old
     // table, rename). Unlike v23, this migration adds NO new column (mcp_server_id already exists as
     // of v23) — only the CHECK's admitted values change — so idempotency is detected by inspecting the
@@ -1654,11 +1654,11 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v56 — remove the retired `qlik_answers` provider kind. The Qlik Answers executor, its
-    // OpenAI-compatible facade, the tenant detection/probe and the per-environment `answers_mode`
+    // v56 — remove the retired Answers provider kind (the literal is in the SQL below). Its executor,
+    // its OpenAI-compatible facade, the tenant detection/probe and the per-environment `answers_mode`
     // transport override were all deleted from the product, so the DB must stop admitting the kind.
     //
-    // DESTRUCTIVE, by owner decision: a `qlik_answers` credential's environments (`scenarios`) and
+    // DESTRUCTIVE, by owner decision: such a credential's environments (`scenarios`) and
     // every run/report captured against them are DELETED. There is no non-destructive alternative —
     // `scenarios.provider_id` is ON DELETE RESTRICT, so the credential cannot be removed while an
     // environment still points at it, and the narrowed CHECK would reject the row on the rebuild's
@@ -1675,7 +1675,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     // altered in place), narrowing `kind` to 6 values AND dropping the retired `mcp_server_id` link
     // column in the same pass. Rows are copied with their SAME `id`, so every surviving child
     // reference stays valid. Self-guarded CONTENT-wise (v28's pattern): if the persisted DDL no longer
-    // mentions `qlik_answers`, the DB is already at the target shape (fresh DB / re-run) → no-op.
+    // mentions the retired kind, the DB is already at the target shape (fresh DB / re-run) → no-op.
     // Bumps LATEST_SCHEMA_VERSION (auto-derived below) to 56.
     version: 56,
     up: (db) => {
@@ -1780,7 +1780,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
 
       narrowProviderCredentialsKindCheck(db);
 
-      // 6. The per-environment Qlik transport override (v24's column) is retired with the feature.
+      // 6. The per-environment Answers transport override (v24's column) is retired with the feature.
       if (hasTable("scenarios")) {
         const hasAnswersMode = (
           db.prepare("PRAGMA table_info(scenarios)").all() as Array<{ name: string }>
@@ -1895,7 +1895,7 @@ function rebuildSuiteRunsForOptionalSuite(db: AppDatabase): void {
 }
 
 /**
- * v23 (D-QA1) — widen `provider_credentials.kind` to admit `'qlik_answers'` + add the nullable
+ * v23 (D-QA1) — widen `provider_credentials.kind` to admit the Answers kind + add the nullable
  * `mcp_server_id TEXT REFERENCES mcp_servers(id) ON DELETE SET NULL` link column, via the SQLite
  * 12-step rebuild (SQLite cannot ALTER a CHECK constraint in place). SELF-GUARDS on the live presence
  * of `mcp_server_id` so it no-ops on a fresh DB (schema.ts already built the target shape) and on a
@@ -2061,7 +2061,7 @@ function widenProviderCredentialsKindCheck(db: AppDatabase): void {
 
 /**
  * v56 — NARROW `provider_credentials.kind`'s CHECK back to the 6 live kinds (dropping the retired
- * `'qlik_answers'`) and drop the `mcp_server_id` link column that only ever served it. The inverse of
+ * Answers kind) and drop the `mcp_server_id` link column that only ever served it. The inverse of
  * {@link rebuildProviderCredentialsForServerLink} (v23) + {@link widenProviderCredentialsKindCheck}
  * (v28), and the SAME SQLite 12-step rebuild for the same reason: a CHECK cannot be altered in place.
  *
@@ -2072,7 +2072,7 @@ function widenProviderCredentialsKindCheck(db: AppDatabase): void {
  * fire those actions. Every surviving row keeps its SAME `id`, so those child references stay valid
  * (verified by `foreign_key_check` before commit).
  *
- * The caller (v56's `up`) has ALREADY removed every `qlik_answers` row and its dependents, so the
+ * The caller (v56's `up`) has ALREADY removed every row of the retired kind and its dependents, so the
  * `INSERT … SELECT` below cannot hit the narrowed CHECK. Idempotency is CONTENT-based (v28's pattern):
  * no column is added, so the self-guard inspects the persisted DDL for the retired literal. No-ops on
  * a fresh DB (schema.ts already builds the narrowed shape) and on a re-run.

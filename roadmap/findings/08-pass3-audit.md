@@ -90,7 +90,7 @@ tables), MCP Servers (server rail, sticky header + red destructive trash, KPI ba
 tabs, Findings + Token-distribution), Scans (split history/detail + resizable handle + empty state),
 Settings (Appearance/Token-profile/Local-app-info/Provider-credentials), Compare (both modes). No
 contrast failures, no broken/unstyled views, numerals are `tabular-nums`, focus rings visible. The
-theme switcher exposes exactly **Qlik Bright + Qlik Dark** (no blueprint). Compact density on by default.
+theme switcher exposes exactly **Vendor Bright + Vendor Dark** (no blueprint). Compact density on by default.
 
 ## 4. Static `brand-ui audit` triage — 3 issue(s) + 14 advisory (all PRE-EXISTING, out of this round's lane)
 

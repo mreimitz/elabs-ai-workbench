@@ -11,7 +11,7 @@ npm `@elabs-ai/components-*` packages at `^4.0.0`**. Install is now anonymous �
 line, no `_authToken`, no CI token, no `vendor/brand/` tarballs, no `file:` dependencies.
 
 **Renames.** 1,233 import specifiers / `@source` paths across 458 source files; every theme slug
-(`qlik-bright` → `light`, `qlik-dark` → `dark`) in code, tests, e2e and screenshot scripts; and the
+(the vendor bright/dark pair → `light`/`dark`) in code, tests, e2e and screenshot scripts; and the
 same sweep across 191 markdown files. `THEME_META` → `BUILT_IN_THEME_META` (the only import in the
 app with no 1:1 new name — all 358 other named imports resolved unchanged). Theme labels are now
 "Light"/"Dark", so the command-palette entry reads "Switch to Light theme".
@@ -211,7 +211,7 @@ Documentation-and-process pass reconciling the docs to what the code actually is
 
 ### Process hygiene (#22)
 
-- **Themes:** replaced the stale "six themes" with "two themes (`qlik-bright`, `qlik-dark`)" across
+- **Themes:** replaced the stale "six themes" with "two themes (the vendor bright/dark pair)" across
   the Testing WP specs (`roadmap/testing/phase-*/WP-*.md`) and both `/next-wp` definitions. Did not
   re-add blueprint/light/dark/high-contrast.
 - **`/next-wp` dedup:** the `next-wp` skill (`.claude/skills/next-wp/SKILL.md`) is now the single
