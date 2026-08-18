@@ -1,10 +1,61 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="AI Workbench">
-  <rect x="2" y="2" width="28" height="28" rx="7" fill="#19426c" />
-  <path
-    d="M9 21.5V10.5M16 21.5V14M23 21.5V17.5"
-    stroke="#ffffff"
-    stroke-width="2.6"
-    stroke-linecap="round"
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AI Workbench">
+  <title>AI Workbench</title>
+  <!-- The browser-tab copy of the app icon (`AppIcon morph="mark"`, which renders `BrandLogo
+       variant="mark"` from @elabs-ai/components-icons). A favicon renders OUTSIDE the app, so it
+       cannot use the component or the theme tokens: it is a hand-synced copy, and a copy drifts.
+       The geometry below is identical to what BrandLogo draws, and
+       `apps/web/src/components/favicon-matches-app-icon.test.tsx` compares the two shape-for-shape,
+       so re-tuning the mark upstream fails the gate instead of shipping two different logos.
+
+       Two inks, as in the component: the construction square is the brand plane (the `primary`
+       token, oklch(0.875 0.148 116.5)) and every drawn element is ink (the `brand-mark-ring` token,
+       which resolves to `currentColor` in both themes). An inherited text colour has no meaning in
+       a browser tab, so the ink is pinned to the theme's `foreground` value and swapped with
+       `prefers-color-scheme` — that IS the component's background-adaptive behaviour, expressed the
+       only way a standalone asset can.
+
+       Colour lives in the stylesheet, never in a presentation attribute: Chrome does not substitute
+       `var()` inside `fill="…"`/`stroke="…"`, so an attribute-carried variable silently renders the
+       linework as an invalid (near-invisible) paint. Geometry stays on the attributes, because that
+       is what the parity test compares. Token names appear without their CSS prefix in this comment
+       on purpose: an XML comment may not contain a double hyphen, and this file is parsed as XML. -->
+  <style>
+    svg { --ink: #272e38; --plane: #d0e268; }
+    @media (prefers-color-scheme: dark) { svg { --ink: #edeff1; } }
+    .plane { fill: var(--plane); fill-opacity: 0.22; stroke: var(--plane); }
+    .ink { stroke: var(--ink); fill: none; }
+    .ink-solid { fill: var(--ink); stroke: none; }
+  </style>
+  <defs>
+    <clipPath id="brand-mark-hatch">
+      <circle cx="42" cy="23" r="19.5" />
+    </clipPath>
+  </defs>
+  <rect
+    class="plane"
+    x="5.5"
+    y="21.5"
+    width="37"
+    height="37"
+    stroke-width="2.2"
+    stroke-dasharray="4.5 4.5"
+    stroke-linecap="square"
   />
-  <circle cx="23" cy="12" r="2.4" fill="#3fb984" />
+  <g class="ink" clip-path="url(#brand-mark-hatch)" stroke-width="1.8">
+    <line x1="-22" y1="64" x2="42" y2="0" />
+    <line x1="-15" y1="64" x2="49" y2="0" />
+    <line x1="-8" y1="64" x2="56" y2="0" />
+    <line x1="-1" y1="64" x2="63" y2="0" />
+    <line x1="6" y1="64" x2="70" y2="0" />
+    <line x1="13" y1="64" x2="77" y2="0" />
+    <line x1="20" y1="64" x2="84" y2="0" />
+    <line x1="27" y1="64" x2="91" y2="0" />
+  </g>
+  <circle class="ink" cx="42" cy="23" r="19.5" stroke-width="2.4" />
+  <circle class="ink-solid" cx="34.5" cy="30" r="2.2" />
+  <circle class="ink-solid" cx="44.5" cy="47" r="2.2" />
+  <g class="ink" stroke-width="1.8" stroke-linecap="round">
+    <line x1="48" y1="58" x2="53.5" y2="52.5" />
+    <line x1="55" y1="50" x2="60.5" y2="44.5" />
+  </g>
 </svg>
