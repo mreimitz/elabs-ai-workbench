@@ -1,0 +1,132 @@
+{
+  // Debug profiles for AI Workbench (mcp-token-footprint).
+  //
+  // The API is TypeScript run through `tsx`, so every API profile uses the tsx binary as the
+  // runtime rather than plain `node` — breakpoints land in `apps/api/src/*.ts` directly, no
+  // pre-compile step. `packages/shared` IS compiled, so the profiles that need it depend on a
+  // "build shared" task (see tasks.json); that mirrors what `pnpm dev` does before it starts.
+  //
+  // Start here: "Full stack: API + Web" runs both and opens Chrome with the debugger attached.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // The one to use for normal API work. No file watching, so a breakpoint stays put and the
+      // session is never torn down under you mid-inspect. Restart with the debug toolbar (⇧⌘F5).
+      "name": "API: debug",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/api",
+      "runtimeExecutable": "${workspaceFolder}/apps/api/node_modules/.bin/tsx",
+      // Same env-file flags the `dev` script passes; `-if-exists` means a missing file is fine.
+      "runtimeArgs": ["--env-file-if-exists=.env.local", "--env-file-if-exists=.env"],
+      "program": "${workspaceFolder}/apps/api/src/index.ts",
+      "preLaunchTask": "build shared",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "env": {
+        // Serves the built SPA from apps/web/dist when present; run the Web profile for HMR.
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      // Same, but with `tsx watch` — the API restarts on save. `autoAttachChildProcesses` is what
+      // keeps the debugger attached across those restarts. Breakpoints survive; an in-flight
+      // inspect does not, which is why "API: debug" above is the default recommendation.
+      "name": "API: debug (watch)",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/api",
+      "runtimeExecutable": "${workspaceFolder}/apps/api/node_modules/.bin/tsx",
+      "runtimeArgs": [
+        "watch",
+        "--env-file-if-exists=.env.local",
+        "--env-file-if-exists=.env"
+      ],
+      "program": "${workspaceFolder}/apps/api/src/index.ts",
+      "preLaunchTask": "build shared",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // Attach to an API you started yourself with an inspector, e.g.
+      //   cd apps/api && node --inspect ./node_modules/.bin/tsx src/index.ts
+      // Also works against the Docker container if you publish 9229.
+      "name": "API: attach to :9229",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "restart": true,
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "${workspaceFolder}",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // Debugs the PRODUCTION artifact (apps/api/dist) rather than the sources — use this to chase
+      // something that only reproduces in a built bundle. Requires source maps from `pnpm build`.
+      "name": "API: debug built output",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/apps/api/dist/index.js",
+      "preLaunchTask": "build all",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // Browser-side debugging. Starts Vite first (background task) and attaches to Chrome, so
+      // breakpoints work in apps/web/src/*.tsx. Vite proxies /api to the API on :8080 — run an API
+      // profile too, or just use the "Full stack" compound below.
+      "name": "Web: debug in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://127.0.0.1:5173",
+      "webRoot": "${workspaceFolder}/apps/web",
+      "preLaunchTask": "dev web",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // Debug ONE API test file — open it, then run this. The API suite is the node test runner via
+      // tsx, so this is `tsx --test <the file you have focused>`.
+      "name": "API: debug current test file",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/api",
+      "runtimeExecutable": "${workspaceFolder}/apps/api/node_modules/.bin/tsx",
+      "runtimeArgs": ["--test"],
+      "program": "${file}",
+      "preLaunchTask": "build shared",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    },
+    {
+      // Debug ONE web test file (vitest). `--no-file-parallelism` keeps it in this process so
+      // breakpoints are hit instead of being swallowed by a worker.
+      "name": "Web: debug current test file",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/apps/web",
+      "runtimeExecutable": "${workspaceFolder}/apps/web/node_modules/.bin/vitest",
+      "runtimeArgs": ["run", "--no-file-parallelism", "${relativeFile}"],
+      "preLaunchTask": "build shared",
+      "console": "integratedTerminal",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
+    }
+  ],
+  "compounds": [
+    {
+      // The everyday one: API (breakpoints in apps/api/src) + Vite + Chrome (breakpoints in
+      // apps/web/src), all under one debug session. Stop it to stop both.
+      "name": "Full stack: API + Web",
+      "configurations": ["API: debug", "Web: debug in Chrome"],
+      "stopAll": true,
+      "presentation": { "group": "1-fullstack", "order": 1 }
+    }
+  ]
+}

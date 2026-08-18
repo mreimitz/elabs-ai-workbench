@@ -1,0 +1,66 @@
+{
+  // Tasks the debug profiles depend on (see launch.json).
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // `packages/shared` is the API contract and IS compiled — both apps import it from `dist`.
+      // Every debug profile builds it first, exactly like the `pnpm dev` script does.
+      "label": "build shared",
+      "type": "shell",
+      "command": "pnpm --filter @mcp-token-footprint/shared build",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "silent", "panel": "dedicated" }
+    },
+    {
+      "label": "build all",
+      "type": "shell",
+      "command": "pnpm build",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        // The web build bundles Monaco + Milkdown + Mermaid and OOMs on the default V8 heap.
+        "env": { "NODE_OPTIONS": "--max-old-space-size=3400" }
+      },
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      // Background task: Vite dev server for the Chrome profile. The problemMatcher's
+      // `endsPattern` is what tells VS Code the server is up so the browser can launch — without
+      // it the debug session would hang waiting for the task to "finish", which it never does.
+      "label": "dev web",
+      "type": "shell",
+      "command": "pnpm --filter @mcp-token-footprint/web dev",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "dependsOn": ["build shared"],
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": {
+          "regexp": "^\\s*(ERROR|error)\\s+(.*)$",
+          "severity": 1,
+          "message": 2
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*VITE.*",
+          "endsPattern": ".*(Local:|ready in).*"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      // Convenience: the full quality gate, so it is one ⇧⌘B away while debugging.
+      "label": "quality gate",
+      "type": "shell",
+      "command": "pnpm typecheck && pnpm test && pnpm build && pnpm lint",
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": { "NODE_OPTIONS": "--max-old-space-size=3400" }
+      },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$tsc"],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ]
+}
