@@ -13,6 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  StatePanel,
 } from "@elabs-ai/components-ui";
 import { Lightbulb } from "lucide-react";
 import { PageShell } from "../../components/PageShell";
@@ -86,6 +87,14 @@ export function AdvisorView() {
       ? "the whole fleet"
       : (entityOptions.find((option) => option.value === selectedId)?.label ??
         `this ${ADVISOR_SCOPE_LABELS[scopeKind].toLowerCase()}`);
+
+  // The picker's own fetch state, kept SEPARATE from "the list came back empty" — otherwise a cold
+  // load of `/advisor?scope=server` would assert "there is nothing to advise on yet" while the
+  // request is still in flight, which is a statement the app cannot make yet
+  // (`.claude/rules/loading-states.md`).
+  const pickerState =
+    scopeKind === "server" ? serversState : scopeKind === "scenario" ? scenariosState : null;
+  const pickerLoading = pickerState?.status === "loading";
 
   const pickerError =
     scopeKind === "server" && serversState.status === "error"
@@ -171,11 +180,18 @@ export function AdvisorView() {
 
       {query ? (
         <AdvisorPanel query={query} scopeLabel={scopeLabel} />
+      ) : pickerLoading ? (
+        <StatePanel
+          kind="loading"
+          title={scopeKind === "server" ? "Loading MCP servers…" : "Loading environments…"}
+          loadingLabel={scopeKind === "server" ? "Loading MCP servers…" : "Loading environments…"}
+        />
       ) : (
         <EmptyState
           icon={<Lightbulb aria-hidden />}
           title={scopeKind === "server" ? "Pick an MCP server" : "Pick an environment"}
           description={
+            // Only claimable once the list has SETTLED — `entityOptions` is `[]` while loading too.
             entityOptions.length === 0 && !pickerError
               ? `There is nothing to advise on yet — register ${
                   scopeKind === "server" ? "an MCP server" : "an environment"
