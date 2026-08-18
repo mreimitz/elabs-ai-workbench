@@ -1456,6 +1456,10 @@ await registerReportRoutes(
   suiteReportRepository,
   digestRepository,
   digestSchedule,
+  // Advisor WP 2.2 — the fleet report (`GET /api/reports/fleet/{json,markdown}`) reads the SAME four
+  // narrow advisor ports registered above, so its recommendations come from the one advisor service
+  // rather than a second copy of the rules.
+  { servers, scans, scenarios: scenarioRepository, runs: runRepository },
 );
 await registerOAuthRoutes(server, oauthService);
 await registerTestingRoutes(
