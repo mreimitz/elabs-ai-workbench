@@ -34,6 +34,11 @@ import {
   createSuiteRunMarkdownReport,
   type SuiteRunReportDeps,
 } from "./suite-run-report.js";
+// Advisor WP 2.2 — the fleet report (composer + its Markdown twin) and the advisor read-model
+// composition root it shares with `GET /api/advisor/report`.
+import { createAdvisorContext, type AdvisorRepositories } from "../advisor/repository.js";
+import { createFleetReport, type FleetReportDeps } from "./fleet-report.js";
+import { createFleetMarkdownReport } from "./fleet-report-markdown.js";
 
 export async function registerReportRoutes(
   app: FastifyInstance,
@@ -52,6 +57,12 @@ export async function registerReportRoutes(
   // the manual on-demand generation path (the scheduler tick calls the SAME service — see index.ts).
   digestRepository: DigestReportRepository,
   digestSchedule: DigestScheduleService,
+  // Advisor WP 2.2 — the fleet report's extra read model. `advisor` is the SAME four narrow read
+  // ports `registerAdvisorRoutes` is given (servers/scans/scenarios/runs), so the fleet report's
+  // recommendations are produced by the same service `GET /api/advisor/report?scope=fleet` uses.
+  // The suite-grade side reuses `suiteService` / `suiteRunRepository` already passed above.
+  // Appended, so every existing call site and every route above is untouched.
+  advisor: AdvisorRepositories,
 ) {
   // The suite-run report reads only DERIVED state (child runs + grades + test/scenario/suite names) PLUS
   // (Auto-Rating WP 4.3) the persisted cross-run `SuiteReport`, if one has landed — additive, absent when
@@ -209,6 +220,28 @@ export async function registerReportRoutes(
       `attachment; filename="mcp-token-footprint-digest-${report.id}.md"`,
     );
     return createDigestMarkdownReport(report);
+  });
+
+  // ── Fleet report (Advisor WP 2.2) — the on-demand aggregate: servers + scan drift, environment
+  // costs, suite grades, a posture summary when one exists, and the fleet-scope advisor
+  // recommendations. Read-only over already-persisted data; no query, no id — the whole install IS
+  // the subject, so the route renders in full from a cold URL. Both formats render the SAME composed
+  // document (`createFleetReport`), so JSON and Markdown can never disagree. ────────────────────────
+  const fleetDeps = (): FleetReportDeps => ({
+    // A fresh context per request: the clock is read once, at the top of the report, so every figure
+    // in the document — including the embedded advisor report's own `generatedAt` — is one instant.
+    advisor: createAdvisorContext(advisor),
+    suiteRuns: suiteRunRepository,
+    suites: suiteService,
+  });
+
+  app.get("/api/reports/fleet/json", async () => createFleetReport(fleetDeps()));
+
+  app.get("/api/reports/fleet/markdown", async (_request, reply) => {
+    const report = createFleetReport(fleetDeps());
+    reply.header("content-type", "text/markdown; charset=utf-8");
+    reply.header("content-disposition", 'attachment; filename="mcp-token-footprint-fleet.md"');
+    return createFleetMarkdownReport(report);
   });
 }
 

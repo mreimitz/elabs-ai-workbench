@@ -7006,6 +7006,12 @@ export type AdvisorRecommendation = {
   savings?: AdvisorSavings;
   /** At least one — a recommendation with nothing to drill into is a contract violation. */
   evidence: AdvisorEvidenceRef[];
+  /**
+   * WP 2.1 — the grade-side provenance (`GRADING_VERSION` + the suite-run ids read). REQUIRED of a
+   * grade-aware rule (the engine refuses the finding without it) and absent on every deterministic
+   * Phase 1 rule, which reads no grades at all. See {@link AdvisorGradeProvenance}.
+   */
+  gradeProvenance?: AdvisorGradeProvenance;
   /** What the suggestion takes for granted, stated plainly (e.g. "the last 20 runs are
    *  representative of normal use"). May be empty when a rule genuinely assumes nothing. */
   assumptions: string[];
@@ -7037,4 +7043,213 @@ export type AdvisorReport = {
 export type AdvisorReportQuery = {
   scope: AdvisorScopeKind;
   id?: string;
+};
+
+// --- Advisor — grade-aware provenance (WP 2.1) ------------------------------------------------
+// roadmap/advisor/phase-2-grade-aware/. A Phase 2 rule reads GRADES, which are themselves versioned
+// and derived from specific suite runs. Recording both on the finding is what lets an operator (and
+// a later report) tell "this trim was validated against suite run X under grading version 1" apart
+// from "this trim rests on a newer, differently-computed grade" — the never-silently-compare rule
+// `ADVISOR_VERSION` / `TOKEN_COUNTING_VERSION` / `GRADING_VERSION` all follow.
+
+/**
+ * The grade-side provenance of one grade-aware recommendation.
+ *
+ * `suiteRunIds` are the EXACT suite runs whose members supplied the scores the finding rests on —
+ * ascending and deduped, so the same finding computed twice serializes identically. It is never
+ * empty: a rule with no suite-run evidence has nothing to be grade-aware ABOUT, and must emit an
+ * {@link AdvisorInsufficientData} entry instead of a recommendation.
+ */
+export type AdvisorGradeProvenance = {
+  /** `GRADING_VERSION` at the time the grades were written/read. */
+  gradingVersion: number;
+  /** The suite runs read, ascending + deduped. Always at least one. */
+  suiteRunIds: string[];
+};
+
+// --- Advisor — fleet report (WP 2.2) ----------------------------------------------------------
+// The aggregate, on-demand report behind `GET /api/reports/fleet/{json,markdown}`: what the fleet
+// looks like right now (servers + scan drift, environment costs, suite grades, a posture summary
+// when one exists) with the fleet-scope `AdvisorReport` attached.
+//
+// THE HONEST-GAP RULE (README invariant 3) is encoded structurally: every section carries an
+// optional `gap`, and a section with nothing in it ALWAYS carries one naming what is missing. A
+// zero is never published as a measurement — "no runs yet" and "runs that cost $0.00" are different
+// facts, and the report says which one it is.
+
+/** A scan as the fleet report cites it — identity plus the totals a drift figure is read from. */
+export type FleetScanRef = {
+  scanId: string;
+  scannedAt: string;
+  tokenProfile: TokenProfileId;
+  /** `TOKEN_COUNTING_VERSION` this scan was produced under (CLAUDE.md §7). */
+  countingVersion: number;
+  totalTools: number;
+  totalTokens: number;
+};
+
+/** How a server's tool surface moved between its two most recent SUCCESSFUL scans (`previousScan`
+ *  → the entry's `latestScan`). Computed with the same matcher the Compare workspace uses. */
+export type FleetServerDrift = {
+  previousScan: FleetScanRef;
+  /** Tools present only in the newer scan. */
+  toolsAdded: number;
+  /** Tools present only in the older scan. */
+  toolsRemoved: number;
+  /** Matched tools whose description, schema or annotations changed. */
+  toolsChanged: number;
+  /**
+   * Newer − older on the scan totals, and the same as a percentage of the older total. BOTH are
+   * `null` when the two scans are not on a comparable counting scale (different token profile or
+   * counting version) — a suppressed delta is reported as absent, never as a `0` that would read as
+   * "nothing changed".
+   */
+  deltaTokens: number | null;
+  deltaPercent: number | null;
+  /** False → the two token deltas above are `null`, and why. */
+  deltasComparable: boolean;
+};
+
+/** One registered MCP server in the fleet, with its latest measured footprint and its drift. */
+export type FleetServerEntry = {
+  serverId: string;
+  serverName: string;
+  transport: TransportType;
+  /** The most recent SUCCESSFUL scan, or `null` when the server has never been scanned cleanly. */
+  latestScan: FleetScanRef | null;
+  /** Present only when the server has at least two successful scans to compare. */
+  drift: FleetServerDrift | null;
+  /** Names what is missing whenever `latestScan` or `drift` is `null`. */
+  gap?: string;
+};
+
+export type FleetServersSection = {
+  entries: FleetServerEntry[];
+  /** Present when there is nothing to report at all (no servers configured). */
+  gap?: string;
+};
+
+/**
+ * One environment's (UI label for a `Scenario`) measured spend.
+ *
+ * Billed and subscription-reference costs are kept in SEPARATE fields and are never added together:
+ * a `claude_subscription` run's `costUsd` is a shadow reference price (exact tokens × list price),
+ * not a charge anyone paid (see `SUBSCRIPTION_COST_FOOTNOTE`), so one total spanning both would be a
+ * number that means nothing.
+ */
+export type FleetEnvironmentEntry = {
+  scenarioId: string;
+  name: string;
+  model: string;
+  toolLoadingMode: ToolLoadingMode;
+  /** Every persisted run of this environment — cost accrues on failed and stopped runs too. */
+  runs: number;
+  /** How many of `runs` reached `completed`. */
+  completedRuns: number;
+  /** Sum of `costUsd` over runs billed through a provider key. */
+  billedCostUsd: number;
+  billedRuns: number;
+  /** `billedCostUsd / billedRuns`, or `null` when no run was billed. */
+  meanBilledCostUsd: number | null;
+  /** Sum of `costUsd` over Claude-subscription runs — a REFERENCE price, never a billed charge. */
+  subscriptionReferenceCostUsd: number;
+  subscriptionReferenceRuns: number;
+  tokensIn: number;
+  tokensOut: number;
+  /** Present when the environment has no runs at all (so every figure above is a structural zero). */
+  gap?: string;
+};
+
+export type FleetEnvironmentsSection = {
+  entries: FleetEnvironmentEntry[];
+  /** Present when no environment is configured, or none has ever been run. */
+  gap?: string;
+};
+
+/** One executed suite run and the grades it produced, read straight off its persisted aggregates. */
+export type FleetSuiteEntry = {
+  suiteRunId: string;
+  /** The owning saved suite — absent for a `collection`/`adhoc` plan, which creates no suite row. */
+  suiteId?: string;
+  /** The suite's name, or a plain description of the plan when there is no saved suite. */
+  label: string;
+  source?: RunPlanSource;
+  status: SuiteRunStatus;
+  startedAt: string;
+  endedAt?: string;
+  cellsTotal: number;
+  cellsCompleted: number;
+  meanGrade: number | null;
+  gradeStdDev: number | null;
+  passRateAt05: number | null;
+  totalTokens: number;
+  execCostUsd: number;
+  judgeCostUsd: number;
+  /** Present when the run carries no aggregates, or aggregates with no graded score. */
+  gap?: string;
+};
+
+export type FleetSuitesSection = {
+  /** Most recent first, capped at `FLEET_REPORT_SUITE_RUN_LIMIT`. */
+  entries: FleetSuiteEntry[];
+  /** How many suite runs exist in total, so a truncated list never reads as the whole history. */
+  totalSuiteRuns: number;
+  /** Present when no suite run exists, or none of the listed runs produced a grade. */
+  gap?: string;
+};
+
+/**
+ * A security-posture roll-up, if some analyzer produced one.
+ *
+ * The analyzer itself is `roadmap/security-posture/` and is NOT built yet, so today this section
+ * always renders its gap. The shape is deliberately generic (a version stamp, an optional score,
+ * severity tallies, per-subject rows) — enough for the report to render a summary, and small enough
+ * that the security-posture plan's own contract (its WP 1.1) can feed it without this file having
+ * pre-committed to findings vocabulary it does not own.
+ */
+export type FleetPostureSubject = {
+  kind: "server" | "skill";
+  id: string;
+  name: string;
+  /** The subject's own posture score, or `null` when the analyzer produced none. */
+  score: number | null;
+  findings: number;
+};
+
+export type FleetPostureSummary = {
+  /** The analyzer version this summary was produced under — never mixed across versions. */
+  analyzerVersion: number;
+  /** The fleet-wide score, or `null` when the analyzer produced none. */
+  score: number | null;
+  /** Finding tallies by the analyzer's own severity labels, in the analyzer's own order. */
+  findingCounts: { severity: string; count: number }[];
+  subjects: FleetPostureSubject[];
+};
+
+export type FleetPostureSection = {
+  /** `null` whenever no posture analyzer has produced a summary — then `gap` says so. */
+  summary: FleetPostureSummary | null;
+  gap?: string;
+};
+
+/** The fleet-scope `AdvisorReport`, verbatim — the same document `GET /api/advisor/report?scope=fleet`
+ *  returns, so the two surfaces can never disagree. Rules registered later (WP 2.1's grade-aware
+ *  ones) flow in automatically; nothing here names a rule id. */
+export type FleetAdvisorSection = {
+  report: AdvisorReport;
+  /** Present when the advisor produced neither a recommendation nor an honest gap. */
+  gap?: string;
+};
+
+/** `GET /api/reports/fleet/json`. The Markdown twin renders exactly this — no second data path. */
+export type FleetReport = {
+  /** `ADVISOR_VERSION` — fleet reports from different advisor versions are never silently compared. */
+  advisorVersion: number;
+  /** ISO-8601, from the advisor context's injected clock (so the whole report is one instant). */
+  generatedAt: string;
+  servers: FleetServersSection;
+  environments: FleetEnvironmentsSection;
+  suites: FleetSuitesSection;
+  posture: FleetPostureSection;
+  advisor: FleetAdvisorSection;
 };

@@ -204,7 +204,16 @@ function makeContext(fixture: Partial<Fixture>): AdvisorContext {
         ),
       getRun: (runId) => notFound("Run", runId),
       getToolCallSequence: (runId) => toolCalls[runId] ?? [],
+      getSummary: (runId) => runs.find((r) => r.id === runId) ?? notFound("Run", runId),
+      getRunSkills: () => [],
     },
+    // WP 2.1 — the grade-aware ports answer with NOTHING here. `advisor-grade-rules.test.ts` owns
+    // the fixtures that populate them; this file's four deterministic rules must never read one, and
+    // the three grade-aware rules must produce honest gaps over an empty grade model.
+    grades: { listByRun: () => [] },
+    suiteRuns: { listRuns: () => [], listChildRunIds: () => [] },
+    skills: { list: () => [] },
+    models: { get: () => null },
     now: () => FIXED_CLOCK,
   };
 }
@@ -223,9 +232,13 @@ function only(recommendations: AdvisorRecommendation[], ruleId: string): Advisor
 
 // ── Registry ─────────────────────────────────────────────────────────────────────────────────────
 
-test("WP 1.2 registers the four deterministic rules, in the documented order", () => {
+test("the four deterministic rules lead the registry, in the documented order", () => {
+  // WP 2.1 APPENDED three grade-aware rules after these four (see `advisor-grade-rules.test.ts`,
+  // which pins the full seven-rule list). What this file locks is that the Phase 1 rules keep their
+  // relative order and their leading position — that position is their precedence in the engine's
+  // first-wins dedup, so appending must never reshuffle them.
   assert.deepEqual(
-    ADVISOR_RULES.map((rule) => rule.id),
+    ADVISOR_RULES.slice(0, 4).map((rule) => rule.id),
     [
       UNUSED_TOOL_TRIM_RULE_ID,
       DESCRIPTION_BLOAT_RULE_ID,
@@ -233,6 +246,8 @@ test("WP 1.2 registers the four deterministic rules, in the documented order", (
       TOOL_OVERLAP_RULE_ID,
     ],
   );
+  // None of the four reads grades, so none of them may stamp grade provenance.
+  for (const rule of ADVISOR_RULES.slice(0, 4)) assert.notEqual(rule.gradeAware, true);
 });
 
 // ── Rule 1 — unused-tool trim ────────────────────────────────────────────────────────────────────
@@ -1040,7 +1055,7 @@ test("overlap: reuses the shared compare matcher (fuzzy pairing agrees with `sim
 
 // ── All four together ────────────────────────────────────────────────────────────────────────────
 
-test("the four registered rules run together and produce a deterministic, schema-valid report", () => {
+test("the four deterministic rules run together and produce a deterministic, schema-valid report", () => {
   const ctx = makeContext({
     servers: [server("srv-a", "Alpha"), server("srv-b", "Beta")],
     scans: [
@@ -1113,4 +1128,21 @@ test("the four registered rules run together and produce a deterministic, schema
       assert.ok(rec.savings.basis.trim().length > 0);
     }
   }
+
+  // WP 2.1 — this fixture has runs but NO suite runs and NO grades, so the three grade-aware rules
+  // contribute nothing but honest gaps here. A grade-aware recommendation over an ungraded fleet
+  // would be exactly the fabrication the plan's invariant 3 forbids.
+  for (const ruleId of [
+    "advisor.quality-validated-trim",
+    "advisor.skill-effect",
+    "advisor.model-quality-bar",
+  ]) {
+    assert.equal(only(first.recommendations, ruleId).length, 0, `${ruleId} emits no finding`);
+    assert.ok(
+      first.insufficientData.some((gap) => gap.ruleId === ruleId),
+      `${ruleId} names what is missing`,
+    );
+  }
+  // And no deterministic rule stamped grade provenance it did not earn.
+  for (const rec of first.recommendations) assert.equal(rec.gradeProvenance, undefined);
 });
