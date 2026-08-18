@@ -1954,3 +1954,16 @@ export const ADVISOR_SEVERITIES = ["high", "medium", "info"] as const;
 // converted into one another (no pricing is applied behind the operator's back). Keeping the
 // comparator unit-major is what makes the "savings desc" tie-break a strict total order.
 export const ADVISOR_SAVINGS_UNITS = ["tokens_per_turn", "tokens", "usd_per_run"] as const;
+
+// --- Advisor — fleet report (WP 2.2) ----------------------------------------------------------
+// roadmap/advisor/phase-2-grade-aware/WP-2.2-fleet-report.md. `GET /api/reports/fleet/{json,
+// markdown}` is an aggregate of what the app has ALREADY measured — servers + scan drift,
+// environment costs, suite grades, a posture summary when one exists — plus the fleet-scope advisor
+// recommendations. It is stamped `ADVISOR_VERSION` (above): the report is only as reproducible as
+// the advisor method that produced its advice, so the two version together.
+
+// How many suite runs the fleet report lists (most recent first). A long-lived install accumulates
+// thousands; an unbounded list would make the Markdown export unreadable and the JSON enormous. The
+// report always states the FULL count alongside the truncated list, so the cap never reads as
+// "that's all there is".
+export const FLEET_REPORT_SUITE_RUN_LIMIT = 20;

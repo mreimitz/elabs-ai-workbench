@@ -90,6 +90,7 @@ import {
   RUN_MODES,
   RUN_OUTCOMES,
   RUN_PHASES,
+  RUN_PLAN_SOURCES,
   RUN_SORT_DIRECTIONS,
   RUN_SORT_FIELDS,
   RUN_STATUSES,
@@ -4333,3 +4334,128 @@ export const advisorReportQuerySchema = z
       });
     }
   });
+
+// --- Advisor — fleet report (WP 2.2) ----------------------------------------------------------
+// zod partners of the `Fleet*` types. Response schemas, so the enums are used RAW (`z.enum(...)`)
+// rather than through the request-side aliases that carry a `.default()` — a report states what was
+// persisted, and a schema that silently fills in a default would mask a missing field instead of
+// failing the contract test that guards it.
+
+export const fleetScanRefSchema = z.object({
+  scanId: z.string().min(1),
+  scannedAt: z.string().min(1),
+  tokenProfile: z.enum(TOKEN_PROFILES),
+  countingVersion: z.number().int(),
+  totalTools: z.number().int().nonnegative(),
+  totalTokens: z.number().int().nonnegative(),
+});
+
+/** `deltaTokens`/`deltaPercent` are NULLABLE, not optional: "not comparable" is a stated fact about
+ *  the pair of scans, so the field is present and empty rather than quietly missing. */
+export const fleetServerDriftSchema = z.object({
+  previousScan: fleetScanRefSchema,
+  toolsAdded: z.number().int().nonnegative(),
+  toolsRemoved: z.number().int().nonnegative(),
+  toolsChanged: z.number().int().nonnegative(),
+  deltaTokens: z.number().nullable(),
+  deltaPercent: z.number().nullable(),
+  deltasComparable: z.boolean(),
+});
+
+export const fleetServerEntrySchema = z.object({
+  serverId: z.string().min(1),
+  serverName: z.string().min(1),
+  transport: z.enum(TRANSPORT_TYPES),
+  latestScan: fleetScanRefSchema.nullable(),
+  drift: fleetServerDriftSchema.nullable(),
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetServersSectionSchema = z.object({
+  entries: z.array(fleetServerEntrySchema),
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetEnvironmentEntrySchema = z.object({
+  scenarioId: z.string().min(1),
+  name: z.string().min(1),
+  model: z.string(),
+  toolLoadingMode: z.enum(TOOL_LOADING_MODES),
+  runs: z.number().int().nonnegative(),
+  completedRuns: z.number().int().nonnegative(),
+  billedCostUsd: z.number().finite(),
+  billedRuns: z.number().int().nonnegative(),
+  meanBilledCostUsd: z.number().finite().nullable(),
+  subscriptionReferenceCostUsd: z.number().finite(),
+  subscriptionReferenceRuns: z.number().int().nonnegative(),
+  tokensIn: z.number().int().nonnegative(),
+  tokensOut: z.number().int().nonnegative(),
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetEnvironmentsSectionSchema = z.object({
+  entries: z.array(fleetEnvironmentEntrySchema),
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetSuiteEntrySchema = z.object({
+  suiteRunId: z.string().min(1),
+  suiteId: z.string().min(1).optional(),
+  label: z.string().min(1),
+  source: z.enum(RUN_PLAN_SOURCES).optional(),
+  status: z.enum(SUITE_RUN_STATUSES),
+  startedAt: z.string().min(1),
+  endedAt: z.string().min(1).optional(),
+  cellsTotal: z.number().int().nonnegative(),
+  cellsCompleted: z.number().int().nonnegative(),
+  meanGrade: z.number().finite().nullable(),
+  gradeStdDev: z.number().finite().nullable(),
+  passRateAt05: z.number().finite().nullable(),
+  totalTokens: z.number().int().nonnegative(),
+  execCostUsd: z.number().finite(),
+  judgeCostUsd: z.number().finite(),
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetSuitesSectionSchema = z.object({
+  entries: z.array(fleetSuiteEntrySchema),
+  totalSuiteRuns: z.number().int().nonnegative(),
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetPostureSubjectSchema = z.object({
+  kind: z.enum(["server", "skill"]),
+  id: z.string().min(1),
+  name: z.string().min(1),
+  score: z.number().finite().nullable(),
+  findings: z.number().int().nonnegative(),
+});
+
+export const fleetPostureSummarySchema = z.object({
+  analyzerVersion: z.number().int(),
+  score: z.number().finite().nullable(),
+  findingCounts: z.array(
+    z.object({ severity: z.string().min(1), count: z.number().int().nonnegative() }),
+  ),
+  subjects: z.array(fleetPostureSubjectSchema),
+});
+
+export const fleetPostureSectionSchema = z.object({
+  summary: fleetPostureSummarySchema.nullable(),
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetAdvisorSectionSchema = z.object({
+  report: advisorReportSchema,
+  gap: z.string().trim().min(1).optional(),
+});
+
+export const fleetReportSchema = z.object({
+  advisorVersion: z.number().int(),
+  generatedAt: z.string().min(1),
+  servers: fleetServersSectionSchema,
+  environments: fleetEnvironmentsSectionSchema,
+  suites: fleetSuitesSectionSchema,
+  posture: fleetPostureSectionSchema,
+  advisor: fleetAdvisorSectionSchema,
+});
