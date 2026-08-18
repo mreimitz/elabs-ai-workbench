@@ -74,6 +74,30 @@ function stubContext(now: Date = FIXED_CLOCK): AdvisorContext {
   };
 }
 
+/**
+ * A context over an EMPTY read model — every port answers, and answers with nothing. Used for the
+ * default-registry call, where WP 1.2's real rules do read their ports and must produce honest gaps
+ * rather than findings.
+ */
+function emptyContext(now: Date = FIXED_CLOCK): AdvisorContext {
+  const missing = (what: string) => (): never => {
+    const error = new Error(`${what} not found`) as Error & { statusCode: number };
+    error.statusCode = 404;
+    throw error;
+  };
+  return {
+    servers: { list: () => [], getPublic: missing("Server") },
+    scans: {
+      listSummariesByServer: () => [],
+      getLatestForServer: () => null,
+      getDetail: missing("Scan"),
+    },
+    scenarios: { list: () => [], get: missing("Scenario"), listServers: () => [] },
+    runs: { listRuns: () => [], getRun: missing("Run"), getToolCallSequence: () => [] },
+    now: () => now,
+  };
+}
+
 /** A minimal, contract-valid recommendation. Overrides let a test bend exactly one field. */
 function recommendation(
   ruleId: string,
@@ -555,15 +579,41 @@ test("a published savings figure keeps its estimate marker and basis end to end"
 
 // ── Registry seam ────────────────────────────────────────────────────────────────────────────────
 
-test("WP 1.1 registers ZERO product rules — the app registry is empty", () => {
-  assert.deepEqual([...ADVISOR_RULES], []);
-  assert.deepEqual([...advisorRuleRegistry.list()], []);
+test("the app registry exposes WP 1.2's four product rules, in registration order", () => {
+  // WP 1.1 shipped this registry EMPTY (the engine seam only); WP 1.2 filled it with the four
+  // deterministic rules. Their order is part of the determinism contract — it is the tie-break the
+  // engine's first-wins dedup would use — so it is asserted here, once, against the registry itself.
+  const expected = [
+    "advisor.unused-tool-trim",
+    "advisor.description-bloat",
+    "advisor.loading-mode-comparison",
+    "advisor.tool-overlap",
+  ];
+  assert.deepEqual(
+    ADVISOR_RULES.map((rule) => rule.id),
+    expected,
+  );
+  assert.deepEqual(
+    advisorRuleRegistry.list().map((rule) => rule.id),
+    expected,
+  );
   assert.equal(advisorRuleRegistry.get("anything"), undefined);
-  // …and the default-registry engine call therefore produces an empty, still-valid report.
-  const report = runAdvisor(stubContext(), FLEET);
+  assert.equal(advisorRuleRegistry.get("advisor.tool-overlap")?.id, "advisor.tool-overlap");
+  // Every registered rule still satisfies the engine's own shape (a non-empty id + description, and
+  // both members of the contract), which is what lets the default-registry call below be trusted.
+  for (const rule of ADVISOR_RULES) {
+    assert.ok(rule.id.trim().length > 0);
+    assert.ok(rule.description.trim().length > 0);
+    assert.equal(typeof rule.appliesTo, "function");
+    assert.equal(typeof rule.run, "function");
+  }
+  // The default-registry engine call over an EMPTY read model is still a valid report: an install
+  // with no servers, no environments and no runs produces honest gaps, never fabricated findings.
+  const report = runAdvisor(emptyContext(), FLEET);
   assert.deepEqual(report.recommendations, []);
-  assert.deepEqual(report.insufficientData, []);
   assert.equal(advisorReportSchema.safeParse(report).success, true);
+  assert.ok(report.insufficientData.length > 0);
+  for (const gap of report.insufficientData) assert.ok(gap.reason.trim().length > 0);
 });
 
 test("the registry keeps registration order, looks up by id, and refuses duplicate ids", () => {
@@ -580,8 +630,10 @@ test("the registry keeps registration order, looks up by id, and refuses duplica
   assert.throws(() => registry.register(fixtureRule("rule.first", [])), /already registered/);
   assert.throws(() => registry.register(fixtureRule("  ", [])), /non-empty id/);
 
-  // An isolated registry never leaks into the app-wide one.
-  assert.deepEqual([...advisorRuleRegistry.list()], []);
+  // An isolated registry never leaks into the app-wide one (which carries only the product rules).
+  assert.equal(advisorRuleRegistry.get("rule.first"), undefined);
+  assert.equal(advisorRuleRegistry.get("rule.second"), undefined);
+  assert.equal(advisorRuleRegistry.list().length, ADVISOR_RULES.length);
 });
 
 // ── Runtime boundary ─────────────────────────────────────────────────────────────────────────────
