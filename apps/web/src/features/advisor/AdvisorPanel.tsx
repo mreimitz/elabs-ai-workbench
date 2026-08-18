@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { AdvisorInsufficientData, AdvisorReportQuery } from "@mcp-token-footprint/shared";
 import { Badge, Button, EmptyState, Skeleton, Text, cn } from "@elabs-ai/components-ui";
@@ -105,11 +104,7 @@ export function AdvisorPanel({ query, scopeLabel, fullReportHref, className }: A
       </div>
 
       {recommendations.length === 0 ? (
-        <NoRecommendations
-          scopeLabel={scopeLabel}
-          gaps={insufficientData}
-          action={fullReportLink}
-        />
+        <NoRecommendations scopeLabel={scopeLabel} gaps={insufficientData} />
       ) : (
         <>
           <ul
@@ -136,11 +131,9 @@ export function AdvisorPanel({ query, scopeLabel, fullReportHref, className }: A
 function NoRecommendations({
   scopeLabel,
   gaps,
-  action,
 }: {
   scopeLabel: string;
   gaps: AdvisorInsufficientData[];
-  action: ReactNode;
 }) {
   if (gaps.length > 0) {
     return (
@@ -149,7 +142,6 @@ function NoRecommendations({
           icon={<CircleHelp aria-hidden />}
           title="Not enough data yet"
           description={`The advisor ran over ${scopeLabel} but its rules are missing inputs, so it has nothing it can honestly recommend. What is missing is listed below.`}
-          actions={action}
         />
         <InsufficientDataList gaps={gaps} />
       </div>
@@ -161,7 +153,6 @@ function NoRecommendations({
       icon={<Lightbulb aria-hidden />}
       title="No recommendations"
       description={`The deterministic rules that apply to ${scopeLabel} ran and none of them matched. That means no rule found something to flag — not that nothing could be improved.`}
-      actions={action}
     />
   );
 }

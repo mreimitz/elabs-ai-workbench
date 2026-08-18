@@ -124,14 +124,19 @@ export function ScansView(props: {
   // the scan id + the param: closing the sheet does NOT re-open it, because neither dep changed.
   const [toolLinkParams] = useSearchParams();
   const deepLinkedToolName = toolLinkParams.get("tool");
-  useEffect(() => {
-    if (!deepLinkedToolName || !selectedScan) return;
-    const match = selectedScan.tools.find((tool) => tool.toolName === deepLinkedToolName);
-    // No match → leave the page as-is. A stale/renamed tool name must not open an empty sheet.
-    if (!match) return;
-    setSelectedToolId(match.id);
-    setSheetOpen(true);
+  // Resolve FIRST, then react to the resolved id — not to the `selectedScan` object. A refetch that
+  // produces an equivalent scan yields the same tool id, so the sheet is not re-opened behind a user
+  // who just closed it. No match → null → nothing happens (a stale/renamed tool name must not open
+  // an empty sheet).
+  const deepLinkedToolId = useMemo(() => {
+    if (!deepLinkedToolName || !selectedScan) return null;
+    return selectedScan.tools.find((tool) => tool.toolName === deepLinkedToolName)?.id ?? null;
   }, [deepLinkedToolName, selectedScan]);
+  useEffect(() => {
+    if (!deepLinkedToolId) return;
+    setSelectedToolId(deepLinkedToolId);
+    setSheetOpen(true);
+  }, [deepLinkedToolId]);
 
   function openTool(tool: ToolScan) {
     onSelectTool(tool);

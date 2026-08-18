@@ -1,4 +1,4 @@
-import type { ScanDetail, ScanSummary } from "@mcp-token-footprint/shared";
+import type { ScanDetail, ScanSummary, ToolScan } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -65,8 +65,28 @@ function scan(overrides: Partial<ScanSummary> & { id: string; serverId: string }
   };
 }
 
-function detail(overrides: Partial<ScanSummary> & { id: string; serverId: string }): ScanDetail {
-  return { ...scan(overrides), tools: [], resources: [], prompts: [], events: [] };
+function detail(
+  overrides: Partial<ScanSummary> & { id: string; serverId: string },
+  tools: ToolScan[] = [],
+): ScanDetail {
+  return { ...scan(overrides), tools, resources: [], prompts: [], events: [] };
+}
+
+/** A minimal tool row for the `?tool=` deep-link test (advisor WP 1.3 evidence drill-through). */
+function tool(scanId: string, toolName: string): ToolScan {
+  return {
+    id: `${scanId}-${toolName}`,
+    scanId,
+    toolName,
+    rawTool: {},
+    contributionPercent: 50,
+    totalTokens: 500,
+    nameTokens: 5,
+    descriptionTokens: 400,
+    schemaTokens: 90,
+    annotationsTokens: 5,
+    rawBytes: 2000,
+  };
 }
 
 // scan-0 and scan-1 are the SAME server (srv-a) so scan-1 has a previous successful scan to diff
@@ -206,5 +226,36 @@ describe("ScansView — list-first IA (WP 4.2 / D-1)", () => {
     // …and this is the error kind (role="alert" is StatePanel's error-only role) with a way out.
     expect(container.querySelector('[data-kind="error"]')).not.toBeNull();
     expect(screen.getByRole("button", { name: /back to scans/i })).toBeTruthy();
+  });
+});
+
+// Advisor WP 1.3 — an advisor `tool_scan` evidence ref links to `/scans/:scanId?tool=<name>`, so a
+// citation of a TOOL has to land on that tool, not merely on the scan that contains it.
+describe("ScansView — ?tool= deep link (advisor evidence drill-through)", () => {
+  it("opens the tool detail sheet for a matching tool name", async () => {
+    renderAt("/scans/scan-1?tool=search", {
+      scans: SCANS,
+      selectedScan: detail({ id: "scan-1", serverId: "srv-a" }, [tool("scan-1", "search")]),
+    });
+
+    expect(await screen.findByText("Tool detail")).toBeTruthy();
+  });
+
+  it("leaves the page alone when the named tool is not in the scan (no empty sheet)", () => {
+    renderAt("/scans/scan-1?tool=gone", {
+      scans: SCANS,
+      selectedScan: detail({ id: "scan-1", serverId: "srv-a" }, [tool("scan-1", "search")]),
+    });
+
+    expect(screen.queryByText("Tool detail")).toBeNull();
+  });
+
+  it("does not open the sheet when no ?tool= param is present", () => {
+    renderAt("/scans/scan-1", {
+      scans: SCANS,
+      selectedScan: detail({ id: "scan-1", serverId: "srv-a" }, [tool("scan-1", "search")]),
+    });
+
+    expect(screen.queryByText("Tool detail")).toBeNull();
   });
 });
