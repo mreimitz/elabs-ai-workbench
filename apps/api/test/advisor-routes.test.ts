@@ -11,13 +11,18 @@ import {
 import { registerAdvisorRoutes } from "../src/advisor/routes.js";
 import { DESCRIPTION_BLOAT_RULE_ID } from "../src/advisor/rules/description-bloat.js";
 import { LOADING_MODE_RULE_ID } from "../src/advisor/rules/loading-mode.js";
+import { MODEL_QUALITY_BAR_RULE_ID } from "../src/advisor/rules/model-quality-bar.js";
+import { SKILL_EFFECT_RULE_ID } from "../src/advisor/rules/skill-effect.js";
 import { TOOL_OVERLAP_RULE_ID } from "../src/advisor/rules/tool-overlap.js";
 import { UNUSED_TOOL_TRIM_RULE_ID } from "../src/advisor/rules/unused-tool-trim.js";
 import { applyMigrations, type AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
+import { GradeRepository } from "../src/grading/grade-repository.js";
 import { ScanRepository } from "../src/scans/repository.js";
 import { SecretStore } from "../src/secrets/secret-store.js";
 import { ServerRepository } from "../src/servers/repository.js";
+import { SkillRepository } from "../src/skills/repository.js";
+import { SuiteRunRepository } from "../src/suites/suite-run-repository.js";
 import { RunRepository } from "../src/testing/run-repository.js";
 import { ScenarioRepository } from "../src/testing/scenario-repository.js";
 
@@ -44,6 +49,10 @@ type Harness = {
   scans: ScanRepository;
   scenarios: ScenarioRepository;
   runs: RunRepository;
+  // WP 2.1 — the grade-aware ports, wired from the same real repositories the app uses.
+  grades: GradeRepository;
+  suiteRuns: SuiteRunRepository;
+  skills: SkillRepository;
 };
 
 async function makeApp(): Promise<Harness> {
@@ -53,10 +62,14 @@ async function makeApp(): Promise<Harness> {
   applyMigrations(db);
   databases.push(db);
 
-  const servers = new ServerRepository(db, new SecretStore(Buffer.alloc(32, 7)));
+  const secrets = new SecretStore(Buffer.alloc(32, 7));
+  const servers = new ServerRepository(db, secrets);
   const scans = new ScanRepository(db);
   const scenarios = new ScenarioRepository(db);
   const runs = new RunRepository(db);
+  const grades = new GradeRepository(db);
+  const suiteRuns = new SuiteRunRepository(db);
+  const skills = new SkillRepository(db, secrets);
 
   const app = Fastify({ logger: false });
   // The same mapping the real app installs (`apps/api/src/index.ts`): ZodError → 400, otherwise the
@@ -68,13 +81,31 @@ async function makeApp(): Promise<Harness> {
     const typed = error as Error & { statusCode?: number };
     return reply.code(typed.statusCode ?? 500).send({ error: error.message });
   });
-  await registerAdvisorRoutes(app, { servers, scans, scenarios, runs });
+  await registerAdvisorRoutes(app, {
+    servers,
+    scans,
+    scenarios,
+    runs,
+    grades,
+    suiteRuns,
+    skills,
+  });
   await app.listen({ port: 0, host: "127.0.0.1" });
   apps.push(app);
 
   const address = app.server.address();
   const port = typeof address === "object" && address ? address.port : 0;
-  return { baseUrl: `http://127.0.0.1:${port}`, db, servers, scans, scenarios, runs };
+  return {
+    baseUrl: `http://127.0.0.1:${port}`,
+    db,
+    servers,
+    scans,
+    scenarios,
+    runs,
+    grades,
+    suiteRuns,
+    skills,
+  };
 }
 
 // ── Seeding (the real repositories where they have a create path, SQL where a full pipeline would
@@ -274,10 +305,17 @@ test("an empty install returns a valid, stamped, empty fleet report", async () =
   assert.equal(body.advisorVersion, ADVISOR_VERSION);
   assert.deepEqual(body.scope, { kind: "fleet" });
   assert.deepEqual(body.recommendations, []);
-  // Two rules genuinely could not run: there is nothing to compare and nothing to observe.
+  // Four rules genuinely could not run: there is nothing to compare, nothing to observe, no suite
+  // run to read a grade from, and no ± skill variant axis. WP 2.1 added the last two — the
+  // grade-aware rules report an EMPTY install as a named gap, never as "nothing to improve".
   assert.deepEqual(
     body.insufficientData.map((gap) => gap.ruleId).sort(),
-    [LOADING_MODE_RULE_ID, TOOL_OVERLAP_RULE_ID].sort(),
+    [
+      LOADING_MODE_RULE_ID,
+      TOOL_OVERLAP_RULE_ID,
+      SKILL_EFFECT_RULE_ID,
+      MODEL_QUALITY_BAR_RULE_ID,
+    ].sort(),
   );
   for (const gap of body.insufficientData) assert.ok(gap.reason.trim().length > 0);
 });
