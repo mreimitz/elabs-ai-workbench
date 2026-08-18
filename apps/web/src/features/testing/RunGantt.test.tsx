@@ -9,9 +9,65 @@ import { describe, expect, test, vi } from "vitest";
 // stub `@elabs-ai/components-charts` rather than fight it). The stub renders each `GanttTask`'s `name` + `parentId`
 // as plain, assertable DOM — enough to prove the NESTING (WP 3.2's `parentId` wiring) without needing
 // the real chart's internals.
-type GanttTaskLike = { id: string; name: ReactNode; parentId?: string };
+type GanttTaskLike = { id: string; name: ReactNode; parentId?: string; dependencies?: string[] };
+/** Records the scale props the component drives, so a test can assert the unit ladder it offers. */
+const ganttProps: { viewMode?: string; viewModes?: string[] } = {};
 vi.mock("@elabs-ai/components-charts", () => {
-  function Gantt({ tasks, children }: { tasks: GanttTaskLike[]; children?: ReactNode }) {
+  // Faithful re-implementations of the three pure helpers `RunGantt` imports from the barrel. They
+  // are plain arithmetic (no React, no @visx), so mirroring them here keeps the stub honest without
+  // importing the real module — see the mock rationale above.
+  const GANTT_UNIT_MS: Record<string, number> = {
+    millisecond: 1,
+    second: 1_000,
+    minute: 60_000,
+    hour: 3_600_000,
+    day: 86_400_000,
+    week: 604_800_000,
+    month: 2_592_000_000,
+    quarter: 7_776_000_000,
+  };
+  const LADDER = [
+    "millisecond",
+    "second",
+    "minute",
+    "hour",
+    "day",
+    "week",
+    "month",
+    "quarter",
+  ] as const;
+  function pickGanttTimeUnit(spanMs: number): string {
+    for (const u of LADDER) if (spanMs / GANTT_UNIT_MS[u]! <= 40) return u;
+    return "quarter";
+  }
+  function computeGanttZoomBounds(args: {
+    domainStart: Date;
+    domainEnd: Date;
+    viewportWidth?: number;
+  }): { min: number; max: number } {
+    const viewportWidth = args.viewportWidth ?? 1200;
+    const spanDays =
+      (args.domainEnd.getTime() - args.domainStart.getTime()) / GANTT_UNIT_MS.day!;
+    if (!(spanDays > 0)) return { min: 2, max: 200 };
+    return {
+      min: Math.min(2, viewportWidth / spanDays),
+      max: Math.max(200, (viewportWidth * 20) / spanDays),
+    };
+  }
+
+  function Gantt({
+    tasks,
+    children,
+    viewMode,
+    viewModes,
+  }: {
+    tasks: GanttTaskLike[];
+    children?: ReactNode;
+    viewMode?: string;
+    viewModes?: string[];
+  }) {
+    ganttProps.viewMode = viewMode;
+    ganttProps.viewModes = viewModes;
     return (
       <div data-testid="gantt">
         {tasks.map((t) => (
@@ -25,10 +81,10 @@ vi.mock("@elabs-ai/components-charts", () => {
   }
   Gantt.Toolbar = () => null;
   Gantt.Body = () => null;
-  return { Gantt };
+  return { Gantt, GANTT_UNIT_MS, pickGanttTimeUnit, computeGanttZoomBounds };
 });
 
-import { buildTasks, RunGantt } from "./RunGantt";
+import { buildTasks, offeredViewModes, resolveCanvasWidth, RunGantt } from "./RunGantt";
 import type { RunStreamState } from "./use-run-stream";
 
 function step(over: Partial<RunStep> & Pick<RunStep, "id" | "type">): RunStep {
@@ -86,6 +142,9 @@ describe("buildTasks — flat legacy runs are BYTE-STABLE (WP 3.2 acceptance 1)"
     expect(tasks.map((t) => t.id)).toEqual(["llm-1", "run:mcp:0"]);
     // Neither task carries a parentId — flat, exactly as before this WP.
     expect(tasks.every((t) => t.parentId === undefined)).toBe(true);
+    // No dependency arrows: row order already carries request → tools → response, and at run scale
+    // the arrows were long curves over near-zero-width bars.
+    expect(tasks.every((t) => t.dependencies === undefined)).toBe(true);
   });
 });
 
@@ -224,5 +283,104 @@ describe("RunGantt component", () => {
     expect(childTask.getAttribute("data-parent-id")).toBe("run:mcp:0");
     const parentTask = screen.getByTestId("gantt-task-run:mcp:0");
     expect(parentTask.getAttribute("data-parent-id")).toBe("");
+  });
+});
+
+describe("offeredViewModes — the toolbar offers SUB-DAY units, not the calendar defaults", () => {
+  test("a seconds-long run offers millisecond | second | minute (never day/week/month/quarter)", () => {
+    expect(offeredViewModes("second")).toEqual(["millisecond", "second", "minute"]);
+  });
+
+  test("mid-ladder units get the full window: two finer + the unit + one coarser", () => {
+    expect(offeredViewModes("minute")).toEqual(["millisecond", "second", "minute", "hour"]);
+    expect(offeredViewModes("hour")).toEqual(["second", "minute", "hour", "day"]);
+  });
+
+  test("the finest unit clamps to the ladder start rather than producing a short/empty window", () => {
+    expect(offeredViewModes("millisecond")).toEqual(["millisecond", "second"]);
+  });
+
+  test("the coarsest unit has no coarser neighbour, so the window is the two finer units + itself", () => {
+    expect(offeredViewModes("quarter")).toEqual(["week", "month", "quarter"]);
+  });
+});
+
+/** The library's own span-derived px/day ceiling: max(200, viewportWidth × 20 / spanDays). */
+function computeMaxPxPerDay(viewportWidth: number, spanMs: number): number {
+  const spanDays = spanMs / 86_400_000;
+  return Math.max(200, (viewportWidth * 20) / spanDays);
+}
+
+describe("resolveCanvasWidth — the chip is a REAL zoom, fit-to-pane by default", () => {
+  const SPAN_40S = 40_000;
+  // A generous ceiling so these cases exercise the tick/fit arms, not the clamp.
+  const ROOMY_MAX_PX_PER_DAY = 20 * 86_400_000;
+
+  test("a unit COARSER than the pane can show clamps up to fit — no horizontal scroll", () => {
+    // 40 s at minute granularity = 0.67 ticks ≈ 48 px, far under the 900 px pane.
+    const width = resolveCanvasWidth({
+      spanMs: SPAN_40S,
+      unit: "minute",
+      fitWidth: 900,
+      maxPxPerDay: ROOMY_MAX_PX_PER_DAY,
+    });
+    expect(width).toBe(900);
+  });
+
+  test("a FINER unit widens the canvas past the pane — that widening IS the zoom", () => {
+    // 40 s at second granularity = 40 ticks × 72 px = 2880 px against a 900 px pane.
+    const width = resolveCanvasWidth({
+      spanMs: SPAN_40S,
+      unit: "second",
+      fitWidth: 900,
+      maxPxPerDay: ROOMY_MAX_PX_PER_DAY,
+    });
+    expect(width).toBe(2880);
+    expect(width).toBeGreaterThan(900);
+  });
+
+  test("millisecond over a 40 s run clamps to the library ceiling, not ~2.9M px", () => {
+    // Unclamped this would be 40_000 ticks × 72 px. The ceiling is maxPxPerDay × span-in-days.
+    const maxPxPerDay = computeMaxPxPerDay(900, SPAN_40S);
+    const width = resolveCanvasWidth({
+      spanMs: SPAN_40S,
+      unit: "millisecond",
+      fitWidth: 900,
+      maxPxPerDay,
+    });
+    expect(width).toBe(Math.round((maxPxPerDay * SPAN_40S) / 86_400_000));
+    expect(width).toBeLessThan(40_000 * 72);
+    expect(width).toBeGreaterThan(900);
+  });
+});
+
+describe("RunGantt — scale wiring (the run is seconds long, not days)", () => {
+  function timedRun(endedAt: string): RunStep[] {
+    return [
+      step({
+        id: "llm-1",
+        index: 0,
+        type: "llm_response",
+        turnIndex: 0,
+        status: "ok",
+        startedAt: "2026-01-01T00:00:00.000Z",
+        endedAt,
+      }),
+    ];
+  }
+
+  test("a one-second run drives the SECOND unit and offers a sub-day ladder", () => {
+    render(<RunGantt stream={streamOf(timedRun("2026-01-01T00:00:01.000Z"))} />);
+    expect(ganttProps.viewMode).toBe("second");
+    expect(ganttProps.viewModes).toEqual(["millisecond", "second", "minute"]);
+    // The regression this replaces: the old local picker returned "day" for anything under 6 h,
+    // whose [week, day] timescale has zero ticks inside a one-second domain.
+    expect(ganttProps.viewModes).not.toContain("day");
+  });
+
+  test("a half-hour run steps up to the MINUTE unit", () => {
+    render(<RunGantt stream={streamOf(timedRun("2026-01-01T00:30:00.000Z"))} />);
+    expect(ganttProps.viewMode).toBe("minute");
+    expect(ganttProps.viewModes).toEqual(["millisecond", "second", "minute", "hour"]);
   });
 });
