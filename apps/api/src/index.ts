@@ -1419,6 +1419,11 @@ await registerAdvisorRoutes(server, {
   scans,
   scenarios: scenarioRepository,
   runs: runRepository,
+  // WP 2.1 — the grade-aware side: suite runs + their members' grades + skill names. Still
+  // read-only, still no provider key (a grade is read from `run_grades`, never re-judged here).
+  grades: gradeRepository,
+  suiteRuns: suiteRunRepository,
+  skills,
 });
 // UX overhaul WP 3.5 (G7, D-UX12) — advisory run-plan cost preview (reads footprints + pricing; no key).
 await registerEstimateRoutes(server, {

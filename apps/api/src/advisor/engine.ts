@@ -107,6 +107,46 @@ function assertRecommendationContract(rule: AdvisorRule, rec: AdvisorRecommendat
       fail(`recommendation "${rec.id}" reports a non-finite savings value`);
     }
   }
+
+  // WP 2.1 — the Phase 2 invariant, enforced HERE rather than trusted to each grade-aware rule:
+  // a finding derived from grades records the grading version AND the exact suite runs it read.
+  const provenance = rec.gradeProvenance;
+  if (rule.gradeAware === true && provenance === undefined) {
+    fail(
+      `recommendation "${rec.id}" comes from a grade-aware rule but records no gradeProvenance; ` +
+        "every grade-aware recommendation must carry GRADING_VERSION and the suite-run ids it read",
+    );
+  }
+  if (rule.gradeAware !== true && provenance !== undefined) {
+    // The converse is just as important: provenance on a rule that reads no grades would be an
+    // unearned claim of grade validation.
+    fail(
+      `recommendation "${rec.id}" records gradeProvenance but its rule is not marked gradeAware`,
+    );
+  }
+  if (provenance) {
+    if (!Number.isInteger(provenance.gradingVersion)) {
+      fail(`recommendation "${rec.id}" records a non-integer gradingVersion`);
+    }
+    if (provenance.suiteRunIds.length === 0) {
+      fail(
+        `recommendation "${rec.id}" records gradeProvenance with no suite-run ids; a claim ` +
+          "validated against 'the suite score' must name the suite runs it read",
+      );
+    }
+    // Determinism: the same finding computed twice must SERIALIZE identically, so the id list is
+    // required to be ascending and duplicate-free rather than merely "the same set".
+    for (let i = 1; i < provenance.suiteRunIds.length; i += 1) {
+      const previous = provenance.suiteRunIds[i - 1] as string;
+      const current = provenance.suiteRunIds[i] as string;
+      if (previous >= current) {
+        fail(
+          `recommendation "${rec.id}" records suite-run ids that are not ascending and unique ` +
+            `("${previous}" before "${current}")`,
+        );
+      }
+    }
+  }
 }
 
 function assertGapContract(rule: AdvisorRule, gap: AdvisorInsufficientData): void {
