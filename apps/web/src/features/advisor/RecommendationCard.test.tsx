@@ -78,8 +78,7 @@ describe("RecommendationCard", () => {
 
   it("renders every evidence ref as a link that resolves to the real entity", () => {
     renderCard();
-    const hrefFor = (name: RegExp) =>
-      screen.getByRole("link", { name }).getAttribute("href");
+    const hrefFor = (name: RegExp) => screen.getByRole("link", { name }).getAttribute("href");
 
     expect(hrefFor(/^Scan: GitHub/)).toBe("/scans/sc_1");
     // A tool citation lands on the TOOL, not merely on the scan that contains it.

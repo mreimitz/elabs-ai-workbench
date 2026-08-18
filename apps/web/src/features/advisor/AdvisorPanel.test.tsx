@@ -100,9 +100,7 @@ describe("AdvisorPanel — 'not enough data' is honest, never an empty list pass
 
     expect(await screen.findByText("Not enough data yet")).toBeTruthy();
     // The API's own reasons are printed verbatim — the UI never paraphrases or invents a gap.
-    expect(
-      screen.getByText("no completed runs recorded for this environment yet"),
-    ).toBeTruthy();
+    expect(screen.getByText("no completed runs recorded for this environment yet")).toBeTruthy();
     expect(
       screen.getByText("the server has no successful scan to read a footprint from"),
     ).toBeTruthy();

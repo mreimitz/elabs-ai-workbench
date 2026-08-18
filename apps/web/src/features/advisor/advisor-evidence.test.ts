@@ -20,7 +20,9 @@ const ref = (kind: AdvisorEvidenceRef["kind"], id: string): AdvisorEvidenceRef =
 describe("advisorEvidenceHref — every wire evidence kind lands somewhere real", () => {
   it("covers EVERY ADVISOR_EVIDENCE_KINDS member (a new kind can't ship link-less)", () => {
     for (const kind of ADVISOR_EVIDENCE_KINDS) {
-      const href = advisorEvidenceHref(ref(kind, kind === "tool_scan" ? "sc_1:create_issue" : "id_1"));
+      const href = advisorEvidenceHref(
+        ref(kind, kind === "tool_scan" ? "sc_1:create_issue" : "id_1"),
+      );
       expect(href, `evidence kind "${kind}" has no destination`).toBeTruthy();
     }
   });

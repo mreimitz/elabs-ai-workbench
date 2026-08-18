@@ -107,7 +107,10 @@ export function AdvisorView() {
           info="Deterministic, evidenced recommendations computed from scans and runs the app has already recorded. Every saving is an estimate, and nothing here is ever applied automatically."
           left={
             <>
-              <Select value={scopeKind} onValueChange={(value) => setScope(value as AdvisorScopeKind)}>
+              <Select
+                value={scopeKind}
+                onValueChange={(value) => setScope(value as AdvisorScopeKind)}
+              >
                 <SelectTrigger className="w-44" aria-label="Advisor scope">
                   <SelectValue placeholder="Scope" />
                 </SelectTrigger>
@@ -128,11 +131,15 @@ export function AdvisorView() {
                   <SelectTrigger
                     className="w-64"
                     aria-label={
-                      scopeKind === "server" ? "MCP server to advise on" : "Environment to advise on"
+                      scopeKind === "server"
+                        ? "MCP server to advise on"
+                        : "Environment to advise on"
                     }
                   >
                     <SelectValue
-                      placeholder={scopeKind === "server" ? "Pick a server…" : "Pick an environment…"}
+                      placeholder={
+                        scopeKind === "server" ? "Pick a server…" : "Pick an environment…"
+                      }
                     />
                   </SelectTrigger>
                   <SelectContent>

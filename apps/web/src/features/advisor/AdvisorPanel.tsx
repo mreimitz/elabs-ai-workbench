@@ -39,10 +39,7 @@ export type AdvisorPanelProps = {
 };
 
 export function AdvisorPanel({ query, scopeLabel, fullReportHref, className }: AdvisorPanelProps) {
-  const { state, reload } = useLoadable(
-    () => getAdvisorReport(query),
-    [query.scope, query.id],
-  );
+  const { state, reload } = useLoadable(() => getAdvisorReport(query), [query.scope, query.id]);
 
   if (state.status === "loading") {
     return (
