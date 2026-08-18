@@ -2572,3 +2572,23 @@ export const listHubAudit = (filter?: HubAuditFilter): Promise<HubAuditPage> => 
 };
 
 export type { HubAuditEntry };
+
+// ── Advisor — evidenced recommendations (roadmap/advisor/, WP 1.2 routes + WP 1.3 web client) ───────
+// Self-contained additive block (its OWN `import type`, mirroring the hub-audit block above). The
+// advisor is a READ MODEL: one GET, no writes, no auto-apply — the report is a set of suggestions the
+// operator acts on by hand (README invariant 1).
+import type { AdvisorReport, AdvisorReportQuery } from "@mcp-token-footprint/shared";
+
+/**
+ * `GET /api/advisor/report?scope=server|scenario|fleet&id=…` — the deterministic advisor report for
+ * one scope. `id` is REQUIRED for `server`/`scenario` and must be ABSENT for `fleet` (the API's zod
+ * partner rejects both mistakes), so it is only appended when the caller supplies one.
+ */
+export const getAdvisorReport = (
+  query: AdvisorReportQuery,
+  signal?: AbortSignal,
+): Promise<AdvisorReport> => {
+  const params = new URLSearchParams({ scope: query.scope });
+  if (query.id !== undefined) params.set("id", query.id);
+  return apiGet<AdvisorReport>(`/api/advisor/report?${params.toString()}`, signal);
+};

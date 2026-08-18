@@ -28,7 +28,7 @@ import {
   Text,
   toast,
 } from "@elabs-ai/components-ui";
-import { FlaskConical, Loader2, Pencil, Plus, Trash2, Wifi } from "lucide-react";
+import { FlaskConical, Lightbulb, Loader2, Pencil, Plus, Trash2, Wifi, X } from "lucide-react";
 import {
   apiGet,
   createScenario,
@@ -49,6 +49,8 @@ import { PageShell } from "../../components/PageShell";
 import { ResultCount } from "../../components/ResultCount";
 import { StatusBadge } from "../../components/StatusBadge";
 import { ViewToolbar } from "../../components/ViewToolbar";
+import { AdvisorPanel } from "../advisor/AdvisorPanel";
+import { advisorReportHref } from "../advisor/advisor-format";
 import { EnvironmentEditor } from "./EnvironmentEditor";
 import { credentialHealthView, getCredentialHealth, testCredential } from "./credential-health";
 import { notifyError } from "../../lib/notify";
@@ -82,11 +84,24 @@ export function EnvironmentsView() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Scenario | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Scenario | null>(null);
+  // Advisor (roadmap/advisor/ WP 1.3) — the environment whose inline recommendation panel is open
+  // below the table. Environments have no per-entity ROUTE (selection lives in React state, as it
+  // already does for the editor above), so the panel is opened from a row action and names the
+  // environment it belongs to; the full, bookmarkable report is one click away at `/advisor`.
+  const [advisorScenarioId, setAdvisorScenarioId] = useState<string | null>(null);
   // Credential health ("is this key usable?", T7) — a client-side record (see `credential-health.ts`).
   // `healthTick` forces the table to re-read the store after a check; `testingProviders` tracks which
   // credential(s) have a live "Test connection" in flight (a Set — two rows may test at once).
   const [healthTick, setHealthTick] = useState(0);
   const [testingProviders, setTestingProviders] = useState<ReadonlySet<string>>(() => new Set());
+
+  // The live row behind the open advisor panel. Derived (not stored) so a refresh, rename or
+  // delete can never leave the panel pointing at a stale snapshot — a deleted environment simply
+  // closes the panel.
+  const advisorScenario = useMemo(
+    () => scenarios.find((scenario) => scenario.id === advisorScenarioId) ?? null,
+    [scenarios, advisorScenarioId],
+  );
 
   const providerById = useMemo(() => {
     const map = new Map<string, ProviderCredential>();
@@ -345,6 +360,14 @@ export function EnvironmentsView() {
             <IconButton
               variant="ghost"
               size="sm"
+              label={`Advice for ${row.name}`}
+              onClick={() => setAdvisorScenarioId(row.id)}
+            >
+              <Lightbulb aria-hidden />
+            </IconButton>
+            <IconButton
+              variant="ghost"
+              size="sm"
               label={`Delete ${row.name}`}
               onClick={() => setPendingDelete(row)}
             >
@@ -449,6 +472,40 @@ export function EnvironmentsView() {
           emptyMessage="No environments match the current search."
         />
       )}
+
+      {/* ── Inline advisor panel for the picked environment (advisor WP 1.3). Read-only: evidenced
+          suggestions with labelled estimates; the app never applies one. ── */}
+      {advisorScenario ? (
+        <section
+          aria-label={`Advisor recommendations for ${advisorScenario.name}`}
+          className="flex flex-col gap-3 rounded-md border border-border bg-card p-4"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+            <div className="flex min-w-0 flex-col">
+              <Heading level={2} size="subtitle">
+                Advisor · {advisorScenario.name}
+              </Heading>
+              <Text variant="meta" tone="muted" className="text-pretty">
+                Deterministic recommendations from this environment's runs and its servers' scans.
+                Savings are estimates.
+              </Text>
+            </div>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              label="Close advisor panel"
+              onClick={() => setAdvisorScenarioId(null)}
+            >
+              <X aria-hidden />
+            </IconButton>
+          </div>
+          <AdvisorPanel
+            query={{ scope: "scenario", id: advisorScenario.id }}
+            scopeLabel={advisorScenario.name}
+            fullReportHref={advisorReportHref({ scope: "scenario", id: advisorScenario.id })}
+          />
+        </section>
+      ) : null}
 
       <EnvironmentEditor
         open={editorOpen}

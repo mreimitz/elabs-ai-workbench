@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type {
   PromptScan,
   ResourceScan,
@@ -117,6 +117,26 @@ export function ScansView(props: {
   const [readOpen, setReadOpen] = useState(false);
   const [getPrompt, setGetPrompt] = useState<PromptScan | null>(null);
   const [getOpen, setGetOpen] = useState(false);
+
+  // `?tool=<toolName>` — the deep link an advisor `tool_scan` evidence ref resolves to (advisor
+  // WP 1.3), so a citation of a TOOL lands on that tool rather than merely on its scan. Runs after
+  // the reset effect above (declaration order), so a fresh scan's reset can't cancel it. Keyed to
+  // the scan id + the param: closing the sheet does NOT re-open it, because neither dep changed.
+  const [toolLinkParams] = useSearchParams();
+  const deepLinkedToolName = toolLinkParams.get("tool");
+  // Resolve FIRST, then react to the resolved id — not to the `selectedScan` object. A refetch that
+  // produces an equivalent scan yields the same tool id, so the sheet is not re-opened behind a user
+  // who just closed it. No match → null → nothing happens (a stale/renamed tool name must not open
+  // an empty sheet).
+  const deepLinkedToolId = useMemo(() => {
+    if (!deepLinkedToolName || !selectedScan) return null;
+    return selectedScan.tools.find((tool) => tool.toolName === deepLinkedToolName)?.id ?? null;
+  }, [deepLinkedToolName, selectedScan]);
+  useEffect(() => {
+    if (!deepLinkedToolId) return;
+    setSelectedToolId(deepLinkedToolId);
+    setSheetOpen(true);
+  }, [deepLinkedToolId]);
 
   function openTool(tool: ToolScan) {
     onSelectTool(tool);

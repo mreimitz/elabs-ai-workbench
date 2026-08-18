@@ -97,6 +97,11 @@ const CompatibilityView = lazy(() =>
     default: m.CompatibilityView,
   })),
 );
+// Advisor (roadmap/advisor/, WP 1.3) — evidenced recommendations at `/advisor`. Read-only: the
+// route renders suggestions + evidence links; nothing here is ever auto-applied.
+const AdvisorView = lazy(() =>
+  import("./features/advisor/AdvisorView").then((m) => ({ default: m.AdvisorView })),
+);
 const DashboardView = lazy(() =>
   import("./features/dashboard/DashboardView").then((m) => ({ default: m.DashboardView })),
 );
@@ -207,6 +212,7 @@ export const PAGESHELL_EXACT_ROUTES = new Set<string>([
   "/testing/environments", // WP 1.2
   "/dashboard", // WP 2.1 (home root — no breadcrumb, consistent with other top-level roots)
   "/testing/compatibility", // WP 2.9
+  "/advisor", // advisor WP 1.3 (recommendation cards, centered reading surface)
   "/scans", // WP 2.3 (master-detail, in-view split)
   "/compare/scans", // WP 2.3
   "/skills", // WP 2.8 (master-detail via SkillRail secondaryContent → D-UX14 variant)
@@ -1073,6 +1079,9 @@ export function App() {
     if (location.pathname === "/testing/compatibility") {
       return [{ label: "Testing" }, { label: "Compatibility" }];
     }
+    if (location.pathname === "/advisor") {
+      return [{ label: "MCP" }, { label: "Advisor" }];
+    }
     // Depth-1 list roots also root at their section so the top bar always carries a breadcrumb (S16).
     if (location.pathname === "/testing/runs") {
       return [{ label: "Testing" }, { label: "Runs" }];
@@ -1391,6 +1400,10 @@ export function App() {
                   path="/testing/compatibility"
                   element={<CompatibilityView scans={scans} />}
                 />
+                {/* Advisor (roadmap/advisor/ WP 1.3) — the scope lives in the URL (`?scope=&id=`)
+                so a report is bookmarkable/shareable, and the bare route renders the FLEET report,
+                i.e. something useful with zero query params (D-TB10). */}
+                <Route path="/advisor" element={<AdvisorView />} />
                 {/* Bare `/testing` parent → the testing home (Collections), not the dashboard catch-all
                 (WP 0.3 / C1). Collections is the test home per the IA nav order. */}
                 <Route path="/testing" element={<Navigate to="/testing/collections" replace />} />

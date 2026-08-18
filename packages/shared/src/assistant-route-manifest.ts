@@ -167,6 +167,19 @@ export const ASSISTANT_ROUTE_MANIFEST: readonly AssistantRouteManifestEntry[] = 
     surface: "global",
     exempt: "Report route, no single-entity dock surface.",
   },
+  {
+    // Advisor (roadmap/advisor/ WP 1.3). A report ROUTE whose subject is chosen in the URL query
+    // (`?scope=server|scenario|fleet&id=…`), not the path — so `resolveEntityPin` (which reads the
+    // PATHNAME only) names no entity here, exactly as for `/reports/digest/:id` above. The operable
+    // per-entity surfaces already exist and are pinned: `/servers/:serverId` (which carries the
+    // inline advisor panel) and, once environments URL-encode their selection, the environment
+    // detail. A dedicated `advisor` starter surface would need advisor-aware assistant read tools,
+    // which are not in WP 1.3's scope — this exemption is the visible record of that.
+    pattern: "/advisor",
+    surface: "global",
+    exempt:
+      "Advisor report route; the subject is a URL QUERY (?scope=&id=), not a path param, so there is no single entity to pin. The operable per-entity surface is /servers/:serverId (which hosts the inline advisor panel); a dedicated `advisor` starter surface needs advisor-aware assistant read tools, out of advisor WP 1.3's scope.",
+  },
   { pattern: "*", surface: "global", exempt: "404 catch-all." },
 
   // ── Hub routes — real, route-keyed surfaces (assistant-operability WP 2.1, D-AO3). Flipped from the

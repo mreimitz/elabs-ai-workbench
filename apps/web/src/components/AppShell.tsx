@@ -59,6 +59,7 @@ import {
   GitCompareArrows,
   History,
   LayoutDashboard,
+  Lightbulb,
   ListChecks,
   Monitor,
   Moon,
@@ -143,6 +144,10 @@ export const MCP_NAV_ITEMS: NavItem[] = [
   { path: "/servers", label: "MCP Servers", icon: Server },
   { path: "/scans", label: "Scans", icon: ScanLine },
   { path: "/compare/scans", label: "Compare", icon: GitCompareArrows },
+  // Advisor (roadmap/advisor/ WP 1.3) — evidenced recommendations over the measurements the MCP
+  // group above produces (scans/footprints) plus the run history. It sits here rather than under
+  // Testing so the four load-bearing Testing items stay as they are.
+  { path: "/advisor", label: "Advisor", icon: Lightbulb },
 ];
 
 // The Skills registry views, grouped under their own "Skills" label between the analyzer and the
