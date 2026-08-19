@@ -144,8 +144,9 @@ export type ContextChartProps = {
   currentContextTokens?: number;
   /**
    * WP 3.2 — reveal the chat and scroll it to a turn (0-based). Rendered as a clickable "jump to turn"
-   * strip beneath the columns: `@elabs-ai/components-charts` `BarChart` exposes no per-bar click handler, so this
-   * aligned, keyboard-reachable strip is the columns' click affordance. Omitted → no strip.
+   * strip beneath the columns: a visibly NUMBERED, aligned row, so the target of each jump is legible
+   * without hovering a bar. Omitted → no strip. (`BarChart` does also accept `onDatapointClick` since
+   * v4 — wiring the columns themselves is a separate change, not a capability gap.)
    */
   onSelectTurn?: (turnIndex: number) => void;
 };
@@ -360,9 +361,10 @@ function toNumber(value: unknown): number {
 
 /**
  * WP 3.2 — the clickable "jump to turn" strip: one button per plotted TURN column (baseline / overflow
- * columns aren't turns, so they're skipped), evenly distributed so it aligns under the columns. Since
- * `@elabs-ai/components-charts` `BarChart` has no per-bar `onClick`, this is the columns' accessible click affordance:
- * clicking "N" reveals the chat and scrolls it to turn N. Renders nothing when there are no turns.
+ * columns aren't turns, so they're skipped), evenly distributed so it aligns under the columns.
+ * Clicking "N" reveals the chat and scrolls it to turn N. Renders nothing when there are no turns.
+ * It stays a visible, numbered strip because the turn number is the useful label here; it is NOT a
+ * workaround for a missing chart API (`BarChart` accepts `onDatapointClick` since v4).
  */
 function TurnJumpStrip({
   columns,
