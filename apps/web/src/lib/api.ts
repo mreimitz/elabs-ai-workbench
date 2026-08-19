@@ -90,6 +90,7 @@ import type {
   RunStartRequest,
   RunStartResponse,
   ScanComparison,
+  ScanSummary,
   Scenario,
   ScenarioInput,
   Skill,
@@ -587,8 +588,18 @@ export const deleteReviewRubric = (id: string): Promise<void> =>
 // web never redefines them. The provider API only ever returns `hasKey` (never the key value).
 
 /** All configured MCP servers (redacted — no secret values). Used by the Testing dashboard's
- *  filter-bar catalog (WP 2.2) alongside {@link listScenarios}/{@link listSuites}. */
-export const listServers = (): Promise<ServerConfig[]> => apiGet<ServerConfig[]>("/api/servers");
+ *  filter-bar catalog (WP 2.2) alongside {@link listScenarios}/{@link listSuites}. The optional
+ *  `signal` is ADDITIVE (every existing caller passes nothing) — it lets a hook abort the fetch when
+ *  its inputs change, the same contract {@link listIssues} and the metrics wrappers already offer. */
+export const listServers = (signal?: AbortSignal): Promise<ServerConfig[]> =>
+  apiGet<ServerConfig[]>("/api/servers", signal);
+
+/** Every scan summary — `GET /api/scans` (newest first, as the API returns it). `App.tsx` already
+ *  fetches this path inline for its app-wide `scans` state; this is the typed wrapper for callers
+ *  that need it on their own (the Dashboard Overview's attention queue when it is not handed the
+ *  app's copy). */
+export const listScans = (signal?: AbortSignal): Promise<ScanSummary[]> =>
+  apiGet<ScanSummary[]>("/api/scans", signal);
 
 /** All scenarios (the run harness — provider/model/params/allow-list/guardrails/profiles). */
 export const listScenarios = (): Promise<Scenario[]> => apiGet<Scenario[]>("/api/scenarios");
