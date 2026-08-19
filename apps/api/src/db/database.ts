@@ -1835,6 +1835,34 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
       }
     },
   },
+  {
+    // v58 — service tokens (roadmap/ci/ WP 1.1, D-C2): the brand-new `api_tokens` table backing the
+    // credential a headless caller (CI, the `mcpfp` CLI, an external agent on the MCP mount) presents
+    // instead of a browser session. DDL is IDENTICAL to schema.ts's baseline (the v40/…/v48 brand-new-
+    // table pattern — safe in both the baseline CREATE TABLE and this migration, with no "column
+    // doesn't exist yet" ordering hazard since the table is new and references nothing). `CREATE TABLE
+    // IF NOT EXISTS` makes this a no-op on a fresh DB (already created by the baseline) and additive on
+    // an upgrade path; there is no data to backfill (an instance that had no tokens still has none, and
+    // loopback keeps passing exactly as before — D-C2's posture is unchanged for a local browser).
+    // No FK, so nothing to rebuild and no foreign_key_check exposure. Bumps LATEST_SCHEMA_VERSION
+    // (auto-derived below) to 58.
+    version: 58,
+    up: (db) => {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS api_tokens (
+          id           TEXT PRIMARY KEY,
+          label        TEXT NOT NULL,
+          token_hash   TEXT NOT NULL UNIQUE,
+          token_prefix TEXT NOT NULL,
+          scopes_json  TEXT NOT NULL,
+          created_at   TEXT NOT NULL,
+          last_used_at TEXT,
+          expires_at   TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_api_tokens_created_at ON api_tokens(created_at DESC);
+      `);
+    },
+  },
 ];
 
 /** The baseline schema version: the current full schema (schema.ts + every migration step above). */

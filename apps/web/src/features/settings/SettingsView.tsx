@@ -155,6 +155,7 @@ import {
   updateProvider,
 } from "../../lib/api";
 import { FeaturesSection } from "./FeaturesSection";
+import { TokensSection } from "./TokensSection";
 import { notifyError } from "../../lib/notify";
 
 /* ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -174,6 +175,7 @@ const SETTINGS_SECTION_IDS = [
   "grading",
   "assistant",
   "github",
+  "tokens",
   "storage",
   "about",
 ] as const;
@@ -325,6 +327,31 @@ const SECTION_GROUPS: { label: string; sections: SectionDef[] }[] = [
   {
     label: "System",
     sections: [
+      {
+        // Service tokens (roadmap/ci/ WP 1.1) — machine-facing, so it sits with the other System
+        // panes rather than with the AI providers. It rides `/settings/:section`, adding NO new
+        // `<Route>`, so `ASSISTANT_ROUTE_MANIFEST` and the assistant-route-operability gate are
+        // untouched.
+        id: "tokens",
+        label: "API tokens",
+        icon: KeyRound,
+        keywords: [
+          "api token",
+          "service token",
+          "bearer",
+          "authorization",
+          "auth",
+          "ci",
+          "cli",
+          "mcpfp",
+          "headless",
+          "automation",
+          "scope",
+          "revoke",
+          "credential",
+          "remote access",
+        ],
+      },
       {
         id: "storage",
         label: "Storage",
@@ -658,6 +685,8 @@ export function SettingsDialog(props: {
                   <AssistantSection />
                 ) : active === "github" ? (
                   <GithubSection />
+                ) : active === "tokens" ? (
+                  <TokensSection />
                 ) : active === "storage" ? (
                   <StorageSection />
                 ) : (

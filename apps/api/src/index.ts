@@ -5,6 +5,10 @@ import { type GraderId, type HealthPayload } from "@mcp-token-footprint/shared";
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { registerAdvisorRoutes } from "./advisor/routes.js";
+import { registerApiTokenGuard } from "./api-tokens/guard.js";
+import { ApiTokenRepository } from "./api-tokens/repository.js";
+import { registerApiTokenRoutes } from "./api-tokens/routes.js";
+import { ApiTokenService } from "./api-tokens/service.js";
 import { AssistantAuthService } from "./assistant/auth-service.js";
 import {
   ClaudeOauthFlowManager,
@@ -340,6 +344,17 @@ const appSettings = new AppSettingsRepository(db);
 // curl would still start sessions and spend provider tokens.
 const featureFlags = new FeatureFlagsService(appSettings);
 registerFeatureRoutes(server, featureFlags);
+// Service tokens (roadmap/ci/ WP 1.1, D-C2) — the credential a headless caller (CI, the mcpfp CLI, an
+// external agent on the MCP mount) presents instead of a browser session. The guard is a root
+// `onRequest` hook, registered right AFTER the feature guard on purpose: a switched-off feature should
+// read as switched off (403 feature_disabled), not as an auth problem. Posture: loopback stays open
+// (the browser UI is unaffected), any non-loopback caller must present a valid bearer token, and
+// API_AUTH_REQUIRED=true extends that to loopback. There is deliberately NO feature flag over this —
+// an off-switch on an auth check is a foot-gun.
+const apiTokenRepository = new ApiTokenRepository(db);
+const apiTokenService = new ApiTokenService(apiTokenRepository);
+registerApiTokenGuard(server, apiTokenService, { authRequired: config.apiAuthRequired });
+registerApiTokenRoutes(server, apiTokenService);
 // Auto-Rating (WP 2.3, AR2/AR3/AR16) — the ONE judge resolution chain shared by ALL FIVE LLM graders
 // (outcome/trajectory judges + the three mandatory base-rating graders): Claude CLI (subscription, if
 // signed in) → configured provider judge → none. Built ONCE here and passed to every LLM grader so the

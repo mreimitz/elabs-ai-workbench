@@ -1293,6 +1293,29 @@ CREATE TABLE IF NOT EXISTS hub_session_summaries (
 );
 CREATE INDEX IF NOT EXISTS idx_hub_session_summaries_session ON hub_session_summaries(session_id, upto_seq DESC);
 
+-- Service tokens (roadmap/ci/ WP 1.1, D-C2) — the credential a headless caller (CI, the mcpfp CLI,
+-- an external agent on the MCP mount) presents instead of a browser session. Stored HASHED: the
+-- plaintext is returned exactly once by POST /api/tokens and is unrecoverable from this row.
+-- \`token_hash\` is the SHA-256 hex of the FULL plaintext (\`mcpfp_…\` marker included) and is UNIQUE, so
+-- authentication is a single indexed lookup rather than a scan-and-compare. A plain SHA-256 is
+-- deliberate: the input is a 256-bit random secret this app generated, not a human password, so a slow
+-- KDF would only add latency to the hot auth path (see API_TOKEN_HASH_ALGORITHM in packages/shared).
+-- \`token_prefix\` is display-only (\`mcpfp_ab12cd34…\`). \`scopes_json\` holds a JSON array of the frozen
+-- ApiTokenScope vocabulary (D-C4); its admitted values are validated by the shared zod schema at the
+-- app layer, not by a CHECK (a JSON array can't carry one). No FK: a token belongs to the instance,
+-- not to any row in it.
+CREATE TABLE IF NOT EXISTS api_tokens (
+  id           TEXT PRIMARY KEY,
+  label        TEXT NOT NULL,
+  token_hash   TEXT NOT NULL UNIQUE,
+  token_prefix TEXT NOT NULL,
+  scopes_json  TEXT NOT NULL,
+  created_at   TEXT NOT NULL,
+  last_used_at TEXT,
+  expires_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_api_tokens_created_at ON api_tokens(created_at DESC);
+
 -- Observability — full-text search over run content (WP1.3, D-OB16). DERIVED state: the FTS5 index +
 -- its docmap are rebuildable from runs/run_steps/run_grades (see observability/search.ts for the DDL,
 -- which is the single source of truth reused by the v33 migration + reindex). Placed LAST so the

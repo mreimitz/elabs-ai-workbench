@@ -175,3 +175,61 @@ test("a corrupt stored blob resolves to ENABLED rather than taking the feature d
   assert.equal(h.features.refresh().assistant, true);
   assert.equal((await fetch(`${h.baseUrl}/api/assistant/threads`)).status, 200);
 });
+
+// ── Path shapes — a percent-encoded path must not slip past the feature guard ─────────────────────
+//
+// Same defect class as the service-token guard (see `api-tokens-guard.test.ts`): Fastify's router
+// percent-decodes before matching while `request.url` stays raw, so a guard that prefix-matched the
+// raw string read `/%61pi/assistant/threads` (`%61` = `a`) as "no feature owns this" and waved it
+// through to the real handler. That defeats this guard's entire purpose — "a stale tab, a bookmarked
+// deep link, or a direct curl" could keep driving a switched-off feature and keep spending on it.
+//
+// Both halves are asserted: the status, AND that the request reached no application handler.
+
+test("a percent-encoded path cannot slip past the feature guard while the feature is OFF", async () => {
+  const h = await makeApp();
+  h.features.setFlags({ assistant: false });
+
+  for (const path of [
+    "/api/assistant/threads", // the plain form — the baseline
+    "/%61pi/assistant/threads", // %61 = 'a' — the bypass this pins closed
+    "/api/%61ssistant/threads", // an encoded byte in a later segment
+    "/%61pi/%68ub/sessions", // several encoded segments at once
+    "/api/hub/sessions?limit=5", // a query string never hid the path, and still doesn't
+  ]) {
+    const response = await fetch(`${h.baseUrl}${path}`);
+    assert.equal(response.status, 403, path);
+    const body = (await response.json()) as { error: string; code?: string };
+    assert.equal(body.code, FEATURE_DISABLED_ERROR_CODE, path);
+  }
+});
+
+test("normalization does not make the feature guard block routes no feature owns", async () => {
+  const h = await makeApp();
+  h.features.setFlags({ assistant: false });
+
+  // An unrelated route stays reachable in BOTH spellings — the hardening must not turn into a
+  // blanket refusal of anything containing an escape.
+  for (const path of ["/api/scans", "/%61pi/scans"]) {
+    const response = await fetch(`${h.baseUrl}${path}`);
+    assert.equal(response.status, 200, path);
+    assert.deepEqual(await response.json(), { ok: true }, path);
+  }
+
+  // …and the flags endpoint itself is still reachable however it is spelled, so the switch can
+  // always be flipped back on.
+  assert.equal((await fetch(`${h.baseUrl}/%61pi/features`)).status, 200);
+});
+
+test("blockingFeature matches the decoded path directly (the unit behind the two tests above)", async () => {
+  const h = await makeApp();
+  h.features.setFlags({ assistant: false });
+
+  assert.equal(h.features.blockingFeature("/api/assistant/x")?.id, "assistant");
+  assert.equal(h.features.blockingFeature("/%61pi/assistant/x")?.id, "assistant");
+  assert.equal(h.features.blockingFeature("/api/%61ssistant/x")?.id, "assistant");
+  assert.equal(h.features.blockingFeature("/api/scans"), undefined);
+  assert.equal(h.features.blockingFeature("/%61pi/scans"), undefined);
+  // A malformed escape decodes to nothing; it owns no feature and Fastify 400s it before the hook.
+  assert.equal(h.features.blockingFeature("/%zz/api/assistant/x"), undefined);
+});
