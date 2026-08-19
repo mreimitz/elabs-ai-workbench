@@ -110,6 +110,46 @@ wp/ci/<id>`.
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
 
+- **2026-08-19 · D-C5 / D-C6 / D-C7 locked at the WP 1.2 kickoff** (the `mcpfp` CLI). Full text +
+  the design they bind: [`wp-1.2-mcpfp-cli.md`](./wp-1.2-mcpfp-cli.md). Declared in
+  `packages/shared/src/cli-contract.ts` and pinned by `apps/cli/test/*.test.ts`.
+  - **D-C5 — argument parsing has no dependency.** `node:util`'s built-in `parseArgs`; HTTP is
+    global `fetch`. A four-command CLI is not a reason to take on `commander`/`yargs`, so
+    **`apps/cli`'s only runtime dependency is `@mcp-token-footprint/shared`** — no MCP SDK, no
+    `better-sqlite3`, no `js-tiktoken`, no `apps/api` import. A test reads the manifest AND scans
+    every import in `apps/cli/src` so the invariant survives a future convenience.
+    _Implementation note:_ `pnpm-lock.yaml` gains **no package** — its `packages:`/`snapshots:`
+    sections are byte-identical. It does gain the 16-line `apps/cli` **importer** entry, which is
+    unavoidable for any new workspace package and is *required*: the `Dockerfile` (twice) and
+    `.github/workflows/mcp-self-scan.yml` run `pnpm install --frozen-lockfile`, which refuses to
+    install when a workspace `package.json` is absent from the lockfile (verified: reverting the
+    entry produces `ERR_PNPM_OUTDATED_LOCKFILE`). The WP spec's "the lockfile is unchanged" is met
+    in the sense that matters — nothing new is resolved or downloaded.
+  - **D-C6 — stdout is the payload, stderr is the narration.** Everything a machine consumes (the
+    JSON envelope, the API's markdown, the human table) goes to stdout or to `--output`; every
+    progress line, warning and error goes to stderr, so
+    `mcpfp report scan <id> --format json > report.json` is a byte-exact parseable file.
+    Structurally guaranteed rather than left to each command: there is one `Emitter` with
+    `payload`/`narrate`/`warn`/`fail`, and every string it writes passes a redaction pass that masks
+    anything token-shaped — including an API error body that echoed the credential back.
+  - **D-C7 — the exit codes are reserved now, not later.** `0` success · `1` **assertion failure,
+    reserved for WP 1.3 and emitted by nothing in WP 1.2** (a test asserts no source line even
+    references the constant) · `2` execution/config/transport error. A non-2xx API response is a
+    `2`, not a `1`; so is a scan whose `status` comes back `failed`, so a CI step cannot go green
+    against an MCP server that could not be reached.
+    _Implementation note (matters for WP 2.3's workflow):_ **`pnpm exec` and `pnpm --silent` both
+    collapse a non-zero child exit to `1`** (measured on pnpm 9.15.4) — i.e. straight onto the code
+    reserved for assertions. The root convenience script therefore uses
+    `pnpm --filter … run mcpfp --` (which preserves `2`), and the documented CI invocation is
+    `pnpm build` once, then `node apps/cli/dist/index.js …` — clean stdout *and* honest exit codes.
+    `pnpm mcpfp` stays a dev convenience: pnpm's own banner lands on **stdout**, so it must not be
+    used with `--format json > file`. Documented in `user-guide/22-mcpfp-cli.md`, `CLAUDE.md` §4 and
+    `mcpfp help`.
+
+  _Rationale:_ WP 1.3's `assert` and WP 2.2's PR artifact both extend the WP 1.2 envelope rather
+  than inventing a second one, so the envelope + exit codes had to be a contract in
+  `packages/shared` from the first command, not a shape that emerges later.
+
 - **2026-08-19 · D-C1 / D-C2 / D-C4 locked at Phase 1 kickoff** (owner, at the WP 1.1 kickoff).
   Full text + the design they bind: [`wp-1.1-service-tokens.md`](./wp-1.1-service-tokens.md).
   - **D-C1 — CLI packaging:** `mcpfp` is a new workspace package **`apps/cli`** (the README's own

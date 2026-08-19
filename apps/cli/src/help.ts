@@ -53,6 +53,10 @@ Output
     mcpfp report scan <id> --format json > report.json
   writes a file containing nothing but the JSON envelope.
 
+  In CI, invoke the built entry point (\`node apps/cli/dist/index.js …\`) rather than the
+  \`pnpm mcpfp\` convenience script: pnpm prints its own banner on stdout, and silencing it with
+  \`--silent\` makes pnpm collapse every non-zero exit to 1 — the code reserved for assertions.
+
 Exit codes
   0  success
   1  assertion failure — reserved for \`mcpfp assert\` (WP 1.3); nothing in this build emits it
