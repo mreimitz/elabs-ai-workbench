@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { ShieldAlert } from "lucide-react";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import type { RunFilter, RunMetricsSeries, StopReasonCode } from "@mcp-token-footprint/shared";
+import { chartSeriesColor } from "../../../lib/chart-colors";
 import { formatNumber } from "../../../lib/format";
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { DrillList } from "./DrillList";
@@ -63,14 +64,14 @@ export function GuardrailStopsPanel({
             >
               <Grid horizontal />
               {codes.map((code, i) => (
-                <Bar key={code} dataKey={code} fill={`var(--chart-${(i % 5) + 1})`} />
+                <Bar key={code} dataKey={code} fill={chartSeriesColor(i)} />
               ))}
               <BarXAxis maxLabels={8} />
               <ChartTooltip
                 showDatePill={false}
                 rows={(point) =>
                   codes.map((code, i) => ({
-                    color: `var(--chart-${(i % 5) + 1})`,
+                    color: chartSeriesColor(i),
                     label: labels[code] ?? code,
                     value: formatNumber(Number(point[code] ?? 0)),
                   }))
