@@ -10,12 +10,12 @@ import type { SuiteMatrixRef } from "./SuiteMatrix";
  *
  * Two defects this locks, neither of which the existing suites could see:
  *
- * 1. **Colours repeated after five series.** Both views built `var(--chart-${(i % 5) + 1})` against
- *    a twelve-token ramp, so the 6th environment was painted the same colour as the 1st — in views
- *    whose entire job is telling environments apart.
+ * 1. **Colours repeated after five series.** Both views built their own five-slot token cycle
+ *    against a twelve-token ramp, so the 6th environment was painted the same colour as the 1st —
+ *    in views whose entire job is telling environments apart.
  * 2. **The legend swatches painted only by borrowed luck.** They were a *template-literal* Tailwind
- *    class, `` `bg-chart-${n}` ``. Tailwind extracts class names STATICALLY, so it never sees that
- *    string; the utility exists only because some other file spells the literal. Today all twelve
+ *    class built from the series index. Tailwind extracts class names STATICALLY, so it never sees
+ *    that string; the utility exists only because some other file spells the literal. Today all twelve
  *    survive because `@elabs-ai/components-ui`'s dist spells `bg-chart-1` … `bg-chart-12` and
  *    `app.css` `@source`s it — a guarantee held by a vendored package, not by this app, and one an
  *    upstream release can withdraw silently. Both legends now paint from an inline `var(--chart-N)`

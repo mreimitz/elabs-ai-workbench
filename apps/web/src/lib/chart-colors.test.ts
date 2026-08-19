@@ -92,8 +92,9 @@ describe("chartSwatchStyle", () => {
   });
 
   test("covers the whole ramp, including the slots past the old five-colour cycle", () => {
-    // Tailwind extracts class names statically, so a `bg-chart-${n}` class is invisible to it and
-    // paints only while some other file spells that literal — an inline style needs no such luck.
+    // Tailwind extracts class names statically, so an index-built `bg-chart-N` class is invisible
+    // to it and paints only while some other file spells that literal — an inline style needs no
+    // such luck.
     expect(chartSwatchStyle(5)).toEqual({ backgroundColor: "var(--chart-6)" });
     expect(chartSwatchStyle(11)).toEqual({ backgroundColor: "var(--chart-12)" });
   });
