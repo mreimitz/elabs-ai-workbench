@@ -1,8 +1,9 @@
-import { WORKBENCH_MCP_MOUNT_PATH } from "@mcp-token-footprint/shared";
+import { WORKBENCH_MCP_LLMS_TXT_PATH, WORKBENCH_MCP_MOUNT_PATH } from "@mcp-token-footprint/shared";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { buildWorkbenchLlmsTxt, resolveDocumentOrigin } from "./llms-txt.js";
 import { createWorkbenchMcpServer } from "./server.js";
-import type { WorkbenchMcpDeps } from "./tools.js";
+import { buildWorkbenchToolDefinitions, type WorkbenchMcpDeps } from "./tools.js";
 
 // ==================================================================================================
 // Workbench MCP server — the Fastify mount (D-MCP1)
@@ -83,4 +84,24 @@ export function registerWorkbenchMcpRoutes(app: FastifyInstance, deps: Workbench
 
   app.get(WORKBENCH_MCP_MOUNT_PATH, methodNotAllowed);
   app.delete(WORKBENCH_MCP_MOUNT_PATH, methodNotAllowed);
+
+  // ── The agent-onboarding doc (WP M.4) ────────────────────────────────────────────────────────
+  // `llms.txt`-style plain text at `/api/mcp/llms.txt`, so a host that finds the mount can also find
+  // out what is behind it without a browser. It sits UNDER the mount path on purpose: the
+  // `mcp_server` feature's `/api/mcp` prefix therefore covers it with no second declaration, so the
+  // doc disappears with the endpoint it documents (proven by a test, not assumed).
+  //
+  // The tool list is rebuilt from `buildWorkbenchToolDefinitions` per request — the same definitions
+  // the MCP server registers, so name and description can never drift from `tools/list`. Building
+  // them is ~20 closures over repository handles that already exist; nothing here touches the DB.
+  app.get(WORKBENCH_MCP_LLMS_TXT_PATH, async (request: FastifyRequest, reply: FastifyReply) => {
+    const document = buildWorkbenchLlmsTxt({
+      origin: resolveDocumentOrigin(request.headers.host, request.protocol === "https"),
+      tools: buildWorkbenchToolDefinitions(deps).map((definition) => ({
+        name: definition.name,
+        description: definition.description,
+      })),
+    });
+    return reply.type("text/plain; charset=utf-8").send(document);
+  });
 }
