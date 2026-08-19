@@ -5,8 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@elabs-ai/components-ui";
 import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { formatDuration } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
-import { DrillList } from "./DrillList";
-import { buildDurationRows } from "./metrics-derive";
+import { buildDurationRows, datapointBucketStart } from "./metrics-derive";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -14,6 +13,10 @@ import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
  * GOTCHA) — `rows[].x` from `buildDurationRows`/`pivotToRows` already are. A bucket that fell back
  * to wall-clock `totalDurationMs` (no `activeDurationMs` recorded) is MARKED via an inline note,
  * never silently hidden.
+ *
+ * Drill-down: activating a p50 or p95 point (pointer or keyboard) opens the runs feed scoped to
+ * exactly that bucket's window. Both series in a bucket resolve to the same target — the percentile
+ * is a summary OF those runs, not a filter over them.
  */
 export function DurationPanel({
   series,
@@ -27,22 +30,6 @@ export function DurationPanel({
   onDrill: (filter: RunFilter) => void;
 }) {
   const { rows, fallbackUsed, hasData } = useMemo(() => buildDurationRows(series), [series]);
-
-  const drillRows = useMemo(
-    () =>
-      rows.map((row) => {
-        const { from, to } = bucketRangeIso(row.bucketStart, bucket);
-        const p50 = typeof row.p50 === "number" ? row.p50 : undefined;
-        const p95 = typeof row.p95 === "number" ? row.p95 : undefined;
-        return {
-          key: row.bucketStart,
-          label: new Date(row.bucketStart).toLocaleString(),
-          value: `p50 ${p50 != null ? formatDuration(p50) : "n/a"} · p95 ${p95 != null ? formatDuration(p95) : "n/a"}`,
-          onOpen: () => onDrill(drillDownFilter(controls, { dateFrom: from, dateTo: to })),
-        };
-      }),
-    [rows, bucket, controls, onDrill],
-  );
 
   return (
     <ChartPanel
@@ -68,6 +55,12 @@ export function DurationPanel({
               aspectRatio="auto"
               className="h-full w-full"
               accessibleLabel="p50 and p95 duration over time"
+              onDatapointClick={(point) => {
+                const bucketStart = datapointBucketStart(point.datum);
+                if (!bucketStart) return;
+                const { from, to } = bucketRangeIso(bucketStart, bucket);
+                onDrill(drillDownFilter(controls, { dateFrom: from, dateTo: to }));
+              }}
             >
               <Grid horizontal />
               <Line dataKey="p50" stroke="var(--chart-1)" />
@@ -89,7 +82,6 @@ export function DurationPanel({
               />
             </LineChart>
           </ChartBox>
-          <DrillList rows={drillRows} />
         </>
       ) : (
         <PanelEmptyState

@@ -13,6 +13,12 @@ import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
  * `GET /api/metrics/scans`). This is server FOOTPRINT data, not run data — its natural drill target
  * is the server detail page (`/servers/:id`, the same route `ScansTab.tsx`'s own rows open), not the
  * runs feed a `RunFilter` would scope.
+ *
+ * Drill-down: activating any point on a server's line (pointer or keyboard) opens THAT server's
+ * detail page — the identical destination the server's row below composes, so the two entry points
+ * can never disagree. The per-server list stays: it is the panel's legend (the only place a
+ * server's NAME and its latest footprint are readable without hovering a line keyed by an opaque
+ * server id) and it carries one row per server, not one per plotted point.
  */
 export function ScansStripPanel({
   series,
@@ -22,6 +28,13 @@ export function ScansStripPanel({
   onOpenServer: (serverId: string) => void;
 }) {
   const { rows, series: perServer, hasData } = useMemo(() => buildScansStripResult(series), [series]);
+
+  /** serverId → display name, for the chart's accessible datapoint names (a `Line`'s `dataKey` here
+   *  is an opaque server id, which is not a usable name for a keyboard/screen-reader user). */
+  const serverNames = useMemo(
+    () => new Map(perServer.map((s) => [s.serverId, s.serverName])),
+    [perServer],
+  );
 
   const drillRows = useMemo(
     () =>
@@ -49,6 +62,18 @@ export function ScansStripPanel({
               aspectRatio="auto"
               className="h-full w-full"
               accessibleLabel="Server footprint tokens over time"
+              onDatapointClick={(point) => {
+                const serverId = String(point.seriesKey ?? "");
+                if (!serverNames.has(serverId)) return;
+                onOpenServer(serverId);
+              }}
+              datapointLabel={(point) => {
+                const serverId = String(point.seriesKey ?? "");
+                const name = serverNames.get(serverId) ?? serverId;
+                const when =
+                  point.category instanceof Date ? point.category.toLocaleDateString() : String(point.category ?? "");
+                return `${name}, ${when}: ${formatNumber(Number(point.value ?? 0))} tokens`;
+              }}
             >
               <Grid horizontal />
               {perServer.map((s, i) => (

@@ -1,12 +1,12 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { Coins, ExternalLink } from "lucide-react";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import { Button, Separator, Text } from "@elabs-ai/components-ui";
-import type { RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
+import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatCostUsd, formatNumber } from "../../../lib/format";
-import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
-import { buildCostResult } from "./metrics-derive";
+import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
+import { buildCostResult, datapointBucketStart } from "./metrics-derive";
 import { ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -15,19 +15,35 @@ import { ChartPanel, PanelEmptyState } from "./panel-shell";
  * stacked) bars, same reasoning as `TokensPanel`. A non-dollar cost basis is not
  * a dollar figure at all, so it gets its own separate mini chart/total rather than being folded into
  * the `$` axis — mixing the two units into one number would be a worse blend than any capability-
- * class merge. Drill-down mirrors `TokensPanel`: cost basis isn't a `RunFilter` dimension, so the
- * action is ONE "Open runs" affordance for the panel's window/filter, not per-class buttons.
+ * class merge.
+ *
+ * Drill-down mirrors `TokensPanel` exactly: a cost basis is not a `RunFilter` dimension, but a bar's
+ * BUCKET is — so activating a bar (pointer or keyboard) opens the runs feed scoped to that bucket's
+ * window via the shared `drillDownFilter` + `bucketRangeIso` path, and the header keeps ONE
+ * whole-window "Open runs" affordance. No per-class buttons, and no per-class filter is invented.
  */
 export function CostPanel({
   series,
   controls,
+  bucket,
   onDrill,
 }: {
   series: RunMetricsSeries[];
   controls: TestingDashboardControls;
+  bucket: MetricsBucket;
   onDrill: (filter: RunFilter) => void;
 }) {
   const { costRows, costClasses, hasData } = useMemo(() => buildCostResult(series), [series]);
+
+  const drillToBucket = useCallback(
+    (datum: unknown) => {
+      const bucketStart = datapointBucketStart(datum);
+      if (!bucketStart) return;
+      const { from, to } = bucketRangeIso(bucketStart, bucket);
+      onDrill(drillDownFilter(controls, { dateFrom: from, dateTo: to }));
+    },
+    [bucket, controls, onDrill],
+  );
 
   const costChartRows = costRows.map((r) => ({ ...r, bucketLabel: new Date(r.bucketStart).toLocaleDateString() }));
 
@@ -61,6 +77,7 @@ export function CostPanel({
                   aspectRatio="auto"
                   className="h-full w-full"
                   accessibleLabel="Cost by basis over time"
+                  onDatapointClick={(point) => drillToBucket(point.datum)}
                 >
                   <Grid horizontal />
                   {costClasses.map((c, i) => (

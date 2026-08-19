@@ -3,9 +3,12 @@ import { Star } from "lucide-react";
 import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
 import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { formatPercent } from "../../../lib/format";
-import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
-import { DrillList } from "./DrillList";
-import { buildScoreTrendRows } from "./metrics-derive";
+import {
+  bucketRangeIso,
+  drillDownFilter,
+  type TestingDashboardControls,
+} from "./dashboard-url-state";
+import { buildScoreTrendRows, datapointBucketStart } from "./metrics-derive";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -14,6 +17,9 @@ import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
  * server-side — the SAME selection Benchmarks' suite analytics uses). A grader Select was in the
  * original spec sketch but the metrics contract has no per-grader parameter for this measure, so a
  * picker with no effect would be a dead control (interaction-guidelines.md) — this note replaces it.
+ *
+ * Drill-down: activating a point (pointer or keyboard) opens the runs feed scoped to exactly that
+ * bucket's window — the graded runs the mean was computed over.
  */
 export function ScoreTrendPanel({
   series,
@@ -28,20 +34,6 @@ export function ScoreTrendPanel({
 }) {
   const { rows, hasData } = useMemo(() => buildScoreTrendRows(series), [series]);
 
-  const drillRows = useMemo(
-    () =>
-      rows.map((row) => {
-        const { from, to } = bucketRangeIso(row.bucketStart, bucket);
-        return {
-          key: row.bucketStart,
-          label: new Date(row.bucketStart).toLocaleString(),
-          value: formatPercent(typeof row.meanScore === "number" ? row.meanScore * 100 : 0),
-          onOpen: () => onDrill(drillDownFilter(controls, { dateFrom: from, dateTo: to })),
-        };
-      }),
-    [rows, bucket, controls, onDrill],
-  );
-
   return (
     <ChartPanel
       title="Score trend"
@@ -49,31 +41,35 @@ export function ScoreTrendPanel({
       icon={<Star aria-hidden className="size-4" />}
     >
       {hasData ? (
-        <>
-          <ChartBox>
-            <LineChart
-              data={rows as unknown as Record<string, unknown>[]}
-              xDataKey="x"
-              aspectRatio="auto"
-              className="h-full w-full"
-              accessibleLabel="Mean grade over time"
-            >
-              <Grid horizontal />
-              <Line dataKey="meanScore" stroke="var(--chart-1)" showMarkers />
-              <XAxis />
-              <ChartTooltip
-                rows={(point) => [
-                  {
-                    color: "var(--chart-1)",
-                    label: "Mean score",
-                    value: point.meanScore != null ? formatPercent(Number(point.meanScore) * 100) : "n/a",
-                  },
-                ]}
-              />
-            </LineChart>
-          </ChartBox>
-          <DrillList rows={drillRows} />
-        </>
+        <ChartBox>
+          <LineChart
+            data={rows as unknown as Record<string, unknown>[]}
+            xDataKey="x"
+            aspectRatio="auto"
+            className="h-full w-full"
+            accessibleLabel="Mean grade over time"
+            onDatapointClick={(point) => {
+              const bucketStart = datapointBucketStart(point.datum);
+              if (!bucketStart) return;
+              const { from, to } = bucketRangeIso(bucketStart, bucket);
+              onDrill(drillDownFilter(controls, { dateFrom: from, dateTo: to }));
+            }}
+          >
+            <Grid horizontal />
+            <Line dataKey="meanScore" stroke="var(--chart-1)" showMarkers />
+            <XAxis />
+            <ChartTooltip
+              rows={(point) => [
+                {
+                  color: "var(--chart-1)",
+                  label: "Mean score",
+                  value:
+                    point.meanScore != null ? formatPercent(Number(point.meanScore) * 100) : "n/a",
+                },
+              ]}
+            />
+          </LineChart>
+        </ChartBox>
       ) : (
         <PanelEmptyState
           title="No graded runs"
