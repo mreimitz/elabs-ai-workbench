@@ -76,6 +76,14 @@ included in the result).
 footprint budget** (D-MCP5) — doubling as the first end-to-end proof of scan-over-own-mount.
 Docs cross-link from README/CLAUDE.md.
 
+Where it landed: `GET /api/mcp/llms.txt` (rendered by `apps/api/src/mcp-server/llms-txt.ts` from the
+registered definitions + `WORKBENCH_MCP_TOOL_FAMILIES`, so the doc cannot drift from `tools/list`);
+[`user-guide/20-workbench-mcp-server.md`](../../user-guide/20-workbench-mcp-server.md); the gate is
+`pnpm mcp:self-scan` (`apps/api/src/mcp-server/self-scan{,-cli}.ts` → gitignored
+`.artifacts/mcp-self-scan/footprint.{json,md}`, exit 1 over budget / 2 on failure), run in CI by
+`.github/workflows/mcp-self-scan.yml` and in `pnpm test` by
+`apps/api/test/workbench-mcp-self-scan.test.ts`.
+
 ## Dependencies & sequencing
 
 WP M.1 has **no dependency on Phase 1** under D-MCP2 (localhost trust) — it can run first if

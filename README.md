@@ -152,6 +152,19 @@ directory you can browse, reuse, and cost-track.
 
 ![Agents & Crews: 9 saved agents organized into 10 crews, each with its model, tools, skills, and run history.](docs/screenshots/hub-agents.png)
 
+### 10 · The bench itself, MCP-operable
+
+The workbench serves its own **read-only MCP server** at `/api/mcp` (streamable HTTP), so an outside
+agent — a Claude Code session, a Cursor window, a CI job — reads what the bench has already measured
+without a browser: servers and scans with per-tool footprints, runs with their grades and reports,
+skills with their footprint and security surface, suites, collections and compatibility. It is
+read-only, returns no secret values, and lives behind a Settings › Features switch. Point a host at
+`http://127.0.0.1:8080/api/mcp`, or read the generated usage page it serves at
+[`/api/mcp/llms.txt`](http://127.0.0.1:8080/api/mcp/llms.txt); the owner-facing walkthrough is
+[Workbench agent playbook](user-guide/20-workbench-mcp-server.md). We hold it to our own standard:
+`pnpm mcp:self-scan` points the app's discovery scanner at its own mount and fails if the tool
+definitions exceed their token budget (currently **21 tools · 2,224 tokens** against a 3,000 budget).
+
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](user-guide/README.md) for the full picture.
 
