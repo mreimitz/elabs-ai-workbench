@@ -1,8 +1,9 @@
-# 22. The `mcpfp` command line — scans and reports from a terminal
+# 22. The `mcpfp` command line — scans, reports and build gates from a terminal
 
 Everything the workbench measures is reachable from a browser. This page is about doing the same
-things **from a terminal or a build pipeline**: run a scan, pull a report, list what is registered —
-without clicking anything, and with output a script can read.
+things **from a terminal or a build pipeline**: run a scan, check it against rules you wrote down,
+pull a report, list what is registered — without clicking anything, and with output a script can
+read.
 
 `mcpfp` is a **client**. It does not connect to your MCP servers, it does not read your database,
 and it holds no credentials of its own beyond the one token you hand it. It talks to a **running
@@ -93,6 +94,7 @@ Which permission a command needs:
 | Command | Permission |
 | --- | --- |
 | `scan` | **Run scans** (plus **Read**, if you pass a server *name* rather than an id) |
+| `assert` | **Run scans** — see the note under [`assert`](#assert-file--fail-the-build-when-the-footprint-moves); it only reads, but this version decides permissions by request type |
 | everything else | **Read** |
 
 Three things `mcpfp` does with your token, deliberately:
@@ -145,6 +147,132 @@ number is worse than not scanning.
 cannot go green against a server that could not be reached.
 
 Formats: `human` (default), `json`.
+
+### `assert [file]` — fail the build when the footprint moves
+
+This is the one that turns a measurement into a **gate**. You write down what you consider
+acceptable, `mcpfp assert` asks the app whether the latest scan still meets it, and the exit code
+tells your pipeline what to do.
+
+```bash
+node apps/cli/dist/index.js scan   "Everything (demo)"   # measure it now
+node apps/cli/dist/index.js assert                       # then check it against your rules
+```
+
+Those two are deliberately separate commands. **`assert` never runs a scan** — it judges a
+measurement the app already holds. That is what keeps the exit codes honest: a server that could not
+be reached fails the *scan* step with code 2, rather than quietly turning into "the gate says no".
+
+#### The file
+
+`mcpfp assert` looks for **`mcpfp.assert.json`**, starting in the current folder and walking up until
+it finds one — so it works from any subfolder of your repository. Name a different file as an
+argument (`mcpfp assert gates/footprint.json`) and that one is used instead. Finding nothing is an
+error, never a silent pass.
+
+A worked example, also in the repository as
+[`mcpfp.assert.example.json`](../mcpfp.assert.example.json):
+
+```json
+{
+  "version": 1,
+  "target": { "server": "Everything (demo)" },
+  "baseline": "previous",
+  "rules": [
+    { "rule": "max-server-tokens", "max": 3000 },
+    { "rule": "max-tool-count", "max": 30 },
+    { "rule": "max-tool-tokens", "max": 400 },
+    { "rule": "max-tool-tokens", "max": 900, "tool": "search_issues" },
+    { "rule": "no-new-tools" },
+    { "rule": "no-removed-tools" },
+    { "rule": "max-scan-delta", "maxTokens": 250, "maxPercent": 10 }
+  ]
+}
+```
+
+- **`version`** must be `1`. A file written for a newer version is refused with a sentence naming
+  both, rather than half-read.
+- **`target`** is either `{ "server": … }` (a server id or its exact name — the newest completed scan
+  is used) or `{ "scan": "<scanId>" }`. Not both.
+- **`baseline`** is optional and only consulted by the rules that need one: `"previous"` means "the
+  scan before this one, of the same server", or you can name an exact scan id.
+- **Every key is checked.** A misspelled key is an error naming the field — never a rule that
+  silently disappears from a gate you believe is protecting you.
+
+Unlike `mcpfp.config.json`, this file carries **no credential** — commit it. It is the record of what
+your team agreed the footprint may cost, and it belongs next to the code it protects.
+
+#### The rules
+
+| Rule | What it checks | Needs a baseline |
+| --- | --- | --- |
+| `max-server-tokens` | The whole server's tool definitions cost at most `max` tokens. | no |
+| `max-tool-tokens` | Every tool costs at most `max` tokens. With `tool`, only that one — and if that tool is **missing**, the rule fails. | no |
+| `max-tool-count` | The server exposes at most `max` tools. | no |
+| `no-new-tools` | No tool appeared that the baseline did not have. | yes |
+| `no-removed-tools` | No tool the baseline had has disappeared. | yes |
+| `max-scan-delta` | The change against the baseline stays within `maxTokens` and/or `maxPercent`. Both are **absolute**, so a large drop fails too. | yes |
+
+Every rule is evaluated, every time — you get the full list of problems in one run, not one problem
+per round trip.
+
+#### What it prints
+
+```
+Server    Everything (demo) (JS8YDxdw9pvo3B1hS-keH)
+Scan      r-3ZMS8fNiNfoBu6O0Qfs — 2026-08-19T20:25:56.402Z
+Baseline  qN1p2LmT4vQ8sWx0aBcDe — 2026-08-18T09:12:41.008Z (asked for "previous")
+
+PASS  max-server-tokens  Server tokens 1,729 within budget 3,000.
+PASS  max-tool-count     13 tools within the limit of 30.
+FAIL  max-tool-tokens    1 of 13 tools exceed the 200-token budget.
+        gzip-file-as-resource — 249 > 200
+PASS  no-new-tools       No tools were added against the baseline.
+PASS  no-removed-tools   No tools were removed against the baseline.
+PASS  max-scan-delta     Scan delta +12 tokens (+0.7%) vs baseline is within the allowance.
+
+5 passed · 1 failed · 0 skipped
+```
+
+Note the **Baseline** line. You asked for `"previous"`; the app tells you the one concrete scan it
+actually compared against, with its timestamp. That is what makes a stored result reproducible — you
+can re-run the same comparison later by naming that id.
+
+Formats: `human` (default), `json`. The JSON form is the same envelope every other command uses, with
+the full report in `data` — including each rule's `observed`, `limit` and itemized `details`.
+
+#### When a rule cannot be evaluated
+
+The three cases are deliberately **not** the same outcome, because two of them mean your gate did not
+actually check anything:
+
+| Situation | What happens | Exit |
+| --- | --- | --- |
+| This is the server's **first** scan, so there is nothing earlier to compare against. | The baseline rules report **SKIP** with a reason, and a warning naming each one goes to standard error. | **0** — a first run does not fail a build for having no history. |
+| You **named** a baseline that does not resolve: an unknown id, a scan of a different server, a failed scan. | An error naming the problem. | **2** — a typo must never quietly degrade into the case above. |
+| The two scans are **not on the same scale** — a different token profile or counting method, where every difference would read as zero. | An error naming both profiles and both counting versions. | **2** — a `max-scan-delta` measured against a fake zero would pass every single time. |
+
+The `--quiet` flag does **not** hide the skip warnings. "Be less chatty" must not be able to hide
+"this rule did not actually run".
+
+#### Overriding the file from the command line
+
+```bash
+mcpfp assert --scan <scanId>            # assert this exact scan, not the newest
+mcpfp assert --server "Other server"    # assert a different server's newest scan
+mcpfp assert --baseline <scanId>        # compare against this exact scan
+mcpfp assert --file gates/strict.json   # same as passing the path as an argument
+```
+
+`--server` and `--scan` together is an error — they name two different targets.
+
+#### Permissions
+
+Against a workbench on the same machine you need no token at all. A **remote** workbench needs a
+token with an **execute** permission (**Run scans** is the natural one — a footprint pipeline already
+holds it to run the scan this checks). This is because the check is submitted as a POST, and this
+version of the workbench decides permissions by request type rather than per endpoint; a finer
+mapping is planned.
 
 ### `report <what>` — pull a report the app already composes
 
@@ -217,12 +345,14 @@ node apps/cli/dist/index.js report scan <scanId> --format json > report.json
 
 | Code | Meaning |
 | --- | --- |
-| **0** | It did what you asked. |
-| **1** | **An assertion failed.** Reserved for `mcpfp assert`, which is not built yet — nothing in this version returns it. |
-| **2** | It could not do what you asked: bad options, an unreadable config file, an unreachable workbench, a refused request, a scan that failed. |
+| **0** | It did what you asked. For `assert`: every rule passed. A rule that could not be evaluated yet is a loud SKIP, and still a 0. |
+| **1** | **An assertion failed.** Only `mcpfp assert` returns this — no other command can. |
+| **2** | It could not do what you asked: bad options, an unreadable config or gate file, an unreachable workbench, a refused request, a scan that failed, a baseline that could not be resolved. |
 
 The distinction between **1** and **2** is the one that matters in a pipeline: "the check said no" and
-"the check could not run" are different problems, and you want to be able to tell them apart.
+"the check could not run" are different problems, and you want to be able to tell them apart. That is
+why an unreachable workbench, a broken gate file and an unusable baseline are all **2** — none of
+them is evidence that your footprint is fine.
 
 ## When something goes wrong
 
@@ -241,16 +371,17 @@ The distinction between **1** and **2** is the one that matters in a pipeline: "
 
 ## What is not built yet
 
-This is the first version of the command line. Three planned pieces are not in it, and `mcpfp` will
-tell you it does not know the command rather than pretending:
+Two planned pieces are not in it, and `mcpfp` will tell you it does not know the command rather than
+pretending:
 
-- **`mcpfp assert`** — a versioned assertions file (max tokens per server or tool, no new or removed
-  tools, a maximum change against a baseline) evaluated by the app and failing the build with exit
-  code 1. *(Work package 1.3.)*
 - **`mcpfp suite run`** — trigger a suite mass-run, follow it, and summarize the result.
   *(Work package 2.1.)*
 - **The pull-request comment artifact** — a markdown summary of what changed against a named
   baseline, ready to post on a PR. *(Work package 2.2.)*
 
-Until then, `scan` plus `report … --format json` is enough to record a footprint in CI and compare it
-yourself.
+Assertions themselves are also only half the story yet: the rules cover **footprint and change**
+(tokens, tool counts, added and removed tools). Rules about a suite's *quality* — a minimum score, a
+maximum cost — and about security findings arrive with those later work packages, on the same file
+and the same exit codes.
+
+Until then, `scan` + `assert` gates a footprint, and `report … --format json` records one.
