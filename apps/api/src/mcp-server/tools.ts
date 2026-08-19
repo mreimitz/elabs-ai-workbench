@@ -50,8 +50,11 @@ import type { RunRepository } from "../testing/run-repository.js";
 // provider-credential or OAuth store is in the deps bag at all. A test asserts a real secret value
 // never crosses the wire; treat that test as the contract when adding a tool.
 //
-// **Every list result is bounded** (`truncate`) and self-describing (`total` + `truncated`), because
-// an unbounded scan/run/skill listing would blow up the host's context in one call.
+// **Every list result is bounded** (`truncate`) and self-describing (`total` + `truncated`) — with no
+// exemption for entities that are low-cardinality on a dev box, because a fleet install is exactly
+// where an unbounded dump hurts and a bare `{ servers: [...] }` envelope leaves a host unable to tell
+// "8 servers" from "the first 8 of 400". If you add a list tool, it takes `limit` and it emits both
+// markers; a bare `deps.x.list()` in a handler is the bug this comment exists to prevent.
 
 /** The repositories/services the read tools project. Deliberately narrow — see the banner. */
 export type WorkbenchMcpDeps = {
@@ -157,7 +160,14 @@ export function buildWorkbenchToolDefinitions(
       S.servers_list,
       "List every registered MCP server with its redacted config (transport, command/url, auth kind). " +
         "Secret values are never included — only hasEnvSecrets/hasHeaderSecrets booleans.",
-      () => jsonResult({ servers: deps.servers.list() }),
+      (args) => {
+        const capped = truncate(deps.servers.list(), args.limit ?? LIST_LIMIT);
+        return jsonResult({
+          servers: capped.items,
+          total: capped.total,
+          truncated: capped.truncated,
+        });
+      },
     ),
 
     defineTool(
@@ -392,7 +402,14 @@ export function buildWorkbenchToolDefinitions(
       "suites_list",
       S.suites_list,
       "List benchmark suites (the test × environment × repetition matrices a suite run executes).",
-      () => jsonResult({ suites: deps.suites.list() }),
+      (args) => {
+        const capped = truncate(deps.suites.list(), args.limit ?? LIST_LIMIT);
+        return jsonResult({
+          suites: capped.items,
+          total: capped.total,
+          truncated: capped.truncated,
+        });
+      },
     ),
 
     defineTool(
@@ -440,7 +457,14 @@ export function buildWorkbenchToolDefinitions(
       S.collections_list,
       "List collections — the home tests and suites are organised in, with their optional GitHub " +
         "binding. Never returns the GitHub token, only whether one is set.",
-      () => jsonResult({ collections: deps.collections.list() }),
+      (args) => {
+        const capped = truncate(deps.collections.list(), args.limit ?? LIST_LIMIT);
+        return jsonResult({
+          collections: capped.items,
+          total: capped.total,
+          truncated: capped.truncated,
+        });
+      },
     ),
   ];
 }

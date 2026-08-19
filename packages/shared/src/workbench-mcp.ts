@@ -86,11 +86,11 @@ export const WORKBENCH_MCP_DEFAULT_LIST_LIMIT = 50;
  * pays on EVERY conversation just to know this server exists (D-MCP5: we measure ourselves with our
  * own scanner).
  *
- * How this number was chosen: the 21-tool surface measures **2,149 tokens** under the app's default
+ * How this number was chosen: the 21-tool surface measures **2,206 tokens** under the app's default
  * `generic_o200k` profile (`apps/api/test/workbench-mcp-server.test.ts` prints the live figure on every
- * run, so the real cost is never a guess), and **2,167 tokens** when the app's own discovery scanner
+ * run, so the real cost is never a guess), and **2,224 tokens** when the app's own discovery scanner
  * is pointed at the running mount — the two agree to within 1%, which is the whole point of measuring
- * ourselves the way we measure everyone else. The budget is set at **3,000**: about 40% headroom,
+ * ourselves the way we measure everyone else. The budget is set at **3,000**: about 35% headroom,
  * enough for the WP M.3 write tools and a few longer descriptions without ceremony, tight enough that
  * a careless paragraph trips the gate instead of quietly costing every host a thousand tokens a turn.
  * WP M.4 turns this same assertion into a CI job that scans the running mount with our own scanner.
@@ -106,10 +106,16 @@ const limitField = z.number().int().positive().max(WORKBENCH_MCP_MAX_LIST_LIMIT)
  * The argument shape of every tool, keyed by tool name. Each value is a **ZodRawShape** (a plain
  * object of zod fields) because that is what `McpServer.registerTool({ inputSchema })` consumes; wrap
  * one in `z.object(...)` at a call site that needs a parser instead.
+ *
+ * **Every list-shaped tool takes `limit`** — no exceptions for entities that happen to be
+ * low-cardinality today. A fleet install with hundreds of registered servers must not dump all of
+ * them into a host's context, and a caller that cannot tell "8 servers" from "the first 8 of 400"
+ * has been handed a worse answer than either bound would give. The handler pairs the field with
+ * `truncate(...)` so the result always carries `total` + `truncated`.
  */
 export const WORKBENCH_MCP_TOOL_SCHEMAS = {
   // ── Servers & scans ─────────────────────────────────────────────────────────────────────────
-  servers_list: {},
+  servers_list: { limit: limitField },
   scans_list: { serverId: z.string().optional(), limit: limitField },
   scans_get: { scanId: idField },
   scans_latest: { serverId: idField },
@@ -148,14 +154,14 @@ export const WORKBENCH_MCP_TOOL_SCHEMAS = {
   skills_security: { versionId: idField },
 
   // ── Suites, collections ─────────────────────────────────────────────────────────────────────
-  suites_list: {},
+  suites_list: { limit: limitField },
   suite_runs_list: {
     suiteId: z.string().optional(),
     status: z.enum(SUITE_RUN_STATUSES).optional(),
     limit: limitField,
   },
   suite_runs_get: { suiteRunId: idField, memberLimit: limitField },
-  collections_list: {},
+  collections_list: { limit: limitField },
 } satisfies Record<WorkbenchMcpReadToolName, z.ZodRawShape>;
 
 /** Build the report resource URI for one run. */
