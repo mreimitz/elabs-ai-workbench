@@ -36,8 +36,11 @@ Test files that hardcode a colour expectation may need updating: `compare/flow/a
 
 - [ ] `chartSeriesColor(index)` (or equivalent) exists in `apps/web/src/lib/`, is pure, cycles
       1→12 then wraps, and is unit-tested including the wrap boundary (index 0, 11, 12, 25).
-- [ ] Every dynamic `--chart-N` construction in `apps/web/src` routes through the helper. Verified
-      by `grep -rn 'chart-\${' apps/web/src` returning only the helper itself.
+- [ ] Every **index-driven** series colour in `apps/web/src` routes through the helper. The grep
+      `grep -rn 'chart-\${' apps/web/src` returning only the helper is **necessary but NOT
+      sufficient** — it cannot see a private array/record of `var(--chart-N)` literals indexed by a
+      series index (the shape that hid `features/hub/workforce/usage/UsageCharts.tsx`). Check that
+      shape too. Fixed *semantic* mappings (named segments, node kinds) are correctly left alone.
 - [ ] The `SuiteScatter` dynamic-Tailwind-class problem is fixed, not merely re-moduloed, and the
       swatch colour is asserted by a test.
 - [ ] No raw hex/rgb colour is introduced anywhere.
