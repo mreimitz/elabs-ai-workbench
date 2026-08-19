@@ -28,6 +28,7 @@ const captured = vi.hoisted(() => ({
     status?: string;
     loadingLabel?: string;
     accessibleLabel?: string;
+    accessibleDescription?: string;
     handler: unknown;
     label: unknown;
     rowCount: number;
@@ -66,6 +67,7 @@ vi.mock("@elabs-ai/components-charts", async () => {
     status,
     loadingLabel,
     accessibleLabel,
+    accessibleDescription,
     onDatapointClick,
     datapointLabel,
     children,
@@ -75,6 +77,7 @@ vi.mock("@elabs-ai/components-charts", async () => {
     status?: string;
     loadingLabel?: string;
     accessibleLabel?: string;
+    accessibleDescription?: string;
     onDatapointClick?: Ctx["onDatapointClick"];
     datapointLabel?: Ctx["datapointLabel"];
     children?: ReactNode;
@@ -84,6 +87,7 @@ vi.mock("@elabs-ai/components-charts", async () => {
       status,
       loadingLabel,
       accessibleLabel,
+      accessibleDescription,
       handler: onDatapointClick,
       label: datapointLabel,
       rowCount: data.length,
@@ -171,6 +175,8 @@ function footprint(over: Partial<FootprintData> = {}): FootprintData {
     deltaTokens: 30_000,
     firstTimeServers: 0,
     mix: { toolTokens: 150_000, resourceTokens: 20_000, promptTokens: 10_000 },
+    latestMeasuredAt: BUCKET_B,
+    noActivityInWindow: false,
     ...over,
   };
 }
@@ -246,6 +252,46 @@ describe("HeroFootprintTile — the figures it states", () => {
   });
 });
 
+describe("HeroFootprintTile — a window with no scan activity", () => {
+  // The browser-walk defect: the owner's 7-day window contained none of their 103 scans, so the
+  // whole footprint section resolved to `empty` and this tile — carrying the fleet's startup token
+  // cost — removed itself. The figures are a STANDING measurement; only the trend is windowed.
+  const quiet = () =>
+    ready({
+      perServer: [],
+      noActivityInWindow: true,
+      latestMeasuredAt: "2026-07-20T00:00:00.000Z",
+    });
+
+  test("still states the fleet total and its Δ — the tile does NOT vanish", () => {
+    renderTile(quiet());
+    expect(screen.getByText("180,000")).toBeInTheDocument();
+    expect(screen.getByText("+30,000 vs previous")).toBeInTheDocument();
+  });
+
+  test("says plainly that nothing was scanned in this window, and when it last was", () => {
+    renderTile(quiet());
+    expect(screen.getByText("No scan activity in this window")).toBeInTheDocument();
+    expect(screen.getByText(/last measured/i)).toBeInTheDocument();
+  });
+
+  test("no chart is rendered for a window with nothing to plot (never an empty axis)", () => {
+    renderTile(quiet());
+    expect(captured.charts).toHaveLength(0);
+  });
+
+  test("a missing 'last measured' timestamp is simply absent — never a fabricated date", () => {
+    renderTile(ready({ perServer: [], noActivityInWindow: true, latestMeasuredAt: null }));
+    expect(screen.getByText("No scan activity in this window")).toBeInTheDocument();
+    expect(screen.queryByText(/last measured/i)).not.toBeInTheDocument();
+  });
+
+  test("the first-measured disclosure survives a quiet window (it qualifies the Δ, not the chart)", () => {
+    renderTile(ready({ perServer: [], noActivityInWindow: true, firstTimeServers: 1 }));
+    expect(screen.getByText("Includes 1 server measured for the first time")).toBeInTheDocument();
+  });
+});
+
 describe("HeroFootprintTile — the props that actually reach the chart", () => {
   test("xDataKey is 'x' — the rows carry the timestamp there, and a time axis throws on anything else", () => {
     renderTile(ready());
@@ -293,6 +339,20 @@ describe("HeroFootprintTile — the props that actually reach the chart", () => 
     renderTile(ready());
     expect(captured.charts[0]?.accessibleLabel).toBe(
       "Fleet footprint tokens over time, one line per server",
+    );
+  });
+
+  test("the accessible description never states the fleet total over the PLOTTED server count", () => {
+    // The total is standing (whole fleet); the lines are only the servers scanned in this window, so
+    // the two counts are stated as two separate facts.
+    renderTile(
+      ready({
+        totalTokens: 255_751,
+        perServer: [{ serverId: "srv_only", serverName: "Only", points: [] }],
+      }),
+    );
+    expect(captured.charts[0]?.accessibleDescription).toBe(
+      "Fleet total 255,751 tokens; 1 server plotted in this window",
     );
   });
 });

@@ -53,6 +53,47 @@ describe("AdvisorTile — the recommendation", () => {
   });
 });
 
+describe("AdvisorTile — a long detail is CLAMPED, never sliced", () => {
+  // On the owner's real data the top recommendation's `detail` enumerates all 131 affected tool
+  // names. It rendered as a ~10-line paragraph that overflowed the tile and was cut mid-sentence by
+  // the bento item's `overflow-hidden`.
+  const LONG_DETAIL = `These tools are never called: ${Array.from(
+    { length: 131 },
+    (_, i) => `alpha_tool_number_${i}`,
+  ).join(", ")}.`;
+
+  function detailNode() {
+    // The detail is the only element carrying the whole string.
+    return screen.getByText(LONG_DETAIL);
+  }
+
+  test("the WHOLE string stays in the DOM — the clamp is visual, so nothing is misquoted", () => {
+    renderTile(ready(teaser({ detail: LONG_DETAIL })));
+    expect(detailNode().textContent).toBe(LONG_DETAIL);
+    expect(detailNode().textContent).not.toMatch(/…$|\.\.\.$/);
+  });
+
+  test("it is line-clamped, so the paragraph cannot run past the tile", () => {
+    renderTile(ready(teaser({ detail: LONG_DETAIL })));
+    expect(detailNode().className).toContain("line-clamp-3");
+    expect(detailNode().className).toContain("break-words");
+  });
+
+  test("the full text stays reachable — the native title (D-10) and the full-report link", () => {
+    renderTile(ready(teaser({ detail: LONG_DETAIL })));
+    expect(detailNode()).toHaveAttribute("title", LONG_DETAIL);
+    expect(screen.getByRole("link", { name: "See all recommendations" })).toBeInTheDocument();
+  });
+
+  test("the title and the savings estimate are NOT clamped — they are the point of the tile", () => {
+    renderTile(ready(teaser({ detail: LONG_DETAIL })));
+    const title = screen.getByRole("link", { name: "Trim 14 unused tools from Alpha" });
+    expect(title.className).not.toContain("line-clamp");
+    const savings = screen.getByText("Estimated saving 31,000 tokens");
+    expect(savings.className).not.toContain("line-clamp");
+  });
+});
+
 describe("AdvisorTile — severity is stated in TEXT, never colour alone", () => {
   test.each([
     ["high", "High severity"],

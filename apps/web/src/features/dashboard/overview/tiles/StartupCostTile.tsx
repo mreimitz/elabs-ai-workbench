@@ -2,13 +2,19 @@ import { useMemo } from "react";
 import { Database } from "lucide-react";
 import { Sparkline } from "@elabs-ai/components-charts";
 import { BentoGridItem, MetricCard, StatePanel } from "@elabs-ai/components-ui";
-import { formatNumber } from "../../../../lib/format";
+import { formatNumber, formatRelativeTime } from "../../../../lib/format";
 import type { FootprintData, SectionEnvelope } from "../overview-contract";
 import { isEmptySection } from "../overview-contract";
 
 /**
  * Overview KPI (dashboard-bento WP 1.2) — the fleet's startup-token cost: the total, its Δ and a
  * sparkline of how it got there.
+ *
+ * **The figure is window-INDEPENDENT; only the sparkline is windowed.** `totalTokens`/`deltaTokens`
+ * are the latest successful scan per server across all of history, so a week in which nobody
+ * scanned removes the sparkline and nothing else — the tile still states what the fleet costs, and
+ * its footer says when it was last measured. (Before that split, a 7-day window with no scan in it
+ * emptied this tile off the bento on an instance holding 103 scans.)
  *
  * Three things this tile is deliberate about:
  *
@@ -33,11 +39,14 @@ export function StartupCostTile({ section }: { section: SectionEnvelope<Footprin
   const perServer = section.data?.perServer ?? [];
 
   /**
-   * The fleet total after each bucket, oldest → newest — the tile's OWN value recomputed over the
-   * window, so the series and the headline measure the same quantity. A server with no measurement
-   * in a bucket keeps its last known figure (and counts as 0 before its first), the same convention
-   * `ScansTab.tsx`'s `buildTileTrend` uses; anything else would make adding a server look like a
-   * collapse.
+   * The fleet total after each bucket of the WINDOW, oldest → newest — the same quantity the
+   * headline states, recomputed per bucket so the shape under the number is the number's own
+   * history. A server with no measurement in a bucket keeps its last known figure (and counts as 0
+   * before its first), the same convention `ScansTab.tsx`'s `buildTileTrend` uses; anything else
+   * would make adding a server look like a collapse.
+   *
+   * It is empty when the window holds no scan — the headline is standing, the sparkline is not, so
+   * the visual is simply omitted (never a flat line at zero, which would claim a collapse).
    */
   const series = useMemo(() => {
     const byServer = perServer.map((s) => ({
@@ -79,6 +88,27 @@ export function StartupCostTile({ section }: { section: SectionEnvelope<Footprin
   const first = series[0] ?? 0;
   const last = series[series.length - 1] ?? 0;
 
+  /**
+   * The grounding footer. Both notes qualify the FIGURE, not the sparkline, so they survive a window
+   * with no scan in it — which is the state that used to remove this tile entirely (see the module
+   * doc). Each is stated only when it is true; nothing here is padded with a placeholder.
+   */
+  const notes: string[] = [];
+  if (data?.noActivityInWindow === true) {
+    notes.push(
+      data.latestMeasuredAt !== null
+        ? `No scans in this window — last measured ${formatRelativeTime(data.latestMeasuredAt)}`
+        : "No scans in this window",
+    );
+  }
+  if (data && data.firstTimeServers > 0) {
+    notes.push(
+      data.firstTimeServers === 1
+        ? "Includes 1 server measured for the first time"
+        : `Includes ${formatNumber(data.firstTimeServers)} servers measured for the first time`,
+    );
+  }
+
   return (
     <BentoGridItem size="sm">
       <MetricCard
@@ -97,12 +127,13 @@ export function StartupCostTile({ section }: { section: SectionEnvelope<Footprin
               positiveIsGood: false,
             }
           : {})}
-        {...(data && data.firstTimeServers > 0
+        {...(notes.length > 0
           ? {
-              evidence:
-                data.firstTimeServers === 1
-                  ? "Includes 1 server measured for the first time"
-                  : `Includes ${formatNumber(data.firstTimeServers)} servers measured for the first time`,
+              evidence: notes.map((note) => (
+                <span key={note} className="block">
+                  {note}
+                </span>
+              )),
             }
           : {})}
         {...(series.length >= 2

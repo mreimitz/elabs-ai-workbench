@@ -121,6 +121,12 @@ export function MoversTile({ section, onRetry }: MoversTileProps) {
   // Nothing measured at all → the tile removes itself (the bento never shows an empty box).
   if (isEmptySection(section)) return null;
 
+  // A window with no scan in it has nothing that MOVED in it. Unlike the fleet's footprint — a
+  // standing measurement that survives a quiet week — movement is genuinely an event: it happened at
+  // a time, or it did not. So this tile (and only this tile) still steps aside, and the figures a
+  // quiet window must not hide stay on the hero and the startup-cost KPI.
+  if (section.state === "ready" && section.data?.noActivityInWindow === true) return null;
+
   const movers =
     section.state === "ready" && section.data ? deriveMovers(section.data.perServer) : [];
   // A settled section whose servers all held steady (or were all first-measured) has no movers to
@@ -128,7 +134,10 @@ export function MoversTile({ section, onRetry }: MoversTileProps) {
   if (section.state === "ready" && movers.length === 0) return null;
 
   return (
-    <BentoGridItem size="md" className="gap-3 p-4">
+    // `min-h-0` for the same reason `AttentionTile` carries it: the ranked list below owns its own
+    // scroll, and without it the flex column's automatic minimum size lets the rows push past the
+    // tile's grid row, where the item's `overflow-hidden` clips them with nothing to scroll.
+    <BentoGridItem size="md" className="min-h-0 gap-3 p-4">
       <header className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <SectionCardTitle className="min-w-0 truncate">Biggest movers</SectionCardTitle>
         <Text variant="meta" tone="muted" className="whitespace-nowrap">

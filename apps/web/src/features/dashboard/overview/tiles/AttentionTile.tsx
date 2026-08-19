@@ -71,6 +71,27 @@ export type AttentionTileProps = {
 const MAX_ROWS = 8;
 
 /**
+ * The three numbers the tile shows, derived ONCE so the header badge and the list can never
+ * contradict each other: `total === shown.length + hidden`, always, by construction.
+ *
+ * Why it is a function and not two `useMemo`s in two components: the badge lives in the tile header
+ * and the rows live in the body, and the browser walk that prompted this found a 14-item queue whose
+ * badge, visible rows and footer were three independent readings of the same data. `total` is
+ * floored at the number of rows actually listed, so a producer that under-reports `total` can never
+ * make the badge claim FEWER items than the operator can see (it would still be a producer bug — but
+ * a visible one, not a silently miscounted queue).
+ */
+export function attentionCounts(data: AttentionData): {
+  shown: AttentionItem[];
+  total: number;
+  hidden: number;
+} {
+  const shown = data.items.slice(0, MAX_ROWS);
+  const total = Math.max(data.total, shown.length);
+  return { shown, total, hidden: total - shown.length };
+}
+
+/**
  * Kind → the chip the row leads with, resolved through the app's existing authorities:
  * scan/server kinds through {@link deriveStatusView} (the same table ScansTab's rows use — an
  * unscanned server is the dashed "Pending" chip), issue kinds through
@@ -99,11 +120,15 @@ export function AttentionTile({ section, onRunScan, onRetry }: AttentionTileProp
   if (isEmptySection(section)) return null;
 
   return (
-    <BentoGridItem size="sm" span={{ row: 2 }} className="gap-3 p-4">
+    // `min-h-0` is load-bearing, not decoration: this is the one tile whose content is unbounded
+    // (a fleet can need you in 14 places), and without it the flex column's automatic minimum size
+    // lets the rows push past the 2×14rem row box the grid gave it, where the item's own
+    // `overflow-hidden` clips them with no scrollbar and no way to reach the rest.
+    <BentoGridItem size="sm" span={{ row: 2 }} className="min-h-0 gap-3 p-4">
       <header className="flex items-center justify-between gap-2">
         <SectionCardTitle className="min-w-0 truncate">Needs you</SectionCardTitle>
         {section.state === "ready" && section.data ? (
-          <CountBadge value={section.data.total} tone="warning" />
+          <CountBadge value={attentionCounts(section.data).total} tone="warning" />
         ) : null}
       </header>
       <AttentionBody section={section} onRunScan={onRunScan} onRetry={onRetry} />
@@ -154,12 +179,20 @@ function AttentionBody({ section, onRunScan, onRetry }: AttentionTileProps) {
     );
   }
 
-  const shown = data.items.slice(0, MAX_ROWS);
-  const hidden = Math.max(data.total - shown.length, 0);
+  const { shown, total, hidden } = attentionCounts(data);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <ul aria-label="Items that need your attention" className="min-h-0 flex-1 overflow-y-auto">
+      {/* The list owns its own scroll. `min-h-0` lets it shrink below its content inside the flex
+          column (without it a flex item's automatic minimum size is its content, so a long queue
+          pushes the tile past its grid row and the item's `overflow-hidden` clips the overflow away
+          with nothing to scroll); `overflow-y-auto` gives the rows somewhere to go; and
+          `overscroll-contain` stops a flick at the end of the queue from scrolling the whole bento
+          behind it. The tile therefore keeps its grid geometry however many rows arrive. */}
+      <ul
+        aria-label={`Items that need your attention, ${formatNumber(shown.length)} of ${formatNumber(total)} listed`}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+      >
         {shown.map((item) => (
           <AttentionRow
             key={`${item.kind}:${item.href}:${item.label}`}
@@ -168,10 +201,17 @@ function AttentionBody({ section, onRunScan, onRetry }: AttentionTileProps) {
           />
         ))}
       </ul>
+      {/* Pinned under the scroll area (`shrink-0`), so "there is more" is stated whether or not the
+          operator has scrolled — and it reconciles with the header badge by construction. */}
       {hidden > 0 ? (
-        <Text variant="meta" tone="muted" className="shrink-0 tabular-nums">
-          {`+${formatNumber(hidden)} more`}
-        </Text>
+        <div className="flex shrink-0 flex-wrap items-baseline justify-between gap-x-2">
+          <Text variant="meta" tone="muted" className="tabular-nums">
+            {`Showing ${formatNumber(shown.length)} of ${formatNumber(total)}`}
+          </Text>
+          <Text variant="meta" tone="muted" className="tabular-nums">
+            {`+${formatNumber(hidden)} more`}
+          </Text>
+        </div>
       ) : null}
     </div>
   );

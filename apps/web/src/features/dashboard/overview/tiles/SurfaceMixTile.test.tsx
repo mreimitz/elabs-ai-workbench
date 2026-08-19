@@ -144,6 +144,8 @@ function footprint(over: Partial<FootprintData> = {}): FootprintData {
     deltaTokens: null,
     firstTimeServers: 0,
     mix: { toolTokens: 150_000, resourceTokens: 30_000, promptTokens: 20_000 },
+    latestMeasuredAt: "2026-08-03T00:00:00.000Z",
+    noActivityInWindow: false,
     ...over,
   };
 }
@@ -178,6 +180,17 @@ describe("SurfaceMixTile — self-hiding", () => {
       />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("SurfaceMixTile — a window with no scan activity", () => {
+  test("the mix is a STANDING measurement, so a quiet window does NOT remove the tile", () => {
+    // Before the standing/windowed split this tile read its mix off the windowed scan metrics, so an
+    // instance holding 103 scans whose newest was 19 days old saw it disappear on the 7-day default.
+    render(<SurfaceMixTile section={ready({ perServer: [], noActivityInWindow: true })} />);
+    expect(captured.rings).toHaveLength(1);
+    expect(captured.rings[0]?.data).toHaveLength(3);
+    expect(screen.getByText("Tools")).toBeInTheDocument();
   });
 });
 

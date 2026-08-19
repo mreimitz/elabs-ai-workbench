@@ -124,7 +124,20 @@ function AdvisorBody({ section, onRetry }: AdvisorTileProps) {
             <span className="min-w-0 break-words text-left text-pretty">{data.title}</span>
           </Link>
         </Button>
-        <Text variant="meta" tone="muted" className="break-words text-pretty">
+        {/* CLAMPED, NEVER SLICED. On real data the top recommendation's `detail` is a full
+            enumeration of every affected tool (131 of them on the instance this was found on),
+            which rendered as a ~10-line paragraph that overflowed the tile and was cut mid-sentence
+            by the bento item's `overflow-hidden`. The clamp is VISUAL: the DOM keeps the whole
+            string, so a screen reader, a find-in-page and a copy all still get the real text — a
+            `String.slice` here would cut mid-word and quietly misstate what the advisor said. The
+            full text is reachable in two ways: the native `title` (the app's sanctioned recovery for
+            clamped text, D-10) and the header's "See all recommendations" link. */}
+        <Text
+          variant="meta"
+          tone="muted"
+          className="line-clamp-3 break-words text-pretty"
+          title={data.detail}
+        >
           {data.detail}
         </Text>
       </div>

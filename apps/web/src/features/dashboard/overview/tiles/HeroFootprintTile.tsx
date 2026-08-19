@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Database } from "lucide-react";
+import { CalendarRange, Database } from "lucide-react";
 import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
 import {
   BentoGridItem,
@@ -13,7 +13,7 @@ import {
 } from "@elabs-ai/components-ui";
 import { chartSeriesColor, chartSwatchStyle } from "../../../../lib/chart-colors";
 import { deltaTextTone } from "../../../../lib/delta";
-import { formatNumber } from "../../../../lib/format";
+import { formatNumber, formatRelativeTime } from "../../../../lib/format";
 import { pivotToRows } from "../../testing/metrics-derive";
 import type { FootprintData, SectionEnvelope } from "../overview-contract";
 import { isEmptySection } from "../overview-contract";
@@ -27,6 +27,14 @@ import { isEmptySection } from "../overview-contract";
  * would render as N overlapping translucent washes rather than a composition — unreadable past two
  * servers, and it would imply a stacked total that isn't drawn. One `Line` per server is the shape
  * `ScansStripPanel` already ships against the same data.
+ *
+ * ## Two clocks, one tile
+ * The headline figures (total, Δ, mix, first-measured) are a **standing measurement** — the latest
+ * successful scan per server, whatever window is selected — while the plotted lines are the
+ * **window's** trend. So a window containing no scan removes the LINES and nothing else: the tile
+ * states the fleet's startup cost, says plainly that nothing was scanned in this window, and names
+ * when the fleet was last measured. It does NOT vanish, which is what it used to do on a real
+ * instance holding 103 scans whose newest was 19 days old.
  *
  * ## The three traps this tile is written against
  * 1. **`xDataKey` defaults to `"date"`.** The pivoted rows carry the timestamp under `x`; forgetting
@@ -82,7 +90,9 @@ export function HeroFootprintTile({
               <Database aria-hidden className="size-4" />
               Fleet footprint
             </CardTitle>
-            <CardDescription>Startup tokens per server across the window</CardDescription>
+            <CardDescription>
+              Startup tokens per server — the total is your fleet's current surface
+            </CardDescription>
           </div>
           {data ? (
             <div className="flex shrink-0 flex-col items-end gap-0.5">
@@ -112,6 +122,20 @@ export function HeroFootprintTile({
             title="Footprint unavailable"
             description={section.error ?? "The scan metrics could not be loaded."}
           />
+        ) : data?.noActivityInWindow ? (
+          // The window is quiet — the TREND is genuinely empty, the standing figures above are not.
+          // Say so, and name when the fleet was last measured, instead of removing the tile.
+          <StatePanel
+            kind="empty"
+            className="min-h-0 flex-1"
+            icon={<CalendarRange aria-hidden />}
+            title="No scan activity in this window"
+            description={
+              data.latestMeasuredAt !== null
+                ? `Nothing was scanned in the selected window, so there is no trend to plot. The fleet was last measured ${formatRelativeTime(data.latestMeasuredAt)}; the figures above are its current surface.`
+                : "Nothing was scanned in the selected window, so there is no trend to plot. The figures above are the fleet's current surface."
+            }
+          />
         ) : (
           <>
             <div className="min-h-0 w-full flex-1">
@@ -124,8 +148,13 @@ export function HeroFootprintTile({
                 loadingLabel="Loading footprint…"
                 accessibleLabel="Fleet footprint tokens over time, one line per server"
                 accessibleDescription={
+                  // The two counts are deliberately NOT joined into one sentence: the total is the
+                  // whole fleet's current surface, while the lines are only the servers scanned
+                  // inside this window. "N tokens across <plotted> servers" would state a total over
+                  // a population it does not cover — the exact class of mismatch this plan exists to
+                  // remove.
                   data
-                    ? `${formatNumber(data.totalTokens)} tokens across ${formatNumber(perServer.length)} servers`
+                    ? `Fleet total ${formatNumber(data.totalTokens)} tokens; ${formatNumber(perServer.length)} ${perServer.length === 1 ? "server" : "servers"} plotted in this window`
                     : undefined
                 }
                 onDatapointClick={(point) => {
@@ -181,17 +210,19 @@ export function HeroFootprintTile({
                 ))}
               </ul>
             ) : null}
-            {/* Part of the Δ can be a FIRST measurement rather than a change — disclose it, rather
-                than letting a newly scanned server's whole footprint read as growth. */}
-            {data && data.firstTimeServers > 0 ? (
-              <Text variant="meta" tone="muted">
-                {data.firstTimeServers === 1
-                  ? "Includes 1 server measured for the first time"
-                  : `Includes ${formatNumber(data.firstTimeServers)} servers measured for the first time`}
-              </Text>
-            ) : null}
           </>
         )}
+        {/* Part of the Δ can be a FIRST measurement rather than a change — disclose it, rather than
+            letting a newly scanned server's whole footprint read as growth. The Δ it qualifies is
+            in the header, so this line belongs to the FIGURES, not to the chart: it stays on screen
+            in a window with no scan activity too. */}
+        {section.state !== "error" && data && data.firstTimeServers > 0 ? (
+          <Text variant="meta" tone="muted">
+            {data.firstTimeServers === 1
+              ? "Includes 1 server measured for the first time"
+              : `Includes ${formatNumber(data.firstTimeServers)} servers measured for the first time`}
+          </Text>
+        ) : null}
       </CardContent>
     </BentoGridItem>
   );

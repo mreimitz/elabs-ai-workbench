@@ -151,6 +151,25 @@ export function useOverviewData(
     return () => controller.abort();
   }, [from, to, bucket, nonce]);
 
+  // ── Footprint (standing) — deliberately NOT range-scoped: no `from`/`to`, so it is the fleet's
+  //    whole scan history and therefore always carries the latest successful scan per server. This
+  //    is what keeps the fleet's startup cost on screen in a window that happens to contain no scan.
+  //    Declared AFTER the windowed effect so the windowed request is always the first one issued.
+  useEffect(() => {
+    const controller = new AbortController();
+    setStandingScanMetrics(LOADING);
+    getScanMetrics({ bucket: STANDING_SCAN_BUCKET }, controller.signal)
+      .then((response) => {
+        if (controller.signal.aborted) return;
+        setStandingScanMetrics(ready(response));
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        setStandingScanMetrics(failed(error));
+      });
+    return () => controller.abort();
+  }, [nonce]);
+
   // ── Run health — range-scoped; the previous, equal-length window comes along so pass rate and
   //    spend have a baseline. Both requests share one controller, so both abort together. ────────
   useEffect(() => {
@@ -259,10 +278,32 @@ export function useOverviewData(
   // series carries its own `serverName`, so an unresolved catalog degrades to the id, not a stall.
   const serverCatalog = serverSource.payload ?? EMPTY_SERVERS;
 
-  const footprint = useMemo(
-    () => toSection(scanMetrics, (response) => buildFootprintData(response, serverCatalog)),
-    [scanMetrics, serverCatalog],
-  );
+  // The footprint joins its two sources: the STANDING response owns every current-state figure, the
+  // WINDOWED one owns the trend. Loading while either is in flight (a half-built hero would state a
+  // total under a chart that has not arrived); an error from either is surfaced verbatim rather than
+  // laundered into an empty section. `empty` therefore means exactly one thing: nothing has ever
+  // been successfully scanned.
+  const footprint = useMemo(() => {
+    const sources = [standingScanMetrics, scanMetrics];
+    const errored = sources.find((source) => source.status === "error");
+    if (errored !== undefined) {
+      return { state: "error" as const, data: null, error: errored.error };
+    }
+    if (sources.some((source) => source.status === "loading")) {
+      return { state: "loading" as const, data: null, error: null };
+    }
+    const data =
+      standingScanMetrics.payload === null
+        ? null
+        : buildFootprintData(
+            standingScanMetrics.payload,
+            serverCatalog,
+            scanMetrics.payload ?? standingScanMetrics.payload,
+          );
+    return data === null
+      ? { state: "empty" as const, data: null, error: null }
+      : { state: "ready" as const, data, error: null };
+  }, [standingScanMetrics, scanMetrics, serverCatalog]);
 
   const runHealth = useMemo(
     () =>

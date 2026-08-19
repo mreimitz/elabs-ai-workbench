@@ -484,6 +484,92 @@ describe("buildFootprintData — the delta covers the SAME population as its val
   });
 });
 
+describe("buildFootprintData — the footprint is a STANDING measurement, the trend is not", () => {
+  // The browser-walk defect: 103 scans on record, newest 19 days old, a 7-day window ⇒ the WINDOWED
+  // `GET /api/metrics/scans` returns `{"servers":[]}`, and the hero + startup-cost + surface-mix +
+  // movers tiles all vanished — the fleet's single most important number absent, with 103 scans
+  // sitting in the database. A footprint does not stop being true because nobody scanned this week.
+  const STANDING = scanResponse([
+    scanSeries("a", "Alpha", [
+      measured("2026-07-01T00:00:00.000Z", 100_000, {
+        deltaTotalTokens: null,
+        deltaComparable: false,
+      }),
+      measured(
+        "2026-07-20T00:00:00.000Z",
+        120_000,
+        { deltaTotalTokens: 20_000, deltaComparable: true },
+        { tool: 90_000, resource: 20_000, prompt: 10_000 },
+      ),
+    ]),
+  ]);
+  const QUIET_WINDOW = scanResponse([]);
+
+  test("a window with no scan in it keeps every current-state figure and only drops the trend", () => {
+    const data = buildFootprintData(STANDING, [], QUIET_WINDOW);
+    expect(data).not.toBeNull();
+    expect(data?.totalTokens).toBe(120_000);
+    expect(data?.deltaTokens).toBe(20_000);
+    expect(data?.mix).toEqual({ toolTokens: 90_000, resourceTokens: 20_000, promptTokens: 10_000 });
+    // The ONLY casualty of a quiet window: the plotted series.
+    expect(data?.perServer).toEqual([]);
+    expect(data?.noActivityInWindow).toBe(true);
+    // …and the tile is told when the fleet WAS last measured, so it can say so.
+    expect(data?.latestMeasuredAt).toBe("2026-07-20T00:00:00.000Z");
+  });
+
+  test("the plotted trend comes from the WINDOW, never from the standing history", () => {
+    const windowed = scanResponse([
+      scanSeries("a", "Alpha", [
+        measured("2026-08-05T00:00:00.000Z", 120_000, {
+          deltaTotalTokens: null,
+          deltaComparable: false,
+        }),
+      ]),
+    ]);
+    const data = buildFootprintData(STANDING, [], windowed);
+    expect(data?.perServer[0]?.points).toEqual([
+      { bucketStart: "2026-08-05T00:00:00.000Z", value: 120_000 },
+    ]);
+    expect(data?.noActivityInWindow).toBe(false);
+    // The figures still come from the standing response — a single in-window measurement must not
+    // reset the Δ to "first measurement" (which is exactly what the windowed-only build did).
+    expect(data?.deltaTokens).toBe(20_000);
+    expect(data?.firstTimeServers).toBe(0);
+  });
+
+  test("`empty` (⇒ the tiles self-hide) means NO successful scan at all, ever — not a quiet window", () => {
+    expect(buildFootprintData(scanResponse([]), [], QUIET_WINDOW)).toBeNull();
+    expect(buildFootprintData(STANDING, [], QUIET_WINDOW)).not.toBeNull();
+  });
+
+  test("an omitted window means 'the window covers everything', never 'the window is empty'", () => {
+    const data = buildFootprintData(STANDING);
+    expect(data?.noActivityInWindow).toBe(false);
+    expect(data?.perServer[0]?.points).toHaveLength(2);
+  });
+
+  test("`latestMeasuredAt` is the NEWEST measurement across the fleet, not the first server's", () => {
+    const data = buildFootprintData(
+      scanResponse([
+        scanSeries("a", "Alpha", [
+          measured("2026-07-01T00:00:00.000Z", 10, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+        ]),
+        scanSeries("b", "Bravo", [
+          measured("2026-07-31T00:00:00.000Z", 20, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+        ]),
+      ]),
+    );
+    expect(data?.latestMeasuredAt).toBe("2026-07-31T00:00:00.000Z");
+  });
+});
+
 describe("pickSeriesPerServer", () => {
   test("one server scanned under two token profiles is never counted twice", () => {
     const response = scanResponse([

@@ -209,17 +209,73 @@ describe("useOverviewData", () => {
     }
   });
 
-  test("asks the scans endpoint ONCE for the whole fleet — no per-server fan-out", async () => {
+  test("asks the scans endpoint twice for the whole fleet — one windowed, one standing — and never per-server", async () => {
     resolveAllHappily();
     renderHook(() => useOverviewData(RANGE_7D, { servers: SERVERS, scans: SCANS, now: NOW }));
-    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(1));
-    expect((getScanMetrics.mock.calls[0]?.[0] as { serverId?: string }).serverId).toBeUndefined();
+    // TWO calls by design (the fix for the window-scoped-footprint defect): the windowed one draws
+    // the trend, the UNSCOPED one carries the standing figures so a quiet window cannot delete the
+    // fleet's startup cost. Neither is per-server — one response already covers the whole fleet.
+    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(2));
+    const scanQueries = getScanMetrics.mock.calls.map(
+      (call) => call[0] as { serverId?: string; from?: string; to?: string; bucket: string },
+    );
+    for (const query of scanQueries) expect(query.serverId).toBeUndefined();
+    expect(scanQueries[0]).toMatchObject({ from: RANGE_7D.from, to: RANGE_7D.to });
+    // The standing request carries NO window at all — that is the whole point of it.
+    expect(scanQueries[1]?.from).toBeUndefined();
+    expect(scanQueries[1]?.to).toBeUndefined();
     // Run metrics is exactly two calls: the current window and its equal-length baseline.
     await waitFor(() => expect(getRunMetrics).toHaveBeenCalledTimes(2));
     expect(getRunMetrics.mock.calls[1]?.[0]).toMatchObject({
       from: "2026-07-25T00:00:00.000Z",
       to: "2026-08-01T00:00:00.000Z",
     });
+  });
+
+  test("the standing footprint keeps the fleet's figures on screen in a window with NO scan in it", async () => {
+    resolveAllHappily();
+    // The owner's real shape: 103 scans on record, none inside the selected window.
+    getScanMetrics.mockImplementation((query: { from?: string }) =>
+      Promise.resolve(query.from === undefined ? SCAN_METRICS : EMPTY_SCAN_METRICS),
+    );
+    const { result } = renderHook(() =>
+      useOverviewData(RANGE_7D, { servers: SERVERS, scans: SCANS, now: NOW }),
+    );
+    await waitFor(() => expect(result.current.footprint.state).toBe("ready"));
+    // The section is READY, not `empty` — the tiles stay on the bento.
+    expect(result.current.footprint.data?.totalTokens).toBe(1200);
+    expect(result.current.footprint.data?.mix).toEqual({
+      toolTokens: 1000,
+      resourceTokens: 150,
+      promptTokens: 50,
+    });
+    // …and it says, in the contract, that the trend is the thing that is missing.
+    expect(result.current.footprint.data?.noActivityInWindow).toBe(true);
+    expect(result.current.footprint.data?.perServer).toEqual([]);
+    expect(result.current.footprint.data?.latestMeasuredAt).toBe("2026-08-02T00:00:00.000Z");
+  });
+
+  test("the footprint is `empty` only when the fleet has NO successful scan at all", async () => {
+    resolveAllHappily();
+    getScanMetrics.mockResolvedValue(EMPTY_SCAN_METRICS);
+    const { result } = renderHook(() =>
+      useOverviewData(RANGE_7D, { servers: SERVERS, scans: SCANS, now: NOW }),
+    );
+    await waitFor(() => expect(result.current.footprint.state).toBe("empty"));
+  });
+
+  test("a failed STANDING request surfaces as an error, never as an empty footprint", async () => {
+    resolveAllHappily();
+    getScanMetrics.mockImplementation((query: { from?: string }) =>
+      query.from === undefined
+        ? Promise.reject(new Error("Scan metrics unavailable"))
+        : Promise.resolve(SCAN_METRICS),
+    );
+    const { result } = renderHook(() =>
+      useOverviewData(RANGE_7D, { servers: SERVERS, scans: SCANS, now: NOW }),
+    );
+    await waitFor(() => expect(result.current.footprint.state).toBe("error"));
+    expect(result.current.footprint.error).toBe("Scan metrics unavailable");
   });
 
   test("an error in one section never blanks the others", async () => {
@@ -261,8 +317,10 @@ describe("useOverviewData", () => {
         initialProps: RANGE_7D,
       },
     );
-    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(2));
+    // Call 0 is the WINDOWED footprint request, call 1 the standing one (declaration order).
     const firstScanSignal = getScanMetrics.mock.calls[0]?.[1] as AbortSignal;
+    const standingSignal = getScanMetrics.mock.calls[1]?.[1] as AbortSignal;
     const firstRunSignal = getRunMetrics.mock.calls[0]?.[1] as AbortSignal;
     expect(firstScanSignal.aborted).toBe(false);
 
@@ -270,9 +328,11 @@ describe("useOverviewData", () => {
 
     expect(firstScanSignal.aborted).toBe(true);
     expect(firstRunSignal.aborted).toBe(true);
-    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(2));
-    // The new window is what the second call asks for, at the 24h preset's hourly granularity.
-    expect(getScanMetrics.mock.calls[1]?.[0]).toMatchObject({
+    // The standing request is NOT range-scoped, so a window switch neither aborts nor refires it.
+    expect(standingSignal.aborted).toBe(false);
+    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(3));
+    // The new window is what the refired windowed call asks for, at the 24h preset's hourly bucket.
+    expect(getScanMetrics.mock.calls[2]?.[0]).toMatchObject({
       from: RANGE_24H.from,
       bucket: "hour",
     });
@@ -296,7 +356,8 @@ describe("useOverviewData", () => {
       (range: OverviewRange) => useOverviewData(range, { servers: [], scans: [], now: NOW }),
       { initialProps: RANGE_7D },
     );
-    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(1));
+    // Two calls on mount: the windowed one is the pending mock, the standing one resolves empty.
+    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(2));
     rerender(RANGE_24H);
     await waitFor(() => expect(result.current.footprint.state).toBe("empty"));
 
@@ -359,7 +420,8 @@ describe("useOverviewData", () => {
     );
     await waitFor(() => expect(result.current.footprint.state).toBe("ready"));
     act(() => result.current.reload());
-    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(2));
+    // Both footprint requests re-fire (windowed + standing), so 2 on mount becomes 4.
+    await waitFor(() => expect(getScanMetrics).toHaveBeenCalledTimes(4));
     await waitFor(() => expect(result.current.footprint.state).toBe("ready"));
     expect(getAdvisorReport).toHaveBeenCalledTimes(2);
     expect(listIssues).toHaveBeenCalledTimes(2);

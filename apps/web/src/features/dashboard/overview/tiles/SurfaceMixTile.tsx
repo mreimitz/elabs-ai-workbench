@@ -40,6 +40,11 @@ const SEGMENTS = [
  * is never the only signal: every segment's name, token count and share are in the legend text and
  * in the chart's accessible description.
  *
+ * The mix is **window-independent** — it is the composition of the latest successful scan per
+ * server, whatever window the tab is showing, because what a fleet's startup context is made of does
+ * not stop being true in a week nobody scanned. (It used to be read off the windowed scan metrics,
+ * which removed this tile entirely from an instance holding 103 scans whose newest was 19 days old.)
+ *
  * Self-hides when the section is empty, when no successful scan produced a `mix`, or when the whole
  * measured surface is zero — a ring of three empty arcs is the empty box the bento must not show.
  */

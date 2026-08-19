@@ -129,6 +129,56 @@ describe("AttentionTile — rows", () => {
     expect(screen.getByText("+4 more")).toBeInTheDocument();
   });
 
+  test("the count badge, the listed rows and the '+N more' line can never disagree", () => {
+    const many = Array.from({ length: 14 }, (_, i) =>
+      item({ label: `Server ${i}`, href: `/servers/srv-${i}`, serverId: `srv-${i}` }),
+    );
+    renderTile(ready(many, 14));
+    // badge (14) === rows listed (8) + remainder (6), derived from ONE computation.
+    expect(screen.getByText("14")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(8);
+    expect(screen.getByText("Showing 8 of 14")).toBeInTheDocument();
+    expect(screen.getByText("+6 more")).toBeInTheDocument();
+  });
+
+  test("a `total` that under-reports the rows can never make the badge claim fewer than are visible", () => {
+    // Defensive: the badge is floored at the number of rows actually listed, so a producer bug shows
+    // up as a badge that agrees with the list rather than a queue that miscounts itself.
+    renderTile(ready([item({ label: "Alpha" }), item({ label: "Beta", href: "/servers/b" })], 0));
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+    expect(screen.queryByText(/more$/)).not.toBeInTheDocument();
+  });
+
+  test("the queue SCROLLS inside the tile instead of pushing past its bento row", () => {
+    // The layout defect a jsdom suite cannot see: 14 items ran past the tile's 2 × 14rem row box and
+    // were clipped by the item's own `overflow-hidden`. These are the classes that produce the
+    // internal scroll — `min-h-0` (so the list may shrink below its content inside the flex column)
+    // plus `overflow-y-auto` (so the rows have somewhere to go). The VISUAL result is not asserted
+    // here; only the structure that causes it.
+    const many = Array.from({ length: 14 }, (_, i) =>
+      item({ label: `Server ${i}`, href: `/servers/srv-${i}`, serverId: `srv-${i}` }),
+    );
+    const { container } = renderTile(ready(many, 14));
+    const list = screen.getByRole("list");
+    expect(list.className).toContain("overflow-y-auto");
+    expect(list.className).toContain("min-h-0");
+    expect(list.className).toContain("flex-1");
+    // …and the tile itself may shrink to its grid row, or the whole column blows out again.
+    const tile = container.querySelector('[data-slot="bento-grid-item"]');
+    expect(tile?.className).toContain("min-h-0");
+  });
+
+  test("the list states its own counts to a screen reader, not just visually", () => {
+    const many = Array.from({ length: 14 }, (_, i) =>
+      item({ label: `Server ${i}`, href: `/servers/srv-${i}`, serverId: `srv-${i}` }),
+    );
+    renderTile(ready(many, 14));
+    expect(
+      screen.getByRole("list", { name: "Items that need your attention, 8 of 14 listed" }),
+    ).toBeInTheDocument();
+  });
+
   test("long labels truncate rather than overflow the narrow tile", () => {
     renderTile(ready([item({ label: "A very long MCP server name that will not fit this tile" })]));
     const link = screen.getByRole("link", {

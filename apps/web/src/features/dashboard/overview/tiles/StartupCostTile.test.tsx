@@ -61,6 +61,8 @@ function footprint(over: Partial<FootprintData> = {}): FootprintData {
     deltaTokens: 10_000,
     firstTimeServers: 0,
     mix: { toolTokens: 500_000, resourceTokens: 60_000, promptTokens: 30_000 },
+    latestMeasuredAt: "2026-08-03T00:00:00.000Z",
+    noActivityInWindow: false,
     ...over,
   };
 }
@@ -123,6 +125,45 @@ describe("StartupCostTile — the figure and its delta", () => {
 
   test("discloses first-time measurements as evidence under the figure", () => {
     renderTile(ready({ firstTimeServers: 2 }));
+    expect(screen.getByText("Includes 2 servers measured for the first time")).toBeInTheDocument();
+  });
+});
+
+describe("StartupCostTile — a window with no scan activity", () => {
+  // The figure is a STANDING measurement (latest successful scan per server, all history); only the
+  // sparkline is windowed. A quiet window used to empty this tile off the bento entirely.
+  const quiet = (over: Partial<FootprintData> = {}) =>
+    ready({
+      perServer: [],
+      noActivityInWindow: true,
+      latestMeasuredAt: "2026-07-20T00:00:00.000Z",
+      ...over,
+    });
+
+  test("still states the fleet's startup tokens and its Δ — the tile does NOT vanish", () => {
+    renderTile(quiet());
+    expect(screen.getByText("590,000")).toBeInTheDocument();
+    expect(screen.getByText(/\+10,000/)).toBeInTheDocument();
+  });
+
+  test("the footer says there were no scans in this window, and when it was last measured", () => {
+    renderTile(quiet());
+    expect(screen.getByText(/No scans in this window — last measured/)).toBeInTheDocument();
+  });
+
+  test("no sparkline is drawn for a window with nothing in it (never a flat line at zero)", () => {
+    renderTile(quiet());
+    expect(sparkline()).toBeNull();
+  });
+
+  test("with no 'last measured' timestamp the note stays honest and simply says less", () => {
+    renderTile(quiet({ latestMeasuredAt: null }));
+    expect(screen.getByText("No scans in this window")).toBeInTheDocument();
+  });
+
+  test("the first-measured disclosure is still stated alongside it", () => {
+    renderTile(quiet({ firstTimeServers: 2 }));
+    expect(screen.getByText(/No scans in this window/)).toBeInTheDocument();
     expect(screen.getByText("Includes 2 servers measured for the first time")).toBeInTheDocument();
   });
 });

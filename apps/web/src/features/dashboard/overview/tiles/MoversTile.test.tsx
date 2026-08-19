@@ -28,6 +28,8 @@ function footprint(perServer: Series[]): FootprintData {
     deltaTokens: null,
     firstTimeServers: 0,
     mix: null,
+    latestMeasuredAt: "2026-08-03T00:00:00.000Z",
+    noActivityInWindow: perServer.length === 0,
   };
 }
 
@@ -106,6 +108,18 @@ describe("MoversTile — empty behaviour", () => {
 
   test("SELF-HIDES when nothing has a comparable Δ — 'nothing moved' is not a movers list", () => {
     const { container } = renderTile(ready([series("a", "Alpha", [10_000])]));
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  test("SELF-HIDES when the window holds no scan — movement is an EVENT, unlike the footprint", () => {
+    // The counterpart to the standing-footprint fix: the hero and the startup-cost KPI must survive
+    // a quiet window because a footprint just *is*; movement genuinely happened at a time, so with
+    // no scan in the window there is nothing to rank and the tile steps aside.
+    const { container } = renderTile({
+      state: "ready",
+      data: { ...footprint([]), noActivityInWindow: true },
+      error: null,
+    });
     expect(container).toBeEmptyDOMElement();
   });
 
