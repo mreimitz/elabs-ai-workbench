@@ -6,9 +6,13 @@ import {
   DEFAULT_TOKEN_PROFILE,
   FEATURE_DISABLED_ERROR_CODE,
   WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
+  WORKBENCH_MCP_LLMS_TXT_PATH,
+  WORKBENCH_MCP_MAX_LIST_LIMIT,
   WORKBENCH_MCP_MOUNT_PATH,
   WORKBENCH_MCP_READ_TOOL_NAMES,
+  WORKBENCH_MCP_RESOURCE_TEMPLATES,
   WORKBENCH_MCP_SERVER_NAME,
+  WORKBENCH_MCP_TOOL_FAMILIES,
   workbenchRunReportUri,
   workbenchScanReportUri,
 } from "@mcp-token-footprint/shared";
@@ -829,4 +833,87 @@ test("turning the mcp_server feature off 403s the mount, and turning it back on 
 
   // Turning the MCP server off never touches another feature's endpoints.
   assert.equal(h.features.getFlags().assistant, true);
+});
+
+// ── Agent onboarding doc (WP M.4) ──────────────────────────────────────────────────────────────
+
+/** `GET /api/mcp/llms.txt` — the served document, asserted to be a 200 text/plain body. */
+async function fetchLlmsTxt(h: Harness): Promise<string> {
+  const response = await fetch(`${h.baseUrl}${WORKBENCH_MCP_LLMS_TXT_PATH}`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^text\/plain/);
+  return response.text();
+}
+
+test("the mount serves an llms.txt usage doc that names EVERY registered tool and template", async () => {
+  const h = await makeHarness();
+  const document = await fetchLlmsTxt(h);
+
+  // The whole point of generating the doc: it cannot fall behind the surface it documents.
+  for (const name of WORKBENCH_MCP_READ_TOOL_NAMES) {
+    assert.ok(document.includes(name), `llms.txt never mentions the tool ${name}`);
+  }
+  for (const template of Object.values(WORKBENCH_MCP_RESOURCE_TEMPLATES)) {
+    assert.ok(
+      document.includes(template),
+      `llms.txt never mentions the resource template ${template}`,
+    );
+  }
+  for (const family of WORKBENCH_MCP_TOOL_FAMILIES) {
+    assert.ok(
+      document.includes(family.label),
+      `llms.txt never mentions the family ${family.label}`,
+    );
+  }
+
+  // The operating facts an agent needs before its first call.
+  assert.ok(document.includes(WORKBENCH_MCP_MOUNT_PATH), "llms.txt never states the mount path");
+  assert.ok(document.includes(String(WORKBENCH_MCP_MAX_LIST_LIMIT)), "no list ceiling stated");
+  assert.ok(
+    document.includes(String(WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET)),
+    "no definition-footprint budget stated",
+  );
+  assert.match(document, /read-only/i);
+  assert.match(document, /Settings › Features/);
+
+  // A generated document must never become a data leak: it describes the surface, it does not read it.
+  for (const secret of [SECRET_ENV_VALUE, SECRET_HEADER_VALUE, SECRET_PAT_VALUE]) {
+    assert.ok(!document.includes(secret), "llms.txt leaked a stored secret");
+  }
+});
+
+test("every tool line in llms.txt carries the SAME description tools/list returns", async () => {
+  const h = await makeHarness();
+  const client = await connect(h);
+  const { tools } = await client.listTools();
+  const document = await fetchLlmsTxt(h);
+
+  for (const tool of tools) {
+    assert.ok(
+      document.includes(`- ${tool.name} — ${tool.description ?? ""}`),
+      `llms.txt describes ${tool.name} differently from tools/list`,
+    );
+  }
+});
+
+test("the usage doc is a GET while the mount itself still answers 405, and both 403 while off", async () => {
+  const h = await makeHarness();
+  const docUrl = `${h.baseUrl}${WORKBENCH_MCP_LLMS_TXT_PATH}`;
+
+  // Adding a GET under the mount must not soften the stateless mount's own GET.
+  assert.equal((await fetch(h.mcpUrl, { method: "GET" })).status, 405);
+  assert.equal((await fetch(docUrl)).status, 200);
+
+  h.features.setFlags({ mcp_server: false });
+
+  // The doc lives UNDER `/api/mcp`, so the feature's existing API prefix covers it with no second
+  // declaration — the documentation disappears with the endpoint it documents.
+  const blocked = await fetch(docUrl);
+  assert.equal(blocked.status, 403);
+  const body = (await blocked.json()) as { error: string; code?: string };
+  assert.equal(body.code, FEATURE_DISABLED_ERROR_CODE);
+  assert.equal((await fetch(h.mcpUrl, { method: "GET" })).status, 403);
+
+  h.features.setFlags({ mcp_server: true });
+  assert.equal((await fetch(docUrl)).status, 200);
 });

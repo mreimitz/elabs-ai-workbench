@@ -1,0 +1,52 @@
+# The dogfood gate (roadmap/ci/mcp-server.md, D-MCP5): the workbench scans its OWN MCP mount with
+# its own discovery scanner and asserts the tool-definition token budget.
+#
+# This is the ONLY workflow in this repository — the full quality gate
+# (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`) is still run locally. Do not read this
+# file as evidence of a broader CI pipeline.
+#
+# The job needs nothing but Node: the self-scan serves the mount on an ephemeral loopback port
+# against its own throwaway database, with no provider credentials and no outbound network.
+name: MCP self-scan
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  self-scan:
+    name: Definition-footprint budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Only the shared contract needs compiling: the gate runs the API sources through tsx and never
+      # touches the web bundle, so building it here would cost minutes and prove nothing extra.
+      - name: Build the shared contract
+        run: pnpm --filter @mcp-token-footprint/shared build
+
+      # Exit 1 = over budget (the assertion), exit 2 = the scan could not run. Either fails the job.
+      - name: Scan the workbench's own MCP mount
+        run: pnpm mcp:self-scan
+
+      - name: Upload the footprint artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-self-scan-footprint
+          path: .artifacts/mcp-self-scan/
+          if-no-files-found: warn
