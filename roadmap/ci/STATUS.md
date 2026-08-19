@@ -64,7 +64,8 @@ wp/ci/<id>`.
       reproduce on `4eddf6f` with none of WP 1.1 present**, and all 88 api + 12 web tests this WP
       added pass on merged `main`. Fix belongs to that dataset work: `pnpm build:model-data`, then
       update the hardcoded `33` at `apps/api/test/compatibility-data.test.ts:53`.
-- [ ] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output
+- [ ] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output — **in progress**
+      (`wp/ci/1.2`) · spec: [`wp-1.2-mcpfp-cli.md`](./wp-1.2-mcpfp-cli.md)
 - [ ] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
 
 ## Phase 2 — Suites & PR artifacts
