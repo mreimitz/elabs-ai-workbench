@@ -30,7 +30,7 @@ wp/ci/<id>`.
 - [ ] WP 3.1 — `no-new-security-findings` assertion
 
 ## Phase MCP — workbench MCP server (see [`mcp-server.md`](./mcp-server.md))
-- [ ] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag
+- [ ] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — **in progress** (2026-08-19 · `wp/ci/M.1`)
 - [ ] WP M.2 — service-token scopes on the mount (localhost bypass per D-MCP2) — depends: 1.1, M.1
 - [ ] WP M.3 — scoped write tools: `scan:run` · `runs:launch` · `suites:run` — depends: M.2
 - [ ] WP M.4 — agent onboarding docs + self-scan CI gate — depends: M.1
@@ -38,6 +38,30 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-19 · D-MCP1–D-MCP6 locked at kickoff** (Phase MCP — workbench MCP server). Locked
+  verbatim as proposed in [`mcp-server.md`](./mcp-server.md) §"Decisions to lock", by the WP M.1
+  kickoff prompt [`kickoff-prompt-mcp.md`](./kickoff-prompt-mcp.md):
+  - **D-MCP1 — Transport & mount:** streamable HTTP served by the existing Fastify API
+    (`/api/mcp`), same process, no sidecar. Stdio optional later via a thin launcher.
+  - **D-MCP2 — Trust model:** on localhost the mount follows the app's no-auth-by-design posture
+    (bind-scoped, same trust as the web UI). Non-local exposure requires a Phase 1 service token
+    (WP M.2); tokens carry scopes.
+  - **D-MCP3 — Read-first:** v1 is read-only. Write tools arrive only behind explicit token scopes
+    (`scan:run`, `runs:launch`) — headless has no interactive approval, so **scope = consent**;
+    deletes are excluded entirely, at every phase.
+  - **D-MCP4 — One tool registry:** the MCP tools re-project the SAME service/repository functions
+    and zod schemas the Assistant tools and (later) `mcpfp` resolve to. **No logic in the MCP
+    layer** — re-project, don't reimplement.
+  - **D-MCP5 — Dogfood gate:** the workbench scans its own MCP server; the footprint report is a
+    build artifact and a budget assertion on the tool definitions (WP M.4 wires the CI job; WP M.1
+    records the first measured number).
+  - **D-MCP6 — Feature flag:** ships behind a Settings › Features flag (the `feature-flags.ts`
+    registry precedent); off = 403 `feature_disabled` on the mount, nav untouched.
+
+  _Rationale:_ [`research/langfuse-landscape/`](../../research/langfuse-landscape/) `01 §G10` +
+  the `02` matrix row "Exposes an MCP server over itself" — every compared platform (Langfuse,
+  LangSmith, Phoenix, Opik, Braintrust, Weave) ships one; the MCP workbench does not.
 
 ## Owner acceptance (owner-only)
 - [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
