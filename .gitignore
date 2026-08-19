@@ -16,6 +16,10 @@ test-results
 playwright-report
 .playwright
 
+# The `mcpfp` CLI's local config (roadmap/ci/ WP 1.2). It MAY carry a service token, so it must
+# never be committed — the CLI also warns on stderr whenever a token is resolved from it.
+mcpfp.config.json
+
 # Filesystem / tooling artifacts (FUSE mounts, stray pnpm temp probes)
 .fuse_hidden*
 _tmp_*

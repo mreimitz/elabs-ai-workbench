@@ -129,6 +129,22 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  apps/cli:
+    dependencies:
+      '@mcp-token-footprint/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.0
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   apps/web:
     dependencies:
       '@mcp-token-footprint/shared':
