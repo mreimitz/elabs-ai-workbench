@@ -264,24 +264,68 @@ function buildServerFootprint(
 }
 
 /**
- * The hero tile's data. Returns `null` when no server has a single successful scan in the window —
- * the section is then `empty` and the tile removes itself rather than rendering an empty box.
- *
- * `servers` supplies display-name fallbacks for a series whose `serverName` is null (a deleted
- * server keeps its id); it never widens or narrows the population.
+ * Bucket for the STANDING (window-independent) footprint request — the finest one, so a bucket is
+ * effectively one scan session and the standing Δ reads "vs the previous scan" rather than "vs the
+ * previous day/week that happened to contain a scan". The response is bounded by the number of
+ * scans on record (`SCAN_RETENTION_PER_SERVER` bounds that), not by the length of history.
  */
-export function buildFootprintData(
+export const STANDING_SCAN_BUCKET: MetricsBucket = "hour";
+
+/** Every measured series in `response`, one per server, after profile selection. */
+function footprintsOf(
   response: ScanMetricsResponse,
-  servers: readonly ServerConfig[] = [],
-): FootprintData | null {
-  const serversById = new Map(servers.map((server) => [server.id, server.name] as const));
-  const perServer = pickSeriesPerServer(response)
+  serversById: ReadonlyMap<string, string>,
+): ServerFootprint[] {
+  return pickSeriesPerServer(response)
     .map((series) => buildServerFootprint(series, serversById))
     .filter((entry): entry is ServerFootprint => entry !== null);
+}
+
+/**
+ * The hero tile's data.
+ *
+ * ── THE WINDOW SPLIT (the defect this signature exists to prevent) ────────────────────────────────
+ * `standing` is an **unscoped** `GET /api/metrics/scans` (no `from`/`to`) and supplies every
+ * CURRENT-STATE figure: the fleet total, its Δ, the surface mix, the first-measured disclosure and
+ * `latestMeasuredAt`. `windowed` is the range-scoped response and supplies ONLY the plotted trend.
+ *
+ * The browser walk that prompted this split found the whole bento emptying out on a real instance:
+ * 103 scans on record, none in the last 7 days, so the 7-day `GET /api/metrics/scans` returned
+ * `{"servers":[]}` and the hero, the startup-cost KPI and the surface mix all self-hid — the single
+ * most important number the app owns (the fleet's startup token cost) absent, despite 103 scans.
+ * A footprint is a STANDING MEASUREMENT, not an event stream; a run or a cost genuinely happened at
+ * a time, a footprint just *is*. So the only thing a quiet window may remove is the trend.
+ *
+ * Returns `null` — an `empty` section, the tile removes itself — ONLY when the fleet has no
+ * successful scan at all, ever.
+ *
+ * `servers` supplies display-name fallbacks for a series whose `serverName` is null (a deleted
+ * server keeps its id); it never widens or narrows the population. `windowed` defaults to
+ * `standing`, which is the single-response shape the unit tests use (and means an omitted window is
+ * treated as "the window covers everything", never as "the window is empty").
+ */
+export function buildFootprintData(
+  standing: ScanMetricsResponse,
+  servers: readonly ServerConfig[] = [],
+  windowed: ScanMetricsResponse = standing,
+): FootprintData | null {
+  const serversById = new Map(servers.map((server) => [server.id, server.name] as const));
+  const perServer = footprintsOf(standing, serversById);
   if (perServer.length === 0) return null;
+
+  // The trend is the WINDOW's series — and only the window's. An empty one is a real statement
+  // ("nothing was scanned in this window"), not a reason to drop the standing figures above.
+  const windowPerServer = footprintsOf(windowed, serversById);
 
   const totalTokens = perServer.reduce((sum, entry) => sum + entry.latest.totalTokens, 0);
   const firstTimeServers = perServer.filter((entry) => entry.firstMeasured).length;
+  // Newest measurement anywhere in the fleet — a BUCKET START, so only as precise as the bucket the
+  // standing response was fetched at. Rendered coarsely by the tile; never as an exact scan clock.
+  const latestMeasuredAt = perServer.reduce<string | null>(
+    (newest, entry) =>
+      newest === null || entry.latest.bucketStart > newest ? entry.latest.bucketStart : newest,
+    null,
+  );
 
   // Population integrity (rule 1): the Δ is stated only when EVERY server in the population can be
   // accounted for, and only when at least one of them has a real prior measurement to compare
@@ -303,7 +347,7 @@ export function buildFootprintData(
   );
 
   return {
-    perServer: perServer.map((entry) => ({
+    perServer: windowPerServer.map((entry) => ({
       serverId: entry.serverId,
       serverName: entry.serverName,
       points: entry.points,
@@ -312,6 +356,8 @@ export function buildFootprintData(
     deltaTokens,
     firstTimeServers,
     mix,
+    latestMeasuredAt,
+    noActivityInWindow: windowPerServer.length === 0,
   };
 }
 

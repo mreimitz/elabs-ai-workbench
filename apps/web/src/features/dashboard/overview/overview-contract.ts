@@ -34,10 +34,24 @@ export type SectionEnvelope<T> = {
   error: string | null;
 };
 
-/** Hero: whole-surface footprint over time, one series per server. */
+/**
+ * Hero: the fleet's startup footprint.
+ *
+ * **Two different time scopes live in this one shape, and mixing them up is a bug.** A fleet's
+ * startup footprint is a STANDING MEASUREMENT — "what my servers cost me to put in front of a
+ * model" does not stop being true because nobody scanned this week. Only the TREND is an event
+ * stream. So:
+ *
+ * - `totalTokens` / `deltaTokens` / `firstTimeServers` / `mix` / `latestMeasuredAt` are
+ *   **window-independent**: they come from the latest successful scan per server across ALL of
+ *   history, whatever window the tab is showing.
+ * - `perServer[].points` is **window-scoped**: it is the plotted trend, and a window with no scan
+ *   in it genuinely has nothing to plot (`noActivityInWindow`), which the tile must SAY rather
+ *   than vanish over.
+ */
 export type FootprintData = {
   perServer: { serverId: string; serverName: string; points: OverviewPoint[] }[];
-  /** Fleet total of the latest successful scan per server. */
+  /** Fleet total of the latest successful scan per server. Window-independent. */
   totalTokens: number;
   /** Fleet Δ over the SAME population `totalTokens` covers; `null` when nothing is comparable. */
   deltaTokens: number | null;
@@ -45,6 +59,19 @@ export type FootprintData = {
   firstTimeServers: number;
   /** Composition of the current fleet surface. `null` when no successful scan exists. */
   mix: { toolTokens: number; resourceTokens: number; promptTokens: number } | null;
+  /**
+   * When the fleet was last measured — the BUCKET START of the newest measurement anywhere, so it
+   * is only as precise as the producer's bucket (hour, today). Render it coarsely (a relative
+   * "3d ago" / a date), never as an exact scan clock. `null` when the producer could not establish
+   * one; a `null` renders as absent, never as "never".
+   */
+  latestMeasuredAt: string | null;
+  /**
+   * `true` when the SELECTED WINDOW contains no measurement at all — i.e. `perServer` has no series
+   * to plot. The standing figures above still stand; the tile says "no scan activity in this
+   * window" instead of hiding itself.
+   */
+  noActivityInWindow: boolean;
 };
 
 /** One cost figure, kept separate from every other basis. */

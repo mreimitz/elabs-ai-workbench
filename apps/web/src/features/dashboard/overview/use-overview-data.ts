@@ -24,6 +24,7 @@ import {
   buildRunHealthData,
   previousRange,
   resolveOverviewBucket,
+  STANDING_SCAN_BUCKET,
 } from "./overview-derive";
 
 /**
@@ -39,9 +40,16 @@ import {
  * - **Sections are independent.** Each has its own fetch, its own state and its own error, so a
  *   failing advisor never blanks the hero — the acceptance rule that a section settles to
  *   `loading → ready | empty | error` on its own.
- * - **Parallel, and never per-server.** Five requests in total on mount (four of them fired
+ * - **Parallel, and never per-server.** Six requests in total on mount (five of them fired
  *   simultaneously by separate effects), three on a range change. `GET /api/metrics/scans` already
  *   returns every server's series in one response — this hook never fans out one request per server.
+ * - **The footprint is fetched TWICE, on purpose, and only one of the two is windowed.** A fleet's
+ *   startup footprint is a STANDING measurement: "what my servers cost me" does not stop being true
+ *   because nobody scanned this week. The range-scoped call supplies the plotted TREND; a second,
+ *   **unscoped** call supplies the current-state figures (total, Δ, mix, first-measured, "last
+ *   measured at"), so a quiet window can only ever remove the trend line — never the fleet's most
+ *   important number. Measured on the owner's instance: 103 scans, newest 19 days old, 7-day window
+ *   ⇒ the windowed call alone returned `{"servers":[]}` and four tiles self-hid.
  * - **Aborts on `range` change.** The range-scoped effects carry an `AbortController` whose
  *   `cleanup` aborts the in-flight request, so a fast preset switch cannot land a stale window's
  *   numbers under the new window's label (last-write-wins).
@@ -103,6 +111,8 @@ export function useOverviewData(
   input: OverviewInput = {},
 ): UseOverviewDataResult {
   const [scanMetrics, setScanMetrics] = useState<Source<ScanMetricsResponse>>(LOADING);
+  const [standingScanMetrics, setStandingScanMetrics] =
+    useState<Source<ScanMetricsResponse>>(LOADING);
   const [runMetrics, setRunMetrics] =
     useState<Source<{ current: RunMetricsResponse; previous: RunMetricsResponse | null }>>(LOADING);
   const [advisor, setAdvisor] = useState<Source<AdvisorReport>>(LOADING);
