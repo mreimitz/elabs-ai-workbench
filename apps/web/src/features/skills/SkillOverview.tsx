@@ -5,6 +5,7 @@ import type {
   SkillVersion,
   TriggerSurface,
 } from "@mcp-token-footprint/shared";
+import { deriveSkillSecuritySurface } from "@mcp-token-footprint/shared";
 import {
   Badge,
   BentoGrid,
@@ -77,48 +78,10 @@ function stripFrontmatter(markdown: string): string {
   return markdown.slice(match[0].length).replace(/^\s*\n/, "");
 }
 
-// Rough URL/network-reference detector for the security strip. This is a LIGHT client-side scan of
-// text file bodies — it flags http(s) URLs and bare protocol-relative refs so the operator can spot
-// external calls. It never executes anything (Phase 1 only inspects). Non-text files are skipped.
-const NETWORK_REF = /\bhttps?:\/\/[^\s"'<>)]+/i;
-
-type SecuritySurface = {
-  scriptCount: number;
-  scriptLangs: string[];
-  networkRefs: boolean;
-  fileCount: number;
-  totalBytes: number;
-};
-
-/** Derive the security surface from the file list + a light scan of the SKILL.md body. */
-function deriveSecurity(files: SkillFileNode[], skillMdBody: string): SecuritySurface {
-  const scripts = files.filter((f) => f.kind === "script");
-  const scriptLangs = Array.from(
-    new Set(
-      scripts.map((f) => {
-        const ext = f.path.split(".").pop()?.toLowerCase() ?? "";
-        return SCRIPT_LANG_LABELS[ext] ?? ext ?? "script";
-      }),
-    ),
-  ).sort();
-  return {
-    scriptCount: scripts.length,
-    scriptLangs,
-    networkRefs: NETWORK_REF.test(skillMdBody),
-    fileCount: files.length,
-    totalBytes: files.reduce((sum, f) => sum + f.size, 0),
-  };
-}
-
-const SCRIPT_LANG_LABELS: Record<string, string> = {
-  py: "python",
-  js: "javascript",
-  ts: "typescript",
-  sh: "shell",
-  bash: "shell",
-  rb: "ruby",
-  go: "go",
-};
+// The security surface (scripts + their languages, network references, file/byte totals) is derived by
+// `deriveSkillSecuritySurface` in `packages/shared` — the SAME pure function the workbench MCP
+// server's `skills_security` tool calls (roadmap/ci/mcp-server.md, D-MCP4: one derivation, several
+// surfaces). It inspects, it never executes.
 
 export type SkillOverviewProps = {
   skillId: string;
@@ -246,7 +209,7 @@ export function SkillOverview({
     };
   }, [skillId, version.id, skillMdPath]);
 
-  const security = useMemo(() => deriveSecurity(files, body ?? ""), [files, body]);
+  const security = useMemo(() => deriveSkillSecuritySurface(files, body ?? ""), [files, body]);
   // K1 — render only the markdown body (real heading hierarchy); the frontmatter lives in the side card.
   const renderedBody = useMemo(() => (body === null ? null : stripFrontmatter(body)), [body]);
   const manifest = version.manifest;
