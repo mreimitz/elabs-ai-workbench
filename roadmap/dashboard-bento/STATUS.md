@@ -19,9 +19,21 @@ box is ticked **only** when the WP's Acceptance is met and the gate
 
 ## Phase 1 — The Overview tab
 
-Not yet specced. Gated on Phase 0 landing **and** the owner judging the wireframe direction. Will
-cover: composing `BentoGrid` (F1), the `use-overview-data` hook over four existing endpoints,
-promoting the footprint chart off the Testing tab (F2), and making Overview the default tab.
+Owner said "build it now" 2026-08-19 after seeing Phase 0 land without a layout change. D-DB1 stands:
+Overview becomes the **default** tab, Scans/Testing/Issues remain as siblings.
+
+The data contract `apps/web/src/features/dashboard/overview/overview-contract.ts` is committed
+**up front** so 1.1/1.2/1.3 can be built in parallel against one shape.
+
+- [ ] WP 1.1 — `use-overview-data` + pure derivation (no new endpoint) — spec [`WP-1.1-data-hook.md`](./WP-1.1-data-hook.md)
+- [ ] WP 1.2 — hero footprint chart + KPI tiles — spec [`WP-1.2-hero-kpi-tiles.md`](./WP-1.2-hero-kpi-tiles.md)
+- [ ] WP 1.3 — attention / movers / advisor tiles — spec [`WP-1.3-list-tiles.md`](./WP-1.3-list-tiles.md)
+- [ ] WP 1.4 — `BentoGrid` shell + Overview as the default tab — spec [`WP-1.4-tab-shell.md`](./WP-1.4-tab-shell.md) · **depends on 1.1 + 1.2 + 1.3**
+
+**Gate baseline for this phase:** `main` carries **2 pre-existing api failures** unrelated to this
+plan — `bundled all-models.json is not stale vs research data/**` and `builder validates + merges the
+full roster (11 providers, 33 models, unique ids)`, both from the `ci` workstream's model-roster
+bundle. Agents must NOT attempt to fix them; the gate is "green except these two".
 
 ## Decision log
 
@@ -71,3 +83,14 @@ _Entries: date · decision · rationale._
 - **2026-08-19 · a pre-existing panel-layout issue, not caused by any Phase 0 WP:** in the
   `Runs & error rate over time` panel the right-hand percentage axis labels overlap the final bar at
   the panel's rendered width, in both themes (seen in the browser walk). Not touched here.
+- **2026-08-19 · Phase 0 shipped no layout change, and that surprised the owner.** Phase 0 was scoped
+  as unblockers (ramp, datapoint clicks, tile props) with the bento deliberately deferred to Phase 1
+  behind a "judge the wireframe first" gate. The owner read the merged result as "layout is the exact
+  same" — correct, and the orchestrator's summaries did not state plainly enough in each report that
+  the grid itself was untouched (nor that WP 0.2's clickable charts live on the *Testing* tab, not the
+  Scans tab the owner was looking at). Phase 1 authorised directly; the gate is dropped.
+- **2026-08-19 · the Phase 1 data contract is committed BEFORE its producer or consumers.** WP 1.1
+  (hook) and WP 1.2/1.3 (tiles) would otherwise serialise. `overview-contract.ts` encodes the three
+  Phase 0 lessons in the types themselves: a missing figure is `null` and never `0`; cost is a LIST
+  per basis so no tile can blend `api_exact` with `subscription_reference` (D-OB14); and each section
+  carries its own load state so an empty tile self-hides instead of blanking the bento.
