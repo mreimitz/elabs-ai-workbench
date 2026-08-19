@@ -18,6 +18,7 @@ wp/ci/<id>`.
 
 ## Phase 1 — Tokens + CLI core
 - [ ] WP 1.1 — contract + service tokens: `api_tokens` (hashed, scoped), auth middleware, Settings UI
+      — spec: [`wp-1.1-service-tokens.md`](./wp-1.1-service-tokens.md) · status: **in progress** (`wp/ci/1.1`)
 - [ ] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output
 - [ ] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
 
@@ -62,6 +63,28 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-19 · D-C1 / D-C2 / D-C4 locked at Phase 1 kickoff** (owner, at the WP 1.1 kickoff).
+  Full text + the design they bind: [`wp-1.1-service-tokens.md`](./wp-1.1-service-tokens.md).
+  - **D-C1 — CLI packaging:** `mcpfp` is a new workspace package **`apps/cli`** (the README's own
+    recommendation), published nowhere, invoked via `pnpm --filter cli`. Binds WP 1.2.
+  - **D-C2 — token storage + auth posture:** an **`api_tokens`** table at **`user_version` v58**
+    (57 was the latest). **Loopback stays open, remote requires a bearer token** — D-MCP2's trust
+    model applied to the whole API, so the local browser UI is unregressed; the env switch
+    **`API_AUTH_REQUIRED=true`** forces token auth on loopback too. A *presented* token is always
+    verified (a bad one is 401 even from loopback — never a silent fall-through to the open path),
+    and loopback is decided from the socket, never a header (`trustProxy` stays off).
+  - **D-C4 — scope vocabulary (new):** the frozen tuple `read` · `scan:run` · `runs:launch` ·
+    `suites:run` — exactly D-MCP3's write scopes, so WP M.2/M.3 consume it unchanged. **No delete
+    scope at any phase**; token-authenticated `DELETE` is refused, and a token can never mint or
+    revoke another token. WP 1.1 enforces scopes coarsely (safe methods need `read`, unsafe methods
+    need an execute scope); per-route mapping is WP M.2/M.3.
+  - **No feature flag** for service tokens: an auth primitive, not a capability — a Settings switch
+    that could turn an auth check *off* is a foot-gun (contrast `mcp_server`/D-MCP6, which gates a
+    capability).
+
+  _Rationale:_ D-MCP2 already committed the trust model ("non-local exposure requires a Phase 1
+  service token; tokens carry scopes"); Phase 1 implements it rather than inventing a second one.
 
 - **2026-08-19 · D-MCP1–D-MCP6 locked at kickoff** (Phase MCP — workbench MCP server). Locked
   verbatim as proposed in [`mcp-server.md`](./mcp-server.md) §"Decisions to lock", by the WP M.1

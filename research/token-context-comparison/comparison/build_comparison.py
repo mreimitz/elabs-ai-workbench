@@ -14,7 +14,7 @@ import json, glob, os, datetime
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 OUT = os.path.join(ROOT, "comparison")
-AS_OF = "2026-06-21"
+AS_OF = "2026-08-19"
 
 GROUP_ORDER = {"saas": 0, "open_weight": 1}
 

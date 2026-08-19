@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "as_of": "2026-06-21",
+  "as_of": "2026-08-19",
   "provider": {
     "id": "mistral",
     "name": "Mistral AI",
@@ -11,18 +11,18 @@
     "native_mcp_support": {
       "value": true,
       "confidence": "high",
-      "source_url": "https://docs.mistral.ai/capabilities/connectors",
+      "source_url": "https://docs.mistral.ai/studio/connectors",
       "source_tier": 1,
-      "as_of": "2026-06-21",
-      "notes": "Supported via 'Connectors' (beta): MCP-compatible servers registered via API or Studio and exposed as tools to the model in conversations and Agents. Transport is managed server-side; client does not need local MCP transport."
+      "as_of": "2026-08-19",
+      "notes": "Supported via 'Connectors' — registered MCP servers exposed to the model as tools in Conversations, Agents and Vibe Code; Mistral runs the MCP transport server-side, the client does not. Still labelled 'Public Preview — the API interface can change' on the Studio Connectors page (checked 2026-08-19). The 2026-06-24 update added per-tool enable/disable for a whole org or one workspace, connector-scoped API keys, and moved Enterprise controls, Connector Credentials and Connectors-in-Vibe-Code to GA, while Connectors Playground and Connectors in Workflows stay in public preview (https://mistral.ai/news/more-control-over-connectors/). REST surface: GET/POST/PATCH/DELETE /v1/connectors plus GET /v1/connectors/{id}/tools (https://docs.mistral.ai/api/endpoint/beta/connectors)."
     },
     "skills_concept": {
-      "value": "Agents — pre-configured model instances with system prompt, tools, and completion params; persistent Conversations API tracks turn history server-side",
+      "value": "Skills — versioned, reusable instruction bundles (title + trigger description + instructions + optional attached files) loaded on demand by description match; plus Agents (pre-configured model instances with instructions and tools) and server-side Conversations",
       "confidence": "high",
-      "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+      "source_url": "https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill",
       "source_tier": 1,
-      "as_of": "2026-06-21",
-      "notes": "Agents are created via POST /v1/agents and referenced by agent_id in Conversations. System prompts and tool stubs are injected at conversation start and count as input tokens. Mistral Vibe CLI also exposes 'agents-skills' concept for CLI-based agents."
+      "as_of": "2026-08-19",
+      "notes": "CHANGED since 2026-06-21: Mistral now ships an explicit, first-class 'Skills' primitive (Studio + Vibe), not just Agents. Studio Skills are immutably versioned with rollback, and 'the description field ... determines when the assistant loads the Skill' — i.e. progressive disclosure, not always-on. Vibe Skills are SKILL.md folders discovered name+description-first (~100 tokens each) and expanded on activation (https://docs.mistral.ai/vibe/work/skills). Skills are also reachable as MCP servers from Studio (https://mistral.ai/news/manage-prompts-and-skills-in-studio/). Agents remain the API-side construct (https://docs.mistral.ai/studio/agents/introduction)."
     }
   },
   "models": [
@@ -35,18 +35,22 @@
         "confidence": "high",
         "source_url": "https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04",
         "source_tier": 1,
-        "as_of": "2026-06-21"
+        "as_of": "2026-08-19",
+        "notes": "Re-verified on the model card 2026-08-19; unchanged."
       },
       "status": "ga",
       "knowledge_cutoff": {
         "value": null,
         "confidence": "low",
         "source_url": null,
-        "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Not published in model card or docs as of 2026-06-21."
+        "as_of": "2026-08-19",
+        "notes": "Still not published. Checked the Mistral model card (https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04) and the official Hugging Face model card (https://huggingface.co/mistralai/Mistral-Medium-3.5-128B) on 2026-08-19 — neither states a training-data cutoff date."
       },
-      "modalities": ["text", "image", "pdf"],
+      "modalities": [
+        "text",
+        "image",
+        "pdf"
+      ],
       "context": {
         "context_window_tokens": {
           "value": 256000,
@@ -54,44 +58,44 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Confirmed in Known Limitations context-window table and model card."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the Known Limitations context-window table still lists this model at 256k tokens; the official HF model card (https://huggingface.co/mistralai/Mistral-Medium-3.5-128B) repeats '256k context'."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Known Limitations states: 'Token counts include both input and output tokens.'"
+          "as_of": "2026-08-19",
+          "notes": "Known Limitations, re-read 2026-08-19: both input and output tokens are included in the context calculation — 'Plan your max_tokens accordingly.'"
         },
         "max_input_tokens": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": false,
-          "notes": "Not published as a separate cap. Effective max input = context_window - max_tokens_requested. No documented separate input limit."
+          "notes": "No separate input ceiling is published. The chat endpoint reference states only that 'The token count of your prompt plus max_tokens cannot exceed the model's context length', so the effective input ceiling is 256k minus the requested max_tokens. Not recorded as a number because it is request-dependent, not a documented constant."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/api",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Mistral docs state default varies by model; query /models endpoint. Not published as a fixed number in model card."
+          "as_of": "2026-08-19",
+          "notes": "No default value for max_tokens is documented on the chat endpoint reference (re-read 2026-08-19); the parameter is described without a stated default or maximum."
         },
         "max_output_tokens_max": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/api",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Bounded by context_window_tokens minus input. No separate published hard cap other than the 256k window. Retrieve via /models endpoint."
+          "as_of": "2026-08-19",
+          "notes": "No per-completion output ceiling is published. The only documented bound is 'prompt + max_tokens cannot exceed the model's context length' (256k). This is a genuine documentation gap, not an absence of constraint — the shared 256k window is what binds."
         },
         "extended_context": {
           "value": null,
@@ -99,16 +103,16 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No extended/beta context beyond 256k documented for this model."
+          "as_of": "2026-08-19",
+          "notes": "No extended/beta context tier beyond 256k appears in the Known Limitations table (re-read 2026-08-19)."
         },
         "reasoning_tokens_count_as_output": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/reasoning",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Mistral Medium 3.5 is not documented as a reasoning/thinking model; no reasoning token billing documented."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED sourcing: this model IS a reasoning model. The Reasoning page lists mistral-medium-3-5 as supporting the per-request reasoning_effort parameter ('high' emits a ThinkChunk before the TextChunk; 'none' omits it); the HF model card (https://huggingface.co/mistralai/Mistral-Medium-3.5-128B) repeats 'configurable reasoning effort per request'. Mistral does NOT document how thinking tokens are counted or billed, and there is no thinking-budget parameter — so the value stays null rather than assuming they bill as output."
         }
       },
       "tokenization": {
@@ -117,55 +121,56 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/cookbooks/concept-deep-dive-tokenization-readme",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Mistral's tokenization docs describe V3-Tekken as the current tokenizer for modern models, built on tiktoken rather than SentencePiece. mistral-common README states 'we only release Tekken tokenizers for recent models'."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Mistral's tokenization deep-dive still documents V1/V2/V3 with V3-Tekken as the tiktoken-based variant used by recent models; the official HF card for this model (https://huggingface.co/mistralai/Mistral-Medium-3.5-128B) names Tekken and pins a minimum mistral-common version. Exact Tekken sub-version per model is not published."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://github.com/mistralai/mistral-common",
           "source_tier": 2,
-          "as_of": "2026-06-21",
-          "notes": "mistral-common is open-source (Apache-2.0) and includes tokenizer code and weights downloadable from PyPI or Hugging Face Hub."
+          "as_of": "2026-08-19",
+          "notes": "mistral-common remains open source; tokenizer files are downloadable from the HF Hub."
         },
         "tokenizer_access": {
-          "value": "pip install mistral-common; tokenizer downloadable from HF Hub via mistral-common[hf-hub]",
+          "value": "pip install mistral-common; MistralTokenizer.from_hf_hub(\"<hf-model-id>\") pulls the Tekken tokenizer from the HF Hub",
           "confidence": "high",
-          "source_url": "https://github.com/mistralai/mistral-common",
+          "source_url": "https://mistralai.github.io/mistral-common/usage/tokenizers/",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Refreshed 2026-08-19 to the current documented loading path. Extras: pip install \"mistral-common[image]\" / \"mistral-common[audio,hf-hub]\"."
         },
         "count_tokens_method": {
-          "value": "from mistral_common.tokens.tokenizers.mistral import MistralTokenizer; tok = MistralTokenizer.v3(); tokens = tok.encode(text)",
+          "value": "from mistral_common.tokens.tokenizers.mistral import MistralTokenizer; tok = MistralTokenizer.from_hf_hub(\"<hf-model-id>\"); n = len(tok.encode_chat_completion(ChatCompletionRequest(messages=[...])).tokens)",
           "confidence": "high",
-          "source_url": "https://github.com/mistralai/mistral-common",
+          "source_url": "https://mistralai.github.io/mistral-common/usage/tokenizers/",
           "source_tier": 2,
-          "as_of": "2026-06-21",
-          "notes": "mistral-common provides encode/decode plus tool-call-aware tokenization. For exact per-request counts including tool defs, use the library locally with the Tekken tokenizer file."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED: the previously recorded MistralTokenizer.v3() call is superseded by the documented from_hf_hub + encode_chat_completion flow. Caveat verified 2026-08-19: the mistral-common usage docs show no worked example of putting `tools` into the ChatCompletionRequest, so tool-definition token counts obtained this way are reconstructions, not a vendor-blessed recipe. Mistral exposes no server-side count-tokens endpoint."
         },
         "image_token_rule": {
           "value": null,
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/studio-api/conversations/vision",
+          "source_url": "https://docs.mistral.ai/capabilities/vision",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model supports vision (image input) per model card. Precise token-per-image tiling rule not published in docs as of 2026-06-21."
+          "as_of": "2026-08-19",
+          "notes": "Still undocumented, and now confirmed as a deliberate gap: the Vision capability page carries the FAQ heading 'How many tokens correspond to an image and/or what is the maximum resolution?' with no answer beneath it (checked 2026-08-19). The only published image constraint is a 20 MB per-image cap in Known Limitations (https://docs.mistral.ai/resources/known-limitations)."
         },
         "audio_token_rule": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Audio transcription listed as a feature on the model card, but tokens-per-second rule not documented."
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED 2026-08-19: the model card does not list audio as a capability for this model, and the official HF card (https://huggingface.co/mistralai/Mistral-Medium-3.5-128B) gives the modalities as text+image in / text out. Audio is handled by the separate Voxtral models and endpoints, so no audio token rule applies here. (The 2026-06-21 entry's 'audio transcription listed as a feature' claim did not hold up on re-read.)"
         },
         "chars_per_token_estimate": {
-          "value": 4.0,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "Rough industry estimate for BPE tokenizers on English text. Use mistral-common for accurate counts."
+          "source_url": "https://mistral.ai/news/mistral-nemo/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED to null: the previous 4.0 was an unsourced industry rule of thumb. Searched Mistral's tokenization deep-dive, the mistral-common docs and the Tekken tokenizer card (https://huggingface.co/toksuite/mistralai-tekken, vocab 130,000, tier 3) on 2026-08-19 — no chars-per-token or bytes-per-token figure is published for Tekken. The only quantitative claim Mistral makes is relative: Tekken is '~30% more efficient at compressing source code, Chinese, Italian, French, German, Spanish, and Russian' and 2x/3x on Korean/Arabic versus the Llama 3 tokenizer. Use mistral-common for exact counts."
         }
       },
       "tools_mcp": {
@@ -174,173 +179,174 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Function Calling listed as a supported feature in model card."
+          "as_of": "2026-08-19",
+          "notes": "Function Calling is listed in the model card's feature list (re-verified 2026-08-19) and the model appears in the function-calling guide's supported-model list (https://docs.mistral.ai/capabilities/function_calling)."
         },
         "native_mcp": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/capabilities/connectors",
+          "source_url": "https://docs.mistral.ai/studio/connectors",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Via 'Connectors' beta: register any MCP-compatible server URL; tools are discovered and called by the model. Currently beta; interface may change."
+          "as_of": "2026-08-19",
+          "notes": "Platform-level: any function-calling model can be pointed at registered Connectors (MCP servers), whose tools the model 'discovers automatically and calls ... based on the user's request'. Still Public Preview as of 2026-08-19; the API interface can change. Vibe Code additionally speaks MCP directly over stdio, HTTP and streamable HTTP (https://docs.mistral.ai/vibe/code/cli/mcp-servers)."
         },
         "parallel_tool_calls": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "parallel_tool_calls parameter documented (default: true). Model may emit multiple tool calls per turn."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified on the chat endpoint reference 2026-08-19: parallel_tool_calls — 'Whether to enable parallel function calling during tool use, when enabled the model can call multiple tools in parallel.' Default Value: true."
         },
         "max_tools_hard": {
           "value": 128,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Known Limitations: 'Maximum number of tools per request: 128.'"
+          "as_of": "2026-08-19",
+          "notes": "Unchanged and re-verified 2026-08-19: Known Limitations still states 'Maximum number of tools per request: 128.' SCOPE = AGGREGATE — it counts every tool in the request's `tools` array together: your own functions, every tool pulled in from each connected Connector (MCP server), and Mistral's built-in tools (web search, code interpreter, image generation, document library), which are passed in the same array (https://docs.mistral.ai/api/endpoint/chat). It is not a per-MCP-server cap; no per-server tool cap is documented anywhere."
         },
         "max_tools_practical": {
-          "value": 40,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "No Mistral-specific empirical study found. Using community consensus of ~30-50 tools before accuracy degradation (Berkeley FCL, general practitioner reports). Treat as indicative only."
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 20 → null (2026-08-19 final audit): no empirical source has measured a Mistral model's tool-count degradation, so no practical tool ceiling can be asserted for Mistral Medium 3.5. The previously cited leaderboard (https://presenc.ai/research/ai-agent-tool-calling-accuracy-benchmarks-2026, tier 4, re-opened 2026-08-19) measures only Claude Opus 4.7, GPT-5 Pro, Claude Sonnet 4.6, Gemini 2.5 Pro, GPT-5, Qwen 3 235B, Llama 4 405B, Qwen 3 32B, Llama 4 70B and DeepSeek V4 — NO Mistral model appears in it, so its \"accuracy degrades to 85-91 percent at 5 tools, then to 65-78 percent at 20+ tools\" band (exemplified on Claude Opus 4.7: 96% at 1 tool → 91% at 5 → 76% at 20+) is evidence about those models only. The practitioner write-up previously quoted alongside it (https://tianpan.co/blog/2026-04-19-over-tooled-agent-problem, \"safe zone ... at roughly 10-20 tools per reasoning context\") likewise names no Mistral model. Mistral itself publishes no tool-count guidance: the function-calling docs (https://docs.mistral.ai/capabilities/function_calling/, tier 1, checked 2026-08-19) list Mistral Medium 3.5 among the function-calling models but state no maximum or recommended number of tools and no degradation threshold. Binding limits that DO apply: the documented 128-tool hard cap per request (see max_tools_hard, https://docs.mistral.ai/resources/known-limitations, tier 1) and the 256,000-token shared input+output context window that every tool definition is billed into. Any cross-vendor 10-20-tool rule of thumb applied to Mistral is an unmeasured extrapolation, not a Mistral measurement."
         },
         "tool_definition_shape": {
           "value": "openai_function",
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Tool spec uses {type: 'function', function: {name, description, parameters}} — identical to OpenAI function-calling JSON schema."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: {\"type\": \"function\", \"function\": {name, description, parameters}} with a JSON-Schema `parameters` object — identical in shape to OpenAI function calling. tool_choice accepts auto (default) | any/required | none | a named tool."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Known Limitations: 'Tool descriptions are included in the token count. Long descriptions reduce available context for messages.'"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: Known Limitations states that tool descriptions consume tokens from the available context. Tool definitions are therefore billed as input tokens and eat the same 256k window as the messages — the premise of the footprint measurement."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://mistral.ai/news/more-control-over-connectors/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented lazy/deferred tool loading in Mistral API. Connectors can be registered selectively per conversation, which provides coarse control, but no automatic deferral mechanism."
+          "as_of": "2026-08-19",
+          "notes": "Still no automatic/lazy tool loading: nothing in the API defers tool schemas or lets the model search a catalog. What exists as of 2026-08-19 is manual, human-side pruning — admins can 'turn individual tools on or off for a whole org or one workspace' inside a Connector, Vibe Code offers a `/connectors` picker to choose which tools to enable, and the Vibe CLI supports enabled_tools/disabled_tools glob or regex filters (https://docs.mistral.ai/vibe/code/cli/mcp-servers). Those shrink what is sent, but every surviving tool is still serialized into every request."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/api",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No character cap on function/tool names documented in Mistral API spec or Known Limitations as of 2026-06-21. Note: Connector (MCP server) names have a 64-char cap (alphanumeric+underscore+dash), but this is the registry name, not the tool function name itself."
+          "as_of": "2026-08-19",
+          "notes": "No character ceiling or pattern for function/tool names is published: the API reference documents the `tools` parameter but not a Function object schema with maxLength/pattern (checked 2026-08-19). Two adjacent caps that DO bind: Connector (MCP server registry) names are 'up to 64 characters, alphanumeric with underscores and dashes only' (https://docs.mistral.ai/capabilities/connectors/management), and the Vibe CLI namespaces MCP tools as {server_name}_{tool_name} (https://docs.mistral.ai/vibe/code/cli/mcp-servers), so a long server alias eats into whatever name budget the model-side parser has."
         },
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented character or token cap on tool description length. Known Limitations states descriptions count toward the token budget, but imposes no hard character limit."
+          "as_of": "2026-08-19",
+          "notes": "No character or token ceiling for a tool description is published (re-checked 2026-08-19). The binding constraint is budgetary, not syntactic: Known Limitations says descriptions consume tokens from the available context, so long descriptions across 128 tools are charged against the shared 256k window."
         },
         "max_request_size": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No byte/MB payload cap documented for POST /v1/chat/completions. File upload endpoint has a 512 MB cap, but that is a separate endpoint. Chat request size is effectively bounded by the 256k token context window."
+          "as_of": "2026-08-19",
+          "notes": "No byte/MB payload ceiling is documented for POST /v1/chat/completions (the chat endpoint reference documents no array or payload size limits, checked 2026-08-19). Adjacent caps that are documented and that DO bind on neighbouring paths: 512 MB per uploaded file, 512 MB per batch file with up to 100,000 requests, 20 MB per image, 500 MB / 60 minutes per audio file. For chat itself the binding ceilings are the 256k token window and the 128-tool aggregate cap."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on individual tool result size. Tool results (role: 'tool' messages) count against the shared 256k context window."
+          "as_of": "2026-08-19",
+          "notes": "No numeric size ceiling for an individual tool result is documented (checked 2026-08-19). A tool result is an ordinary `tool`-role message, so it is charged against the shared 256k input+output window — that window, not a size rule, is what a chatty MCP tool blows."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
           "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "parallel_tool_calls is a boolean parameter (default: true); no numeric cap on simultaneous tool calls published. Known Limitations: 'Parallel function calls are supported but may return calls in any order.'"
+          "as_of": "2026-08-19",
+          "notes": "parallel_tool_calls is a boolean (default true) — no numeric ceiling on how many tool calls the model may emit in one turn is published (re-checked on the chat endpoint reference 2026-08-19). The 128-tool aggregate cap limits what is offered, not how many are invoked at once."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on tool-call/result cycles per turn or per agentic loop. Function calling docs show an example loop ('recursively call the model until it generates a final answer') with no stated limit."
+          "as_of": "2026-08-19",
+          "notes": "No numeric ceiling on tool-call/result cycles per turn or per agentic loop is published; the function calling guide's worked example loops back to the model until it produces a final answer without stating a cycle ceiling (re-checked 2026-08-19). Cost and the 256k window are what bound a long agentic run."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/capabilities/connectors/management",
+          "source_url": "https://docs.mistral.ai/api/endpoint/beta/connectors",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on the number of Connectors (MCP servers) that can be registered in a workspace or attached to a single conversation/agent. Connector list uses cursor-based pagination, suggesting potentially large counts are expected."
+          "as_of": "2026-08-19",
+          "notes": "No numeric ceiling on the number of Connectors (MCP servers) per workspace, org, agent or conversation is published (Connectors API reference and management docs re-checked 2026-08-19); listing uses keyset pagination with a page_size shown as high as 1000, which implies large counts are expected. Mistral advertises 'more than 60 integrations' plus custom MCP connectors (https://mistral.ai/news/more-control-over-connectors/). The limit that actually binds when you attach many servers is the aggregate 128-tool per-request cap."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No aggregate-across-connectors tool count documented separately. The API-level hard cap is 128 tools per request (max_tools_hard). If multiple connectors expose tools, all count toward that 128 limit."
+          "as_of": "2026-08-19",
+          "notes": "No separate aggregate catalog ceiling exists above the per-request cap: on Mistral the aggregate cap IS max_tools_hard = 128 tools per request, summed across your own functions, every connected Connector's tools and the built-in tools. GET /v1/connectors/{id}/tools paginates (default page_size 100) with no documented maximum tool count per connector (https://docs.mistral.ai/capabilities/connectors/management)."
         },
-        "tool_schema_limits_notes": "Connector (MCP server registry) names: max 64 chars, alphanumeric with underscores and dashes only (source: https://docs.mistral.ai/capabilities/connectors/management). Tool function name cap: not published. No documented limit on tool JSON schema depth, property count, or total tool definition byte size. Tool descriptions count toward the 256k token budget (Known Limitations).",
-        "other_limits_notes": "Rate limits enforced per API key (not per workspace): requests-per-second and tokens-per-minute independently. Returns 429 on breach. Check X-RateLimit-Remaining header. Batch API does not count against real-time limits. Connectors are beta (interface may change). Prompt caching: the API exposes a prompt_cache_key param (cached tokens billed at 10% of input price) as of 2026-06-21, though this was not prominently documented at the time of the initial skills_context.prompt_caching capture — verify current pricing page. Connector tool schemas are loaded into context when a Connector is referenced; large MCP servers with many tools will consume substantial context budget.",
+        "tool_schema_limits_notes": "Re-checked 2026-08-19. Connector (MCP server registry) names: 'up to 64 characters, alphanumeric with underscores and dashes only', unique within a workspace (https://docs.mistral.ai/capabilities/connectors/management / https://docs.mistral.ai/api/endpoint/beta/connectors). Tool function name cap: not published — the API reference documents the `tools` parameter but no Function object maxLength/pattern (https://docs.mistral.ai/api). No documented limit on JSON-Schema nesting depth, property count, enum size, or on unsupported keywords such as oneOf/anyOf/$ref — Mistral publishes no schema-shape rules at all, so the only reliable ceiling is the token budget: tool descriptions and schemas are charged as input against the shared 256k window (https://docs.mistral.ai/resources/known-limitations). Vibe CLI namespaces MCP tools as {server_name}_{tool_name} (https://docs.mistral.ai/vibe/code/cli/mcp-servers).",
+        "other_limits_notes": "CORRECTED 2026-08-19 — rate limits are set at the ORGANIZATION level and apply across all workspaces (the 2026-06-21 entry said 'per API key', which the tier docs contradict); three independent limits are enforced: requests per second, tokens per minute and tokens per month, with tier upgrades driven by cumulative billed amount and the actual numbers only visible in Admin > Limits (https://docs.mistral.ai/deployment/ai-studio/tier). Batch processing is 50% cheaper and does not compete with real-time limits; max batch file 512 MB / 100,000 requests, results retained 24h; streaming connections drop after 10 minutes of inactivity (https://docs.mistral.ai/resources/known-limitations). Prompt caching is now documented and is EXPLICIT, not automatic: pass prompt_cache_key, cache blocks are 64 tokens so cached_tokens is always a multiple of 64 and prompts under 64 tokens never hit, and cached prompt tokens bill at 10% of the standard input price (https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching). Connectors remain Public Preview; connector tool schemas are serialized into the request, so a large MCP server consumes a real share of the 256k window and of the 128-tool aggregate cap. Regional endpoints (EU/US) are GA and a Priority Tier with custom rate limits and an uptime SLA is in public preview (https://mistral.ai/news/regional-inference-open-models-new-compute/).",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "notes": "Re-checked 2026-08-19: Mistral documents no OpenAI-style `strict` flag and no structural schema restrictions (no 100-property / 5-level-depth / no-oneOf rules). The function calling guide exposes only name/description/parameters plus tool_choice and parallel_tool_calls. Structured Outputs is a separate response-format feature, not a tool schema mode.",
+          "as_of": "2026-08-19"
         }
       },
       "skills_context": {
         "skills_supported": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Agents API allows creating pre-configured model instances with system prompts and tools. These are the Mistral skills analog."
+          "as_of": "2026-08-19",
+          "notes": "Upgraded sourcing 2026-08-19: Mistral now has a literal Skills primitive (Studio and Vibe), announced 2026-07-09, in addition to Agents. A Skill packages 'a reusable method, checklist, or procedure that an AI assistant can apply when a task matches', with a trigger description, instructions and optional attached files, and Studio versions it immutably with rollback."
         },
         "skills_loading_model": {
-          "value": "always_on",
+          "value": "progressive_disclosure",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/vibe/work/skills",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Agent instructions (system prompt) and tool list are fixed at agent creation time and injected at conversation start. No progressive disclosure mechanism documented."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED always_on -> progressive_disclosure. Vibe documents a three-stage load: at session start 'Work loads only each Skill's name and description (~100 tokens each)'; when a task matches the description the full SKILL.md loads into context; referenced supporting files load only as needed. Studio says the same in prose — 'the description field ... determines when the assistant loads the Skill' (https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill). NOTE the asymmetry that matters for footprinting: Skills are progressively disclosed, but MCP/Connector TOOL definitions are not — those are serialized into every request."
         },
-        "skills_context_cost_notes": "Agent system prompts and tool definitions are injected as input tokens at the start of each conversation. Connector tool schemas are also loaded into context when a Connector is referenced in a conversation.",
-        "system_prompt_overhead_notes": "System prompt token cost depends on the agent's 'instructions' field content. Not a fixed overhead — developer-controlled. Tool descriptions additionally reduce available context per Known Limitations.",
+        "skills_context_cost_notes": "Re-measured against the docs 2026-08-19. Skills: ~100 tokens per enabled Skill at discovery (name + description only), then the full SKILL.md on activation, then referenced files on demand (https://docs.mistral.ai/vibe/work/skills); Mistral publishes no size ceiling for SKILL.md and only an unquantified 'supporting files are subject to a file-count limit'. Agents: the agent's `instructions` and its tool list are fixed at creation and injected into the conversation, billed as input tokens. Connector (MCP) tool schemas are NOT progressively disclosed — every tool left enabled is serialized into every request and charged as input (https://docs.mistral.ai/resources/known-limitations). Prompt caching can recover 90% of the cost of that repeated prefix if a stable prompt_cache_key is supplied (https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching).",
+        "system_prompt_overhead_notes": "No fixed platform-injected system prompt is documented (checked 2026-08-19). Overhead is developer-controlled through the agent's `instructions` field (https://docs.mistral.ai/studio/agents/introduction) plus whichever Skills are enabled (~100 tokens each until activated) and whichever tool definitions are attached, all of which are billed as input against the shared 256k window.",
         "prompt_caching": {
-          "value": false,
-          "confidence": "medium",
-          "source_url": null,
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No prompt caching / prefix caching feature documented in Mistral API as of 2026-06-21. Not mentioned in pricing, model cards, or API reference."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED false -> true. Prompt caching is documented as of 2026-08-19 and is explicit: set prompt_cache_key to 'a stable application-level identifier, such as a conversation ID, session ID, or workflow ID'. Cache blocks are 64 tokens, so cached_tokens is always a multiple of 64 and 'prompts with fewer than 64 prompt tokens do not have cache hits'; supplying the key 'doesn't guarantee' a hit. Cached prompt tokens bill at 10% of the standard input price. TTL is not published, nor is whether tool definitions specifically are cacheable — only that a compatible cached PREFIX is matched, which a stable tools array at the head of the request should satisfy."
         },
         "memory_feature": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/studio/agents/introduction",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Conversations API stores turn history server-side by default (opt-out with store=False). This persistent history is replayed as input tokens on each continuation, growing context over a session."
+          "as_of": "2026-08-19",
+          "notes": "Agents documentation describes 'persistent state across conversations' and agent-to-agent handoffs (re-checked 2026-08-19). Server-side conversation history is replayed as input tokens on each continuation, so a long session's context — and cost — grows turn over turn. The exact `store` parameter semantics are no longer spelled out on the current Agents introduction page."
         }
       },
       "cost": {
@@ -348,64 +354,89 @@
           "value": 1.5,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified against the API pricing table and the model card 2026-08-19; unchanged."
         },
         "output_per_mtok_usd": {
           "value": 7.5,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified against the API pricing table and the model card 2026-08-19; unchanged."
         },
         "cached_input_per_mtok_usd": {
-          "value": null,
+          "value": 0.15,
           "unit": "USD/1M tokens",
-          "confidence": "high",
-          "source_url": null,
+          "confidence": "medium",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No prompt caching feature; no cached input price tier documented."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED null -> 0.15. DERIVED: prompt caching now exists and 'cached prompt tokens are billed at 10% of the standard input token price', so this is 10% of the 1.5 USD/1M input rate. Mistral does not print a per-model cached rate on the pricing page (the marketing page phrases it as 'cached input tokens reduce input cost by up to 90%', https://mistral.ai/pricing), hence confidence medium rather than high.",
+          "derived": true
         },
         "batch_discount": {
           "value": "50% off",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/batch-processing",
+          "source_url": "https://mistral.ai/pricing",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Batch API provides 50% discount for asynchronous inference. Batch does not count against real-time rate limits."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: 'Batch processing, for high-volume work, reduces the price by 50%'. Batch does not compete with real-time rate limits; max batch file 512 MB / 100,000 requests (https://docs.mistral.ai/resources/known-limitations)."
         },
         "billing_unit": {
           "value": "tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Priced per million input and output tokens, counted separately."
         },
-        "multimodal_billing_notes": "Image input billing rule (tiles/tokens per image) not published. Audio transcription billed separately (audio endpoint). Check pricing page for any per-image or per-minute surcharges.",
+        "multimodal_billing_notes": "Checked 2026-08-19: no per-image or per-tile token rule and no per-image surcharge is published — the Vision page leaves 'How many tokens correspond to an image' as an unanswered FAQ heading (https://docs.mistral.ai/capabilities/vision); images are simply capped at 20 MB each (https://docs.mistral.ai/resources/known-limitations). Audio is not a capability of this model; transcription/TTS run on the separate Voxtral models and endpoints and are priced separately (https://mistral.ai/pricing/api).",
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/reasoning",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a documented reasoning model; no reasoning token billing."
+          "as_of": "2026-08-19",
+          "notes": "Left null deliberately. The model does emit thinking content when reasoning_effort='high' (a ThinkChunk precedes the TextChunk), and Mistral warns it means 'increased token usage', but no page states which meter those tokens land on or exposes a separate reasoning-token price or budget. Assume output-priced for planning, but that is not documented."
         }
       },
       "self_host": null,
-      "notes": "Mistral Medium 3.5 (v26.04) is the latest and most capable general-purpose model as of 2026-06-21. It is also released as open weights under a Modified MIT license (HF: mistralai/Mistral-Medium-3.5), but this file covers the hosted API only. API string: 'mistral-medium-3-5' or 'mistral-medium-latest' (verify via /models).",
+      "notes": "Re-verified 2026-08-19; still Mistral's flagship general-purpose model and unchanged since the 2026-06-21 capture (no successor shipped — the only model releases between 2026-06-21 and today were OCR 4.0 on 2026-06-23, Leanstral 1.5 on 2026-06-30 and OCR 4.1 on 2026-07-16, none of them generalist). API string mistral-medium-3-5-26-04 (alias mistral-medium-latest); v26.04, released 2026-04-28, Modified MIT open weights. The official HF card corrects two things in the previous entry: it is a DENSE 128B model (not MoE), it takes text+image in and emits text only (no audio), and it exposes a per-request reasoning_effort of 'none' or 'high'. 256k context, 128-tool aggregate cap, $1.5/$7.5 per 1M in/out — all unchanged.",
       "sources": [
         "https://docs.mistral.ai/models/model-cards/mistral-medium-3-5-26-04",
+        "https://huggingface.co/mistralai/Mistral-Medium-3.5-128B",
         "https://docs.mistral.ai/resources/known-limitations",
-        "https://docs.mistral.ai/capabilities/connectors",
+        "https://docs.mistral.ai/models",
+        "https://docs.mistral.ai/models/overview",
+        "https://docs.mistral.ai/resources/changelogs",
         "https://docs.mistral.ai/capabilities/function_calling",
-        "https://docs.mistral.ai/studio-api/batch-processing",
-        "https://docs.mistral.ai/studio-api/agents/agents-api",
-        "https://github.com/mistralai/mistral-common",
+        "https://docs.mistral.ai/studio/connectors",
+        "https://docs.mistral.ai/capabilities/connectors/management",
+        "https://docs.mistral.ai/api/endpoint/beta/connectors",
+        "https://mistral.ai/news/more-control-over-connectors/",
+        "https://docs.mistral.ai/api/endpoint/chat",
+        "https://docs.mistral.ai/api",
+        "https://docs.mistral.ai/capabilities/vision",
+        "https://docs.mistral.ai/studio-api/conversations/reasoning",
+        "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
+        "https://docs.mistral.ai/studio/agents/introduction",
+        "https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill",
+        "https://docs.mistral.ai/vibe/work/skills",
+        "https://docs.mistral.ai/vibe/code/cli/mcp-servers",
+        "https://docs.mistral.ai/deployment/ai-studio/tier",
         "https://docs.mistral.ai/resources/cookbooks/concept-deep-dive-tokenization-readme",
-        "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5"
+        "https://github.com/mistralai/mistral-common",
+        "https://mistralai.github.io/mistral-common/usage/tokenizers/",
+        "https://mistral.ai/pricing",
+        "https://mistral.ai/pricing/api",
+        "https://mistral.ai/news/mistral-nemo/",
+        "https://huggingface.co/toksuite/mistralai-tekken",
+        "https://presenc.ai/research/ai-agent-tool-calling-accuracy-benchmarks-2026",
+        "https://tianpan.co/blog/2026-04-19-over-tooled-agent-problem"
       ]
     },
     {
@@ -417,18 +448,22 @@
         "confidence": "high",
         "source_url": "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
         "source_tier": 1,
-        "as_of": "2026-06-21"
+        "as_of": "2026-08-19",
+        "notes": "Re-verified on the model card 2026-08-19; unchanged."
       },
       "status": "ga",
       "knowledge_cutoff": {
         "value": null,
         "confidence": "low",
         "source_url": null,
-        "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Not published in model card or docs as of 2026-06-21."
+        "as_of": "2026-08-19",
+        "notes": "Still not published. Checked the Mistral model card (https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03) and the official Hugging Face model card (https://huggingface.co/mistralai/Mistral-Small-4-119B-2603) on 2026-08-19 — neither states a training-data cutoff date."
       },
-      "modalities": ["text", "image", "pdf"],
+      "modalities": [
+        "text",
+        "image",
+        "pdf"
+      ],
       "context": {
         "context_window_tokens": {
           "value": 256000,
@@ -436,44 +471,44 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Confirmed in Known Limitations context-window table and model card."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the Known Limitations context-window table still lists this model at 256k tokens; the official HF model card (https://huggingface.co/mistralai/Mistral-Small-4-119B-2603) repeats '256k context'."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Known Limitations: 'Token counts include both input and output tokens.'"
+          "as_of": "2026-08-19",
+          "notes": "Known Limitations, re-read 2026-08-19: both input and output tokens are included in the context calculation — 'Plan your max_tokens accordingly.'"
         },
         "max_input_tokens": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": false,
-          "notes": "Not published as a separate cap. Effective max input = context_window - max_tokens_requested."
+          "notes": "No separate input ceiling is published. The chat endpoint reference states only that 'The token count of your prompt plus max_tokens cannot exceed the model's context length', so the effective input ceiling is 256k minus the requested max_tokens. Not recorded as a number because it is request-dependent, not a documented constant."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/api",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Mistral docs state default varies by model; query /models endpoint."
+          "as_of": "2026-08-19",
+          "notes": "No default value for max_tokens is documented on the chat endpoint reference (re-read 2026-08-19); the parameter is described without a stated default or maximum."
         },
         "max_output_tokens_max": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/api",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Bounded by context_window_tokens minus input. No separate published hard cap."
+          "as_of": "2026-08-19",
+          "notes": "No per-completion output ceiling is published. The only documented bound is 'prompt + max_tokens cannot exceed the model's context length' (256k). This is a genuine documentation gap, not an absence of constraint — the shared 256k window is what binds."
         },
         "extended_context": {
           "value": null,
@@ -481,16 +516,16 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No extended/beta context beyond 256k documented."
+          "as_of": "2026-08-19",
+          "notes": "No extended/beta context tier beyond 256k appears in the Known Limitations table (re-read 2026-08-19)."
         },
         "reasoning_tokens_count_as_output": {
           "value": null,
-          "confidence": "medium",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
+          "confidence": "low",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/reasoning",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Mistral Small 4 is a hybrid instruct+reasoning model (119B total / 6.5B active MoE). Reasoning mode is available but billing of thinking tokens as output vs. input is not explicitly documented."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED sourcing: this model IS a reasoning model. The Reasoning page lists mistral-small-latest as supporting the per-request reasoning_effort parameter ('high' emits a ThinkChunk before the TextChunk; 'none' omits it); the HF model card (https://huggingface.co/mistralai/Mistral-Small-4-119B-2603) repeats 'configurable reasoning effort per request'. Mistral does NOT document how thinking tokens are counted or billed, and there is no thinking-budget parameter — so the value stays null rather than assuming they bill as output."
         }
       },
       "tokenization": {
@@ -499,53 +534,56 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/cookbooks/concept-deep-dive-tokenization-readme",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Current Mistral models use V3-Tekken; mistral-common README confirms only Tekken tokenizers are released for recent models."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Mistral's tokenization deep-dive still documents V1/V2/V3 with V3-Tekken as the tiktoken-based variant used by recent models; the official HF card for this model (https://huggingface.co/mistralai/Mistral-Small-4-119B-2603) names Tekken and pins a minimum mistral-common version. Exact Tekken sub-version per model is not published."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://github.com/mistralai/mistral-common",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "mistral-common remains open source; tokenizer files are downloadable from the HF Hub."
         },
         "tokenizer_access": {
-          "value": "pip install mistral-common; tokenizer downloadable from HF Hub via mistral-common[hf-hub]",
+          "value": "pip install mistral-common; MistralTokenizer.from_hf_hub(\"<hf-model-id>\") pulls the Tekken tokenizer from the HF Hub",
           "confidence": "high",
-          "source_url": "https://github.com/mistralai/mistral-common",
+          "source_url": "https://mistralai.github.io/mistral-common/usage/tokenizers/",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Refreshed 2026-08-19 to the current documented loading path. Extras: pip install \"mistral-common[image]\" / \"mistral-common[audio,hf-hub]\"."
         },
         "count_tokens_method": {
-          "value": "from mistral_common.tokens.tokenizers.mistral import MistralTokenizer; tok = MistralTokenizer.v3(); tokens = tok.encode(text)",
+          "value": "from mistral_common.tokens.tokenizers.mistral import MistralTokenizer; tok = MistralTokenizer.from_hf_hub(\"<hf-model-id>\"); n = len(tok.encode_chat_completion(ChatCompletionRequest(messages=[...])).tokens)",
           "confidence": "high",
-          "source_url": "https://github.com/mistralai/mistral-common",
+          "source_url": "https://mistralai.github.io/mistral-common/usage/tokenizers/",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "CHANGED: the previously recorded MistralTokenizer.v3() call is superseded by the documented from_hf_hub + encode_chat_completion flow. Caveat verified 2026-08-19: the mistral-common usage docs show no worked example of putting `tools` into the ChatCompletionRequest, so tool-definition token counts obtained this way are reconstructions, not a vendor-blessed recipe. Mistral exposes no server-side count-tokens endpoint."
         },
         "image_token_rule": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/vision",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Vision supported per model card. Tiling/token rule not published."
+          "as_of": "2026-08-19",
+          "notes": "Still undocumented, and now confirmed as a deliberate gap: the Vision capability page carries the FAQ heading 'How many tokens correspond to an image and/or what is the maximum resolution?' with no answer beneath it (checked 2026-08-19). The only published image constraint is a 20 MB per-image cap in Known Limitations (https://docs.mistral.ai/resources/known-limitations)."
         },
         "audio_token_rule": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Audio transcription listed as feature. Tokens-per-second not documented."
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED 2026-08-19: the model card does not list audio as a capability for this model, and the official HF card (https://huggingface.co/mistralai/Mistral-Small-4-119B-2603) gives the modalities as text+image in / text out. Audio is handled by the separate Voxtral models and endpoints, so no audio token rule applies here. (The 2026-06-21 entry's 'audio transcription listed as a feature' claim did not hold up on re-read.)"
         },
         "chars_per_token_estimate": {
-          "value": 4.0,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "Rough estimate for BPE on English text. Use mistral-common for accuracy."
+          "source_url": "https://mistral.ai/news/mistral-nemo/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED to null: the previous 4.0 was an unsourced industry rule of thumb. Searched Mistral's tokenization deep-dive, the mistral-common docs and the Tekken tokenizer card (https://huggingface.co/toksuite/mistralai-tekken, vocab 130,000, tier 3) on 2026-08-19 — no chars-per-token or bytes-per-token figure is published for Tekken. The only quantitative claim Mistral makes is relative: Tekken is '~30% more efficient at compressing source code, Chinese, Italian, French, German, Spanish, and Russian' and 2x/3x on Korean/Arabic versus the Llama 3 tokenizer. Use mistral-common for exact counts."
         }
       },
       "tools_mcp": {
@@ -554,166 +592,174 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Function Calling is listed in the model card's feature list (re-verified 2026-08-19) and the model appears in the function-calling guide's supported-model list (https://docs.mistral.ai/capabilities/function_calling)."
         },
         "native_mcp": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/capabilities/connectors",
+          "source_url": "https://docs.mistral.ai/studio/connectors",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Connectors (MCP) feature is platform-level; applies to all function-calling capable models including Mistral Small 4."
+          "as_of": "2026-08-19",
+          "notes": "Platform-level: any function-calling model can be pointed at registered Connectors (MCP servers), whose tools the model 'discovers automatically and calls ... based on the user's request'. Still Public Preview as of 2026-08-19; the API interface can change. Vibe Code additionally speaks MCP directly over stdio, HTTP and streamable HTTP (https://docs.mistral.ai/vibe/code/cli/mcp-servers)."
         },
         "parallel_tool_calls": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified on the chat endpoint reference 2026-08-19: parallel_tool_calls — 'Whether to enable parallel function calling during tool use, when enabled the model can call multiple tools in parallel.' Default Value: true."
         },
         "max_tools_hard": {
           "value": 128,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Unchanged and re-verified 2026-08-19: Known Limitations still states 'Maximum number of tools per request: 128.' SCOPE = AGGREGATE — it counts every tool in the request's `tools` array together: your own functions, every tool pulled in from each connected Connector (MCP server), and Mistral's built-in tools (web search, code interpreter, image generation, document library), which are passed in the same array (https://docs.mistral.ai/api/endpoint/chat). It is not a per-MCP-server cap; no per-server tool cap is documented anywhere."
         },
         "max_tools_practical": {
-          "value": 40,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "Community consensus estimate (~30-50 tools). No Mistral Small 4-specific study."
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 20 → null (2026-08-19 final audit): no empirical source has measured a Mistral model's tool-count degradation, so no practical tool ceiling can be asserted for Mistral Small 4. The previously cited leaderboard (https://presenc.ai/research/ai-agent-tool-calling-accuracy-benchmarks-2026, tier 4, re-opened 2026-08-19) measures only Claude Opus 4.7, GPT-5 Pro, Claude Sonnet 4.6, Gemini 2.5 Pro, GPT-5, Qwen 3 235B, Llama 4 405B, Qwen 3 32B, Llama 4 70B and DeepSeek V4 — NO Mistral model appears in it, so its \"accuracy degrades to 85-91 percent at 5 tools, then to 65-78 percent at 20+ tools\" band (exemplified on Claude Opus 4.7: 96% at 1 tool → 91% at 5 → 76% at 20+) is evidence about those models only. The practitioner write-up previously quoted alongside it (https://tianpan.co/blog/2026-04-19-over-tooled-agent-problem, \"safe zone ... at roughly 10-20 tools per reasoning context\") likewise names no Mistral model. Mistral itself publishes no tool-count guidance: the function-calling docs (https://docs.mistral.ai/capabilities/function_calling/, tier 1, checked 2026-08-19) list Mistral Small 4 among the function-calling models but state no maximum or recommended number of tools and no degradation threshold. Binding limits that DO apply: the documented 128-tool hard cap per request (see max_tools_hard, https://docs.mistral.ai/resources/known-limitations, tier 1) and the 256,000-token shared input+output context window that every tool definition is billed into. Any cross-vendor 10-20-tool rule of thumb applied to Mistral is an unmeasured extrapolation, not a Mistral measurement."
         },
         "tool_definition_shape": {
           "value": "openai_function",
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: {\"type\": \"function\", \"function\": {name, description, parameters}} with a JSON-Schema `parameters` object — identical in shape to OpenAI function calling. tool_choice accepts auto (default) | any/required | none | a named tool."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: Known Limitations states that tool descriptions consume tokens from the available context. Tool definitions are therefore billed as input tokens and eat the same 256k window as the messages — the premise of the footprint measurement."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://mistral.ai/news/more-control-over-connectors/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No deferred/lazy tool loading documented."
+          "as_of": "2026-08-19",
+          "notes": "Still no automatic/lazy tool loading: nothing in the API defers tool schemas or lets the model search a catalog. What exists as of 2026-08-19 is manual, human-side pruning — admins can 'turn individual tools on or off for a whole org or one workspace' inside a Connector, Vibe Code offers a `/connectors` picker to choose which tools to enable, and the Vibe CLI supports enabled_tools/disabled_tools glob or regex filters (https://docs.mistral.ai/vibe/code/cli/mcp-servers). Those shrink what is sent, but every surviving tool is still serialized into every request."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/api",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No character cap on function/tool names documented in Mistral API spec or Known Limitations as of 2026-06-21. Connector registry names are capped at 64 chars (alphanumeric+underscore+dash) but that is the server-registration name, not the tool function name."
+          "as_of": "2026-08-19",
+          "notes": "No character ceiling or pattern for function/tool names is published: the API reference documents the `tools` parameter but not a Function object schema with maxLength/pattern (checked 2026-08-19). Two adjacent caps that DO bind: Connector (MCP server registry) names are 'up to 64 characters, alphanumeric with underscores and dashes only' (https://docs.mistral.ai/capabilities/connectors/management), and the Vibe CLI namespaces MCP tools as {server_name}_{tool_name} (https://docs.mistral.ai/vibe/code/cli/mcp-servers), so a long server alias eats into whatever name budget the model-side parser has."
         },
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented character or token cap on tool description length. Descriptions count toward the token budget (Known Limitations) but no hard limit published."
+          "as_of": "2026-08-19",
+          "notes": "No character or token ceiling for a tool description is published (re-checked 2026-08-19). The binding constraint is budgetary, not syntactic: Known Limitations says descriptions consume tokens from the available context, so long descriptions across 128 tools are charged against the shared 256k window."
         },
         "max_request_size": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No byte/MB payload cap documented for POST /v1/chat/completions. Bounded in practice by the 256k token context window."
+          "as_of": "2026-08-19",
+          "notes": "No byte/MB payload ceiling is documented for POST /v1/chat/completions (the chat endpoint reference documents no array or payload size limits, checked 2026-08-19). Adjacent caps that are documented and that DO bind on neighbouring paths: 512 MB per uploaded file, 512 MB per batch file with up to 100,000 requests, 20 MB per image, 500 MB / 60 minutes per audio file. For chat itself the binding ceilings are the 256k token window and the 128-tool aggregate cap."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on individual tool result size. Results count against the shared 256k context window."
+          "as_of": "2026-08-19",
+          "notes": "No numeric size ceiling for an individual tool result is documented (checked 2026-08-19). A tool result is an ordinary `tool`-role message, so it is charged against the shared 256k input+output window — that window, not a size rule, is what a chatty MCP tool blows."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
           "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "parallel_tool_calls is a boolean parameter (default: true); no numeric cap on simultaneous tool calls published."
+          "as_of": "2026-08-19",
+          "notes": "parallel_tool_calls is a boolean (default true) — no numeric ceiling on how many tool calls the model may emit in one turn is published (re-checked on the chat endpoint reference 2026-08-19). The 128-tool aggregate cap limits what is offered, not how many are invoked at once."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on tool-call/result cycles per turn or per agentic loop."
+          "as_of": "2026-08-19",
+          "notes": "No numeric ceiling on tool-call/result cycles per turn or per agentic loop is published; the function calling guide's worked example loops back to the model until it produces a final answer without stating a cycle ceiling (re-checked 2026-08-19). Cost and the 256k window are what bound a long agentic run."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/capabilities/connectors/management",
+          "source_url": "https://docs.mistral.ai/api/endpoint/beta/connectors",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on the number of Connectors attached to a conversation or agent. Platform-level cap not published."
+          "as_of": "2026-08-19",
+          "notes": "No numeric ceiling on the number of Connectors (MCP servers) per workspace, org, agent or conversation is published (Connectors API reference and management docs re-checked 2026-08-19); listing uses keyset pagination with a page_size shown as high as 1000, which implies large counts are expected. Mistral advertises 'more than 60 integrations' plus custom MCP connectors (https://mistral.ai/news/more-control-over-connectors/). The limit that actually binds when you attach many servers is the aggregate 128-tool per-request cap."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No aggregate-tool-count figure beyond the 128 per-request hard cap. All connector tools count toward the 128 limit."
+          "as_of": "2026-08-19",
+          "notes": "No separate aggregate catalog ceiling exists above the per-request cap: on Mistral the aggregate cap IS max_tools_hard = 128 tools per request, summed across your own functions, every connected Connector's tools and the built-in tools. GET /v1/connectors/{id}/tools paginates (default page_size 100) with no documented maximum tool count per connector (https://docs.mistral.ai/capabilities/connectors/management)."
         },
-        "tool_schema_limits_notes": "Connector (MCP server registry) names: max 64 chars, alphanumeric+underscore+dash only (source: https://docs.mistral.ai/capabilities/connectors/management). Tool function name cap: not published. No documented limit on JSON schema depth or property count. Tool descriptions count toward the 256k token budget.",
-        "other_limits_notes": "Rate limits enforced per API key: requests-per-second and tokens-per-minute independently; 429 on breach. Batch API exempt from real-time limits. Connectors are beta. prompt_cache_key param available in API (cached tokens at 10% of input price) — see other_limits_notes for Medium 3.5.",
+        "tool_schema_limits_notes": "Re-checked 2026-08-19. Connector (MCP server registry) names: 'up to 64 characters, alphanumeric with underscores and dashes only', unique within a workspace (https://docs.mistral.ai/capabilities/connectors/management / https://docs.mistral.ai/api/endpoint/beta/connectors). Tool function name cap: not published — the API reference documents the `tools` parameter but no Function object maxLength/pattern (https://docs.mistral.ai/api). No documented limit on JSON-Schema nesting depth, property count, enum size, or on unsupported keywords such as oneOf/anyOf/$ref — Mistral publishes no schema-shape rules at all, so the only reliable ceiling is the token budget: tool descriptions and schemas are charged as input against the shared 256k window (https://docs.mistral.ai/resources/known-limitations). Vibe CLI namespaces MCP tools as {server_name}_{tool_name} (https://docs.mistral.ai/vibe/code/cli/mcp-servers).",
+        "other_limits_notes": "CORRECTED 2026-08-19 — rate limits are set at the ORGANIZATION level and apply across all workspaces (the 2026-06-21 entry said 'per API key', which the tier docs contradict); three independent limits are enforced: requests per second, tokens per minute and tokens per month, with tier upgrades driven by cumulative billed amount and the actual numbers only visible in Admin > Limits (https://docs.mistral.ai/deployment/ai-studio/tier). Batch processing is 50% cheaper and does not compete with real-time limits; max batch file 512 MB / 100,000 requests, results retained 24h; streaming connections drop after 10 minutes of inactivity (https://docs.mistral.ai/resources/known-limitations). Prompt caching is now documented and is EXPLICIT, not automatic: pass prompt_cache_key, cache blocks are 64 tokens so cached_tokens is always a multiple of 64 and prompts under 64 tokens never hit, and cached prompt tokens bill at 10% of the standard input price (https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching). Connectors remain Public Preview; connector tool schemas are serialized into the request, so a large MCP server consumes a real share of the 256k window and of the 128-tool aggregate cap. Regional endpoints (EU/US) are GA and a Priority Tier with custom rate limits and an uptime SLA is in public preview (https://mistral.ai/news/regional-inference-open-models-new-compute/).",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "notes": "Re-checked 2026-08-19: Mistral documents no OpenAI-style `strict` flag and no structural schema restrictions (no 100-property / 5-level-depth / no-oneOf rules). The function calling guide exposes only name/description/parameters plus tool_choice and parallel_tool_calls. Structured Outputs is a separate response-format feature, not a tool schema mode.",
+          "as_of": "2026-08-19"
         }
       },
       "skills_context": {
         "skills_supported": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Upgraded sourcing 2026-08-19: Mistral now has a literal Skills primitive (Studio and Vibe), announced 2026-07-09, in addition to Agents. A Skill packages 'a reusable method, checklist, or procedure that an AI assistant can apply when a task matches', with a trigger description, instructions and optional attached files, and Studio versions it immutably with rollback."
         },
         "skills_loading_model": {
-          "value": "always_on",
+          "value": "progressive_disclosure",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/vibe/work/skills",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "CHANGED always_on -> progressive_disclosure. Vibe documents a three-stage load: at session start 'Work loads only each Skill's name and description (~100 tokens each)'; when a task matches the description the full SKILL.md loads into context; referenced supporting files load only as needed. Studio says the same in prose — 'the description field ... determines when the assistant loads the Skill' (https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill). NOTE the asymmetry that matters for footprinting: Skills are progressively disclosed, but MCP/Connector TOOL definitions are not — those are serialized into every request."
         },
-        "skills_context_cost_notes": "Agent system prompt and tool list injected at conversation start as input tokens.",
-        "system_prompt_overhead_notes": "Developer-controlled via 'instructions' field in agent creation. No fixed platform-injected system prompt documented.",
+        "skills_context_cost_notes": "Re-measured against the docs 2026-08-19. Skills: ~100 tokens per enabled Skill at discovery (name + description only), then the full SKILL.md on activation, then referenced files on demand (https://docs.mistral.ai/vibe/work/skills); Mistral publishes no size ceiling for SKILL.md and only an unquantified 'supporting files are subject to a file-count limit'. Agents: the agent's `instructions` and its tool list are fixed at creation and injected into the conversation, billed as input tokens. Connector (MCP) tool schemas are NOT progressively disclosed — every tool left enabled is serialized into every request and charged as input (https://docs.mistral.ai/resources/known-limitations). Prompt caching can recover 90% of the cost of that repeated prefix if a stable prompt_cache_key is supplied (https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching).",
+        "system_prompt_overhead_notes": "No fixed platform-injected system prompt is documented (checked 2026-08-19). Overhead is developer-controlled through the agent's `instructions` field (https://docs.mistral.ai/studio/agents/introduction) plus whichever Skills are enabled (~100 tokens each until activated) and whichever tool definitions are attached, all of which are billed as input against the shared 256k window.",
         "prompt_caching": {
-          "value": false,
-          "confidence": "medium",
-          "source_url": null,
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No prompt caching feature documented."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED false -> true. Prompt caching is documented as of 2026-08-19 and is explicit: set prompt_cache_key to 'a stable application-level identifier, such as a conversation ID, session ID, or workflow ID'. Cache blocks are 64 tokens, so cached_tokens is always a multiple of 64 and 'prompts with fewer than 64 prompt tokens do not have cache hits'; supplying the key 'doesn't guarantee' a hit. Cached prompt tokens bill at 10% of the standard input price. TTL is not published, nor is whether tool definitions specifically are cacheable — only that a compatible cached PREFIX is matched, which a stable tools array at the head of the request should satisfy."
         },
         "memory_feature": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/studio/agents/introduction",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Conversations API stores history server-side by default."
+          "as_of": "2026-08-19",
+          "notes": "Agents documentation describes 'persistent state across conversations' and agent-to-agent handoffs (re-checked 2026-08-19). Server-side conversation history is replayed as input tokens on each continuation, so a long session's context — and cost — grows turn over turn. The exact `store` parameter semantics are no longer spelled out on the current Agents introduction page."
         }
       },
       "cost": {
@@ -721,61 +767,89 @@
           "value": 0.15,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified against the API pricing table and the model card 2026-08-19; unchanged."
         },
         "output_per_mtok_usd": {
           "value": 0.6,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified against the API pricing table and the model card 2026-08-19; unchanged."
         },
         "cached_input_per_mtok_usd": {
-          "value": null,
+          "value": 0.015,
           "unit": "USD/1M tokens",
-          "confidence": "high",
-          "source_url": null,
+          "confidence": "medium",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No prompt caching; no cached price tier."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED null -> 0.015. DERIVED: prompt caching now exists and 'cached prompt tokens are billed at 10% of the standard input token price', so this is 10% of the 0.15 USD/1M input rate. Mistral does not print a per-model cached rate on the pricing page (the marketing page phrases it as 'cached input tokens reduce input cost by up to 90%', https://mistral.ai/pricing), hence confidence medium rather than high.",
+          "derived": true
         },
         "batch_discount": {
           "value": "50% off",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/batch-processing",
+          "source_url": "https://mistral.ai/pricing",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: 'Batch processing, for high-volume work, reduces the price by 50%'. Batch does not compete with real-time rate limits; max batch file 512 MB / 100,000 requests (https://docs.mistral.ai/resources/known-limitations)."
         },
         "billing_unit": {
           "value": "tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Priced per million input and output tokens, counted separately."
         },
-        "multimodal_billing_notes": "Image and audio billing specifics not published per-model.",
+        "multimodal_billing_notes": "Checked 2026-08-19: no per-image or per-tile token rule and no per-image surcharge is published — the Vision page leaves 'How many tokens correspond to an image' as an unanswered FAQ heading (https://docs.mistral.ai/capabilities/vision); images are simply capped at 20 MB each (https://docs.mistral.ai/resources/known-limitations). Audio is not a capability of this model; transcription/TTS run on the separate Voxtral models and endpoints and are priced separately (https://mistral.ai/pricing/api).",
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/reasoning",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Hybrid reasoning model but reasoning-token billing not explicitly documented."
+          "as_of": "2026-08-19",
+          "notes": "Left null deliberately. The model does emit thinking content when reasoning_effort='high' (a ThinkChunk precedes the TextChunk), and Mistral warns it means 'increased token usage', but no page states which meter those tokens land on or exposes a separate reasoning-token price or budget. Assume output-priced for planning, but that is not documented."
         }
       },
       "self_host": null,
-      "notes": "Mistral Small 4 (v26.03, API: mistral-small-2603 / mistral-small-latest) is a 119B-param MoE model with 6.5B active params — hybrid instruct+reasoning+coding. Excellent cost/performance ratio. Also available as open weights. The '+1' alternate API string shown in model card likely refers to a versioned alias.",
+      "notes": "Re-verified 2026-08-19; unchanged. API string mistral-small-2603 (alias mistral-small-latest); v26.03, released 2026-03-16, Apache 2.0. 119B total / 6.5B active MoE (128 experts, 4 active per the official HF card), hybrid instruct+reasoning+coding, text+image in / text out, per-request reasoning_effort none|high. 256k context, 128-tool aggregate cap, $0.15/$0.60 per 1M in/out. Not affected by any announced deprecation — the retirements in flight cover Mistral Small 3.2 (2026-07-31) and Mistral Medium 3 / 3.1 (2026-08-31).",
       "sources": [
         "https://docs.mistral.ai/models/model-cards/mistral-small-4-0-26-03",
+        "https://huggingface.co/mistralai/Mistral-Small-4-119B-2603",
         "https://docs.mistral.ai/resources/known-limitations",
-        "https://docs.mistral.ai/capabilities/connectors",
+        "https://docs.mistral.ai/models",
+        "https://docs.mistral.ai/models/overview",
+        "https://docs.mistral.ai/resources/changelogs",
         "https://docs.mistral.ai/capabilities/function_calling",
-        "https://docs.mistral.ai/studio-api/batch-processing",
-        "https://docs.mistral.ai/studio-api/agents/agents-api",
-        "https://github.com/mistralai/mistral-common"
+        "https://docs.mistral.ai/studio/connectors",
+        "https://docs.mistral.ai/capabilities/connectors/management",
+        "https://docs.mistral.ai/api/endpoint/beta/connectors",
+        "https://mistral.ai/news/more-control-over-connectors/",
+        "https://docs.mistral.ai/api/endpoint/chat",
+        "https://docs.mistral.ai/api",
+        "https://docs.mistral.ai/capabilities/vision",
+        "https://docs.mistral.ai/studio-api/conversations/reasoning",
+        "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
+        "https://docs.mistral.ai/studio/agents/introduction",
+        "https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill",
+        "https://docs.mistral.ai/vibe/work/skills",
+        "https://docs.mistral.ai/vibe/code/cli/mcp-servers",
+        "https://docs.mistral.ai/deployment/ai-studio/tier",
+        "https://docs.mistral.ai/resources/cookbooks/concept-deep-dive-tokenization-readme",
+        "https://github.com/mistralai/mistral-common",
+        "https://mistralai.github.io/mistral-common/usage/tokenizers/",
+        "https://mistral.ai/pricing",
+        "https://mistral.ai/pricing/api",
+        "https://mistral.ai/news/mistral-nemo/",
+        "https://huggingface.co/toksuite/mistralai-tekken",
+        "https://presenc.ai/research/ai-agent-tool-calling-accuracy-benchmarks-2026",
+        "https://tianpan.co/blog/2026-04-19-over-tooled-agent-problem"
       ]
     },
     {
@@ -787,18 +861,22 @@
         "confidence": "high",
         "source_url": "https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12",
         "source_tier": 1,
-        "as_of": "2026-06-21"
+        "as_of": "2026-08-19",
+        "notes": "Re-verified on the model card 2026-08-19; unchanged."
       },
       "status": "ga",
       "knowledge_cutoff": {
         "value": null,
         "confidence": "low",
         "source_url": null,
-        "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Not published in model card as of 2026-06-21."
+        "as_of": "2026-08-19",
+        "notes": "Still not published. Checked the Mistral model card (https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12) and the official Hugging Face model card (https://huggingface.co/mistralai/Mistral-Large-3) on 2026-08-19 — neither states a training-data cutoff date."
       },
-      "modalities": ["text", "image", "pdf"],
+      "modalities": [
+        "text",
+        "image",
+        "pdf"
+      ],
       "context": {
         "context_window_tokens": {
           "value": 256000,
@@ -806,43 +884,44 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Confirmed in Known Limitations table and model card."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the Known Limitations context-window table still lists this model at 256k tokens; the official HF model card (https://huggingface.co/mistralai/Mistral-Large-3) repeats '256k context'."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Known Limitations, re-read 2026-08-19: both input and output tokens are included in the context calculation — 'Plan your max_tokens accordingly.'"
         },
         "max_input_tokens": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": false,
-          "notes": "Not published as a separate cap."
+          "notes": "No separate input ceiling is published. The chat endpoint reference states only that 'The token count of your prompt plus max_tokens cannot exceed the model's context length', so the effective input ceiling is 256k minus the requested max_tokens. Not recorded as a number because it is request-dependent, not a documented constant."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/api",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Default varies by model; not published. Query /models endpoint."
+          "as_of": "2026-08-19",
+          "notes": "No default value for max_tokens is documented on the chat endpoint reference (re-read 2026-08-19); the parameter is described without a stated default or maximum."
         },
         "max_output_tokens_max": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/api",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Bounded by 256k context window minus input. No separate hard cap published."
+          "as_of": "2026-08-19",
+          "notes": "No per-completion output ceiling is published. The only documented bound is 'prompt + max_tokens cannot exceed the model's context length' (256k). This is a genuine documentation gap, not an absence of constraint — the shared 256k window is what binds."
         },
         "extended_context": {
           "value": null,
@@ -850,16 +929,16 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No extended context beyond 256k documented."
+          "as_of": "2026-08-19",
+          "notes": "No extended/beta context tier beyond 256k appears in the Known Limitations table (re-read 2026-08-19)."
         },
         "reasoning_tokens_count_as_output": {
           "value": null,
-          "confidence": "low",
-          "source_url": null,
+          "confidence": "medium",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/reasoning",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a reasoning model."
+          "as_of": "2026-08-19",
+          "notes": "Mistral Large 3 is not listed among the models that accept reasoning_effort on the Reasoning page (only mistral-small-latest and mistral-medium-3-5 are, checked 2026-08-19), so no reasoning-token accounting applies."
         }
       },
       "tokenization": {
@@ -868,220 +947,232 @@
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/cookbooks/concept-deep-dive-tokenization-readme",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Mistral's tokenization deep-dive still documents V1/V2/V3 with V3-Tekken as the tiktoken-based variant used by recent models; the official HF card for this model (https://huggingface.co/mistralai/Mistral-Large-3) names Tekken and pins a minimum mistral-common version. Exact Tekken sub-version per model is not published."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://github.com/mistralai/mistral-common",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "mistral-common remains open source; tokenizer files are downloadable from the HF Hub."
         },
         "tokenizer_access": {
-          "value": "pip install mistral-common; tokenizer downloadable from HF Hub via mistral-common[hf-hub]",
+          "value": "pip install mistral-common; MistralTokenizer.from_hf_hub(\"<hf-model-id>\") pulls the Tekken tokenizer from the HF Hub",
           "confidence": "high",
-          "source_url": "https://github.com/mistralai/mistral-common",
+          "source_url": "https://mistralai.github.io/mistral-common/usage/tokenizers/",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Refreshed 2026-08-19 to the current documented loading path. Extras: pip install \"mistral-common[image]\" / \"mistral-common[audio,hf-hub]\"."
         },
         "count_tokens_method": {
-          "value": "from mistral_common.tokens.tokenizers.mistral import MistralTokenizer; tok = MistralTokenizer.v3(); tokens = tok.encode(text)",
+          "value": "from mistral_common.tokens.tokenizers.mistral import MistralTokenizer; tok = MistralTokenizer.from_hf_hub(\"<hf-model-id>\"); n = len(tok.encode_chat_completion(ChatCompletionRequest(messages=[...])).tokens)",
           "confidence": "high",
-          "source_url": "https://github.com/mistralai/mistral-common",
+          "source_url": "https://mistralai.github.io/mistral-common/usage/tokenizers/",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "CHANGED: the previously recorded MistralTokenizer.v3() call is superseded by the documented from_hf_hub + encode_chat_completion flow. Caveat verified 2026-08-19: the mistral-common usage docs show no worked example of putting `tools` into the ChatCompletionRequest, so tool-definition token counts obtained this way are reconstructions, not a vendor-blessed recipe. Mistral exposes no server-side count-tokens endpoint."
         },
         "image_token_rule": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/vision",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Vision supported. Token/image rule not published."
+          "as_of": "2026-08-19",
+          "notes": "Still undocumented, and now confirmed as a deliberate gap: the Vision capability page carries the FAQ heading 'How many tokens correspond to an image and/or what is the maximum resolution?' with no answer beneath it (checked 2026-08-19). The only published image constraint is a 20 MB per-image cap in Known Limitations (https://docs.mistral.ai/resources/known-limitations)."
         },
         "audio_token_rule": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Audio transcription listed as feature. Tokens-per-second not documented."
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED 2026-08-19: the model card does not list audio as a capability for this model, and the official HF card (https://huggingface.co/mistralai/Mistral-Large-3) gives the modalities as text+image in / text out. Audio is handled by the separate Voxtral models and endpoints, so no audio token rule applies here. (The 2026-06-21 entry's 'audio transcription listed as a feature' claim did not hold up on re-read.)"
         },
         "chars_per_token_estimate": {
-          "value": 4.0,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "Rough estimate for BPE on English text."
+          "source_url": "https://mistral.ai/news/mistral-nemo/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED to null: the previous 4.0 was an unsourced industry rule of thumb. Searched Mistral's tokenization deep-dive, the mistral-common docs and the Tekken tokenizer card (https://huggingface.co/toksuite/mistralai-tekken, vocab 130,000, tier 3) on 2026-08-19 — no chars-per-token or bytes-per-token figure is published for Tekken. The only quantitative claim Mistral makes is relative: Tekken is '~30% more efficient at compressing source code, Chinese, Italian, French, German, Spanish, and Russian' and 2x/3x on Korean/Arabic versus the Llama 3 tokenizer. Use mistral-common for exact counts."
         }
       },
       "tools_mcp": {
         "function_calling": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
+          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Listed as canonical example model (mistral-large-latest) in function calling docs."
+          "as_of": "2026-08-19",
+          "notes": "Function Calling is listed in the model card's feature list (re-verified 2026-08-19) and the model appears in the function-calling guide's supported-model list (https://docs.mistral.ai/capabilities/function_calling)."
         },
         "native_mcp": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/capabilities/connectors",
+          "source_url": "https://docs.mistral.ai/studio/connectors",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Platform-level Connectors feature applies to all function-calling models."
+          "as_of": "2026-08-19",
+          "notes": "Platform-level: any function-calling model can be pointed at registered Connectors (MCP servers), whose tools the model 'discovers automatically and calls ... based on the user's request'. Still Public Preview as of 2026-08-19; the API interface can change. Vibe Code additionally speaks MCP directly over stdio, HTTP and streamable HTTP (https://docs.mistral.ai/vibe/code/cli/mcp-servers)."
         },
         "parallel_tool_calls": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
+          "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified on the chat endpoint reference 2026-08-19: parallel_tool_calls — 'Whether to enable parallel function calling during tool use, when enabled the model can call multiple tools in parallel.' Default Value: true."
         },
         "max_tools_hard": {
           "value": 128,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Unchanged and re-verified 2026-08-19: Known Limitations still states 'Maximum number of tools per request: 128.' SCOPE = AGGREGATE — it counts every tool in the request's `tools` array together: your own functions, every tool pulled in from each connected Connector (MCP server), and Mistral's built-in tools (web search, code interpreter, image generation, document library), which are passed in the same array (https://docs.mistral.ai/api/endpoint/chat). It is not a per-MCP-server cap; no per-server tool cap is documented anywhere."
         },
         "max_tools_practical": {
-          "value": 40,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "Community consensus ~30-50 tools before degradation."
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 20 → null (2026-08-19 final audit): no empirical source has measured a Mistral model's tool-count degradation, so no practical tool ceiling can be asserted for Mistral Large 3. The previously cited leaderboard (https://presenc.ai/research/ai-agent-tool-calling-accuracy-benchmarks-2026, tier 4, re-opened 2026-08-19) measures only Claude Opus 4.7, GPT-5 Pro, Claude Sonnet 4.6, Gemini 2.5 Pro, GPT-5, Qwen 3 235B, Llama 4 405B, Qwen 3 32B, Llama 4 70B and DeepSeek V4 — NO Mistral model appears in it, so its \"accuracy degrades to 85-91 percent at 5 tools, then to 65-78 percent at 20+ tools\" band (exemplified on Claude Opus 4.7: 96% at 1 tool → 91% at 5 → 76% at 20+) is evidence about those models only. The practitioner write-up previously quoted alongside it (https://tianpan.co/blog/2026-04-19-over-tooled-agent-problem, \"safe zone ... at roughly 10-20 tools per reasoning context\") likewise names no Mistral model. Mistral itself publishes no tool-count guidance: the function-calling docs (https://docs.mistral.ai/capabilities/function_calling/, tier 1, checked 2026-08-19) list Mistral Large 3 among the function-calling models but state no maximum or recommended number of tools and no degradation threshold. Binding limits that DO apply: the documented 128-tool hard cap per request (see max_tools_hard, https://docs.mistral.ai/resources/known-limitations, tier 1) and the 256,000-token shared input+output context window that every tool definition is billed into. Any cross-vendor 10-20-tool rule of thumb applied to Mistral is an unmeasured extrapolation, not a Mistral measurement."
         },
         "tool_definition_shape": {
           "value": "openai_function",
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: {\"type\": \"function\", \"function\": {name, description, parameters}} with a JSON-Schema `parameters` object — identical in shape to OpenAI function calling. tool_choice accepts auto (default) | any/required | none | a named tool."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: Known Limitations states that tool descriptions consume tokens from the available context. Tool definitions are therefore billed as input tokens and eat the same 256k window as the messages — the premise of the footprint measurement."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://mistral.ai/news/more-control-over-connectors/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No deferred loading mechanism documented."
+          "as_of": "2026-08-19",
+          "notes": "Still no automatic/lazy tool loading: nothing in the API defers tool schemas or lets the model search a catalog. What exists as of 2026-08-19 is manual, human-side pruning — admins can 'turn individual tools on or off for a whole org or one workspace' inside a Connector, Vibe Code offers a `/connectors` picker to choose which tools to enable, and the Vibe CLI supports enabled_tools/disabled_tools glob or regex filters (https://docs.mistral.ai/vibe/code/cli/mcp-servers). Those shrink what is sent, but every surviving tool is still serialized into every request."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/api",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No character cap on function/tool names documented in Mistral API spec or Known Limitations as of 2026-06-21. Connector registry names are capped at 64 chars (alphanumeric+underscore+dash) but that is the server-registration name, not the tool function name."
+          "as_of": "2026-08-19",
+          "notes": "No character ceiling or pattern for function/tool names is published: the API reference documents the `tools` parameter but not a Function object schema with maxLength/pattern (checked 2026-08-19). Two adjacent caps that DO bind: Connector (MCP server registry) names are 'up to 64 characters, alphanumeric with underscores and dashes only' (https://docs.mistral.ai/capabilities/connectors/management), and the Vibe CLI namespaces MCP tools as {server_name}_{tool_name} (https://docs.mistral.ai/vibe/code/cli/mcp-servers), so a long server alias eats into whatever name budget the model-side parser has."
         },
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
           "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented character or token cap on tool description length. Descriptions count toward the token budget (Known Limitations) but no hard limit published."
+          "as_of": "2026-08-19",
+          "notes": "No character or token ceiling for a tool description is published (re-checked 2026-08-19). The binding constraint is budgetary, not syntactic: Known Limitations says descriptions consume tokens from the available context, so long descriptions across 128 tools are charged against the shared 256k window."
         },
         "max_request_size": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No byte/MB payload cap documented for POST /v1/chat/completions. Bounded in practice by the 256k token context window."
+          "as_of": "2026-08-19",
+          "notes": "No byte/MB payload ceiling is documented for POST /v1/chat/completions (the chat endpoint reference documents no array or payload size limits, checked 2026-08-19). Adjacent caps that are documented and that DO bind on neighbouring paths: 512 MB per uploaded file, 512 MB per batch file with up to 100,000 requests, 20 MB per image, 500 MB / 60 minutes per audio file. For chat itself the binding ceilings are the 256k token window and the 128-tool aggregate cap."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on individual tool result size. Results count against the shared 256k context window."
+          "as_of": "2026-08-19",
+          "notes": "No numeric size ceiling for an individual tool result is documented (checked 2026-08-19). A tool result is an ordinary `tool`-role message, so it is charged against the shared 256k input+output window — that window, not a size rule, is what a chatty MCP tool blows."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
           "source_url": "https://docs.mistral.ai/api/endpoint/chat",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "parallel_tool_calls is a boolean parameter (default: true); no numeric cap on simultaneous tool calls published."
+          "as_of": "2026-08-19",
+          "notes": "parallel_tool_calls is a boolean (default true) — no numeric ceiling on how many tool calls the model may emit in one turn is published (re-checked on the chat endpoint reference 2026-08-19). The 128-tool aggregate cap limits what is offered, not how many are invoked at once."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on tool-call/result cycles per turn or per agentic loop."
+          "as_of": "2026-08-19",
+          "notes": "No numeric ceiling on tool-call/result cycles per turn or per agentic loop is published; the function calling guide's worked example loops back to the model until it produces a final answer without stating a cycle ceiling (re-checked 2026-08-19). Cost and the 256k window are what bound a long agentic run."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "source_url": "https://docs.mistral.ai/capabilities/connectors/management",
+          "source_url": "https://docs.mistral.ai/api/endpoint/beta/connectors",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented cap on the number of Connectors attached to a conversation or agent. Platform-level cap not published."
+          "as_of": "2026-08-19",
+          "notes": "No numeric ceiling on the number of Connectors (MCP servers) per workspace, org, agent or conversation is published (Connectors API reference and management docs re-checked 2026-08-19); listing uses keyset pagination with a page_size shown as high as 1000, which implies large counts are expected. Mistral advertises 'more than 60 integrations' plus custom MCP connectors (https://mistral.ai/news/more-control-over-connectors/). The limit that actually binds when you attach many servers is the aggregate 128-tool per-request cap."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/resources/known-limitations",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No aggregate-tool-count figure beyond the 128 per-request hard cap. All connector tools count toward the 128 limit."
+          "as_of": "2026-08-19",
+          "notes": "No separate aggregate catalog ceiling exists above the per-request cap: on Mistral the aggregate cap IS max_tools_hard = 128 tools per request, summed across your own functions, every connected Connector's tools and the built-in tools. GET /v1/connectors/{id}/tools paginates (default page_size 100) with no documented maximum tool count per connector (https://docs.mistral.ai/capabilities/connectors/management)."
         },
-        "tool_schema_limits_notes": "Connector (MCP server registry) names: max 64 chars, alphanumeric+underscore+dash only (source: https://docs.mistral.ai/capabilities/connectors/management). Tool function name cap: not published. No documented limit on JSON schema depth or property count. Tool descriptions count toward the 256k token budget.",
-        "other_limits_notes": "Rate limits enforced per API key: requests-per-second and tokens-per-minute independently; 429 on breach. Batch API exempt from real-time limits. Connectors are beta. prompt_cache_key param available in API (cached tokens at 10% of input price) — see other_limits_notes for Medium 3.5.",
+        "tool_schema_limits_notes": "Re-checked 2026-08-19. Connector (MCP server registry) names: 'up to 64 characters, alphanumeric with underscores and dashes only', unique within a workspace (https://docs.mistral.ai/capabilities/connectors/management / https://docs.mistral.ai/api/endpoint/beta/connectors). Tool function name cap: not published — the API reference documents the `tools` parameter but no Function object maxLength/pattern (https://docs.mistral.ai/api). No documented limit on JSON-Schema nesting depth, property count, enum size, or on unsupported keywords such as oneOf/anyOf/$ref — Mistral publishes no schema-shape rules at all, so the only reliable ceiling is the token budget: tool descriptions and schemas are charged as input against the shared 256k window (https://docs.mistral.ai/resources/known-limitations). Vibe CLI namespaces MCP tools as {server_name}_{tool_name} (https://docs.mistral.ai/vibe/code/cli/mcp-servers).",
+        "other_limits_notes": "CORRECTED 2026-08-19 — rate limits are set at the ORGANIZATION level and apply across all workspaces (the 2026-06-21 entry said 'per API key', which the tier docs contradict); three independent limits are enforced: requests per second, tokens per minute and tokens per month, with tier upgrades driven by cumulative billed amount and the actual numbers only visible in Admin > Limits (https://docs.mistral.ai/deployment/ai-studio/tier). Batch processing is 50% cheaper and does not compete with real-time limits; max batch file 512 MB / 100,000 requests, results retained 24h; streaming connections drop after 10 minutes of inactivity (https://docs.mistral.ai/resources/known-limitations). Prompt caching is now documented and is EXPLICIT, not automatic: pass prompt_cache_key, cache blocks are 64 tokens so cached_tokens is always a multiple of 64 and prompts under 64 tokens never hit, and cached prompt tokens bill at 10% of the standard input price (https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching). Connectors remain Public Preview; connector tool schemas are serialized into the request, so a large MCP server consumes a real share of the 256k window and of the 128-tool aggregate cap. Regional endpoints (EU/US) are GA and a Priority Tier with custom rate limits and an uptime SLA is in public preview (https://mistral.ai/news/regional-inference-open-models-new-compute/).",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://docs.mistral.ai/capabilities/function_calling",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "notes": "Re-checked 2026-08-19: Mistral documents no OpenAI-style `strict` flag and no structural schema restrictions (no 100-property / 5-level-depth / no-oneOf rules). The function calling guide exposes only name/description/parameters plus tool_choice and parallel_tool_calls. Structured Outputs is a separate response-format feature, not a tool schema mode.",
+          "as_of": "2026-08-19"
         }
       },
       "skills_context": {
         "skills_supported": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Upgraded sourcing 2026-08-19: Mistral now has a literal Skills primitive (Studio and Vibe), announced 2026-07-09, in addition to Agents. A Skill packages 'a reusable method, checklist, or procedure that an AI assistant can apply when a task matches', with a trigger description, instructions and optional attached files, and Studio versions it immutably with rollback."
         },
         "skills_loading_model": {
-          "value": "always_on",
+          "value": "progressive_disclosure",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/vibe/work/skills",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "CHANGED always_on -> progressive_disclosure. Vibe documents a three-stage load: at session start 'Work loads only each Skill's name and description (~100 tokens each)'; when a task matches the description the full SKILL.md loads into context; referenced supporting files load only as needed. Studio says the same in prose — 'the description field ... determines when the assistant loads the Skill' (https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill). NOTE the asymmetry that matters for footprinting: Skills are progressively disclosed, but MCP/Connector TOOL definitions are not — those are serialized into every request."
         },
-        "skills_context_cost_notes": "Agent system prompt and tool list injected at conversation start as input tokens.",
-        "system_prompt_overhead_notes": "Developer-controlled via agent 'instructions' field.",
+        "skills_context_cost_notes": "Re-measured against the docs 2026-08-19. Skills: ~100 tokens per enabled Skill at discovery (name + description only), then the full SKILL.md on activation, then referenced files on demand (https://docs.mistral.ai/vibe/work/skills); Mistral publishes no size ceiling for SKILL.md and only an unquantified 'supporting files are subject to a file-count limit'. Agents: the agent's `instructions` and its tool list are fixed at creation and injected into the conversation, billed as input tokens. Connector (MCP) tool schemas are NOT progressively disclosed — every tool left enabled is serialized into every request and charged as input (https://docs.mistral.ai/resources/known-limitations). Prompt caching can recover 90% of the cost of that repeated prefix if a stable prompt_cache_key is supplied (https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching).",
+        "system_prompt_overhead_notes": "No fixed platform-injected system prompt is documented (checked 2026-08-19). Overhead is developer-controlled through the agent's `instructions` field (https://docs.mistral.ai/studio/agents/introduction) plus whichever Skills are enabled (~100 tokens each until activated) and whichever tool definitions are attached, all of which are billed as input against the shared 256k window.",
         "prompt_caching": {
-          "value": false,
-          "confidence": "medium",
-          "source_url": null,
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No prompt caching documented."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED false -> true. Prompt caching is documented as of 2026-08-19 and is explicit: set prompt_cache_key to 'a stable application-level identifier, such as a conversation ID, session ID, or workflow ID'. Cache blocks are 64 tokens, so cached_tokens is always a multiple of 64 and 'prompts with fewer than 64 prompt tokens do not have cache hits'; supplying the key 'doesn't guarantee' a hit. Cached prompt tokens bill at 10% of the standard input price. TTL is not published, nor is whether tool definitions specifically are cacheable — only that a compatible cached PREFIX is matched, which a stable tools array at the head of the request should satisfy."
         },
         "memory_feature": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/agents/agents-api",
+          "source_url": "https://docs.mistral.ai/studio/agents/introduction",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Agents documentation describes 'persistent state across conversations' and agent-to-agent handoffs (re-checked 2026-08-19). Server-side conversation history is replayed as input tokens on each continuation, so a long session's context — and cost — grows turn over turn. The exact `store` parameter semantics are no longer spelled out on the current Agents introduction page."
         }
       },
       "cost": {
@@ -1089,62 +1180,89 @@
           "value": 0.5,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified against the API pricing table and the model card 2026-08-19; unchanged."
         },
         "output_per_mtok_usd": {
           "value": 1.5,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified against the API pricing table and the model card 2026-08-19; unchanged."
         },
         "cached_input_per_mtok_usd": {
-          "value": null,
+          "value": 0.05,
           "unit": "USD/1M tokens",
-          "confidence": "high",
-          "source_url": null,
+          "confidence": "medium",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No prompt caching."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED null -> 0.05. DERIVED: prompt caching now exists and 'cached prompt tokens are billed at 10% of the standard input token price', so this is 10% of the 0.5 USD/1M input rate. Mistral does not print a per-model cached rate on the pricing page (the marketing page phrases it as 'cached input tokens reduce input cost by up to 90%', https://mistral.ai/pricing), hence confidence medium rather than high.",
+          "derived": true
         },
         "batch_discount": {
           "value": "50% off",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/studio-api/batch-processing",
+          "source_url": "https://mistral.ai/pricing",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: 'Batch processing, for high-volume work, reduces the price by 50%'. Batch does not compete with real-time rate limits; max batch file 512 MB / 100,000 requests (https://docs.mistral.ai/resources/known-limitations)."
         },
         "billing_unit": {
           "value": "tokens",
           "confidence": "high",
-          "source_url": "https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12",
+          "source_url": "https://mistral.ai/pricing/api",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Priced per million input and output tokens, counted separately."
         },
-        "multimodal_billing_notes": "Image token billing rule not published. Audio via separate endpoint.",
+        "multimodal_billing_notes": "Checked 2026-08-19: no per-image or per-tile token rule and no per-image surcharge is published — the Vision page leaves 'How many tokens correspond to an image' as an unanswered FAQ heading (https://docs.mistral.ai/capabilities/vision); images are simply capped at 20 MB each (https://docs.mistral.ai/resources/known-limitations). Audio is not a capability of this model; transcription/TTS run on the separate Voxtral models and endpoints and are priced separately (https://mistral.ai/pricing/api).",
         "reasoning_billed_as_output": {
           "value": null,
-          "confidence": "low",
-          "source_url": null,
+          "confidence": "medium",
+          "source_url": "https://docs.mistral.ai/studio-api/conversations/reasoning",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a reasoning model."
+          "as_of": "2026-08-19",
+          "notes": "Not a reasoning model — Mistral Large 3 is not listed among the models accepting reasoning_effort (checked 2026-08-19), so no reasoning-token billing arises."
         }
       },
       "self_host": null,
-      "notes": "Mistral Large 3 (v25.12, API: mistral-large-2512 / mistral-large-latest) is a 675B-param granular MoE model with 41B active params. General-purpose frontier model. Also available as open weights (Modified MIT). API alias 'mistral-large-latest' confirmed in function_calling docs.",
+      "notes": "Re-verified 2026-08-19; unchanged. API string mistral-large-2512 (alias mistral-large-latest); v25.12, released 2025-12-02. CORRECTION to the previous entry: the licence is Apache 2.0, not Modified MIT (both the model card and the official HF card say Apache 2.0). 675B total / 41B active granular MoE including a 2.5B vision encoder, 256k context, $0.5/$1.5 per 1M in/out. Not a reasoning model — it is absent from the reasoning_effort model list. Despite being the oldest of the three it is still listed as a current generalist model on the models overview, so status stays ga.",
       "sources": [
         "https://docs.mistral.ai/models/model-cards/mistral-large-3-25-12",
+        "https://huggingface.co/mistralai/Mistral-Large-3",
         "https://docs.mistral.ai/resources/known-limitations",
-        "https://docs.mistral.ai/capabilities/connectors",
+        "https://docs.mistral.ai/models",
+        "https://docs.mistral.ai/models/overview",
+        "https://docs.mistral.ai/resources/changelogs",
         "https://docs.mistral.ai/capabilities/function_calling",
-        "https://docs.mistral.ai/studio-api/batch-processing",
-        "https://docs.mistral.ai/studio-api/agents/agents-api",
+        "https://docs.mistral.ai/studio/connectors",
+        "https://docs.mistral.ai/capabilities/connectors/management",
+        "https://docs.mistral.ai/api/endpoint/beta/connectors",
+        "https://mistral.ai/news/more-control-over-connectors/",
+        "https://docs.mistral.ai/api/endpoint/chat",
+        "https://docs.mistral.ai/api",
+        "https://docs.mistral.ai/capabilities/vision",
+        "https://docs.mistral.ai/studio-api/conversations/reasoning",
+        "https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching",
+        "https://docs.mistral.ai/studio/agents/introduction",
+        "https://docs.mistral.ai/getting-started/quickstarts/studio/create-skill",
+        "https://docs.mistral.ai/vibe/work/skills",
+        "https://docs.mistral.ai/vibe/code/cli/mcp-servers",
+        "https://docs.mistral.ai/deployment/ai-studio/tier",
+        "https://docs.mistral.ai/resources/cookbooks/concept-deep-dive-tokenization-readme",
         "https://github.com/mistralai/mistral-common",
-        "https://mistral.ai/news/mistral-3"
+        "https://mistralai.github.io/mistral-common/usage/tokenizers/",
+        "https://mistral.ai/pricing",
+        "https://mistral.ai/pricing/api",
+        "https://mistral.ai/news/mistral-nemo/",
+        "https://huggingface.co/toksuite/mistralai-tekken",
+        "https://presenc.ai/research/ai-agent-tool-calling-accuracy-benchmarks-2026",
+        "https://tianpan.co/blog/2026-04-19-over-tooled-agent-problem"
       ]
     }
   ]

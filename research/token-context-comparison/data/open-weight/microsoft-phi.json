@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "as_of": "2026-06-21",
+  "as_of": "2026-08-19",
   "provider": {
     "id": "microsoft-phi",
     "name": "Microsoft Phi",
@@ -11,18 +11,18 @@
     "native_mcp_support": {
       "value": false,
       "confidence": "high",
-      "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+      "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
       "source_tier": 1,
-      "as_of": "2026-06-21",
-      "notes": "No native MCP at model level. MCP can be wired in via serving stacks (vLLM, SGLang) that expose an OpenAI-compatible endpoint, but the model itself has no native MCP protocol. Phi-4-mini and multimodal document function-calling via a custom chat template; Phi-4 base does not document function-calling."
+      "as_of": "2026-08-19",
+      "notes": "Re-verified 2026-08-19. No Phi model implements MCP at the model level; MCP is a host/serving-layer concern. Microsoft Foundry's model list (page updated 2026-07-24) records 'Tool calling: No' for every published Phi endpoint (Phi-4, Phi-4-mini-instruct, Phi-4-multimodal-instruct, Phi-4-reasoning, Phi-4-mini-reasoning). Self-hosted, Phi-4-mini/multimodal weights DO carry a native tool format (<|tool|>…<|/tool|> in the system message), and MCP can be bridged through a serving stack that exposes an OpenAI-compatible endpoint — but the protocol itself is never spoken by the model."
     },
     "skills_concept": {
       "value": null,
       "confidence": "high",
       "source_url": "https://huggingface.co/microsoft/phi-4",
       "source_tier": 1,
-      "as_of": "2026-06-21",
-      "notes": "No formal skills/extensions concept for self-hosted Phi models. Azure AI Foundry hosting may expose agent-level features, but these are platform-layer, not model-native."
+      "as_of": "2026-08-19",
+      "notes": "Re-verified 2026-08-19: no formal skills/extensions concept for Phi models. Microsoft Foundry hosting may expose agent-level features, but those are platform-layer, not model-native."
     }
   },
   "models": [
@@ -35,7 +35,8 @@
         "confidence": "high",
         "source_url": "https://huggingface.co/microsoft/phi-4",
         "source_tier": 1,
-        "as_of": "2026-06-21"
+        "as_of": "2026-08-19",
+        "notes": "Model card re-checked 2026-08-19: 'Release date: December 12, 2024'; training October–November 2024."
       },
       "status": "ga",
       "knowledge_cutoff": {
@@ -43,8 +44,8 @@
         "confidence": "high",
         "source_url": "https://huggingface.co/microsoft/phi-4",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Model card states 'cutoff date of June 2024 and earlier for publicly available data'"
+        "as_of": "2026-08-19",
+        "notes": "Model card states 'cutoff date of June 2024 and earlier for publicly available data' (unchanged 2026-08-19)."
       },
       "modalities": ["text"],
       "context": {
@@ -54,16 +55,16 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json: max_position_embeddings=16384, original_max_position_embeddings=16384, rope_scaling=null. Azure Foundry also lists input+output as 16,384 tokens each."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. config.json: max_position_embeddings=16384, original_max_position_embeddings=16384, rope_scaling=null, rope_theta=250000. tokenizer_config.json model_max_length=16384. Tech report: pretraining context 4,096, 'later extended to a 16K context length during midtraining'. Foundry lists input 16,384 / output 16,384."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Azure Foundry shows input 16,384 and output 16,384; total pool is 16,384 shared (input+output must fit within 16K). Self-hosted: serving stack enforces this."
+          "as_of": "2026-08-19",
+          "notes": "Foundry (page updated 2026-07-24) shows Phi-4 input 16,384 and output 16,384 — the two numbers are the same ceiling, not two pools: prompt + completion must together fit in the 16,384-token window. Self-hosted, the serving stack enforces it via --max-model-len."
         },
         "max_input_tokens": {
           "value": 16384,
@@ -71,18 +72,18 @@
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": false,
-          "notes": "Azure Foundry documents 16,384 input tokens. Self-hosted: max_position_embeddings=16384 sets the hard ceiling."
+          "notes": "Foundry documents 16,384 input tokens (unchanged 2026-08-19). Self-hosted: max_position_embeddings=16384 is the hard ceiling."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "No documented default. Self-hosted via vLLM/Ollama, max_new_tokens is set per-request; no vendor-published default for open-weight deployment."
+          "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No default published. The Foundry table gives only a maximum (16,384); the HF card gives none. Self-hosted via vLLM/Ollama/Transformers the operator sets max_new_tokens per request."
         },
         "max_output_tokens_max": {
           "value": 16384,
@@ -90,8 +91,8 @@
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Azure Foundry documents output up to 16,384 tokens. Self-hosted: ceiling is the 16K context window."
+          "as_of": "2026-08-19",
+          "notes": "Foundry documents output up to 16,384 tokens (re-checked 2026-08-19). Self-hosted the ceiling is the 16K window shared with the prompt."
         },
         "extended_context": {
           "value": null,
@@ -99,71 +100,73 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No extended/beta context documented. rope_scaling is null in config.json. Native ceiling is 16K."
+          "as_of": "2026-08-19",
+          "notes": "No extended/beta context mode documented. rope_scaling is null in config.json — no RoPE-scaling path to a longer window. The native ceiling is 16K."
         },
         "reasoning_tokens_count_as_output": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Phi-4 is not a reasoning model (no chain-of-thought token budget). Phi-4-reasoning is a separate model. N/A here."
+          "as_of": "2026-08-19",
+          "notes": "Phi-4 is not a reasoning model — it emits no <think> trace and has no separate thinking-token accounting, so there is no reasoning-vs-output split to record; left null. Phi-4-reasoning and Phi-4-reasoning-vision-15B are separate models where the question is live."
         }
       },
       "tokenization": {
         "tokenizer_family": {
-          "value": "tiktoken/o200k_base-derived (GPT2Tokenizer, vocab 100352)",
+          "value": "tiktoken cl100k_base-derived (GPT2Tokenizer, padded vocab 100352)",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4/raw/main/tokenizer_config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "tokenizer_config.json lists tokenizer_class=GPT2Tokenizer with vocabulary tokens matching tiktoken o200k_base at indices 0-100255, plus Microsoft-added special tokens (100256-100351). config.json vocab_size=100352. The base 100K tokens are identical to tiktoken o200k_base; Microsoft extended with 96 special-purpose tokens."
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED 2026-08-19 (was recorded as o200k_base-derived — that was wrong). tokenizer_config.json's added_tokens_decoder places <|endoftext|>=100257, <|fim_prefix|>=100258, <|fim_middle|>=100259, <|fim_suffix|>=100260, <|endofprompt|>=100276 — exactly tiktoken's cl100k_base special-token IDs (o200k_base puts <|endoftext|> at 199999). Base vocab therefore occupies 0–100255 = cl100k_base, plus 96 Microsoft special tokens at 100256–100351 (<|im_start|>/<|im_end|>/<|im_sep|> + <|dummy_*|> padding); config.json vocab_size=100352. Tech report: 'we now use the tiktoken tokenizer … with a padded vocabulary size of 100,352'. NOTE: Phi-4-mini and Phi-4-multimodal use a DIFFERENT tokenizer (o200k_base, vocab 200,064) — do not share counts between them. For this app, the generic_cl100k profile is the right one for Phi-4."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Weights and tokenizer files are public on the MIT-licensed HF repo (re-checked 2026-08-19)."
         },
         "tokenizer_access": {
-          "value": "HF AutoTokenizer (microsoft/phi-4) — also usable via tiktoken o200k_base for the base vocab, with special-token offsets for Phi-4 additions",
+          "value": "HF AutoTokenizer (microsoft/phi-4) — or tiktoken cl100k_base for the base vocab, with the 96 Phi-4 special tokens (100256-100351) added on top",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
-          "source_tier": 2,
-          "as_of": "2026-06-21"
+          "source_url": "https://huggingface.co/microsoft/phi-4/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Corrected alongside tokenizer_family: the tiktoken-side equivalent is cl100k_base, not o200k_base."
         },
         "count_tokens_method": {
           "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('microsoft/phi-4'); len(tok.encode(text))",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "image_token_rule": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Phi-4 is text-only; no image token rule."
+          "as_of": "2026-08-19",
+          "notes": "Phi-4 is text-only (model card 'Input: Text'); no image token rule."
         },
         "audio_token_rule": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "notes": "Phi-4 is text-only; no audio token rule."
         },
         "chars_per_token_estimate": {
-          "value": 3.5,
+          "value": 4.0,
           "confidence": "medium",
-          "source_url": null,
-          "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "Approximate for English text with tiktoken-compatible tokenizer. Use HF AutoTokenizer for exact counts."
+          "source_url": "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Rule of thumb only: ~4 characters per token for English. Phi-4 and Phi-4-reasoning-vision-15B use tiktoken cl100k_base as their base vocabulary, so OpenAI's published ~4-chars/token English heuristic applies directly. Use the HF AutoTokenizer for exact counts — never this estimate for a hard budget. (Previously recorded as 3.5 with no source; replaced with the sourced ~4 figure.)"
         }
       },
       "tools_mcp": {
@@ -172,122 +175,138 @@
           "confidence": "medium",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Azure Foundry explicitly lists 'Tool calling: No' for Phi-4. The HF model card does not document a function-calling chat template or format (unlike Phi-4-mini which has <|tool|> tokens). Phi-4 base was released Dec 2024 without function-calling instruction tuning."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Foundry (updated 2026-07-24) still lists 'Tool calling: No' for Phi-4. The HF model card documents no function-calling format, and tokenizer_config.json contains no tool special tokens — unlike Phi-4-mini, whose vocabulary carries <|tool|>/<|tool_call|>/<|tool_response|>. Confidence stays 'medium' because this is an absence-of-documentation finding: the weights can still be prompted into emitting JSON, just without trained tool-calling behaviour."
         },
         "native_mcp": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No native MCP support at model level. Requires serving-stack wrappers."
+          "as_of": "2026-08-19",
+          "notes": "No MCP at the model level; MCP must be bridged by the host/serving stack (re-checked 2026-08-19)."
         },
         "parallel_tool_calls": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not documented; function calling not natively supported in Phi-4."
+          "as_of": "2026-08-19",
+          "notes": "Undocumented, and moot: Phi-4 has no trained function-calling format at all, so there is nothing to emit in parallel."
         },
         "max_tools_hard": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented hard limit. Phi-4 does not natively support function calling, so tools are limited by context window (16K) if injected as text."
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric tool-count cap is documented at the model API layer — open weights have no API layer to enforce one. The limits that DO bind, in order: (1) the 16,384-token context window shared by prompt and completion — the tightest window in this roster; (2) the ~30–50-tool selection cliff reported empirically (and lower for a 14B model); (3) the host's aggregate catalog cap (Cursor ~40, Claude Desktop ~100). Scope: any cap that applies is AGGREGATE across all connected servers plus built-in tools; there is no documented per-MCP-server tool cap."
         },
         "max_tools_practical": {
-          "value": 5,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "CRITICAL: 16K total window is severely constraining for MCP tool definitions. A single MCP server's tool definitions commonly consume 2-8K tokens. With only 16K total, even 3-5 verbose tool definitions can consume 30-50% of the window, leaving little room for conversation history and output. This is the smallest window in the open-weight roster — MCP footprint risk is highest here."
+          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19: 5 -> null. The previous value was an interpolation. It was cited to a dev.to tool-overload post (2026-03-06) that was re-opened in this pass: its single measurement ('accuracy on correct tool selection dropped from ~95% with a focused toolset to ~71% with the full GitHub MCP server loaded', ~4 tools / ~1,200 tokens vs ~46 tools / ~42,000 tokens) was run with model=\"claude-3-5-sonnet-20241022\", and the post never mentions Phi. Attributing a per-Phi-variant number to a measurement of another vendor's model is not admissible, and the four Phi variants were merely ranked against each other by judgement. SEARCHED 2026-08-19 for a Phi-specific figure and found none: the four Hugging Face model cards (tier 1), the Phi-4 / Phi-4-mini technical reports, Microsoft's PhiCookBook function-calling sample (its example declares exactly one tool and gives no guidance), an on-device tool-calling comparison covering Phi-4-mini (ertas.ai, updated 2026-08-07 -- BFCL v4 composite scores and a 5-tool customer-support evaluation set, but no tool-count-vs-accuracy curve), a 2026 tool-calling benchmark round-up (presenc.ai) and a catalog-scaling study (nerdleveltech), neither of which mentions Phi. No Azure AI Foundry page states a tool count either. WHAT ACTUALLY BINDS on this variant: the 16,384-token context window (model card, tier 1: 'Context length: 16K tokens') divided by the ~200-400 tokens a typical MCP tool definition costs, minus conversation and output headroom -- the smallest budget in the open-weight roster, and the ~42,000-token GitHub MCP surface in the cited measurement does not fit in it at all. Compounding this, the phi-4 model card does not mention function calling or tool use anywhere, so there is no trained tool-calling format to rely on. Scope when a number is eventually recorded: AGGREGATE (all connected servers plus built-in tools in one request), not per server."
         },
         "tool_definition_shape": {
           "value": "openai_function",
           "confidence": "medium",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "When function calling is approximated via prompt injection with vLLM/OpenAI-compatible serving, tools are submitted in OpenAI function-call JSON format. No native tool format documented in model card."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No native tool format exists in the Phi-4 chat template, so the shape is whatever the serving stack injects — in practice OpenAI function-call JSON via an OpenAI-compatible endpoint. Re-checked 2026-08-19: vLLM's supported --tool-call-parser list contains no Phi entry, so even that path needs a custom parser or client-side extraction."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_url": "https://huggingface.co/microsoft/phi-4/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Tool definitions serialized into the prompt count as input tokens. At 16K window this is critical — even modest tool footprints consume a large fraction."
+          "as_of": "2026-08-19",
+          "notes": "Tool definitions are serialized into the prompt, so they are ordinary input tokens counted against max_position_embeddings=16384. At a 16K window this is the dominant footprint risk in this dataset."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No deferred/lazy tool loading at model level. No equivalent of Claude Code's defer_loading."
+          "as_of": "2026-08-19",
+          "notes": "No deferred/lazy tool loading at the model level — no equivalent of Claude Code's tool-search / defer_loading. Any deferral must be built by the host."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not documented; depends on serving stack."
+          "as_of": "2026-08-19",
+          "notes": "No tool-name length or pattern rule is documented (there is no tool API to enforce one). Whatever the serving stack / client imposes is the operative limit."
         },
-        "tool_schema_limits_notes": "Phi-4 has no documented schema-size limits beyond the 16K context window ceiling. All tool definitions must fit within this shared pool. In practice this means MCP deployments must be tightly scoped — a single large MCP server (50+ tools at ~200 tok/def = 10K+) would consume the majority of the context before any user message.",
+        "tool_schema_limits_notes": "No documented schema-size limits — the binding constraint is the 16,384-token window that prompt, tool definitions and completion all share. A single mid-size MCP server (50 tools at ~200 tok/def = ~10K tokens) consumes ~60% of the window before the first user message, and a large one (the ~42K-token GitHub server measured in the cited tool-overload report) cannot be loaded at all. Scope: aggregate across all connected servers; there is no per-server cap to check against.",
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
-          "notes": "No vendor cap; description counts against context window."
+          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap documented; description text simply counts against the 16K context window."
         },
         "max_request_size": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+          "as_of": "2026-08-19",
+          "notes": "No vendor byte cap (no vendor-run API). Bounded by the serving config (vLLM --max-model-len / --max-num-batched-tokens), any reverse proxy body limit, and GPU memory."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "Context-bound; tool results count against max_model_len."
+          "as_of": "2026-08-19",
+          "notes": "No documented cap on a single tool result; results are context-bound and count against max_model_len — at 16K a chatty tool result can evict the whole conversation."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
-          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not documented; would be set by the chat-template tool-call parser, and vLLM ships none for Phi. See parallel_tool_calls."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "notes": "Set by the agent host/framework, not the model."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not a model property — the agent host/framework decides how many tool-call/result cycles a turn may run."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total across servers); nothing at the model or serving layer counts servers."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap. The effective AGGREGATE ceiling is approximately (context_window − output headroom) ÷ average tool-definition tokens, set by the serving config; for Phi-4's 16,384-token window that is roughly 30–50 small definitions with nothing left for history. Host apps cap lower (Cursor ~40, Claude Desktop ~100)."
         },
-        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser — re-checked 2026-08-19, vLLM's supported --tool-call-parser list (Hermes, Mistral, Llama, Granite, InternLM, Jamba, xLAM, Qwen, DeepSeek, OpenAI OSS, Kimi-K2, Hunyuan, Cohere, GLM, FunctionGemma, Olmo 3, Apertus, pythonic, …) contains NO Phi entry, so OpenAI-shaped tool calling over vLLM needs a custom parser or client-side parsing of the model's own template; (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style strict function-schema mode (100-prop / 5-level-depth / no-oneOf enforcement) is documented for any Phi model — neither the HF model cards nor the Foundry model pages define schema validation rules. Schema constraints are whatever the serving stack's guided-decoding backend enforces, not a model/API rule."
         }
       },
       "skills_context": {
@@ -296,32 +315,34 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills/extension concept for self-hosted Phi weights (re-checked 2026-08-19)."
         },
         "skills_loading_model": {
           "value": "n/a",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills mechanism exists, so there is nothing to load eagerly or progressively."
         },
         "skills_context_cost_notes": null,
-        "system_prompt_overhead_notes": "No documented fixed system-prompt overhead. The chat template (tokenizer_config.json) adds minimal special tokens per turn (<|im_start|>, <|im_sep|>, <|im_end|>). System prompt counts as input tokens against the shared 16K pool.",
+        "system_prompt_overhead_notes": "No fixed system-prompt overhead is documented. The chat template adds only a few special tokens per turn (<|im_start|>, <|im_sep|>, <|im_end|>, IDs 100264-100266). The system prompt itself counts as ordinary input tokens against the shared 16,384-token pool.",
         "prompt_caching": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No vendor-level prompt caching for open-weight self-hosted deployment. Some serving frameworks (vLLM with --enable-prefix-caching, SGLang with RadixAttention) support KV-cache prefix reuse, but this is operator-configured, not model-native."
+          "as_of": "2026-08-19",
+          "notes": "No vendor-level prompt caching exists for self-hosted open weights (there is no per-token bill to discount). Serving stacks can reuse the KV-cache prefix — vLLM --enable-prefix-caching, SGLang RadixAttention — which cuts recompute for a static system prompt + tool block, but it is operator-configured, not model-native."
         },
         "memory_feature": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No persistent memory feature at model level."
+          "as_of": "2026-08-19",
+          "notes": "No persistent memory feature at the model level; memory is entirely the host's job."
         }
       },
       "cost": {
@@ -329,53 +350,53 @@
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open weights — self-hosted compute cost only. Azure AI Foundry serverless pricing page shows '$-' (currently free at serverless tier as of 2026-06-21 per https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/). Self-host = operator pays GPU/cloud costs."
+          "as_of": "2026-08-19",
+          "notes": "Open weights — no per-token list price to record. Re-checked 2026-08-19: the Microsoft Foundry pricing page still shows '$-' for every Phi row (Phi-4, Phi-4-mini, Phi-4-multimodal text+image, Phi-4-multimodal audio, Phi-4-mini-reasoning, Phi-4-reasoning, Phi-4-reasoning-plus). Self-hosting means the operator pays GPU/cloud cost."
         },
         "output_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Same as input: self-hosted compute only."
+          "as_of": "2026-08-19",
+          "notes": "Same as input: no published per-token price; self-hosted compute only."
         },
         "cached_input_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted; prefix caching via vLLM/SGLang reduces GPU compute but has no per-token billing."
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price exists for self-hosted weights; vLLM/SGLang prefix caching saves GPU time, not a billed token rate."
         },
         "batch_discount": {
           "value": null,
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for open-weight self-hosted deployment."
+          "as_of": "2026-08-19",
+          "notes": "No batch-discount tier is published for Phi; batching is a throughput setting of the operator's serving stack."
         },
         "billing_unit": {
           "value": "compute",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute (GPU hours / cloud instance cost)."
+          "as_of": "2026-08-19",
+          "notes": "Self-hosted compute (GPU hours / cloud instance cost); the Foundry pricing page publishes no token rate for Phi."
         },
         "multimodal_billing_notes": null,
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a reasoning model; N/A."
+          "as_of": "2026-08-19",
+          "notes": "Phi-4 emits no reasoning trace, and self-hosted weights carry no per-token billing at all, so there is no reasoning-billing rule to record; left null. Cost is GPU time."
         }
       },
       "self_host": {
@@ -384,57 +405,64 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "license": {
           "value": "MIT",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card and LICENSE file on HF confirm MIT license."
+          "as_of": "2026-08-19",
+          "notes": "Model card and LICENSE file on HF confirm MIT (re-checked 2026-08-19)."
         },
         "param_variants": {
-          "value": "14B (dense decoder-only Transformer, BF16)",
+          "value": "14B (dense decoder-only Transformer, BF16; hidden_size 5120, 40 layers)",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_url": "https://huggingface.co/microsoft/phi-4/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Model card states 14B parameters; config.json hidden_size=5120, num_hidden_layers=40, torch_dtype=bfloat16."
         },
         "native_context_config": {
           "value": 16384,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json max_position_embeddings=16384, original_max_position_embeddings=16384, rope_scaling=null, rope_theta=250000. No RoPE scaling extension configured."
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings=16384, original_max_position_embeddings=16384, rope_scaling=null, rope_theta=250000 — no RoPE-scaling extension configured (re-checked 2026-08-19)."
         },
         "max_context_documented": {
           "value": 16384,
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/phi-4",
+          "source_url": "https://arxiv.org/pdf/2412.08905",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented extended context beyond 16K for Phi-4. The rope_theta=250000 was tuned for 16K; no longer RoPE scaling config documented."
+          "as_of": "2026-08-19",
+          "notes": "Tech report: pretraining default context 4,096, 'later extended to a 16K context length during midtraining'. No longer window is documented anywhere."
         },
         "serving_frameworks": {
-          "value": "vLLM, SGLang, Transformers (HF), Ollama (quantized via llama.cpp), ONNX Runtime, Docker Model Runner",
+          "value": "vLLM, SGLang, Transformers (HF), Docker Model Runner, llama.cpp / Ollama / LM Studio (quantized GGUF), ONNX Runtime (microsoft/phi-4-onnx)",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/phi-4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "HF model card explicitly shows vLLM and SGLang serve commands. Ollama available via quantized GGUF. ONNX Runtime and Docker Model Runner also listed on HF card."
+          "as_of": "2026-08-19",
+          "notes": "Model card (re-checked 2026-08-19) shows vLLM and SGLang serve commands, Docker Model Runner, and quantized builds for llama.cpp / Ollama / LM Studio. ONNX weights live in the separate microsoft/phi-4-onnx repo."
         },
-        "framework_tool_calling_notes": "Phi-4 does not have native function-calling post-training. When served via vLLM/SGLang with an OpenAI-compatible API, tools can be submitted in OpenAI function-call JSON format, but the model was not specifically trained to follow this format reliably. Phi-4-mini is the recommended choice for function calling within the Phi-4 family."
+        "framework_tool_calling_notes": "Phi-4 has no function-calling post-training and no tool tokens in its vocabulary. Served through an OpenAI-compatible endpoint you can still pass a tools array, but the model was never trained to honour it, and as of 2026-08-19 vLLM ships no Phi --tool-call-parser, so tool calls must be parsed client-side out of free text. For tool/MCP work inside this family use Phi-4-mini-instruct or Phi-4-multimodal-instruct, whose chat templates take a tools argument natively."
       },
-      "notes": "Phi-4 (14B, Dec 2024) is the largest and most capable base text model in the Phi-4 family. Its 16K context window is the smallest in this open-weight comparison, making it the highest-risk model for MCP deployments with large tool footprints. A single MCP server with 30+ tools easily consumes 50-100% of the available context, leaving no room for conversation history. Function calling is not officially supported (Azure Foundry: Tool calling No). Best suited for latency-sensitive text/reasoning tasks with minimal tool use.",
+      "notes": "Phi-4 (14B, Dec 2024) is the largest plain text model in the Phi-4 family and remains GA on Microsoft Foundry (lifecycle page checked 2026-08-17: GA, no retirement date). Its 16,384-token window is the smallest in this open-weight roster, which makes it the highest-risk model here for MCP footprints: a 50-tool server at ~200 tokens per definition eats ~60% of the window, and the ~42K-token GitHub MCP surface cannot be loaded at all. Function calling is not supported (Foundry: 'Tool calling: No'; no tool tokens in the tokenizer). 2026-08-19 correction: its tokenizer is tiktoken cl100k_base-derived (padded vocab 100,352), NOT o200k_base — count Phi-4 with the generic_cl100k profile and Phi-4-mini/multimodal with generic_o200k.",
       "sources": [
         "https://huggingface.co/microsoft/phi-4",
         "https://huggingface.co/microsoft/phi-4/raw/main/config.json",
         "https://huggingface.co/microsoft/phi-4/raw/main/tokenizer_config.json",
         "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
+        "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/model-lifecycle-retirement",
         "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
         "https://arxiv.org/abs/2412.08905",
+        "https://arxiv.org/pdf/2412.08905",
+        "https://raw.githubusercontent.com/openai/tiktoken/main/tiktoken_ext/openai_public.py",
+        "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+        "https://docs.vllm.ai/en/stable/features/tool_calling/",
+        "https://dev.to/thedailyagent/mcp-tool-overload-why-more-tools-make-your-agent-worse-5a49",
         "https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/introducing-phi-4-microsoft%E2%80%99s-newest-small-language-model-specializing-in-comple/4357090"
       ]
     },
@@ -447,8 +475,8 @@
         "confidence": "medium",
         "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Model card states 'Release date: February 2025'. Exact date confirmed as February 2025; using Feb 01 as placeholder."
+        "as_of": "2026-08-19",
+        "notes": "Model card (re-checked 2026-08-19) states 'Release date: February 2025' with no day; 2025-02-01 is a placeholder for the month."
       },
       "status": "ga",
       "knowledge_cutoff": {
@@ -456,8 +484,8 @@
         "confidence": "high",
         "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Model card: 'This is a static model trained on offline datasets with the cutoff date of June 2024 for publicly available data.' Trained November–December 2024."
+        "as_of": "2026-08-19",
+        "notes": "Model card: 'a static model trained on offline datasets with the cutoff date of June 2024 for publicly available data.' Trained Nov–Dec 2024. Unchanged 2026-08-19."
       },
       "modalities": ["text"],
       "context": {
@@ -467,16 +495,16 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json: max_position_embeddings=131072. Model card: 'Context length: 128K tokens' (128K = 131072). tokenizer_config.json: model_max_length=131072. LongRoPE scaling from original_max_position_embeddings=4096 to 131072."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. config.json max_position_embeddings=131072 (original_max_position_embeddings=4096, rope_scaling.type=longrope); tokenizer_config.json model_max_length=131072; model card 'Context length: 128K tokens'; tech report 'support 128K context length based on LongRoPE'. Foundry lists 131,072 input."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Azure Foundry documents 131,072 input / 4,096 output as separate caps within the shared window."
+          "as_of": "2026-08-19",
+          "notes": "Foundry (updated 2026-07-24) documents input 131,072 / output 4,096 for the hosted endpoint. These are caps inside one 131,072-token attention window, not two independent pools — the completion is drawn from the same budget the prompt consumes. Self-hosted, --max-model-len is the single ceiling."
         },
         "max_input_tokens": {
           "value": 131072,
@@ -484,17 +512,18 @@
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "derived": false
+          "as_of": "2026-08-19",
+          "derived": false,
+          "notes": "Foundry documents 131,072 input tokens (unchanged 2026-08-19); matches config.json max_position_embeddings."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "No documented default. Azure Foundry cap is 4,096; self-hosted via vLLM the operator sets max_new_tokens per-request."
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No default published. Foundry publishes only the 4,096 maximum; the HF card's examples pass max_new_tokens explicitly (values 40–500). Self-hosted the operator sets it per request."
         },
         "max_output_tokens_max": {
           "value": 4096,
@@ -502,8 +531,8 @@
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Azure Foundry documents output up to 4,096 tokens. Self-hosted: serving stack can exceed this up to the context window ceiling."
+          "as_of": "2026-08-19",
+          "notes": "Foundry documents output up to 4,096 tokens (re-checked 2026-08-19). Self-hosted this is not enforced — the serving stack can generate up to the 131,072-token window."
         },
         "extended_context": {
           "value": null,
@@ -511,195 +540,213 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "128K is the native documented maximum via LongRoPE. No additional extended/beta window beyond 128K documented."
+          "as_of": "2026-08-19",
+          "notes": "128K (131,072) via LongRoPE is the native documented maximum; no additional beta/extended window is published."
         },
         "reasoning_tokens_count_as_output": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a reasoning model. Phi-4-mini-reasoning is a separate model."
+          "as_of": "2026-08-19",
+          "notes": "Phi-4-mini-instruct is not a reasoning model and emits no thinking trace, so there is no reasoning-vs-output split to record; left null. Phi-4-mini-reasoning is a separate model."
         }
       },
       "tokenization": {
         "tokenizer_family": {
-          "value": "GPT2Tokenizer / o200k_base-aligned, vocab 200064",
+          "value": "tiktoken o200k_base-derived (GPT2Tokenizer, padded vocab 200064)",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/tokenizer_config.json",
+          "source_url": "https://arxiv.org/pdf/2503.01743",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json auto_map AutoTokenizer points to 'Xenova/gpt-4o' (the o200k_base tokenizer). tokenizer_config.json tokenizer_class=GPT2Tokenizer, vocab_size=200064. The base vocab is o200k_base (200K tokens) extended with Phi-4-mini special tokens including <|tool|>, <|/tool|>, <|tool_call|>, <|/tool_call|>, <|tool_response|>."
+          "as_of": "2026-08-19",
+          "notes": "Upgraded to a tier-1 statement 2026-08-19: the Phi-4-Mini tech report says the model uses the 'o200k_base tiktoken' tokenizer with a 'vocabulary size of 200,064'. Corroborated by config.json auto_map AutoTokenizer='Xenova/gpt-4o' and tokenizer_config.json tokenizer_class=GPT2Tokenizer. On top of the o200k_base base vocab sit Phi-4-mini's tool special tokens: <|tool|>=200023, <|/tool|>=200024, <|tool_call|>=200025, <|/tool_call|>=200026, <|tool_response|>=200027. This is a DIFFERENT tokenizer from Phi-4 / Phi-4-reasoning-vision-15B (cl100k_base, vocab 100,352) — use generic_o200k for this model."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Tokenizer files ship in the MIT-licensed HF repo (re-checked 2026-08-19)."
         },
         "tokenizer_access": {
-          "value": "HF AutoTokenizer (microsoft/Phi-4-mini-instruct, trust_remote_code=True)",
+          "value": "HF AutoTokenizer (microsoft/Phi-4-mini-instruct, trust_remote_code=True) — or tiktoken o200k_base for the base vocab plus the Phi-4-mini special tokens",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
-          "source_tier": 2,
-          "as_of": "2026-06-21"
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19"
         },
         "count_tokens_method": {
           "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('microsoft/Phi-4-mini-instruct', trust_remote_code=True); len(tok.encode(text))",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "For a tool-loaded prompt use tok.apply_chat_template(messages, tools=[...]) so the <|tool|> wrapper and the serialized tool JSON are counted the way the model will actually see them."
         },
         "image_token_rule": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Phi-4-mini-instruct is text-only."
+          "as_of": "2026-08-19",
+          "notes": "Phi-4-mini-instruct is text-only; images require Phi-4-multimodal-instruct or Phi-4-reasoning-vision-15B."
         },
         "audio_token_rule": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Phi-4-mini-instruct is text-only."
+          "as_of": "2026-08-19",
+          "notes": "Phi-4-mini-instruct is text-only; audio requires Phi-4-multimodal-instruct."
         },
         "chars_per_token_estimate": {
-          "value": 3.5,
+          "value": 4.0,
           "confidence": "medium",
-          "source_url": null,
-          "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "Approximate for English text with o200k_base-aligned tokenizer."
+          "source_url": "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Rule of thumb only: ~4 characters per token for English. Phi-4-mini / Phi-4-multimodal use tiktoken o200k_base (vocab 200,064) per the Phi-4-Mini tech report, so OpenAI's published ~4-chars/token English heuristic applies directly. Use the HF AutoTokenizer for exact counts — never this estimate for a hard budget. (Previously recorded as 3.5 with no source; replaced with the sourced ~4 figure.)"
         }
       },
       "tools_mcp": {
         "function_calling": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/tokenizer_config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card explicitly documents a 'Tool-enabled function-calling format' with <|tool|>...<|/tool|> system-prompt wrapper for JSON tool definitions, and <|tool_call|>...<|/tool_call|> for model responses. Function calling is a primary use case listed in intended uses."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 at the tokenizer level, which is stronger than the prose: tokenizer_config.json reserves <|tool|>=200023, <|/tool|>=200024, <|tool_call|>=200025, <|/tool_call|>=200026, <|tool_response|>=200027, and the bundled chat_template branches on \"message['role'] == 'system' and 'tools' in message\" to emit <|tool|>[…]<|/tool|>. The model card documents the same 'tool-enabled function-calling format' and lists function calling as an intended use; the tech report notes Phi-4-Mini was trained on 'a significantly larger and more diverse set of function calling' data. NOTE the split: the WEIGHTS support tool calling, while the Foundry-hosted endpoint still advertises 'Tool calling: No'."
         },
         "native_mcp": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No native MCP protocol. Uses a custom JSON-in-system-prompt format for tools. Azure Foundry lists 'Tool calling: No' for the hosted endpoint, though the model weights support it via the custom format."
+          "as_of": "2026-08-19",
+          "notes": "No MCP protocol at the model level — tools arrive as a JSON array inside the system message, and an MCP host must translate tools/list into that array. Foundry lists 'Tool calling: No' for the hosted endpoint (page updated 2026-07-24), so MCP over Foundry is not available either; MCP use means self-hosting."
         },
         "parallel_tool_calls": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/tokenizer_config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not explicitly documented in model card. The custom tool format allows multiple tools in the system prompt, but whether multiple simultaneous calls per turn is trained is undocumented."
+          "as_of": "2026-08-19",
+          "notes": "Still undocumented as of 2026-08-19. The chat template accepts an arbitrary tools array and wraps model output in a single <|tool_call|>…<|/tool_call|> span; neither the model card nor the tech report states whether multiple simultaneous calls per turn were trained. Treat multi-call turns as unverified."
         },
         "max_tools_hard": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented API-enforced hard limit on tool count. Practical ceiling is the 128K context window."
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric tool-count cap is documented — open weights have no API layer to enforce one. What binds instead: the 131,072-token window shared with the prompt, the empirical tool-selection cliff (lower than the usual 30–50 for a 3.8B model), and the host's aggregate catalog cap. Scope: AGGREGATE across all connected servers plus built-in tools; no per-MCP-server cap is documented anywhere."
         },
         "max_tools_practical": {
-          "value": 20,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "Estimated from general small-model degradation patterns (Berkeley FCL: accuracy drops steeply past 30-50 tools for larger models; smaller 3.8B models tend to degrade earlier). 128K window gives more headroom than Phi-4's 16K, but the 3.8B parameter count limits reliable tool selection across large sets. Tier-4 estimate only."
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19: 20 -> null. The previous value was an interpolation. It was cited to a dev.to tool-overload post (2026-03-06) that was re-opened in this pass: its single measurement ('accuracy on correct tool selection dropped from ~95% with a focused toolset to ~71% with the full GitHub MCP server loaded', ~4 tools / ~1,200 tokens vs ~46 tools / ~42,000 tokens) was run with model=\"claude-3-5-sonnet-20241022\", and the post never mentions Phi. Attributing a per-Phi-variant number to a measurement of another vendor's model is not admissible, and the four Phi variants were merely ranked against each other by judgement. SEARCHED 2026-08-19 for a Phi-specific figure and found none: the four Hugging Face model cards (tier 1), the Phi-4 / Phi-4-mini technical reports, Microsoft's PhiCookBook function-calling sample (its example declares exactly one tool and gives no guidance), an on-device tool-calling comparison covering Phi-4-mini (ertas.ai, updated 2026-08-07 -- BFCL v4 composite scores and a 5-tool customer-support evaluation set, but no tool-count-vs-accuracy curve), a 2026 tool-calling benchmark round-up (presenc.ai) and a catalog-scaling study (nerdleveltech), neither of which mentions Phi. No Azure AI Foundry page states a tool count either. WHAT ACTUALLY BINDS on this variant: model capacity rather than the window -- 3.8B parameters with a 128K context length (model card, tier 1). The model card documents a tool-enabled function-calling format (tools passed in the system prompt between <|tool|> and <|/tool|>) but gives no guidance whatsoever on tool quantity, and its red-team section reports that 'With function calling scenarios, the model could sometimes hallucinate function names or URL's.' Treat tool-selection reliability as degrading earlier than the ~30-50 range reported for frontier models, but the dataset now records no number because none has been measured on this model. Scope when a number is eventually recorded: AGGREGATE, not per server."
         },
         "tool_definition_shape": {
           "value": "phi4_mini_tool_format",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/tokenizer_config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Phi-4-mini uses a custom format: tools provided as a JSON array in the system prompt, wrapped by special tokens <|tool|>[{...}]<|/tool|>. Each tool definition is a JSON object with name, description, and parameters fields — structurally similar to OpenAI function format but injected via system prompt rather than as a separate API parameter. vLLM with OpenAI-compatible API may also accept openai_function format and translate internally."
+          "as_of": "2026-08-19",
+          "notes": "Native shape: a JSON array of {name, description, parameters} objects placed in the SYSTEM message and wrapped by the <|tool|> / <|/tool|> special tokens — structurally close to OpenAI function JSON but injected as prompt text rather than a separate API field. Re-checked 2026-08-19: vLLM's supported --tool-call-parser list still has no Phi entry, so an OpenAI-compatible server will not translate or parse this shape for you; use tok.apply_chat_template(..., tools=[...]) and parse <|tool_call|> spans client-side."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/tokenizer_config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Tool JSON serialized in the system prompt counts as input tokens. 128K window provides significantly more headroom than Phi-4, but the 3.8B parameter size means accuracy may degrade before the context window is saturated."
+          "as_of": "2026-08-19",
+          "notes": "The tool JSON is literally part of the system message, so it is ordinary input tokens against the 131,072-token window — plus ~5 special tokens of wrapper overhead. The 128K window gives far more headroom than Phi-4's 16K, but a 3.8B model's selection accuracy degrades well before the window fills."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No deferred/lazy tool loading at model level."
+          "as_of": "2026-08-19",
+          "notes": "No deferred/lazy tool loading at the model level; the whole tool array is materialized in the system message every turn. Any progressive disclosure must be built by the host."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not documented."
+          "as_of": "2026-08-19",
+          "notes": "No name-length or character-pattern rule is documented; names are free-form JSON strings inside the system message. The operative limit is whatever the MCP host imposes after namespacing."
         },
-        "tool_schema_limits_notes": "Tools are injected as JSON in the system prompt between <|tool|> and <|/tool|> special tokens. Each tool JSON object is counted as input tokens. With 128K context, MCP tool footprint is less critical than Phi-4, but model capability at 3.8B may limit reliable selection from large tool sets. Red-team testing noted that 'the model could sometimes hallucinate function names or URLs' in function calling scenarios.",
+        "tool_schema_limits_notes": "Tools are injected as a JSON array in the system message between <|tool|> (200023) and <|/tool|> (200024); model tool calls come back between <|tool_call|> (200025) and <|/tool_call|> (200026), and results are fed back after <|tool_response|> (200027). No schema-size, nesting-depth or keyword restriction is documented — the definitions are plain prompt text counted against the 131,072-token window. Practical caution from the model card's red-team section: the model 'could sometimes hallucinate function names or URLs' in function-calling scenarios, so validate the emitted name against the registered tool set before dispatching.",
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
-          "notes": "No vendor cap; description counts against context window."
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap documented; description text counts against the 128K context window like any other prompt text."
         },
         "max_request_size": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+          "as_of": "2026-08-19",
+          "notes": "No vendor byte cap (no vendor-run API). Bounded by the serving config (vLLM --max-model-len / --max-num-batched-tokens), proxy body limits, and GPU memory."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "Context-bound; tool results count against max_model_len."
+          "as_of": "2026-08-19",
+          "notes": "No documented cap on a single tool result; results arrive after <|tool_response|> as ordinary tokens and count against max_model_len."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
-          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not documented; would be governed by the chat-template tool-call parser, and vLLM ships none for Phi. See parallel_tool_calls."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "notes": "Set by the agent host/framework, not the model."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not a model property — the agent host/framework decides how many tool-call/result cycles a turn may run."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total across servers); nothing at the model or serving layer counts servers."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap. The effective AGGREGATE ceiling is approximately (context_window − output headroom) ÷ average tool-definition tokens; at 131,072 tokens that is in the hundreds, so for this model the practical selection cliff — not the window — is the real limit. Host apps cap lower (Cursor ~40, Claude Desktop ~100)."
         },
-        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser — re-checked 2026-08-19, vLLM's supported --tool-call-parser list (Hermes, Mistral, Llama, Granite, InternLM, Jamba, xLAM, Qwen, DeepSeek, OpenAI OSS, Kimi-K2, Hunyuan, Cohere, GLM, FunctionGemma, Olmo 3, Apertus, pythonic, …) contains NO Phi entry, so OpenAI-shaped tool calling over vLLM needs a custom parser or client-side parsing of the model's own template; (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style strict function-schema mode (100-prop / 5-level-depth / no-oneOf enforcement) is documented for any Phi model — neither the HF model cards nor the Foundry model pages define schema validation rules. Schema constraints are whatever the serving stack's guided-decoding backend enforces, not a model/API rule."
         }
       },
       "skills_context": {
@@ -708,31 +755,34 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills/extension concept for self-hosted Phi weights (re-checked 2026-08-19)."
         },
         "skills_loading_model": {
           "value": "n/a",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills mechanism exists, so there is nothing to load eagerly or progressively."
         },
         "skills_context_cost_notes": null,
-        "system_prompt_overhead_notes": "The chat template prepends <|system|>...<|end|> for the system message, which includes tool definitions via <|tool|>...<|/tool|> tokens. System prompt (including tool JSON) counts as input tokens against the 128K window.",
+        "system_prompt_overhead_notes": "The chat template wraps the system message as <|system|>…<|end|>, and when a tools array is present it emits <|tool|>[…]<|/tool|> inside that message. Wrapper overhead is only a handful of special tokens; the real cost is the serialized tool JSON itself, which counts as input against the 131,072-token window.",
         "prompt_caching": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No vendor-level prompt caching. Serving stacks like vLLM (--enable-prefix-caching) or SGLang (RadixAttention) can provide KV-cache reuse for static system prompt + tool definitions, reducing compute overhead in multi-turn sessions."
+          "as_of": "2026-08-19",
+          "notes": "No vendor-level prompt caching for self-hosted weights (there is no per-token bill to discount). Because the tool block sits at the very front of the system message, vLLM --enable-prefix-caching / SGLang RadixAttention reuse its KV-cache across turns very effectively — an operator setting, not a model feature."
         },
         "memory_feature": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No persistent memory feature at the model level."
         }
       },
       "cost": {
@@ -742,8 +792,8 @@
           "confidence": "high",
           "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open weights — self-hosted compute cost only. Azure AI Foundry serverless pricing shows '$-' (currently free serverless tier as of 2026-06-21)."
+          "as_of": "2026-08-19",
+          "notes": "Open weights — no per-token list price. Re-checked 2026-08-19: the Microsoft Foundry pricing page still shows '$-' for the 'Phi-4-mini' row. Self-hosting means the operator pays GPU/cloud cost."
         },
         "output_per_mtok_usd": {
           "value": null,
@@ -751,41 +801,42 @@
           "confidence": "high",
           "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Same as input: self-hosted compute only."
+          "as_of": "2026-08-19",
+          "notes": "Same as input: no published per-token price; self-hosted compute only."
         },
         "cached_input_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted."
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price exists for self-hosted weights; prefix caching saves GPU time, not a billed token rate."
         },
         "batch_discount": {
           "value": null,
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for open-weight self-hosted."
+          "as_of": "2026-08-19",
+          "notes": "No batch-discount tier is published for Phi; batching is a throughput setting of the operator's serving stack."
         },
         "billing_unit": {
           "value": "compute",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Self-hosted compute (GPU hours / cloud instance cost); the Foundry pricing page publishes no token rate for Phi."
         },
         "multimodal_billing_notes": null,
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a reasoning model."
+          "as_of": "2026-08-19",
+          "notes": "Not a reasoning model, and self-hosted weights carry no per-token billing, so there is no reasoning-billing rule to record; left null. Cost is GPU time."
         }
       },
       "self_host": {
@@ -794,57 +845,63 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "license": {
           "value": "MIT",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card and LICENSE file confirm MIT license."
+          "as_of": "2026-08-19",
+          "notes": "Model card and LICENSE file confirm MIT (re-checked 2026-08-19)."
         },
         "param_variants": {
           "value": "3.8B (dense decoder-only Transformer, BF16; 200K vocabulary, grouped-query attention, shared input/output embedding)",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Unchanged 2026-08-19; config.json torch_dtype=bfloat16, vocab_size=200064."
         },
         "native_context_config": {
           "value": 131072,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json: max_position_embeddings=131072, original_max_position_embeddings=4096, rope_scaling.type=longrope with long_factor array extending to 128K. LongRoPE (longrope) scaling is the mechanism for the 128K extension."
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings=131072, original_max_position_embeddings=4096, rope_scaling.type=longrope — LongRoPE is the mechanism for the 128K extension (re-checked 2026-08-19)."
         },
         "max_context_documented": {
           "value": 131072,
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+          "source_url": "https://arxiv.org/pdf/2503.01743",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "128K (131072) is the documented maximum. No further extension beyond 128K documented."
+          "as_of": "2026-08-19",
+          "notes": "Tech report: 'support 128K context length based on LongRoPE'. No longer window is documented."
         },
         "serving_frameworks": {
-          "value": "vLLM (>=0.7.3), SGLang, Transformers (HF, >=4.49.0), Ollama (quantized GGUF), ONNX Runtime (Phi-4-mini-instruct-onnx), Docker Model Runner",
+          "value": "vLLM (>=0.7.3), SGLang, Transformers (HF, >=4.49.0, trust_remote_code=True), Docker Model Runner, Ollama / llama.cpp / LM Studio (quantized GGUF), ONNX Runtime (microsoft/Phi-4-mini-instruct-onnx)",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card shows vLLM and SGLang examples with trust_remote_code=True. ONNX Runtime: separate microsoft/Phi-4-mini-instruct-onnx repo. Requires flash_attn==2.7.4.post1 for GPU serving."
+          "as_of": "2026-08-19",
+          "notes": "Model card (re-checked 2026-08-19) lists Transformers 4.49.0+, vLLM 0.7.3+, SGLang, Docker Model Runner, and quantized builds for Ollama / llama.cpp / LM Studio. ONNX weights live in a separate repo."
         },
-        "framework_tool_calling_notes": "Phi-4-mini-instruct has native function-calling support via its custom <|tool|>/<|/tool|> chat template. When served via vLLM or SGLang with OpenAI-compatible API, tools can be submitted in the OpenAI function-call format and the framework translates to the model's native format. PhiCookBook (GitHub) provides function calling examples. Note: model card red-team testing found hallucination of function names/URLs in some function-calling scenarios."
+        "framework_tool_calling_notes": "Phi-4-mini-instruct has native function-calling post-training and a chat template that takes a tools argument, emitting <|tool|>[…]<|/tool|> in the system message. Re-checked 2026-08-19: vLLM's supported --tool-call-parser list contains NO Phi entry, so an OpenAI-compatible server will neither render the native shape from a tools= field nor parse <|tool_call|> spans back into tool_calls for you — either apply the chat template yourself (tok.apply_chat_template(messages, tools=[...])) and parse client-side, or supply a custom parser. Microsoft's PhiCookBook has worked function-calling examples. Model-card red-teaming warns the model can hallucinate function names or URLs, so validate emitted names against the registered tool set."
       },
-      "notes": "Phi-4-mini-instruct (3.8B, Feb 2025) is the recommended Phi-4 model for function-calling/MCP use cases — it explicitly documents tool/function calling with a dedicated format and has a 128K context window vs Phi-4's 16K. However, its 3.8B parameter count means reliable tool selection degrades faster than larger models. Excellent for edge/device deployment where function calling is needed with minimal GPU memory (fits in ~8GB VRAM with quantization).",
+      "notes": "Phi-4-mini-instruct (3.8B, Feb 2025) is the Phi model to reach for when tool/MCP use matters: it is the only Phi-4-family model whose vocabulary and chat template natively encode tool calling (<|tool|> 200023 … <|tool_response|> 200027), and its 128K LongRoPE window leaves room for a real tool surface — unlike Phi-4's 16K. Two caveats that have not changed as of 2026-08-19: (1) the Foundry-hosted endpoint still advertises 'Tool calling: No', so MCP use means self-hosting the weights; (2) at 3.8B parameters, selection accuracy degrades long before the window fills, and the model card's own red-teaming reports hallucinated function names. Still GA on Foundry (lifecycle page checked 2026-08-17: GA, no retirement date). Fits in ~8GB VRAM quantized.",
       "sources": [
         "https://huggingface.co/microsoft/Phi-4-mini-instruct",
         "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/config.json",
         "https://huggingface.co/microsoft/Phi-4-mini-instruct/raw/main/tokenizer_config.json",
         "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
+        "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/model-lifecycle-retirement",
         "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
         "https://arxiv.org/abs/2503.01743",
+        "https://arxiv.org/pdf/2503.01743",
+        "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+        "https://docs.vllm.ai/en/stable/features/tool_calling/",
+        "https://dev.to/thedailyagent/mcp-tool-overload-why-more-tools-make-your-agent-worse-5a49",
         "https://techcommunity.microsoft.com/blog/educatordeveloperblog/welcome-to-the-new-phi-4-models---microsoft-phi-4-mini--phi-4-multimodal/4386037",
         "https://github.com/microsoft/PhiCookBook/blob/main/md/02.Application/07.FunctionCalling/Phi4/FunctionCallingBasic/README.md"
       ]
@@ -858,17 +915,17 @@
         "confidence": "medium",
         "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Model card states training 'December 2024 to January 2025', release confirmed as February 2025 per blog and third-party sources. Using Feb 01 as placeholder date."
+        "as_of": "2026-08-19",
+        "notes": "Model card (re-checked 2026-08-19) gives 'Release date: February 2025' with no day; training December 2024–January 2025. 2025-02-01 is a placeholder for the month."
       },
       "status": "ga",
       "knowledge_cutoff": {
         "value": "2024-06-01",
         "confidence": "medium",
-        "source_url": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+        "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Phi-4-mini tech report (arxiv 2503.01743) applies to both Phi-4-mini and Phi-4-multimodal; consistent June 2024 cutoff for publicly available data."
+        "as_of": "2026-08-19",
+        "notes": "Model card states a June 2024 cutoff for publicly available data, matching Phi-4-mini (the shared tech report, arXiv 2503.01743, covers both). Confidence 'medium' because the multimodal card restates it less explicitly than the mini card."
       },
       "modalities": ["text", "image", "audio"],
       "context": {
@@ -878,16 +935,16 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json: max_position_embeddings=131072. Model card: '128K token context length'. Same LongRoPE architecture as Phi-4-mini."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. config.json max_position_embeddings=131072, original_max_position_embeddings=4096, rope_scaling.type=longrope; model card '128K token context length'. Same LongRoPE architecture as Phi-4-mini. Text, image and audio tokens all draw on this one pool."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Azure Foundry: input 131,072 tokens / output 4,096 tokens within shared pool."
+          "as_of": "2026-08-19",
+          "notes": "Foundry (updated 2026-07-24): input text+images+audio 131,072 tokens / output text 4,096 tokens — caps inside one shared window, not two pools."
         },
         "max_input_tokens": {
           "value": 131072,
@@ -895,18 +952,18 @@
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": false,
-          "notes": "Azure Foundry documents 131,072 input tokens across text+image+audio modalities combined."
+          "notes": "Foundry documents 131,072 input tokens for text, images and audio COMBINED (re-checked 2026-08-19) — every modality is charged into the same budget as tool definitions."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "No documented default. Azure Foundry cap is 4,096; self-hosted operator sets max_new_tokens."
+          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No default published. Foundry publishes only the 4,096 maximum; self-hosted the operator sets max_new_tokens per request."
         },
         "max_output_tokens_max": {
           "value": 4096,
@@ -914,8 +971,8 @@
           "confidence": "high",
           "source_url": "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Azure Foundry documents output up to 4,096 tokens."
+          "as_of": "2026-08-19",
+          "notes": "Foundry documents output up to 4,096 tokens (re-checked 2026-08-19). Self-hosted the serving stack can generate up to the 131,072-token window."
         },
         "extended_context": {
           "value": null,
@@ -923,71 +980,74 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "128K is the native maximum. No additional extended context documented."
+          "as_of": "2026-08-19",
+          "notes": "128K is the native maximum via LongRoPE; no additional beta/extended window is documented."
         },
         "reasoning_tokens_count_as_output": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a reasoning model."
+          "as_of": "2026-08-19",
+          "notes": "Not a reasoning model — no thinking trace and no separate thinking-token accounting, so there is no reasoning-vs-output split to record; left null."
         }
       },
       "tokenization": {
         "tokenizer_family": {
-          "value": "GPT2Tokenizer / o200k_base-aligned, vocab 200064 (shared with Phi-4-mini)",
+          "value": "tiktoken o200k_base-derived (GPT2Tokenizer, padded vocab 200064; shared with Phi-4-mini)",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json auto_map AutoTokenizer='Xenova/gpt-4o' (o200k_base). vocab_size=200064. Same tokenizer family as Phi-4-mini, with additional special tokens for image (<|image_1|>, etc.) and audio (<|audio_1|>, etc.) modalities."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: config.json auto_map AutoTokenizer='Xenova/gpt-4o' (the o200k_base tokenizer), vocab_size=200064 — identical text tokenizer to Phi-4-mini (whose tech report names 'o200k_base tiktoken', vocab 200,064), plus extra special tokens for the image (<|image_1|>…) and audio (<|audio_1|>…) placeholders. Use the generic_o200k profile for this model, NOT the cl100k one that Phi-4 needs."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Tokenizer files ship in the MIT-licensed HF repo (re-checked 2026-08-19)."
         },
         "tokenizer_access": {
           "value": "HF AutoTokenizer (microsoft/Phi-4-multimodal-instruct, trust_remote_code=True)",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
-          "source_tier": 2,
-          "as_of": "2026-06-21"
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "trust_remote_code=True is mandatory — the repo ships custom modeling/processor code (modeling_phi4mm.py)."
         },
         "count_tokens_method": {
-          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('microsoft/Phi-4-multimodal-instruct', trust_remote_code=True); len(tok.encode(text)) — text tokens only; image/audio tokens require model-specific preprocessing",
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('microsoft/Phi-4-multimodal-instruct', trust_remote_code=True); len(tok.encode(text)) — text only; image and audio tokens require the AutoProcessor",
           "confidence": "medium",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "The text tokenizer does not tell you the multimodal cost. To budget a real request, run the AutoProcessor over the actual images/audio and measure input_ids length — image cost varies with resolution and audio cost with duration."
         },
         "image_token_rule": {
-          "value": "Dynamic high-definition (HD) transform via avg_pool_2d compression; up to 3,600 visual tokens per image depending on resolution",
+          "value": "Dynamic HD transform (crop_size 448, avg_pool_2d token compression, sub_glb ordering); no per-image token count published",
           "confidence": "medium",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json embd_layer.image_embd_layer: use_hd_transform=true, crop_size=448, image_token_compression_cls=avg_pool_2d, hd_transform_order=sub_glb, with_learnable_separator=true. Phi-4-reasoning-vision (related model) documents up to 3,600 visual tokens for high-resolution inputs. Exact token count per image varies by resolution; no fixed per-image token rule documented."
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED 2026-08-19. The previous entry attributed 'up to 3,600 visual tokens' to this model; that figure belongs to Phi-4-reasoning-vision-15B (config.json max_patches=3600), a different architecture (SigLIP-2 NaFlex), and must not be carried over. What IS documented for Phi-4-multimodal: config.json embd_layer.image_embd_layer sets use_hd_transform=true, crop_size=448, image_token_compression_cls=avg_pool_2d, hd_transform_order=sub_glb, with_learnable_separator=true; the model card says resolution is dynamic up to roughly 3584x3584 for square images and up to 64 frames for multi-image input. Neither the card nor the tech report publishes a tokens-per-image formula — measure with the AutoProcessor. Practical consequence for MCP: image tokens and tool-definition tokens compete for the same 131,072-token budget."
         },
         "audio_token_rule": {
-          "value": "Cascades encoder with time_reduction=8; audio processed at 80-dim mel features → ~1 token per 80ms of audio",
-          "confidence": "medium",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/config.json",
+          "value": "80 ms per audio token (~12.5 tokens/second; ~750 tokens per minute of audio)",
+          "confidence": "high",
+          "source_url": "https://arxiv.org/pdf/2503.01743",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json audio_processor.config: time_reduction=8, input_size=80 (mel features), num_blocks=24. time_reduction=8 means 8 frames are compressed to 1 token. At 16kHz with standard 10ms frame shift, roughly ~12-13 tokens per second of audio. No precise per-second published in model card."
+          "as_of": "2026-08-19",
+          "notes": "UPGRADED 2026-08-19 from a config-derived estimate to a tier-1 published figure: the Phi-4-Mini / Phi-4-Multimodal tech report states an '80ms token rate for the language decoder' and '750 tokens for 1-minute audio'. Mechanism in config.json: audio_processor time_reduction=8 over 80-dim mel features, 24 conformer blocks. Model card recommends audio clips up to 40 s (up to 30 min for summarization) — 30 minutes of audio is ~22,500 tokens, roughly a sixth of the whole window."
         },
         "chars_per_token_estimate": {
-          "value": 3.5,
+          "value": 4.0,
           "confidence": "medium",
-          "source_url": null,
-          "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "For text tokens only. Multimodal inputs (image/audio) require model-specific preprocessing to count tokens."
+          "source_url": "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Rule of thumb only: ~4 characters per token for English. Phi-4-mini / Phi-4-multimodal use tiktoken o200k_base (vocab 200,064) per the Phi-4-Mini tech report, so OpenAI's published ~4-chars/token English heuristic applies directly. Use the HF AutoTokenizer for exact counts — never this estimate for a hard budget. Text only — image and audio inputs do not follow any characters-per-token rule. (Previously recorded as 3.5 with no source.)"
         }
       },
       "tools_mcp": {
@@ -996,121 +1056,138 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card explicitly documents a 'Tool-enabled function-calling format' identical to Phi-4-mini's format: <|tool|>[{...}]<|/tool|> in system prompt. Listed as a primary use case: 'Function and tool calling'. Azure Foundry however lists 'Tool calling: No' for the hosted endpoint — discrepancy between model capability and hosted API exposure."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. The model card documents the same tool-enabled function-calling format as Phi-4-mini: tool specs as JSON wrapped in <|tool|> / <|/tool|> inside the system message (the two models share the Phi-4-mini language backbone and tokenizer). Unchanged discrepancy: Foundry's hosted endpoint still lists 'Tool calling: No' (page updated 2026-07-24), so the capability is reachable only by self-hosting the weights."
         },
         "native_mcp": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No native MCP protocol. Custom tool format via chat template."
+          "as_of": "2026-08-19",
+          "notes": "No MCP protocol at the model level; tools arrive as JSON in the system message and an MCP host must translate tools/list into that array."
         },
         "parallel_tool_calls": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not documented."
+          "as_of": "2026-08-19",
+          "notes": "Undocumented as of 2026-08-19; inherits Phi-4-mini's format, whose parallel-call behaviour is likewise unstated in the card and tech report."
         },
         "max_tools_hard": {
           "value": null,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented hard limit. Context window (128K) is the ceiling. Important: image and audio inputs consume additional tokens reducing the effective budget for tool definitions."
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric tool-count cap is documented — open weights have no API layer to enforce one. What binds: the 131,072-token window, which images (dynamic HD transform) and audio (~750 tokens/minute) draw down BEFORE any tool definitions; then the empirical selection cliff for a 5.6B model; then the host's aggregate catalog cap. Scope: AGGREGATE across all connected servers plus built-in tools; no per-MCP-server cap is documented."
         },
         "max_tools_practical": {
-          "value": 15,
+          "value": null,
           "confidence": "low",
-          "source_url": null,
-          "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "Tier-4 estimate only. 5.6B model — somewhat more capable than 3.8B mini, but still small. Multimodal input (images/audio) consumes additional context tokens, shrinking the budget available for tool definitions. MCP use with multimodal inputs requires careful budgeting."
+          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19: 15 -> null. The previous value was an interpolation. It was cited to a dev.to tool-overload post (2026-03-06) that was re-opened in this pass: its single measurement ('accuracy on correct tool selection dropped from ~95% with a focused toolset to ~71% with the full GitHub MCP server loaded', ~4 tools / ~1,200 tokens vs ~46 tools / ~42,000 tokens) was run with model=\"claude-3-5-sonnet-20241022\", and the post never mentions Phi. Attributing a per-Phi-variant number to a measurement of another vendor's model is not admissible, and the four Phi variants were merely ranked against each other by judgement. SEARCHED 2026-08-19 for a Phi-specific figure and found none: the four Hugging Face model cards (tier 1), the Phi-4 / Phi-4-mini technical reports, Microsoft's PhiCookBook function-calling sample (its example declares exactly one tool and gives no guidance), an on-device tool-calling comparison covering Phi-4-mini (ertas.ai, updated 2026-08-07 -- BFCL v4 composite scores and a 5-tool customer-support evaluation set, but no tool-count-vs-accuracy curve), a 2026 tool-calling benchmark round-up (presenc.ai) and a catalog-scaling study (nerdleveltech), neither of which mentions Phi. No Azure AI Foundry page states a tool count either. WHAT ACTUALLY BINDS on this variant: the shared 128K window is contested by media, not by tool definitions alone -- 30 minutes of audio is ~22,500 tokens and a high-resolution image costs hundreds to thousands more, out of the same pool the tool definitions sit in -- on a 5.6B-total model (3.8B language backbone plus vision/speech LoRA adapters). The model card (tier 1) documents the same tool-enabled function-calling format ('the user should provide the available tools in the system prompt, wrapped by <|tool|> and <|/tool|> tokens') and gives no tool-count guidance. Budget MCP tools per session against the actual media payload, not against the nominal 128K. Scope when a number is eventually recorded: AGGREGATE, not per server."
         },
         "tool_definition_shape": {
           "value": "phi4_mini_tool_format",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Same format as Phi-4-mini: JSON array in system prompt wrapped by <|tool|> and <|/tool|> tokens."
+          "as_of": "2026-08-19",
+          "notes": "Same native shape as Phi-4-mini: a JSON array of {name, description, parameters} in the system message wrapped by <|tool|> / <|/tool|>. As of 2026-08-19 vLLM ships no Phi --tool-call-parser, so rendering and parsing are the caller's job."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Tool JSON in system prompt counts as input tokens. Image and audio tokens additionally consume input budget — multimodal sessions must account for both."
+          "as_of": "2026-08-19",
+          "notes": "Tool JSON in the system message counts as input tokens. Critically for this model, image and audio tokens count against the SAME 131,072-token input budget — the tool footprint must be sized against what is left after the media."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No deferred/lazy tool loading at the model level; the full tool array is materialized in the system message every turn."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not documented."
+          "as_of": "2026-08-19",
+          "notes": "No name-length or pattern rule is documented; names are free-form JSON strings inside the system message."
         },
-        "tool_schema_limits_notes": "Phi-4-multimodal shares the same function-calling format as Phi-4-mini. Key consideration: multimodal inputs (images/audio) compete with tool definitions for the 128K context budget. A high-resolution image can consume hundreds to thousands of tokens, directly reducing the number of MCP tools that can be loaded. MCP use should be evaluated per-session with actual image/audio token budgets in mind.",
+        "tool_schema_limits_notes": "Shares Phi-4-mini's function-calling format (<|tool|> … <|/tool|> in the system message, <|tool_call|> … <|/tool_call|> on the way back) and, like it, documents no schema-size, depth or keyword limits. The distinguishing constraint is contention: image tokens (dynamic HD transform at crop_size 448) and audio tokens (~750 per minute, tier-1 tech report) are drawn from the same 131,072-token pool as the tool definitions, so the usable tool budget must be computed per session from the actual media payload rather than from the nominal window.",
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
-          "notes": "No vendor cap; description counts against context window."
+          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap documented; description text counts against the shared 128K window."
         },
         "max_request_size": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+          "as_of": "2026-08-19",
+          "notes": "No vendor byte cap (no vendor-run API). Bounded by the serving config (vLLM --max-model-len / --max-num-batched-tokens), proxy body limits, and GPU memory — and for this model, by how large the base64/media payload gets."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "Context-bound; tool results count against max_model_len."
+          "as_of": "2026-08-19",
+          "notes": "No documented cap on a single tool result; results are context-bound and count against max_model_len alongside any image/audio tokens already in the window."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
-          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not documented; would be governed by the chat-template tool-call parser, and vLLM ships none for Phi."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "notes": "Set by the agent host/framework, not the model."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not a model property — the agent host/framework decides how many tool-call/result cycles a turn may run."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total across servers); nothing at the model or serving layer counts servers."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "medium",
           "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
           "source_tier": 2,
-          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap. Effective AGGREGATE ceiling is approximately (context_window − media tokens − output headroom) ÷ average tool-definition tokens. Host apps cap lower (Cursor ~40, Claude Desktop ~100)."
         },
-        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser — re-checked 2026-08-19, vLLM's supported --tool-call-parser list (Hermes, Mistral, Llama, Granite, InternLM, Jamba, xLAM, Qwen, DeepSeek, OpenAI OSS, Kimi-K2, Hunyuan, Cohere, GLM, FunctionGemma, Olmo 3, Apertus, pythonic, …) contains NO Phi entry, so OpenAI-shaped tool calling over vLLM needs a custom parser or client-side parsing of the model's own template; (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style strict function-schema mode (100-prop / 5-level-depth / no-oneOf enforcement) is documented for any Phi model — neither the HF model cards nor the Foundry model pages define schema validation rules. Schema constraints are whatever the serving stack's guided-decoding backend enforces, not a model/API rule."
         }
       },
       "skills_context": {
@@ -1119,31 +1196,34 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills/extension concept for self-hosted Phi weights (re-checked 2026-08-19)."
         },
         "skills_loading_model": {
           "value": "n/a",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills mechanism exists, so there is nothing to load eagerly or progressively."
         },
         "skills_context_cost_notes": null,
-        "system_prompt_overhead_notes": "Same chat template structure as Phi-4-mini (<|system|>...<|tool|>...<|/tool|><|end|>). System prompt + tool definitions count as input tokens. Multimodal inputs add image tokens (dynamic HD transform, up to 3,600 per image) and audio tokens (~12-13 per second), all from the shared 128K pool.",
+        "system_prompt_overhead_notes": "Same chat-template structure as Phi-4-mini (<|system|>…<|tool|>[…]<|/tool|><|end|>): wrapper overhead is a handful of special tokens, and the serialized tool JSON is the real cost. On top of that, image tokens (dynamic HD transform) and audio tokens (~750 per minute, ~12.5/second) are charged to the same 131,072-token pool, so the effective system-prompt budget shrinks with every attachment.",
         "prompt_caching": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No vendor-level caching. vLLM prefix caching can reuse static system-prompt + tool definition KV-cache across turns, but multimodal (image/audio) inputs typically break prefix cache."
+          "as_of": "2026-08-19",
+          "notes": "No vendor-level caching for self-hosted weights. vLLM prefix caching can reuse the static system-prompt + tool-definition KV-cache across turns, but a new image or audio clip changes the prefix and breaks the reuse for that request."
         },
         "memory_feature": {
           "value": false,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No persistent memory feature at the model level."
         }
       },
       "cost": {
@@ -1153,8 +1233,8 @@
           "confidence": "high",
           "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open weights — self-hosted compute. Azure Foundry serverless shows '$-' (free tier). Two separate Foundry SKUs: 'Phi-4-multimodal, text and image' and 'Phi-4-multimodal, audio' — both at '$-' as of 2026-06-21."
+          "as_of": "2026-08-19",
+          "notes": "Open weights — no per-token list price. Re-checked 2026-08-19: the Foundry pricing page still shows '$-' for both SKUs, 'Phi-4-multimodal, text and image' and 'Phi-4-multimodal, audio'. Self-hosting means the operator pays GPU/cloud cost."
         },
         "output_per_mtok_usd": {
           "value": null,
@@ -1162,41 +1242,42 @@
           "confidence": "high",
           "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute only."
+          "as_of": "2026-08-19",
+          "notes": "Same as input: no published per-token price; self-hosted compute only."
         },
         "cached_input_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted."
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price exists for self-hosted weights; prefix caching saves GPU time, not a billed token rate."
         },
         "batch_discount": {
           "value": null,
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted."
+          "as_of": "2026-08-19",
+          "notes": "No batch-discount tier is published for Phi; batching is a throughput setting of the operator's serving stack."
         },
         "billing_unit": {
           "value": "compute",
           "confidence": "high",
-          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Self-hosted compute (GPU hours / cloud instance cost); the Foundry pricing page publishes no token rate for Phi."
         },
-        "multimodal_billing_notes": "Self-hosted: GPU compute cost is proportional to total token count (text + image + audio tokens). Images (dynamic HD transform, up to 3,600 visual tokens) and audio (~12-13 tokens/sec) increase per-request compute cost. Azure Foundry has separate SKUs for text+image vs audio inference.",
+        "multimodal_billing_notes": "Self-hosted: GPU compute scales with total tokens — text + image + audio. Audio is the one modality with a published rate: ~750 tokens per minute (80 ms per token, tier-1 tech report), so a 30-minute clip is ~22,500 tokens. Image cost is resolution-dependent with no published formula; measure with the AutoProcessor. Foundry keeps two separate SKUs ('text and image' vs 'audio'), both priced '$-' as of 2026-08-19.",
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "high",
-          "source_url": null,
+          "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not a reasoning model."
+          "as_of": "2026-08-19",
+          "notes": "Not a reasoning model, and self-hosted weights carry no per-token billing, so there is no reasoning-billing rule to record; left null. Cost is GPU time."
         }
       },
       "self_host": {
@@ -1205,59 +1286,503 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "license": {
           "value": "MIT",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card and LICENSE file confirm MIT license."
+          "as_of": "2026-08-19",
+          "notes": "Model card and LICENSE file confirm MIT (re-checked 2026-08-19)."
         },
         "param_variants": {
-          "value": "5.6B (multimodal: 3.8B language backbone + vision encoder (SigLIP-based) + audio encoder (Cascades, 24 blocks); BF16)",
+          "value": "5.6B (multimodal: 3.8B Phi-4-mini language backbone + SigLIP-based vision encoder + Cascades audio encoder, 24 blocks; BF16)",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card: '5.6 billion parameters'. Architecture uses vision LoRA (r=256) and speech LoRA (r=320) adapters on the 3.8B Phi-4-mini language backbone."
+          "as_of": "2026-08-19",
+          "notes": "Model card: '5.6 billion parameters'. Mixture-of-LoRAs design — vision LoRA (r=256) and speech LoRA (r=320) on the frozen Phi-4-mini backbone. Unchanged 2026-08-19."
         },
         "native_context_config": {
           "value": 131072,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "config.json: max_position_embeddings=131072, original_max_position_embeddings=4096, rope_scaling.type=longrope. Same LongRoPE config as Phi-4-mini-instruct."
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings=131072, original_max_position_embeddings=4096, rope_scaling.type=longrope, _attn_implementation=flash_attention_2. Same LongRoPE config as Phi-4-mini-instruct (re-checked 2026-08-19)."
         },
         "max_context_documented": {
           "value": 131072,
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "128K is the documented maximum. Effective usable context is reduced by image and audio tokens."
+          "as_of": "2026-08-19",
+          "notes": "128K is the documented maximum. Effective usable context is lower in practice because image and audio tokens are charged to the same pool."
         },
         "serving_frameworks": {
-          "value": "vLLM (>=0.7.3), Transformers (HF, >=4.48.2, trust_remote_code=True), ONNX Runtime (Phi-4-multimodal-instruct-onnx), Azure AI Studio",
+          "value": "vLLM (>=0.7.3), Transformers (HF, >=4.48.2, trust_remote_code=True), ONNX Runtime (microsoft/Phi-4-multimodal-instruct-onnx), Microsoft Foundry / Azure AI Studio",
           "confidence": "high",
           "source_url": "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Model card provides vLLM inference examples. Requires flash_attention_2 (config specifies _attn_implementation=flash_attention_2). Custom modeling code (modeling_phi4mm.py, trust_remote_code=True required). NVIDIA A100/A6000/H100 tested. ONNX Runtime variant available separately."
+          "as_of": "2026-08-19",
+          "notes": "Model card (re-checked 2026-08-19) gives Transformers 4.48.2+ examples and vLLM inference. Requires flash_attention_2 (config _attn_implementation) and custom modeling code (modeling_phi4mm.py) so trust_remote_code=True is mandatory. Tested on NVIDIA A100/A6000/H100."
         },
-        "framework_tool_calling_notes": "Same function-calling format as Phi-4-mini (JSON array in system prompt wrapped by <|tool|>/<|/tool|>). Custom modeling code means trust_remote_code=True is mandatory. Multimodal inputs (image/audio) can be combined with tool calling in the same request. MCP integration requires careful management of total token budget across text+image+audio+tool definitions."
+        "framework_tool_calling_notes": "Same function-calling format as Phi-4-mini (JSON array in the system message wrapped by <|tool|> / <|/tool|>), and the same 2026-08-19 caveat: vLLM's supported --tool-call-parser list contains no Phi entry, so render the template yourself and parse <|tool_call|> spans client-side. trust_remote_code=True is mandatory. Multimodal inputs can be combined with tool calling in one request — the token budget must then cover text + image + audio + tool definitions simultaneously."
       },
-      "notes": "Phi-4-multimodal-instruct (5.6B, Feb 2025) is the first open small model combining text, vision, and audio in a unified architecture. It shares the 128K context window and function-calling format with Phi-4-mini. Key MCP consideration: image and audio tokens consume the same shared pool as tool definitions — a single high-res image can consume thousands of tokens, directly reducing available tool budget. Ranked #1 on HuggingFace OpenASR leaderboard (WER 6.14%) at release. Requires trust_remote_code=True for all serving.",
+      "notes": "Phi-4-multimodal-instruct (5.6B, Feb 2025) unifies text, vision and audio on the Phi-4-mini backbone and inherits its 128K window and <|tool|> function-calling format. The MCP-relevant point is contention: image tokens and audio tokens (~750 per minute, tier-1) are charged to the same 131,072-token pool as the tool definitions, so an audio-heavy or image-heavy session can leave far less tool budget than the nominal window suggests. Still GA on Foundry (lifecycle page checked 2026-08-17: GA, no retirement date), still advertised there as 'Tool calling: No', so tool use means self-hosting. 2026-08-19 correction: the 'up to 3,600 visual tokens' figure previously recorded here belongs to Phi-4-reasoning-vision-15B, not to this model — no per-image token formula is published for Phi-4-multimodal. Requires trust_remote_code=True.",
       "sources": [
         "https://huggingface.co/microsoft/Phi-4-multimodal-instruct",
         "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/config.json",
-        "https://huggingface.co/microsoft/Phi-4-multimodal-instruct/raw/main/README.md",
         "https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-from-partners",
+        "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/model-lifecycle-retirement",
         "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
         "https://arxiv.org/abs/2503.01743",
+        "https://arxiv.org/pdf/2503.01743",
+        "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+        "https://docs.vllm.ai/en/stable/features/tool_calling/",
+        "https://dev.to/thedailyagent/mcp-tool-overload-why-more-tools-make-your-agent-worse-5a49",
         "https://techcommunity.microsoft.com/blog/educatordeveloperblog/welcome-to-the-new-phi-4-models---microsoft-phi-4-mini--phi-4-multimodal/4386037"
+      ]
+    },
+    {
+      "id": "microsoft/Phi-4-reasoning-vision-15B",
+      "display_name": "Phi-4-reasoning-vision-15B",
+      "family": "Phi-4-reasoning",
+      "release_date": {
+        "value": "2026-03-04",
+        "confidence": "high",
+        "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Model card 'Release date: March 4, 2026'. Announced the same day on the Microsoft Research blog and introduced to Microsoft Foundry via the Foundry blog. Trained on 240 B200 GPUs over 4 days in February 2026."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Not stated. The model card gives training dates (February 2026) but no data cutoff, and the technical report does not give one either. The Phi-4-reasoning backbone descends from Phi-4, whose cutoff is June 2024, but no Microsoft source restates a cutoff for this model, so it is left null rather than inherited."
+      },
+      "modalities": ["text", "image"],
+      "context": {
+        "context_window_tokens": {
+          "value": 16384,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card 'Context length: 16,384 tokens', corroborated by tokenizer_config.json model_max_length=16384 and by the technical report's stage-3 training 'Max sequence length 16384'. SOURCE CONFLICT: config.json carries max_position_embeddings=32768 (inherited from the Phi-4-reasoning backbone, rope_scaling=null, rope_theta=500000). Both are tier 1; the documented window — what Microsoft states and trains to — is 16,384, so that is the recorded value, with 32,768 recorded separately under self_host.native_context_config."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The card publishes a single 'Context length' figure and no separate input/output caps, so prompt, image tokens and the generated <think> trace all draw on one 16,384-token pool. Unlike Phi-4/Phi-4-mini this model is not yet on the Foundry lifecycle or model-capability tables, so there is no hosted-endpoint split to cite."
+        },
+        "max_input_tokens": {
+          "value": 16384,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Derived: no separate input cap is published, so the ceiling is the documented 16,384-token window, less whatever the completion (including the <think> trace) needs. Image tokens count here too — up to 3,600 per image."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/research/wp-content/uploads/2026/03/Phi-4-reasoning-vision-15B-Tech-Report.pdf",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No default published. The technical report used '4096 max output tokens' for its own evaluations, which is an evaluation setting rather than a model default; self-hosted, the operator sets max_new_tokens per request."
+        },
+        "max_output_tokens_max": {
+          "value": 16384,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Derived: no separate output cap is published, so the ceiling is the shared 16,384-token window. Budget carefully — the <think> reasoning trace is emitted inline and consumes this same allowance before the answer appears."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No extended or beta context mode is advertised. config.json rope_scaling=null (no RoPE-scaling path), and although max_position_embeddings=32768 leaves architectural headroom above the documented 16,384, Microsoft does not present that as a supported longer window."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "This IS a reasoning model: it emits <think>…</think> blocks (tokenizer IDs 100350/100351, with <nothink>=100348 to suppress them) inline in the completion. There is no separate reasoning-token channel and no hidden budget — the trace is ordinary generated text, so it consumes the generation allowance and the shared 16,384-token window. Confidence 'medium': this is read off the mechanism (inline control tokens) because Microsoft publishes no explicit accounting statement for open weights."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "tiktoken cl100k_base-derived (GPT2Tokenizer, padded vocab 100352)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer_config.json places <|endoftext|>=100257, <|fim_prefix|>=100258, <|fim_middle|>=100259, <|fim_suffix|>=100260, <|endofprompt|>=100276 — exactly tiktoken cl100k_base's special-token IDs — so the base vocab occupies 0-100255 and config.json vocab_size=100352 is cl100k_base plus 96 Microsoft tokens. Same tokenizer as Phi-4; NOT the o200k_base one used by Phi-4-mini/multimodal. Reasoning control tokens: <nothink>=100348, <think>=100350, </think>=100351. Use the generic_cl100k profile for this model."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Weights and tokenizer files are public in the MIT-licensed HF repo."
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer (microsoft/Phi-4-reasoning-vision-15B) — or tiktoken cl100k_base for the base vocab plus the 96 Phi special tokens (100256-100351)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19"
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('microsoft/Phi-4-reasoning-vision-15B'); len(tok.encode(text))",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Text only. Image cost must be measured with the AutoProcessor — it varies with resolution between the 256- and 3,600-patch bounds in config.json."
+        },
+        "image_token_rule": {
+          "value": "Dynamic-resolution SigLIP-2 NaFlex vision encoder: 256-3,600 visual tokens per image depending on resolution",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json vision config: vision_tower='google/siglip2-so400m-patch16-naflex', max_patches=3600, min_patches=256, image_aspect_ratio='square', projector 'mlp2x_gelu'. Model card: 'a dynamic resolution vision encoder with up to 3,600 visual tokens'. The technical report compares 2,048 vs 3,600 maximum tokens and finds 'dynamic resolution vision encoders with a large number of visual tokens perform uniformly well', at a cost in efficiency. MCP consequence: a single full-resolution image can take 3,600 of the 16,384 tokens — about 22% of the entire window before any tool definitions."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Text and images in, text out. No audio path — audio requires Phi-4-multimodal-instruct."
+        },
+        "chars_per_token_estimate": {
+          "value": 4.0,
+          "confidence": "medium",
+          "source_url": "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Rule of thumb only: ~4 characters per token for English. Phi-4 and Phi-4-reasoning-vision-15B use tiktoken cl100k_base as their base vocabulary, so OpenAI's published ~4-chars/token English heuristic applies directly. Use the HF AutoTokenizer for exact counts — never this estimate for a hard budget."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No function-calling format is documented. The model card and the technical report contain no tool-calling section, and tokenizer_config.json reserves reasoning-control tokens (<think> 100350, </think> 100351, <nothink> 100348) but none of Phi-4-mini's tool tokens (<|tool|>, <|tool_call|>, <|tool_response|>). Every Phi endpoint Microsoft publishes on Foundry is marked 'Tool calling: No'. Confidence 'medium' because this is an absence-of-documentation finding: the weights can be prompted to emit JSON, just without trained tool-calling behaviour. Note the irony for agent builders — Microsoft positions this model as a base for computer-using agents (GUI element localization), but that is coordinate grounding, not structured tool calls."
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No MCP at the model level; MCP must be bridged by the host/serving stack."
+        },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Undocumented, and moot: there is no trained tool-calling format to emit calls in, in parallel or otherwise."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric tool-count cap is documented — open weights have no API layer to enforce one. The limits that DO bind, in order: (1) the 16,384-token window, which is shared by the prompt, up to 3,600 visual tokens per image, the inline <think> trace and the answer; (2) the empirical ~30-50-tool selection cliff, reached far earlier here; (3) the host's aggregate catalog cap (Cursor ~40, Claude Desktop ~100). Scope: AGGREGATE across all connected servers plus built-in tools; no per-MCP-server cap is documented."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19: 3 -> null. The previous value was an interpolation. It was cited to a dev.to tool-overload post (2026-03-06) that was re-opened in this pass: its single measurement ('accuracy on correct tool selection dropped from ~95% with a focused toolset to ~71% with the full GitHub MCP server loaded', ~4 tools / ~1,200 tokens vs ~46 tools / ~42,000 tokens) was run with model=\"claude-3-5-sonnet-20241022\", and the post never mentions Phi. Attributing a per-Phi-variant number to a measurement of another vendor's model is not admissible, and the four Phi variants were merely ranked against each other by judgement. SEARCHED 2026-08-19 for a Phi-specific figure and found none: the four Hugging Face model cards (tier 1), the Phi-4 / Phi-4-mini technical reports, Microsoft's PhiCookBook function-calling sample (its example declares exactly one tool and gives no guidance), an on-device tool-calling comparison covering Phi-4-mini (ertas.ai, updated 2026-08-07 -- BFCL v4 composite scores and a 5-tool customer-support evaluation set, but no tool-count-vs-accuracy curve), a 2026 tool-calling benchmark round-up (presenc.ai) and a catalog-scaling study (nerdleveltech), neither of which mentions Phi. No Azure AI Foundry page states a tool count either. WHAT ACTUALLY BINDS on this variant: the 16,384-token context window (model card, tier 1: 'Context Length: 16,384 tokens'), already contested by up to ~3,600 visual tokens per image and by an inline chain-of-thought trace that is unbounded in practice, leaving on the order of 10K tokens for prompt plus tool definitions; the ~42,000-token GitHub MCP surface in the cited measurement cannot be loaded at all. The model card does not mention function calling or tool use anywhere, so there is no documented tool-calling format for this variant. Scope when a number is eventually recorded: AGGREGATE, not per server."
+        },
+        "tool_definition_shape": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No native tool-definition shape exists in the chat template. If tools are used at all they must be hand-serialized into the prompt (OpenAI function JSON is the usual convention over an OpenAI-compatible endpoint), and the reply parsed out of free text."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Any tool definitions are serialized into the prompt and counted as ordinary input tokens against the 16,384-token window — competing directly with image tokens and the reasoning trace."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No deferred/lazy tool loading at the model level — no equivalent of Claude Code's tool-search / defer_loading."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tool-name length or pattern rule is documented (there is no tool API to enforce one)."
+        },
+        "tool_schema_limits_notes": "No schema limits are documented because no tool interface is documented. The binding constraint is the 16,384-token window, and this model contends for it harder than any other Phi entry: up to 3,600 visual tokens per image (config.json max_patches=3600) plus an inline <think> reasoning trace plus the answer, all before a single tool definition. Scope: aggregate across all connected servers; there is no per-server cap to check.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap documented; description text would simply count against the 16K window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No vendor byte cap (no vendor-run API). Bounded by the serving config (vLLM --max-model-len / --max-num-batched-tokens), proxy body limits, image payload size, and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No documented cap; results would be context-bound and count against max_model_len — at 16K with images in play, a verbose result can evict the conversation."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not documented; would be governed by a chat-template tool-call parser, and vLLM ships none for Phi."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Not a model property — the agent host/framework decides how many tool-call/result cycles a turn may run."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total across servers); nothing at the model or serving layer counts servers."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap. Effective AGGREGATE ceiling is approximately (16,384 − image tokens − reasoning-trace headroom − answer) ÷ average tool-definition tokens, which lands in the low single digits for image-bearing turns. Host apps cap lower (Cursor ~40, Claude Desktop ~100)."
+        },
+        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser — re-checked 2026-08-19, vLLM's supported --tool-call-parser list (Hermes, Mistral, Llama, Granite, InternLM, Jamba, xLAM, Qwen, DeepSeek, OpenAI OSS, Kimi-K2, Hunyuan, Cohere, GLM, FunctionGemma, Olmo 3, Apertus, pythonic, …) contains NO Phi entry, so OpenAI-shaped tool calling over vLLM needs a custom parser or client-side parsing of the model's own template; (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style strict function-schema mode (100-prop / 5-level-depth / no-oneOf enforcement) is documented for any Phi model — neither the HF model cards nor the Foundry model pages define schema validation rules. Schema constraints are whatever the serving stack's guided-decoding backend enforces, not a model/API rule."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No skills/extension concept for self-hosted Phi weights."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No skills mechanism exists, so there is nothing to load eagerly or progressively."
+        },
+        "skills_context_cost_notes": null,
+        "system_prompt_overhead_notes": "No fixed system-prompt overhead is documented. The chat template uses the Phi-4 <|im_start|>/<|im_sep|>/<|im_end|> markers (IDs 100264-100266) plus the reasoning-control tokens <think>/</think>/<nothink>. The <nothink> token is the one lever that materially changes context cost: it suppresses the chain-of-thought trace, freeing window that the trace would otherwise consume.",
+        "prompt_caching": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor-level prompt caching for self-hosted open weights. vLLM --enable-prefix-caching / SGLang RadixAttention can reuse a static system-prompt prefix, but a new image changes the prefix and breaks reuse for that request. Operator-configured, not model-native."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No persistent memory feature at the model level."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Open weights — no per-token list price. Checked 2026-08-19: this model does not appear at all on the Microsoft Foundry pricing page's Phi table (which still shows '$-' for every Phi row it does list). Self-hosting means the operator pays GPU/cloud cost."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Same as input: no published per-token price; self-hosted compute only."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price exists for self-hosted weights; prefix caching saves GPU time, not a billed token rate."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No batch-discount tier is published for Phi; batching is a throughput setting of the operator's serving stack."
+        },
+        "billing_unit": {
+          "value": "compute",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Self-hosted compute (GPU hours / cloud instance cost)."
+        },
+        "multimodal_billing_notes": "Self-hosted: compute scales with total tokens. Images are the dominant variable here — 256 to 3,600 visual tokens each depending on resolution — and the technical report notes the efficiency cost is worse than linear because attention is quadratic in sequence length. The inline <think> trace adds generated tokens on top; <nothink> turns it off for perception-only tasks.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "There is no token billing for self-hosted open weights, so nothing is 'billed as output'. Mechanically the reasoning trace is generated text and consumes generation time and window — see context.reasoning_tokens_count_as_output."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19"
+        },
+        "license": {
+          "value": "MIT",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card states MIT; the Microsoft Research blog describes it as released under a 'permissive license'."
+        },
+        "param_variants": {
+          "value": "15B (mid-fusion multimodal: Phi-4-Reasoning language backbone + SigLIP-2 so400m-patch16-naflex vision encoder; BF16)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card: 15 billion parameters. config.json model_type='phi4-siglip', architectures=['Phi4ForCausalLMV'], torch_dtype=bfloat16; vision encoder hidden_size 1152, 27 layers, 16 heads. Only one size is published."
+        },
+        "native_context_config": {
+          "value": 32768,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings=32768, original_max_position_embeddings=32768, rope_scaling=null, rope_theta=500000 — inherited from the Phi-4-reasoning backbone. This exceeds the 16,384 window Microsoft documents and that tokenizer_config.json enforces (model_max_length=16384); do not plan capacity on the 32K figure."
+        },
+        "max_context_documented": {
+          "value": 16384,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card 'Context length: 16,384 tokens'; technical report stage-3 training max sequence length 16384. This is the number to budget against."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (>=0.15.2, recommended), Transformers (HF, >=4.57.1) with torch >=2.7.1",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card lists these versions and reports testing on NVIDIA A6000, A100, H100 and B200. Also distributed through Microsoft Foundry and GitHub per the Microsoft Research blog. No SGLang, Ollama or ONNX build is listed on the card."
+        },
+        "framework_tool_calling_notes": "No tool-calling support to configure: the chat template has no tools argument, the vocabulary has no tool tokens, and as of 2026-08-19 vLLM ships no Phi --tool-call-parser. Any tool use must be prompt-engineered and parsed out of free text. Use <nothink> to suppress the chain-of-thought trace when the 16,384-token window is tight — for perception-style turns that is the single biggest context saving available."
+      },
+      "notes": "Phi-4-reasoning-vision-15B (15B, released 2026-03-04) is Microsoft's newest Phi model and the family's first multimodal reasoning model: a Phi-4-Reasoning language backbone mid-fused with a SigLIP-2 NaFlex vision encoder, trained on 240 B200 GPUs over four days in February 2026, MIT-licensed. ADDED in the 2026-08-19 refresh — it was missing from the 2026-06-21 roster despite predating it. For MCP purposes it is the most constrained entry in this file: a 16,384-token window (smaller than Phi-4-mini's 128K) that is simultaneously contested by up to 3,600 visual tokens per image, an inline <think> reasoning trace, and the answer — with no documented function-calling format at all. Microsoft pitches it as a base model for computer-using agents because it localizes GUI elements well, but that is coordinate grounding, not structured tool calling. It is not yet listed on the Foundry lifecycle table or the Foundry Phi pricing table; 'ga' here reflects the public MIT weight release. Also note it uses the cl100k_base-derived tokenizer (vocab 100,352) like Phi-4, not the o200k_base one used by Phi-4-mini/multimodal.",
+      "sources": [
+        "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B",
+        "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/config.json",
+        "https://huggingface.co/microsoft/Phi-4-reasoning-vision-15B/raw/main/tokenizer_config.json",
+        "https://www.microsoft.com/en-us/research/wp-content/uploads/2026/03/Phi-4-reasoning-vision-15B-Tech-Report.pdf",
+        "https://www.microsoft.com/en-us/research/blog/phi-4-reasoning-vision-and-the-lessons-of-training-a-multimodal-reasoning-model/",
+        "https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/introducing-phi-4-reasoning-vision-to-microsoft-foundry/4499154",
+        "https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/model-lifecycle-retirement",
+        "https://azure.microsoft.com/en-us/pricing/details/ai-foundry-models/microsoft/",
+        "https://raw.githubusercontent.com/openai/tiktoken/main/tiktoken_ext/openai_public.py",
+        "https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them",
+        "https://docs.vllm.ai/en/stable/features/tool_calling/",
+        "https://dev.to/thedailyagent/mcp-tool-overload-why-more-tools-make-your-agent-worse-5a49"
       ]
     }
   ]

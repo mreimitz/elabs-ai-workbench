@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "as_of": "2026-06-21",
+  "as_of": "2026-08-19",
   "provider": {
     "id": "google-gemma",
     "name": "Google Gemma",
@@ -13,16 +13,16 @@
       "confidence": "high",
       "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
       "source_tier": 1,
-      "as_of": "2026-06-21",
-      "notes": "Gemma models have no native MCP support at the model level. MCP can be layered on top via serving frameworks (e.g. vLLM OpenAI-compatible API + MCP proxy). The model speaks a Gemma-native function-calling token format, not the MCP wire protocol."
+      "as_of": "2026-08-19",
+      "notes": "Re-verified 2026-08-19: the Gemma capability index (chat, function calling, image, video, audio, thinking, MTP) contains no MCP page, and neither the Gemma 4 function-calling guide nor the Gemma 4 technical report mentions MCP. Gemma speaks a Gemma-native function-calling control-token format, not the MCP wire protocol. MCP is layered on by the operator: serve with vLLM using --tool-call-parser gemma4 to get an OpenAI-compatible tool_calls surface, then bridge MCP tools to that surface in the agent host."
     },
     "skills_concept": {
       "value": null,
       "confidence": "high",
       "source_url": "https://ai.google.dev/gemma/docs",
       "source_tier": 1,
-      "as_of": "2026-06-21",
-      "notes": "Google Gemma has no platform-level skills concept equivalent to Anthropic Agent Skills or OpenAI GPTs. Gemma is open-weight; all skill-like behavior is implemented by the operator in the serving stack or system prompt."
+      "as_of": "2026-08-19",
+      "notes": "Re-verified 2026-08-19 against the Gemma docs capability index: no skills, agent-bundle, prompt-caching or memory page exists. Gemma is open-weight; all skill-like behaviour is implemented by the operator in the system prompt, in retrieval, or by fine-tuning."
     }
   },
   "models": [
@@ -35,7 +35,8 @@
         "confidence": "high",
         "source_url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/",
         "source_tier": 1,
-        "as_of": "2026-06-21"
+        "as_of": "2026-08-19",
+        "notes": "Re-confirmed 2026-08-19: the launch post is dated 2026-04-02 and names E2B, E4B, 26B MoE and 31B Dense. Still GA; no successor and no Gemma 4.1 exists as of 2026-08-19."
       },
       "status": "ga",
       "knowledge_cutoff": {
@@ -43,10 +44,13 @@
         "confidence": "high",
         "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Model card states training data cutoff date of January 2025."
+        "as_of": "2026-08-19",
+        "notes": "Model card states a training-data cutoff of January 2025; independently corroborated by the Gemma 4 technical report (arXiv 2607.02770), which states a cutoff date of January 2025."
       },
-      "modalities": ["text", "image", "video"],
+      "modalities": [
+        "text",
+        "image"
+      ],
       "context": {
         "context_window_tokens": {
           "value": 262144,
@@ -54,16 +58,16 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Confirmed from config.json text_config.max_position_embeddings=262144. Also documented as 256K in model card."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: text_config.max_position_embeddings=262144 (= 256K), matching the 256K stated on the Gemma 4 model card and the HF model card. Note the practical caveat: the vLLM Gemma 4 recipe recommends serving the 31B at --max-model-len 8192-32768 for memory reasons, so the window an operator actually gets is usually far below 262144."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Standard decoder-only transformer; input and output tokens share the same context pool."
+          "as_of": "2026-08-19",
+          "notes": "Standard decoder-only transformer; input and output share one context pool. Re-checked 2026-08-19: no separate input/output pools are documented anywhere in the Gemma 4 model card or technical report."
         },
         "max_input_tokens": {
           "value": 262144,
@@ -71,27 +75,25 @@
           "confidence": "medium",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": true,
-          "notes": "Derived from context window; vendor does not publish a separate max_input cap. Effective input limit is context_window minus desired output length."
+          "notes": "Derived from the context window; Google publishes no separate max-input cap. Effective input limit is the served window minus desired output (and minus thinking tokens when enable_thinking=True). Re-checked 2026-08-19."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Not specified in official model card or config. Default controlled by serving framework (e.g. vLLM max_new_tokens parameter). Code examples in HF model card use max_new_tokens=1024 for demos."
+          "as_of": "2026-08-19",
+          "notes": "Still not specified in the model card, the HF card or config.json as of 2026-08-19. The default is whatever the serving framework sets (vLLM max_tokens / Transformers max_new_tokens). The vLLM Gemma 4 recipe explicitly tells operators to raise --max-model-len and max_tokens when thinking is enabled, confirming there is no model-side default."
         },
         "max_output_tokens_max": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open-weight: maximum output is set by the serving stack operator, bounded only by the context window minus input length. No vendor-fixed output cap exists."
+          "as_of": "2026-08-19",
+          "notes": "No numeric output cap is published; the ceiling is the served window minus the input length, chosen by the operator. Re-checked 2026-08-19 against the Gemma 4 model card and config.json - neither carries a max-output field."
         },
         "extended_context": {
           "value": null,
@@ -99,16 +101,16 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No extended/beta context beyond the native 256K documented for this model."
+          "as_of": "2026-08-19",
+          "notes": "No extended, beta or RoPE-scaled context beyond the native 256K is documented for the 31B. Re-checked the Gemma 4 model card 2026-08-19."
         },
         "reasoning_tokens_count_as_output": {
           "value": true,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/thinking",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Gemma 4 supports a thinking/reasoning mode via <|think|> token. Thinking tokens appear in the generated output stream and count as output tokens. Self-hosted: billed as compute, not per-token."
+          "as_of": "2026-08-19",
+          "notes": "Re-read the thinking guide 2026-08-19: thinking is enabled with apply_chat_template(enable_thinking=True); all five Gemma 4 variants support it, and for the larger models the response contains reasoning blocks delimited by <|channel>thought ... <channel|> alongside the final answer. Those tokens are generated, so they occupy the output side of the shared window. The guide does not state a token-budget parameter. Self-hosted, so they cost compute rather than a per-token line item. Confidence stays medium: the counting behaviour is inferred from the emission format, not stated as an accounting rule."
         }
       },
       "tokenization": {
@@ -117,56 +119,57 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "SentencePiece BPE tokenizer. Vocab size 262,144 (262K) — shared architecture with Gemini tokenizer family. Confirmed from config.json vocab_size=262144."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: vocab_size=262144. The Gemma 4 technical report (arXiv 2607.02770) states the vocabulary has 262k entries and describes a SentencePiece tokenizer with split digits, preserved whitespace and byte-level encodings. Identical across every Gemma 4 variant, so token counts are portable within the family."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Tokenizer weights distributed with model on Hugging Face. Requires accepting Gemma license (Apache 2.0 for Gemma 4) to download."
+          "as_of": "2026-08-19",
+          "notes": "Tokenizer files ship with the weights on Hugging Face and Kaggle. Gemma 4 is Apache 2.0, so no bespoke licence gate applies to the tokenizer. Re-checked the HF model card 2026-08-19."
         },
         "tokenizer_access": {
-          "value": "HF AutoTokenizer / HuggingFace Transformers (transformers>=5.5.0)",
+          "value": "HF AutoProcessor / AutoTokenizer (latest Transformers; >=5.10.1 required for function calling)",
           "confidence": "high",
-          "source_url": "https://huggingface.co/google/gemma-4-31B-it",
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Use AutoProcessor.from_pretrained('google/gemma-4-31B-it') or AutoTokenizer. Requires HF account + license acceptance."
+          "as_of": "2026-08-19",
+          "notes": "Changed 2026-08-19. The HF card no longer pins a floor version - it says all Gemma 4 models work with the latest Transformers (pip install -U transformers torch accelerate) - while the Gemma 4 function-calling guide pins transformers>=5.10.1 for correct tool serialisation. The old >=5.5.0 figure is stale for any tool-calling workload. Use AutoProcessor.from_pretrained('google/gemma-4-31B-it')."
         },
         "count_tokens_method": {
           "value": "HF Transformers AutoProcessor / AutoTokenizer encode()",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 2,
-          "as_of": "2026-06-21",
-          "notes": "Exact counts available locally once tokenizer is downloaded. No cloud count-tokens API endpoint (unlike Gemini API's countTokens). Tool definition tokens count as input."
+          "as_of": "2026-08-19",
+          "notes": "Exact counts are available locally once the tokenizer is downloaded; there is no hosted count-tokens endpoint for Gemma (unlike the Gemini API countTokens). To count a tool footprint faithfully, tokenize the output of apply_chat_template(messages, tools=[...]) rather than the raw JSON schemas, because the template rewrites them into Gemma control-token form. Re-checked 2026-08-19."
         },
         "image_token_rule": {
           "value": "Variable token budget: 70, 140, 280, 560, or 1120 tokens per image (configurable)",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Default is 280 tokens/image (vision_soft_tokens_per_image=280 in config.json). Higher budgets preserve detail for OCR/doc parsing; lower budgets for captioning/video frames."
+          "as_of": "2026-08-19",
+          "notes": "Re-confirmed 2026-08-19 from both the Gemma 4 model card (budgets 70, 140, 280, 560, 1120) and config.json (vision_soft_tokens_per_image=280 default). Higher budgets preserve detail for OCR and document parsing; lower budgets suit captioning and video frames. Video input is capped at 60 seconds per the model card."
         },
         "audio_token_rule": {
           "value": null,
           "confidence": "low",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Gemma 4 31B does NOT support audio. Audio is only supported on E2B and E4B models. N/A for 31B."
+          "as_of": "2026-08-19",
+          "notes": "Corrected 2026-08-19: the Gemma 4 model card lists audio for E2B, E4B and 12B (the previous note omitted 12B). The 31B model card row is Text + Image only, so no audio token rule applies to this model. config.json does reserve an audio_token_id but exposes no audio encoder for the 31B."
         },
         "chars_per_token_estimate": {
           "value": 4.0,
           "confidence": "medium",
-          "source_url": "https://huggingface.co/docs/transformers/model_doc/gemma4",
+          "source_url": "https://huggingface.co/docs/transformers/en/model_doc/gemma4",
           "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "Rough estimate ~4 chars/token for English text with the 262K-vocab SentencePiece tokenizer. Use HF tokenizer for exact counts."
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Estimate, not a vendor-published figure: ~4 characters per token for English with the 262K-entry SentencePiece tokenizer. Google publishes no chars-per-token ratio anywhere in the Gemma 4 docs or technical report, so this stays Tier 3 / medium and is marked derived. Always prefer the HF tokenizer for real counts."
         }
       },
       "tools_mcp": {
@@ -175,122 +178,139 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Gemma 4 has native function calling support. Tools are passed via the HF chat template (apply_chat_template tools= argument). The model emits structured <|tool_call>call:funcname{...}<tool_call|> tokens."
+          "as_of": "2026-08-19",
+          "notes": "Re-read the Gemma 4 function-calling guide and the Transformers Gemma4 doc 2026-08-19. Tools are authored as OpenAI-style JSON function objects and passed as apply_chat_template(..., tools=[...]); the template rewrites them into <|tool>declaration:...<tool|> and the model emits <|tool_call>call:funcname{param:<|\"|>value<|\"|>}<tool_call|>. Requires transformers>=5.10.1. The guide warns the model cannot execute code itself - the host must map names to callables safely."
         },
         "native_mcp": {
           "value": false,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "The model does not speak the MCP wire protocol natively. MCP integration requires a serving-stack adapter (e.g. an MCP-to-OpenAI tool bridge in front of vLLM). The function-calling format is Gemma-native, not MCP."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: neither the function-calling guide, the Gemma docs capability index, nor the Gemma 4 technical report mentions MCP. The model speaks a Gemma-native control-token format. The working integration path is vLLM with --tool-call-parser gemma4 exposing an OpenAI-compatible tool_calls surface, with the MCP client living in the agent host."
         },
         "parallel_tool_calls": {
-          "value": true,
-          "confidence": "medium",
+          "value": null,
+          "confidence": "low",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "The function calling docs show tool_responses as a list, supporting multiple tool call results per turn. Parallel generation of multiple calls in one turn is supported in principle; serving framework must handle parsing."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19 from true (medium) to null. The cited tier-1 page was re-opened in this pass and makes NO statement about parallel, simultaneous or multiple-per-turn tool calling -- the previous boolean was inferred from the fact that the guide's `tool_responses` example is a list, which is an inference about response formatting, not a documented model capability. Also re-read 2026-08-19 with the same result: the Gemma 4 prompt-formatting page and the Gemma 4 model card. The only explicit statement found anywhere is tier 4 and empirical -- a practitioner guide (https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/, re-opened 2026-08-19) says 'Gemma 4 can generate multiple tool calls in a single turn, but reliability decreases with more than 3 parallel calls' -- which is not a tier-1 source for a capability boolean, so the value stays null rather than being recorded as a vendor-supported feature. In practice the serving parser decides: vLLM ships --tool-call-parser gemma4, which has open issues about control-token leakage in streamed tool_calls."
         },
         "max_tools_hard": {
           "value": null,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented hard API cap on number of tools. As open-weight, the limit is context window consumption: each tool declaration is injected as input tokens via the <|tool>declaration:...<tool|> format."
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric tool cap is documented, and there is no vendor-operated API that could enforce one. The limits that DO bind: the aggregate context budget (every declaration is serialized into the prompt as <|tool>declaration:...<tool|> input tokens), the served --max-model-len (the vLLM Gemma 4 recipe suggests only 8192-32768 for the 31B), the ~10-15-tool practitioner selection cliff, and any host cap (Cursor ~40, Claude Desktop ~100). Scope: aggregate - there is no documented per-MCP-server tool cap at any layer. Re-checked 2026-08-19."
         },
         "max_tools_practical": {
-          "value": 20,
+          "value": 15,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/",
           "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "No published benchmark for Gemma 4 tool count vs accuracy. General practitioner consensus (Berkeley FCL pattern) suggests accuracy degrades with many tools, especially for smaller models. 31B is more capable but 20-30 tools is a conservative practical estimate. Treat as Tier-4 estimate."
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "CORRECTED 2026-08-19 (15 -> 15, and the same value is now used for all three variants). The cited practitioner guide was re-opened in this pass; the ONLY figure it gives is a single family-wide band: 'Keep tool definitions under 10-15 for best accuracy. More tools = more confusion about which to call.' It gives no per-variant numbers, so the previous 15/12/10 ranking across 31B/12B/E4B was invented by interpolation (12 appears nowhere in the source) and has been removed. This entry now carries the top of the band the source actually states; the conservative reading of the same sentence is 10, so treat 10-15 as the usable range and 15 as an optimistic ceiling. EMPIRICAL, NOT SPEC (tier 4, low confidence): Google publishes no tool-count-versus-accuracy benchmark, the Gemma 4 technical report contains no such experiment, the Gemma 4 function-calling guide and prompt-formatting page (both re-read 2026-08-19) state no tool-count limit, and the Berkeley Function Calling Leaderboard carries no Gemma-4 tool-count curve. Scope: AGGREGATE tools visible in one request, not per MCP server. Variant-specific context: a Tier-4 report describes a July 2026 weight refresh improving 31B tool-calling on Tau2 Telecom by 10.1 points, which argues the real ceiling for this variant may be at or above the top of the band."
         },
         "tool_definition_shape": {
           "value": "gemma4_function",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Gemma 4 uses its own native function declaration format embedded in the chat template: <|tool>declaration:funcname{description:...,parameters:{...}}<tool|>. This differs from OpenAI function JSON and Anthropic tool blocks. Tool defs are injected into the context as input tokens by the chat template."
+          "as_of": "2026-08-19",
+          "notes": "Two-stage shape, clarified 2026-08-19. The developer authors OpenAI-style JSON function objects (type: function, name, description, parameters) and hands them to apply_chat_template(tools=...); the Gemma chat template then serializes them into the native control-token form <|tool>declaration:funcname{description:...,parameters:{...}}<tool|>, with string values wrapped in <|\"|> delimiters. Token counts therefore must be taken after templating, not from the raw JSON - the two differ. The Gemma 4 technical report shows the same format in Table 11."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Tool declarations are serialized into the prompt by apply_chat_template and count as input tokens. Exact per-declaration overhead depends on function name + description + parameter schema length."
+          "as_of": "2026-08-19",
+          "notes": "Structural, not an explicit doc statement: the function-calling guide never says the words input tokens, but it shows declarations being written into the prompt string by apply_chat_template, and Gemma has no side channel for tool schemas, so they are unavoidably prompt tokens. Per-declaration overhead scales with name, description and parameter-schema length. Confidence stays high because the mechanism is visible in the template output. Re-checked 2026-08-19."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented deferred/lazy tool loading mechanism for Gemma models. All tools must be present in the prompt at inference time. Operator workaround: split tool sets across calls or use a router model."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 against the Gemma docs capability index (chat, function calling, image, video, audio, thinking, MTP): there is no deferred, lazy or searchable tool-loading mechanism. Every tool must be serialized into the prompt at inference time, so the full tool footprint is paid on every request - there is no Gemma equivalent of Claude's tool search / defer_loading. Operator workarounds: shard tool sets across calls, or front the model with a router that selects a subset."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented character/token limit on tool names in official Gemma 4 docs."
+          "as_of": "2026-08-19",
+          "notes": "Searched the Gemma 4 function-calling guide, the model card, the HF card and the Gemma 4 technical report on 2026-08-19: no character limit, no token limit and no name-pattern rule for tool names is published. Long MCP-namespaced names are accepted but cost more input tokens, and the guide's own caution applies - the model selects by name and description, so near-identical names hurt accuracy. Scope: per-tool."
         },
-        "tool_schema_limits_notes": "Tool definitions are injected via the HF chat template in a Gemma-native serialization format (not JSON). Schema complexity is limited only by context window consumption. Complex nested schemas should use manually defined JSON schemas rather than auto-generated ones (documented caveat in function calling guide).",
+        "tool_schema_limits_notes": "Re-checked 2026-08-19. Schemas are authored as OpenAI-style JSON and re-serialized by the chat template into Gemma control tokens, so the count that matters is the templated form, not the JSON. No property-count, nesting-depth, enum-size or unsupported-keyword rule is published - the only real constraint is how many tokens the templated declarations consume out of the served window. The function-calling guide's own caveat still stands: prefer hand-written JSON schemas over auto-generated ones for complex nested parameters, because nothing validates them and errors surface as bad tool calls rather than as rejections.",
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
-          "notes": "No vendor cap; description counts against context window."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: the Gemma 4 function-calling guide documents no character or token cap on a tool description. The limits that bind are the context window and the serving stack's --max-model-len; a longer description simply costs more input tokens. Scope: per-tool."
         },
         "max_request_size": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+          "as_of": "2026-08-19",
+          "notes": "No request-byte cap is published, because there is no vendor-operated Gemma inference API. The ceilings that bind are the serving stack's --max-model-len (the vLLM Gemma 4 recipe says the default context length can be very large and to set --max-model-len to match the workload) and GPU/KV-cache memory. Scope: aggregate - the whole serialized request, including every connected server's tool declarations. Source URL changed from the generic vLLM tool-calling page, which does not cover Gemma, to the vLLM Gemma 4 recipe, which does."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "Context-bound; tool results count against max_model_len."
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap on a single tool result is documented. A result is inserted into the prompt as a tool_responses entry by the chat template, so it is bounded by the served --max-model-len and by the remaining context budget. Scope: per-tool-call, but it consumes the aggregate context budget."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
-          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap documented. The guide shows tool_responses as a list, so several calls can be answered in one turn; how many the model may emit at once is governed by the chat template and the serving-side parser (vLLM --tool-call-parser gemma4), not by a published limit. Scope: per-turn."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "notes": "Set by the agent host/framework, not the model."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cycle cap is documented; the agent host decides how many tool-call/result cycles to run. Note the thinking guide's constraint that thoughts must NOT be stripped between function calls inside a turn, which makes every extra cycle cost more context. Scope: per-session, host layer."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Host-layer concern. Gemma ships no first-party client, so no number exists at the model layer; whatever host wraps the OpenAI-compatible vLLM endpoint sets it (Cursor ~40 tools aggregate, Claude Desktop ~100). Scope: aggregate across all connected servers."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap is published at any Gemma layer. The binding aggregate ceiling is approximately (served --max-model-len minus output/thinking headroom) divided by average tool-declaration tokens. Important: the vLLM Gemma 4 recipe recommends --max-model-len 8192-32768 for the 31B and 26B A4B variants and up to 131072 for E2B/E4B, so the served window - not the model's native 256K - is usually what binds in practice. Client hosts cap lower again (Cursor ~40, Claude Desktop ~100). Scope: aggregate (all connected servers plus built-in tools in one request)."
         },
-        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "other_limits_notes": "Open-weight: no per-request numeric tool cap is published at the model layer, because there is no vendor-operated inference API. The limits that DO bind, smallest first: (1) the serving stack - the vLLM Gemma 4 recipe (opened 2026-08-19) requires --tool-call-parser gemma4, --reasoning-parser gemma4 and --chat-template examples/tool_chat_template_gemma4.jinja, and recommends --max-model-len 8192-32768 for the 31B/26B A4B variants (up to 131072 for E2B/E4B), so the served window rather than the native 256K is normally the real aggregate ceiling; (2) the aggregate context budget - every tool declaration is serialized into the prompt, so tool defs, system prompt, history and thinking output all compete for one window; (3) the ~10-15-tool practitioner selection cliff for Gemma-class open models (Tier 4, see max_tools_practical); (4) the agent host (Cursor ~40 tools aggregate, Claude Desktop ~100). Serving-side defects to watch: the gemma4 tool parser has open vLLM issues about raw control tokens leaking into streamed tool_calls and pad tokens appearing under concurrency.",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: the Gemma 4 function-calling guide documents no strict-schema mode and no property-count, nesting-depth or unsupported-keyword rules. Tools are authored as OpenAI-style JSON function objects and passed via apply_chat_template(tools=...); the chat template then serializes them into Gemma's <|tool>declaration:...<tool|> control-token form. Schema conformance is therefore a prompting property, not an API-enforced contract - malformed or over-deep schemas degrade silently instead of being rejected."
         }
       },
       "skills_context": {
@@ -299,33 +319,34 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No platform-level skills mechanism. Gemma is open-weight; all instruction customization is done via system prompt or fine-tuning. No skills concept analogous to Anthropic Agent Skills."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 against the Gemma docs capability index: no skills, agent-bundle or packaged-capability mechanism exists at any Gemma layer. All instruction customization is system prompt, retrieval or fine-tuning, and every byte of it is ordinary input tokens."
         },
         "skills_loading_model": {
           "value": "n/a",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills mechanism exists, so there is nothing to load eagerly or progressively. Re-verified 2026-08-19."
         },
         "skills_context_cost_notes": null,
-        "system_prompt_overhead_notes": "Gemma 4 natively supports the system role (new in Gemma 4). System prompt tokens count as regular input tokens and consume context window. No documented fixed overhead beyond the chat template tokens.",
+        "system_prompt_overhead_notes": "Gemma 4 has native system instructions (called out in the launch post alongside function calling and structured JSON output). System-prompt tokens are ordinary input tokens against the shared window; no fixed overhead figure is published beyond the chat-template control tokens themselves. Re-checked 2026-08-19. Budgeting note for tool-heavy sessions: system prompt + templated tool declarations + retained thinking blocks (which must not be stripped between function calls in a turn) all compete for the same served window.",
         "prompt_caching": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No Google-managed prompt caching for self-hosted Gemma. KV cache reuse is possible at the serving framework level (vLLM prefix caching, SGLang RadixAttention) but is an operator-configured feature, not a model or vendor feature."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the Gemma docs capability index has no prompt-caching page and Google operates no Gemma inference service that could bill cached input. KV/prefix cache reuse is available to the operator (vLLM prefix caching, SGLang RadixAttention) and is the practical way to stop re-paying for a large static tool-declaration block on every turn, but it is a serving-stack feature with no vendor discount attached."
         },
         "memory_feature": {
           "value": false,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No built-in persistent memory. Memory must be implemented by the operator (e.g. RAG, explicit context injection)."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no memory feature is documented in the Gemma docs capability index. Any persistence is operator-built (retrieval, explicit context injection) and costs ordinary input tokens."
         }
       },
       "cost": {
@@ -335,8 +356,8 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute. No per-token pricing; cost is operator's GPU/TPU infrastructure. Hosted via Google AI Studio or Vertex AI may have pricing but that is a SaaS wrapper, not the open-weight model price."
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: Google publishes no per-token price for Gemma weights, because it sells no Gemma inference product - the model card and HF card are distribution pages, not pricing pages. Cost is the operator's GPU/TPU time. Third-party hosts and Vertex AI deployments do price per token, but that is their SaaS wrapper, not a Gemma price, so it is deliberately not recorded here."
         },
         "output_per_mtok_usd": {
           "value": null,
@@ -344,42 +365,39 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute. See input_per_mtok_usd notes."
+          "as_of": "2026-08-19",
+          "notes": "Self-hosted compute; see input_per_mtok_usd. Re-checked 2026-08-19 - no vendor output price exists. Practical note: output is the expensive direction on self-hosted too, since thinking blocks are generated tokens and the vLLM Gemma 4 recipe warns to raise max_tokens when thinking is on."
         },
         "cached_input_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted. KV cache reuse reduces compute but is not a separately billed line item."
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price exists because there is no vendor billing surface. KV/prefix cache reuse in vLLM or SGLang cuts prefill compute for a repeated tool-declaration prefix, but it is not a separately metered line item. Re-checked 2026-08-19."
         },
         "batch_discount": {
           "value": null,
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted open-weight model. Batch inference via vLLM/SGLang improves GPU utilization but has no vendor-published discount rate."
+          "as_of": "2026-08-19",
+          "notes": "No vendor batch discount exists, since there is no vendor billing surface. Continuous batching in vLLM/SGLang raises GPU utilisation and lowers effective cost per token, but the saving is an infrastructure effect with no published rate. Re-checked 2026-08-19."
         },
         "billing_unit": {
           "value": "compute",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute (GPU/TPU hours). For reference: hosted Vertex AI / AI Studio pricing may apply if using Google-managed inference, but that is a separate SaaS product."
+          "as_of": "2026-08-19",
+          "notes": "Billing unit is operator compute (GPU/TPU hours), not tokens. Re-checked 2026-08-19 against the HF model card, which distributes weights under Apache 2.0 with no pricing attached. Third-party or Vertex-hosted deployments introduce their own per-token pricing, which is a property of that host, not of Gemma."
         },
-        "multimodal_billing_notes": "Self-hosted: image tokens (default 280/image, configurable 70-1120) count as input compute. No separate image billing.",
+        "multimodal_billing_notes": "Self-hosted, so there is no separate image line item: image soft tokens (default 280 per image, selectable from 70, 140, 280, 560, 1120) are ordinary input tokens against the shared window and against prefill compute. Video is frame-based and capped at 60 seconds per the model card. Re-checked 2026-08-19.",
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted. Thinking/reasoning tokens increase total token count (compute), no separate per-token billing category."
+          "as_of": "2026-08-19",
+          "notes": "No billing category exists for reasoning tokens because there is no vendor billing. Thinking blocks are generated tokens: they add prefill/decode compute and occupy the output side of the shared window. Re-checked 2026-08-19."
         }
       },
       "self_host": {
@@ -388,59 +406,68 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "license": {
           "value": "Apache-2.0",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Gemma 4 is released under Apache 2.0. This is a significant change from Gemma 1/2/3 which used the custom Gemma Terms of Use. Apache 2.0 is OSI-approved and permits commercial use. See https://ai.google.dev/gemma/apache_2"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 on the HF card, the Gemma 4 model card and the Gemma 4 licence page, which serves the full Apache License 2.0 text. This remains a change from Gemma 1/2/3, which used the custom Gemma Terms of Use. Apache 2.0 is OSI-approved and permits commercial use and redistribution."
         },
         "param_variants": {
           "value": "31B dense (30.7B params); also E2B, E4B, 26B A4B MoE in Gemma 4 family",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Gemma 4 31B is a dense 30.7B parameter model. Full family: E2B (5.1B total/2.3B effective), E4B (8B total/4.5B effective), 12B Unified, 26B A4B MoE (25.2B total/3.8B active), 31B Dense."
+          "as_of": "2026-08-19",
+          "notes": "Re-confirmed 2026-08-19 from the Gemma 4 model card: 31B Dense = 30.7B parameters, plus roughly 550M vision-encoder parameters per the HF card. Full family: E2B (2.3B effective / 5.1B with embeddings), E4B (4.5B effective / 8B with embeddings), 12B Unified (11.95B), 26B A4B MoE (25.2B total / 3.8B active, 8 of 128 experts plus 1 shared), 31B Dense (30.7B). Multi-Token-Prediction drafter variants shipped 2026-04-16 for E2B, E4B, 31B and 26B A4B - a decoding-speed feature that does not change token accounting."
         },
         "native_context_config": {
           "value": 262144,
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "text_config.max_position_embeddings=262144 in config.json. Uses hybrid sliding-window + global attention with Proportional RoPE (p-RoPE) for long context."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: text_config.max_position_embeddings=262144, vocab_size=262144, vision max_position_embeddings=131072, vision_soft_tokens_per_image=280. Hybrid sliding-window plus global attention with Proportional RoPE for long context."
         },
         "max_context_documented": {
           "value": 262144,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "256K is the documented maximum. No extended/RoPE-scaled context beyond this is documented by Google."
+          "as_of": "2026-08-19",
+          "notes": "256K is the documented maximum; no extended or RoPE-scaled mode beyond it is documented. Re-checked 2026-08-19. Caveat for capacity planning: the vLLM Gemma 4 recipe recommends serving the 31B at --max-model-len 8192-32768, so 262144 is an architectural ceiling rather than what a typical deployment exposes."
         },
         "serving_frameworks": {
-          "value": "vLLM, SGLang, HuggingFace Transformers (>=5.5.0), llama.cpp (GGUF), Ollama, LM Studio, MLX, Keras, Vertex AI, Cloud GKE",
+          "value": "vLLM (with the gemma4 tool/reasoning parsers), SGLang, HuggingFace Transformers (latest; >=5.10.1 for function calling), llama.cpp (GGUF), Ollama, LM Studio, MLX, Keras, Vertex AI, Cloud GKE",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-31B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Broad framework support. vLLM and SGLang provide OpenAI-compatible API. GGUF/llama.cpp for local/CPU inference. Ollama for easy local deployment. Requires ~70GB VRAM at BF16 or ~17.5GB at Q4_0."
+          "as_of": "2026-08-19",
+          "notes": "Updated 2026-08-19. The transformers floor moved: the HF card now just says use the latest Transformers, while the function-calling guide pins >=5.10.1. vLLM and SGLang expose an OpenAI-compatible API; the vLLM Gemma 4 recipe is the tool-calling reference (--tool-call-parser gemma4, --reasoning-parser gemma4, --chat-template examples/tool_chat_template_gemma4.jinja) and recommends --max-model-len 8192-32768 for this variant. GGUF/llama.cpp and Ollama cover local and CPU inference. The ~70GB BF16 / ~17.5GB Q4_0 memory figures are carried over from the prior pass and were not restated on the pages opened on 2026-08-19 - treat them as indicative."
         },
-        "framework_tool_calling_notes": "Tool calling in Gemma 4 uses the native chat template format via HF Transformers apply_chat_template(tools=[...]). When serving via vLLM or SGLang with OpenAI-compatible API, tool schemas are converted to the Gemma-native format by the serving layer chat template. MCP is not natively supported; an MCP-to-OpenAI adapter (e.g. a proxy) is required. The Gemma 4 native format uses special tokens <|tool>declaration:...<tool|> and <|tool_call>call:...<tool_call|> — these differ from OpenAI function JSON and require a custom parser on the application side."
+        "framework_tool_calling_notes": "Rewritten 2026-08-19 against the vLLM Gemma 4 recipe, which is now the concrete reference. Tools are authored as OpenAI-style JSON and converted by the Gemma chat template into <|tool>declaration:...<tool|>; the model replies with <|tool_call>call:...<tool_call|>. Serving with vLLM requires all three flags together: --tool-call-parser gemma4, --reasoning-parser gemma4 and --chat-template examples/tool_chat_template_gemma4.jinja; without them tool calls come back as raw control tokens. The recipe recommends --max-model-len 8192-32768 for the 31B and warns to raise --max-model-len and max_tokens when thinking is enabled. Known open vLLM defects against the gemma4 parser: control-token leakage into streamed tool_calls, and pad tokens under concurrent requests. MCP is still not native - the MCP client lives in the agent host and talks to the OpenAI-compatible endpoint."
       },
-      "notes": "Gemma 4 31B is the flagship open-weight model from Google DeepMind (April 2026). It ranked #3 on Arena AI text leaderboard at launch. The 256K context window makes it suitable for large MCP tool footprints. Apache 2.0 license (unlike Gemma 1-3 custom terms). Supports native thinking/reasoning mode. Tool definitions are injected as input tokens via a Gemma-specific serialization format; operators must account for this when estimating context budget.",
+      "notes": "Gemma 4 31B Dense is the flagship open-weight Gemma from Google DeepMind, launched 2026-04-02 and ranked #3 on Arena AI's open-source leaderboard at launch. Apache 2.0. Native thinking mode, native system instructions, native structured tool use. Refreshed 2026-08-19: no successor exists - Google shipped no new Gemma model between 2026-06-21 and 2026-08-19, and the official releases page lists nothing after the 12B Unified on 2026-06-03. A Tier-4 report describes a 2026-07-15 weight/config refresh across the Gemma 4 collection (Flash Attention 4 on Hopper, better tool-calling reliability, vision default settled at 280 soft tokens with a 1120 max) that the official releases page does not list; nothing in it changes a hard value in this entry. For MCP footprint work the important nuance is that the 262144 architectural window is rarely what you get - the vLLM recipe recommends 8192-32768 for this variant - and that templated tool declarations, not raw JSON, are what consume it. MODALITIES CORRECTED 2026-08-19: video was removed. The Gemma 4 model card's per-variant Dense Models table gives the 31B as 'Text, Image' (audio is explicitly scoped to 'E2B, E4B, and 12B Unified only'), and the Hugging Face card's Supported Modalities section says the same; video appears only in loose family-level prose ('All models support image inputs and can process videos as frames'), which is a capability statement about frame-by-frame image input, not a listed native input modality. modalities now follows the per-variant table row.",
       "sources": [
         "https://huggingface.co/google/gemma-4-31B-it",
         "https://huggingface.co/google/gemma-4-31B-it/resolve/main/config.json",
         "https://ai.google.dev/gemma/docs/core/model_card_4",
         "https://ai.google.dev/gemma/docs/core",
         "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+        "https://ai.google.dev/gemma/docs/capabilities/thinking",
+        "https://ai.google.dev/gemma/docs",
+        "https://ai.google.dev/gemma/docs/releases",
+        "https://ai.google.dev/gemma/docs/mtp/overview",
         "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/",
-        "https://ai.google.dev/gemma/apache_2"
+        "https://ai.google.dev/gemma/apache_2",
+        "https://arxiv.org/pdf/2607.02770",
+        "https://huggingface.co/docs/transformers/en/model_doc/gemma4",
+        "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
+        "https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/",
+        "https://explainx.ai/blog/gemma-4-updates-flash-attention-tool-calling-july-2026"
       ]
     },
     {
@@ -448,11 +475,12 @@
       "display_name": "Gemma 4 12B Unified Instruct",
       "family": "Gemma 4",
       "release_date": {
-        "value": "2026-04-02",
+        "value": "2026-06-03",
         "confidence": "high",
-        "source_url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/",
+        "source_url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-gemma-4-12b/",
         "source_tier": 1,
-        "as_of": "2026-06-21"
+        "as_of": "2026-08-19",
+        "notes": "Corrected 2026-04-02 -> 2026-06-03 on 2026-08-19. The 12B Unified was NOT part of the 2026-04-02 Gemma 4 launch, which named only E2B, E4B, 26B MoE and 31B Dense. Its own launch post is dated 2026-06-03, and the official Gemma releases page carries a 2026-06-03 entry for Release of Gemma 4 12B Unified. The previous entry cited the April family post, which does not mention the 12B."
       },
       "status": "ga",
       "knowledge_cutoff": {
@@ -460,10 +488,14 @@
         "confidence": "high",
         "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Model card states training data cutoff date of January 2025."
+        "as_of": "2026-08-19",
+        "notes": "Model card states a training-data cutoff of January 2025; the Gemma 4 technical report gives the same cutoff and confirms audio data was included for E2B, E4B and 12B."
       },
-      "modalities": ["text", "image", "video", "audio"],
+      "modalities": [
+        "text",
+        "image",
+        "audio"
+      ],
       "context": {
         "context_window_tokens": {
           "value": 262144,
@@ -471,16 +503,16 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Confirmed from config.json text_config.max_position_embeddings=262144. Documented as 256K in model card."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: text_config.max_position_embeddings=262144 (= 256K), vocab_size=262144. The HF card states a context window of up to 256K tokens and the Gemma 4 model card lists 12B Unified at 256K. Note the Transformers Gemma4 doc page currently renders a garbled per-variant context table (it swaps E4B and the 256K models); config.json is authoritative and was read directly."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Standard decoder-only transformer; shared context pool."
+          "as_of": "2026-08-19",
+          "notes": "Encoder-free unified decoder: text, image patches and audio all flow into one decoder-only transformer, and every modality shares the same context pool with the output. Re-checked 2026-08-19."
         },
         "max_input_tokens": {
           "value": 262144,
@@ -488,27 +520,25 @@
           "confidence": "medium",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": true,
-          "notes": "Derived from context window; vendor does not publish a separate max_input cap."
+          "notes": "Derived from the context window; no separate max-input cap is published. Because image soft tokens and audio tokens land in the same pool, a multimodal turn eats the input budget faster than the number suggests. Re-checked 2026-08-19."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open-weight; serving-stack controlled. Not specified in official docs."
+          "as_of": "2026-08-19",
+          "notes": "Not specified in the model card, the HF card or config.json as of 2026-08-19; the default is whatever the serving framework sets (vLLM max_tokens / Transformers max_new_tokens)."
         },
         "max_output_tokens_max": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open-weight: maximum output bounded by context window minus input length; set by serving operator."
+          "as_of": "2026-08-19",
+          "notes": "No numeric output cap is published; the ceiling is the served window minus input length, chosen by the operator. Re-checked 2026-08-19."
         },
         "extended_context": {
           "value": null,
@@ -516,16 +546,16 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No extended/beta context beyond the native 256K documented."
+          "as_of": "2026-08-19",
+          "notes": "No extended, beta or RoPE-scaled context beyond the native 256K is documented. Re-checked the Gemma 4 model card 2026-08-19."
         },
         "reasoning_tokens_count_as_output": {
           "value": true,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/thinking",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Thinking mode supported. Thinking tokens appear in output stream. Self-hosted: billed as compute."
+          "as_of": "2026-08-19",
+          "notes": "Re-read the thinking guide 2026-08-19: google/gemma-4-12B-it is named among the variants supporting thinking, enabled with apply_chat_template(enable_thinking=True). Reasoning blocks are emitted in the generated stream, so they occupy the output side of the shared window; the guide states no token-budget parameter. Self-hosted, so they cost compute, not a per-token line item. Medium confidence - inferred from the emission format, not from a stated accounting rule."
         }
       },
       "tokenization": {
@@ -534,54 +564,55 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "SentencePiece BPE, vocab_size=262144. Identical tokenizer architecture to 31B. Encoder-free unified architecture: raw image patches and audio waveforms projected directly via linear layers (no separate encoder), but tokenization of text is the same."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: vocab_size=262144, identical to every other Gemma 4 variant, so text token counts are portable across the family. The Gemma 4 technical report describes a SentencePiece tokenizer with split digits, preserved whitespace and byte-level encodings over a 262k-entry vocabulary. The encoder-free design changes how image and audio become tokens (direct linear projection, no separate encoder) but not text tokenization."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "tokenizer_access": {
-          "value": "HF AutoProcessor / HuggingFace Transformers (>=5.10.1 for 12B Unified)",
+          "value": "HF AutoProcessor / AutoTokenizer (latest Transformers; >=5.10.1 required for function calling)",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "The function calling guide specifies transformers>=5.10.1 for the 12B Unified model. Uses AutoModelForMultimodalLM (not AutoModelForCausalLM) for multimodal inputs."
+          "as_of": "2026-08-19",
+          "notes": "Re-read 2026-08-19: the function-calling guide pins transformers>=5.10.1, and the Transformers Gemma4 doc shows AutoModelForMultimodalLM plus AutoProcessor for multimodal inputs (AutoModelForCausalLM only for text-only use). Audio also needs librosa per the HF card install line."
         },
         "count_tokens_method": {
           "value": "HF Transformers AutoProcessor / AutoTokenizer encode()",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "image_token_rule": {
           "value": "Variable token budget: 70, 140, 280, 560, or 1120 tokens per image (configurable); default 280",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "12B Unified uses encoder-free architecture: raw image patches projected via linear layers. Default num_soft_tokens=280 confirmed in config.json vision_config."
+          "as_of": "2026-08-19",
+          "notes": "Re-confirmed 2026-08-19 from config.json (num_soft_tokens=280) and the model card / HF card (selectable budgets 70, 140, 280, 560, 1120). Encoder-free: raw image patches are projected by linear layers rather than a vision encoder, but the soft-token budget accounting is the same as the other variants. Video frames are capped at 60 seconds per the model card."
         },
         "audio_token_rule": {
           "value": "640 audio samples per token (audio_samples_per_token=640); max 30 seconds audio",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Confirmed from config.json audio_config.audio_samples_per_token=640. 12B Unified supports audio natively (encoder-free); 31B and 26B A4B do not."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: audio_config.audio_samples_per_token=640. The model card caps audio input at 30 seconds and lists audio for E2B, E4B and 12B only; the 31B and 26B A4B have no audio_config (verified null in the 26B config.json). 12B is the only mid-size variant with native audio, and it gets it encoder-free."
         },
         "chars_per_token_estimate": {
           "value": 4.0,
           "confidence": "medium",
-          "source_url": "https://huggingface.co/docs/transformers/model_doc/gemma4",
+          "source_url": "https://huggingface.co/docs/transformers/en/model_doc/gemma4",
           "source_tier": 3,
-          "as_of": "2026-06-21",
-          "notes": "Same tokenizer family as 31B; same estimate applies."
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Estimate, not a vendor-published figure: same 262K-entry SentencePiece tokenizer as every other Gemma 4 variant, so the same ~4 chars/token English rule of thumb applies. Google publishes no chars-per-token ratio; Tier 3, derived. Use the HF tokenizer for real counts."
         }
       },
       "tools_mcp": {
@@ -590,119 +621,139 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Native function calling via HF chat template. Same Gemma 4 function declaration format as 31B."
+          "as_of": "2026-08-19",
+          "notes": "Re-read 2026-08-19. Same mechanism as the rest of the family: OpenAI-style JSON function objects passed as apply_chat_template(..., tools=[...]), rewritten by the template into <|tool>declaration:...<tool|>, with calls emitted as <|tool_call>call:...<tool_call|>. Requires transformers>=5.10.1. The HF card states native support for structured tool use enabling agentic workflows."
         },
         "native_mcp": {
           "value": false,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No native MCP. Requires serving-stack MCP adapter."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no MCP mention in the function-calling guide, the Gemma docs capability index, the 12B HF card or the Gemma 4 technical report. MCP has to be bridged in the agent host on top of an OpenAI-compatible endpoint (vLLM --tool-call-parser gemma4)."
         },
         "parallel_tool_calls": {
-          "value": true,
-          "confidence": "medium",
+          "value": null,
+          "confidence": "low",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Same tool-calling format as 31B; parallel calls supported in principle."
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19 from true (medium) to null. The cited tier-1 page was re-opened in this pass and makes NO statement about parallel, simultaneous or multiple-per-turn tool calling -- the previous boolean was inferred from the fact that the guide's `tool_responses` example is a list, which is an inference about response formatting, not a documented model capability. Also re-read 2026-08-19 with the same result: the Gemma 4 prompt-formatting page and the Gemma 4 model card. The only explicit statement found anywhere is tier 4 and empirical -- a practitioner guide (https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/, re-opened 2026-08-19) says 'Gemma 4 can generate multiple tool calls in a single turn, but reliability decreases with more than 3 parallel calls' -- which is not a tier-1 source for a capability boolean, so the value stays null rather than being recorded as a vendor-supported feature. In practice the serving parser decides: vLLM ships --tool-call-parser gemma4, which has open issues about control-token leakage in streamed tool_calls. Same tool-calling format across the family, so the same absence of evidence applies."
         },
         "max_tools_hard": {
           "value": null,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No documented hard cap; bounded by context window token budget."
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric tool cap is documented, and no vendor-operated API exists to enforce one. The limits that DO bind: the aggregate context budget consumed by templated declarations, the served --max-model-len, the ~10-15-tool practitioner selection cliff, and any host cap (Cursor ~40, Claude Desktop ~100). Scope: aggregate; there is no documented per-MCP-server tool cap. Re-checked 2026-08-19."
         },
         "max_tools_practical": {
           "value": 15,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/",
           "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "Mid-size model (12B); fewer parameters than 31B means tool-following accuracy likely degrades sooner with large tool sets. Conservative estimate ~15 tools for reliable performance. Tier-4 empirical estimate; no published benchmark."
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "CORRECTED 2026-08-19 (12 -> 15, and the same value is now used for all three variants). The cited practitioner guide was re-opened in this pass; the ONLY figure it gives is a single family-wide band: 'Keep tool definitions under 10-15 for best accuracy. More tools = more confusion about which to call.' It gives no per-variant numbers, so the previous 15/12/10 ranking across 31B/12B/E4B was invented by interpolation (12 appears nowhere in the source) and has been removed. This entry now carries the top of the band the source actually states; the conservative reading of the same sentence is 10, so treat 10-15 as the usable range and 15 as an optimistic ceiling. EMPIRICAL, NOT SPEC (tier 4, low confidence): Google publishes no tool-count-versus-accuracy benchmark, the Gemma 4 technical report contains no such experiment, the Gemma 4 function-calling guide and prompt-formatting page (both re-read 2026-08-19) state no tool-count limit, and the Berkeley Function Calling Leaderboard carries no Gemma-4 tool-count curve. Scope: AGGREGATE tools visible in one request, not per MCP server."
         },
         "tool_definition_shape": {
           "value": "gemma4_function",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Same Gemma 4 native token format as 31B."
+          "as_of": "2026-08-19",
+          "notes": "Same two-stage shape as the rest of the family: OpenAI-style JSON in, Gemma control tokens (<|tool>declaration:...<tool|>, string values wrapped in <|\"|>) after templating. Count tokens on the templated form, not the raw JSON. Re-checked 2026-08-19."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Structural rather than an explicit doc statement: the guide never uses the phrase input tokens, but it shows declarations being written into the prompt string by apply_chat_template, and Gemma offers no side channel for tool schemas, so they are unavoidably prompt tokens. Per-declaration cost scales with name, description and parameter-schema length, measured on the templated form. Re-checked 2026-08-19."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the Gemma docs capability index lists no deferred or searchable tool-loading feature. The whole tool set is paid for on every request."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Searched the Gemma 4 function-calling guide, the model card, the HF card and the Gemma 4 technical report on 2026-08-19: no character limit, no token limit and no name-pattern rule for tool names is published. Long MCP-namespaced names are therefore accepted but cost more input tokens, and the guide's own caution applies - the model picks by name and description, so near-identical names hurt selection accuracy. Scope: per-tool."
         },
-        "tool_schema_limits_notes": "Same Gemma-native serialization format as 31B. Complex nested schemas should be manually defined. Encoder-free architecture means no special consideration for multimodal tool inputs.",
+        "tool_schema_limits_notes": "Re-checked 2026-08-19. Same serialization as the rest of the family and the same absence of published rules: no property-count, nesting-depth, enum-size or unsupported-keyword constraint is documented, so the only real limit is how many tokens the templated declarations consume. Prefer hand-written JSON schemas over auto-generated ones for complex nested parameters - nothing validates them, so errors surface as bad tool calls rather than rejections. The encoder-free design adds no special handling for multimodal tool arguments.",
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
-          "notes": "No vendor cap; description counts against context window."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: the Gemma 4 function-calling guide documents no character or token cap on a tool description. The limits that bind are the context window and the serving stack's --max-model-len; a longer description simply costs more input tokens. Scope: per-tool."
         },
         "max_request_size": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+          "as_of": "2026-08-19",
+          "notes": "No request-byte cap is published, because there is no vendor-operated Gemma inference API. The ceilings that bind are the serving stack's --max-model-len (the vLLM Gemma 4 recipe says the default context length can be very large and to set --max-model-len to match the workload) and GPU/KV-cache memory. Scope: aggregate - the whole serialized request, including every connected server's tool declarations. Source URL changed from the generic vLLM tool-calling page, which does not cover Gemma, to the vLLM Gemma 4 recipe, which does."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "Context-bound; tool results count against max_model_len."
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap on a single tool result is documented. A result is inserted into the prompt as a tool_responses entry by the chat template, so it is bounded by the served --max-model-len and by the remaining context budget. Scope: per-tool-call, but it consumes the aggregate context budget."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
-          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap documented. The guide shows tool_responses as a list, so several calls can be answered in one turn; how many the model may emit at once is governed by the chat template and the serving-side parser (vLLM --tool-call-parser gemma4), not by a published limit. Scope: per-turn."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "notes": "Set by the agent host/framework, not the model."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cycle cap is documented; the agent host decides how many tool-call/result cycles to run. Note the thinking guide's constraint that thoughts must NOT be stripped between function calls inside a turn, which makes every extra cycle cost more context. Scope: per-session, host layer."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Host-layer concern. Gemma ships no first-party client, so no number exists at the model layer; whatever host wraps the OpenAI-compatible vLLM endpoint sets it (Cursor ~40 tools aggregate, Claude Desktop ~100). Scope: aggregate across all connected servers."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap is published at any Gemma layer. The binding aggregate ceiling is approximately (served --max-model-len minus output/thinking headroom) divided by average tool-declaration tokens. Important: the vLLM Gemma 4 recipe recommends --max-model-len 8192-32768 for the 31B and 26B A4B variants and up to 131072 for E2B/E4B, so the served window - not the model's native 256K - is usually what binds in practice. Client hosts cap lower again (Cursor ~40, Claude Desktop ~100). Scope: aggregate (all connected servers plus built-in tools in one request)."
         },
-        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "other_limits_notes": "Open-weight: no per-request numeric tool cap is published at the model layer, because there is no vendor-operated inference API. The limits that DO bind, smallest first: (1) the serving stack - the vLLM Gemma 4 recipe (opened 2026-08-19) requires --tool-call-parser gemma4, --reasoning-parser gemma4 and --chat-template examples/tool_chat_template_gemma4.jinja, and recommends --max-model-len 8192-32768 for the 31B/26B A4B variants (up to 131072 for E2B/E4B), so the served window rather than the native 256K is normally the real aggregate ceiling; (2) the aggregate context budget - every tool declaration is serialized into the prompt, so tool defs, system prompt, history and thinking output all compete for one window; (3) the ~10-15-tool practitioner selection cliff for Gemma-class open models (Tier 4, see max_tools_practical); (4) the agent host (Cursor ~40 tools aggregate, Claude Desktop ~100). Serving-side defects to watch: the gemma4 tool parser has open vLLM issues about raw control tokens leaking into streamed tool_calls and pad tokens appearing under concurrency.",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: the Gemma 4 function-calling guide documents no strict-schema mode and no property-count, nesting-depth or unsupported-keyword rules. Tools are authored as OpenAI-style JSON function objects and passed via apply_chat_template(tools=...); the chat template then serializes them into Gemma's <|tool>declaration:...<tool|> control-token form. Schema conformance is therefore a prompting property, not an API-enforced contract - malformed or over-deep schemas degrade silently instead of being rejected."
         }
       },
       "skills_context": {
@@ -711,31 +762,34 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 against the Gemma docs capability index: no skills or packaged-capability mechanism exists. Instruction customization is system prompt, retrieval or fine-tuning, all of which are ordinary input tokens."
         },
         "skills_loading_model": {
           "value": "n/a",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills mechanism exists, so there is nothing to load eagerly or progressively. Re-verified 2026-08-19."
         },
         "skills_context_cost_notes": null,
-        "system_prompt_overhead_notes": "System role natively supported in Gemma 4. System prompt tokens count as input. No fixed overhead documented.",
+        "system_prompt_overhead_notes": "Native system instructions (called out in the Gemma 4 launch post alongside function calling and structured JSON output). System-prompt tokens are ordinary input tokens against the shared 256K window; no fixed overhead figure is published beyond the chat-template control tokens. Re-checked 2026-08-19. Budgeting note: on this variant the same window also absorbs image soft tokens and audio tokens, so a multimodal agent session runs out of headroom faster than a text-only one.",
         "prompt_caching": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No vendor-managed prompt caching. KV prefix caching available at operator level via vLLM/SGLang."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no vendor-managed prompt caching exists (no Gemma docs page, no Google-operated Gemma endpoint). Operator-level KV/prefix caching via vLLM or SGLang is the substitute and is the practical way to avoid re-paying for a static tool-declaration prefix each turn."
         },
         "memory_feature": {
           "value": false,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no memory feature in the Gemma docs capability index. Any persistence is operator-built and costs ordinary input tokens."
         }
       },
       "cost": {
@@ -744,49 +798,46 @@
           "unit": "USD/1M tokens",
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute."
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: Google publishes no per-token price for Gemma weights and sells no Gemma inference product, so there is nothing to record. Cost is the operator's GPU time. The 12B is notable here because the launch post says it runs on consumer laptops with 16GB of RAM, which is the practical cost story for this variant."
         },
         "output_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute."
+          "as_of": "2026-08-19",
+          "notes": "No vendor output price exists; self-hosted compute. Re-checked 2026-08-19. Output is still the expensive direction in compute terms because thinking blocks are generated tokens."
         },
         "cached_input_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price exists because there is no vendor billing surface for Gemma weights. KV/prefix cache reuse in vLLM or SGLang cuts prefill compute for a repeated tool-declaration prefix, but it is not a separately metered line item. Re-checked 2026-08-19."
         },
         "batch_discount": {
           "value": null,
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No vendor batch discount exists, since there is no vendor billing surface. Continuous batching in vLLM/SGLang raises GPU utilisation and lowers effective cost per token, but the saving is an infrastructure effect with no published rate. Re-checked 2026-08-19."
         },
         "billing_unit": {
           "value": "compute",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
-        "multimodal_billing_notes": "Self-hosted: image tokens (default 280/image) and audio tokens (640 samples/token) count as input compute.",
+        "multimodal_billing_notes": "Self-hosted, so no separate multimodal line item: image soft tokens (default 280 per image, selectable 70/140/280/560/1120) and audio tokens (audio_samples_per_token=640, max 30 seconds of audio) are ordinary input tokens against the shared window and against prefill compute. Video is frame-based, capped at 60 seconds. Re-checked 2026-08-19 against config.json and the model card.",
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted."
+          "as_of": "2026-08-19",
+          "notes": "No billing category exists for reasoning tokens because there is no vendor billing surface. Thinking blocks are generated tokens: they add decode compute and occupy the output side of the shared window. Re-checked 2026-08-19."
         }
       },
       "self_host": {
@@ -795,57 +846,66 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "license": {
           "value": "Apache-2.0",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Apache 2.0, same as all Gemma 4 models."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 on the HF card and the 12B launch post, which both state Apache 2.0 - same as every Gemma 4 model. OSI-approved, commercial use and redistribution permitted."
         },
         "param_variants": {
           "value": "11.95B (dense, unified encoder-free architecture)",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "12B Unified uses encoder-free architecture — no separate vision or audio encoders. Raw patches and waveforms are projected via linear layers directly into the LLM embedding space."
+          "as_of": "2026-08-19",
+          "notes": "Re-confirmed 2026-08-19: 11.95B dense parameters, encoder-free - vision and audio flow into the decoder through lightweight linear projections instead of separate encoders. The launch post puts its quality near the 26B MoE at under half the total memory footprint, running on consumer laptops with 16GB RAM. Note it is the one Gemma 4 variant that did not get a Multi-Token-Prediction drafter in the 2026-04-16 MTP release (E2B, E4B, 31B, 26B A4B did), which predates the 12B."
         },
         "native_context_config": {
           "value": 262144,
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "text_config.max_position_embeddings=262144 confirmed from config.json."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: text_config.max_position_embeddings=262144, vocab_size=262144, vision num_soft_tokens=280, audio_config.audio_samples_per_token=640."
         },
         "max_context_documented": {
           "value": 262144,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "256K is the documented maximum; no extended or RoPE-scaled mode beyond it exists. Re-checked 2026-08-19. As with the other 256K variants, the served --max-model-len is what an operator actually gets."
         },
         "serving_frameworks": {
-          "value": "vLLM, SGLang, HuggingFace Transformers (>=5.10.1), llama.cpp (GGUF), Ollama, LM Studio, MLX, Keras",
+          "value": "vLLM (with the gemma4 tool/reasoning parsers), SGLang, HuggingFace Transformers (latest; >=5.10.1 for function calling), llama.cpp (GGUF), Ollama, LM Studio, Google AI Edge Gallery, MLX, Keras",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-12B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Requires ~26.7GB VRAM at BF16; ~6.7GB at Q4_0. More accessible than 31B for consumer hardware."
+          "as_of": "2026-08-19",
+          "notes": "Updated 2026-08-19. The 12B launch post names LM Studio, Ollama and the Google AI Edge Gallery app as day-one targets, with weights on Hugging Face and Kaggle. The HF install line is pip install -U transformers torch torchvision librosa accelerate (librosa for audio). The ~26.7GB BF16 / ~6.7GB Q4_0 figures are carried over from the prior pass and were not restated on the pages opened on 2026-08-19; the launch post's own claim is that it runs on a 16GB-RAM consumer laptop, which implies quantized deployment."
         },
-        "framework_tool_calling_notes": "Same Gemma 4 native function calling via HF chat template. For audio processing, requires AutoModelForMultimodalLM (not AutoModelForCausalLM). The encoder-free architecture processes audio natively without a separate encoder pipeline, simplifying multimodal serving."
+        "framework_tool_calling_notes": "Same family tool-calling path, rechecked 2026-08-19 against the vLLM Gemma 4 recipe: serve with --tool-call-parser gemma4, --reasoning-parser gemma4 and --chat-template examples/tool_chat_template_gemma4.jinja, or tool calls come back as raw control tokens. Multimodal work needs AutoModelForMultimodalLM plus AutoProcessor (not AutoModelForCausalLM); the encoder-free design means audio needs no separate encoder pipeline, which simplifies multimodal serving but does not change tool-call handling. Known open vLLM defects against the gemma4 parser: control-token leakage into streamed tool_calls and pad tokens under concurrency. MCP is bridged in the agent host, not by the model."
       },
-      "notes": "Gemma 4 12B Unified is a mid-tier model with a unique encoder-free architecture that processes text, image, and audio through a single decoder transformer. Good balance of capability and resource requirements (~27GB BF16). The 256K context window is the same as the 31B. Suitable for tool-heavy sessions where 31B VRAM requirements are prohibitive. Audio support (ASR/translation) is a notable differentiator vs 31B.",
+      "notes": "Gemma 4 12B Unified is the newest Gemma 4 variant, shipped 2026-06-03 - three months after the rest of the family - with an encoder-free architecture that runs text, image and audio through a single decoder transformer. Apache 2.0, 256K window, native audio (ASR and translation) which the 31B and 26B A4B do not have. Google positions its quality near the 26B MoE at under half the memory, running on a 16GB-RAM laptop. Refreshed 2026-08-19: still GA, still the most recent Gemma release - the official releases page lists nothing after it. The release date in this entry was corrected from 2026-04-02 to 2026-06-03. For MCP work it is the best fit when the 31B's memory is prohibitive but a large tool footprint plus multimodal input still has to fit one window; budget for image soft tokens and audio tokens sharing that window with the templated tool declarations. MODALITIES CORRECTED 2026-08-19: video was removed; the Gemma 4 model card's per-variant Dense Models table gives the 12B Unified as 'Text, Image, Audio'. Video appears only in family-level prose about processing videos as frame sequences, which is image input, not a listed native modality.",
       "sources": [
         "https://huggingface.co/google/gemma-4-12B-it",
         "https://huggingface.co/google/gemma-4-12B-it/resolve/main/config.json",
         "https://ai.google.dev/gemma/docs/core/model_card_4",
+        "https://ai.google.dev/gemma/docs/core",
         "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+        "https://ai.google.dev/gemma/docs/capabilities/thinking",
+        "https://ai.google.dev/gemma/docs",
+        "https://ai.google.dev/gemma/docs/releases",
         "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-gemma-4-12b/",
-        "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/"
+        "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/",
+        "https://arxiv.org/pdf/2607.02770",
+        "https://huggingface.co/docs/transformers/en/model_doc/gemma4",
+        "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
+        "https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/"
       ]
     },
     {
@@ -857,7 +917,8 @@
         "confidence": "high",
         "source_url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/",
         "source_tier": 1,
-        "as_of": "2026-06-21"
+        "as_of": "2026-08-19",
+        "notes": "Re-confirmed 2026-08-19: E4B was one of the four variants in the 2026-04-02 Gemma 4 launch post (E2B, E4B, 26B MoE, 31B Dense). Still GA; no successor as of 2026-08-19."
       },
       "status": "ga",
       "knowledge_cutoff": {
@@ -865,10 +926,14 @@
         "confidence": "high",
         "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
         "source_tier": 1,
-        "as_of": "2026-06-21",
-        "notes": "Model card states training data cutoff date of January 2025."
+        "as_of": "2026-08-19",
+        "notes": "Model card states a training-data cutoff of January 2025; the Gemma 4 technical report gives the same cutoff and confirms audio data was included in E2B, E4B and 12B training."
       },
-      "modalities": ["text", "image", "audio"],
+      "modalities": [
+        "text",
+        "image",
+        "audio"
+      ],
       "context": {
         "context_window_tokens": {
           "value": 131072,
@@ -876,15 +941,16 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Confirmed from config.json text_config.max_position_embeddings=131072. Documented as 128K in model card. Note: earlier search result mentioned a metadata bug where 131072 was incorrect; however config.json IS 131072 which equals 128K tokens. 131072 = 128 * 1024."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: text_config.max_position_embeddings=131072 (= 128K), vocab_size=262144, sliding_window=512. The Gemma 4 model card and the HF card both state 128K for E4B. The prior pass's note about a suspected metadata bug is resolved - 131072 is correct and equals 128K. Unlike the 256K variants, the vLLM Gemma 4 recipe says E2B/E4B can be served up to the full 131072 default context, so here the architectural window and the practical served window usually match."
         },
         "input_output_shared": {
           "value": true,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Decoder-only transformer; input, image soft tokens, audio tokens and generated output all share one 128K pool. Re-checked 2026-08-19."
         },
         "max_input_tokens": {
           "value": 131072,
@@ -892,27 +958,25 @@
           "confidence": "medium",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
+          "as_of": "2026-08-19",
           "derived": true,
-          "notes": "Derived from context window."
+          "notes": "Derived from the context window; no separate max-input cap is published. On a 128K window the templated tool declarations plus system prompt are a materially larger fraction of the budget than on the 256K variants. Re-checked 2026-08-19."
         },
         "max_output_tokens_default": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open-weight; serving-stack controlled."
+          "as_of": "2026-08-19",
+          "notes": "Not specified in the model card, the HF card or config.json as of 2026-08-19; the default is set by the serving framework (vLLM max_tokens / Transformers max_new_tokens / LiteRT-LM on device)."
         },
         "max_output_tokens_max": {
           "value": null,
           "unit": "tokens",
           "confidence": "low",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Open-weight: bounded by context window minus input."
+          "as_of": "2026-08-19",
+          "notes": "No numeric output cap is published; the ceiling is the served window minus input length, chosen by the operator. Re-checked 2026-08-19."
         },
         "extended_context": {
           "value": null,
@@ -920,16 +984,16 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No extended context beyond native 128K for E4B."
+          "as_of": "2026-08-19",
+          "notes": "No extended, beta or RoPE-scaled context beyond the native 128K is documented for E4B. Re-checked the Gemma 4 model card 2026-08-19."
         },
         "reasoning_tokens_count_as_output": {
           "value": true,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/thinking",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Thinking mode supported on E4B. For E2B and E4B, thinking can be fully disabled (unlike larger models which still emit empty thought blocks). Thinking tokens count as output compute."
+          "as_of": "2026-08-19",
+          "notes": "Re-read the thinking guide 2026-08-19: google/gemma-4-E4B-it is named among the variants supporting thinking, enabled with apply_chat_template(enable_thinking=True) and disabled by removing the <|think|> token. The guide describes the <|channel>thought ... <channel|> delimited form for the larger models; the prior pass's claim that E2B/E4B can disable thinking fully while larger models still emit empty thought blocks was not restated on the page as opened on 2026-08-19, so treat that detail as unconfirmed. Reasoning tokens are generated and occupy the output side of the shared window; self-hosted, so they cost compute. Medium confidence."
         }
       },
       "tokenization": {
@@ -938,52 +1002,57 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "SentencePiece BPE, vocab_size=262144. Identical tokenizer to 31B and 12B. E4B uses Per-Layer Embeddings (PLE) for parameter efficiency, but text tokenization is identical."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: vocab_size=262144, identical to every other Gemma 4 variant, so text token counts are portable across the family. The Gemma 4 technical report describes a SentencePiece tokenizer with split digits, preserved whitespace and byte-level encodings over a 262k-entry vocabulary. Per-Layer Embeddings make E4B parameter-efficient but do not change text tokenization."
         },
         "tokenizer_public": {
           "value": true,
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Tokenizer files ship with the weights on Hugging Face and Kaggle under Apache 2.0; no licence gate. Re-checked 2026-08-19."
         },
         "tokenizer_access": {
-          "value": "HF AutoProcessor / HuggingFace Transformers (>=5.5.0)",
+          "value": "HF AutoProcessor / AutoTokenizer (latest Transformers; >=5.10.1 required for function calling)",
           "confidence": "high",
-          "source_url": "https://huggingface.co/google/gemma-4-E4B-it",
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Changed 2026-08-19. The HF card no longer pins a floor version - it says Gemma 4 works with the latest Transformers and uses AutoProcessor plus AutoModelForMultimodalLM - while the function-calling guide pins transformers>=5.10.1. The old >=5.5.0 figure is stale for any tool-calling workload."
         },
         "count_tokens_method": {
           "value": "HF Transformers AutoProcessor / AutoTokenizer encode()",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it",
           "source_tier": 2,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Exact counts locally once the tokenizer is downloaded; no hosted count-tokens endpoint exists for Gemma. To count a tool footprint faithfully, tokenize the output of apply_chat_template(messages, tools=[...]) rather than the raw JSON schemas. Re-checked 2026-08-19."
         },
         "image_token_rule": {
           "value": "Variable token budget: 70, 140, 280, 560, or 1120 tokens per image; default 280",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Same configurable budget as 31B and 12B. vision_soft_tokens_per_image=280 in config.json."
+          "as_of": "2026-08-19",
+          "notes": "Re-confirmed 2026-08-19 from config.json (vision_soft_tokens_per_image=280) and the Gemma 4 model card (selectable 70, 140, 280, 560, 1120). Same budget mechanism as the larger variants, but on a 128K window a 1120-token image budget is a much bigger bite - prefer 70-280 for on-device agent loops."
         },
         "audio_token_rule": {
-          "value": "Dedicated audio encoder; max 30 seconds audio; audio_samples_per_token and output_proj_dims in config.json",
+          "value": "Dedicated audio encoder (12 layers, hidden_size 1024); audio input capped at 30 seconds; no tokens-per-second or samples-per-token figure published",
           "confidence": "medium",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "E4B has a dedicated audio encoder (unlike 12B Unified encoder-free). The config.json shows a separate audio_config with 12 attention layers, hidden_size=1024. Exact tokens-per-second not documented in model card."
+          "as_of": "2026-08-19",
+          "notes": "Corrected 2026-08-19. Re-reading E4B config.json shows the audio_config has NO audio_samples_per_token key - the prior value named one, which was wrong; that key exists on the 12B Unified (=640), not here. What E4B's config.json does carry is a dedicated audio encoder (num_hidden_layers=12, hidden_size=1024, num_attention_heads=8, attention_chunk_size=12, conv_kernel_size=5), unlike the 12B's encoder-free projection. The 30-second audio cap comes from the Gemma 4 model card. No audio-to-token conversion ratio is published for E4B, so audio context cost cannot be estimated from documentation alone - measure it with the processor."
         },
         "chars_per_token_estimate": {
           "value": 4.0,
           "confidence": "medium",
-          "source_url": "https://huggingface.co/docs/transformers/model_doc/gemma4",
+          "source_url": "https://huggingface.co/docs/transformers/en/model_doc/gemma4",
           "source_tier": 3,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Estimate, not a vendor-published figure: same 262K-entry SentencePiece tokenizer as the rest of the family, so the same ~4 chars/token English rule of thumb applies. Google publishes no chars-per-token ratio anywhere in the Gemma 4 docs or technical report; Tier 3, derived. Use the HF tokenizer for real counts."
         }
       },
       "tools_mcp": {
@@ -992,116 +1061,139 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Native function calling supported on E4B via HF chat template."
+          "as_of": "2026-08-19",
+          "notes": "Re-read 2026-08-19. Same mechanism as the rest of the family: OpenAI-style JSON function objects passed as apply_chat_template(..., tools=[...]), rewritten by the template into <|tool>declaration:...<tool|>, calls emitted as <|tool_call>call:...<tool_call|>. Requires transformers>=5.10.1. The HF card states native support for structured tool use enabling agentic workflows."
         },
         "native_mcp": {
           "value": false,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no MCP mention in the function-calling guide, the Gemma docs capability index, the E4B HF card or the Gemma 4 technical report. MCP is bridged in the agent host on top of an OpenAI-compatible endpoint; on-device (LiteRT-LM) deployments have no such endpoint by default, so the bridge has to be supplied by the app."
         },
         "parallel_tool_calls": {
-          "value": true,
-          "confidence": "medium",
+          "value": null,
+          "confidence": "low",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19 from true (medium) to null. The cited tier-1 page was re-opened in this pass and makes NO statement about parallel, simultaneous or multiple-per-turn tool calling -- the previous boolean was inferred from the fact that the guide's `tool_responses` example is a list, which is an inference about response formatting, not a documented model capability. Also re-read 2026-08-19 with the same result: the Gemma 4 prompt-formatting page and the Gemma 4 model card. The only explicit statement found anywhere is tier 4 and empirical -- a practitioner guide (https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/, re-opened 2026-08-19) says 'Gemma 4 can generate multiple tool calls in a single turn, but reliability decreases with more than 3 parallel calls' -- which is not a tier-1 source for a capability boolean, so the value stays null rather than being recorded as a vendor-supported feature. In practice the serving parser decides: vLLM ships --tool-call-parser gemma4, which has open issues about control-token leakage in streamed tool_calls. Same tool-calling format across the family, so the same absence of evidence applies; expect the smallest variant to be the least reliable at emitting several well-formed calls at once."
         },
         "max_tools_hard": {
           "value": null,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric tool cap is documented, and no vendor-operated API exists to enforce one. The limits that DO bind on E4B: the 128K aggregate context budget consumed by templated declarations, the served --max-model-len (the vLLM recipe allows E2B/E4B up to the full 131072), the ~10-tool practitioner selection cliff for a model this size, and any host cap. Scope: aggregate; there is no documented per-MCP-server tool cap. Re-checked 2026-08-19."
         },
         "max_tools_practical": {
-          "value": 10,
+          "value": 15,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/",
           "source_tier": 4,
-          "as_of": "2026-06-21",
-          "notes": "Small/edge model (4.5B effective params). Small models degrade faster with many tools (Berkeley FCL pattern). Conservative practical estimate ~10 tools for reliable performance on E4B. The 128K context window also limits the total tool definition footprint at lower model capacity. Tier-4 empirical estimate."
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "CORRECTED 2026-08-19 (10 -> 15, and the same value is now used for all three variants). The cited practitioner guide was re-opened in this pass; the ONLY figure it gives is a single family-wide band: 'Keep tool definitions under 10-15 for best accuracy. More tools = more confusion about which to call.' It gives no per-variant numbers, so the previous 15/12/10 ranking across 31B/12B/E4B was invented by interpolation (12 appears nowhere in the source) and has been removed. This entry now carries the top of the band the source actually states; the conservative reading of the same sentence is 10, so treat 10-15 as the usable range and 15 as an optimistic ceiling. EMPIRICAL, NOT SPEC (tier 4, low confidence): Google publishes no tool-count-versus-accuracy benchmark, the Gemma 4 technical report contains no such experiment, the Gemma 4 function-calling guide and prompt-formatting page (both re-read 2026-08-19) state no tool-count limit, and the Berkeley Function Calling Leaderboard carries no Gemma-4 tool-count curve. Scope: AGGREGATE tools visible in one request, not per MCP server. Variant-specific context: a Tier-4 on-device tool-calling comparison (updated 2026-08-07) reports E4B in the mid-to-high 80s on BFCL v4 composite and evaluates it on a 5-tool customer-support set -- practitioners exercise the smallest variant at single-digit tool counts, so the bottom of the band (10) is the safer planning number here even though the recorded value is the band's top."
         },
         "tool_definition_shape": {
           "value": "gemma4_function",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Same Gemma 4 native token format as 31B and 12B."
+          "as_of": "2026-08-19",
+          "notes": "Same two-stage shape as the rest of the family: OpenAI-style JSON in, Gemma control tokens (<|tool>declaration:...<tool|>, string values wrapped in <|\"|>) after templating. Count tokens on the templated form, not the raw JSON - the difference matters most here, where the window is 128K. Re-checked 2026-08-19."
         },
         "tool_defs_count_as_input": {
           "value": true,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Structural rather than an explicit doc statement: the guide never uses the phrase input tokens, but it shows declarations being written into the prompt string by apply_chat_template, and Gemma offers no side channel for tool schemas, so they are unavoidably prompt tokens. Per-declaration cost scales with name, description and parameter-schema length, measured on the templated form. Re-checked 2026-08-19."
         },
         "tool_search_deferral": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the Gemma docs capability index lists no deferred or searchable tool-loading feature. The whole tool set is paid for on every request."
         },
         "max_tool_name_len": {
           "value": null,
           "confidence": "low",
-          "source_url": null,
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Searched the Gemma 4 function-calling guide, the model card, the HF card and the Gemma 4 technical report on 2026-08-19: no character limit, no token limit and no name-pattern rule for tool names is published. Long MCP-namespaced names are therefore accepted but cost more input tokens, and the guide's own caution applies - the model picks by name and description, so near-identical names hurt selection accuracy. Scope: per-tool."
         },
-        "tool_schema_limits_notes": "Small model — keep tool schemas minimal. Each tool declaration consumes context budget on a 128K window. Recommend fewer than 10 tools and concise descriptions for reliable function calling on E4B.",
+        "tool_schema_limits_notes": "Re-checked 2026-08-19: no property-count, nesting-depth, enum-size or unsupported-keyword rule is published for any Gemma 4 variant, so nothing rejects a bad schema - errors surface as wrong tool calls. Practical guidance for this variant specifically: keep schemas minimal and descriptions terse, since every declaration is templated into a 128K window and a 4.5B-effective-parameter model is the family's weakest tool selector. Prefer hand-written JSON schemas over auto-generated ones for nested parameters.",
         "max_tool_description_len": {
           "value": null,
           "confidence": "low",
-          "notes": "No vendor cap; description counts against context window."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: the Gemma 4 function-calling guide documents no character or token cap on a tool description. The limits that bind are the context window and the serving stack's --max-model-len; a longer description simply costs more input tokens. Scope: per-tool."
         },
         "max_request_size": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "No vendor byte cap; bounded by serving config (vLLM --max-model-len / --max-num-batched-tokens) and GPU memory."
+          "as_of": "2026-08-19",
+          "notes": "No request-byte cap is published, because there is no vendor-operated Gemma inference API. The ceilings that bind are the serving stack's --max-model-len (the vLLM Gemma 4 recipe says the default context length can be very large and to set --max-model-len to match the workload) and GPU/KV-cache memory. Scope: aggregate - the whole serialized request, including every connected server's tool declarations. Source URL changed from the generic vLLM tool-calling page, which does not cover Gemma, to the vLLM Gemma 4 recipe, which does."
         },
         "max_tool_result_size": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "Context-bound; tool results count against max_model_len."
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap on a single tool result is documented. A result is inserted into the prompt as a tool_responses entry by the chat template, so it is bounded by the served --max-model-len and by the remaining context budget. Scope: per-tool-call, but it consumes the aggregate context budget."
         },
         "max_parallel_tool_calls_count": {
           "value": null,
           "confidence": "low",
-          "notes": "Depends on the model chat-template tool-call parser; see parallel_tool_calls."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap documented. The guide shows tool_responses as a list, so several calls can be answered in one turn; how many the model may emit at once is governed by the chat template and the serving-side parser (vLLM --tool-call-parser gemma4), not by a published limit. Scope: per-turn."
         },
         "tool_use_per_turn_limit": {
           "value": null,
           "confidence": "low",
-          "notes": "Set by the agent host/framework, not the model."
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cycle cap is documented; the agent host decides how many tool-call/result cycles to run. Note the thinking guide's constraint that thoughts must NOT be stripped between function calls inside a turn, which makes every extra cycle cost more context. Scope: per-session, host layer."
         },
         "max_connected_servers": {
           "value": null,
           "confidence": "low",
-          "notes": "Client/agent-framework-defined (e.g. Cursor caps ~40 tools total)."
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Host-layer concern. Gemma ships no first-party client, so no number exists at the model layer; whatever host wraps the OpenAI-compatible vLLM endpoint sets it (Cursor ~40 tools aggregate, Claude Desktop ~100). Scope: aggregate across all connected servers."
         },
         "max_total_tools": {
           "value": null,
           "confidence": "medium",
-          "source_url": "https://docs.vllm.ai/en/stable/features/tool_calling/",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
           "source_tier": 2,
-          "notes": "No vendor cap. Effective ceiling ≈ (context_window − output headroom) ÷ avg tool-definition tokens, set by serving config. Client hosts may cap lower (Cursor ~40, Claude Desktop ~100)."
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap is published at any Gemma layer. The binding aggregate ceiling is approximately (served --max-model-len minus output/thinking headroom) divided by average tool-declaration tokens. Important: the vLLM Gemma 4 recipe recommends --max-model-len 8192-32768 for the 31B and 26B A4B variants and up to 131072 for E2B/E4B, so the served window - not the model's native 256K - is usually what binds in practice. Client hosts cap lower again (Cursor ~40, Claude Desktop ~100). Scope: aggregate (all connected servers plus built-in tools in one request)."
         },
-        "other_limits_notes": "Open-weight: the model API layer imposes NO tool count/size caps. Binding limits come from (1) the serving stack — vLLM/SGLang max_model_len, max_num_batched_tokens, GPU KV-cache; (2) the model chat-template tool-call parser (must match --tool-call-parser); (3) the agent host (Cursor ~40-tool cap, Claude Desktop ~100). vLLM's default context is often 16K which silently truncates tool calls — raise --max-model-len.",
+        "other_limits_notes": "Open-weight: no per-request numeric tool cap is published at the model layer, because there is no vendor-operated inference API. The limits that DO bind, smallest first: (1) the serving stack - the vLLM Gemma 4 recipe (opened 2026-08-19) requires --tool-call-parser gemma4, --reasoning-parser gemma4 and --chat-template examples/tool_chat_template_gemma4.jinja, and recommends --max-model-len 8192-32768 for the 31B/26B A4B variants (up to 131072 for E2B/E4B), so the served window rather than the native 256K is normally the real aggregate ceiling; (2) the aggregate context budget - every tool declaration is serialized into the prompt, so tool defs, system prompt, history and thinking output all compete for one window; (3) the ~10-15-tool practitioner selection cliff for Gemma-class open models (Tier 4, see max_tools_practical); (4) the agent host (Cursor ~40 tools aggregate, Claude Desktop ~100). Serving-side defects to watch: the gemma4 tool parser has open vLLM issues about raw control tokens leaking into streamed tool_calls and pad tokens appearing under concurrency.",
         "strict_function_schema": {
           "value": false,
           "confidence": "medium",
-          "source_url": null,
+          "source_url": "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
           "source_tier": 1,
-          "notes": "No OpenAI-style strict function-schema mode that enforces 100-prop/5-depth/no-oneOf. (Gemini/Anthropic have their own, looser keyword rules — captured in tool_schema_limits_notes.)"
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: the Gemma 4 function-calling guide documents no strict-schema mode and no property-count, nesting-depth or unsupported-keyword rules. Tools are authored as OpenAI-style JSON function objects and passed via apply_chat_template(tools=...); the chat template then serializes them into Gemma's <|tool>declaration:...<tool|> control-token form. Schema conformance is therefore a prompting property, not an API-enforced contract - malformed or over-deep schemas degrade silently instead of being rejected."
         }
       },
       "skills_context": {
@@ -1110,31 +1202,34 @@
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 against the Gemma docs capability index: no skills or packaged-capability mechanism exists. Instruction customization is system prompt, retrieval or fine-tuning, all of which are ordinary input tokens."
         },
         "skills_loading_model": {
           "value": "n/a",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No skills mechanism exists, so there is nothing to load eagerly or progressively. Re-verified 2026-08-19."
         },
         "skills_context_cost_notes": null,
-        "system_prompt_overhead_notes": "System role natively supported. System prompt tokens count as input. On a 128K window, system prompt + tool definitions may represent a larger fraction of the budget than on the 256K models.",
+        "system_prompt_overhead_notes": "Native system instructions (called out in the Gemma 4 launch post alongside function calling and structured JSON output). System-prompt tokens are ordinary input tokens; no fixed overhead figure is published beyond the chat-template control tokens. Re-checked 2026-08-19. On a 128K window the system prompt plus templated tool declarations are roughly twice the share of the budget they take on the 256K variants, and retained thinking blocks (which must not be stripped between function calls inside a turn) add to that.",
         "prompt_caching": {
           "value": false,
           "confidence": "medium",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "No vendor-managed prompt caching. Operator KV cache via vLLM/Ollama possible."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no vendor-managed prompt caching. Operator KV/prefix caching via vLLM, Ollama or llama.cpp is the substitute; on a 128K window with an on-device deployment it matters more, because the tool-declaration prefix is a larger fraction of the budget."
         },
         "memory_feature": {
           "value": false,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no memory feature in the Gemma docs capability index. Any persistence is operator-built and costs ordinary input tokens."
         }
       },
       "cost": {
@@ -1143,48 +1238,47 @@
           "unit": "USD/1M tokens",
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Self-hosted compute. E4B targets mobile and edge devices (Pixel, Chrome). LiteRT-LM for mobile deployment."
+          "as_of": "2026-08-19",
+          "notes": "Re-checked 2026-08-19: Google publishes no per-token price for Gemma weights and sells no Gemma inference product. Cost is the operator's or the device's compute. E4B specifically targets on-device execution (laptops and high-end phones per the HF card, LiteRT-LM for mobile), where the marginal token cost is battery and latency rather than dollars."
         },
         "output_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No vendor output price exists; self-hosted or on-device compute. Re-checked 2026-08-19."
         },
         "cached_input_per_mtok_usd": {
           "value": null,
           "unit": "USD/1M tokens",
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price exists because there is no vendor billing surface. KV/prefix cache reuse cuts prefill work for a repeated tool-declaration prefix but is not metered. Re-checked 2026-08-19."
         },
         "batch_discount": {
           "value": null,
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "No vendor batch discount exists. Batching matters little for the single-user on-device deployments this variant targets. Re-checked 2026-08-19."
         },
         "billing_unit": {
           "value": "compute",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19",
+          "notes": "Billing unit is operator or device compute, not tokens. Re-checked 2026-08-19 against the HF model card, which distributes weights under Apache 2.0 with no pricing attached."
         },
-        "multimodal_billing_notes": "Self-hosted: image and audio tokens count as compute. Designed for on-device inference — memory as low as 2.5GB (mobile full) or 4.5GB (Q4_0).",
+        "multimodal_billing_notes": "Self-hosted or on-device, so no separate multimodal line item: image soft tokens (default 280, selectable 70/140/280/560/1120) and audio tokens are ordinary input tokens against the 128K window and against prefill compute; audio input is capped at 30 seconds and video at 60 seconds per the model card. The 2.5GB mobile / 4.5GB Q4_0 memory figures are carried over from the prior pass and were not restated on the pages opened 2026-08-19 - treat as indicative.",
         "reasoning_billed_as_output": {
           "value": null,
           "confidence": "high",
           "source_url": null,
-          "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "N/A for self-hosted."
+          "as_of": "2026-08-19",
+          "notes": "No billing category exists for reasoning tokens because there is no vendor billing surface. Thinking blocks are generated tokens: they add decode time and occupy the output side of the shared 128K window - the most visible cost on an edge device. Re-checked 2026-08-19."
         }
       },
       "self_host": {
@@ -1193,57 +1287,67 @@
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21"
+          "as_of": "2026-08-19"
         },
         "license": {
           "value": "Apache-2.0",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Apache 2.0. OSI-approved, commercial use permitted."
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 on the HF card and the Gemma 4 model card: Apache 2.0, same as every Gemma 4 model. OSI-approved; commercial use and redistribution permitted."
         },
         "param_variants": {
           "value": "4.5B effective / 8B total (with Per-Layer Embeddings); also E2B sibling in family",
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "E (Effective) prefix: PLE means embedding tables are large but only used for lookups. Effective compute parameters are 4.5B; total weights including embeddings ~8B. Quantized: QAT Q4_0 available at ~4.5GB."
+          "as_of": "2026-08-19",
+          "notes": "Re-confirmed 2026-08-19 from the Gemma 4 model card: E4B is 4.5B effective / 8B with embeddings; the E2B sibling is 2.3B effective / 5.1B with embeddings. The E prefix denotes Per-Layer Embeddings - large embedding tables used only for lookup, so effective compute parameters are far below the on-disk count. E4B also received a Multi-Token-Prediction drafter in the 2026-04-16 MTP release (alongside E2B, 31B and 26B A4B), a decoding-speed feature that does not change token accounting. The ~4.5GB QAT Q4_0 figure is carried over from the prior pass and was not restated on the pages opened 2026-08-19."
         },
         "native_context_config": {
           "value": 131072,
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it/resolve/main/config.json",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "text_config.max_position_embeddings=131072 confirmed from config.json (= 128K). Uses sliding window attention (512 tokens) with global attention every 6 layers."
+          "as_of": "2026-08-19",
+          "notes": "Re-read config.json 2026-08-19: text_config.max_position_embeddings=131072 (= 128K), vocab_size=262144, sliding_window=512, vision_soft_tokens_per_image=280, plus a dedicated audio_config (12 layers, hidden_size 1024). Sliding-window attention of 512 tokens with periodic global layers; the every-6-layers detail is carried over from the prior pass and was not restated on the config as read on 2026-08-19."
         },
         "max_context_documented": {
           "value": 131072,
           "confidence": "high",
           "source_url": "https://ai.google.dev/gemma/docs/core/model_card_4",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Documented as 128K. No extended context beyond this."
+          "as_of": "2026-08-19",
+          "notes": "Documented as 128K on the Gemma 4 model card and the HF card; no extended or RoPE-scaled mode beyond it. Re-checked 2026-08-19. Unlike the 256K variants, the vLLM Gemma 4 recipe says E2B/E4B can be served at up to the full 131072, so the documented maximum is realistically attainable here."
         },
         "serving_frameworks": {
-          "value": "vLLM, HuggingFace Transformers, llama.cpp (GGUF), Ollama, LM Studio, LiteRT-LM (mobile), MLX, MediaPipe",
+          "value": "vLLM (with the gemma4 tool/reasoning parsers), HuggingFace Transformers (latest; >=5.10.1 for function calling), llama.cpp (GGUF), Ollama, LM Studio, LiteRT-LM (mobile), MLX, MediaPipe",
           "confidence": "high",
           "source_url": "https://huggingface.co/google/gemma-4-E4B-it",
           "source_tier": 1,
-          "as_of": "2026-06-21",
-          "notes": "Specifically designed for edge/mobile. LiteRT-LM targets Pixel/Android. Mobile memory: 2.5GB (full), 2.2GB (text-only). Server: ~17.9GB BF16 or ~4.5GB Q4_0."
+          "as_of": "2026-08-19",
+          "notes": "Updated 2026-08-19. The HF card describes E4B as designed for efficient local execution on laptops and mobile devices, including high-end phones; Google also documents Gemma 4 on AI Edge / LiteRT-LM. The vLLM Gemma 4 recipe allows serving E2B/E4B at up to --max-model-len 131072, unlike the 8192-32768 it suggests for the larger variants. The transformers floor moved: the HF card now says use the latest Transformers, while the function-calling guide pins >=5.10.1. The 2.5GB / 2.2GB mobile and ~17.9GB BF16 / ~4.5GB Q4_0 memory figures are carried over from the prior pass and were not restated on the pages opened 2026-08-19 - treat as indicative."
         },
-        "framework_tool_calling_notes": "Same Gemma 4 native function calling via HF chat template. For tool-heavy MCP usage, prefer the 31B or 12B models — E4B is designed for on-device/edge scenarios where large tool sets are impractical. Audio processing requires AutoModelForMultimodalLM."
+        "framework_tool_calling_notes": "Rechecked 2026-08-19. Same family tool-calling path: serve with vLLM using --tool-call-parser gemma4, --reasoning-parser gemma4 and --chat-template examples/tool_chat_template_gemma4.jinja, or tool calls come back as raw control tokens; known open vLLM defects against that parser are control-token leakage into streamed tool_calls and pad tokens under concurrency. Multimodal input needs AutoModelForMultimodalLM plus AutoProcessor. For tool-heavy MCP work prefer the 31B or 12B - E4B targets on-device scenarios where large tool sets are impractical, and on LiteRT-LM there is no OpenAI-compatible endpoint at all, so any MCP bridge must be built into the host app."
       },
-      "notes": "Gemma 4 E4B is the smallest production-ready Gemma 4 model targeting edge and mobile deployment. At 4.5B effective parameters with 128K context, it can handle moderate tool sets but will degrade faster than larger models with many tools. The Per-Layer Embedding (PLE) architecture makes it memory-efficient on-device. For MCP tool footprint use, the 128K window is adequate for small-to-medium server definitions but the model's tool-following accuracy at scale is the primary constraint.",
+      "notes": "Gemma 4 E4B is the smaller of the two edge variants (E2B is smaller still and is not in this roster), launched 2026-04-02 under Apache 2.0. 4.5B effective / 8B with embeddings via Per-Layer Embeddings, 128K window, and 'Text, Image, Audio' as the model card's per-variant input modalities (video only in the sense that frame sequences are image input). Refreshed 2026-08-19: still GA, no successor. For MCP footprint work the 128K window is adequate for small-to-medium servers and is realistically attainable (the vLLM recipe allows serving E2B/E4B at the full 131072, unlike the larger variants), so the binding limit here is tool-selection accuracy, not context. Corrections: an earlier pass added video to modalities - that was a regression and was reverted on 2026-08-19, because the model card's per-variant Dense Models table reads 'Text, Image, Audio' for E4B and video appears only in family-level prose about processing videos as frames; and the audio token rule no longer claims an audio_samples_per_token key - E4B's config.json has none, only a dedicated 12-layer audio encoder, so audio context cost must be measured rather than derived from docs.",
       "sources": [
         "https://huggingface.co/google/gemma-4-E4B-it",
         "https://huggingface.co/google/gemma-4-E4B-it/resolve/main/config.json",
         "https://ai.google.dev/gemma/docs/core/model_card_4",
+        "https://ai.google.dev/gemma/docs/core",
         "https://ai.google.dev/gemma/docs/capabilities/text/function-calling-gemma4",
-        "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/"
+        "https://ai.google.dev/gemma/docs/capabilities/thinking",
+        "https://ai.google.dev/gemma/docs",
+        "https://ai.google.dev/gemma/docs/releases",
+        "https://ai.google.dev/gemma/docs/mtp/overview",
+        "https://blog.google/innovation-and-ai/technology/developers-tools/gemma-4/",
+        "https://arxiv.org/pdf/2607.02770",
+        "https://huggingface.co/docs/transformers/en/model_doc/gemma4",
+        "https://docs.vllm.ai/projects/recipes/en/stable/Google/Gemma4.html",
+        "https://lushbinary.com/blog/build-ai-agent-gemma-4-function-calling-mcp-tool-use/",
+        "https://www.ertas.ai/blog/on-device-tool-calling-2026-qwen3-gemma4-phi4"
       ]
     }
   ]
