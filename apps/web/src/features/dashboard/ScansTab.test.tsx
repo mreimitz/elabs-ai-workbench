@@ -1,19 +1,78 @@
 import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
 
-// `MetricGrid` is a real `@elabs-ai/components-charts` export, but importing ANYTHING from that package's barrel
-// under Vitest/jsdom resolves a broken deep `@visx/gradient` subpath used by its (unrelated, unused
-// here) Gantt chart — a pre-existing, environment-only issue (confirmed: `import { MetricGrid } from
-// "@elabs-ai/components-charts"` alone fails identically in a scratch test; `AreaChart` from the same package does
-// not). `RunConsole.test.tsx` hits the same class of issue ("AnalyticsPanel — pulls `@elabs-ai/components-charts`
-// that jsdom can't load") and mocks around it; mirrored here. A trivial pass-through keeps the real
-// `MetricCard`/`@elabs-ai/components-ui` children (and this test's assertions on them) intact.
+// `MetricGrid`/`Sparkline` are real `@elabs-ai/components-charts` exports, but importing ANYTHING from that
+// package's barrel under Vitest/jsdom resolves a broken deep `@visx/gradient` subpath used by its
+// (unrelated, unused here) Gantt chart — a pre-existing, environment-only issue (confirmed:
+// `import { MetricGrid } from "@elabs-ai/components-charts"` alone fails identically in a scratch test;
+// `AreaChart` from the same package does not). `RunConsole.test.tsx` hits the same class of issue
+// ("AnalyticsPanel — pulls `@elabs-ai/components-charts` that jsdom can't load") and mocks around it; mirrored
+// here. The real `MetricCard`/`@elabs-ai/components-ui` children are kept intact, so every delta/emphasis
+// assertion below runs against the REAL component.
+//
+// WP 0.3 — this stub is FAITHFUL, not inert (dashboard-bento `conventions.md`: an inert chart mock
+// lets a wrong chart prop pass the gate silently). It reproduces the two contracts this file now
+// depends on: `MetricGrid`'s `featured` is an INDEX into its children (the real component clones the
+// child at that index with a `col-span` class — here each child is wrapped and tagged instead, so a
+// test can ask *which tile* is featured, not merely that some number was passed), and `Sparkline`
+// renders the `values` series it was handed. Both record the props they received.
+const captured = vi.hoisted(() => ({
+  grid: [] as { columns?: number; featured?: number; featuredSpan?: number }[],
+}));
+
 vi.mock("@elabs-ai/components-charts", () => ({
-  MetricGrid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  MetricGrid: ({
+    children,
+    columns,
+    featured,
+    featuredSpan,
+  }: {
+    children: ReactNode;
+    columns?: number;
+    featured?: number;
+    featuredSpan?: number;
+  }) => {
+    captured.grid.push({ columns, featured, featuredSpan });
+    const tiles = Array.isArray(children) ? children : [children];
+    return (
+      <div data-testid="metric-grid">
+        {tiles.map((tile, index) => (
+          <div
+            key={index}
+            data-testid="metric-tile"
+            data-index={index}
+            data-featured={featured === index ? "true" : "false"}
+          >
+            {tile}
+          </div>
+        ))}
+      </div>
+    );
+  },
+  Sparkline: ({
+    values,
+    variant,
+    emphasizeLast,
+    label,
+  }: {
+    values: number[];
+    variant?: string;
+    emphasizeLast?: boolean;
+    label?: string;
+  }) => (
+    <svg
+      role="img"
+      aria-label={label}
+      data-testid="sparkline"
+      data-values={values.join(",")}
+      data-variant={variant}
+      data-emphasize-last={String(Boolean(emphasizeLast))}
+    />
+  ),
 }));
 
 import { ScansTab } from "./ScansTab";
@@ -79,7 +138,42 @@ function renderScansTab(props: Partial<Parameters<typeof ScansTab>[0]> = {}) {
   return { onOpenScan, onOpenServer };
 }
 
+/** The wrapper the faithful `MetricGrid` stub puts around each tile, found via the tile's label. */
+function tileFor(label: string): HTMLElement {
+  const tile = screen.getByText(label).closest('[data-testid="metric-tile"]');
+  if (!tile) throw new Error(`No metric tile found for label "${label}"`);
+  return tile as HTMLElement;
+}
+
+/** Two successful scans of ONE server, a fortnight apart — the minimum shape that gives the tiles a
+ *  genuine prior-period comparison AND a two-point fleet series. */
+function twoScanHistory(later: Partial<ScanSummary>): ScanSummary[] {
+  return [
+    scan({
+      id: "scan-2",
+      serverId: "srv-a",
+      serverName: "Alpha",
+      scannedAt: "2026-01-15T00:00:00Z",
+      totalTokens: 1000,
+      totalTools: 3,
+      ...later,
+    }),
+    scan({
+      id: "scan-1",
+      serverId: "srv-a",
+      serverName: "Alpha",
+      scannedAt: "2026-01-01T00:00:00Z",
+      totalTokens: 1000,
+      totalTools: 3,
+    }),
+  ];
+}
+
 describe("ScansTab", () => {
+  beforeEach(() => {
+    captured.grid.length = 0;
+  });
+
   test("renders the change/attention cards, the KPI grid, and both tables", () => {
     renderScansTab({
       servers: [server({ id: "srv-a", name: "Alpha" })],
@@ -181,5 +275,138 @@ describe("ScansTab", () => {
     // scope so they can't be misread as the KPI's broader total.
     expect(screen.queryByText("Tokens")).not.toBeInTheDocument();
     expect(screen.getAllByText("Tool tokens").length).toBe(2); // footprint table + recent activity table
+  });
+
+  // ---------------------------------------------------------------------------------------------
+  // WP 0.3 (findings F3 + F8) — the inventory band carries rank and trend.
+  // ---------------------------------------------------------------------------------------------
+
+  test("the headline number leads the band as the featured, headline-emphasis tile", () => {
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: twoScanHistory({}),
+    });
+    expect(captured.grid[0]).toEqual({ columns: 3, featured: 0, featuredSpan: 2 });
+    // `featured` is an INDEX into the grid's children, so passing a number proves nothing on its
+    // own — the tile AT that index must be the product's headline figure, not the count of
+    // configuration rows that used to sit first.
+    expect(tileFor("Total startup tokens").getAttribute("data-index")).toBe("0");
+    expect(tileFor("Total startup tokens").getAttribute("data-featured")).toBe("true");
+    expect(tileFor("Servers").getAttribute("data-featured")).toBe("false");
+    // `emphasis="headline"` — the REAL MetricCard renders the value at the KPI type scale.
+    expect(within(tileFor("Total startup tokens")).getByText("1,000").className).toContain(
+      "text-kpi",
+    );
+  });
+
+  test("a GROWING token footprint reads as a regression, never as success", () => {
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: twoScanHistory({ totalTokens: 1250 }),
+    });
+    const delta = tileFor("Total startup tokens").querySelector("[data-polarity]");
+    expect(delta).not.toBeNull();
+    expect(delta?.textContent).toContain("+250");
+    // The real MetricCard derives polarity from deltaDirection × positiveIsGood. "bad" is ONLY
+    // reachable with `positiveIsGood={false}`; the component's default (`true`) would paint a
+    // growing footprint in the success colour — the exact way round this is easy to get wrong.
+    expect(delta?.getAttribute("data-polarity")).toBe("bad");
+    expect(delta?.getAttribute("aria-label")).toBe("up +250, unfavorable");
+  });
+
+  test("a SHRINKING token footprint reads as favorable", () => {
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: twoScanHistory({ totalTokens: 750 }),
+    });
+    const delta = tileFor("Total startup tokens").querySelector("[data-polarity]");
+    expect(delta?.textContent).toContain("-250");
+    expect(delta?.getAttribute("data-polarity")).toBe("good");
+    expect(delta?.getAttribute("aria-label")).toBe("down -250, favorable");
+  });
+
+  test("the Δ measures the tile's OWN quantity, not the tools-only figure", () => {
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: twoScanHistory({ totalResourceTokens: 300, totalPromptTokens: 100 }),
+    });
+    // Tool tokens are unchanged (1,000 → 1,000); the startup footprint grew by exactly the resource
+    // + prompt tokens this tile's own value counts. A tile whose value and Δ denote different
+    // quantities is the collision T10 removed — lock that they agree.
+    const delta = tileFor("Total startup tokens").querySelector("[data-polarity]");
+    expect(delta?.textContent).toContain("+400");
+    expect(delta?.getAttribute("data-polarity")).toBe("bad");
+  });
+
+  test("a server with no earlier successful scan gets NO delta and NO sparkline (never a fabricated 0)", () => {
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: [scan({ id: "scan-1", serverId: "srv-a", serverName: "Alpha" })],
+    });
+    for (const label of ["Total startup tokens", "Resources", "Prompts", "Tools scanned"]) {
+      expect(tileFor(label).querySelector("[data-polarity]")).toBeNull();
+      expect(tileFor(label).querySelector('[data-testid="sparkline"]')).toBeNull();
+    }
+  });
+
+  test("sparklines are backed by a real fleet series that ends at the tile's current value", () => {
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: twoScanHistory({ totalTokens: 1250, totalTools: 5 }),
+    });
+    const spark = tileFor("Total startup tokens").querySelector('[data-testid="sparkline"]');
+    expect(spark?.getAttribute("data-values")).toBe("1000,1250");
+    expect(spark?.getAttribute("data-variant")).toBe("line");
+    expect(spark?.getAttribute("data-emphasize-last")).toBe("true");
+    expect(spark?.getAttribute("aria-label")).toBe(
+      "Total startup tokens across the last 2 fleet snapshots",
+    );
+    for (const label of ["Resources", "Prompts", "Tools scanned"]) {
+      expect(tileFor(label).querySelector('[data-testid="sparkline"]')).not.toBeNull();
+    }
+    // The state tiles have no reconstructable history (deletions are not recorded) or would compare
+    // unlike things ("largest single tool" can be a different tool at every point) — so neither a
+    // delta nor a series is invented for them.
+    for (const label of ["Servers", "Largest single tool", "Unscanned", "Failed"]) {
+      expect(tileFor(label).querySelector('[data-testid="sparkline"]')).toBeNull();
+      expect(tileFor(label).querySelector("[data-polarity]")).toBeNull();
+    }
+  });
+
+  test("the fleet series only starts once EVERY tracked server has been scanned", () => {
+    // Beta's first successful scan lands after Alpha's two. A point emitted before that would climb
+    // purely because scan coverage grew, so the series holds exactly the like-for-like snapshots.
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" }), server({ id: "srv-b", name: "Beta" })],
+      scans: [
+        scan({
+          id: "b-1",
+          serverId: "srv-b",
+          serverName: "Beta",
+          scannedAt: "2026-01-20T00:00:00Z",
+          totalTokens: 500,
+        }),
+        scan({
+          id: "a-2",
+          serverId: "srv-a",
+          serverName: "Alpha",
+          scannedAt: "2026-01-15T00:00:00Z",
+          totalTokens: 1200,
+        }),
+        scan({
+          id: "a-1",
+          serverId: "srv-a",
+          serverName: "Alpha",
+          scannedAt: "2026-01-01T00:00:00Z",
+          totalTokens: 1000,
+        }),
+      ],
+    });
+    // Only one like-for-like snapshot exists (1200 + 500) — a one-point sparkline is not a series.
+    expect(tileFor("Total startup tokens").querySelector('[data-testid="sparkline"]')).toBeNull();
+    // Alpha still has a comparable earlier scan, so the Δ is real: +200 from Alpha, nothing from
+    // Beta (newly measured, not changed).
+    const delta = tileFor("Total startup tokens").querySelector("[data-polarity]");
+    expect(delta?.textContent).toContain("+200");
   });
 });
