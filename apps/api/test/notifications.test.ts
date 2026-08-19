@@ -98,10 +98,10 @@ test("migration v40 — a fresh DB carries the notifications table; LATEST is 55
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    57,
-    "LATEST auto-derived to 57 (v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten))",
+    58,
+    "LATEST auto-derived to 58 (v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, roadmap/ci WP 1.1)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
+  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
   assert.ok(tableExists(db, "notifications"), "fresh DB has the notifications table");
 
   // Immediately usable + the CHECK constraint on severity holds.
@@ -133,7 +133,7 @@ test("migration v40 — a pre-v40 (v39) DB gains the notifications table; idempo
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    "stamped to LATEST (57) after v40+v41+v42+v43+v44+v45+v46",
+    "stamped to LATEST (58) after v40+v41+v42+v43+v44+v45+v46",
   );
   assert.ok(tableExists(db, "notifications"), "v40 created notifications on the existing (v39) DB");
 
@@ -147,7 +147,7 @@ test("migration v40 — a pre-v40 (v39) DB gains the notifications table; idempo
   );
 
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v40 is a no-op");
-  assert.equal(db.pragma("user_version", { simple: true }), 57, "version unchanged after the re-run");
+  assert.equal(db.pragma("user_version", { simple: true }), 58, "version unchanged after the re-run");
 });
 
 // ── (2) NotificationRepository — CRUD + filters + paging ────────────────────────────────────────

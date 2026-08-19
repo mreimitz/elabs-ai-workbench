@@ -300,6 +300,14 @@ wired from `apps/api/src/index.ts`); the wire contract is `packages/shared` (`ty
   `mcp_server` (the flag's `/api/mcp` prefix covers the doc too). Owner-facing walkthrough:
   [`user-guide/20-workbench-mcp-server.md`](./user-guide/20-workbench-mcp-server.md); the dogfood
   gate is `pnpm mcp:self-scan` (`mcp-server/self-scan.ts`).
+- **Tokens** (`api-tokens/`) — service-token CRUD for headless callers: `GET`/`POST /api/tokens`,
+  `DELETE /api/tokens/:id` (the plaintext is returned **once**, from the create response, and never
+  again). Plus the root `onRequest` **guard** that authenticates a presented `Authorization: Bearer
+  mcpfp_…`, enforces "loopback open · remote requires a token" (D-C2, `API_AUTH_REQUIRED` forces it
+  on loopback too), and coarsely scope-checks a token-authenticated request — deletes and token CRUD
+  are refused to any token. Contract in `packages/shared/src/api-tokens.ts`; **no feature flag**
+  (an off-switch on an auth check is a foot-gun). See §7 and
+  [`user-guide/21-service-tokens.md`](./user-guide/21-service-tokens.md).
 - **Maintenance** (`db/maintenance.ts`) — `POST /api/maintenance/{checkpoint,vacuum,prune-scans,prune-assistant}`.
 - **Health** — `GET /api/health`.
 
@@ -343,8 +351,24 @@ rules in [`.claude/rules/mcp-and-security.md`](./.claude/rules/mcp-and-security.
 `OAUTH_REDIRECT_URL`, `WEB_DIST_PATH`, `DOCKER_MODE`, `SCAN_RETENTION_PER_SERVER` (0 = keep all;
 otherwise prune to N newest scans per server), and the Skills ingest caps
 `SKILL_MAX_FILE_BYTES` / `SKILL_MAX_TOTAL_BYTES` / `SKILL_MAX_FILES` (optional; each falls back to
-its shared-constant default and is enforced on both skill ingestion paths — the zip-bomb guard).
+its shared-constant default and is enforced on both skill ingestion paths — the zip-bomb guard), plus
+**`API_AUTH_REQUIRED`** (service tokens, D-C2; default `false` — loopback passes without a token, so
+the browser UI is unaffected; `true` requires a token on loopback too, which also makes Settings ›
+API tokens unreachable, since a token may never manage tokens. A **non-loopback** request always
+requires a token regardless — that is not configurable. `GET /api/health` is always exempt).
 Keep real secrets in `.env.local` (never committed); only `.env.example` is tracked.
+
+**Service tokens** (`apps/api/src/api-tokens/`): the credential a headless caller (CI, the `mcpfp`
+CLI, an external agent on the MCP mount) presents instead of a browser session. A token is
+`mcpfp_` + 43 base64url chars (256 bits from `node:crypto`), stored as a **SHA-256 digest** with an
+8-character display prefix — the plaintext is returned **exactly once** by `POST /api/tokens` and is
+never persisted, listed, or logged. Scopes are a **frozen** tuple (D-C4) — `read` · `scan:run` ·
+`runs:launch` · `suites:run`, exactly the write scopes D-MCP3 names, so WP M.2/M.3 consume them
+unchanged; there is **no delete scope** and a token-authenticated `DELETE` is refused outright. The
+root `onRequest` guard (`api-tokens/guard.ts`) decides loopback **from the socket peer, never from a
+header** — do not enable `trustProxy` (a test pins it off). No feature flag: an off-switch on an auth
+check is a foot-gun. Owner-facing walkthrough:
+[`user-guide/21-service-tokens.md`](./user-guide/21-service-tokens.md).
 
 ---
 
