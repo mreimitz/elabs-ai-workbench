@@ -412,7 +412,9 @@ const EVALUATORS: { [K in AssertionRuleKind]: RuleEvaluator<K> } = {
         removed.length === 0
           ? undefined
           : capAssertionDetails(
-              removed.map((tool) => `- ${tool.toolName} (${formatNumber(tool.totalTokens)} tokens)`),
+              removed.map(
+                (tool) => `- ${tool.toolName} (${formatNumber(tool.totalTokens)} tokens)`,
+              ),
             ),
     };
   },

@@ -99,9 +99,7 @@ export async function runAssertCommand(
 
   if (report.passed) return MCPFP_EXIT.success;
 
-  context.emitter.fail(
-    `Assertions failed: ${report.counts.failed} of ${report.counts.total}.`,
-  );
+  context.emitter.fail(`Assertions failed: ${report.counts.failed} of ${report.counts.total}.`);
   return MCPFP_EXIT.assertionFailure;
 }
 

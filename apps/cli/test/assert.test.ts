@@ -35,10 +35,7 @@ const DOCUMENT = {
   version: ASSERTIONS_VERSION,
   target: { server: "Everything" },
   baseline: "previous",
-  rules: [
-    { rule: "max-server-tokens", max: 3000 },
-    { rule: "no-new-tools" },
-  ],
+  rules: [{ rule: "max-server-tokens", max: 3000 }, { rule: "no-new-tools" }],
 };
 
 /** Write a gate file into `cwd` (or a subdirectory of it) and return the directory to run from. */
@@ -99,7 +96,10 @@ function routesFor(response: unknown, status = 200): StubRoutes {
   return { "POST /api/assertions/evaluate": { status, body: response } };
 }
 
-async function withStub<T>(routes: StubRoutes, body: (stub: Awaited<ReturnType<typeof startStub>>) => Promise<T>) {
+async function withStub<T>(
+  routes: StubRoutes,
+  body: (stub: Awaited<ReturnType<typeof startStub>>) => Promise<T>,
+) {
   const stub = await startStub(routes);
   try {
     return await body(stub);
@@ -127,7 +127,11 @@ test("A5 — a failing rule exits 1, and everything passing exits 0", async () =
         observed: 2224,
         limit: 1000,
       },
-      { rule: "no-new-tools", status: "pass", message: "No tools were added against the baseline." },
+      {
+        rule: "no-new-tools",
+        status: "pass",
+        message: "No tools were added against the baseline.",
+      },
     ],
   });
   await withStub(routesFor(failing), async (stub) => {
@@ -154,7 +158,7 @@ test("A5 (D-C8 case 1) — a SKIPPED rule warns loudly on stderr and still exits
         rule: "no-new-tools",
         status: "skipped",
         message: "no-new-tools could not be evaluated without a baseline.",
-        skipReason: "No earlier completed scan of \"Everything\" — scn_new is the first one.",
+        skipReason: 'No earlier completed scan of "Everything" — scn_new is the first one.',
       },
     ],
   });
@@ -288,9 +292,12 @@ test("A6 — --format json is a byte-exact parseable envelope with the report ve
 
     // …and `--quiet` empties stderr entirely without touching the payload. (`generatedAt` is the
     // instant the CLI produced the envelope, so it legitimately differs between two invocations.)
-    const quiet = await runCliCapture(["assert", "--url", stub.url, "--format", "json", "--quiet"], {
-      cwd,
-    });
+    const quiet = await runCliCapture(
+      ["assert", "--url", stub.url, "--format", "json", "--quiet"],
+      {
+        cwd,
+      },
+    );
     assert.equal(quiet.stderr, "");
     assert.deepEqual(withoutTimestamp(quiet.stdout), withoutTimestamp(result.stdout));
   });
@@ -443,17 +450,7 @@ test("A9 — the token never reaches stdout, stderr or the output file — even 
     const cwd = writeDocument(makeCwd());
     const target = path.join(makeCwd(), "gate.json");
     const green = await runCliCapture(
-      [
-        "assert",
-        "--url",
-        ok.url,
-        "--token",
-        VALID_TOKEN,
-        "--format",
-        "json",
-        "--output",
-        target,
-      ],
+      ["assert", "--url", ok.url, "--token", VALID_TOKEN, "--format", "json", "--output", target],
       { cwd },
     );
     assert.equal(green.exitCode, MCPFP_EXIT.success);

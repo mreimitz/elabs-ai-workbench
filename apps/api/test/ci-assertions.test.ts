@@ -340,9 +340,7 @@ test("A2 — a max-scan-delta breach names the direction, and a DROP fails too",
 test("A2 — details are capped at ASSERTION_DETAIL_LIMIT with an `…and N more` line", () => {
   const many = scan({
     id: "scn_many",
-    tools: Array.from({ length: ASSERTION_DETAIL_LIMIT + 5 }, (_, index) =>
-      tool(`t${index}`, 900),
-    ),
+    tools: Array.from({ length: ASSERTION_DETAIL_LIMIT + 5 }, (_, index) => tool(`t${index}`, 900)),
   });
   const report = evaluateAssertions(
     portsFor([many]),
@@ -726,13 +724,30 @@ function seedScan(
   return created.id;
 }
 
-async function postEvaluate(h: Harness, body: unknown): Promise<{ status: number; body: any }> {
+/**
+ * The response body is deliberately typed loosely: these tests assert against what came back OVER
+ * THE WIRE, not against a locally re-derived `AssertionReport` — casting it to the type would make
+ * a route that returned the wrong shape still typecheck.
+ */
+type WireResponse = { status: number; body: Record<string, unknown> };
+
+async function postEvaluate(h: Harness, body: unknown): Promise<WireResponse> {
   const response = await fetch(`${h.baseUrl}/api/assertions/evaluate`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   });
-  return { status: response.status, body: await response.json() };
+  return { status: response.status, body: (await response.json()) as Record<string, unknown> };
+}
+
+/** Read a dotted path out of a wire body. Keeps the assertions readable without an `any`. */
+function at(body: Record<string, unknown>, path: string): unknown {
+  return path
+    .split(".")
+    .reduce<unknown>(
+      (value, key) => (value as Record<string, unknown> | undefined)?.[key],
+      body as unknown,
+    );
 }
 
 test("A2 — POST /api/assertions/evaluate returns an itemized report over the real repositories", async () => {
@@ -782,20 +797,21 @@ test("A2 — POST /api/assertions/evaluate returns an itemized report over the r
   });
 
   assert.equal(status, 200);
-  assert.equal(body.subject.scanId, second, "the newest succeeded scan is the subject");
-  assert.equal(body.baseline.requested, "previous");
-  assert.equal(body.baseline.scan.scanId, first, "D-C3: the concrete resolved scan is echoed");
-  assert.equal(body.results.length, ASSERTION_RULE_KINDS.length);
+  assert.equal(at(body, "subject.scanId"), second, "the newest succeeded scan is the subject");
+  assert.equal(at(body, "baseline.requested"), "previous");
+  assert.equal(at(body, "baseline.scan.scanId"), first, "D-C3: the resolved scan is echoed");
+
+  const results = body.results as { rule: string; status: string }[];
   assert.deepEqual(
-    body.results.map((result: { rule: string }) => result.rule),
+    results.map((result) => result.rule),
     [...ASSERTION_RULE_KINDS],
   );
   assert.deepEqual(body.counts, { total: 6, passed: 3, failed: 3, skipped: 0 });
   assert.equal(body.passed, false);
   // `counts` and `passed` agree with `results` — nothing is computed twice.
   assert.equal(
-    body.counts.failed,
-    body.results.filter((result: { status: string }) => result.status === "fail").length,
+    at(body, "counts.failed"),
+    results.filter((result) => result.status === "fail").length,
   );
 });
 
@@ -804,8 +820,16 @@ test("A2 — a malformed body is a 400 from the shared schema, not a 500", async
   for (const body of [
     {},
     { document: { version: ASSERTIONS_VERSION, target: { server: "x" }, rules: [] } },
-    { document: { version: 99, target: { server: "x" }, rules: [{ rule: "max-tool-count", max: 1 }] } },
-    { document: { version: ASSERTIONS_VERSION, target: { server: "x" }, rules: [{ rule: "nope" }] } },
+    {
+      document: {
+        version: 99,
+        target: { server: "x" },
+        rules: [{ rule: "max-tool-count", max: 1 }],
+      },
+    },
+    {
+      document: { version: ASSERTIONS_VERSION, target: { server: "x" }, rules: [{ rule: "nope" }] },
+    },
   ]) {
     const response = await postEvaluate(h, body);
     assert.equal(response.status, 400, JSON.stringify(body));
@@ -822,5 +846,8 @@ test("A2 — an unresolvable target leaves the route as a 400 with an operator s
     },
   });
   assert.equal(response.status, 400);
-  assert.match(response.body.error, /No registered server with the id or exact name "nope"/);
+  assert.match(
+    String(response.body.error),
+    /No registered server with the id or exact name "nope"/,
+  );
 });
