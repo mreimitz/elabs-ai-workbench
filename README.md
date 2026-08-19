@@ -104,7 +104,7 @@ triggers and command entry points, and a **security surface** (script files and 
 references, file and byte totals). Skills can be attached to test scenarios — exposed to the agent
 read-only and metered, **never executed**.
 
-![The skill inspector: frontmatter, L1/L2/L3 token footprint, keyword triggers, and a security surface.](docs/screenshots/skill-inspector.png)
+![The skill inspector: frontmatter, an L1/L2/L3 token footprint totalling 1,760, the trigger configuration, and a security surface.](docs/screenshots/skill-inspector.png)
 
 ### 5 · The testing console — real agent sessions
 
@@ -113,7 +113,7 @@ session: the conversation, every tool call and result, a live KPI rail (context 
 tokens sent/received, tool calls, turns), hotspots (slowest and costliest steps, largest context
 jump), and a per-turn context-window chart. Runs are fully persisted, so any run replays exactly.
 
-![The run console: a real agent session with tool calls, a live KPI rail, hotspots, and a per-turn context chart.](docs/screenshots/run-console.png)
+![The run console: a real agent session — 13 tool calls across 14 turns, a live KPI rail, hotspots, and a per-turn context chart.](docs/screenshots/run-console.png)
 
 ### 6 · Automatic run rating
 
@@ -139,7 +139,7 @@ Every run and suite-run in one searchable, filterable feed with running totals (
 rate). Suite-runs expand into their member sessions; drill into any one to open its console. Runs can
 be compared, reviewed, and turned into repeatable suites.
 
-![The unified Runs feed: 90 runs, 70.6M tokens, $90.64, a 12.2% failure rate, with grades and durations.](docs/screenshots/runs-feed.png)
+![The unified Runs feed: 76 runs, 70.6M tokens, $90.64, a 6.6% failure rate, with grades and durations.](docs/screenshots/runs-feed.png)
 
 ### 9 · The Assistant and the multi-agent Hub
 
@@ -150,7 +150,7 @@ research, and **missions**, where a planner proposes a team of subagents (roles,
 budgets) that run in parallel and synthesize a cited answer. Saved agents and crews live in a
 directory you can browse, reuse, and cost-track.
 
-![Agents & Crews: a directory of saved agents organized into crews, each with its model, tools, skills, and run history.](docs/screenshots/hub-agents.png)
+![Agents & Crews: 9 saved agents organized into 10 crews, each with its model, tools, skills, and run history.](docs/screenshots/hub-agents.png)
 
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](user-guide/README.md) for the full picture.
