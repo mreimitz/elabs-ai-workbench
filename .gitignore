@@ -32,6 +32,8 @@ apps/*/vitest.config.ts.timestamp-*.mjs
 
 # Transient git worktrees created by the /next-wp runner (one per work package).
 .worktrees/
+# Same, for the harness-managed worktree isolation used by sub-agents.
+.claude/worktrees/
 
 # Build artifacts produced by gates that MEASURE the repo rather than change it
 # (`pnpm mcp:self-scan` → .artifacts/mcp-self-scan/footprint.{json,md}). Regenerated on demand and
