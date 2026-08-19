@@ -17,8 +17,46 @@ wp/ci/<id>`.
 > [`kickoff-prompt-mcp.md`](./kickoff-prompt-mcp.md).
 
 ## Phase 1 — Tokens + CLI core
-- [ ] WP 1.1 — contract + service tokens: `api_tokens` (hashed, scoped), auth middleware, Settings UI
-      — spec: [`wp-1.1-service-tokens.md`](./wp-1.1-service-tokens.md) · status: **in progress** (`wp/ci/1.1`)
+- [x] WP 1.1 — contract + service tokens: `api_tokens` (hashed, scoped), auth middleware, Settings UI
+      — done 2026-08-19 · `wp/ci/1.1` · spec: [`wp-1.1-service-tokens.md`](./wp-1.1-service-tokens.md).
+      Contract-first in `packages/shared/src/api-tokens.ts` (the **frozen D-C4 vocabulary** `read` ·
+      `scan:run` · `runs:launch` · `suites:run`, the wire shapes, the zod schemas, and the coarse
+      method→scope rule declared **once**); `api_tokens` at **`user_version` 58** (SHA-256 of the full
+      `mcpfp_…` plaintext, UNIQUE so auth is one indexed lookup; an 8-char display prefix; a JSON scope
+      array; throttled `last_used_at`); `apps/api/src/api-tokens/{repository,service,routes,guard}.ts`
+      with `GET`/`POST /api/tokens` + `DELETE /api/tokens/:id` (the plaintext exists **only** in the
+      create response — never persisted, never listed, never logged); and Settings › **API tokens**
+      (`@elabs-ai/components-*` only, `IconButton` row action, one-time reveal with copy, revoke behind a
+      confirm). **No migration hazard** (brand-new table, no FK), **no new dependency**
+      (`node:crypto`), `pnpm-lock.yaml` unchanged, **no new `<Route>`** — `ASSISTANT_ROUTE_MANIFEST`
+      has a zero-byte diff and the `assistant-route-operability` gate is untouched.
+      **The guard's posture (D-C2):** loopback passes exactly as before (the local browser UI is
+      unregressed), any non-loopback caller must present a valid bearer token,
+      **`API_AUTH_REQUIRED=true`** extends that to loopback, `GET /api/health` is always exempt, a
+      *presented* token is always verified (a bad one is 401 even from 127.0.0.1), and loopback is
+      decided from `request.socket.remoteAddress` — never a header, with `trustProxy` pinned off by
+      test. Coarse scopes only: safe methods need `read`, unsafe methods need an execute scope,
+      **`DELETE` is refused for any token** (D-MCP3), and a token may never reach `/api/tokens*`.
+      Per-route scope mapping is deliberately left to WP M.2/M.3.
+      **Two review rounds — the first cut was bypassable.** An orchestrator path-shape probe found
+      that the guard prefix-matched the **raw** request target while Fastify's router percent-decodes
+      **before** matching: `/%61pi/tokens` (`%61` = `a`) read as "not under `/api`", the guard passed
+      it, and the router then dispatched it to the real `GET /api/tokens` handler — a remote,
+      unauthenticated caller could reach the entire API, token CRUD included. Fixed with a shared
+      `apps/api/src/utils/request-path.ts` that matches the **union** of the raw and decoded forms and
+      treats an undecodable path as governed (always at least as inclusive as the router). **The same
+      bypass existed on `main` in the feature-flag guard** — `/%61pi/assistant/…` slipped past
+      `feature_disabled`, defeating the "a stale tab or a direct curl cannot keep spending" property —
+      and is fixed here on the same helper. Both fixes are pinned by tables that were confirmed to
+      **fail against the pre-fix code**.
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`pnpm typecheck && pnpm test && pnpm build && pnpm lint` → **exit 0**; shared 94 · api 3307 ·
+      web 3248 passed + 5 skipped · build · lint clean) and an **independent** adversarial probe —
+      44 requests over 22 path shapes from a non-loopback socket with no credential, **zero leaks**
+      (`/api/health` exempt as designed). **Not independently verified:** the both-theme + keyboard
+      walk (A13) — the implementing agent reports driving the built app in Chromium with screenshots
+      in both themes and a worst text contrast of 5.71:1 light / 6.47:1 dark, but the orchestrator did
+      not re-run it; it stays an owner-acceptance item below.
 - [ ] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output
 - [ ] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
 
@@ -111,6 +149,23 @@ MCP) here._
   LangSmith, Phoenix, Opik, Braintrust, Weave) ships one; the MCP workbench does not.
 
 ## Owner acceptance (owner-only)
+- [ ] **WP 1.1** — Settings › **API tokens** reads correctly in **both themes** and is
+      keyboard-reachable with visible focus; creating a token reveals the secret **once** with an
+      unmissable "you will not see this again" and a working copy; revoking asks first; a real remote
+      caller (another machine on the LAN, or `curl` from a container) is refused without a token and
+      succeeds with one — accepted: ____
+- [ ] **WP 1.1 — three consequences of D-C2 to rule on** (all working as specified, none a defect;
+      each is a one-line change if the owner wants it different):
+      1. **`API_AUTH_REQUIRED=true` makes Settings › API tokens unreachable** — the host's browser
+         presents no token (401) and a token may never manage tokens (403). Documented workaround:
+         mint the tokens you need first, then switch it on. Alternative: exempt `/api/tokens*` on
+         loopback even under the flag — accepted: ____
+      2. **A remote browser loads the SPA shell but every `/api` call 401s** — non-`/api` paths are
+         deliberately untouched, so a remote user sees the app with nothing in it. A friendlier
+         "this instance needs a token" surface is possible but unbuilt — accepted: ____
+      3. **The workbench MCP mount is POST-based**, so under the WP 1.1 coarse rule a remote MCP
+         client needs an **execute** scope, not `read`. Per-route mapping is WP M.2's job — confirm
+         M.2 picks this up — accepted: ____
 - [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
       assertions → PR comment with deltas; a deliberate budget breach fails the check —
       accepted: ____
