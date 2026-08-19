@@ -181,3 +181,76 @@ export const WORKBENCH_MCP_RESOURCE_TEMPLATES = {
   scanMarkdown: `${WORKBENCH_MCP_RESOURCE_SCHEME}://reports/scan/{scanId}.md`,
   scanJson: `${WORKBENCH_MCP_RESOURCE_SCHEME}://reports/scan/{scanId}.json`,
 } as const;
+
+// ── Agent onboarding (WP M.4) ─────────────────────────────────────────────────────────────────────
+
+/** The path the `llms.txt`-style usage doc is served on — a plain-text sibling of the mount itself. */
+export const WORKBENCH_MCP_LLMS_TXT_PATH = `${WORKBENCH_MCP_MOUNT_PATH}/llms.txt`;
+
+/**
+ * One family of read tools: the heading the usage doc groups them under, and the one sentence that
+ * says WHEN to reach for that family rather than another.
+ */
+export type WorkbenchMcpToolFamily = {
+  label: string;
+  /** "Reach for these when…" — written for an agent choosing between families, not for a changelog. */
+  when: string;
+  tools: readonly WorkbenchMcpReadToolName[];
+};
+
+/**
+ * The families the served usage doc (`GET /api/mcp/llms.txt`) groups the surface into.
+ *
+ * They live here, beside the tool names themselves, because they are part of the SAME declaration: a
+ * tool added to {@link WORKBENCH_MCP_READ_TOOL_NAMES} without a family would silently drop out of the
+ * document an external agent onboards from. `workbench-mcp.test.ts` asserts the families **partition**
+ * the tool list exactly — every tool in exactly one family, no family naming a tool that does not
+ * exist — so classifying a new tool is a build requirement, not a convention.
+ */
+export const WORKBENCH_MCP_TOOL_FAMILIES: readonly WorkbenchMcpToolFamily[] = [
+  {
+    label: "Servers & scans",
+    when:
+      "Reach for these to answer what a registered MCP server costs a model before a word is " +
+      "generated — its tools, their per-tool token footprint, and how that surface fits inside " +
+      "each model's limits.",
+    tools: [
+      "servers_list",
+      "scans_list",
+      "scans_get",
+      "scans_latest",
+      "scans_tools",
+      "compatibility_heatmap",
+      "compatibility_findings",
+    ],
+  },
+  {
+    label: "Runs & reports",
+    when:
+      "Reach for these to answer what actually happened in a test session — the step trace, the " +
+      "token/cost totals, the quality grades, and the composed run report.",
+    tools: ["runs_list", "runs_get", "runs_grades", "run_report"],
+  },
+  {
+    label: "Skills",
+    when:
+      "Reach for these to inspect a registered Agent Skill — its versions, its file tree and " +
+      "contents, its L1/L2/L3 token footprint, and its security surface (bundled scripts, network " +
+      "references).",
+    tools: [
+      "skills_list",
+      "skills_get",
+      "skills_versions",
+      "skills_files",
+      "skills_file_content",
+      "skills_security",
+    ],
+  },
+  {
+    label: "Suites & collections",
+    when:
+      "Reach for these to work at the batch level — the benchmark matrices, their mass-run results " +
+      "with per-member grades, and the collections tests and suites are organised in.",
+    tools: ["suites_list", "suite_runs_list", "suite_runs_get", "collections_list"],
+  },
+];
