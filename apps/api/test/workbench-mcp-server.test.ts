@@ -432,8 +432,14 @@ test("servers & scans tools project the persisted scan surface", async () => {
   const h = await makeHarness();
   const client = await connect(h);
 
-  const servers = (await callJson(client, "servers_list")).servers as Array<{ id: string }>;
-  assert.equal(servers.length, 2);
+  const serverList = (await callJson(client, "servers_list")) as {
+    servers: Array<{ id: string }>;
+    total: number;
+    truncated: boolean;
+  };
+  assert.equal(serverList.servers.length, 2);
+  assert.equal(serverList.total, 2);
+  assert.equal(serverList.truncated, false);
 
   const scans = (await callJson(client, "scans_list", { serverId: h.serverId })) as {
     scans: Array<{ id: string }>;
@@ -661,11 +667,17 @@ test("suite and collection tools project their registries and member grades", as
   const h = await makeHarness();
   const client = await connect(h);
 
-  const suites = (await callJson(client, "suites_list")) as { suites: Array<{ id: string }> };
+  const suites = (await callJson(client, "suites_list")) as {
+    suites: Array<{ id: string }>;
+    total: number;
+    truncated: boolean;
+  };
   assert.deepEqual(
     suites.suites.map((s) => s.id),
     [h.suiteId],
   );
+  assert.equal(suites.total, 1);
+  assert.equal(suites.truncated, false);
 
   const runs = (await callJson(client, "suite_runs_list", { status: "completed" })) as {
     suiteRuns: Array<{ id: string }>;
@@ -688,8 +700,12 @@ test("suite and collection tools project their registries and member grades", as
   // The reserved default "Local" collection is always present.
   const collections = (await callJson(client, "collections_list")) as {
     collections: Array<{ name: string }>;
+    total: number;
+    truncated: boolean;
   };
   assert.ok(collections.collections.some((c) => c.name === "Local"));
+  assert.equal(collections.total, collections.collections.length);
+  assert.equal(collections.truncated, false);
 });
 
 test("suite tools reject an unknown id cleanly, and a bad status at validation", async () => {
@@ -697,6 +713,46 @@ test("suite tools reject an unknown id cleanly, and a bad status at validation",
   const client = await connect(h);
   await callExpectingError(client, "suite_runs_get", { suiteRunId: "ghost" });
   await callExpectingValidationError(client, "suite_runs_list", { status: "elsewhere" });
+});
+
+test("every list-shaped tool is bounded and self-describing, with no low-cardinality exemption", async () => {
+  const h = await makeHarness();
+  const client = await connect(h);
+
+  // The three registry listings used to return a bare `{ x: [...] }` envelope with no cap, because
+  // servers/suites/collections are few on a dev box. That is exactly the fleet case the bound exists
+  // for: a host handed `{ servers: [8 rows] }` cannot tell 8 from the first 8 of 400. `limit: 1` on a
+  // fixture with 2 servers proves the cut is real, not just an extra key.
+  const bounded: Array<[string, string, number]> = [
+    ["servers_list", "servers", 2],
+    ["scans_list", "scans", 1],
+    ["runs_list", "runs", 1],
+    ["skills_list", "skills", 1],
+    ["suites_list", "suites", 1],
+    ["suite_runs_list", "suiteRuns", 1],
+    ["collections_list", "collections", 2],
+  ];
+
+  for (const [name, key, seeded] of bounded) {
+    const full = (await callJson(client, name)) as Record<string, unknown>;
+    assert.deepEqual(
+      Object.keys(full).sort(),
+      [key, "total", "truncated"].sort(),
+      `${name} envelope`,
+    );
+    assert.equal(full.total, seeded, `${name} total`);
+    assert.equal(full.truncated, false, `${name} truncated at default limit`);
+
+    const cut = (await callJson(client, name, { limit: 1 })) as Record<string, unknown>;
+    assert.equal((cut[key] as unknown[]).length, 1, `${name} honoured limit: 1`);
+    assert.equal(cut.total, seeded, `${name} reports the FULL total when cut`);
+    assert.equal(cut.truncated, seeded > 1, `${name} truncated marker at limit: 1`);
+  }
+
+  // And the cap is enforced on all of them, so no caller can ask for an unbounded dump.
+  for (const [name] of bounded) {
+    await callExpectingValidationError(client, name, { limit: 10_000 });
+  }
 });
 
 // ── Resources ──────────────────────────────────────────────────────────────────────────────────
