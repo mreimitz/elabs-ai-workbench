@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import type { SuiteAnalytics, SuiteCell, SuiteScatterPoint } from "@mcp-token-footprint/shared";
 import { GRADER_IDS } from "@mcp-token-footprint/shared";
-import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Text, cn } from "@elabs-ai/components-ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@elabs-ai/components-ui";
 import { ChartTooltip, Grid, Scatter, ScatterChart, YAxis } from "@elabs-ai/components-charts";
 import { ExternalLink, ScatterChart as ScatterIcon } from "lucide-react";
 import { SelectField } from "../../../components/SelectField";
+import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatCostUsd, formatNumber, formatPercent } from "../../../lib/format";
 import { GRADER_LABELS } from "../grade-format";
 import type { SuiteMatrixRef } from "./SuiteMatrix";
@@ -13,7 +14,7 @@ import type { SuiteMatrixRef } from "./SuiteMatrix";
  * Suite-run QUALITY × COST scatter (WP 3.4, B9.3) — one `@elabs-ai/components-charts` ScatterChart point per
  * (test × scenario) subject (repetitions AVERAGED, server-computed). X toggles between mean tokens and
  * mean cost; Y is the mean score under the SELECTED grade dimension (the `grader` selector re-fetches
- * the analytics upstream). Points are colored by scenario (`--chart-1..5`). A subject with no graded rep
+ * the analytics upstream). Points are colored by scenario off the shared 12-token chart ramp. A subject with no graded rep
  * is omitted server-side, so the plot is honestly empty until something is graded.
  *
  * NOTE on the axes: the vendored ScatterChart maps its x through a time scale, which mislabels a numeric
@@ -35,10 +36,6 @@ export type SuiteScatterProps = {
 };
 
 type XMetric = "tokens" | "cost";
-
-function chartVar(index: number): string {
-  return `var(--chart-${(index % 5) + 1})`;
-}
 
 /** One scatter data row (wide by scenario) enriched with the labels the tooltip reads. */
 type ScatterRow = Record<string, unknown> & {
@@ -64,7 +61,7 @@ export function SuiteScatter({
 }: SuiteScatterProps) {
   const [xMetric, setXMetric] = useState<XMetric>("cost");
   const scenarioName = useMemo(() => new Map(scenarios.map((s) => [s.id, s.name])), [scenarios]);
-  const colorOf = useMemo(() => new Map(scenarios.map((s, i) => [s.id, chartVar(i)])), [scenarios]);
+  const colorOf = useMemo(() => new Map(scenarios.map((s, i) => [s.id, chartSeriesColor(i)])), [scenarios]);
   const indexOf = useMemo(() => new Map(scenarios.map((s, i) => [s.id, i])), [scenarios]);
 
   // Resolve a subject → a child run id from the live cells (works for a running / just-run suite; a
@@ -266,10 +263,8 @@ function ScenarioLegend({
       {ids.map((id) => (
         <li key={id} className="flex items-center gap-1.5">
           <span
-            className={cn(
-              "size-2.5 shrink-0 rounded-full",
-              `bg-chart-${((indexOf.get(id) ?? 0) % 5) + 1}`,
-            )}
+            className="size-2.5 shrink-0 rounded-full"
+            style={chartSwatchStyle(indexOf.get(id) ?? 0)}
             aria-hidden
           />
           <Text variant="meta" tone="muted" className="max-w-40 truncate">

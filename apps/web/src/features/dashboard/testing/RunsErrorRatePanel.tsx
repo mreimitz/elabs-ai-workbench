@@ -2,11 +2,21 @@ import { useMemo } from "react";
 import { Activity } from "lucide-react";
 import { ChartTooltip, ComposedChart, Grid, Line, SeriesBar, XAxis, YAxis } from "@elabs-ai/components-charts";
 import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
+import { CHART_RAMP_LENGTH, chartSeriesColor } from "../../../lib/chart-colors";
 import { formatNumber, formatPercent } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { DrillList } from "./DrillList";
 import { buildRunsOverTimeRows } from "./metrics-derive";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
+
+/**
+ * The error-rate LINE is a different measure on a different axis, not one of the grouped count
+ * series, so it reserves the LAST ramp slot and the bars cycle every slot before it. The old code
+ * expressed the same reservation as `(i % 4) + 1` against a hard-coded fifth token — which both
+ * under-used the twelve-token ramp AND collided again at the 5th group.
+ */
+const GROUP_RAMP_LENGTH = CHART_RAMP_LENGTH - 1;
+const ERROR_RATE_COLOR = chartSeriesColor(CHART_RAMP_LENGTH - 1);
 
 /**
  * Panel 1 — Runs & error rate over time. Grouped run-count bars (stacked by the dashboard's global
@@ -67,21 +77,21 @@ export function RunsErrorRatePanel({
             >
               <Grid horizontal />
               {groups.map((group, i) => (
-                <SeriesBar key={group} dataKey={group} fill={`var(--chart-${(i % 4) + 1})`} />
+                <SeriesBar key={group} dataKey={group} fill={chartSeriesColor(i, GROUP_RAMP_LENGTH)} />
               ))}
-              <Line dataKey="errorRatePercent" yAxisId="right" stroke="var(--chart-5)" showMarkers />
+              <Line dataKey="errorRatePercent" yAxisId="right" stroke={ERROR_RATE_COLOR} showMarkers />
               <XAxis />
               <YAxis yAxisId="left" />
               <YAxis yAxisId="right" orientation="right" formatValue={(v) => `${v}%`} />
               <ChartTooltip
                 rows={(point) => [
                   ...groups.map((group, i) => ({
-                    color: `var(--chart-${(i % 4) + 1})`,
+                    color: chartSeriesColor(i, GROUP_RAMP_LENGTH),
                     label: groupLabel(group),
                     value: formatNumber(Number(point[group] ?? 0)),
                   })),
                   {
-                    color: "var(--chart-5)",
+                    color: ERROR_RATE_COLOR,
                     label: "Error rate",
                     value: formatPercent(Number(point.errorRatePercent ?? 0)),
                   },

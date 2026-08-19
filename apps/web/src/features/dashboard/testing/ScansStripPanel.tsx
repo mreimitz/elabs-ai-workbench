@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Database } from "lucide-react";
 import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
 import type { ScanMetricsSeries } from "@mcp-token-footprint/shared";
+import { chartSeriesColor } from "../../../lib/chart-colors";
 import { formatNumber } from "../../../lib/format";
 import { DrillList } from "./DrillList";
 import { buildScansStripResult } from "./metrics-derive";
@@ -51,13 +52,13 @@ export function ScansStripPanel({
             >
               <Grid horizontal />
               {perServer.map((s, i) => (
-                <Line key={s.serverId} dataKey={s.serverId} stroke={`var(--chart-${(i % 5) + 1})`} />
+                <Line key={s.serverId} dataKey={s.serverId} stroke={chartSeriesColor(i)} />
               ))}
               <XAxis />
               <ChartTooltip
                 rows={(point) =>
                   perServer.map((s, i) => ({
-                    color: `var(--chart-${(i % 5) + 1})`,
+                    color: chartSeriesColor(i),
                     label: s.serverName,
                     value: point[s.serverId] != null ? formatNumber(Number(point[s.serverId])) : "no scan",
                   }))

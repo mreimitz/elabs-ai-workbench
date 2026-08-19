@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { ExternalLink, Layers } from "lucide-react";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
-import { Button, Text, cn } from "@elabs-ai/components-ui";
+import { Button, Text } from "@elabs-ai/components-ui";
 import type { RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
+import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatNumber } from "../../../lib/format";
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { buildTokensResult, type CapabilityClassSeries } from "./metrics-derive";
@@ -100,14 +101,14 @@ function TokenDirection({
         >
           <Grid horizontal />
           {classes.map((c, i) => (
-            <Bar key={c.cls} dataKey={c.cls} fill={`var(--chart-${(i % 5) + 1})`} />
+            <Bar key={c.cls} dataKey={c.cls} fill={chartSeriesColor(i)} />
           ))}
           <BarXAxis maxLabels={6} />
           <ChartTooltip
             showDatePill={false}
             rows={(point) =>
               classes.map((c, i) => ({
-                color: `var(--chart-${(i % 5) + 1})`,
+                color: chartSeriesColor(i),
                 label: c.label,
                 value: formatNumber(Number(point[c.cls] ?? 0)),
               }))
@@ -119,7 +120,7 @@ function TokenDirection({
       <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2">
         {classes.map((c, i) => (
           <li key={c.cls} className="flex items-center gap-1.5">
-            <span className={cn("size-2.5 shrink-0 rounded-sm", `bg-chart-${(i % 5) + 1}`)} aria-hidden />
+            <span className="size-2.5 shrink-0 rounded-sm" style={chartSwatchStyle(i)} aria-hidden />
             <Text variant="meta" tone="muted">
               {c.label}
             </Text>

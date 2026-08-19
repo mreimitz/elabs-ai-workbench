@@ -19,6 +19,7 @@ import {
 } from "@elabs-ai/components-ui";
 import { BarChart, BarXAxis, Bar, Grid, ChartTooltip, type TooltipRow } from "@elabs-ai/components-charts";
 import { AlertTriangle, LineChart } from "lucide-react";
+import { chartSeriesColor } from "../../lib/chart-colors";
 import { formatNumber } from "../../lib/format";
 
 /**
@@ -61,13 +62,13 @@ const SEGMENT_LABELS: Record<ContextSegment, string> = {
 };
 
 /**
- * Series → chart-token map, in the `CONTEXT_SEGMENTS` wire order (its index is the `--chart-1..5`
- * colour index). `Bar.fill` takes a CSS token reference and the library honours `var(--chart-N)`
+ * Series → chart-token map, in the `CONTEXT_SEGMENTS` wire order (its index is the ramp colour
+ * index). `Bar.fill` takes a CSS token reference and the library honours `var(--chart-N)`
  * verbatim (theme-aware in both themes); we set it per series because charts does not colour bars by
  * child order automatically.
  */
 const SEGMENT_FILL: Record<ContextSegment, string> = CONTEXT_SEGMENTS.reduce(
-  (acc, seg, index) => ({ ...acc, [seg]: `var(--chart-${index + 1})` }),
+  (acc, seg, index) => ({ ...acc, [seg]: chartSeriesColor(index) }),
   {} as Record<ContextSegment, string>,
 );
 

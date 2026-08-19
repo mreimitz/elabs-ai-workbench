@@ -9,6 +9,7 @@ import type {
   ToolLoadingMode,
 } from "@mcp-token-footprint/shared";
 import { apiGet, getRunGrades } from "../../../lib/api";
+import { chartSeriesColor } from "../../../lib/chart-colors";
 import { runStatusBadgeView } from "../RunBar";
 
 /**
@@ -56,7 +57,8 @@ export function isCompareMode(value: string | null | undefined): value is Compar
 /** Letter labels in comparison order. Runs beyond this cap are refused by the bar. */
 export const COMPARE_LETTERS = ["A", "B", "C", "D", "E", "F"] as const;
 
-/** The maximum comparison-set size (bounded by the letter alphabet + the `--chart-1..5` palette). */
+/** The maximum comparison-set size (bounded by the letter alphabet; the 12-token chart ramp is
+ *  comfortably wider, so a run's colour is unique across a full comparison set). */
 export const MAX_COMPARE_RUNS = COMPARE_LETTERS.length;
 
 /** The letter for a run at a given comparison index (A, B, C, …); empty past the cap. */
@@ -64,10 +66,12 @@ export function letterForIndex(index: number): string {
   return COMPARE_LETTERS[index] ?? "";
 }
 
-/** A run's stable series colour token (`--chart-1..5`), by its comparison index — shared across the
- * bar's letter badge, the matrix and every chart so a run reads as one colour everywhere. */
+/** A run's stable series colour token, by its comparison index — shared across the bar's letter
+ * badge, the matrix and every chart so a run reads as one colour everywhere. Cycling the full
+ * 12-token ramp matters here: the old `% 5` gave run F the SAME colour as run A, in a view whose
+ * entire job is telling runs apart. */
 export function runColor(index: number): string {
-  return `var(--chart-${(index % 5) + 1})`;
+  return chartSeriesColor(index);
 }
 
 // ── The resolved comparison set ────────────────────────────────────────────────────────────────────

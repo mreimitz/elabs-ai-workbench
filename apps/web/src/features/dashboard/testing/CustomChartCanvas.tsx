@@ -3,6 +3,7 @@ import { Bar, BarChart, BarXAxis, ChartTooltip, Grid, Line, LineChart, XAxis } f
 import { Skeleton } from "@elabs-ai/components-ui";
 import type { DashboardChartType } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../../components/InlineError";
+import { chartSeriesColor } from "../../../lib/chart-colors";
 import { formatCostUsd, formatDuration, formatNumber, formatPercent } from "../../../lib/format";
 import type { PivotedRow } from "./metrics-derive";
 import { ChartBox, PanelEmptyState } from "./panel-shell";
@@ -60,7 +61,7 @@ export function CustomChartCanvas({
 
   const tooltipRows = (point: Record<string, unknown>) =>
     series.map((s, i) => ({
-      color: `var(--chart-${(i % 5) + 1})`,
+      color: chartSeriesColor(i),
       label: s.label,
       value: point[s.key] != null ? formatValue(unit, Number(point[s.key])) : "n/a",
     }));
@@ -77,7 +78,7 @@ export function CustomChartCanvas({
         >
           <Grid horizontal />
           {series.map((s, i) => (
-            <Line key={s.key} dataKey={s.key} stroke={`var(--chart-${(i % 5) + 1})`} />
+            <Line key={s.key} dataKey={s.key} stroke={chartSeriesColor(i)} />
           ))}
           <XAxis />
           <ChartTooltip rows={tooltipRows} />
@@ -98,7 +99,7 @@ export function CustomChartCanvas({
       >
         <Grid horizontal />
         {series.map((s, i) => (
-          <Bar key={s.key} dataKey={s.key} fill={`var(--chart-${(i % 5) + 1})`} />
+          <Bar key={s.key} dataKey={s.key} fill={chartSeriesColor(i)} />
         ))}
         <BarXAxis maxLabels={8} />
         <ChartTooltip showDatePill={false} rows={tooltipRows} />

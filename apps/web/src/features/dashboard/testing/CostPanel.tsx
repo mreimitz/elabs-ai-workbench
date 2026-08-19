@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Coins, ExternalLink } from "lucide-react";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
-import { Button, Separator, Text, cn } from "@elabs-ai/components-ui";
+import { Button, Separator, Text } from "@elabs-ai/components-ui";
 import type { RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
+import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatCostUsd, formatNumber } from "../../../lib/format";
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { buildCostResult } from "./metrics-derive";
@@ -63,14 +64,14 @@ export function CostPanel({
                 >
                   <Grid horizontal />
                   {costClasses.map((c, i) => (
-                    <Bar key={c.cls} dataKey={c.cls} fill={`var(--chart-${(i % 5) + 1})`} />
+                    <Bar key={c.cls} dataKey={c.cls} fill={chartSeriesColor(i)} />
                   ))}
                   <BarXAxis maxLabels={6} />
                   <ChartTooltip
                     showDatePill={false}
                     rows={(point) =>
                       costClasses.map((c, i) => ({
-                        color: `var(--chart-${(i % 5) + 1})`,
+                        color: chartSeriesColor(i),
                         label: c.label,
                         value: formatCostUsd(Number(point[c.cls] ?? 0)),
                       }))
@@ -81,7 +82,7 @@ export function CostPanel({
               <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2">
                 {costClasses.map((c, i) => (
                   <li key={c.cls} className="flex items-center gap-1.5">
-                    <span className={cn("size-2.5 shrink-0 rounded-sm", `bg-chart-${(i % 5) + 1}`)} aria-hidden />
+                    <span className="size-2.5 shrink-0 rounded-sm" style={chartSwatchStyle(i)} aria-hidden />
                     <Text variant="meta" tone="muted">
                       {c.label}
                     </Text>
