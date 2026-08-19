@@ -21,7 +21,6 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-  cn,
 } from "@elabs-ai/components-ui";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid, MetricCard, MetricGrid } from "@elabs-ai/components-charts";
 import { DataTable } from "@elabs-ai/components-data";
@@ -41,6 +40,7 @@ import {
 import { getRunReport, getRunSkills } from "../../lib/api";
 import { col } from "../../lib/table";
 import { getErrorMessage } from "../../lib/errors";
+import { chartSeriesColor, chartSwatchStyle } from "../../lib/chart-colors";
 import { formatCostUsd, formatDuration, formatNumber, formatPercent } from "../../lib/format";
 import { isTerminalRunStatus } from "../../lib/status";
 import { InlineError } from "../../components/InlineError";
@@ -100,9 +100,9 @@ const SEGMENT_LABELS: Record<ContextSegment, string> = {
   output: "Output",
 };
 
-/** Series → chart-token map in `CONTEXT_SEGMENTS` order (its index is the `--chart-1..5` index). */
+/** Series → chart-token map in `CONTEXT_SEGMENTS` order (its index is the ramp index). */
 const SEGMENT_FILL: Record<ContextSegment, string> = CONTEXT_SEGMENTS.reduce(
-  (acc, seg, index) => ({ ...acc, [seg]: `var(--chart-${index + 1})` }),
+  (acc, seg, index) => ({ ...acc, [seg]: chartSeriesColor(index) }),
   {} as Record<ContextSegment, string>,
 );
 
@@ -1078,13 +1078,14 @@ function ChartPanel({
   );
 }
 
-/** Swatch legend for the five context-segment series (matches the `--chart-1..5` ramp). */
+/** Swatch legend for the context-segment series — painted from the SAME ramp token as each
+ *  plotted series (never a template-literal `bg-chart-N` class: Tailwind cannot generate one it never sees). */
 function SegmentLegend() {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2.5">
       {CONTEXT_SEGMENTS.map((seg, i) => (
         <li key={seg} className="flex items-center gap-1.5">
-          <span className={cn("size-2.5 shrink-0 rounded-sm", `bg-chart-${i + 1}`)} aria-hidden />
+          <span className="size-2.5 shrink-0 rounded-sm" style={chartSwatchStyle(i)} aria-hidden />
           <Text variant="meta" tone="muted">
             {SEGMENT_LABELS[seg]}
           </Text>

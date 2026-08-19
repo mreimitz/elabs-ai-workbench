@@ -1,5 +1,6 @@
 import type { RunSummary, Scenario, SuiteRun, Test } from "@mcp-token-footprint/shared";
 import { describe, expect, test } from "vitest";
+import { chartSeriesColor } from "../../../../lib/chart-colors";
 import type { CompareData } from "../compare-runs";
 import {
   buildSuiteCompareMarkdown,
@@ -72,7 +73,7 @@ function side(
     id,
     index,
     letter: index === 0 ? "A" : "B",
-    color: `var(--chart-${index + 1})`,
+    color: chartSeriesColor(index),
     isBaseline: index === 0,
     suiteRun: suiteRun(id, undefined),
     aggregates: null,

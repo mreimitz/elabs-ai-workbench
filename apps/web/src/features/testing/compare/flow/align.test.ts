@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+import { chartSeriesColor } from "../../../../lib/chart-colors";
 import { alignLanes, alignNodeLists, lcsMatches } from "./align";
 import { columnCellDiffs, columnDiff, divergenceColumnId } from "./flow-derive";
 import type { FlowLane, FlowNode, FlowTurn } from "./flow-types";
@@ -25,7 +26,7 @@ function lane(runIndex: number, letter: string, turns: FlowTurn[], baseline = fa
   return {
     runIndex,
     letter,
-    color: `var(--chart-${runIndex + 1})`,
+    color: chartSeriesColor(runIndex),
     isBaseline: baseline,
     // Only the fields the align/diff layer touches matter here.
     run: { id: `run-${letter}`, index: runIndex, letter } as unknown as FlowLane["run"],

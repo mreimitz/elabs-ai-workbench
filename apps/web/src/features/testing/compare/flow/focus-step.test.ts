@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { RunDetail, RunStep } from "@mcp-token-footprint/shared";
+import { chartSeriesColor } from "../../../../lib/chart-colors";
 import { alignLanes } from "./align";
 import { resolveFocusedStep } from "./focus-step";
 import type { FlowLane, FlowNode, FlowTurn } from "./flow-types";
@@ -21,7 +22,7 @@ function lane(runIndex: number, letter: string, turns: FlowTurn[]): FlowLane {
   return {
     runIndex,
     letter,
-    color: `var(--chart-${runIndex + 1})`,
+    color: chartSeriesColor(runIndex),
     isBaseline: runIndex === 0,
     run: { id: `run-${letter}`, index: runIndex, letter } as unknown as FlowLane["run"],
     preamble: {

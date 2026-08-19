@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
 import type { SuiteAnalytics, SuiteBreakdownSlice } from "@mcp-token-footprint/shared";
-import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text, cn } from "@elabs-ai/components-ui";
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@elabs-ai/components-ui";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import { BarChart3, Layers } from "lucide-react";
 import { SelectField } from "../../../components/SelectField";
+import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatCostUsd, formatPercent } from "../../../lib/format";
 import type { SuiteMatrixRef } from "./SuiteMatrix";
 
 /**
  * Suite-run METADATA BREAKDOWNS (WP 3.4, B9.2) — for each metadata dimension present (category /
  * difficulty / each tag), a grouped `@elabs-ai/components-charts` BarChart with a categorical x (the dimension's
- * values) and one series per scenario (`--chart-1..5`). One metric toggle (mean score % vs mean cost)
+ * values) and one series per scenario, coloured off the shared 12-token chart ramp. One metric toggle (mean score % vs mean cost)
  * governs all charts. Server-computed + derived: every bar is a {@link SuiteBreakdownSlice}. BarChart is
  * categorical (string x is safe — unlike Line/Area which need Dates). Honest EmptyState when no test in
  * the run carries category/difficulty/tag metadata (or nothing is graded, so no slice has a score).
@@ -31,15 +32,10 @@ const DIMENSION_LABELS: Record<SuiteBreakdownSlice["dimension"], string> = {
   tag: "Tag",
 };
 
-/** Semantic series color for a scenario index (cycles the five `--chart-*` tokens). */
-function chartVar(index: number): string {
-  return `var(--chart-${(index % 5) + 1})`;
-}
-
 export function SuiteBreakdowns({ analytics, scenarios, graderLabel }: SuiteBreakdownsProps) {
   const [metric, setMetric] = useState<Metric>("score");
   const scenarioName = useMemo(() => new Map(scenarios.map((s) => [s.id, s.name])), [scenarios]);
-  const colorOf = useMemo(() => new Map(scenarios.map((s, i) => [s.id, chartVar(i)])), [scenarios]);
+  const colorOf = useMemo(() => new Map(scenarios.map((s, i) => [s.id, chartSeriesColor(i)])), [scenarios]);
 
   const present = DIMENSIONS.filter((d) => analytics.breakdowns.some((s) => s.dimension === d));
 
@@ -200,10 +196,8 @@ function ScenarioLegend({
       {ids.map((id) => (
         <li key={id} className="flex items-center gap-1.5">
           <span
-            className={cn(
-              "size-2.5 shrink-0 rounded-sm",
-              `bg-chart-${((indexOf.get(id) ?? 0) % 5) + 1}`,
-            )}
+            className="size-2.5 shrink-0 rounded-sm"
+            style={chartSwatchStyle(indexOf.get(id) ?? 0)}
             aria-hidden
           />
           <Text variant="meta" tone="muted" className="max-w-40 truncate">
