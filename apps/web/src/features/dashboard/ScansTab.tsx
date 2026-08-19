@@ -1,9 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
 import { DataTable, type ColumnDef } from "@elabs-ai/components-data";
 import { Badge, Button, Card, CardContent, CardHeader, MetricCard, Text } from "@elabs-ai/components-ui";
-import { MetricGrid } from "@elabs-ai/components-charts";
+import { MetricGrid, Sparkline } from "@elabs-ai/components-charts";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -26,6 +26,7 @@ import { SectionCardTitle } from "../../components/SectionCardTitle";
 import {
   buildScanDeltaIndex,
   diffVsPreviousHref,
+  type ScanDeltaInfo,
   ScanDeltaCell,
   scanDeltaFor,
 } from "../scans/scanDelta";
@@ -146,6 +147,19 @@ export function ScansTab(props: {
   const isFirstVisit = lastVisitAt === null;
 
   const hasData = rankedServers.length > 0;
+
+  // WP 0.3 (F3/F8) — trend for the four scan-derived inventory tiles. Both halves come out of data
+  // already in memory (`props.scans`) and out of the app's ONE delta authority (`deltaIndex`); no
+  // fetch, no second comparison window. See `buildTileTrend`.
+  const scanById = useMemo(
+    () => new Map(props.scans.map((scan) => [scan.id, scan] as const)),
+    [props.scans],
+  );
+  const trendInputs = { scans: props.scans, latestByServer: rankedServers, deltaIndex, scanById };
+  const startupTokenTrend = buildTileTrend(trendInputs, startupTokensOf);
+  const resourceTrend = buildTileTrend(trendInputs, resourceCountOf);
+  const promptTrend = buildTileTrend(trendInputs, promptCountOf);
+  const toolTrend = buildTileTrend(trendInputs, toolCountOf);
 
   const rankedColumns: ColumnDef<ScanSummary>[] = [
     navCol<ScanSummary>({
@@ -454,18 +468,28 @@ export function ScansTab(props: {
       </Card>
 
       {/* Inventory KPIs — the static fleet totals, now BELOW the change & attention lead (G1).
-          D2: one metric per card so each figure is legible and comparable at a glance. */}
-      <MetricGrid columns={4}>
-        <MetricCard
-          icon={<Server aria-hidden />}
-          label="Servers"
-          value={formatNumber(props.servers.length)}
-        />
+          D2: one metric per card so each figure is legible and comparable at a glance.
+          WP 0.3 (F3/F8): the band carries rank and trend. "Total startup tokens" is the product's
+          headline number, so it LEADS the grid as the `featured` tile — spanning two of three
+          columns with `emphasis="headline"` — instead of sitting flush with a count of config rows.
+          The four scan-derived footprint tiles carry a Δ vs each server's previous successful scan
+          plus a sparkline of the retained history (see `buildTileTrend`); the four state tiles carry
+          neither, each for the reason noted above it. */}
+      <MetricGrid columns={3} featured={0} featuredSpan={2}>
         <MetricCard
           icon={<Database aria-hidden />}
           label="Total startup tokens"
           value={hasData ? formatNumber(totalStartupTokens) : "n/a"}
           description="Tools + resources + prompts, latest successful scans"
+          emphasis="headline"
+          {...trendProps(startupTokenTrend, "Total startup tokens")}
+        />
+        {/* No trend: a count of configuration rows. Server deletions are not recorded anywhere the
+            app persists, so an earlier count cannot be reconstructed — only invented. */}
+        <MetricCard
+          icon={<Server aria-hidden />}
+          label="Servers"
+          value={formatNumber(props.servers.length)}
         />
         <MetricCard
           icon={<Library aria-hidden />}
@@ -474,13 +498,32 @@ export function ScansTab(props: {
           description={
             hasData ? `${formatNumber(totalResourceTokens)} tokens` : "No completed scans"
           }
+          {...trendProps(resourceTrend, "Resources")}
         />
         <MetricCard
           icon={<MessageSquare aria-hidden />}
           label="Prompts"
           value={hasData ? formatNumber(totalPrompts) : "n/a"}
           description={hasData ? `${formatNumber(totalPromptTokens)} tokens` : "No completed scans"}
+          {...trendProps(promptTrend, "Prompts")}
         />
+        <MetricCard
+          icon={<FileText aria-hidden />}
+          label="Tools scanned"
+          value={hasData ? formatNumber(totalTools) : "n/a"}
+          description="Across latest successful scans"
+          {...trendProps(toolTrend, "Tools scanned")}
+        />
+        {/* No trend: "largest single tool" can be a DIFFERENT tool at every point in the history, so
+            a Δ or a series would silently compare unlike things. */}
+        <MetricCard
+          icon={<Wrench aria-hidden />}
+          label="Largest single tool"
+          value={topToolScan ? formatNumber(topToolScan.largestToolTokens) : "n/a"}
+          description={topToolScan?.largestToolName ?? "No completed scans"}
+        />
+        {/* No trend: both are derived from the CURRENT server list, and (as with "Servers") a past
+            list cannot be reconstructed from the scan history alone. */}
         <MetricCard
           icon={<AlertTriangle aria-hidden />}
           label="Unscanned"
@@ -492,18 +535,6 @@ export function ScansTab(props: {
           label="Failed"
           value={formatNumber(failedLatestCount)}
           description="Servers whose latest scan failed"
-        />
-        <MetricCard
-          icon={<Wrench aria-hidden />}
-          label="Largest single tool"
-          value={topToolScan ? formatNumber(topToolScan.largestToolTokens) : "n/a"}
-          description={topToolScan?.largestToolName ?? "No completed scans"}
-        />
-        <MetricCard
-          icon={<FileText aria-hidden />}
-          label="Tools scanned"
-          value={hasData ? formatNumber(totalTools) : "n/a"}
-          description="Across latest successful scans"
         />
       </MetricGrid>
 
@@ -551,6 +582,156 @@ export function ScansTab(props: {
       </Card>
     </div>
   );
+}
+
+/** Most points a tile sparkline draws. Beyond this the 80×20 box stops resolving individual
+ *  snapshots, so the newest window is shown and the accessible label names how many. */
+const SPARKLINE_POINTS = 24;
+
+/** How each trend-bearing tile reads its figure off ONE scan. Declared once so a tile's value, its Δ
+ *  and its sparkline are guaranteed to measure the same quantity (the T10 discipline: never let two
+ *  figures on one tile denote different things). */
+const startupTokensOf = (scan: ScanSummary) =>
+  scan.totalTokens + scan.totalResourceTokens + scan.totalPromptTokens;
+const resourceCountOf = (scan: ScanSummary) => scan.totalResources + scan.totalResourceTemplates;
+const promptCountOf = (scan: ScanSummary) => scan.totalPrompts;
+const toolCountOf = (scan: ScanSummary) => scan.totalTools;
+
+/** What one inventory tile can honestly say about its own trend. */
+type TileTrend = {
+  /** Δ between the tile's CURRENT value and the same total at each server's PREVIOUS successful
+   *  scan — computed over the SAME server population the value totals, so the two can only ever be
+   *  read as one comparison. A server whose latest successful scan is its FIRST contributes its
+   *  whole figure (it measured as nothing before); `firstTimeServers` discloses that on the tile.
+   *  `null` when NO server has an earlier successful scan at all — nothing has been compared, so
+   *  the tile renders no delta rather than a fabricated one. */
+  delta: number | null;
+  /** How many servers in that population are being measured for the first time. */
+  firstTimeServers: number;
+  /** The tile's own value recomputed after every successful scan in the retained history, oldest →
+   *  newest. Empty below two points — a sparkline needs a real series or nothing. */
+  series: number[];
+};
+
+type TrendInputs = {
+  scans: ScanSummary[];
+  /** The latest SUCCESSFUL scan of each server — the same set the tiles total. */
+  latestByServer: ScanSummary[];
+  deltaIndex: Map<string, ScanDeltaInfo>;
+  scanById: Map<string, ScanSummary>;
+};
+
+/**
+ * Trend for ONE inventory tile, derived entirely from the scan history already in memory.
+ *
+ * **Δ covers the same population as the value.** `buildScanDeltaIndex` pairs every successful scan
+ * with the PREVIOUS successful scan of the SAME server and names it in `prevScanId` — that pairing
+ * is the app's one delta authority and is reused verbatim here. Every server the tile totals then
+ * contributes `now − before`, where `before` is its previous successful scan or, for a server
+ * measured for the first time, **zero**. Summing only the servers that happen to HAVE a previous
+ * scan would leave the Δ and the value covering different populations: add and scan a server (this
+ * product's core workflow, and the most common way a footprint grows) and a fleet that went
+ * 100,000 → 590,000 would render "↓ 10,000, favorable". The zero baseline keeps the arithmetic
+ * closed — value − Δ is always the fleet's previous measured total.
+ *
+ * What this does NOT reuse is the index's `deltaTokens` figure: that is tools-only, and hanging it
+ * under a tools + resources + prompts value would recreate precisely the label/definition collision
+ * T10 removed. The pairing is shared; each tile measures its own figure across it.
+ *
+ * **The series is the tile's own value, recomputed after every scan.** Walk successful scans of the
+ * tracked servers oldest → newest, keep each server's latest figure, and emit the running fleet
+ * total after each one — a server not yet scanned counting as 0, the same convention the Δ uses. So
+ * the last point always equals the tile's current value, and adding a server shows up as the step
+ * it is instead of erasing the series at the very moment it matters most.
+ */
+function buildTileTrend(inputs: TrendInputs, figureOf: (scan: ScanSummary) => number): TileTrend {
+  const { scans, latestByServer, deltaIndex, scanById } = inputs;
+
+  let delta = 0;
+  let comparedServers = 0;
+  let firstTimeServers = 0;
+  for (const scan of latestByServer) {
+    const { prevScanId } = scanDeltaFor(deltaIndex, scan.id);
+    const previous = prevScanId ? scanById.get(prevScanId) : undefined;
+    if (previous) comparedServers += 1;
+    else firstTimeServers += 1;
+    delta += figureOf(scan) - (previous ? figureOf(previous) : 0);
+  }
+
+  const trackedIds = new Set(latestByServer.map((scan) => scan.serverId));
+  const series: number[] = [];
+  if (trackedIds.size > 0) {
+    const history = scans
+      .filter((scan) => scan.status === "success" && trackedIds.has(scan.serverId))
+      .sort((left, right) => Date.parse(left.scannedAt) - Date.parse(right.scannedAt));
+    const current = new Map<string, number>();
+    for (const scan of history) {
+      current.set(scan.serverId, figureOf(scan));
+      let total = 0;
+      for (const value of current.values()) total += value;
+      series.push(total);
+    }
+  }
+
+  return {
+    delta: comparedServers > 0 ? delta : null,
+    firstTimeServers,
+    series: series.length >= 2 ? series.slice(-SPARKLINE_POINTS) : [],
+  };
+}
+
+/** The `MetricCard` trend props for one tile, or nothing where there is nothing honest to show.
+ *
+ *  `positiveIsGood` is **false** on every tile that gets these props: tokens, resources, prompts and
+ *  tools are all startup context the model pays for on every request, so GROWTH is the regression.
+ *  A bigger footprint must never render in the success colour. */
+type TrendProps = {
+  delta?: string;
+  deltaDirection?: "up" | "down" | "neutral";
+  positiveIsGood?: boolean;
+  evidence?: ReactNode;
+  visual?: ReactNode;
+};
+
+function trendProps(trend: TileTrend, seriesName: string): TrendProps {
+  const props: TrendProps = {};
+
+  if (trend.delta !== null) {
+    const value = trend.delta;
+    // A genuine zero is worth saying — but MetricCard gives a "neutral" delta no arrow, no polarity
+    // and no accessible label, so a bare "0" would float beside the value explaining nothing.
+    props.delta = value === 0 ? "No change" : `${value > 0 ? "+" : ""}${formatNumber(value)}`;
+    props.deltaDirection = value > 0 ? "up" : value < 0 ? "down" : "neutral";
+    props.positiveIsGood = false;
+    if (trend.firstTimeServers > 0) {
+      // Part of that Δ is a first measurement rather than a change. Disclose it, rather than letting
+      // a newly scanned server's whole footprint read as growth with nothing to explain it.
+      props.evidence =
+        trend.firstTimeServers === 1
+          ? "Includes 1 server measured for the first time"
+          : `Includes ${formatNumber(trend.firstTimeServers)} servers measured for the first time`;
+    }
+  }
+
+  if (trend.series.length >= 2) {
+    // `Sparkline` is ZERO-baselined (`max = Math.max(...values, 0)`; there is no min), so handing it
+    // absolute fleet totals draws a realistic series like 580k → 590k as a flat line — a ~2% wiggle
+    // inside a 0..max box. Normalising to the window's own minimum spends the full height on the
+    // variation that actually happened; the label keeps the real figures.
+    const floor = Math.min(...trend.series);
+    const first = trend.series[0] ?? 0;
+    const last = trend.series[trend.series.length - 1] ?? 0;
+    props.visual = (
+      <Sparkline
+        values={trend.series.map((value) => value - floor)}
+        variant="line"
+        emphasizeLast
+        label={`${seriesName}: ${formatNumber(first)} → ${formatNumber(last)} across the last ${trend.series.length} scans`}
+      />
+    );
+  }
+
+  return props;
 }
 
 /** Short, human date for the "since <date>" copy (e.g. "Jul 4"). */
