@@ -13,6 +13,7 @@ import {
 } from "@elabs-ai/components-charts";
 import { Card, CardContent, CardHeader, CardTitle, EmptyState, Text } from "@elabs-ai/components-ui";
 import type { HubUsageRow } from "@mcp-token-footprint/shared";
+import { chartSeriesColor } from "../../../../lib/chart-colors";
 import { formatCostUsd } from "../../../../lib/format";
 import { rankByCost } from "./usage-derive";
 
@@ -34,19 +35,15 @@ import { rankByCost } from "./usage-derive";
  *     via the vendored `.d.ts` — "Stack SeriesBar segments in child order at each x"); this is the
  *     SAME "stacked bars over time" recipe `dashboard/testing/RunsErrorRatePanel.tsx` already uses
  *     for its grouped-run-count panel, reused here rather than re-derived.
+ *
+ * Series colour comes from the shared `chartSeriesColor` helper (WP 0.1), NOT a local ramp. This
+ * file used to keep its own five-entry `var(--chart-N)` array indexed by `i % 5`. That is finding
+ * F5's shape, though not yet its symptom: `UsageTab`'s `MAX_STACKED_SERIES` caps the series list at
+ * 5, so a 6th series never rendered and no colour ever actually repeated. The defect was the hidden
+ * coupling — the cap and the ramp length were two unrelated 5s in two different files, so raising
+ * the cap to show more entities would have silently re-coloured entities 6+ as 1+. The cap is now a
+ * free parameter: the helper cycles all twelve tokens.
  */
-
-const CHART_COLORS = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-];
-
-function chartColor(index: number): string {
-  return CHART_COLORS[index % CHART_COLORS.length] ?? "var(--chart-1)";
-}
 
 export function UsageCharts({
   rows,
@@ -114,14 +111,14 @@ export function UsageCharts({
             >
               <Grid horizontal />
               {stackedSeries.map((series, i) => (
-                <SeriesBar key={series.key} dataKey={series.key} fill={chartColor(i)} />
+                <SeriesBar key={series.key} dataKey={series.key} fill={chartSeriesColor(i)} />
               ))}
               <XAxis />
               <YAxis formatValue={(v) => formatCostUsd(v)} />
               <ChartTooltip
                 rows={(point) =>
                   stackedSeries.map((series, i) => ({
-                    color: chartColor(i),
+                    color: chartSeriesColor(i),
                     label: series.label,
                     value: formatCostUsd(Number(point[series.key] ?? 0)),
                   }))
