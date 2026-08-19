@@ -27,8 +27,10 @@ describe("feature-flags registry", () => {
       assert.ok(meta.label.length > 0);
       assert.ok(meta.description.length > 0);
       assert.ok(meta.surfaces.length > 0, `${id} must list what turning it off hides`);
-      assert.ok(meta.routePrefixes.length > 0);
-      assert.ok(meta.apiPrefixes.length > 0);
+      // `routePrefixes` MAY be empty — a machine-facing feature (the workbench MCP mount) owns no
+      // screen to swap for the "turned off" panel. `apiPrefixes` may not: without a server-side
+      // prefix the switch would be decoration, and hiding UI is not an off-switch.
+      assert.ok(meta.apiPrefixes.length > 0, `${id} must own at least one API prefix to enforce`);
       // Every API prefix is under /api, so the guard can never shadow the SPA's own static routes.
       for (const prefix of meta.apiPrefixes) {
         assert.ok(prefix.startsWith("/api/"), `${id} api prefix ${prefix} must live under /api/`);
@@ -82,8 +84,15 @@ describe("isFeatureEnabled", () => {
   });
 
   it("reads the loaded map otherwise", () => {
-    assert.equal(isFeatureEnabled({ assistant: false }, "assistant"), false);
-    assert.equal(isFeatureEnabled({ assistant: true }, "assistant"), true);
+    // Spread the defaults so the map stays complete as features are registered.
+    assert.equal(
+      isFeatureEnabled({ ...DEFAULT_APP_FEATURE_FLAGS, assistant: false }, "assistant"),
+      false,
+    );
+    assert.equal(
+      isFeatureEnabled({ ...DEFAULT_APP_FEATURE_FLAGS, assistant: true }, "assistant"),
+      true,
+    );
   });
 });
 
@@ -113,8 +122,13 @@ describe("pathMatchesPrefix / featureForPath", () => {
 
 describe("wire schemas", () => {
   it("requires every id on the full schema", () => {
-    assert.equal(appFeatureFlagsSchema.safeParse({ assistant: true }).success, true);
+    // Built from the registry, not hand-listed, so registering feature #3 does not edit this test.
+    assert.equal(appFeatureFlagsSchema.safeParse(DEFAULT_APP_FEATURE_FLAGS).success, true);
     assert.equal(appFeatureFlagsSchema.safeParse({}).success, false);
+    // A map missing ONE registered id is still incomplete — that is the point of the full schema.
+    const partial = { ...DEFAULT_APP_FEATURE_FLAGS } as Record<string, boolean>;
+    delete partial[APP_FEATURE_IDS[APP_FEATURE_IDS.length - 1] as string];
+    assert.equal(appFeatureFlagsSchema.safeParse(partial).success, false);
   });
 
   it("accepts a partial patch but rejects an unknown id", () => {

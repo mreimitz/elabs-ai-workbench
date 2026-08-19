@@ -14,6 +14,12 @@ vi.mock("../../lib/api", async (importOriginal) => {
   };
 });
 
+import {
+  APP_FEATURE_IDS,
+  APP_FEATURE_META,
+  type AppFeatureFlags,
+  DEFAULT_APP_FEATURE_FLAGS,
+} from "@mcp-token-footprint/shared";
 import * as api from "../../lib/api";
 import { FeaturesSection } from "../settings/FeaturesSection";
 import { FeatureGate } from "./FeatureGate";
@@ -36,13 +42,19 @@ function AssistantProbe() {
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
-  vi.mocked(api.getFeatureFlags).mockResolvedValue({ flags: { assistant: true } });
-  vi.mocked(api.updateFeatureFlags).mockResolvedValue({ flags: { assistant: false } });
+  vi.mocked(api.getFeatureFlags).mockResolvedValue({
+    flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: true },
+  });
+  vi.mocked(api.updateFeatureFlags).mockResolvedValue({
+    flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false },
+  });
 });
 
 describe("FeatureFlagsProvider", () => {
   test("adopts the server's map", async () => {
-    vi.mocked(api.getFeatureFlags).mockResolvedValue({ flags: { assistant: false } });
+    vi.mocked(api.getFeatureFlags).mockResolvedValue({
+      flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false },
+    });
     renderWithProvider(<AssistantProbe />);
     expect(await screen.findByText("assistant-off")).toBeTruthy();
   });
@@ -55,13 +67,15 @@ describe("FeatureFlagsProvider", () => {
   });
 
   test("mirrors the last-known map so a reload does not flash the feature's surfaces", async () => {
-    vi.mocked(api.getFeatureFlags).mockResolvedValue({ flags: { assistant: false } });
+    vi.mocked(api.getFeatureFlags).mockResolvedValue({
+      flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false },
+    });
     const first = renderWithProvider(<AssistantProbe />);
     expect(await screen.findByText("assistant-off")).toBeTruthy();
     first.unmount();
 
     // Second mount: the fetch is still pending, but the mirror already knows the answer.
-    let resolveFetch: ((value: { flags: { assistant: boolean } }) => void) | undefined;
+    let resolveFetch: ((value: { flags: AppFeatureFlags }) => void) | undefined;
     vi.mocked(api.getFeatureFlags).mockReturnValue(
       new Promise((resolve) => {
         resolveFetch = resolve;
@@ -71,7 +85,7 @@ describe("FeatureFlagsProvider", () => {
     expect(screen.getByText("assistant-off")).toBeTruthy();
     // Settle the in-flight fetch inside act() so the adopt() state update belongs to the test.
     await act(async () => {
-      resolveFetch?.({ flags: { assistant: false } });
+      resolveFetch?.({ flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false } });
     });
     expect(screen.getByText("assistant-off")).toBeTruthy();
   });
@@ -88,7 +102,9 @@ describe("FeatureGate", () => {
   });
 
   test("swaps in an explaining panel — with a link to the switch — while it is off", async () => {
-    vi.mocked(api.getFeatureFlags).mockResolvedValue({ flags: { assistant: false } });
+    vi.mocked(api.getFeatureFlags).mockResolvedValue({
+      flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false },
+    });
     renderWithProvider(
       <FeatureGate feature="assistant">
         <span>the real view</span>
@@ -106,6 +122,11 @@ describe("Settings › Features", () => {
     renderWithProvider(<FeaturesSection />);
     const toggle = await screen.findByRole("switch", { name: "Assistant" });
     expect(toggle.getAttribute("aria-checked")).toBe("true");
+    // The pane renders straight from the registry, so registering a feature needs no UI change here.
+    expect(screen.getAllByRole("switch")).toHaveLength(APP_FEATURE_IDS.length);
+    for (const id of APP_FEATURE_IDS) {
+      expect(screen.getByRole("switch", { name: APP_FEATURE_META[id].label })).toBeTruthy();
+    }
   });
 
   test("turning a feature OFF confirms first, naming what disappears", async () => {
@@ -132,8 +153,12 @@ describe("Settings › Features", () => {
   });
 
   test("turning a feature back ON applies immediately, with no confirmation", async () => {
-    vi.mocked(api.getFeatureFlags).mockResolvedValue({ flags: { assistant: false } });
-    vi.mocked(api.updateFeatureFlags).mockResolvedValue({ flags: { assistant: true } });
+    vi.mocked(api.getFeatureFlags).mockResolvedValue({
+      flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false },
+    });
+    vi.mocked(api.updateFeatureFlags).mockResolvedValue({
+      flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: true },
+    });
     renderWithProvider(<FeaturesSection />);
 
     const toggle = await screen.findByRole("switch", { name: "Assistant" });
