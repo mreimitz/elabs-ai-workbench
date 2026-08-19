@@ -28,6 +28,13 @@ inventory is cross-referenced.
   `roadmap/*/STATUS.md` ledgers, and the langsmith-observability research — **not** from a
   fresh code crawl. Repo state as read on 2026-08-18.
 
+> **Correction (2026-08-19):** the capability table understated the repo — the authoritative
+> ledgers show unified-sessions (2026-07-16), observability (all 27 WPs, 2026-07-17) and
+> Advisor Phases 1–2 (2026-08-18) **built**, owner-acceptance pending, `main` not pushed to
+> origin. Read headlines 1 and 5 with that lens: the Langfuse-exposed structural gaps are
+> closed by **built code**, not by plans, and the routed imports became post-completion
+> follow-ups (see `04-roadmap-handoff.md` and the amendment).
+
 ## Documents
 
 | Doc | Contents |
@@ -80,8 +87,9 @@ inventory is cross-referenced.
 
 ## Suggested next steps (owner's call)
 
-Fold the §G-listed design imports into the affected D-OB WPs before they start; spec the
-workbench MCP server inside `roadmap/ci/` Phase 1 (service tokens are its auth story); queue
-the four deep-dives from 02 §Reading-6 (Topics internals → before the issues layer; Opik
-optimizer → before Advisor; Weave agents contract → during D-US; Phoenix `/mcp` inventory →
-before our MCP-server spec).
+Pick up the AM-OB follow-ups against the built observability surfaces (amendment, corrected
+2026-08-19); implement the workbench MCP server as `roadmap/ci/` **Phase MCP** (kickoff
+prompt: `roadmap/ci/kickoff-prompt-mcp.md`); queue the four deep-dives from 02 §Reading-6
+(Topics internals → evolving the built issues layer; Opik optimizer → extending the built
+Advisor; Weave agents contract → evolving the shipped sessions contract; Phoenix `/mcp`
+inventory → before WP M.1).

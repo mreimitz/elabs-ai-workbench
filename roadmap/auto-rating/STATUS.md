@@ -77,6 +77,9 @@ ticked **only** when the WP's Acceptance is met and the gate
 - [ ] WP 5.1 — skill findings → SkillFlow suggestion drafts / Skill IDE deep-links; server
       findings → server detail (Advisor evidence when Advisor Phase 1 lands)
 - [ ] WP 5.2 — base verdict as CI assertable (`roadmap/ci/`) + verdict trend per server/skill
+- [ ] WP 5.3 — judge-settings live preview + bounded re-rate window — **proposed 2026-08-19**
+      (landscape research; spec [`wp-judge-preview-and-rerate.md`](./wp-judge-preview-and-rerate.md))
+      — owner-gated, append-only per AR6
 
 ## Decision log
 _Entries: date · decision · rationale._

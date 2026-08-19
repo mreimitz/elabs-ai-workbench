@@ -66,6 +66,12 @@ model-aware compatibility engine + heatmap. Single source of truth = the provena
 - [x] WP 5.6 — session pack — done 2026-06-21 (code-complete, integrated; gate green). `run_steps.cumulative_tokens` (guarded additive migration) + accounting session-stats; `apps/api/src/compatibility/session.ts` (`runSessionLevel` over the 8 measurable session tests) + `POST /api/runs/:runId/compatibility`; `SESSION_COST_PER_TASK` unified on dataset pricing. Reconciled the 5.5↔5.6 interaction (authored window-band severity for `SESSION_CONTEXT_HIGHWATER`; excluded the live-agent `SESSION_TASK_SUCCESS_RATE` from the measurable pack).
 - [x] WP 5.7 — persistence/trends + recommendations panel — **superseded** 2026-08-18 by advisor Phase 1 (WPs 1.1–1.3, all green and merged). Its scope folded into [`../advisor/`](../advisor/) as planned (see that plan's README "supersedes-and-extends" note and its ledger [`../advisor/STATUS.md`](../advisor/STATUS.md)): the recommendations panel is the Advisor view + the inline server/environment panels (advisor WP 1.3), and the evidenced rules behind it are advisor WPs 1.1/1.2 (+ the grade-aware ones in 2.1). Nothing was implemented under this WP id; it is ticked as **absorbed**, not as separately built.
 
+## Backlog (proposed, owner-gated)
+- [ ] Compare & launcher follow-ons (comparison grade labels · pairwise preference capture ·
+      launcher variant matrix) — **proposed 2026-08-19** (landscape research; spec
+      [`wp-compare-launcher-followons.md`](./wp-compare-launcher-followons.md)); pairwise
+      rides the built observability `run_feedback` primitive
+
 ## Owner acceptance (deferred visual / a11y / e2e — owner-only, not subagent-doable)
 
 These are the items a sub-agent could **not** self-verify: the two-theme (`light`/`dark`)

@@ -23,6 +23,15 @@ same ones) but **"does Langfuse change the plan"**: each dimension below carries
 — `planned` (a locked WP covers it), `plan+` (planned, but Langfuse adds a pattern worth
 folding in), or `net-new` (no plan covers it).
 
+> **Correction (2026-08-19), after reading the authoritative ledgers:** the CLAUDE.md
+> capability table this doc relied on was a month stale — `roadmap/observability/STATUS.md`
+> records **all 27 WPs (Phases 1–5) built and merged to local `main` on 2026-07-17** (on the
+> completed unified-sessions contract; owner-acceptance pending; not pushed to origin), and
+> `roadmap/advisor/STATUS.md` records **Advisor Phases 1–2 built 2026-08-18**. Read every
+> `planned (D-OB…)`/`planned (D-US…)` annotation below as **built — verify the shipped
+> surface**; the amendment routing these imports was reframed accordingly
+> ([`amendment-2026-08-langfuse.md`](../../roadmap/observability/amendment-2026-08-langfuse.md)).
+
 Verdicts: ✅ we lead · ≈ rough parity · ⚠️ partial · ❌ missing. LangSmith-dimension
 cross-references as (LS D*n*).
 

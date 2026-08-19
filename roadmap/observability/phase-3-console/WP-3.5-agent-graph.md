@@ -1,8 +1,9 @@
 # WP-3.5 — Agent graph lens over a run
 
 > **Status: PROPOSED (amendment AM-OB9, 2026-08-18) — pending owner lock.** Not part of the
-> original 27-WP plan. Sequenced **after WP-3.1** (step hierarchy) and ideally after WP-3.2
-> (per-step economics). Evidence: `research/langfuse-landscape/01-gap-analysis.md` §G4,
+> original 27-WP plan. Its dependencies **WP-3.1 (step hierarchy) and WP-3.2 (per-step
+> economics) are built** (ledger 2026-07-17), so this WP is **implementable immediately** on
+> owner lock. Evidence: `research/langfuse-landscape/01-gap-analysis.md` §G4,
 > `03-charts-viz-inventory.md` §1/§Mapping.
 
 ## Goal

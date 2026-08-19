@@ -266,37 +266,39 @@ $0.10/MB ingest pricing shows how much headroom "local and free" has as a differ
 
 Columns: **WB** = this app (✅ built · 🔜 planned · ❌ absent), then Langfuse (LF), LangSmith
 (LS, from the 2026-07 research), Phoenix (PX — AX-only features marked ✗→AX), Opik (OP),
-Braintrust (BT), Weave (WV). Cells compress; profiles above are authoritative.
+Braintrust (BT), Weave (WV). Cells compress; profiles above are authoritative. *(WB column
+corrected 2026-08-19 against the authoritative ledgers: the observability, unified-sessions,
+and advisor workstreams are **built**, not planned — the CLAUDE.md summary rows lagged.)*
 
 | Capability | WB | LF | LS | PX | OP | BT | WV |
 |---|---|---|---|---|---|---|---|
 | License / self-host | ✅ local-first, source-open repo | MIT (EE extras) | closed, self-host paid | ELv2, 1 container | Apache-2.0, heavy stack | closed, hybrid VPC | closed, K8s+CH |
 | Runs fully offline/air-gapped | ✅ | ✅ (heavy) | ❌ | ✅ | ✅ (heavy) | ❌ (control plane) | ❌ |
-| Metrics over time / custom dashboards | 🔜 D-OB | ✅ | ✅ | ⚠️ preset only (✗→AX) | ✅ (beta) | ✅ | ⚠️ plots |
-| FTS + filter grammar + saved views | 🔜 D-OB | ✅ (URL-serialized) | ✅ | ⚠️ partial | ✅ OQL | ✅ SQL | ⚠️ views, no DSL |
-| Alerts / watch rules | 🔜 D-OB | ✅ (no email) | ✅ | ❌ (✗→AX) | ✅ (+PagerDuty) | ✅ | ✅ |
-| Filter→action automation rules | 🔜 promote-to-test | ❌ manual callouts | ✅ | ❌ | ⚠️ online-eval rules | ✅ | ⚠️ |
-| Trace hierarchy + per-step cost | 🔜 D-OB | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Metrics over time / custom dashboards | ✅ built 2026-07 | ✅ | ✅ | ⚠️ preset only (✗→AX) | ✅ (beta) | ✅ | ⚠️ plots |
+| FTS + filter grammar + saved views | ✅ built 2026-07 | ✅ (URL-serialized) | ✅ | ⚠️ partial | ✅ OQL | ✅ SQL | ⚠️ views, no DSL |
+| Alerts / watch rules | ✅ built 2026-07 | ✅ (no email) | ✅ | ❌ (✗→AX) | ✅ (+PagerDuty) | ✅ | ✅ |
+| Filter→action automation rules | ✅ rules + promote-to-test built | ❌ manual callouts | ✅ | ❌ | ⚠️ online-eval rules | ✅ | ⚠️ |
+| Trace hierarchy + per-step cost | ✅ built 2026-07 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Agent graph over a run | ❌ (net-new) | ✅ 2 modes | ✅ | ✗→AX | ❌ | ❌ | ✅ agents view |
-| Fork / re-run from a step | 🔜 D-OB | ✅ playground | ✅ | ✅ span replay | ❌ | ✅ | ✅ |
-| Sessions/threads as first-class | 🔜 D-US | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ deepest |
+| Fork / re-run from a step | ✅ built 2026-07 | ✅ playground | ✅ | ✅ span replay | ❌ | ✅ | ✅ |
+| Sessions/threads as first-class | ✅ built 2026-07 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ deepest |
 | Mandatory auto-quality on every run | ✅ | ❌ opt-in | ❌ opt-in | ❌ | ❌ opt-in | ❌ opt-in | ⚠️ signals (all traces, cloud GPU) |
 | Error root-cause + drafted fixes | ✅ | ❌ | ⚠️ Engine | ❌ | ❌ | ⚠️ Loop on demand | ⚠️ buckets only |
-| Failure clustering / issues registry | ✅ registry · 🔜 fleet layer | ❌ roadmap | ✅ Engine | ❌ | ❌ | ✅ Topics | ⚠️ signals |
+| Failure clustering / issues registry | ✅ registry + fleet layer built | ❌ roadmap | ✅ Engine | ❌ | ❌ | ✅ Topics | ⚠️ signals |
 | Embedded AI assistant over the data | ✅ (+write, gated) | ⚠️ cloud beta | ✅ | ⚠️ PXI (closed) | ⚠️ Ollie | ✅ Loop | ⚠️ via MCP/ARIA |
-| Human annotation queues | 🔜 review-lite | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| Human annotation queues | ✅ review-queue lite built | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
 | Datasets/experiments with baselines | ✅ collections/suites | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Runnable regression tests in-product | ✅ (we run the agent) | ❌ external runner | ⚠️ | ⚠️ | ⚠️ | ⚠️ remote evals | ⚠️ |
 | Prompt mgmt w/ labels & A/B | ⚠️ skills play this role | ✅ flagship | ✅ | ✅ | ⚠️ tags | ✅ functions+envs | ✅ |
-| Prompt/agent optimizer | 🔜 Advisor (different) | ❌ | ❌ | ❌ | ✅ 6 algos, MCP tools | ⚠️ Loop | ❌ |
+| Prompt/agent optimizer | ⚠️ Advisor P1–2 built (evidenced recs, no search) | ❌ | ❌ | ❌ | ✅ 6 algos, MCP tools | ⚠️ Loop | ❌ |
 | Guardrails (inline blocking) | n/a (bench) | ❌ | ⚠️ | ❌ (✗→AX) | ✅ | ❌ | ✅ |
-| Cost tracking + custom pricing UI | ⚠️ code-only · 🔜 editor | ✅ tiered+audited | ✅ | ✅ | ✅ | ✅ | ✅ API |
+| Cost tracking + custom pricing UI | ✅ pricing editor built (token-type gaps → AM-OB6) | ✅ tiered+audited | ✅ | ✅ | ✅ | ✅ | ✅ API |
 | Pre-run cost/context preview | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Context-composition / window science | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | MCP server surface scanning + token footprint | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | MCP × model compatibility matrix | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Skill registry / inspector / IDE | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Tool defs as optimizable artifact | 🔜 Advisor | ❌ | ❌ | ❌ | ✅ optimizer | ❌ | ❌ |
+| Tool defs as optimizable artifact | ⚠️ Advisor recommends trims; no schema search | ❌ | ❌ | ❌ | ✅ optimizer | ❌ | ❌ |
 | MCP tracing of user apps | n/a (we are the harness) | ✅ `_meta` | ⚠️ | ✅ instrumentor | ⚠️ via frameworks | ⚠️ | ⚠️ both sides, unstitched |
 | **Exposes an MCP server over itself** | ❌ **(net-new)** | ✅ | ✅ | ✅ `/mcp` built-in | ✅ | ✅ | ✅ |
 | CLI for agents/CI | 🔜 mcpfp | ✅ | ✅ | ✅ | ✅ | ✅ bt | ⚠️ |
@@ -308,7 +310,7 @@ Braintrust (BT), Weave (WV). Cells compress; profiles above are authoritative.
 1. **Three features are now table stakes across every tool — and we lack exactly one of
    them.** (a) An embedded AI assistant over the product's own data (Langfuse Assistant, PXI,
    Ollie, Loop, ARIA) — **we shipped ours first-class**, with approval-gated writes and an
-   operability gate none of them have. (b) Metrics-over-time + alerts — **locked in D-OB**.
+   operability gate none of them have. (b) Metrics-over-time + alerts — **built (2026-07-17)**.
    (c) **An MCP server over the product** — all six competitors ship one; we don't. For the
    product whose subject matter *is* MCP, this is the single most glaring row in the matrix
    (G10 in [`01-gap-analysis.md`](./01-gap-analysis.md)).
@@ -322,8 +324,8 @@ Braintrust (BT), Weave (WV). Cells compress; profiles above are authoritative.
    packaging.** Braintrust Topics and LangSmith Engine ship clustering; Weave ships
    root-cause classifiers; Langfuse ships none of it (roadmap). We already *persist* forensics
    buckets + fix targets + a rating-issues registry on every run — deeper input than any of
-   them — but have no fleet view. D-OB's issues layer lands us ahead of everyone except
-   Braintrust/LangSmith, and the drafted-fix→re-run-proof loop would be unique.
+   them — but have no fleet view. the built issues layer (Phase 5, 2026-07-17) lands us ahead of everyone except
+   Braintrust/LangSmith, and the drafted-fix→re-run-proof loop is unique.
 4. **Two deployment poles, and we sit at the good one.** Phoenix (1 container) proves the
    local-first pole wins developer adoption; Langfuse/Opik/Weave show the cluster-weight
    pole; Braintrust splits the difference with hybrid. Our one-container/SQLite posture is
@@ -333,9 +335,10 @@ Braintrust (BT), Weave (WV). Cells compress; profiles above are authoritative.
    deliberately align *names* with the OTel GenAI / emerging usage (turn, tool call, session)
    so our exports and docs read natively to people arriving from these tools.
 6. **Deep-dive candidates for the next pass** (in value order): Braintrust Topics pipeline
-   internals (before building the D-OB issues layer); Opik Agent Optimizer (before Advisor);
-   Weave's Agents-view data contract (while implementing D-US); Phoenix `/mcp` server tool
-   inventory (before our own MCP server spec).
+   internals (for evolving the built issues layer); Opik Agent Optimizer (before extending the
+   built Advisor — P1–2 shipped 2026-08-18 — toward optimizer-style search); Weave's
+   Agents-view data contract (for evolving the shipped sessions contract); Phoenix `/mcp`
+   server tool inventory (before implementing `roadmap/ci/` WP M.1).
 
 ## Sources
 

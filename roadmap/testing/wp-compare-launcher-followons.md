@@ -21,8 +21,8 @@ matches the Δ-matrix on fixtures for all four outcomes; both themes.
 
 When two runs are open in the compare workspace, allow recording a head-to-head human
 preference (A better / B better / tie, optional note). Persistence rides the observability
-**feedback primitive** (`roadmap/observability/phase-1-backbone/WP-1.5`) — this part is
-**blocked until WP-1.5 lands** and stores preferences as feedback, never as grades (AR6).
+**feedback primitive** (`run_feedback`, WP-1.5 — **built 2026-07-17**, `putRunFeedback`
+upsert per run/key/source): store preferences as feedback, never as grades (AR6).
 Value: skill-effect A/B and model comparisons gain a human axis the auto-graders can be
 checked against (per-test-group LLM-agreement already exists in suite reports — this gives
 it a human counterpart). Acceptance: preference recorded/edited/removed; visible on both
@@ -45,5 +45,6 @@ member-metadata field (contract-first).
 
 ## Sequencing
 
-A is free-standing (any time). B waits for observability WP-1.5. C touches the launcher +
-suite orchestrator — schedule outside an active observability wave to avoid collisions.
+A is free-standing (any time). B's dependency (observability WP-1.5 feedback primitive) is
+built, so B is unblocked. C touches the launcher + suite orchestrator — check the ledgers for
+in-flight work on those surfaces before batching.

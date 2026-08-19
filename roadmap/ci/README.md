@@ -23,6 +23,12 @@ Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp ci`). Shared rules
    itemized report.
 4. **CI artifacts**: a markdown PR-comment body (deltas vs a named baseline: scan-to-scan,
    suite-to-suite) + JSON output for machines; a packaged GitHub Actions workflow example.
+5. **Workbench MCP server** (added 2026-08-19): the bench itself MCP-operable by external
+   agents (Claude Code, Cursor, CI) — a streamable-HTTP MCP mount on the API projecting the
+   read surface, then token-scoped writes. Plan, decisions **D-MCP1–6**, and WPs **M.1–M.4**:
+   [`mcp-server.md`](./mcp-server.md) (evidence:
+   [`research/langfuse-landscape/`](../../research/langfuse-landscape/) — every compared
+   platform ships an MCP server over itself).
 
 ## Decisions to lock at kickoff (owner)
 
@@ -54,6 +60,14 @@ Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp ci`). Shared rules
 | WP | Title | Depends on | Size |
 |---|---|---|---|
 | 3.1 | `no-new-security-findings` assertion (needs security-posture P1) | 1.3, security-posture 1.2 | S |
+
+### Phase MCP — workbench MCP server (plan: [`mcp-server.md`](./mcp-server.md))
+| WP | Title | Depends on | Size |
+|---|---|---|---|
+| M.1 | Read-only MCP server core: streamable-HTTP mount on the API, read tools + report resources, feature flag | — | L |
+| M.2 | Service-token scopes on the mount (localhost bypass per D-MCP2) | 1.1, M.1 | M |
+| M.3 | Scoped write tools: `scan:run` · `runs:launch` · `suites:run` | M.2 | M |
+| M.4 | Agent onboarding docs + self-scan CI gate (D-MCP5) | M.1 | S |
 
 ## Invariants
 

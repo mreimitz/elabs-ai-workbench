@@ -18,6 +18,12 @@ Files sections overlap (`packages/shared`, `testing/run-service.ts` + executors,
 `db/database.ts`/`schema.ts`, the run-console component cluster are the known contested
 surfaces). See `kickoff-prompt.md` for the cross-session contention override.
 
+📎 **Post-completion amendment (2026-08-19, proposed — pending owner lock):** follow-up items
+**AM-OB1–14** from [`research/langfuse-landscape/`](../../research/langfuse-landscape/) —
+[`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md) — plus the proposed
+[`WP 3.5 agent-graph lens`](./phase-3-console/WP-3.5-agent-graph.md) (deps 3.1/3.2 ✅).
+Nothing picked up; no locked decision reopened.
+
 ## Phase 1 — Backbone
 - [x] WP 1.1 — RunFilter grammar + GET /api/runs filters — done 2026-07-16 · wp/observability/1.1
 - [x] WP 1.2 — Metrics endpoints (runs + scans) + indexes — done 2026-07-16 · wp/observability/1.2
@@ -41,6 +47,9 @@ surfaces). See `kickoff-prompt.md` for the cross-session contention override.
 - [x] WP 3.2 — Tree StepLog + nested Gantt + per-step economics — done 2026-07-17 · wp/observability/3.2
 - [x] WP 3.3 — Fork-from-step (rerun + lineage + Compare pre-seed) — done 2026-07-17 · wp/observability/3.3
 - [x] WP 3.4 — In-run search + lenses — done 2026-07-17 · wp/observability/3.4
+- [ ] WP 3.5 — Agent-graph lens (aggregated/expanded) — **proposed 2026-08-19** (amendment
+      AM-OB9; spec [`phase-3-console/WP-3.5-agent-graph.md`](./phase-3-console/WP-3.5-agent-graph.md));
+      deps 3.1/3.2 ✅ — status: pending owner lock
 
 ## Phase 4 — Watch rules
 - [x] WP 4.1 — Rules engine core (on-terminal + actions) — done 2026-07-17 · wp/observability/4.1
@@ -717,6 +726,14 @@ webhook test-fire 4.3, real fork 3.3, real digest 5.5) — none claimed by an ag
   observability fixes forked from committed `main` (v1.6.0) and use only v1.6.0-compatible `@elabs-ai/components-*`
   APIs; the upgrade is reportedly fully additive (zero removed exports), so no conflict expected when
   it lands. Re-verify the gate on `main` after that upgrade commits.
+
+- 2026-08-19 — **[amendment proposed]** Langfuse/landscape research follow-ups **AM-OB1–14**
+  + the WP 3.5 agent-graph lens filed post-completion — see
+  [`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md) (routing, per-item
+  verify-at-pickup notes) with evidence in `research/langfuse-landscape/` (docs 00–04). No
+  locked decision reopened; items are enhancements against built surfaces, individually
+  droppable; chart-touching items are bound to the faithful-stub test rule (the gate
+  blind-spot noted 2026-07-17). Pending owner lock — nothing picked up.
 
 ## Owner-acceptance (pending — grows as WPs land)
 
