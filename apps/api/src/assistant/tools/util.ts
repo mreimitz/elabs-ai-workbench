@@ -1,6 +1,7 @@
 // Assistant (WP 1.2) — small shared helpers for the in-process MCP read toolset. Kept dependency-free
 // (no DB) so they're trivially unit-testable and reusable by every tool in `./index.ts`.
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { RunStep } from "@mcp-token-footprint/shared";
 import { toErrorMessage } from "../../utils/errors.js";
 
 /** A single compact JSON `CallToolResult` — every read tool's success shape. */
@@ -75,6 +76,59 @@ export function truncateFields<T extends object>(
       out[`${key}Truncated`] = capped.truncated;
       out[`${key}Total`] = capped.total;
     }
+  }
+  return out;
+}
+
+// ── Run-step compaction ─────────────────────────────────────────────────────────────────────────
+// Shared by the Assistant read toolset (`./index.ts`) and the workbench MCP server's `runs_get`
+// (`apps/api/src/mcp-server/tools.ts`). It lives HERE rather than in `./index.ts` because that module
+// statically imports `@anthropic-ai/claude-agent-sdk`, which the MCP mount must never pull in — and
+// D-MCP4 forbids the MCP layer keeping a second copy of a derivation the app already has.
+
+/** Longest assistant/reasoning prose kept per step before an explicit truncation marker. */
+export const MAX_STEP_TEXT_CHARS = 1_500;
+/** Longest serialized `payload` preview kept per step. */
+export const MAX_PAYLOAD_PREVIEW_CHARS = 500;
+
+/** `JSON.stringify` that never throws on a cyclic/exotic payload. */
+export function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value) ?? "null";
+  } catch {
+    return "[unserializable]";
+  }
+}
+
+/**
+ * A run step, compacted for an agent: drops the raw `payload` in favor of a bounded preview and
+ * flattens `context` to its two scalar fields — everything a trace-reading agent needs, nothing that
+ * would blow up a run with hundreds of steps.
+ */
+export function compactStep(step: RunStep): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    index: step.index,
+    type: step.type,
+    label: step.label,
+    status: step.status,
+    profileTokens: step.profileTokens,
+  };
+  if (step.durationMs !== undefined) out.durationMs = step.durationMs;
+  if (step.serverId !== undefined) out.serverId = step.serverId;
+  if (step.toolName !== undefined) out.toolName = step.toolName;
+  if (step.turnIndex !== undefined) out.turnIndex = step.turnIndex;
+  if (step.usageActual !== undefined) out.usageActual = step.usageActual;
+  if (step.context !== undefined) {
+    out.contextTotal = step.context.total;
+    out.contextLimit = step.context.limit;
+  }
+  if (step.cumulativeTokens !== undefined) out.cumulativeTokens = step.cumulativeTokens;
+  if (step.assistantText !== undefined)
+    out.assistantText = boundText(step.assistantText, MAX_STEP_TEXT_CHARS);
+  if (step.reasoningText !== undefined)
+    out.reasoningText = boundText(step.reasoningText, MAX_STEP_TEXT_CHARS);
+  if (step.payload !== undefined && step.payload !== null) {
+    out.payloadPreview = boundText(safeStringify(step.payload), MAX_PAYLOAD_PREVIEW_CHARS);
   }
   return out;
 }

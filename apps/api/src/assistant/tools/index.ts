@@ -20,7 +20,6 @@ import {
   RUN_STATUSES,
   SUITE_RUN_STATUSES,
 } from "@mcp-token-footprint/shared";
-import type { RunStep } from "@mcp-token-footprint/shared";
 import { z } from "zod";
 import { buildComparison } from "../../compare/service.js";
 import { DEFAULT_HEATMAP_MODELS } from "../../compatibility/dataset.js";
@@ -45,7 +44,7 @@ import { workspaceRootFor } from "../workspace.js";
 // merges trivially with WP 2.2's parallel workspace-tool additions. SINGLE import + spread point; see
 // `buildAssistantToolDefinitions` below.
 import { buildUiToolDefinitions } from "./ui-tools.js";
-import { boundText, jsonResult, safeTool, truncate, truncateFields } from "./util.js";
+import { boundText, compactStep, jsonResult, safeTool, truncate, truncateFields } from "./util.js";
 // WP 2.2 — the skill-workspace edit-loop tools (D-AS13), a SEPARATE module (this file is shared with
 // WP 3.1's `ui_*` tools) included below via one import + one spread so the two WPs' additions merge
 // without touching each other's hunks. See `workspace-tools.ts` for the tool definitions themselves.
@@ -158,50 +157,9 @@ const DEFAULT_STEP_LIMIT = 150;
 const DEFAULT_EVENT_LIMIT = 150;
 const DEFAULT_TOOL_LIMIT = 150;
 const MAX_FILE_TEXT_CHARS = 20_000;
-const MAX_STEP_TEXT_CHARS = 1_500;
-const MAX_PAYLOAD_PREVIEW_CHARS = 500;
 const MAX_REPORT_CHARS = 60_000;
 
 const limitSchema = z.number().int().positive().max(MAX_LIST_LIMIT).optional();
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value) ?? "null";
-  } catch {
-    return "[unserializable]";
-  }
-}
-
-/** A run step, compacted for the agent: drops the raw `payload` in favor of a bounded preview and
- *  flattens `context` to its two scalar fields — everything a trace-reading agent needs, nothing
- *  that would blow up a run with hundreds of steps. */
-function compactStep(step: RunStep): Record<string, unknown> {
-  const out: Record<string, unknown> = {
-    index: step.index,
-    type: step.type,
-    label: step.label,
-    status: step.status,
-    profileTokens: step.profileTokens,
-  };
-  if (step.durationMs !== undefined) out.durationMs = step.durationMs;
-  if (step.serverId !== undefined) out.serverId = step.serverId;
-  if (step.toolName !== undefined) out.toolName = step.toolName;
-  if (step.turnIndex !== undefined) out.turnIndex = step.turnIndex;
-  if (step.usageActual !== undefined) out.usageActual = step.usageActual;
-  if (step.context !== undefined) {
-    out.contextTotal = step.context.total;
-    out.contextLimit = step.context.limit;
-  }
-  if (step.cumulativeTokens !== undefined) out.cumulativeTokens = step.cumulativeTokens;
-  if (step.assistantText !== undefined)
-    out.assistantText = boundText(step.assistantText, MAX_STEP_TEXT_CHARS);
-  if (step.reasoningText !== undefined)
-    out.reasoningText = boundText(step.reasoningText, MAX_STEP_TEXT_CHARS);
-  if (step.payload !== undefined && step.payload !== null) {
-    out.payloadPreview = boundText(safeStringify(step.payload), MAX_PAYLOAD_PREVIEW_CHARS);
-  }
-  return out;
-}
 
 /**
  * Build the read toolset's raw tool definitions (pre-`createSdkMcpServer`). Exported separately from
