@@ -13,8 +13,10 @@ pnpm typecheck && pnpm test && pnpm build && pnpm lint
 | **Build** | `pnpm build` | `shared` + `api` (tsc) and `web` (vite build) all build. |
 | **Lint** | `pnpm lint` | **Biome** (`biome check`, `biome.json`) is clean. `pnpm format` applies the formatter. |
 
-There is **no ESLint**; linting is **Biome**. The root `.github/workflows/ci.yml` runs all four on
-push + PR. The `/quality` command runs the gate and reports honestly.
+There is **no ESLint**; linting is **Biome**. **All four are run locally** — this repo has no
+`ci.yml`; its only workflow is `.github/workflows/mcp-self-scan.yml`, the D-MCP5 dogfood gate
+(`pnpm mcp:self-scan`), which asserts the workbench MCP server's own definition-token budget and is
+*not* the quality gate. The `/quality` command runs the gate and reports honestly.
 
 ## Manual checklist
 

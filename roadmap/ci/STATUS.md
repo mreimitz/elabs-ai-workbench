@@ -33,7 +33,31 @@ wp/ci/<id>`.
 - [x] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — done 2026-08-19 · `wp/ci/M.1`. 21 read tools + 4 report resource templates at `/api/mcp` (stateless streamable HTTP, GET/DELETE→405); new `mcp_server` Settings › Features flag (off ⇒ 403 `feature_disabled`); no new dependency, **no migration** (`user_version` 57 unchanged), additive-only wire. Gate green (shared 89 · api 3254 · web 3178+5 skipped · build · lint). **Live-verified against the built API on a copy of a real 91 MB dev DB**: MCP Inspector `initialize`/`tools/list`/7 tool calls, `resources/read` of a real run report, error + validation paths, flag off→403→on, off-state survives restart, fresh-DB boot. **Self-proof (D-MCP5 seed): the workbench scanned its own mount — 21 tools · 2,224 tokens · 200 resources (`generic_o200k`, countingVersion 2)**; the in-test `tools/list` measurement is 2,206 against a budget of 3,000 (`WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET`). Owner-acceptance pending: the both-theme + keyboard walk of the new Settings › Features row.
 - [ ] WP M.2 — service-token scopes on the mount (localhost bypass per D-MCP2) — depends: 1.1, M.1
 - [ ] WP M.3 — scoped write tools: `scan:run` · `runs:launch` · `suites:run` — depends: M.2
-- [ ] WP M.4 — agent onboarding docs + self-scan CI gate — depends: M.1
+- [x] WP M.4 — agent onboarding docs + self-scan CI gate — done 2026-08-19 · `wp/ci/M.4`. Three
+      deliverables, all additive: **(a)** `GET /api/mcp/llms.txt` — an `llms.txt`-style usage doc
+      **rendered per request from the registered tool definitions** (same name+description
+      `tools/list` returns) grouped by a new `WORKBENCH_MCP_TOOL_FAMILIES` declaration, so it cannot
+      drift; it sits *under* the mount path, so the `mcp_server` feature's existing `/api/mcp` prefix
+      403s it with the endpoint it documents (`GET /api/mcp` itself still answers 405). **(b)**
+      [`user-guide/20-workbench-mcp-server.md`](../../user-guide/20-workbench-mcp-server.md) — the
+      owner-facing playbook (connect Claude Code / Cursor, worked questions, the read-only guarantee,
+      the Settings › Features switch, what is *not* built yet). **(c) The D-MCP5 dogfood gate:**
+      `pnpm mcp:self-scan` serves the real mount on an ephemeral loopback port against a throwaway DB
+      and runs **the app's own `ScanService.runScan`** against it — a real scan row, not a
+      re-implementation — writing a gitignored `.artifacts/mcp-self-scan/footprint.{json,md}`
+      artifact; exit 0 under budget · **1 over budget** · 2 on failure. Wired as
+      `.github/workflows/mcp-self-scan.yml` (the repo's **only** workflow — the four-command quality
+      gate is still local; the stale "root `ci.yml`" claims in `CLAUDE.md` §§3–4 and
+      `.claude/rules/quality-gates.md` were corrected in the same merge) and exercised hermetically
+      inside `pnpm test` (`apps/api/test/workbench-mcp-self-scan.test.ts`). No new dependency, **no
+      migration**, no web route (`assistant-route-operability` untouched); `pnpm-lock.yaml` unchanged.
+      Gate green (shared 94 · api 3261 · web 3187 passed + 5 skipped · build · lint), re-run by the
+      orchestrator on the branch. **Independently verified at merge:** `pnpm mcp:self-scan` →
+      `21 tools · 2224 definition tokens (generic_o200k, countingVersion 2) · budget 3000 → within
+      budget`, exit 0; the breach path re-checked by temporarily setting the budget to 100 → exit
+      **1** with the FAIL message, then reverted. **Not verified:** the GitHub Actions workflow has
+      never executed (no CI in this repo yet), and no third-party host (Claude Code / Cursor) was
+      connected — both are owner-acceptance items below.
 
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
@@ -72,3 +96,9 @@ MCP) here._
       dialog states the blast radius; an external agent host (Claude Code / Cursor) connects to
       `http://127.0.0.1:8080/api/mcp` and answers a real question from the tools —
       accepted: ____
+- [ ] **WP M.4** — a real external host onboards from the served doc: open
+      `http://127.0.0.1:8080/api/mcp/llms.txt` in a browser, then run
+      `claude mcp add --transport http workbench http://127.0.0.1:8080/api/mcp` in another repo and
+      have that session answer a question from the tools without further explanation; the
+      `.github/workflows/mcp-self-scan.yml` job runs green once the branch reaches GitHub (never yet
+      executed) — accepted: ____
