@@ -131,9 +131,14 @@ function resolveSubject(ports: AssertionPorts, target: AssertionTarget): ScanDet
   }
 
   const server = resolveServerRef(ports, target.server);
+  // The repository already returns newest-first, but `ORDER BY scanned_at DESC` alone is not a total
+  // order: two scans in the same millisecond (a CI job that scans twice) would otherwise pick
+  // whichever row SQLite happened to return first. Re-sorting with the id tie-break makes "the
+  // newest scan" mean the same thing on every run.
   const newest = ports.scans
     .listSummariesByServer(server.id)
-    .find((summary) => summary.status === USABLE_STATUS);
+    .filter((summary) => summary.status === USABLE_STATUS)
+    .sort(newestFirst)[0];
   if (!newest) {
     throw httpError(
       400,
@@ -162,6 +167,17 @@ function resolveServerRef(ports: AssertionPorts, ref: string): ServerConfig {
   throw httpError(400, `No registered server with the id or exact name "${ref}".`);
 }
 
+/**
+ * Newest first, with the scan id as tie-break — a TOTAL order, unlike `ORDER BY scanned_at DESC`
+ * alone. Both "which scan is the subject" and "which scan is the baseline" go through it, so a gate
+ * re-run against an unchanged database always compares the same pair.
+ */
+function newestFirst(a: ScanSummary, b: ScanSummary): number {
+  return a.scannedAt === b.scannedAt
+    ? b.id.localeCompare(a.id)
+    : b.scannedAt.localeCompare(a.scannedAt);
+}
+
 type BaselineResolution = {
   scan: ScanDetail | null;
   requested: string | undefined;
@@ -188,13 +204,7 @@ function resolveBaseline(
           summary.id !== subject.id &&
           summary.scannedAt < subject.scannedAt,
       )
-      // Newest first; the id tie-break keeps the choice deterministic when two scans share an
-      // instant (the repository's own ORDER BY does not).
-      .sort((a, b) =>
-        a.scannedAt === b.scannedAt
-          ? b.id.localeCompare(a.id)
-          : b.scannedAt.localeCompare(a.scannedAt),
-      );
+      .sort(newestFirst);
 
     const newest = candidates[0];
     if (!newest) {

@@ -17,7 +17,13 @@ import { runServersCommand } from "./commands/servers.js";
 import { resolveConfig } from "./config.js";
 import { CliError, describeUnexpectedError } from "./errors.js";
 import { renderCommandUsage, renderUsage } from "./help.js";
-import { Emitter, isOutputFormat, type CliStreams, type OutputFormat } from "./output.js";
+import {
+  Emitter,
+  isOutputFormat,
+  redactTokens,
+  type CliStreams,
+  type OutputFormat,
+} from "./output.js";
 
 /**
  * The `mcpfp` entry point, as a plain function over injected argv/env/cwd/streams.
@@ -63,7 +69,9 @@ export async function runCli(context: CliContext): Promise<McpfpExitCode> {
     parsed = parseArgs({ args: argv, options: OPTIONS, allowPositionals: true, strict: true });
   } catch (error) {
     // `strict: true` throws on an unknown option or a missing option argument. Both are usage errors.
-    streams.stderr(`${describeUnexpectedError(error)}\n\n`);
+    // Redacted like everything else: a `parseArgs` message can quote the argument it choked on, and
+    // `--tokn mcpfp_…` is exactly the typo that produces one.
+    streams.stderr(redactTokens(`${describeUnexpectedError(error)}\n\n`));
     streams.stderr(`${renderUsage()}\n`);
     return MCPFP_EXIT.error;
   }
@@ -94,12 +102,17 @@ export async function runCli(context: CliContext): Promise<McpfpExitCode> {
   } catch (error) {
     // ONE place turns a thrown failure into a stderr message + an exit code, so no command has to
     // remember to, and the payload stream stays clean whatever went wrong.
+    //
+    // Everything written here goes through the SAME `redactTokens` the `Emitter` applies. It has to:
+    // this handler writes to the raw stream rather than through the emitter (an error can be thrown
+    // before one exists), and an API error body that echoed the `Authorization` header back reaches
+    // an operator's build log through exactly this path — measured, not assumed.
     if (error instanceof CliError) {
-      streams.stderr(`${error.message}\n`);
-      for (const line of error.details) streams.stderr(`${line}\n`);
+      streams.stderr(redactTokens(`${error.message}\n`));
+      for (const line of error.details) streams.stderr(redactTokens(`${line}\n`));
       return error.exitCode;
     }
-    streams.stderr(`${describeUnexpectedError(error)}\n`);
+    streams.stderr(redactTokens(`${describeUnexpectedError(error)}\n`));
     return MCPFP_EXIT.error;
   }
 }
