@@ -25,10 +25,10 @@ Overview becomes the **default** tab, Scans/Testing/Issues remain as siblings.
 The data contract `apps/web/src/features/dashboard/overview/overview-contract.ts` is committed
 **up front** so 1.1/1.2/1.3 can be built in parallel against one shape.
 
-- [ ] WP 1.1 — `use-overview-data` + pure derivation (no new endpoint) — spec [`WP-1.1-data-hook.md`](./WP-1.1-data-hook.md)
-- [ ] WP 1.2 — hero footprint chart + KPI tiles — spec [`WP-1.2-hero-kpi-tiles.md`](./WP-1.2-hero-kpi-tiles.md)
-- [ ] WP 1.3 — attention / movers / advisor tiles — spec [`WP-1.3-list-tiles.md`](./WP-1.3-list-tiles.md)
-- [ ] WP 1.4 — `BentoGrid` shell + Overview as the default tab — spec [`WP-1.4-tab-shell.md`](./WP-1.4-tab-shell.md) · **depends on 1.1 + 1.2 + 1.3**
+- [x] WP 1.1 — `use-overview-data` + pure derivation (no new endpoint) — done 2026-08-19 · 794a89b · spec [`WP-1.1-data-hook.md`](./WP-1.1-data-hook.md)
+- [x] WP 1.2 — hero footprint chart + KPI tiles — done 2026-08-19 · 794a89b · spec [`WP-1.2-hero-kpi-tiles.md`](./WP-1.2-hero-kpi-tiles.md)
+- [x] WP 1.3 — attention / movers / advisor tiles — done 2026-08-19 · 794a89b · spec [`WP-1.3-list-tiles.md`](./WP-1.3-list-tiles.md)
+- [x] WP 1.4 — `BentoGrid` shell + Overview as the default tab — done 2026-08-19 · cb32370 · spec [`WP-1.4-tab-shell.md`](./WP-1.4-tab-shell.md)
 
 **Gate baseline for this phase:** `main` carries **2 pre-existing api failures** unrelated to this
 plan — `bundled all-models.json is not stale vs research data/**` and `builder validates + merges the
@@ -94,3 +94,45 @@ _Entries: date · decision · rationale._
   Phase 0 lessons in the types themselves: a missing figure is `null` and never `0`; cost is a LIST
   per basis so no tile can blend `api_exact` with `subscription_reference` (D-OB14); and each section
   carries its own load state so an empty tile self-hides instead of blanking the bento.
+
+## Phase 1 close-out (2026-08-19)
+
+- [x] WP 1.5 — the three defects a browser found that jsdom could not — done 2026-08-19 · 998f84b.
+  The bento passed 3,444 green web tests and still rendered wrong on the owner's real data. Rendering
+  it against the live DB exposed: (1) **the footprint section was window-scoped**, and since the
+  owner's newest scan is 19 days old a 7-day window returned `servers: []` — so the hero plus
+  StartupCost, SurfaceMix and Movers all self-hid, leaving 2 tiles and no headline number despite 103
+  scans on record. Fixed by treating startup footprint as a **standing measurement**: current-state
+  figures come from one extra unscoped `getScanMetrics` and are window-independent, only
+  `perServer[].points` stays windowed, and a quiet window keeps the figures while naming when the
+  fleet was last measured. Movers deliberately stays window-scoped — movement IS an event.
+  (2) `AdvisorTile` dumped 131 tool names unclipped → `line-clamp-3` + `title` (D-10), title/savings
+  never clamped. (3) `AttentionTile` overflowed its row → internal scroll + one shared
+  `attentionCounts()` so the badge and the rows cannot disagree.
+
+**Owner-visible state:** `/dashboard` lands on Overview. Verified in-browser, both themes, at
+1400 px: 5 tiles at the 7d default (with the honest "no scan activity in this window — last measured
+Jul 31" notice), 6 at 30d with the hero plotting per-server lines across Jul 21–31; window persisted
+as `?oRange=`; spotlight overlay on every tile; **zero console errors**; **zero horizontal overflow
+at 375 / 768 / 1400 px**.
+
+### Decision log additions
+
+- **2026-08-19 · a green suite is not evidence the page works.** Phase 1 shipped 3,444 passing web
+  tests and every tile was individually correct; the failure lived in the *combination* of the 7-day
+  default and the owner's actual scan dates, which jsdom cannot observe. Browser verification against
+  a real database is now the closing step for any dashboard WP in this plan, not an optional extra.
+- **2026-08-19 · `BentoGrid` has a real upstream defect, but it is benign here.** `BentoGridItem`'s
+  `.d.ts` promises "on a 1-column layout ALL col spans clamp to 1 automatically via CSS `min()`", and
+  the shipped JS implements no clamp — the only `gridColumn` assignment is
+  `span ${n} / span ${n}` (verified: 1 occurrence, no `--bento-cols`, no CSS file). Per CSS Grid the
+  span therefore widens the implicit grid below `lg`. **Measured in-browser, the consequence does not
+  bite:** the added tracks resolve to `0px` (mobile `299.6px 0 0 0`, tablet `218.3px 218.3px 0 0`,
+  desktop 4×260.6px) and horizontal overflow is 0 at every width. Worth raising upstream since the
+  types promise behaviour the code lacks; **not** worth a local CSS workaround (the obvious one,
+  `grid-auto-columns: 0`, is strictly worse — auto-placement would drop ordinary tiles into
+  zero-width tracks and make them invisible).
+- **2026-08-19 · `?oRange=` persists the PRESET, never the resolved instants.** A preset means
+  "trailing 24 h / 7 d / 30 d as of when you open it"; freezing the instants would make a shared link
+  silently age. (The Testing tab makes the opposite choice deliberately — it offers a custom calendar
+  range, so its window must be pinned.)
