@@ -14,6 +14,9 @@ import type {
   AssistantThreadUpdateInput,
   AssistantWorkspaceFileContent,
   AssistantWorkspaceFilesResponse,
+  ApiTokenCreateInput,
+  ApiTokenCreateResponse,
+  ApiTokenListResponse,
   AppFeatureFlagsResponse,
   AppFeatureFlagsUpdate,
   AvailableModelsResponse,
@@ -188,6 +191,26 @@ export const getFeatureFlags = (signal?: AbortSignal): Promise<AppFeatureFlagsRe
 export const updateFeatureFlags = (
   patch: AppFeatureFlagsUpdate,
 ): Promise<AppFeatureFlagsResponse> => apiPut<AppFeatureFlagsResponse>("/api/features", patch);
+
+// ── Service tokens (Settings › API tokens) ──────────────────────────────────────────────────────
+// The credential a headless caller (CI, the mcpfp CLI, an external agent on the MCP mount) presents
+// instead of a browser session. The API stores a SHA-256 digest and returns the plaintext exactly
+// ONCE — from `createApiToken` — so the caller of that function is the last chance to show it. It is
+// never persisted here, never put in localStorage, and never re-fetchable. See roadmap/ci/ WP 1.1.
+
+/** Every service token, newest first — redacted (`ApiToken` has no field that could hold a secret). */
+export const listApiTokens = (signal?: AbortSignal): Promise<ApiTokenListResponse> =>
+  apiGet<ApiTokenListResponse>("/api/tokens", signal);
+
+/**
+ * Mint a service token. **The returned `secret` is the only time the plaintext exists** — show it to
+ * the operator immediately and do not stash it anywhere.
+ */
+export const createApiToken = (input: ApiTokenCreateInput): Promise<ApiTokenCreateResponse> =>
+  apiPost<ApiTokenCreateResponse>("/api/tokens", input);
+
+/** Revoke a service token. Immediate — any caller still holding it starts getting 401s. */
+export const deleteApiToken = (id: string): Promise<void> => apiDelete(`/api/tokens/${id}`);
 
 // ── MCP server connectivity (reauth gate) ───────────────────────────────────────────────────────
 // The reauth gate's throttled preflight. All MCP/secret work stays in the API; the web only ever
