@@ -1079,7 +1079,8 @@ function ChartPanel({
 }
 
 /** Swatch legend for the context-segment series — painted from the SAME ramp token as each
- *  plotted series (never a template-literal `bg-chart-N` class: Tailwind cannot generate one it never sees). */
+ *  plotted series (never a template-literal `bg-chart-N` class: Tailwind cannot see one, so it
+ *  paints only while an unrelated file spells that literal). */
 function SegmentLegend() {
   return (
     <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2.5">
