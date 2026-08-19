@@ -31,6 +31,22 @@ import type { TestingGroupBy } from "./dashboard-url-state";
  *  that bucket (a key absent from a bucket is OMITTED from the row — never zero-filled). */
 export type PivotedRow = { bucketStart: string; x: Date; [seriesKey: string]: unknown };
 
+/**
+ * The `bucketStart` of the {@link PivotedRow} a chart datapoint came from.
+ *
+ * `@elabs-ai/components-charts` hands `onDatapointClick` the RAW data row it plotted (`datum`), typed as
+ * `Record<string, unknown>`. Every row this module builds — for the time-scale charts AND for the
+ * categorical `BarChart` variants, which only decorate a pivoted row with a `bucketLabel` — carries
+ * `bucketStart`, so one narrowing lives here instead of once per panel. Returns `undefined` for
+ * anything that is not one of our rows, so a panel can bail out instead of navigating somewhere
+ * fabricated.
+ */
+export function datapointBucketStart(datum: unknown): string | undefined {
+  if (typeof datum !== "object" || datum === null) return undefined;
+  const value = (datum as { bucketStart?: unknown }).bucketStart;
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 /** A named points list this module derives from a `RunMetricsSeries`/`ScanMetricsSeries` slice —
  *  the common shape every "pivot to chart rows" helper below consumes. */
 export type NamedPoints = { key: string; label: string; points: { bucketStart: string; value: number }[] };

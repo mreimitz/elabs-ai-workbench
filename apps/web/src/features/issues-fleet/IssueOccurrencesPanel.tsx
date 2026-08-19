@@ -8,8 +8,7 @@ import { getRunMetrics } from "../../lib/api";
 import { formatNumber } from "../../lib/format";
 import { type Loadable, useLoadable } from "../../lib/loadable";
 import { bucketRangeIso, drillDownHref } from "../dashboard/testing/dashboard-url-state";
-import { DrillList } from "../dashboard/testing/DrillList";
-import { pivotToRows } from "../dashboard/testing/metrics-derive";
+import { datapointBucketStart, pivotToRows } from "../dashboard/testing/metrics-derive";
 import { ChartBox, ChartPanel, PanelEmptyState } from "../dashboard/testing/panel-shell";
 import { buildIssueRunFilter, type FleetIssue } from "./issue-lib";
 
@@ -53,8 +52,8 @@ export function formatOccurrenceBucketLabel(date: Date, bucket: MetricsBucket): 
 
 /**
  * The detail's "metrics slice" (WP5.3 spec §Design) — occurrences over time for THIS issue's exact
- * scope. REUSES the WP2.2 panel building blocks (`ChartPanel`/`ChartBox`/`PanelEmptyState`/
- * `DrillList`, `dashboard-url-state.ts`'s `bucketRangeIso`/`drillDownHref`) rather than the tightly
+ * scope. REUSES the WP2.2 panel building blocks (`ChartPanel`/`ChartBox`/`PanelEmptyState`,
+ * `dashboard-url-state.ts`'s `bucketRangeIso`/`drillDownHref`) rather than the tightly
  * coupled `RunsErrorRatePanel` component itself: that panel's drill-down composes its RunFilter via
  * `TestingDashboardControls`/`baseRunFilter`, which has no `skillId` dimension (only
  * `providerKind`/`serverId`/`scenarioId`/`suiteId`/`model` — the Testing dashboard's own narrower
@@ -62,6 +61,9 @@ export function formatOccurrenceBucketLabel(date: Date, bucket: MetricsBucket): 
  * fetches `GET /api/metrics/runs` directly with `buildIssueRunFilter(issue)` — the FULL RunFilter
  * grammar — so the chart, its drill-down, and the detail's "open in feed" action all compose the
  * SAME exact filter (`issue-lib.ts`).
+ *
+ * Drill-down: activating a bar (pointer or keyboard) opens the runs feed scoped to exactly that
+ * bucket's window — the chart itself is the click surface.
  */
 export function IssueOccurrencesPanel({ issue }: { issue: FleetIssue }) {
   const filter = useMemo(() => buildIssueRunFilter(issue), [issue]);
@@ -131,39 +133,31 @@ function OccurrencesBody({
     bucketLabel: formatOccurrenceBucketLabel(new Date(row.bucketStart), bucket),
   }));
 
-  const drillRows = rows.map((row) => {
-    const { from, to } = bucketRangeIso(row.bucketStart, bucket);
-    const value = typeof row.count === "number" ? row.count : 0;
-    return {
-      key: row.bucketStart,
-      label: new Date(row.bucketStart).toLocaleString(),
-      value: `${formatNumber(value)} run${value === 1 ? "" : "s"}`,
-      onOpen: () => onDrill({ dateFrom: from, dateTo: to }),
-    };
-  });
-
   return (
-    <>
-      <ChartBox>
-        <BarChart
-          data={chartRows as unknown as Record<string, unknown>[]}
-          xDataKey="bucketLabel"
-          aspectRatio="auto"
-          className="h-full w-full"
-          accessibleLabel="Occurrences over time"
-        >
-          <Grid horizontal />
-          <Bar dataKey="count" fill="var(--chart-1)" />
-          <BarXAxis maxLabels={8} />
-          <ChartTooltip
-            showDatePill={false}
-            rows={(point) => [
-              { color: "var(--chart-1)", label: "Occurrences", value: formatNumber(Number(point.count ?? 0)) },
-            ]}
-          />
-        </BarChart>
-      </ChartBox>
-      <DrillList rows={drillRows} />
-    </>
+    <ChartBox>
+      <BarChart
+        data={chartRows as unknown as Record<string, unknown>[]}
+        xDataKey="bucketLabel"
+        aspectRatio="auto"
+        className="h-full w-full"
+        accessibleLabel="Occurrences over time"
+        onDatapointClick={(point) => {
+          const bucketStart = datapointBucketStart(point.datum);
+          if (!bucketStart) return;
+          const { from, to } = bucketRangeIso(bucketStart, bucket);
+          onDrill({ dateFrom: from, dateTo: to });
+        }}
+      >
+        <Grid horizontal />
+        <Bar dataKey="count" fill="var(--chart-1)" />
+        <BarXAxis maxLabels={8} />
+        <ChartTooltip
+          showDatePill={false}
+          rows={(point) => [
+            { color: "var(--chart-1)", label: "Occurrences", value: formatNumber(Number(point.count ?? 0)) },
+          ]}
+        />
+      </BarChart>
+    </ChartBox>
   );
 }

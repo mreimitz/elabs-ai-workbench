@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ShieldAlert } from "lucide-react";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import type { RunFilter, RunMetricsSeries, StopReasonCode } from "@mcp-token-footprint/shared";
@@ -15,6 +15,12 @@ import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
  * bucket label is a formatted string here. Stacking here is legitimate: this is the EXPLICITLY
  * requested "total stops broken into reasons" visualization, not a capability-class blend (D-OB14
  * governs `tokensIn`/`tokensOut`/`costUsd`/`questions` only — see `TokensPanel`/`CostPanel`).
+ *
+ * Drill-down: activating a bar (pointer or keyboard) opens the runs feed scoped to THAT bar's
+ * `stopReasonCode` — the identical filter the breakdown row for the same reason composes, so the
+ * two entry points can never disagree. The breakdown list stays: its rows are per-REASON totals
+ * across the whole window, which no single bar expresses, and it is where each code's humanized
+ * label is actually readable without hovering.
  */
 export function GuardrailStopsPanel({
   series,
@@ -31,18 +37,25 @@ export function GuardrailStopsPanel({
     [rows],
   );
 
+  /** The ONE place a reason resolves to a filter — the chart's datapoint click and the breakdown
+   *  row below both go through this, so they cannot drift apart. */
+  const drillToCode = useCallback(
+    (code: string) => onDrill(drillDownFilter(controls, { stopReasonCode: [code as StopReasonCode] })),
+    [controls, onDrill],
+  );
+
   const drillRows = useMemo(
     () =>
-      codes.map((code, i) => {
+      codes.map((code) => {
         const total = rows.reduce((sum, r) => sum + (typeof r[code] === "number" ? (r[code] as number) : 0), 0);
         return {
           key: code,
           label: labels[code] ?? code,
           value: `${formatNumber(total)} stops`,
-          onOpen: () => onDrill(drillDownFilter(controls, { stopReasonCode: [code as StopReasonCode] })),
+          onOpen: () => drillToCode(code),
         };
       }),
-    [codes, rows, labels, controls, onDrill],
+    [codes, rows, labels, drillToCode],
   );
 
   return (
@@ -61,6 +74,18 @@ export function GuardrailStopsPanel({
               aspectRatio="auto"
               className="h-full w-full"
               accessibleLabel="Guardrail stops by reason, stacked over time"
+              onDatapointClick={(point) => {
+                const code = String(point.seriesKey ?? "");
+                if (!codes.includes(code)) return;
+                drillToCode(code);
+              }}
+              // The default accessible name would read the raw `stopReasonCode`; the panel already
+              // owns the humanized label the breakdown list shows.
+              datapointLabel={(point) => {
+                const code = String(point.seriesKey ?? "");
+                const when = String(point.category ?? "");
+                return `${labels[code] ?? code}, ${when}: ${formatNumber(Number(point.value ?? 0))} stops`;
+              }}
             >
               <Grid horizontal />
               {codes.map((code, i) => (

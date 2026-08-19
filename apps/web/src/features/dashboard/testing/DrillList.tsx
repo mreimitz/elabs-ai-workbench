@@ -3,14 +3,19 @@ import { Text } from "@elabs-ai/components-ui";
 import { IconButton } from "../../../components/IconButton";
 
 /**
- * DrillList — the ONE click-through breakdown list every Testing-dashboard panel uses for
- * drill-down (WP 2.2). `@elabs-ai/components-charts` v1.6.0 has no per-datapoint/legend `onClick` (Bar/Line/Area
- * only expose hover-tooltip interaction — confirmed against the vendored `.d.ts` and the MCP
- * `docs`/`search` tools; see the WP report), so each chart's actual click surface is this compact,
- * keyboard-reachable list underneath it — one row per bucket/class/group, each opening the
- * equivalent RunFilter in the runs feed. This is the SAME `<ul>/<li>` + ghost `Button` pattern
- * `ScansTab.tsx`'s "Biggest movers" list already uses, so it reads as one grammar across the app
- * (and is a strictly BETTER a11y story than a tiny unlabeled SVG bar as a click target).
+ * DrillList — a compact, labelled breakdown list: one row per SERIES (a stop reason, a server, a
+ * leaderboard entry), each opening that series' destination.
+ *
+ * It is NOT the charts' click surface. Every chart panel now passes `onDatapointClick`, so a bar or
+ * a point is activated directly, by pointer or keyboard (`@elabs-ai/components-charts` mounts real
+ * `<button>` targets outside the aria-hidden `<svg>`). The lists that merely mirrored one row per
+ * datapoint were deleted with that change; the ones that remain earn their place by carrying
+ * something no single datapoint does — a series' TOTAL across the whole window, and its human name
+ * next to it, readable without hovering (`GuardrailStopsPanel`, `ScansStripPanel`,
+ * `LeaderboardsPanel`).
+ *
+ * The `<ul>/<li>` + ghost `IconButton` shape is the SAME pattern `ScansTab.tsx`'s "Biggest movers"
+ * list uses, so it reads as one grammar across the app.
  */
 export type DrillRow = {
   key: string;

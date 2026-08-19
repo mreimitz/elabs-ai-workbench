@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { parseRunFilter, type RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
-import { defaultControls, drillDownHref } from "./dashboard-url-state";
+import { bucketRangeIso, defaultControls, drillDownFilter, drillDownHref } from "./dashboard-url-state";
 
 vi.mock("@elabs-ai/components-charts", () => ({
   ComposedChart: ({ children }: { children: ReactNode }) => <div data-testid="composed-chart">{children}</div>,
@@ -60,32 +60,31 @@ describe("RunsErrorRatePanel", () => {
     expect(screen.getByText("No runs in this window")).toBeInTheDocument();
   });
 
-  // WP 2.2 acceptance #3 — drill-down round trip for "an error-rate point": clicking the bucket's
-  // DrillList row must produce a RunFilter that round-trips through serialize/parse to the EXACT
-  // bucket window (folded via dateFrom/dateTo), scoped by the control bar's own base filter.
-  test("clicking a bucket's drill row opens the runs feed scoped to EXACTLY that bucket's window (round trip)", () => {
-    const onDrill = vi.fn();
+  // WP 0.2 — the per-bucket `DrillList` under this chart is GONE. It existed only because a comment
+  // (written against charts v1.6.0; the app is on v4) claimed the chart had no per-point click, and
+  // it mirrored one row per datapoint. The chart itself is now the click surface. Its behaviour is
+  // locked in `datapoint-clicks.test.tsx`, which stubs `@elabs-ai/components-charts` FAITHFULLY — the
+  // inert no-op mock below cannot see chart props, so the assertion has to live there.
+  test("no per-bucket drill row remains — the chart carries the drill-down now", () => {
     renderPanel(
       <RunsErrorRatePanel
         series={SERIES}
         controls={CONTROLS}
         bucket="day"
         groupLabel={(g) => g}
-        onDrill={onDrill}
+        onDrill={vi.fn()}
       />,
     );
-    const openButton = screen.getByRole("button", { name: /open runs for/i });
-    fireEvent.click(openButton);
+    expect(screen.queryByRole("button", { name: /open runs for/i })).not.toBeInTheDocument();
+  });
 
-    expect(onDrill).toHaveBeenCalledTimes(1);
-    const filter = onDrill.mock.calls[0]![0];
-    expect(filter.dateFrom).toBe("2026-07-01T00:00:00.000Z");
-    expect(filter.dateTo).toBe("2026-07-01T23:59:59.999Z");
-
-    // The SAME filter, run through the actual href builder + parsed back, matches byte-for-byte.
+  // The drill-down filter this panel composes still has to survive the runs-feed wire, so keep the
+  // serialize/parse round trip — just built from the shared helpers instead of a removed button.
+  test("a bucket's drill filter round-trips through the runs-feed href unchanged", () => {
+    const { from, to } = bucketRangeIso("2026-07-01T00:00:00.000Z", "day");
+    const filter = drillDownFilter(CONTROLS, { dateFrom: from, dateTo: to });
     const href = drillDownHref(filter);
-    const encoded = decodeURIComponent(href.slice("/testing/runs?filter=".length));
-    const restored = parseRunFilter(encoded);
+    const restored = parseRunFilter(decodeURIComponent(href.slice("/testing/runs?filter=".length)));
     expect(restored.dateFrom).toBe("2026-07-01T00:00:00.000Z");
     expect(restored.dateTo).toBe("2026-07-01T23:59:59.999Z");
   });

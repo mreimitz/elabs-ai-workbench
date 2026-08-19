@@ -30,7 +30,7 @@ describe("CostPanel — D-OB14 no-blend", () => {
         points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 0.75, n: 2 }],
       }),
     ];
-    render(<CostPanel series={input} controls={CONTROLS} onDrill={vi.fn()} />);
+    render(<CostPanel series={input} controls={CONTROLS} bucket="day" onDrill={vi.fn()} />);
 
     expect(screen.getByText("$ Exact (API-metered)")).toBeInTheDocument();
     expect(screen.getByText("$ Est. (subscription reference)")).toBeInTheDocument();
@@ -43,7 +43,7 @@ describe("CostPanel — D-OB14 no-blend", () => {
   });
 
   test("no cost data → the panel's own empty state", () => {
-    render(<CostPanel series={[]} controls={CONTROLS} onDrill={vi.fn()} />);
+    render(<CostPanel series={[]} controls={CONTROLS} bucket="day" onDrill={vi.fn()} />);
     expect(screen.getByText("No cost data")).toBeInTheDocument();
   });
 

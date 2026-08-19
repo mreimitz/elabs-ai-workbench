@@ -175,8 +175,8 @@ export function TestingTab() {
                 />
                 <GuardrailStopsPanel series={data.guardrail} controls={controls} onDrill={onDrill} />
                 <DurationPanel series={data.duration} controls={controls} bucket={bucket} onDrill={onDrill} />
-                <TokensPanel series={data.tokens} controls={controls} onDrill={onDrill} />
-                <CostPanel series={data.cost} controls={controls} onDrill={onDrill} />
+                <TokensPanel series={data.tokens} controls={controls} bucket={bucket} onDrill={onDrill} />
+                <CostPanel series={data.cost} controls={controls} bucket={bucket} onDrill={onDrill} />
                 <ScoreTrendPanel series={data.score} controls={controls} bucket={bucket} onDrill={onDrill} />
               </PanelGrid>
               <LeaderboardsPanel

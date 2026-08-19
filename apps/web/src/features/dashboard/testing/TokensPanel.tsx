@@ -1,12 +1,12 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { ExternalLink, Layers } from "lucide-react";
 import { Bar, BarChart, BarXAxis, ChartTooltip, Grid } from "@elabs-ai/components-charts";
 import { Button, Text } from "@elabs-ai/components-ui";
-import type { RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
+import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatNumber } from "../../../lib/format";
-import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
-import { buildTokensResult, type CapabilityClassSeries } from "./metrics-derive";
+import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
+import { buildTokensResult, type CapabilityClassSeries, datapointBucketStart } from "./metrics-derive";
 import { ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -15,22 +15,36 @@ import { ChartPanel, PanelEmptyState } from "./panel-shell";
  * a summed total across an accounting-fidelity boundary (an "exact" provider-metered count next to
  * an "estimated" local one), which is exactly what D-OB14 forbids.
  *
- * Drill-down note: a capability class (`exact`/`estimated`/…) is an ACCOUNTING FACET, not a
- * `RunFilter` dimension — there is no "runs with estimated tokens" filter to scope to, so per-class
- * rows would all navigate to the identical destination (a misleading multi-button UI). Instead: a
- * non-interactive legend (the honest per-class totals) plus ONE real drill action for the panel's
- * whole window/filter, in the panel header.
+ * Drill-down: a capability class (`exact`/`estimated`/…) is an ACCOUNTING FACET, not a `RunFilter`
+ * dimension — there is no "runs with estimated tokens" filter to scope to. What a bar DOES identify
+ * is its BUCKET, so activating one (pointer or keyboard) opens the runs feed scoped to exactly that
+ * bucket's window — the same `drillDownFilter` + `bucketRangeIso` path every other time-bucketed
+ * panel uses. The class stays out of the filter, so two classes' bars in one bucket resolve to the
+ * same destination rather than to a fabricated one. The legend below stays non-interactive (the
+ * honest per-class totals), and the header keeps ONE drill for the panel's whole window.
  */
 export function TokensPanel({
   series,
   controls,
+  bucket,
   onDrill,
 }: {
   series: RunMetricsSeries[];
   controls: TestingDashboardControls;
+  bucket: MetricsBucket;
   onDrill: (filter: RunFilter) => void;
 }) {
   const { inRows, outRows, inClasses, outClasses, hasData } = useMemo(() => buildTokensResult(series), [series]);
+
+  const drillToBucket = useCallback(
+    (datum: unknown) => {
+      const bucketStart = datapointBucketStart(datum);
+      if (!bucketStart) return;
+      const { from, to } = bucketRangeIso(bucketStart, bucket);
+      onDrill(drillDownFilter(controls, { dateFrom: from, dateTo: to }));
+    },
+    [bucket, controls, onDrill],
+  );
 
   return (
     <ChartPanel
@@ -53,8 +67,8 @@ export function TokensPanel({
     >
       {hasData ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TokenDirection title="Input" rows={inRows} classes={inClasses} />
-          <TokenDirection title="Output" rows={outRows} classes={outClasses} />
+          <TokenDirection title="Input" rows={inRows} classes={inClasses} onDrillBucket={drillToBucket} />
+          <TokenDirection title="Output" rows={outRows} classes={outClasses} onDrillBucket={drillToBucket} />
         </div>
       ) : (
         <PanelEmptyState
@@ -70,10 +84,12 @@ function TokenDirection({
   title,
   rows,
   classes,
+  onDrillBucket,
 }: {
   title: string;
   rows: ReturnType<typeof buildTokensResult>["inRows"];
   classes: CapabilityClassSeries[];
+  onDrillBucket: (datum: unknown) => void;
 }) {
   if (classes.length === 0) {
     return (
@@ -98,6 +114,7 @@ function TokenDirection({
           aspectRatio="auto"
           className="h-full w-full"
           accessibleLabel={`${title} tokens by capability class over time`}
+          onDatapointClick={(point) => onDrillBucket(point.datum)}
         >
           <Grid horizontal />
           {classes.map((c, i) => (
