@@ -156,6 +156,7 @@ This repo (`elabs-ai-workbench`) currently contains one app under `mcp-token-foo
 mcp-token-footprint/
 ├── apps/
 │   ├── api/        Fastify API: DB, MCP client, token counting, scans, OAuth, reports, static serving
+│   ├── cli/        `mcpfp` — a thin HTTP client of a RUNNING api (no DB, no MCP, no secrets)
 │   └── web/        React 19 + Vite SPA (the UI)
 ├── packages/
 │   └── shared/     Cross-cutting types, zod schemas, constants (the API contract)
@@ -165,7 +166,7 @@ mcp-token-footprint/
 └── .claude/        Rules, commands, hooks, settings for agents working here
 ```
 
-Package names are scoped `@mcp-token-footprint/{api,web,shared}` and wired with `workspace:*`.
+Package names are scoped `@mcp-token-footprint/{api,cli,web,shared}` and wired with `workspace:*`.
 
 ---
 
@@ -185,6 +186,11 @@ Package names are scoped `@mcp-token-footprint/{api,web,shared}` and wired with 
   `@elabs-ai/components-tokens`. `cn()` from `@elabs-ai/components-ui`. Peers the app owns itself
   because each holds a global/context: `monaco-editor`, `@xyflow/react`, `ai` (^6), `tailwindcss`.
   See §8.
+- **CLI (`apps/cli`, the `mcpfp` bin):** a **client only** — its single runtime dependency is
+  `@mcp-token-footprint/shared`. Arg parsing is `node:util`'s `parseArgs`, HTTP is global `fetch`;
+  **no MCP SDK, no `better-sqlite3`, no token counting, no `apps/api` import** (a test reads the
+  manifest and scans every import to keep it that way). It talks to a running API over HTTP and
+  formats what comes back.
 - **Persistence:** one SQLite file at `data/app.sqlite` (`/data/app.sqlite` in Docker).
 - **Deploy target:** one Docker container listening on **8080** internally, published on host port
   **8081** (API serves the built web SPA). A separate, older checkout runs its own container on
@@ -218,6 +224,7 @@ pnpm typecheck               # tsc --noEmit across all packages
 pnpm test                    # API tests (node test runner via tsx) + web tests (vitest; 97 files)
 pnpm lint                    # Biome lint (biome check --formatter-enabled=false)
 pnpm format                  # Biome formatter (biome format --write)
+pnpm mcpfp <command>         # the `mcpfp` CLI against a RUNNING api (see user-guide/22-mcpfp-cli.md)
 docker compose up --build    # production-style single container at http://localhost:8081
 ```
 
@@ -227,6 +234,12 @@ docker compose up --build    # production-style single container at http://local
 
 Dev URLs: API `http://127.0.0.1:8080`, Vite `http://127.0.0.1:5173`. The containerized instance is
 at `http://localhost:8081/`.
+
+**`pnpm mcpfp` is a dev convenience, not the CI invocation.** pnpm prints its own banner on
+**stdout**, which breaks `--format json > file`; `pnpm --silent` fixes that but makes pnpm collapse
+every non-zero exit to **1** — the code D-C7 reserves for assertion failures. In a script, run
+`pnpm build` once and call `node apps/cli/dist/index.js …`, which has clean stdout and honest exit
+codes. Both are documented in [`user-guide/22-mcpfp-cli.md`](./user-guide/22-mcpfp-cli.md).
 
 ---
 
