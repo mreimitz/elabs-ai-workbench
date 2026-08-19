@@ -599,11 +599,17 @@ const toolCountOf = (scan: ScanSummary) => scan.totalTools;
 
 /** What one inventory tile can honestly say about its own trend. */
 type TileTrend = {
-  /** Fleet Δ vs each server's previous successful scan. `null` when NO server has an earlier
-   *  successful scan — the tile then renders **no delta at all** rather than a fabricated `0`. */
+  /** Δ between the tile's CURRENT value and the same total at each server's PREVIOUS successful
+   *  scan — computed over the SAME server population the value totals, so the two can only ever be
+   *  read as one comparison. A server whose latest successful scan is its FIRST contributes its
+   *  whole figure (it measured as nothing before); `firstTimeServers` discloses that on the tile.
+   *  `null` when NO server has an earlier successful scan at all — nothing has been compared, so
+   *  the tile renders no delta rather than a fabricated one. */
   delta: number | null;
-  /** Like-for-like fleet snapshots, oldest → newest, ending at the tile's current value. Empty when
-   *  fewer than two comparable snapshots exist — a sparkline needs a real series or nothing. */
+  /** How many servers in that population are being measured for the first time. */
+  firstTimeServers: number;
+  /** The tile's own value recomputed after every successful scan in the retained history, oldest →
+   *  newest. Empty below two points — a sparkline needs a real series or nothing. */
   series: number[];
 };
 
@@ -618,32 +624,38 @@ type TrendInputs = {
 /**
  * Trend for ONE inventory tile, derived entirely from the scan history already in memory.
  *
- * **Δ reuses the app's single delta authority.** `buildScanDeltaIndex` pairs every successful scan
- * with the PREVIOUS successful scan of the SAME server and names it in `prevScanId`; this sums that
- * exact pairing across the fleet. It is the same comparison the "Δ vs previous" table column, the
- * "Net token change" line and the biggest-movers list already use — not a second one. What it does
- * NOT do is reuse the index's `deltaTokens` figure: that is tools-only, and hanging it under a
- * tools + resources + prompts value would recreate precisely the label/definition collision T10
- * removed. The pairing is shared; each tile measures its own figure across it.
+ * **Δ covers the same population as the value.** `buildScanDeltaIndex` pairs every successful scan
+ * with the PREVIOUS successful scan of the SAME server and names it in `prevScanId` — that pairing
+ * is the app's one delta authority and is reused verbatim here. Every server the tile totals then
+ * contributes `now − before`, where `before` is its previous successful scan or, for a server
+ * measured for the first time, **zero**. Summing only the servers that happen to HAVE a previous
+ * scan would leave the Δ and the value covering different populations: add and scan a server (this
+ * product's core workflow, and the most common way a footprint grows) and a fleet that went
+ * 100,000 → 590,000 would render "↓ 10,000, favorable". The zero baseline keeps the arithmetic
+ * closed — value − Δ is always the fleet's previous measured total.
  *
- * **The sparkline replays the retained history as fleet snapshots.** Walk successful scans oldest →
- * newest keeping each server's latest figure, and emit a point once EVERY tracked server has been
- * scanned at least once. Earlier points would climb purely because scan coverage grew rather than
- * because the fleet did, so they are dropped rather than drawn. The last point therefore equals the
- * tile's current value.
+ * What this does NOT reuse is the index's `deltaTokens` figure: that is tools-only, and hanging it
+ * under a tools + resources + prompts value would recreate precisely the label/definition collision
+ * T10 removed. The pairing is shared; each tile measures its own figure across it.
+ *
+ * **The series is the tile's own value, recomputed after every scan.** Walk successful scans of the
+ * tracked servers oldest → newest, keep each server's latest figure, and emit the running fleet
+ * total after each one — a server not yet scanned counting as 0, the same convention the Δ uses. So
+ * the last point always equals the tile's current value, and adding a server shows up as the step
+ * it is instead of erasing the series at the very moment it matters most.
  */
 function buildTileTrend(inputs: TrendInputs, figureOf: (scan: ScanSummary) => number): TileTrend {
   const { scans, latestByServer, deltaIndex, scanById } = inputs;
 
   let delta = 0;
   let comparedServers = 0;
+  let firstTimeServers = 0;
   for (const scan of latestByServer) {
     const { prevScanId } = scanDeltaFor(deltaIndex, scan.id);
-    if (!prevScanId) continue;
-    const previous = scanById.get(prevScanId);
-    if (!previous) continue;
-    delta += figureOf(scan) - figureOf(previous);
-    comparedServers += 1;
+    const previous = prevScanId ? scanById.get(prevScanId) : undefined;
+    if (previous) comparedServers += 1;
+    else firstTimeServers += 1;
+    delta += figureOf(scan) - (previous ? figureOf(previous) : 0);
   }
 
   const trackedIds = new Set(latestByServer.map((scan) => scan.serverId));
@@ -655,7 +667,6 @@ function buildTileTrend(inputs: TrendInputs, figureOf: (scan: ScanSummary) => nu
     const current = new Map<string, number>();
     for (const scan of history) {
       current.set(scan.serverId, figureOf(scan));
-      if (current.size < trackedIds.size) continue; // not yet a like-for-like fleet total
       let total = 0;
       for (const value of current.values()) total += value;
       series.push(total);
@@ -664,6 +675,7 @@ function buildTileTrend(inputs: TrendInputs, figureOf: (scan: ScanSummary) => nu
 
   return {
     delta: comparedServers > 0 ? delta : null,
+    firstTimeServers,
     series: series.length >= 2 ? series.slice(-SPARKLINE_POINTS) : [],
   };
 }
@@ -673,38 +685,53 @@ function buildTileTrend(inputs: TrendInputs, figureOf: (scan: ScanSummary) => nu
  *  `positiveIsGood` is **false** on every tile that gets these props: tokens, resources, prompts and
  *  tools are all startup context the model pays for on every request, so GROWTH is the regression.
  *  A bigger footprint must never render in the success colour. */
-function trendProps(
-  trend: TileTrend,
-  seriesName: string,
-): {
+type TrendProps = {
   delta?: string;
   deltaDirection?: "up" | "down" | "neutral";
   positiveIsGood?: boolean;
+  evidence?: ReactNode;
   visual?: ReactNode;
-} {
-  const hasComparison = trend.delta !== null;
-  const value = trend.delta ?? 0;
-  return {
-    ...(hasComparison
-      ? {
-          delta: `${value > 0 ? "+" : ""}${formatNumber(value)}`,
-          deltaDirection: value > 0 ? "up" : value < 0 ? "down" : "neutral",
-          positiveIsGood: false,
-        }
-      : {}),
-    ...(trend.series.length >= 2
-      ? {
-          visual: (
-            <Sparkline
-              values={trend.series}
-              variant="line"
-              emphasizeLast
-              label={`${seriesName} across the last ${trend.series.length} fleet snapshots`}
-            />
-          ),
-        }
-      : {}),
-  };
+};
+
+function trendProps(trend: TileTrend, seriesName: string): TrendProps {
+  const props: TrendProps = {};
+
+  if (trend.delta !== null) {
+    const value = trend.delta;
+    // A genuine zero is worth saying — but MetricCard gives a "neutral" delta no arrow, no polarity
+    // and no accessible label, so a bare "0" would float beside the value explaining nothing.
+    props.delta = value === 0 ? "No change" : `${value > 0 ? "+" : ""}${formatNumber(value)}`;
+    props.deltaDirection = value > 0 ? "up" : value < 0 ? "down" : "neutral";
+    props.positiveIsGood = false;
+    if (trend.firstTimeServers > 0) {
+      // Part of that Δ is a first measurement rather than a change. Disclose it, rather than letting
+      // a newly scanned server's whole footprint read as growth with nothing to explain it.
+      props.evidence =
+        trend.firstTimeServers === 1
+          ? "Includes 1 server measured for the first time"
+          : `Includes ${formatNumber(trend.firstTimeServers)} servers measured for the first time`;
+    }
+  }
+
+  if (trend.series.length >= 2) {
+    // `Sparkline` is ZERO-baselined (`max = Math.max(...values, 0)`; there is no min), so handing it
+    // absolute fleet totals draws a realistic series like 580k → 590k as a flat line — a ~2% wiggle
+    // inside a 0..max box. Normalising to the window's own minimum spends the full height on the
+    // variation that actually happened; the label keeps the real figures.
+    const floor = Math.min(...trend.series);
+    const first = trend.series[0] ?? 0;
+    const last = trend.series[trend.series.length - 1] ?? 0;
+    props.visual = (
+      <Sparkline
+        values={trend.series.map((value) => value - floor)}
+        variant="line"
+        emphasizeLast
+        label={`${seriesName}: ${formatNumber(first)} → ${formatNumber(last)} across the last ${trend.series.length} scans`}
+      />
+    );
+  }
+
+  return props;
 }
 
 /** Short, human date for the "since <date>" copy (e.g. "Jul 4"). */

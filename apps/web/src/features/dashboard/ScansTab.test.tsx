@@ -349,19 +349,58 @@ describe("ScansTab", () => {
     }
   });
 
-  test("sparklines are backed by a real fleet series that ends at the tile's current value", () => {
+  test("sparklines are backed by a real series and normalized so the shape is legible", () => {
+    // Three scans of one server, ~2% apart — the realistic shape. `Sparkline` is ZERO-baselined
+    // (`max = Math.max(...values, 0)`, no min), so handing it the absolute totals would draw a flat
+    // line: 580k..590k inside a 0..590k box is a ~2% wiggle. The series is normalized to its own
+    // window minimum so the variation uses the full height, and the LABEL keeps the real figures.
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: [
+        scan({
+          id: "s-3",
+          serverId: "srv-a",
+          serverName: "Alpha",
+          scannedAt: "2026-01-03T00:00:00Z",
+          totalTokens: 590000,
+        }),
+        scan({
+          id: "s-2",
+          serverId: "srv-a",
+          serverName: "Alpha",
+          scannedAt: "2026-01-02T00:00:00Z",
+          totalTokens: 585000,
+        }),
+        scan({
+          id: "s-1",
+          serverId: "srv-a",
+          serverName: "Alpha",
+          scannedAt: "2026-01-01T00:00:00Z",
+          totalTokens: 580000,
+        }),
+      ],
+    });
+    const spark = tileFor("Total startup tokens").querySelector('[data-testid="sparkline"]');
+    const values = (spark?.getAttribute("data-values") ?? "").split(",").map(Number);
+    expect(values).toEqual([0, 5000, 10000]);
+    // Degenerate-shape guard: the drawn series must actually span the box, not sit in the top 2% of
+    // it. Passing the raw absolutes (580000,585000,590000) fails both of these.
+    expect(Math.min(...values)).toBe(0);
+    expect(Math.max(...values)).toBeGreaterThan(0);
+    expect(spark?.getAttribute("data-variant")).toBe("line");
+    expect(spark?.getAttribute("data-emphasize-last")).toBe("true");
+    // The accessible label describes the REAL quantities, not the normalized ones.
+    expect(spark?.getAttribute("aria-label")).toBe(
+      "Total startup tokens: 580,000 → 590,000 across the last 3 scans",
+    );
+  });
+
+  test("the four footprint tiles carry a sparkline; the four state tiles carry neither trend", () => {
     renderScansTab({
       servers: [server({ id: "srv-a", name: "Alpha" })],
       scans: twoScanHistory({ totalTokens: 1250, totalTools: 5 }),
     });
-    const spark = tileFor("Total startup tokens").querySelector('[data-testid="sparkline"]');
-    expect(spark?.getAttribute("data-values")).toBe("1000,1250");
-    expect(spark?.getAttribute("data-variant")).toBe("line");
-    expect(spark?.getAttribute("data-emphasize-last")).toBe("true");
-    expect(spark?.getAttribute("aria-label")).toBe(
-      "Total startup tokens across the last 2 fleet snapshots",
-    );
-    for (const label of ["Resources", "Prompts", "Tools scanned"]) {
+    for (const label of ["Total startup tokens", "Resources", "Prompts", "Tools scanned"]) {
       expect(tileFor(label).querySelector('[data-testid="sparkline"]')).not.toBeNull();
     }
     // The state tiles have no reconstructable history (deletions are not recorded) or would compare
@@ -373,9 +412,11 @@ describe("ScansTab", () => {
     }
   });
 
-  test("the fleet series only starts once EVERY tracked server has been scanned", () => {
-    // Beta's first successful scan lands after Alpha's two. A point emitted before that would climb
-    // purely because scan coverage grew, so the series holds exactly the like-for-like snapshots.
+  test("adding and scanning a NEW server cannot make a grown fleet read as an improvement", () => {
+    // The core workflow, and the most common way startup footprint grows: Alpha shrinks slightly,
+    // then a second server is added and scanned. The fleet went 100,000 → 590,000. A Δ summed only
+    // over servers that HAVE a previous scan would report "↓ 10,000, favorable" — a green tile on a
+    // fleet that nearly sextupled. The Δ covers the same population the VALUE totals, so it can't.
     renderScansTab({
       servers: [server({ id: "srv-a", name: "Alpha" }), server({ id: "srv-b", name: "Beta" })],
       scans: [
@@ -383,30 +424,54 @@ describe("ScansTab", () => {
           id: "b-1",
           serverId: "srv-b",
           serverName: "Beta",
-          scannedAt: "2026-01-20T00:00:00Z",
-          totalTokens: 500,
+          scannedAt: "2026-03-01T00:00:00Z",
+          totalTokens: 500000,
         }),
         scan({
           id: "a-2",
           serverId: "srv-a",
           serverName: "Alpha",
-          scannedAt: "2026-01-15T00:00:00Z",
-          totalTokens: 1200,
+          scannedAt: "2026-02-01T00:00:00Z",
+          totalTokens: 90000,
         }),
         scan({
           id: "a-1",
           serverId: "srv-a",
           serverName: "Alpha",
           scannedAt: "2026-01-01T00:00:00Z",
-          totalTokens: 1000,
+          totalTokens: 100000,
         }),
       ],
     });
-    // Only one like-for-like snapshot exists (1200 + 500) — a one-point sparkline is not a series.
-    expect(tileFor("Total startup tokens").querySelector('[data-testid="sparkline"]')).toBeNull();
-    // Alpha still has a comparable earlier scan, so the Δ is real: +200 from Alpha, nothing from
-    // Beta (newly measured, not changed).
+    const tile = tileFor("Total startup tokens");
+    expect(within(tile).getByText("590,000")).toBeInTheDocument();
+    const delta = tile.querySelector("[data-polarity]");
+    expect(delta?.getAttribute("data-polarity")).not.toBe("good");
+    expect(delta?.getAttribute("data-polarity")).toBe("bad");
+    expect(delta?.textContent).toContain("+490,000");
+    // value − Δ is the fleet's previous measured total: 590,000 − 490,000 = 100,000.
+    expect(delta?.getAttribute("aria-label")).toBe("up +490,000, unfavorable");
+    // …and the part of that Δ which is a first measurement rather than a change is disclosed.
+    expect(
+      within(tile).getByText("Includes 1 server measured for the first time"),
+    ).toBeInTheDocument();
+    // The series must NOT vanish at the moment it matters most — it shows the step.
+    const spark = tile.querySelector('[data-testid="sparkline"]');
+    expect((spark?.getAttribute("data-values") ?? "").split(",").map(Number)).toEqual([
+      10000, 0, 500000,
+    ]);
+  });
+
+  test("an unchanged figure reads as 'No change', not a bare unlabeled 0", () => {
+    renderScansTab({
+      servers: [server({ id: "srv-a", name: "Alpha" })],
+      scans: twoScanHistory({}), // both scans identical
+    });
     const delta = tileFor("Total startup tokens").querySelector("[data-polarity]");
-    expect(delta?.textContent).toContain("+200");
+    expect(delta?.getAttribute("data-polarity")).toBe("neutral");
+    // MetricCard gives a neutral delta no arrow and no aria-label, so the STRING has to carry the
+    // meaning. "0" on its own does not.
+    expect(delta?.textContent?.trim()).toBe("No change");
+    expect(delta?.textContent?.trim()).not.toBe("0");
   });
 });
