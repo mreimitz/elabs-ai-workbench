@@ -8,6 +8,12 @@ import {
 } from "@mcp-token-footprint/shared";
 import type { FastifyInstance } from "fastify";
 import { httpError } from "../utils/errors.js";
+import {
+  normalizeRequestPath,
+  type RequestPath,
+  requestPathEquals,
+  requestPathIsUnder,
+} from "../utils/request-path.js";
 import type { ApiTokenAuthResult, ApiTokenService, AuthenticatedApiToken } from "./service.js";
 
 /**
@@ -36,6 +42,18 @@ import type { ApiTokenAuthResult, ApiTokenService, AuthenticatedApiToken } from 
  * `X-Forwarded-For: 127.0.0.1` header from anywhere on the network would otherwise mint a free pass.
  *
  * **Do not enable `trustProxy`**, and do not "simplify" this to `request.ip`.
+ *
+ * ## The path is matched DECODED, the way the router matches it
+ *
+ * Every prefix test here goes through `utils/request-path.ts` rather than comparing `request.url`
+ * directly. Fastify's router percent-decodes before matching but the hook sees the RAW target, so a
+ * raw comparison lets `/%61pi/tokens` (`%61` = `a`) read as "not under /api" — the guard passes it and
+ * the router then dispatches it to the real `GET /api/tokens` handler. A remote, unauthenticated
+ * caller would get the whole API that way, token CRUD included.
+ *
+ * `requestPathIsUnder` therefore matches on the union of the raw AND decoded forms and treats an
+ * undecodable path as governed, so the guard is always at least as inclusive as the router. See that
+ * module for the measured router behaviour this is pinned to.
  *
  * ## Registration
  *
@@ -83,11 +101,6 @@ export function isLoopbackAddress(remoteAddress: string | undefined | null): boo
   return /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ipv4);
 }
 
-/** Does `path` sit at or under `prefix` (`/api/tokens` and `/api/tokens/x`, but not `/api/tokensish`)? */
-function isUnder(path: string, prefix: string): boolean {
-  return path === prefix || path.startsWith(`${prefix}/`);
-}
-
 /** What the guard decided, and (when refused) exactly why. */
 export type ApiTokenAccessDecision =
   | { kind: "pass" }
@@ -96,8 +109,14 @@ export type ApiTokenAccessDecision =
 
 export type ApiTokenAccessRequest = {
   method: string;
-  /** The request path WITHOUT its query string. */
-  path: string;
+  /**
+   * The RAW request target exactly as `request.url` carries it — query string and percent-escapes
+   * included. Normalization (strip the query, decode, match on the union) happens INSIDE
+   * {@link decideApiTokenAccess}, deliberately: a `path: string` field invited each caller to
+   * pre-split it themselves, and a caller that split but did not DECODE is precisely the
+   * `/%61pi/tokens` bypass. There is now nothing for a call site to get wrong.
+   */
+  url: string;
   /** `request.socket.remoteAddress` — the socket peer. Never a header-derived value. */
   remoteAddress: string | undefined;
   /** The raw `Authorization` header value, if any. */
@@ -112,6 +131,8 @@ export type ApiTokenAccessRequest = {
  * The whole access decision as one pure function — no Fastify, no headers beyond `Authorization`, no
  * clock. The rules, in the order they are applied:
  *
+ *  0. The path is normalized first — query stripped, percent-decoded, matched on the union of the raw
+ *     and decoded forms — so the guard and the router agree on what `/api` is (see the module docs).
  *  1. `GET /api/health` and every non-`/api/*` path pass untouched.
  *  2. A PRESENTED token is always verified, loopback or not. Malformed / unknown / revoked / expired
  *     ⇒ `401 invalid_token`, **including from 127.0.0.1**: a bad credential is an error, never a
@@ -125,10 +146,13 @@ export type ApiTokenAccessRequest = {
  *     a token that could mint or revoke tokens would make revocation meaningless.
  */
 export function decideApiTokenAccess(request: ApiTokenAccessRequest): ApiTokenAccessDecision {
-  const { method, path, remoteAddress, authorization, authRequired, authenticate } = request;
+  const { method, url, remoteAddress, authorization, authRequired, authenticate } = request;
+  const path = normalizeRequestPath(url);
 
-  if (!isUnder(path, API_PREFIX)) return { kind: "pass" };
-  if (path === HEALTH_PATH && method.toUpperCase() === "GET") return { kind: "pass" };
+  if (!requestPathIsUnder(path, API_PREFIX)) return { kind: "pass" };
+  if (requestPathEquals(path, HEALTH_PATH) && method.toUpperCase() === "GET") {
+    return { kind: "pass" };
+  }
 
   const presented = readBearerToken(authorization);
 
@@ -162,13 +186,13 @@ export function decideApiTokenAccess(request: ApiTokenAccessRequest): ApiTokenAc
 /** Coarse authorization for an authenticated token. See {@link decideApiTokenAccess} rule 4. */
 function scopeCheck(
   method: string,
-  path: string,
+  path: RequestPath,
   token: AuthenticatedApiToken,
 ): ApiTokenAccessDecision {
   // Token CRUD first: a token may never mint or revoke another token, whatever scopes it holds.
   // Without this a leaked read-only token could not be contained — its holder could not revoke it,
   // but neither could they be locked out by revoking it if they could just issue themselves a new one.
-  if (isUnder(path, TOKENS_PATH)) {
+  if (requestPathIsUnder(path, TOKENS_PATH)) {
     return {
       kind: "refused",
       status: 403,
@@ -215,7 +239,9 @@ export function registerApiTokenGuard(
   app.addHook("onRequest", async (request) => {
     const decision = decideApiTokenAccess({
       method: request.method,
-      path: request.url.split("?")[0] ?? request.url,
+      // The RAW target — `decideApiTokenAccess` strips the query and decodes it itself, so this call
+      // site cannot reintroduce the `/%61pi/tokens` bypass by pre-splitting without decoding.
+      url: request.url,
       remoteAddress: request.socket.remoteAddress,
       authorization: request.headers.authorization,
       authRequired: options.authRequired,

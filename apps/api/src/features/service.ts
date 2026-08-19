@@ -6,6 +6,7 @@ import {
   resolveFeatureFlags,
 } from "@mcp-token-footprint/shared";
 import type { AppSettingsRepository } from "../grading/app-settings-repository.js";
+import { normalizeRequestPath, requestPathCandidates } from "../utils/request-path.js";
 
 /**
  * App feature flags (Settings › Features) over the existing `app_settings` KV — no table, no migration.
@@ -57,12 +58,19 @@ export class FeatureFlagsService {
    * The disabled feature that owns `url`, or `undefined` when the request is allowed. `url` may carry
    * a query string — only the path is matched. `/api/features` itself is never owned by a feature
    * (asserted in the shared tests), so the switch can always be flipped back on.
+   *
+   * The path is matched through `normalizeRequestPath`, over EVERY interpretation the router might
+   * take (raw and percent-decoded). Fastify's router decodes before matching while `request.url`
+   * stays raw, so matching the raw string alone let `/%61pi/assistant/...` (`%61` = `a`) read as
+   * "no feature owns this" — the guard waved it through and the router then dispatched it to the
+   * real assistant route. That defeats the whole point of this guard: a stale tab or a direct curl
+   * COULD keep spending against a switched-off feature. See `utils/request-path.ts`.
    */
   blockingFeature(url: string): { id: string; label: string } | undefined {
-    const path = url.split("?")[0] ?? url;
-    const meta = featureForPath(path, "api");
-    if (!meta) return undefined;
-    if (this.cache[meta.id]) return undefined;
-    return { id: meta.id, label: meta.label };
+    for (const candidate of requestPathCandidates(normalizeRequestPath(url))) {
+      const meta = featureForPath(candidate, "api");
+      if (meta && !this.cache[meta.id]) return { id: meta.id, label: meta.label };
+    }
+    return undefined;
   }
 }

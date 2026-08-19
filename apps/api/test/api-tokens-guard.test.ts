@@ -46,6 +46,9 @@ type Harness = {
   service: ApiTokenService;
   repository: ApiTokenRepository;
   db: AppDatabase;
+  /** Routes whose handler actually ran, recorded by a `preHandler` hook (empty ⇒ the guard bit
+   *  first, or the router 404'd). Cleared per assertion by the path-shape table below. */
+  reached: string[];
   /** Mint a token and return its plaintext (the only place it exists). */
   mint: (scopes: ApiTokenScope[], expiresAt?: string | null) => { id: string; secret: string };
 };
@@ -63,6 +66,15 @@ async function makeApp(
   const service = new ApiTokenService(repository, options.now);
 
   const app = Fastify({ logger: false });
+  // Every handler that actually RUNS records itself here. `preHandler` fires only once a request has
+  // survived every `onRequest` hook AND matched a route, so an empty list is proof the request never
+  // reached application code — which is the assertion the path-shape table below really needs (a
+  // status code alone cannot tell a refusal apart from a handler that happened to return 401).
+  const reached: string[] = [];
+  app.addHook("preHandler", async (request) => {
+    const route = request.routeOptions?.url;
+    if (route) reached.push(`${request.method} ${route}`);
+  });
   // The same error mapping `apps/api/src/index.ts` installs, including the additive machine-readable
   // `code` a headless caller keys off.
   app.setErrorHandler((error, _request, reply) => {
@@ -104,6 +116,7 @@ async function makeApp(
     service,
     repository,
     db,
+    reached,
     mint: (scopes, expiresAt) => {
       const created = service.create({ label: "test", scopes, expiresAt: expiresAt ?? null });
       return { id: created.token.id, secret: created.secret };
@@ -488,4 +501,110 @@ test("A11 — a failed authentication never stamps anything", async () => {
   h.mint(["read"]);
   await remote(h, "/api/scans", { headers: { authorization: "Bearer mcpfp_wrongwrongwrong" } });
   assert.equal(h.repository.list()[0]?.lastUsedAt, null);
+});
+
+// ── Path shapes — the guard must agree with the ROUTER about what `/api` is ───────────────────────
+//
+// Fastify's router percent-decodes before matching, but `request.url` inside an `onRequest` hook is
+// the RAW request target. A guard that prefix-matches the raw string therefore reads `/%61pi/tokens`
+// (`%61` = `a`) as "not under /api", passes it, and the router then dispatches it to the real
+// `GET /api/tokens` handler — handing a remote, unauthenticated caller the whole API, token CRUD
+// included. That is a REGRESSION TEST: this table failed on the first cut of the guard.
+//
+// Each row asserts BOTH the status code AND that no application handler ran. A status alone is not
+// enough — it cannot distinguish "the guard refused this" from "a handler ran and chose to 401".
+
+type PathShape = {
+  path: string;
+  /** 401/403 = refused by the guard · 404 = the router has no such route · 400 = Fastify rejected it. */
+  status: number;
+  why: string;
+};
+
+const REFUSED_SHAPES: PathShape[] = [
+  { path: "/api/tokens", status: 401, why: "the plain form — the baseline" },
+  { path: "/api//tokens", status: 401, why: "a doubled separator is still under /api" },
+  { path: "/api/tokens/", status: 401, why: "a trailing slash is still under /api" },
+  // ── percent-encoding: the bypass class ──
+  { path: "/%61pi/tokens", status: 401, why: "THE bypass — %61 decodes to 'a', router reaches /api/tokens" },
+  { path: "/api/%74okens", status: 401, why: "an encoded byte in a LATER segment" },
+  { path: "/%61pi/%74okens", status: 401, why: "encoded bytes in several segments at once" },
+  { path: "/%61pi/scans", status: 401, why: "the bypass is not specific to the tokens route" },
+  { path: "/%61pi/tokensmith", status: 401, why: "an encoded prefix on a non-token /api route" },
+  // ── encoded separators / dots must not ESCAPE the refusal either (the other direction) ──
+  { path: "/api%2ftokens", status: 401, why: "%2f decodes to '/' — governed even though the router 404s it" },
+  { path: "/api%2Ftokens", status: 401, why: "…and the uppercase form of the same escape" },
+  { path: "/%2e%2e/api/tokens", status: 401, why: "encoded dot segments never buy a way out" },
+  { path: "/foo/../api/tokens", status: 401, why: "literal dot segments never buy a way out" },
+  { path: "/api/scans%00", status: 401, why: "a NUL byte does not truncate the guard's view of the path" },
+  { path: "/api/scans?x=1", status: 401, why: "a query string does not hide the path" },
+  { path: "/api/tokensmith", status: 401, why: "an ordinary /api route still needs a token from remote" },
+  // ── shapes the ROUTER itself rejects — refused either way, never a handler ──
+  { path: "//api/tokens", status: 404, why: "a leading doubled slash is a different route to the router" },
+  { path: "/API/tokens", status: 404, why: "the router is case-sensitive" },
+  { path: "/%41PI/tokens", status: 404, why: "…and an encoded uppercase 'A' decodes to the same 404" },
+  { path: "/%zz/api/tokens", status: 400, why: "a malformed escape is rejected by Fastify before any hook" },
+];
+
+test("path shapes — no encoding trick reaches a handler unauthenticated (regression: /%61pi/tokens)", async () => {
+  const h = await makeApp();
+
+  for (const shape of REFUSED_SHAPES) {
+    h.reached.length = 0;
+    const response = await remote(h, shape.path);
+    assert.equal(response.statusCode, shape.status, `${shape.path} — ${shape.why}`);
+    assert.deepEqual(
+      h.reached,
+      [],
+      `${shape.path} REACHED A HANDLER unauthenticated — ${shape.why}`,
+    );
+  }
+});
+
+test("path shapes — the legitimately open paths still reach their handler", async () => {
+  const h = await makeApp();
+
+  // A non-/api path (the SPA / static assets) is untouched by the guard…
+  h.reached.length = 0;
+  assert.equal((await remote(h, "/index.html")).statusCode, 200);
+  assert.deepEqual(h.reached, ["GET /index.html"]);
+
+  // …and the health exemption survives normalization, in BOTH its raw and its encoded form, so a
+  // container healthcheck is never broken by the hardening.
+  for (const path of ["/api/health", "/%61pi/health"]) {
+    h.reached.length = 0;
+    assert.equal((await remote(h, path)).statusCode, 200, path);
+    assert.deepEqual(h.reached, ["GET /api/health"], path);
+  }
+});
+
+test("path shapes — an encoded path cannot smuggle a TOKEN past the /api/tokens* refusal", async () => {
+  const h = await makeApp();
+  const { secret } = h.mint(["read", "scan:run", "runs:launch", "suites:run"]);
+  const headers = { authorization: `Bearer ${secret}` };
+
+  // A token authenticates fine, then hits the "a token may never manage tokens" rule — and it must
+  // hit it however the path is spelled, or a token could mint itself a fresh one and make revocation
+  // meaningless.
+  for (const path of ["/api/tokens", "/%61pi/tokens", "/api/%74okens", "/api%2ftokens"]) {
+    h.reached.length = 0;
+    const response = await remote(h, path, { headers });
+    assert.equal(response.statusCode, 403, path);
+    assert.equal(response.json<{ code?: string }>().code, API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE, path);
+    assert.deepEqual(h.reached, [], `${path} reached the token handler`);
+  }
+});
+
+test("path shapes — normalization does not widen the guard onto non-/api routes", async () => {
+  const h = await makeApp();
+  // `/api/tokensmith` is NOT under `/api/tokens` (segment boundary), so a read token passes the
+  // token-CRUD refusal and gets the ordinary scope check. Proven here so the hardening cannot be
+  // "fixed" into a bare `startsWith` that swallows neighbouring routes.
+  const { secret } = h.mint(["read"]);
+  h.reached.length = 0;
+  const response = await remote(h, "/api/tokensmith", {
+    headers: { authorization: `Bearer ${secret}` },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(h.reached, ["GET /api/tokensmith"]);
 });
