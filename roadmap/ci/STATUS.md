@@ -64,8 +64,57 @@ wp/ci/<id>`.
       reproduce on `4eddf6f` with none of WP 1.1 present**, and all 88 api + 12 web tests this WP
       added pass on merged `main`. Fix belongs to that dataset work: `pnpm build:model-data`, then
       update the hardcoded `33` at `apps/api/test/compatibility-data.test.ts:53`.
-- [ ] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output — **in progress**
-      (`wp/ci/1.2`) · spec: [`wp-1.2-mcpfp-cli.md`](./wp-1.2-mcpfp-cli.md)
+- [x] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output
+      — done 2026-08-19 · `wp/ci/1.2` · spec: [`wp-1.2-mcpfp-cli.md`](./wp-1.2-mcpfp-cli.md).
+      New workspace package **`apps/cli`** (D-C1) exposing the **`mcpfp`** bin: `scan <id|name>` ·
+      `report {scan,server,run,fleet}` · `servers` · `scans` · `config show` · `help` · `--version`,
+      with `--url --token --timeout --config --format --output --quiet` and config resolved
+      **flag > env > `mcpfp.config.json` (found by walking up) > default**. Contract-first in
+      `packages/shared/src/cli-contract.ts` (`MCPFP_OUTPUT_VERSION` · `McpfpOutput<T>` ·
+      `MCPFP_EXIT`), so WP 1.3's `assert` and WP 2.2's PR artifact extend **one** envelope.
+      **No API route, no migration, no `<Route>`** — `apps/api/src/`, `apps/web/src/`,
+      `pnpm-workspace.yaml` and `packages/shared/src/api-tokens.ts` all have a **zero-line diff**,
+      and the `assistant-route-operability` gate is untouched. Decisions **D-C5 / D-C6 / D-C7**
+      recorded in the decision log below.
+      **The client invariant is enforced, not just asserted:** `apps/cli`'s only runtime dependency
+      is `@mcp-token-footprint/shared`, pinned by a test that reads the manifest **and** scans every
+      import in `apps/cli/src` — so no future convenience can quietly pull in the MCP SDK,
+      `better-sqlite3` or `commander`. Redaction is likewise structural: one `Emitter`, and every
+      string it writes to stdout/stderr/a file passes a token-shaped mask, which also catches an API
+      error body that echoed the credential back.
+      **Two measured deviations from the spec, both documented rather than papered over.** (1) The
+      spec's A3 said "`pnpm-lock.yaml` unchanged"; it necessarily gains the **16-line `apps/cli`
+      importer entry** and **zero packages** (`packages:`/`snapshots:` byte-identical). The
+      orchestrator verified the claim by reverting the entry and running `pnpm install
+      --frozen-lockfile` → **`ERR_PNPM_OUTDATED_LOCKFILE`**, which would break the `Dockerfile` (2
+      call sites) and `.github/workflows/mcp-self-scan.yml`. The invariant that mattered — nothing
+      new resolved or downloaded — holds. (2) **`pnpm exec` and `pnpm --silent` collapse a non-zero
+      child exit to `1`** — straight onto the code D-C7 reserves for assertion failures — and
+      `pnpm`'s banner lands on **stdout**, breaking `--format json > file`. The root `pnpm mcpfp`
+      script therefore uses `pnpm --filter … run mcpfp --` (which preserves `2`) and is documented
+      as a **dev convenience only**; the CI invocation is `pnpm build` once, then
+      `node apps/cli/dist/index.js …`.
+      **Verified by the orchestrator on the branch, not taken on report:** `pnpm typecheck` → 0 ·
+      `pnpm build` → 0 · shared + **cli 46/46** + **web 316 files, 3248 passed / 5 skipped** (exit
+      0) · **api 3305/3307**, the 2 failures being exactly the pre-existing dataset ones below.
+      **Independent live smoke** against a freshly built API on `127.0.0.1:8123` with a throwaway
+      `DATA_DIR`: `servers` and `report fleet` answer over **loopback with no token** (D-C2 proven
+      from a real client); `--format json` stdout is **byte-exact `JSON.parse`-able** while
+      narration sits on stderr; `--quiet` empties stderr without touching the payload; `--output`
+      creates parent directories, leaves stdout empty and writes a parseable file; and against the
+      **real WP 1.1 guard** a malformed `--token` fails **before** the network (exit 2), an unknown
+      well-shaped token returns the `invalid_token` sentence, an unreachable port returns
+      "No workbench API at … — is it running?", `--format markdown` on `servers` is refused naming
+      the supported formats, and a **`read`-only token running `scan` gets the scope sentence naming
+      `scan:run`** — with the minted secret appearing in **no** stream (`config show` renders
+      `mcpfp_xxxxxxxx…` only).
+      ⚠️ **`pnpm lint` is red on `main`, and was before this WP** — a *third* symptom of commit
+      `4eddf6f` (below): it grew `research/token-context-comparison/comparison/all-models.json` to
+      **1.8 MiB**, over Biome's 1 MiB default cap. Verified independently on a clean `main`
+      checkout with `biome check ./research`. Every file this WP adds is lint-clean.
+      **Owner-acceptance items** (nothing visual here — the CLI has no UI): a real CI job invoking
+      `node apps/cli/dist/index.js` and gating on its exit code, and a **remote** (non-loopback)
+      invocation with a service token — both listed below.
 - [ ] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
 
 ## Phase 2 — Suites & PR artifacts
@@ -214,6 +263,11 @@ MCP) here._
       3. **The workbench MCP mount is POST-based**, so under the WP 1.1 coarse rule a remote MCP
          client needs an **execute** scope, not `read`. Per-route mapping is WP M.2's job — confirm
          M.2 picks this up — accepted: ____
+- [ ] **WP 1.2** — `mcpfp` from a real pipeline: a CI step runs `pnpm build` then
+      `node apps/cli/dist/index.js report scan <id> --format json > report.json`, the file parses,
+      and a deliberate failure (stop the API) fails the step with exit **2**; and a **non-loopback**
+      invocation (`--url http://<lan-ip>:8080 --token mcpfp_…`) succeeds with a `read` token and is
+      refused without one — accepted: ____
 - [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
       assertions → PR comment with deltas; a deliberate budget breach fails the check —
       accepted: ____
