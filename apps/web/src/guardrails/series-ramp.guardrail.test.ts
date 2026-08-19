@@ -6,9 +6,9 @@ import { describe, expect, it } from "vitest";
 // dashboard-bento WP 0.1 · finding F5 — a series ramp is derived in ONE place.
 // ------------------------------------------------------------------------------------------------
 // `lib/chart-colors.ts` cycles all twelve `--chart-N` tokens. The original sweep for this WP grepped
-// for the TEMPLATE-LITERAL form (`` `var(--chart-${…})` ``) and therefore could not see the other
-// shape the same defect takes: a private ARRAY of chart-token literals, indexed by a series index or
-// a modulo. `hub/workforce/usage/UsageCharts.tsx` had exactly that — a five-entry ramp behind
+// for the TEMPLATE-LITERAL form of a chart token and therefore could not see the other shape the
+// same defect takes: a private ARRAY of chart-token literals, indexed by a series index or a
+// modulo. `hub/workforce/usage/UsageCharts.tsx` had exactly that — a five-entry ramp behind
 // `CHART_COLORS[index % CHART_COLORS.length]` — and the grep was structurally blind to it.
 //
 // This guardrail closes that blind spot: no file outside `lib/chart-colors.ts` may hold a bare
