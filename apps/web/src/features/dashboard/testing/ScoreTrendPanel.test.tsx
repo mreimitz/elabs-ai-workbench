@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { RunMetricsSeries } from "@mcp-token-footprint/shared";
 import { describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
@@ -41,15 +41,15 @@ describe("ScoreTrendPanel", () => {
     expect(screen.getByText("No graded runs")).toBeInTheDocument();
   });
 
-  test("clicking a bucket's drill row scopes to that bucket's window", () => {
-    const onDrill = vi.fn();
+  // WP 0.2 — the per-bucket `DrillList` under this chart is GONE (it mirrored one row per plotted
+  // point and existed only because of a stale "charts has no per-point onClick" claim). The chart is
+  // the click surface now; that behaviour is locked in `datapoint-clicks.test.tsx`, which stubs
+  // `@elabs-ai/components-charts` faithfully — the inert mock below cannot observe chart props.
+  test("no per-bucket drill row remains — the chart carries the drill-down now", () => {
     const input: RunMetricsSeries[] = [
       series({ measure: "meanScore", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 0.5, n: 2 }] }),
     ];
-    renderPanel(<ScoreTrendPanel series={input} controls={CONTROLS} bucket="day" onDrill={onDrill} />);
-    fireEvent.click(screen.getByRole("button", { name: /open runs for/i }));
-    const filter = onDrill.mock.calls[0]![0];
-    expect(filter.dateFrom).toBe("2026-07-01T00:00:00.000Z");
-    expect(filter.dateTo).toBe("2026-07-01T23:59:59.999Z");
+    renderPanel(<ScoreTrendPanel series={input} controls={CONTROLS} bucket="day" onDrill={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: /open runs for/i })).not.toBeInTheDocument();
   });
 });

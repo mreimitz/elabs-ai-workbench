@@ -36,7 +36,7 @@ describe("TokensPanel — D-OB14 no-blend (the review focus)", () => {
       }),
       series({ measure: "tokensOut", capabilityClass: "exact", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 500, n: 4 }] }),
     ];
-    render(<TokensPanel series={input} controls={CONTROLS} onDrill={vi.fn()} />);
+    render(<TokensPanel series={input} controls={CONTROLS} bucket="day" onDrill={vi.fn()} />);
 
     // Both class labels render (once for Input, once for Output — "exact" appears in both
     // directions here), each with its OWN total.
@@ -57,12 +57,12 @@ describe("TokensPanel — D-OB14 no-blend (the review focus)", () => {
     const input: RunMetricsSeries[] = [
       series({ measure: "tokensIn", capabilityClass: "exact", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 100, n: 1 }] }),
     ];
-    render(<TokensPanel series={input} controls={CONTROLS} onDrill={vi.fn()} />);
+    render(<TokensPanel series={input} controls={CONTROLS} bucket="day" onDrill={vi.fn()} />);
     expect(screen.getByText("No output tokens")).toBeInTheDocument();
   });
 
   test("no token data at all → the panel's own empty state", () => {
-    render(<TokensPanel series={[]} controls={CONTROLS} onDrill={vi.fn()} />);
+    render(<TokensPanel series={[]} controls={CONTROLS} bucket="day" onDrill={vi.fn()} />);
     expect(screen.getByText("No token data")).toBeInTheDocument();
   });
 
@@ -71,7 +71,7 @@ describe("TokensPanel — D-OB14 no-blend (the review focus)", () => {
       series({ measure: "tokensIn", capabilityClass: "exact", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 100, n: 1 }] }),
     ];
     const onDrill = vi.fn();
-    render(<TokensPanel series={input} controls={CONTROLS} onDrill={onDrill} />);
+    render(<TokensPanel series={input} controls={CONTROLS} bucket="day" onDrill={onDrill} />);
     screen.getByRole("button", { name: /open these runs/i }).click();
     expect(onDrill).toHaveBeenCalledTimes(1);
     const filter = onDrill.mock.calls[0]![0];
