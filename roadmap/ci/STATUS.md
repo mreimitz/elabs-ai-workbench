@@ -30,7 +30,7 @@ wp/ci/<id>`.
 - [ ] WP 3.1 — `no-new-security-findings` assertion
 
 ## Phase MCP — workbench MCP server (see [`mcp-server.md`](./mcp-server.md))
-- [ ] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — **in progress** (2026-08-19 · `wp/ci/M.1`)
+- [x] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — done 2026-08-19 · `wp/ci/M.1`. 21 read tools + 4 report resource templates at `/api/mcp` (stateless streamable HTTP, GET/DELETE→405); new `mcp_server` Settings › Features flag (off ⇒ 403 `feature_disabled`); no new dependency, **no migration** (`user_version` 57 unchanged), additive-only wire. Gate green (shared 89 · api 3254 · web 3178+5 skipped · build · lint). **Live-verified against the built API on a copy of a real 91 MB dev DB**: MCP Inspector `initialize`/`tools/list`/7 tool calls, `resources/read` of a real run report, error + validation paths, flag off→403→on, off-state survives restart, fresh-DB boot. **Self-proof (D-MCP5 seed): the workbench scanned its own mount — 21 tools · 2,224 tokens · 200 resources (`generic_o200k`, countingVersion 2)**; the in-test `tools/list` measurement is 2,206 against a budget of 3,000 (`WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET`). Owner-acceptance pending: the both-theme + keyboard walk of the new Settings › Features row.
 - [ ] WP M.2 — service-token scopes on the mount (localhost bypass per D-MCP2) — depends: 1.1, M.1
 - [ ] WP M.3 — scoped write tools: `scan:run` · `runs:launch` · `suites:run` — depends: M.2
 - [ ] WP M.4 — agent onboarding docs + self-scan CI gate — depends: M.1
@@ -66,4 +66,9 @@ MCP) here._
 ## Owner acceptance (owner-only)
 - [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
       assertions → PR comment with deltas; a deliberate budget breach fails the check —
+      accepted: ____
+- [ ] **WP M.1** — Settings › Features shows the new **Workbench MCP server** row and reads
+      correctly in **both themes**, keyboard-reachable with visible focus; its turn-off confirm
+      dialog states the blast radius; an external agent host (Claude Code / Cursor) connects to
+      `http://127.0.0.1:8080/api/mcp` and answers a real question from the tools —
       accepted: ____
