@@ -31,6 +31,16 @@ vi.mock("@elabs-ai/components-charts", () => ({
   YAxis: () => null,
   ChartTooltip: () => null,
   Sparkline: () => null,
+  // dashboard-bento WP 1.4 — the Overview tab (now the DEFAULT tab) mounts on every render of this
+  // suite, so its tiles' chart imports have to resolve here too.
+  RingChart: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+  Ring: () => null,
+  ChartCard: ({ title, children }: { title?: ReactNode; children?: ReactNode }) => (
+    <div>
+      <div>{title}</div>
+      {children}
+    </div>
+  ),
 }));
 
 // The Testing tab (WP 2.2) fetches its catalog + metrics on mount, and the Issues tab (WP 5.3) fetches
@@ -65,6 +75,16 @@ vi.mock("../../lib/api", async (importOriginal) => {
     listTests: () => Promise.resolve([]),
     listSkills: () => Promise.resolve([]),
     listIssues: () => Promise.resolve([]),
+    // dashboard-bento WP 1.4 — the default Overview tab's advisor teaser. An empty report settles
+    // that section into its own honest `empty`, like every other source mocked here.
+    getAdvisorReport: () =>
+      Promise.resolve({
+        advisorVersion: 1,
+        generatedAt: "2026-01-02T00:00:00Z",
+        scope: { kind: "fleet" as const },
+        insufficientData: [],
+        recommendations: [],
+      }),
   };
 });
 
@@ -168,12 +188,25 @@ describe("DashboardView — loading gate", () => {
 });
 
 describe("DashboardView — default tab + deep link", () => {
-  test("defaults to the Scans tab with a clean URL (no ?tab= for the default)", () => {
+  // dashboard-bento WP 1.4 moved the default from `scans` to `overview`. The contract that did NOT
+  // change is the important half: the default stays out of the URL, and every previously-shipped
+  // `?tab=` deep link still resolves to exactly the tab it always did.
+  test("defaults to the Overview tab with a clean URL (no ?tab= for the default)", async () => {
     renderDashboard();
-    const scansTab = screen.getByRole("tab", { name: "Scans" });
-    expect(scansTab).toHaveAttribute("data-state", "active");
-    expect(screen.getByText("Since your last visit")).toBeInTheDocument(); // ScansTab content
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
+    // The real Overview tab (WP 1.4): every mocked source settles empty, so the bento renders its
+    // honest "nothing in this window" state — proof the real tab mounted, not a placeholder.
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
     expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
+    expect(screen.getByTestId("location")).not.toHaveTextContent("?tab=");
+    expect(screen.queryByText("Since your last visit")).not.toBeInTheDocument();
+  });
+
+  test("`?tab=scans` still deep-links into the Scans tab (unchanged by the new default)", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?tab=scans"] });
+    expect(screen.getByRole("tab", { name: "Scans" })).toHaveAttribute("data-state", "active");
+    expect(screen.getByText("Since your last visit")).toBeInTheDocument(); // ScansTab content
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Issues" })).toBeInTheDocument());
   });
 
   test("`?tab=testing` deep-links directly into the Testing tab on mount", async () => {
@@ -185,27 +218,35 @@ describe("DashboardView — default tab + deep link", () => {
     expect(screen.queryByText("Since your last visit")).not.toBeInTheDocument();
   });
 
-  test("an unrecognized ?tab= value falls back to the default (Scans)", () => {
+  test("an unrecognized ?tab= value falls back to the default (Overview)", async () => {
     renderDashboard({}, { initialEntries: ["/dashboard?tab=bogus"] });
-    expect(screen.getByRole("tab", { name: "Scans" })).toHaveAttribute("data-state", "active");
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
   });
 });
 
 describe("DashboardView — tab switch updates the URL (restore-on-reload)", () => {
-  test("switching to Testing writes ?tab=testing; switching back removes it", async () => {
+  test("every non-default tab writes its ?tab=; returning to Overview removes it", async () => {
     renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+
     activateTab("Testing");
     await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
     expect(screen.getByTestId("location")).toHaveTextContent("/dashboard?tab=testing");
 
+    // Scans is no longer the default, so it now names itself in the URL like any other tab.
     activateTab("Scans");
     expect(screen.getByText("Since your last visit")).toBeInTheDocument();
+    expect(screen.getByTestId("location")).toHaveTextContent("/dashboard?tab=scans");
+
+    activateTab("Overview");
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
     expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
     expect(screen.getByTestId("location")).not.toHaveTextContent("?tab=");
   });
 
   test("the Testing tab body unmounts the Scans tab body and vice versa (Radix single active panel)", async () => {
-    renderDashboard();
+    renderDashboard({}, { initialEntries: ["/dashboard?tab=scans"] });
     expect(screen.getByText("Since your last visit")).toBeInTheDocument();
     activateTab("Testing");
     expect(screen.queryByText("Since your last visit")).not.toBeInTheDocument();
@@ -216,17 +257,18 @@ describe("DashboardView — tab switch updates the URL (restore-on-reload)", () 
 describe("DashboardView — keyboard tab-strip behavior", () => {
   test("ArrowRight moves roving focus to the next tab and activates it (Radix automatic mode)", async () => {
     renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+    const overviewTab = screen.getByRole("tab", { name: "Overview" });
     const scansTab = screen.getByRole("tab", { name: "Scans" });
-    const testingTab = screen.getByRole("tab", { name: "Testing" });
-    scansTab.focus();
-    expect(document.activeElement).toBe(scansTab);
-    fireEvent.keyDown(scansTab, { key: "ArrowRight" });
+    overviewTab.focus();
+    expect(document.activeElement).toBe(overviewTab);
+    fireEvent.keyDown(overviewTab, { key: "ArrowRight" });
     // Radix's roving-focus-group moves focus, then activates the panel on a LATER tick (focus and
     // selection land in separate updates past the synchronous keydown handler) — wait for both
     // rather than asserting immediately.
-    await waitFor(() => expect(document.activeElement).toBe(testingTab));
-    await waitFor(() => expect(testingTab).toHaveAttribute("data-state", "active"));
-    await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
+    await waitFor(() => expect(document.activeElement).toBe(scansTab));
+    await waitFor(() => expect(scansTab).toHaveAttribute("data-state", "active"));
+    expect(screen.getByText("Since your last visit")).toBeInTheDocument();
   });
 });
 
@@ -251,6 +293,7 @@ describe("DashboardView — Issues tab (WP 5.3 mount)", () => {
 describe("DashboardView — sr-only heading is shared across tabs", () => {
   test("the Dashboard H1 renders once and stays mounted across a tab switch", async () => {
     renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
     const heading = screen.getByRole("heading", { level: 1, name: "Dashboard" });
     expect(heading).toBeInTheDocument();
     activateTab("Testing");

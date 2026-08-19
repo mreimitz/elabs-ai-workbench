@@ -6,6 +6,7 @@ import { PageShell } from "../../components/PageShell";
 import { TabPanel, TabPanelContent } from "../../components/TabPanel";
 import { IssuesFleetTab } from "../issues-fleet/IssuesFleetTab";
 import { useFleetIssues } from "../issues-fleet/use-fleet-issues";
+import { OverviewTab } from "./overview/OverviewTab";
 import { ScansTab } from "./ScansTab";
 import { TestingTab } from "./TestingTab";
 
@@ -13,12 +14,14 @@ import { TestingTab } from "./TestingTab";
  *  tab host), not by `ScansTab` — see `ScansTab.tsx`'s doc comment for why. */
 const LAST_VISIT_KEY = "mcpfp:dashboard:last-visit-at";
 
-/** The Dashboard's tabs (D-OB11: the Dashboard is the observability home). `scans` is the default —
- *  today's dashboard content, unchanged, for muscle memory. `testing` is the WP 2.2 metrics shell.
- *  `issues` is the WP 5.3 fleet-issues triage + detail (extends the v26 rating-issues registry). */
-const DASHBOARD_TABS = ["scans", "testing", "issues"] as const;
+/** The Dashboard's tabs (D-OB11: the Dashboard is the observability home). `overview` is the default
+ *  as of dashboard-bento WP 1.4 — the bento answering "how is my fleet doing?" in one screen; it
+ *  took the default from `scans`, which keeps every one of its own behaviours as the second tab.
+ *  `testing` is the WP 2.2 metrics shell. `issues` is the WP 5.3 fleet-issues triage + detail
+ *  (extends the v26 rating-issues registry). */
+const DASHBOARD_TABS = ["overview", "scans", "testing", "issues"] as const;
 type DashboardTab = (typeof DASHBOARD_TABS)[number];
-const DEFAULT_TAB: DashboardTab = "scans";
+const DEFAULT_TAB: DashboardTab = "overview";
 
 function isDashboardTab(value: string | null): value is DashboardTab {
   return value != null && (DASHBOARD_TABS as readonly string[]).includes(value);
@@ -27,9 +30,10 @@ function isDashboardTab(value: string | null): value is DashboardTab {
 /**
  * DashboardView — the tab HOST (WP 2.1 restructure). Owns the shared loading gate + the
  * "since your last visit" reference (both must survive tab switches — see `ScansTab.tsx`), and
- * hosts three tabs on the shared `TabPanel` grammar: `Scans` (today's dashboard, moved verbatim into
- * `ScansTab.tsx` — no visual redesign), `Testing` (`TestingTab.tsx`, WP 2.2), and `Issues`
- * (`IssuesFleetTab.tsx`, WP 5.3 — the fleet-issues triage list + detail).
+ * hosts four tabs on the shared `TabPanel` grammar: `Overview` (`overview/OverviewTab.tsx`,
+ * dashboard-bento WP 1.4 — the bento the Dashboard now LANDS on), `Scans` (today's dashboard, moved
+ * verbatim into `ScansTab.tsx` — no visual redesign), `Testing` (`TestingTab.tsx`, WP 2.2), and
+ * `Issues` (`IssuesFleetTab.tsx`, WP 5.3 — the fleet-issues triage list + detail).
  *
  * DEEP-LINKING: the active tab lives in `?tab=` (e.g. `/dashboard?tab=testing`), read/written via
  * `useSearchParams` — the same idiom this app already uses for URL-restorable state elsewhere
@@ -38,8 +42,10 @@ function isDashboardTab(value: string | null): value is DashboardTab {
  * `CompareView`, `ServersView`, `SuiteRunConsole` — keeps the active tab in local `useState`; see
  * `assistant-context.tsx`'s `deriveAssistantEnvelope` doc, which notes the app "doesn't yet encode a
  * tab in every route"), so this establishes the `?tab=` convention using the query-param option the
- * WP spec explicitly allows. The default tab ("scans") is kept OUT of the URL (`/dashboard` stays
- * the clean canonical link the sidebar nav already points at); only a non-default tab appends `?tab=`.
+ * WP spec explicitly allows. The default tab (now "overview", dashboard-bento WP 1.4) is kept OUT of
+ * the URL (`/dashboard` stays the clean canonical link the sidebar nav already points at); only a
+ * non-default tab appends `?tab=`, so every existing `?tab=scans|testing|issues` deep link — and the
+ * `/dashboard?tab=issues&issue=…` links the attention queue emits — keeps resolving unchanged.
  * `{ replace: true }` (mirroring `SkillInspector`'s `setLiveFileParam`) so clicking between tabs
  * doesn't spam browser history — back/forward still leaves the page, not walks tab-by-tab.
  */
@@ -115,6 +121,7 @@ export function DashboardView(props: {
         onValueChange={setTab}
         header={srHeading}
         tabs={[
+          { value: "overview", label: "Overview" },
           { value: "scans", label: "Scans" },
           { value: "testing", label: "Testing" },
           // Open+regressed count (D-OB11 dashboard integration) — undefined while loading, so the
@@ -126,6 +133,17 @@ export function DashboardView(props: {
           },
         ]}
       >
+        {/* dashboard-bento WP 1.4 — the bento. `scroll={false}` because the tab owns its own scroll
+            region: its window control is pinned in a toolbar band and only the grid below scrolls
+            (the same contract the Testing tab uses for its filter band). */}
+        <TabPanelContent value="overview" scroll={false} bodyClassName="flex min-h-0 flex-col">
+          <OverviewTab
+            servers={props.servers}
+            scans={props.scans}
+            onOpenServer={props.onOpenServer}
+            onRunScan={props.onRunScan}
+          />
+        </TabPanelContent>
         <TabPanelContent value="scans">
           <ScansTab
             servers={props.servers}
