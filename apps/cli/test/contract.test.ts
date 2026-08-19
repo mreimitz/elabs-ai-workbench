@@ -134,20 +134,40 @@ test("A11 — MCPFP_EXIT matches the exit-code invariant in roadmap/ci/README.md
   assert.match(readme, /2 execution\/config error/);
 });
 
-test("A11 — exit code 1 is RESERVED: no source file in apps/cli emits it", () => {
-  // WP 1.3's `mcpfp assert` is the only thing that may ever return `MCPFP_EXIT.assertionFailure`.
-  // Until then a `1` from this CLI would be a lie, so nothing here is allowed to reference it.
+/**
+ * The ONE file allowed to emit `MCPFP_EXIT.assertionFailure`. WP 1.2 reserved the code with an
+ * empty allowlist; WP 1.3 is exactly the thing that lifts the reservation — for one command.
+ */
+const ASSERTION_FAILURE_OWNER = path.join("src", "commands", "assert.ts");
+
+test("A11 — exit code 1 is RESERVED to `mcpfp assert`: no other source file in apps/cli emits it", () => {
+  // A `1` from any other command would collapse "the gate said no" into "something went wrong",
+  // which is precisely the distinction D-C7 exists to protect. So the reservation is not lifted
+  // wholesale — it is narrowed to the single file that owns the verdict.
   const offenders: string[] = [];
+  let ownerReferences = 0;
   for (const file of walkTypeScript(path.join(CLI_ROOT, "src"))) {
     // Comments explain WHY the code is reserved; only executable code is scanned for it.
     const source = stripComments(fs.readFileSync(file, "utf8"));
+    const relative = path.relative(CLI_ROOT, file);
     for (const [index, line] of source.split("\n").entries()) {
-      if (line.includes("assertionFailure")) {
-        offenders.push(`${path.relative(REPO_ROOT, file)}:${index + 1}`);
+      if (!line.includes("assertionFailure")) continue;
+      if (relative === ASSERTION_FAILURE_OWNER) {
+        ownerReferences += 1;
+        continue;
       }
+      offenders.push(`${path.relative(REPO_ROOT, file)}:${index + 1}`);
     }
   }
   assert.deepEqual(offenders, []);
+
+  // The other half of the teeth: the allowlist may not become a way to keep the constant unused.
+  // If `assert.ts` stops returning it, `mcpfp assert` has silently stopped being able to fail a
+  // build — a green pipeline that never gates anything.
+  assert.ok(
+    ownerReferences > 0,
+    `${ASSERTION_FAILURE_OWNER} must still emit MCPFP_EXIT.assertionFailure — otherwise a failed assertion cannot fail a build`,
+  );
 });
 
 /** Blank out comments while preserving line numbers, so an offender's line still points at itself. */

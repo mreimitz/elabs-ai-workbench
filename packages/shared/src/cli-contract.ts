@@ -9,8 +9,10 @@ import { z } from "zod";
 // what it exits with, and what it reads out of `mcpfp.config.json` are wire-adjacent contracts, so
 // they are declared HERE rather than inside `apps/cli` — for three concrete reasons:
 //
-//   1. **WP 1.3 extends the envelope additively** with an `assertions` block, and WP 2.2 renders a
-//      PR comment from it. One declaration means those two never re-derive the shape from prose.
+//   1. **WP 1.3 reuses the envelope unchanged.** `mcpfp assert --format json` puts the API's
+//      `AssertionReport` (`ci-assertions.ts`) in `data` — no new sibling field, no second envelope,
+//      `MCPFP_OUTPUT_VERSION` still 1 — and WP 2.2 renders a PR comment from that same report. One
+//      declaration means those two never re-derive the shape from prose.
 //   2. **`apps/cli`'s only runtime dependency is `@mcp-token-footprint/shared`** (D-C1's "the CLI is
 //      a client" invariant, pinned by a test that reads the manifest). It therefore cannot import
 //      `zod` directly — so the config-file schema it validates with has to live in a package that
@@ -31,8 +33,9 @@ import { z } from "zod";
 
 /**
  * The version of the `--format json` envelope below. Bumped only for a BREAKING change to the
- * envelope's own fields — adding a key to `data`, or a new optional sibling of `data` (as WP 1.3's
- * `assertions` will be), is additive and leaves this at 1.
+ * envelope's own fields. Everything since has been additive and left it at 1 — WP 1.3's `mcpfp
+ * assert` puts its whole `AssertionReport` in `data` rather than growing a sibling field, which is
+ * the point of `data` being "whatever the API returned for this command".
  */
 export const MCPFP_OUTPUT_VERSION = 1;
 

@@ -453,6 +453,26 @@ test("A12 — an unreachable API names the URL and never the token", async () =>
   assert.ok(!result.stderr.includes(VALID_TOKEN));
 });
 
+test("A12 — an UNRECOGNIZED status echoing the token is redacted too (WP 1.3 regression)", async () => {
+  // The four guard codes above get canned sentences that never quote the API's body, so they could
+  // not leak. A *plain* 500 does quote it — and that message is printed by `runCli`'s top-level
+  // catch, which writes to the raw stream rather than through the `Emitter`. Until WP 1.3 that path
+  // was the one place the token-shaped mask did not reach; this pins the fix (the same
+  // `redactTokens`, not a second masker).
+  const routes: StubRoutes = {
+    "GET /api/servers": (request) => ({
+      status: 500,
+      body: { error: `boom for ${request.authorization ?? "none"}` },
+    }),
+  };
+  await withStub(routes, async ({ run }) => {
+    const result = await run(["servers", "--token", VALID_TOKEN]);
+    assert.equal(result.exitCode, 2);
+    assert.ok(!result.stderr.includes(VALID_TOKEN), "the echoed token leaked into stderr");
+    assert.match(result.stderr, /mcpfp_A1b2C3d4…/, "masked, not dropped");
+  });
+});
+
 test("A12 — a plain 500 is an execution error (2), not an assertion failure", async () => {
   await withStub(
     { "GET /api/servers": { status: 500, body: { error: "boom" } } },

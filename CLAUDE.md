@@ -297,6 +297,15 @@ wired from `apps/api/src/index.ts`); the wire contract is `packages/shared` (`ty
 - **Skills** (`skills/`) — register/version/pull/inspect/diff/export (`/api/skills*`).
 - **Compatibility** (`compatibility/`) — `GET /api/scans/:id/heatmap`, `/api/compatibility/models`,
   `POST /api/runs/:runId/compatibility`, per-scan tests/findings.
+- **Assertions** (`assertions/`) — `POST /api/assertions/evaluate`: evaluate a versioned
+  `mcpfp.assert.json` (contract in `packages/shared/src/ci-assertions.ts`) against an
+  **already-persisted** scan and return an itemized `AssertionReport`. Read-only — **it never runs a
+  scan** (D-C9; scanning is `mcpfp scan`, and a CI job chains the two so `1` = "the gate said no"
+  stays distinct from `2` = "the gate could not run"). Every baseline question re-projects
+  `compare/service.ts`'s `buildComparison` (D-MCP4) rather than adding a second differ, and a
+  `deltasComparable === false` pair is a **400**, never a suppressed-to-zero pass (D-C8). No
+  migration, no feature flag. Consumed by `mcpfp assert`; see
+  [`user-guide/22-mcpfp-cli.md`](./user-guide/22-mcpfp-cli.md).
 - **Estimate** (`estimate/`) — `POST /api/estimate/run-plan` for additive cost previews and context warnings.
 - **Grading** (`grading/`) — LLM judge settings/resolution, run/suite auto-rating, rating-issue persistence.
 - **Collections** (`collections/`) — collection CRUD + git-binding + membership write/read.

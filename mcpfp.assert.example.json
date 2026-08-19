@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "target": { "server": "Everything" },
+  "baseline": "previous",
+  "rules": [
+    { "rule": "max-server-tokens", "max": 3000 },
+    { "rule": "max-tool-count", "max": 30 },
+    { "rule": "max-tool-tokens", "max": 400 },
+    { "rule": "max-tool-tokens", "max": 900, "tool": "search_issues" },
+    { "rule": "no-new-tools" },
+    { "rule": "no-removed-tools" },
+    { "rule": "max-scan-delta", "maxTokens": 250, "maxPercent": 10 }
+  ]
+}
