@@ -75,18 +75,31 @@ export function describeTokenPrefix(token: string): string {
 }
 
 /**
- * Walk UP from `cwd` to the filesystem root looking for `mcpfp.config.json`; first hit wins.
- * Returns `undefined` when there is none — an absent config file is the normal case, not an error.
+ * Walk UP from `cwd` to the filesystem root looking for `fileName`; first hit wins. Returns
+ * `undefined` when there is none.
+ *
+ * ONE walk-up, used by both discovered files: `mcpfp.config.json` (below) and `mcpfp.assert.json`
+ * (WP 1.3's `assert`). A second copy of this loop would be the obvious way for the two to drift on
+ * which directory wins, which is the kind of difference nobody notices until CI runs from a
+ * subdirectory.
  */
-export function findConfigFile(cwd: string): string | undefined {
+export function findFileUpwards(cwd: string, fileName: string): string | undefined {
   let directory = path.resolve(cwd);
   for (;;) {
-    const candidate = path.join(directory, MCPFP_CONFIG_FILE_NAME);
+    const candidate = path.join(directory, fileName);
     if (fs.existsSync(candidate)) return candidate;
     const parent = path.dirname(directory);
     if (parent === directory) return undefined;
     directory = parent;
   }
+}
+
+/**
+ * Walk UP from `cwd` looking for `mcpfp.config.json`; first hit wins. Returns `undefined` when there
+ * is none — an absent config file is the normal case, not an error.
+ */
+export function findConfigFile(cwd: string): string | undefined {
+  return findFileUpwards(cwd, MCPFP_CONFIG_FILE_NAME);
 }
 
 /**

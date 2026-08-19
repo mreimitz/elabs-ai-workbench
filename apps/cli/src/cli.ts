@@ -7,6 +7,7 @@ import {
   type McpfpExitCode,
 } from "@mcp-token-footprint/shared";
 import { createClient } from "./client.js";
+import { runAssertCommand } from "./commands/assert.js";
 import { runConfigShowCommand } from "./commands/config-show.js";
 import type { CommandContext } from "./commands/context.js";
 import { isReportTarget, reportTargetTakesId, runReportCommand } from "./commands/report.js";
@@ -43,6 +44,9 @@ const SUPPORTED_FORMATS: Record<string, readonly OutputFormat[]> = {
   servers: ["human", "json"],
   scans: ["human", "json"],
   "config show": ["human", "json"],
+  // `markdown` is deliberately absent: the PR-comment artifact is WP 2.2's, and offering the flag
+  // before it exists would mean writing a human table into a file a later step tried to parse.
+  assert: ["human", "json"],
 };
 
 export async function runCli(context: CliContext): Promise<McpfpExitCode> {
@@ -108,6 +112,10 @@ const OPTIONS = {
   format: { type: "string" },
   output: { type: "string" },
   server: { type: "string" },
+  // `assert` only (WP 1.3): the target override, the baseline override, and an explicit gate file.
+  scan: { type: "string" },
+  baseline: { type: "string" },
+  file: { type: "string" },
   quiet: { type: "boolean" },
   help: { type: "boolean" },
   version: { type: "boolean" },
@@ -121,6 +129,9 @@ type ParsedValues = {
   format?: string | undefined;
   output?: string | undefined;
   server?: string | undefined;
+  scan?: string | undefined;
+  baseline?: string | undefined;
+  file?: string | undefined;
   quiet?: boolean | undefined;
 };
 
@@ -136,8 +147,16 @@ async function dispatch(
 
   const format = resolveFormat(values.format, route.formatKey);
 
-  if (values.server !== undefined && command !== "scans") {
-    throw new CliError("`--server` only applies to `mcpfp scans`.");
+  // Flags that only mean something on one or two commands are refused elsewhere rather than
+  // ignored: `mcpfp scan --server foo` silently scanning nothing named on the command line would be
+  // a very quiet way to gate on the wrong server.
+  if (values.server !== undefined && command !== "scans" && command !== "assert") {
+    throw new CliError("`--server` only applies to `mcpfp scans` and `mcpfp assert`.");
+  }
+  for (const flag of ["scan", "baseline", "file"] as const) {
+    if (values[flag] !== undefined && command !== "assert") {
+      throw new CliError(`\`--${flag}\` only applies to \`mcpfp assert\`.`);
+    }
   }
 
   const config = resolveConfig({ flags: values, env: context.env, cwd: context.cwd });
@@ -168,6 +187,16 @@ async function dispatch(
   switch (route.kind) {
     case "scan":
       return runScanCommand(commandContext, route.serverRef);
+    case "assert":
+      return runAssertCommand(commandContext, {
+        cwd: context.cwd,
+        // A positional path and `--file` mean the same thing; the positional wins because it is
+        // what a person types.
+        file: route.file ?? values.file,
+        server: values.server,
+        scan: values.scan,
+        baseline: values.baseline,
+      });
     case "report":
       await runReportCommand(commandContext, route.target, route.id);
       return MCPFP_EXIT.success;
@@ -185,6 +214,7 @@ async function dispatch(
 
 type Route =
   | { kind: "scan"; name: string; formatKey: string; serverRef: string }
+  | { kind: "assert"; name: string; formatKey: string; file: string | undefined }
   | {
       kind: "report";
       name: string;
@@ -206,6 +236,12 @@ function routeFor(command: string, args: string[]): Route {
       });
     }
     return { kind: "scan", name: "scan", formatKey: "scan", serverRef };
+  }
+
+  if (command === "assert") {
+    // The one optional positional in the CLI: the gate file. Absent, it is discovered by walking up
+    // from the cwd — so `mcpfp assert` alone is the normal invocation from a repository root.
+    return { kind: "assert", name: "assert", formatKey: "assert", file: args[0] };
   }
 
   if (command === "report") {

@@ -9,6 +9,7 @@ import { registerApiTokenGuard } from "./api-tokens/guard.js";
 import { ApiTokenRepository } from "./api-tokens/repository.js";
 import { registerApiTokenRoutes } from "./api-tokens/routes.js";
 import { ApiTokenService } from "./api-tokens/service.js";
+import { registerAssertionRoutes } from "./assertions/routes.js";
 import { AssistantAuthService } from "./assistant/auth-service.js";
 import {
   ClaudeOauthFlowManager,
@@ -1441,6 +1442,11 @@ await registerMaintenanceRoutes(
   { repository: hubRepository, dataDir: config.dataDirectory },
 );
 await registerCompareRoutes(server, scans);
+// CI assertions (roadmap/ci/, WP 1.3) — `POST /api/assertions/evaluate`: evaluate a versioned
+// `mcpfp.assert.json` against an ALREADY-persisted scan and return an itemized report. Read-only
+// (D-C9 — it never runs a scan), and every baseline question re-projects `buildComparison` above
+// rather than adding a second differ (D-MCP4). No migration, no feature flag, no web route.
+await registerAssertionRoutes(server, { scans, servers });
 // Advisor (roadmap/advisor/, WP 1.2) — `GET /api/advisor/report`: deterministic, versioned
 // recommendations derived from data the app already persists (scans + runs + environments). Read-only;
 // the four rules see only the narrow read ports built here, never a DB handle or a secret.
