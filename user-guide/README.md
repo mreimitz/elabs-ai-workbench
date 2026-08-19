@@ -104,6 +104,7 @@ natural order you'll use the app in.
 
 - [App assistant](./12-assistant.md) — the built-in AI helper **dock** that operates the current page.
 - [Assistant](./16-assistant-hub.md) — the full-page, multi-model, multi-agent **workspace**.
+- [Workbench agent playbook](./20-workbench-mcp-server.md) — let an outside AI assistant (Claude Code, Cursor) read your workbench.
 - [Settings](./13-settings.md) — providers, themes, and storage.
 - [Troubleshooting & FAQ](./14-troubleshooting.md) — common problems and fixes.
 
