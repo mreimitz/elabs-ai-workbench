@@ -57,6 +57,13 @@ wp/ci/<id>`.
       walk (A13) — the implementing agent reports driving the built app in Chromium with screenshots
       in both themes and a worst text contrast of 5.71:1 light / 6.47:1 dark, but the orchestrator did
       not re-run it; it stays an owner-acceptance item below.
+      ⚠️ **`main` itself is currently red for an UNRELATED reason** — not this WP. Commit `4eddf6f`
+      (a model-dataset refresh, committed to `main` mid-session by the owner's identity) grew the
+      compatibility roster 33 → 55 models without regenerating the bundle or updating the count the
+      test pins, so `apps/api/test/compatibility-data.test.ts` fails 2 of its 8. **Both failures
+      reproduce on `4eddf6f` with none of WP 1.1 present**, and all 88 api + 12 web tests this WP
+      added pass on merged `main`. Fix belongs to that dataset work: `pnpm build:model-data`, then
+      update the hardcoded `33` at `apps/api/test/compatibility-data.test.ts:53`.
 - [ ] WP 1.2 — `mcpfp` CLI skeleton: config, `scan` + `report`, JSON/markdown output
 - [ ] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
 
