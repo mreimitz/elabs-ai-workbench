@@ -115,7 +115,76 @@ wp/ci/<id>`.
       **Owner-acceptance items** (nothing visual here — the CLI has no UI): a real CI job invoking
       `node apps/cli/dist/index.js` and gating on its exit code, and a **remote** (non-loopback)
       invocation with a service token — both listed below.
-- [ ] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
+      ⚠️ **Correction from WP 1.3:** the "every string it writes passes a token-shaped mask" claim
+      above held only for strings routed through the `Emitter`. `runCli`'s top-level catch wrote to
+      the **raw** stderr stream, so an API error body echoing the `Authorization` header back was
+      printed **unmasked** (the four recognized guard codes get canned sentences that never quote the
+      body, which is why the WP 1.2 test missed it). Fixed in `wp/ci/1.3` by routing that handler
+      through the same `redactTokens`, pinned by two tests the orchestrator confirmed **fail against
+      the pre-fix code**.
+- [x] WP 1.3 — assertions engine + `assert` command: footprint/delta rules, exit codes
+      — done 2026-08-19 · `wp/ci/1.3` · spec: [`wp-1.3-assertions.md`](./wp-1.3-assertions.md).
+      Contract-first in `packages/shared/src/ci-assertions.ts` (`ASSERTIONS_VERSION` ·
+      `ASSERTION_RULE_KINDS` · the `.strict()`-at-every-level document schema · `AssertionReport`),
+      a server-side engine at `apps/api/src/assertions/{service,routes}.ts` behind
+      **`POST /api/assertions/evaluate`**, and **`mcpfp assert [file]`**
+      (`--server --scan --baseline --file --format human|json --output --quiet`) with the gate file
+      found by the same walk-up `mcpfp.config.json` uses. Six rule kinds — `max-server-tokens` ·
+      `max-tool-tokens` (all tools, or one by name, where a **missing** named tool FAILS) ·
+      `max-tool-count` · `no-new-tools` · `no-removed-tools` · `max-scan-delta` (absolute magnitudes,
+      so a large DROP fails too). **No migration, no new dependency, no `<Route>`, no feature flag**
+      — `apps/web/src/`, `packages/shared/src/assistant-route-manifest.ts`,
+      `packages/shared/src/api-tokens.ts`, `apps/api/src/api-tokens/`, `apps/api/src/db/`,
+      `pnpm-lock.yaml` and `apps/cli/package.json` all have a **zero-line diff** (verified by the
+      orchestrator with `git diff 001c8fc..HEAD -- …`). Decisions **D-C3** (owner, at kickoff) and
+      **D-C8 / D-C9 / D-C10** recorded in the decision log below.
+      **Every baseline question re-projects `buildComparison` (D-MCP4)** — the exact→normalized→fuzzy
+      matcher and its `deltasComparable` guard — so this workstream has no second differ. The
+      comparison is built as `buildComparison(baseline, subject)`, i.e. **A is the baseline, B is the
+      subject**, so `onlyInB` is "added"; the direction is pinned by a test because getting it
+      backwards inverts two rules silently.
+      **A defect in WP 1.2 was found and fixed here, not deferred.** `runCli`'s top-level catch wrote
+      to the **raw** stderr stream rather than through the `Emitter`, so an API error body that echoed
+      the `Authorization` header back reached an operator's build log **unredacted** — the WP 1.2
+      ledger line's "every string it writes passes a token-shaped mask" was true only of strings
+      routed through the emitter, and the four *recognized* guard codes get canned sentences that
+      never quote the body, which is why the WP 1.2 test missed it. Fixed by routing that handler
+      through the **same** `redactTokens` (not a second masker). **Orchestrator-verified with teeth:**
+      reverting just the fix makes both pinning tests fail (`A9 — the token never reaches stdout,
+      stderr or the output file` and `A12 — an UNRECOGNIZED status echoing the token is redacted too`
+      → `# fail 2`), then passes again restored.
+      **Three deliberate deviations from the spec, all reviewed and accepted:** (1) the result type is
+      `AssertionRuleResult`, not the spec's `AssertionResult` — that name is already taken in the same
+      package by the Benchmarks/SkillFlow **test-gate** assertions, and two exports cannot share a
+      name through `index.ts`; (2) a `failed`/`running` scan named as the **subject** is a 400, not
+      just as the baseline — a zero-tool failed scan would otherwise satisfy every budget; (3) both
+      subject and baseline resolution share one `newestFirst` comparator (`scannedAt` desc, then id
+      desc), because `ORDER BY scanned_at DESC` alone is not a total order and two scans in the same
+      millisecond made "the newest scan" depend on row order.
+      **Verified by the orchestrator on the branch, not taken on report:** the full gate re-run
+      (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`) — shared **94** · cli **63** (was 46)
+      · api **3325 passed / 2 failed** · web **328 files, 3444 passed + 5 skipped** · build **0** —
+      with the only failures being the three **pre-existing** ones below; the zero-diff list above;
+      the redaction teeth; and the D-C8 case-3 test's use of `maxTokens: 0`, a bound a
+      suppressed-to-zero delta would satisfy, so it fails against any implementation that lets the
+      fake zero through. **Not independently re-run by the orchestrator:** the implementing agent's
+      live end-to-end walk (a built API on a throwaway DB, two real scans of the workbench's own
+      `/api/mcp` mount, then the built CLI through walk-up discovery, a first-scan SKIP → 0, a
+      breaching gate → 1, an unknown baseline → 2, `--output`/`--quiet`, and a `read`-only token
+      getting the D-C10 scope sentence).
+      ⚠️ **Pre-existing failures, none of them this WP** (the branch was cut at `001c8fc`): the two
+      `apps/api/test/compatibility-data.test.ts` dataset failures and the Biome 1 MiB-cap lint error
+      on `research/token-context-comparison/comparison/all-models.json`, both from `4eddf6f` and both
+      already recorded above; plus **4 `apps/web` typecheck errors** in the dashboard-overview tile
+      test fixtures, which arrived with `001c8fc` and were **fixed on `main` by `998f84b`** while this
+      WP was in flight — so they are absent from the merged tree.
+      **Open observations for WP 2.2 to decide on** (implemented as specified, flagged rather than
+      silently chosen): an explicit `--baseline` is **inert** when no rule in the gate consumes one
+      (resolution is lazy by design, so a typo'd id is not reported in that case — the report prints
+      `Baseline  none`); an explicit baseline **equal to the subject** is accepted as a trivially
+      passing self-compare (the strictly-older rule applies only to `"previous"`); and
+      `mcpfp.assert.json` is deliberately **not** gitignored — a gate file carries no credential and
+      is the record of what the team agreed the footprint may cost.
 
 ## Phase 2 — Suites & PR artifacts
 - [ ] WP 2.1 — `suite run` command: trigger, poll/stream, result summary
@@ -128,6 +197,9 @@ wp/ci/<id>`.
 ## Phase MCP — workbench MCP server (see [`mcp-server.md`](./mcp-server.md))
 - [x] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — done 2026-08-19 · `wp/ci/M.1`. 21 read tools + 4 report resource templates at `/api/mcp` (stateless streamable HTTP, GET/DELETE→405); new `mcp_server` Settings › Features flag (off ⇒ 403 `feature_disabled`); no new dependency, **no migration** (`user_version` 57 unchanged), additive-only wire. Gate green (shared 89 · api 3254 · web 3178+5 skipped · build · lint). **Live-verified against the built API on a copy of a real 91 MB dev DB**: MCP Inspector `initialize`/`tools/list`/7 tool calls, `resources/read` of a real run report, error + validation paths, flag off→403→on, off-state survives restart, fresh-DB boot. **Self-proof (D-MCP5 seed): the workbench scanned its own mount — 21 tools · 2,224 tokens · 200 resources (`generic_o200k`, countingVersion 2)**; the in-test `tools/list` measurement is 2,206 against a budget of 3,000 (`WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET`). Owner-acceptance pending: the both-theme + keyboard walk of the new Settings › Features row.
 - [ ] WP M.2 — service-token scopes on the mount (localhost bypass per D-MCP2) — depends: 1.1, M.1
+      Mapping work this WP inherits: **`POST /api/assertions/evaluate` → `read`** (D-C10, WP 1.3).
+      It is a read-only endpoint that only takes a POST because it carries a document body; under the
+      current coarse method→scope rule a remote assert-only token must hold an *execute* scope.
 - [ ] WP M.3 — scoped write tools: `scan:run` · `runs:launch` · `suites:run` — depends: M.2
 - [x] WP M.4 — agent onboarding docs + self-scan CI gate — done 2026-08-19 · `wp/ci/M.4`. Three
       deliverables, all additive: **(a)** `GET /api/mcp/llms.txt` — an `llms.txt`-style usage doc
@@ -158,6 +230,57 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-19 · D-C3 locked at the WP 1.3 kickoff** (owner). **Baseline semantics: symbolic in,
+  concrete out.** A baseline is named either symbolically (`"previous"` — the newest earlier
+  *succeeded* scan of the subject's own server) or as an explicit scan id; **either way the API
+  resolves it server-side to exactly ONE concrete scan** and the report echoes that `scanId` +
+  `scannedAt` under `baseline.requested` / `baseline.scan`. This is a superset of the README's
+  original "explicit ids only" recommendation: a PR gate does not have to discover an id up front,
+  and the artifact still records precisely what was compared, so the same gate re-run later against
+  an unchanged database compares the same pair. Ordering is a **total** order (`scannedAt` desc, id
+  desc), not `ORDER BY scanned_at DESC` alone. The owner also scoped WP 1.3's rule set to the
+  README's footprint+delta list — suite/grade rules stay WP 2.2, security findings WP 3.1.
+
+- **2026-08-19 · D-C8 / D-C9 / D-C10 locked at the WP 1.3 kickoff** (the assertions engine +
+  `mcpfp assert`). Full text + the design they bind:
+  [`wp-1.3-assertions.md`](./wp-1.3-assertions.md). Declared in
+  `packages/shared/src/ci-assertions.ts`, enforced in `apps/api/src/assertions/service.ts`, and
+  pinned by `apps/api/test/ci-assertions.test.ts` + `apps/cli/test/assert.test.ts`.
+  - **D-C8 — an unevaluable rule is never a silent pass.** Three distinguishable outcomes, three
+    different exit codes. (1) **The baseline cannot exist yet** — this is the server's first scan:
+    the baseline-dependent rules report `status: "skipped"` with a reason, the CLI prints one loud
+    stderr warning per skipped rule (**`--quiet` does not silence them**), and the command exits
+    **0**. A first-ever run must not fail a pipeline for having no history. (2) **A baseline was
+    named and does not resolve** — an unknown scan id, a scan of a different server, a `failed`
+    scan: a **400**, so the CLI exits **2**. A typo'd baseline never quietly degrades into case 1.
+    (3) **The baseline resolves but the two scans are not on the same scale** —
+    `ScanComparison.deltasComparable === false`, where the compare service suppresses every token
+    delta to 0: a `max-scan-delta` rule measured against that suppressed 0 would pass every single
+    time, so it is an **error (exit 2)** naming both token profiles and both counting versions,
+    never a pass. Tool matching *is* still valid in that state (the type's own contract), so
+    `no-new-tools` / `no-removed-tools` evaluate normally and the request succeeds.
+    _Implementation note:_ the case-3 test uses `maxTokens: 0` — a bound a suppressed-0 delta would
+    satisfy — so it fails against any implementation that lets the fake zero through.
+  - **D-C9 — `assert` never runs a scan.** It evaluates an already-persisted one. Scanning is
+    `mcpfp scan`; a CI job chains the two, which is what keeps the exit codes honest — a scan that
+    could not run is *that* command's `2`, not this one's `1`. Pinned by a test asserting the stub
+    receives exactly one `POST /api/assertions/evaluate` and no `/scan` at all. Extended, in the
+    same spirit, to the subject: a `failed` or `running` scan named as the target is a **400**, not
+    a zero-tool scan that would silently satisfy every budget.
+  - **D-C10 — the evaluation endpoint is a POST and therefore needs an EXECUTE scope from a remote
+    token even though it only reads.** WP 1.1's `requiredScopesForMethod` maps scopes coarsely by
+    method; carving an exception into it was explicitly rejected (WP 1.1 deferred per-route mapping
+    to WP M.2, and that file is security-critical). The consequence is documented instead: a
+    **loopback** caller needs no token; a **remote** assert-only token needs an execute scope
+    (`scan:run` is the natural one — a footprint pipeline already holds it to run the scan being
+    checked). `packages/shared/src/api-tokens.ts` and `apps/api/src/api-tokens/**` have a
+    **zero-line diff**. WP M.2 should map `POST /api/assertions/evaluate → read`.
+
+  _Rationale:_ the whole value of a footprint gate is that `1` ("the gate said no") and `2` ("the
+  gate could not run") mean different things to a pipeline. D-C8 is that distinction applied to the
+  one case where it is easy to get wrong — a rule that quietly evaluates to "fine" because the data
+  it needed was missing or incomparable.
 
 - **2026-08-19 · D-C5 / D-C6 / D-C7 locked at the WP 1.2 kickoff** (the `mcpfp` CLI). Full text +
   the design they bind: [`wp-1.2-mcpfp-cli.md`](./wp-1.2-mcpfp-cli.md). Declared in
@@ -268,6 +391,11 @@ MCP) here._
       and a deliberate failure (stop the API) fails the step with exit **2**; and a **non-loopback**
       invocation (`--url http://<lan-ip>:8080 --token mcpfp_…`) succeeds with a `read` token and is
       refused without one — accepted: ____
+- [ ] **WP 1.3** — `mcpfp assert` from a real pipeline: a gate file that a change genuinely breaches
+      fails the step with exit **1** and names the rule; the same job with the API stopped fails with
+      exit **2**; a server's **first** scan reports the baseline rules as skipped, warns, and still
+      exits **0**; and a **remote** (non-loopback) `assert` is refused without a token and succeeds
+      with an **execute**-scoped one (D-C10) — accepted: ____
 - [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
       assertions → PR comment with deltas; a deliberate budget breach fails the check —
       accepted: ____
