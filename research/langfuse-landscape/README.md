@@ -35,6 +35,8 @@ inventory is cross-referenced.
 | [`00-langfuse-feature-inventory.md`](./00-langfuse-feature-inventory.md) | What Langfuse actually is as of Aug 2026 (post-ClickHouse-acquisition, v4), feature by feature, with sources |
 | [`01-gap-analysis.md`](./01-gap-analysis.md) | Twelve dimensions vs this app with verdicts **and a plan status per gap** (planned / plan+ / net-new), where-we-lead, threat vector, priority reading |
 | [`02-alternatives-landscape.md`](./02-alternatives-landscape.md) | Phoenix · Opik · Braintrust · Weave profiles, each with a "read for us"; a 30-row cross-tool matrix incl. LangSmith; landscape synthesis + deep-dive candidates |
+| [`03-charts-viz-inventory.md`](./03-charts-viz-inventory.md) | Charts & visualizations per tool (widget-type enums read from OSS schemas/source, chart libraries from dependency manifests, interaction grammar) + workbench mapping — added 2026-08-18 on owner request |
+| [`04-roadmap-handoff.md`](./04-roadmap-handoff.md) | Index of the roadmap entries derived from this research (observability amendment, new WPs, ci MCP-server plan, CLAUDE.md rows) |
 
 ## Headline findings
 
