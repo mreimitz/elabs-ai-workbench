@@ -181,6 +181,14 @@ export const config = {
   // prunes older scans for that server (apps/api/src/scans/service.ts) and the maintenance endpoint
   // can prune on demand across all servers.
   scanRetentionPerServer: readNonNegativeInt(process.env.SCAN_RETENTION_PER_SERVER, 0),
+  // Service tokens (roadmap/ci/ WP 1.1, D-C2) — force token auth on LOOPBACK too. Default false: a
+  // request from 127.0.0.0/8 / ::1 passes exactly as it did before service tokens existed, so the
+  // browser UI on the host is unaffected. A request from any OTHER address always requires a valid
+  // `Authorization: Bearer mcpfp_…` regardless of this setting — that part is not configurable.
+  // Turning this on locks the host's own browser out too (it presents no token), which also makes
+  // Settings › API tokens unreachable, since a token may never manage tokens: mint the tokens you
+  // need first, then switch this on. See apps/api/src/api-tokens/guard.ts.
+  apiAuthRequired: readBoolean(process.env.API_AUTH_REQUIRED, false),
   // Assistant (roadmap/assistant/, WP 0.3) — the embedded Claude agent chat. All agent state
   // (SDK CLAUDE_CONFIG_DIR, HOME, materialized skill workspaces) lives under this dir so it
   // persists on the same /data volume as the DB in Docker and never touches the operator's real

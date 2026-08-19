@@ -452,15 +452,15 @@ test("migration v18 — pre-v18 DB gains skill_versions.intent_log_json (additiv
 // v21 (assistant_settings), v22 (suite_run_reports), v23 (provider_credentials server link), and v24
 // (scenarios.answers_mode — both later reverted by v56).
 
-test("migration v20 — a fresh DB stamps LATEST (57) and carries the 3 assistant tables", () => {
+test("migration v20 — a fresh DB stamps LATEST (58) and carries the 3 assistant tables", () => {
   const db = openFresh();
 
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    57,
-    "LATEST_SCHEMA_VERSION auto-derived to 57 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten))",
+    58,
+    "LATEST_SCHEMA_VERSION auto-derived to 58 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, roadmap/ci WP 1.1)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
+  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
   for (const table of ["assistant_credentials", "assistant_threads", "assistant_events"]) {
     assert.ok(tableExists(db, table), `fresh DB has ${table}`);
   }
@@ -551,8 +551,8 @@ test("migration v43 — a pre-v43 (v42) DB gains digest_reports; idempotent, imm
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    57,
-    "stamped to LATEST (57) after v43…v56",
+    58,
+    "stamped to LATEST (58) after v43…v58",
   );
   assert.ok(
     tableExists(db, "digest_reports"),
@@ -609,8 +609,8 @@ test("migration v44 — a pre-v44 (v43) DB gains model_pricing seeded from the c
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    57,
-    "stamped to LATEST (57) after v44…v56",
+    58,
+    "stamped to LATEST (58) after v44…v58",
   );
   assert.ok(tableExists(db, "model_pricing"), "v44 created model_pricing on the existing (v43) DB");
   assert.ok(indexExists(db, "idx_model_pricing_match"), "v44 added idx_model_pricing_match");
@@ -2477,7 +2477,7 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
 
 test("migration v55 — a fresh DB carries hub_sessions/hub_agents.provider_credential_id (schema.ts baseline)", () => {
   const db = openFresh();
-  assert.equal(db.pragma("user_version", { simple: true }), 57, "fresh DB stamped at 57");
+  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
   assert.ok(
     columnExists(db, "hub_sessions", "provider_credential_id"),
     "the baseline DDL carries hub_sessions.provider_credential_id (a fresh DB SKIPS every migration)",
@@ -2532,7 +2532,7 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
   assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    57, "and latest is 57");
+    58, "and latest is 58");
   assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
   assert.ok(columnExists(db, "hub_sessions", "provider_credential_id"), "hub_sessions gained it");
   assert.ok(columnExists(db, "hub_agents", "provider_credential_id"), "hub_agents gained it");
@@ -2650,6 +2650,91 @@ test("migration v57 — stale notification/digest deep links are rewritten to ro
 
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v57 is a no-op");
   assert.equal(linkOf("n-mission"), "/assistant?session=sess-1", "the rewrite is not applied twice");
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    LATEST_SCHEMA_VERSION,
+    "version unchanged after the re-run",
+  );
+});
+
+// ══ v58 — service tokens (roadmap/ci/ WP 1.1, D-C2): the api_tokens table ═════════════════════════
+// A2's two paths: a FRESH DB boots from schema.ts with `api_tokens` present (every migration no-ops
+// and the version is stamped), and a DB stamped at 57 gains the table in place with its data intact.
+
+test("migration v58 — a fresh DB carries api_tokens from the schema.ts baseline and stamps 58", () => {
+  const db = openFresh();
+  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
+  assert.equal(LATEST_SCHEMA_VERSION, 58, "LATEST_SCHEMA_VERSION auto-derived to 58");
+  assert.ok(tableExists(db, "api_tokens"), "the baseline DDL carries api_tokens");
+  assert.deepEqual(columns(db, "api_tokens"), [
+    "id",
+    "label",
+    "token_hash",
+    "token_prefix",
+    "scopes_json",
+    "created_at",
+    "last_used_at",
+    "expires_at",
+  ]);
+  assert.ok(indexExists(db, "idx_api_tokens_created_at"), "the created_at index is present");
+  // token_hash is UNIQUE so authentication is a single indexed lookup, never a scan-and-compare.
+  assert.match(tableDdl(db, "api_tokens"), /token_hash\s+TEXT\s+NOT\s+NULL\s+UNIQUE/i);
+  // There is deliberately NO column that could hold a plaintext token.
+  assert.ok(!columns(db, "api_tokens").some((c) => /secret|plaintext|token_value/.test(c)));
+});
+
+test("migration v58 — a pre-v58 (v57) DB gains api_tokens with its other data intact; idempotent", () => {
+  // A v57-stamped DB = the CURRENT baseline minus this migration's table. Building it from `schemaSql`
+  // and dropping the table keeps the fixture honest (every other table is exactly what a real v57
+  // install had) — the v43 digest_reports pattern.
+  const db = track(new Database(":memory:") as unknown as AppDatabase);
+  db.pragma("foreign_keys = ON");
+  db.exec(schemaSql);
+  db.exec("DROP TABLE IF EXISTS api_tokens;");
+  db.pragma("user_version = 57");
+  assert.ok(!tableExists(db, "api_tokens"), "sanity: the v57 fixture genuinely lacks api_tokens");
+
+  // Pre-existing data that must survive the upgrade untouched.
+  const now = "2026-08-19T00:00:00.000Z";
+  db.prepare(
+    `INSERT INTO mcp_servers (id, name, transport, command, url, created_at, updated_at)
+     VALUES ('srv-1', 'Existing server', 'stdio', 'node', NULL, @now, @now)`,
+  ).run({ now });
+
+  applyMigrations(db);
+
+  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
+  assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
+  assert.ok(tableExists(db, "api_tokens"), "v58 created api_tokens on the existing (v57) DB");
+  assert.ok(indexExists(db, "idx_api_tokens_created_at"), "…and its index");
+  assert.equal(
+    (db.prepare("SELECT name FROM mcp_servers WHERE id = 'srv-1'").get() as { name: string }).name,
+    "Existing server",
+    "existing rows survive the additive migration",
+  );
+
+  // Immediately usable, and the UNIQUE hash actually bites.
+  db.prepare(
+    `INSERT INTO api_tokens (id, label, token_hash, token_prefix, scopes_json, created_at, last_used_at, expires_at)
+     VALUES ('t1', 'CI', 'hash-1', 'ab12cd34', '["read"]', @now, NULL, NULL)`,
+  ).run({ now });
+  assert.throws(
+    () =>
+      db
+        .prepare(
+          `INSERT INTO api_tokens (id, label, token_hash, token_prefix, scopes_json, created_at, last_used_at, expires_at)
+           VALUES ('t2', 'CI 2', 'hash-1', 'ef56gh78', '["read"]', @now, NULL, NULL)`,
+        )
+        .run({ now }),
+    /UNIQUE/,
+    "two tokens can never share a hash",
+  );
+
+  // An upgraded table must be shaped exactly like the fresh-DB one (the migration DDL and the
+  // schema.ts baseline are the same declaration; a drift between them is the classic v-N bug).
+  assert.deepEqual(tableShape(db, "api_tokens"), tableShape(openFresh(), "api_tokens"));
+
+  assert.doesNotThrow(() => applyMigrations(db), "re-applying v58 is a no-op");
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
