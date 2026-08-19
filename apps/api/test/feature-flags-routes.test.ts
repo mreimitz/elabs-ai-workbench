@@ -90,14 +90,19 @@ test("PUT /api/features persists the patch and echoes the full map", async () =>
     body: JSON.stringify({ assistant: false }),
   });
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { flags: { assistant: false } });
+  // The response echoes the COMPLETE map (every registered feature), not just the patched key —
+  // built from the defaults here so registering another feature does not edit this assertion.
+  const patched = { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false };
+  assert.deepEqual(await response.json(), { flags: patched });
 
-  // Persisted, not just cached: a fresh service over the same DB reads the stored value back.
-  assert.deepEqual(h.settings.get(APP_SETTING_FEATURES_KEY), { assistant: false });
+  // Persisted, not just cached: a fresh service over the same DB reads the stored value back. The KV
+  // holds the RESOLVED full map (`FeatureFlagsService.setFlags` merges the patch over the defaults),
+  // so a stored blob is always complete rather than a sparse diff.
+  assert.deepEqual(h.settings.get(APP_SETTING_FEATURES_KEY), patched);
   assert.equal(new FeatureFlagsService(h.settings).getFlags().assistant, false);
 
   const readBack = await fetch(`${h.baseUrl}/api/features`);
-  assert.deepEqual(await readBack.json(), { flags: { assistant: false } });
+  assert.deepEqual(await readBack.json(), { flags: patched });
 });
 
 test("PUT /api/features rejects an unknown feature id with 400", async () => {

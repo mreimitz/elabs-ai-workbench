@@ -26,7 +26,7 @@ import { z } from "zod";
 //      byte-identical string-set equality with `ASSISTANT_ROUTE_MANIFEST`.
 
 /** Every switchable feature id. Order here is the order the Settings › Features rows render in. */
-export const APP_FEATURE_IDS = ["assistant"] as const;
+export const APP_FEATURE_IDS = ["assistant", "mcp_server"] as const;
 
 export type AppFeatureId = (typeof APP_FEATURE_IDS)[number];
 
@@ -45,7 +45,8 @@ export type AppFeatureMeta = {
    *  turn-off confirmation, so the operator sees the blast radius before committing). */
   surfaces: string[];
   /** URL path prefixes whose routes render the "turned off" panel while the feature is off. A path
-   *  matches when it equals the prefix or continues with `/`. */
+   *  matches when it equals the prefix or continues with `/`. **Empty is legal** — a machine-facing
+   *  feature (an endpoint external clients dial, with no screen of its own) owns no route to swap. */
   routePrefixes: string[];
   /** API path prefixes the server-side guard rejects with 403 while the feature is off. */
   apiPrefixes: string[];
@@ -65,6 +66,20 @@ export const APP_FEATURE_META: Record<AppFeatureId, AppFeatureMeta> = {
     ],
     routePrefixes: ["/assistant"],
     apiPrefixes: ["/api/assistant", "/api/hub"],
+  },
+  mcp_server: {
+    id: "mcp_server",
+    label: "Workbench MCP server",
+    description:
+      "Serves this workbench as an MCP server of its own, so an external agent or a CI job can read its scans, runs, skills, suites and reports over the Model Context Protocol.",
+    surfaces: [
+      "The /api/mcp endpoint external MCP clients connect to (it answers 403 while off)",
+      "The read-only tools and report resources that endpoint exposes",
+    ],
+    // No web route: this feature has no screen of its own — it is a machine-facing endpoint. An empty
+    // list is the honest declaration; `featureForPath(…, "route")` simply never matches it.
+    routePrefixes: [],
+    apiPrefixes: ["/api/mcp"],
   },
 };
 

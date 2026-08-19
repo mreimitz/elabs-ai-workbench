@@ -33,13 +33,16 @@ if (typeof window.matchMedia !== "function") {
 }
 
 import * as api from "../lib/api";
+import { DEFAULT_APP_FEATURE_FLAGS } from "@mcp-token-footprint/shared";
 import { FeatureFlagsProvider } from "../features/feature-flags/feature-flags-context";
 import { AppShell } from "./AppShell";
 
 const ASSISTANT_NAV_LABELS = ["Assistant", "Agents & Crews", "Projects", "Audit"];
 
 async function renderShell(assistant: boolean) {
-  vi.mocked(api.getFeatureFlags).mockResolvedValue({ flags: { assistant } });
+  vi.mocked(api.getFeatureFlags).mockResolvedValue({
+    flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant },
+  });
   const view = render(
     <MemoryRouter initialEntries={["/dashboard"]}>
       <FeatureFlagsProvider>

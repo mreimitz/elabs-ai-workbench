@@ -11,4 +11,6 @@ export * from "./model-data.generated.js";
 export * from "./report-derive.js";
 export * from "./run-filter.js";
 export * from "./schemas.js";
+export * from "./skill-security.js";
 export * from "./types.js";
+export * from "./workbench-mcp.js";

@@ -20,12 +20,12 @@ import type { TestService } from "../testing/test-service.js";
 import { DEFAULT_HEATMAP_MODELS } from "../compatibility/dataset.js";
 import { createDigestMarkdownReport } from "./digest-markdown.js";
 import { DigestReportRepository, DigestScheduleService } from "./digest.js";
+import { createJsonReport, createMarkdownReport } from "./reports.js";
 import {
-  createJsonReport,
-  createMarkdownReport,
-  createRunJsonReport,
-  createRunMarkdownReport,
-} from "./reports.js";
+  buildRunJsonReport,
+  buildRunMarkdownReport,
+  type RunReportSources,
+} from "./run-report-assembly.js";
 import { createServerReport } from "./server-report.js";
 import { createServerMarkdownReport } from "./server-report-markdown.js";
 import {
@@ -126,25 +126,27 @@ export async function registerReportRoutes(
   // hand-roll an error body. Auto-Rating WP 1.5 (AR1): also compose the rating/grades block via the
   // SAME `RunReportService` the `GET /api/runs/:id/report` endpoint uses, so the export and the endpoint
   // can never disagree — additive (existing fields unchanged). ──────────────────────────────────────
+  // The fetch + enrich + compose recipe both formats need lives in `run-report-assembly.ts` — the
+  // workbench MCP server's `run_report` tool and report resources call the SAME helper (D-MCP4), so a
+  // report read over MCP and one downloaded from here can never disagree.
+  const runReportSources: RunReportSources = {
+    runs: runRepository,
+    tests: testService,
+    scenarios: scenarioService,
+    runReports,
+  };
+
   app.get("/api/reports/run/:id/json", async (request) => {
     const { id } = request.params as { id: string };
-    const run = runRepository.getRun(id);
-    const test = testService.get(run.testId);
-    const scenario = scenarioService.get(run.scenarioId);
-    return createRunJsonReport(run, { test, scenario }, runReports.compose(id));
+    return buildRunJsonReport(runReportSources, id);
   });
 
   app.get("/api/reports/run/:id/markdown", async (request, reply) => {
     const { id } = request.params as { id: string };
-    const run = runRepository.getRun(id);
-    const test = testService.get(run.testId);
-    const scenario = scenarioService.get(run.scenarioId);
+    const markdown = buildRunMarkdownReport(runReportSources, id);
     reply.header("content-type", "text/markdown; charset=utf-8");
-    reply.header(
-      "content-disposition",
-      `attachment; filename="mcp-token-footprint-run-${run.id}.md"`,
-    );
-    return createRunMarkdownReport(run, { test, scenario }, runReports.compose(id));
+    reply.header("content-disposition", `attachment; filename="mcp-token-footprint-run-${id}.md"`);
+    return markdown;
   });
 
   // ── Suite-run report (WP 3.4) — mirrors the run report for a suite mass-run: the frozen config

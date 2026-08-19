@@ -31,6 +31,11 @@ import {
 import { config } from "./config/env.js";
 import { openDatabase } from "./db/database.js";
 import { registerMaintenanceRoutes } from "./db/maintenance.js";
+// CI & headless automation — Phase MCP WP M.1 (roadmap/ci/mcp-server.md): the workbench's OWN
+// read-only MCP server, mounted on this same Fastify instance at `/api/mcp` (D-MCP1) behind the
+// `mcp_server` feature flag (D-MCP6). It re-projects the repositories constructed below — it never
+// constructs its own.
+import { registerWorkbenchMcpRoutes } from "./mcp-server/routes.js";
 import { GithubAccountService } from "./github-account/service.js";
 import { registerGithubAccountRoutes } from "./github-account/routes.js";
 import { createAnswerValidationGrader } from "./grading/answer-validation.js";
@@ -1484,6 +1489,25 @@ await registerReportRoutes(
     skills,
   },
 );
+// Workbench MCP server (Phase MCP, WP M.1) — read-only tools + report resources over the SAME
+// repositories every route above uses. `runReports` is the run-report assembly the export routes were
+// just given, so a report read over MCP and one downloaded over HTTP are the same document (D-MCP4).
+registerWorkbenchMcpRoutes(server, {
+  servers,
+  scans,
+  runs: runRepository,
+  grades: gradeRepository,
+  skills,
+  suites: suiteRepository,
+  suiteRuns: suiteRunRepository,
+  collections: collectionRepository,
+  runReports: {
+    runs: runRepository,
+    tests: testService,
+    scenarios: scenarioService,
+    runReports: runReportService,
+  },
+});
 await registerOAuthRoutes(server, oauthService);
 await registerTestingRoutes(
   server,
