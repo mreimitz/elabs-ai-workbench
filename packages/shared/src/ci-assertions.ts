@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { formatNumber, formatPercent } from "./format.js";
+import { SECURITY_SEVERITIES, type SecuritySeverity } from "./security-posture.js";
 import type { RunPlanSource, SuiteRunStatus, TokenProfileId } from "./types.js";
 
 // ==================================================================================================
@@ -51,6 +52,22 @@ import type { RunPlanSource, SuiteRunStatus, TokenProfileId } from "./types.js";
 //   • **D-C16 — a suite gate refuses a suite run that is not `completed` and settled.** Enforced in
 //     the API, not here; see `apps/api/src/assertions/service.ts`. A half-graded matrix read as a
 //     mean score would report a quality regression that is really just grading latency.
+//
+// Locked decisions WP 3.1 adds (2026-08-20, `roadmap/ci/wp-3.1-no-new-security-findings.md`). All
+// three are ADDITIVE — {@link ASSERTIONS_VERSION} stays 1, and every v1 document still validates:
+//
+//   • **D-C20 — "new" is set membership by (ruleId, anchor), never a count.** The comparison is
+//     `securityFindingIdentity` from `security-posture.ts` (declared there because WP 1.4's posture
+//     diff needs the same notion of "the same finding"), so a release that RESOLVED one finding and
+//     INTRODUCED a different one fails — which a count comparison would pass. Evidence text is
+//     deliberately outside the identity: a reworded description that still trips the same rule on the
+//     same tool is the same finding.
+//   • **D-C21 — `minSeverity` defaults to {@link NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY}
+//     (`"warning"`).** `error` and `warning` gate; `info` findings are hygiene, and a gate that goes
+//     red on day one for hygiene is a gate that gets deleted. It is an OPTIONAL field with a named
+//     constant rather than a zod `.default()`, so the default is a decision somebody wrote down.
+//   • **D-C22 — an analyzer-version mismatch between the two reports is an ERROR, not a pass.**
+//     Enforced in the API; the exact shape of D-C8's `deltasComparable` guard.
 
 /**
  * The version of the {@link assertionDocumentSchema} below. Bumped **only** for a breaking change to
@@ -73,10 +90,10 @@ export const MCPFP_ASSERT_FILE_NAME = "mcpfp.assert.json";
 export const ASSERTION_DETAIL_LIMIT = 20;
 
 /**
- * The rule vocabulary. WP 1.3 froze the six SCAN rules; WP 2.2 APPENDED the two SUITE rules (the
- * order here is the `mcpfp help assert` table's order). WP 3.1 (`no-new-security-findings`) extends
- * it additively in the same way — a new kind is one member here, one schema below, one
- * {@link ASSERTION_RULE_META} entry, and one evaluator in the API's dispatch map.
+ * The rule vocabulary. WP 1.3 froze the six SCAN rules; WP 2.2 APPENDED the two SUITE rules; WP 3.1
+ * APPENDED `no-new-security-findings` (the order here is the `mcpfp help assert` table's order). A
+ * new kind is one member here, one schema below, one {@link ASSERTION_RULE_META} entry, and one
+ * evaluator in the API's dispatch map — nothing above it moves.
  */
 export const ASSERTION_RULE_KINDS = [
   "max-server-tokens",
@@ -87,6 +104,7 @@ export const ASSERTION_RULE_KINDS = [
   "max-scan-delta",
   "min-suite-score",
   "max-suite-cost",
+  "no-new-security-findings",
 ] as const;
 
 export type AssertionRuleKind = (typeof ASSERTION_RULE_KINDS)[number];
@@ -158,6 +176,14 @@ export const ASSERTION_RULE_META: Record<
       "The suite run's execution + judge cost must be at most `maxUsd`; both halves are named in the message, because a judge that blew the budget and a matrix that blew the budget are different problems.",
     needsBaseline: false,
     family: "suite",
+  },
+  // WP 3.1 — the posture rule. SCAN-family (D-C13), so it composes with the six footprint rules in
+  // ONE gate file: a repo gates its MCP server's surface and its posture in a single document.
+  "no-new-security-findings": {
+    summary:
+      'No security finding may appear that the baseline scan did not have; a finding is the same finding when its rule id and its anchor (tool, parameter, or the server) match, whatever the wording, and only findings at or above `minSeverity` (default "warning") gate.',
+    needsBaseline: true,
+    family: "scan",
   },
 };
 
@@ -258,6 +284,35 @@ export const maxSuiteCostRuleSchema = z
   })
   .strict();
 
+// WP 3.1 — the POSTURE rule (D-C13 family `"scan"`). It carries no threshold of its own beyond a
+// severity floor: everything it measures comes from the security-posture analyzer, which owns every
+// heuristic, every severity and the score. There is no rule id, no regex and no weight here.
+
+/**
+ * **D-C21** — the severity floor `no-new-security-findings` uses when the rule does not name one.
+ *
+ * `error` and `warning` findings gate; `info` findings (an undescribed parameter, an unmarked
+ * open-world tool, an unconstrained `additionalProperties`) are hygiene. A posture gate that goes red
+ * on its first run because a third-party server left three parameters undescribed is a gate somebody
+ * deletes that afternoon — so the strict posture is opt-in, written as `"minSeverity": "info"`.
+ *
+ * A named constant rather than a zod `.default()`, so the default reads as a decision in the one
+ * place a reader looks for it, and a test can pin it.
+ */
+export const NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY: SecuritySeverity = "warning";
+
+export const noNewSecurityFindingsRuleSchema = z
+  .object({
+    rule: z.literal("no-new-security-findings"),
+    /**
+     * The severity floor. Omitted ⇒ {@link NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY}. The three
+     * values are `SECURITY_SEVERITIES` itself — restating them here would let the gate's vocabulary
+     * drift from the analyzer's.
+     */
+    minSeverity: z.enum(SECURITY_SEVERITIES).optional(),
+  })
+  .strict();
+
 export const assertionRuleSchema = z.discriminatedUnion("rule", [
   maxServerTokensRuleSchema,
   maxToolTokensRuleSchema,
@@ -267,6 +322,7 @@ export const assertionRuleSchema = z.discriminatedUnion("rule", [
   maxScanDeltaRuleSchema,
   minSuiteScoreRuleSchema,
   maxSuiteCostRuleSchema,
+  noNewSecurityFindingsRuleSchema,
 ]);
 
 export type AssertionRule = z.infer<typeof assertionRuleSchema>;
