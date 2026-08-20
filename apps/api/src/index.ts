@@ -1446,7 +1446,14 @@ await registerCompareRoutes(server, scans);
 // `mcpfp.assert.json` against an ALREADY-persisted scan and return an itemized report. Read-only
 // (D-C9 — it never runs a scan), and every baseline question re-projects `buildComparison` above
 // rather than adding a second differ (D-MCP4). No migration, no feature flag, no web route.
-await registerAssertionRoutes(server, { scans, servers });
+await registerAssertionRoutes(server, {
+  scans,
+  servers,
+  // WP 2.2 — the suite family's two read ports. No new repository and no new query: these are
+  // the same reads `GET /api/suite-runs` already serves.
+  suites: suiteService,
+  suiteRuns: suiteRunRepository,
+});
 // Advisor (roadmap/advisor/, WP 1.2) — `GET /api/advisor/report`: deterministic, versioned
 // recommendations derived from data the app already persists (scans + runs + environments). Read-only;
 // the four rules see only the narrow read ports built here, never a DB handle or a secret.
