@@ -62,6 +62,7 @@ reports a loud **SKIP** with its reason. A delta gate in topology A is decoratio
 | `no-new-tools` | ⏭️ skips every run | ✅ works |
 | `no-removed-tools` | ⏭️ skips every run | ✅ works |
 | `max-scan-delta` | ⏭️ skips every run | ✅ works |
+| `no-new-security-findings` | ⏭️ skips every run | ✅ works |
 | `min-suite-score` | ❌ not possible | ✅ works |
 | `max-suite-cost` | ❌ not possible | ✅ works |
 
