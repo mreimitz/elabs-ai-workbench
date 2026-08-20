@@ -1,0 +1,13 @@
+{
+  "tools": [
+    {
+      "name": "doc-intake",
+      "version": "1.0.0",
+      "entrypoint": "tools/doc_intake.py",
+      "converter": "microsoft/markitdown",
+      "converter_version": "0.1.6",
+      "input": ["local-file", "local-directory"],
+      "output": "Research/RS-NN-slug"
+    }
+  ]
+}

@@ -32,7 +32,7 @@ import {
 const REPO_ROOT = path.join(import.meta.dirname, "..", "..", "..");
 const EXAMPLES_DIR = path.join(REPO_ROOT, "examples", "github-actions");
 const WORKFLOWS_DIR = path.join(REPO_ROOT, ".github", "workflows");
-const GUIDE_PATH = path.join(REPO_ROOT, "user-guide", "23-ci-github-actions.md");
+const GUIDE_PATH = path.join(REPO_ROOT, "planning", "user-guide", "DC-19-ci-github-actions", "23-ci-github-actions.md");
 
 /** The example workflows, by file name. Adding one here is the only edit a third topology needs. */
 const WORKFLOW_FILES = ["mcpfp-footprint-gate.yml", "mcpfp-remote-gate.yml"] as const;
@@ -252,7 +252,7 @@ test("A6 — nothing token-shaped appears in an example or in the guide", () => 
   for (const file of fs.readdirSync(EXAMPLES_DIR).filter((f) => f.endsWith(".json"))) {
     assertNothingCredentialShaped(file, read(path.join(EXAMPLES_DIR, file)));
   }
-  assertNothingCredentialShaped("user-guide/23-ci-github-actions.md", read(GUIDE_PATH));
+  assertNothingCredentialShaped("planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md", read(GUIDE_PATH));
 });
 
 test("A6 — the service token only ever comes from `${{ secrets.MCPFP_TOKEN }}`", () => {
@@ -276,7 +276,7 @@ test("A6 — no absolute local path appears in an example or in the guide", () =
       .readdirSync(EXAMPLES_DIR)
       .filter((f) => f.endsWith(".json"))
       .map((f) => [f, read(path.join(EXAMPLES_DIR, f))] as const),
-    ["user-guide/23-ci-github-actions.md", read(GUIDE_PATH)] as const,
+    ["planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md", read(GUIDE_PATH)] as const,
   ];
   for (const [label, text] of files) {
     text.split("\n").forEach((line, index) => {

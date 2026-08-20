@@ -1,8 +1,41 @@
 # Changelog
 
 All notable changes to MCP Token Footprint. This project is single-owner and versioned loosely; the
-authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the `roadmap/*/STATUS.md`
-ledgers. Per-phase git tags are an **owner action** (not created by this remediation).
+authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
+`planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `roadmap/*/STATUS.md`;
+entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
+
+## Unreleased — one governed home for research, planning and the guide
+
+Every research, roadmap and user-guide document now lives in a single **Open Knowledge Format
+bundle** at [`planning/`](./planning/), and the rules that keep it honest are mechanical rather than
+cultural.
+
+Each investigation is a tagged `RS-NN` topic, each initiative a tagged `RM-NN` item with its own
+`STATUS.md` work-package ledger, and each part of the system a tagged `DC-NN` documentation subject
+that holds both the record of what shipped and that part of the manual. Tags are two digits,
+allocated atomically and never reused, so a cross-reference stays valid for the life of the project.
+The loose `research/`, `roadmap/` and `user-guide/` trees are gone; 569 documents moved into tagged
+folders and every internal link was re-pointed.
+
+**A plan can no longer be quietly "finished".** Work is planned as an `RM` item, built against its
+ledger, recorded in a `DC` subject as *what shipped versus what was planned*, and then retired by a
+transactional command that refuses while any ledger box is still open. Five finished initiatives —
+the Assistant Hub UX rebuild, Interface Craft, server types, Toolbar Reach and Unified Sessions —
+went through that path and now sit in `planning/Roadmap/completed/` with their deliveries, their
+deviations and their unverified gaps recorded against the subjects they shipped into.
+
+**Enforcement runs at the moment of the edit.** A pre-write hook rejects a `README.md` inside the
+bundle, a by-hand `status: "done"` flip, a document that lands outside its domain folder, or a
+meaningful edit that leaves its timestamp untouched; a post-write hook revalidates the whole bundle;
+and both conformance layers plus the bundle's own 34 tests run in CI. `pnpm okf:validate`,
+`pnpm okf:sync` and `pnpm okf:test` are the local equivalents. The lifecycle is written down as §11
+of [`CLAUDE.md`](./CLAUDE.md), and `/next-wp` now closes a plan out rather than stopping at the last
+tick.
+
+No application behaviour changed. The one code-visible consequence: the model-comparison dataset the
+compatibility engine builds from now reads from
+`planning/Research/RS-01-token-context-comparison/outputs/data/**`.
 
 ## Unreleased — headless automation: the bench is operable by machines
 

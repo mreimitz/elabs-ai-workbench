@@ -1,0 +1,60 @@
+---
+type: "Work Package Spec"
+title: "WP 1.1 \u2014 Author-time crew integrity + cycle-safe recursive crew-resolution helper + nested crew-summary counts"
+description: "Phase: 1 \u2014 Author-time integrity \u00b7 Size: L \u00b7 Depends on: 0.1, 0.2, 0.3 \u00b7 Model: Opus"
+tags: ["roadmap", "RM-10"]
+timestamp: "2026-08-20T13:47:37Z"
+status: "final"
+---
+# WP 1.1 — Author-time crew integrity + cycle-safe recursive crew-resolution helper + nested crew-summary counts
+
+**Phase:** 1 — Author-time integrity · **Size:** L · **Depends on:** 0.1, 0.2, 0.3 · **Model:** Opus
+
+## Objective
+Close the crew graph's integrity gap at the only layer with crew-read access. In the repository's `createCrew`/`updateCrew` (the single choke point both HTTP CRUD and the dock write tools funnel through), reject a `crewId` member that transitively reaches the crew being saved (self **and** mutual cycles), a non-existent `crewId`, or nesting beyond `HUB_MISSION_MAX_DEPTH` — loud `httpError`s, never a silent skip (D-CN4 author-time layer). Ship a pure, memoised, **cycle-safe** recursive crew-resolution helper (visited-set + total-agent cap) reused by the read tool now and the run-time instantiate path in 2.1, and split `summarizeCrew` into per-kind counts plus a recursive `totalAgentCount` so the dock can say "N agents, M crews (T total)" (D-CN5/D-CN8). Legacy `{agentId}`-only crews stay byte-for-byte unaffected.
+
+## Why / references
+- **D-CN4** — two-layer cycle+depth guard; this WP is the **author-time** half (repository, the only layer that can read other crews). The run-time belt is 2.1's.
+- **D-CN5** — additive wire: `memberCrewIds[]`, `memberAgentCount`/`memberCrewCount`/`totalAgentCount` are new **optional** response fields on the crew summary; `agentId` was widened to optional in 0.1, so every `member.agentId` deref must be guarded.
+- **D-CN9 / conventions §"Frozen scope vocabulary"** — this WP adds validation *logic*, never a tool name or entity kind; `ASSISTANT_ENTITY_KINDS` / `SCOPE_WRITE_TOOLS` / `deriveAssistantScope` and `SCOPE_EXEMPT_ACTION_TOOLS` are untouched.
+- **D-CN10** — `HUB_MISSION_MAX_DEPTH` default 2 (root + one nested level); `=1` reproduces today (a `crewId` member is then rejected at author time as over-depth).
+- Anchors: `repository.ts` `createCrew:405` / `updateCrew:436` / `getCrewRow:1464` (404 precedent) / `listCrews:431` / `toCrew:1569` / constructor `:236`; `hub-read-tools.ts` `summarizeCrew:94` (`memberAgentIds:103`) / `hub_crews_list:144`; `index.ts` `new HubRepository(db):230`; `topologies.ts` `instantiateCrewPlan:430` (the flatten seam — **not touched here**, its deref guard is 0.1's); shared `hubCrewMemberSchema:3432` (0.1 adds `crewId?` + `.superRefine` "exactly one" + `.strict()`), constants `HUB_MISSION_MAX_DEPTH`/`HUB_MISSION_MAX_TOTAL_AGENTS` (0.1), `config.hubMissionMaxDepth`/`config.hubMissionMaxTotalAgents` (0.3).
+
+## Design
+
+**New module `apps/api/src/hub/missions/crew-resolution.ts` (pure, repo-free — imports only shared types + `httpError`).** Two functions over a `Map<crewId, HubCrew>` substrate, with two deliberately different cycle postures:
+
+- `assertCrewGraphValid({ rootId, crewsById, maxCrewDepth }): void` — the **cycle-REJECTING** author-time walk. DFS from `rootId`'s `crewId` members, carrying a path visited-set of crewIds (starting `{rootId}`) and a depth counter (root = **depth 0**, each `crewId` member steps +1). Reject, via `httpError(400, …)`, on: (a) **cycle** — a `crewId` already in the current path visited-set (catches self `A→A` and mutual `A→B→A`); (b) **missing** — a `crewId` not present in `crewsById`; (c) **over-depth** — reaching a crew node at **depth ≥ `maxCrewDepth`** (so `maxCrewDepth=1` rejects any `crewId` member; `=2` allows root + one nested level, rejects the second). Messages name the offending crew id/name and the rule. Loud throw, never a skip.
+- `resolveCrewRollup({ crew, crewsById, maxTotalAgents? }): { totalAgentCount: number; capped: boolean }` — the **cycle-TOLERANT** display/instantiate walk (a corrupt legacy cyclic blob must never 500 the read tool or infinite-loop). Counts **agent-referencing member slots** (`member.agentId != null`) at the root plus, recursively, each `crewId` child's rollup. Path visited-set skips a re-entry edge (cycle tolerated, not thrown); a memo `Map<crewId, number>` caches each crew's fully-resolved (cycle-free) leaf count so a **diamond** (A→B→D, A→C→D) walks D once but **counts it once per referencing path** (each crew instantiates its own copy at run time — the correct "agents that will run" semantics). `maxTotalAgents` defaults to `HUB_MISSION_MAX_TOTAL_AGENTS`; once the running total would exceed it, stop and return `{ …, capped: true }`. Role existence is *not* resolved here — a deleted role is an instantiate-time skip, not a count concern, so the helper needs only the crew Map.
+
+**Repository (`repository.ts`).** Constructor gains an optional caps arg — `constructor(private readonly db: AppDatabase, private readonly crewCaps: { maxCrewDepth: number; maxTotalAgents: number } = { maxCrewDepth: HUB_MISSION_MAX_DEPTH, maxTotalAgents: HUB_MISSION_MAX_TOTAL_AGENTS })` — so existing `new HubRepository(db)` (tests) keeps working with the shared-constant defaults, and `index.ts` injects the env-resolved values (honoring D-CN10's off-switch at author time). In `createCrew` (before the INSERT) and in `updateCrew` **only when `patch.members !== undefined`** (a `members` patch replaces the whole roster — validate the full set, not a delta; a name-only patch skips validation), build the substrate: `crewsById = new Map(this.listCrews().map(c => [c.id, c]))`, then overlay the pending crew — for update `crewsById.set(id, { ...toCrew(current), members: patch.members })`; for create generate the `nanoid()` id first and `crewsById.set(newId, { …draft, members: input.members })` — and call `assertCrewGraphValid({ rootId, crewsById, maxCrewDepth: this.crewCaps.maxCrewDepth })`. (A create can only reference *existing* crews so it cannot itself form a cycle, but running the same walk uniformly catches missing/over-depth and is belt-safe.) Persistence is unchanged — `stableStringify(members)` already serializes `crewId` (opaque blob, no migration, per D-CN6).
+
+**Read tool (`hub-read-tools.ts`).** `summarizeCrew(crew, opts?: { totalAgentCount?: number })` keeps its pure signature; compute `memberAgentIds`/`memberCrewIds` via `flatMap` type-guards (`m.agentId ? [m.agentId] : []`) so it stays `string[]` under the widened optional type, add `memberAgentCount`/`memberCrewCount`, keep the existing `memberCount`/`memberAgentIds` untouched, and spread `totalAgentCount` only when provided. `hub_crews_list` builds `crewsById` from `listCrews()` **once** and passes each crew's `resolveCrewRollup({ crew, crewsById }).totalAgentCount` (default cap — a safety bound for display, not the authoritative runtime cap). The write tools' `summarizeCrew(crew)` echo (`hub-write-tools.ts:121`/`:138`) compiles unchanged and gains the pure `memberCrewIds`/counts for free; wiring `totalAgentCount` there is 1.2's job — **do not touch `hub-write-tools.ts` here.**
+
+**`index.ts`.** Update `new HubRepository(db)` → `new HubRepository(db, { maxCrewDepth: config.hubMissionMaxDepth, maxTotalAgents: config.hubMissionMaxTotalAgents })`.
+
+## Files
+- `apps/api/src/hub/missions/crew-resolution.ts` *(create)* — pure `assertCrewGraphValid` (cycle-rejecting author-time guard) + `resolveCrewRollup` (cycle-tolerant, memoised leaf-agent rollup with total-agent cap).
+- `apps/api/src/hub/repository.ts` *(modify)* — optional caps constructor arg; author-time validation in `createCrew` + `updateCrew` (members-patch only) via the substrate Map + `assertCrewGraphValid`.
+- `apps/api/src/assistant/tools/hub-read-tools.ts` *(modify)* — `summarizeCrew` per-kind split + optional `totalAgentCount`; `hub_crews_list` computes the rollup over a once-built crew Map.
+- `apps/api/src/index.ts` *(modify)* — pass `{ maxCrewDepth, maxTotalAgents }` from `config` into the `HubRepository` constructor.
+- `apps/api/test/hub-crew-nesting.test.ts` *(create)* — table-driven behavior lock (author-time rejects + rollup correctness + legacy safety + read-tool exposure).
+
+## Acceptance
+- [ ] `crew-resolution.ts` exports `assertCrewGraphValid` and `resolveCrewRollup`, imports no repository/service module (pure over a `Map` + caps).
+- [ ] `createCrew`/`updateCrew` **reject** with a loud `httpError` (never a silent skip): `A→A` self-reference, `A→B→A` mutual cycle, a `crewId` absent from the crew set, and nesting at depth ≥ `maxCrewDepth`.
+- [ ] With `maxCrewDepth = 1` (the D-CN10 off-switch), any `crewId` member is rejected at author time; a `{agentId}`-only crew is accepted.
+- [ ] A valid 2-level crew (root + one `crewId` child) is accepted at `maxCrewDepth = 2`.
+- [ ] `updateCrew` with a `members`-less patch (e.g. rename) runs **no** member validation and succeeds even if unrelated crews changed.
+- [ ] `resolveCrewRollup` returns the correct `totalAgentCount` for a **diamond** (a shared sub-crew counted once per referencing path), and **terminates** (no infinite loop, no throw) on a deliberately cyclic in-memory crew Map, returning a bounded count.
+- [ ] `resolveCrewRollup` sets `capped: true` and stops once the running total exceeds `maxTotalAgents`.
+- [ ] `summarizeCrew` emits `memberCrewIds`, `memberAgentCount`, `memberCrewCount` (all present) and `totalAgentCount` only when passed; for a legacy `{agentId}`-only crew `memberCrewIds === []`, `memberCrewCount === 0`, and `memberAgentIds`/`memberCount` are byte-identical to before.
+- [ ] `hub_crews_list` returns each crew's `totalAgentCount`; existing `hub-read-tools`/`hub-write-tools`/`hub-repository` tests stay green (additive fields only; `memberCount`/`memberAgentIds` unchanged).
+- [ ] `ASSISTANT_ENTITY_KINDS`, `SCOPE_WRITE_TOOLS`, `deriveAssistantScope`, and `SCOPE_EXEMPT_ACTION_TOOLS` are untouched (D-CN9); no DB migration and no new runtime dependency were added.
+- [ ] Gate green (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`).
+
+## Notes
+- **Parallel-safety:** touches `repository.ts` (contested — run **solo**) and creates `crew-resolution.ts` (contested with **2.1**, which consumes/extends it) → **must land before 2.1**. `index.ts` is a hot file but 0.3 (a dependency) already merged its caps wiring, so this WP's one-line constructor change is on a distinct line; still, run solo. Does **not** touch `topologies.ts` — the `instantiateCrewPlan` deref guard is 0.1's, and run-time recursion is 2.1's; keeping off `topologies.ts` minimizes overlap with 2.1.
+- **Two cycle postures are load-bearing, not a mistake:** author-time `assertCrewGraphValid` *throws* on a cycle (reject bad input); read-time `resolveCrewRollup` *tolerates* one (a corrupt legacy blob must not 500 the dock). Keep them distinct.
+- Depends on 0.1 (`crewId?` + `.superRefine` "exactly one" on the member schema; `HUB_MISSION_MAX_DEPTH`/`HUB_MISSION_MAX_TOTAL_AGENTS` constants), 0.2 (repo/migration foundation), and 0.3 (`config.hubMissionMaxDepth`/`config.hubMissionMaxTotalAgents`) — all merged before this WP starts; if any is missing, STOP and write a STATUS blocker rather than inventing the constant/config.
+- This WP delivers only the **author-time** guard and the **pure** helper; the run-time visited-set + depth belt (D-CN4 second layer) is wired into the spawn engine in 2.1, which reuses `resolveCrewRollup`'s cycle-safe traversal — do not pre-empt it here.

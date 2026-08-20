@@ -1,6 +1,6 @@
 # TOPOLOGY B — an EXAMPLE workflow. Copy it into your own repository's `.github/workflows/`.
 #
-# This repository does not run it (roadmap/ci/ D-C17) — see the sibling
+# This repository does not run it (planning/Roadmap/RM-08-ci/ D-C17) — see the sibling
 # `mcpfp-footprint-gate.yml`. It is validated as TEXT by `apps/api/test/ci-examples.test.ts`; it has
 # never been executed by GitHub Actions.
 #
@@ -19,7 +19,7 @@
 #                    Run scans   — for `mcpfp scan`
 #                    Run suites  — for `mcpfp suite run`
 #                  An execute permission does NOT include Read. A token holding only "Run scans" is
-#                  refused at the door. See user-guide/21-service-tokens.md.
+#                  refused at the door. See planning/user-guide/DC-17-service-tokens/21-service-tokens.md.
 #   The token is passed to the four CLI steps as an environment variable and NOWHERE else — not in a
 #   `run:` line, not in an `echo`, not in a URL.
 #
@@ -35,7 +35,7 @@
 # Exit codes: 0 every rule passed · 1 the gate said no · 2 the gate could not run. Each command is
 # its own step, so the job log says which one produced the code (D-C9).
 #
-# Full walkthrough: user-guide/23-ci-github-actions.md
+# Full walkthrough: planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md
 name: MCP footprint + quality gate (shared workbench)
 
 on:

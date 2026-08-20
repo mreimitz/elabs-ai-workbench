@@ -427,7 +427,7 @@ test("the Markdown of an empty install renders every section heading with its ga
   assert.ok(md.includes("_No MCP server is registered, so there is no fleet to report on._"));
   assert.ok(md.includes("_No environment is configured"));
   assert.ok(md.includes("_No suite run has been executed"));
-  assert.ok(md.includes("roadmap/security-posture/"));
+  assert.ok(md.includes("planning/Roadmap/RM-20-security-posture/"));
   // No table headers at all — an empty section renders its sentence, never a header row with no rows
   // under it (which reads as "we looked and found none").
   assert.equal(md.includes("| Server | Transport |"), false);
@@ -639,7 +639,7 @@ test("the Markdown renders a populated section as a table AND the empty ones as 
 
   // Empty, in the SAME document: posture still renders its heading + its gap sentence.
   assert.ok(md.includes("## Security posture"));
-  assert.ok(md.includes("roadmap/security-posture/"));
+  assert.ok(md.includes("planning/Roadmap/RM-20-security-posture/"));
 });
 
 test("the Markdown renders each advisor recommendation with its labeled estimate and evidence", () => {

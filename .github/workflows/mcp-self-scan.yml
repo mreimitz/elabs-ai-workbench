@@ -1,13 +1,14 @@
-# The dogfood gate (roadmap/ci/mcp-server.md, D-MCP5): the workbench scans its OWN MCP mount with
+# The dogfood gate (planning/Roadmap/RM-08-ci/mcp-server.md, D-MCP5): the workbench scans its OWN MCP mount with
 # its own discovery scanner and asserts the tool-definition token budget.
 #
-# This is the ONLY workflow in this repository — the full quality gate
+# This is the ONLY workflow file in this repository. It carries two independent gates — the
+# dogfood self-scan and the planning-bundle conformance check. The full quality gate
 # (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`) is still run locally. Do not read this
 # file as evidence of a broader CI pipeline.
 #
 # The job needs nothing but Node: the self-scan serves the mount on an ephemeral loopback port
 # against its own throwaway database, with no provider credentials and no outbound network.
-name: MCP self-scan
+name: Repository gates
 
 on:
   push:
@@ -50,3 +51,22 @@ jobs:
           name: mcp-self-scan-footprint
           path: .artifacts/mcp-self-scan/
           if-no-files-found: warn
+
+  # The planning bundle (planning/) is an Open Knowledge Format knowledge graph. Both conformance
+  # layers and the bundle's own test suite must stay green; neither needs an install — okf.py is
+  # dependency-free and pnpm can run a script without node_modules.
+  planning-bundle:
+    name: Planning bundle conformance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Validate the bundle (OKF v0.1 + the local profile)
+        run: pnpm okf:validate
+
+      - name: Run the bundle's own test suite
+        run: pnpm okf:test

@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-scaffold-tools"
+version = "1.0.0"
+description = "Non-OKF scaffold tooling for document intake"
+requires-python = ">=3.10"
+dependencies = [
+  "markitdown[audio-transcription,docx,outlook,pdf,pptx,xls,xlsx]==0.1.6"
+]
+
+[project.scripts]
+doc-intake = "doc_intake:main"
+
+[tool.setuptools]
+py-modules = ["doc_intake", "markitdown_adapter"]

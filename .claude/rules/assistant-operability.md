@@ -69,7 +69,7 @@ package boundary and run inside `pnpm test`:
 The gate is split because `resolveEntityPin` / `deriveAssistantEnvelope` live in `apps/web` as a
 React `.tsx` that a node-runner api test may not import (`architecture.md` forbids api↔web source
 imports; the runner can't load `.tsx`) — see the WP 1.1 decision in
-[`../../roadmap/assistant-operability/STATUS.md`](../../roadmap/assistant-operability/STATUS.md).
+[`../../planning/Roadmap/RM-05-assistant-operability/STATUS.md`](../../planning/Roadmap/RM-05-assistant-operability/STATUS.md).
 Both halves run inside `pnpm test`, so the manifest is pinned to **both** live resolvers.
 
 WP 4.1 may add a **non-blocking** PostToolUse *nudge* (`enforce-assistant-operability.mjs`) that
@@ -126,4 +126,4 @@ Related: [`routes-vs-dialogs.md`](./routes-vs-dialogs.md) (routes vs dialogs —
 classifies exactly the `<Route>`s that rule defines, plus the deep-linkable `/settings/:section`
 modal), [`brand-ui-only.md`](./brand-ui-only.md) (the sibling hard rule; that one is hook-enforced,
 this one is test-enforced), and the plan
-[`../../roadmap/assistant-operability/README.md`](../../roadmap/assistant-operability/README.md).
+[`../../planning/Roadmap/RM-05-assistant-operability/item.md`](../../planning/Roadmap/RM-05-assistant-operability/item.md).
