@@ -282,7 +282,66 @@ wp/ci/<id>`.
       also never posted to a real GitHub PR comment (the grade and cost deltas are two lines separated
       by one newline; GFM in comments renders that as two lines, a stricter CommonMark renderer would
       join them).
-- [ ] WP 2.3 — GitHub Actions packaging: workflow example + docs — depends: 2.2 · spec: [`wp-2.3-github-actions.md`](./wp-2.3-github-actions.md)
+- [x] WP 2.3 — GitHub Actions packaging: workflow example + docs — done 2026-08-20 · `wp/ci/2.3` ·
+      spec: [`wp-2.3-github-actions.md`](./wp-2.3-github-actions.md).
+      **Two copyable workflows, one per topology**, in `examples/github-actions/`:
+      `mcpfp-footprint-gate.yml` (an ephemeral workbench on the runner — loopback, no token) and
+      `mcpfp-remote-gate.yml` (a persistent shared instance reached with `MCPFP_URL`/`MCPFP_TOKEN`
+      from repository secrets, the only topology where deltas and suite gates mean anything), plus
+      the two gate files they reference and
+      [`user-guide/23-ci-github-actions.md`](../../user-guide/23-ci-github-actions.md). Decisions
+      **D-C17–D-C19** in the log below. **No source change at all** — `.github/workflows`,
+      `apps/cli`, `apps/api/src`, `apps/web`, `packages/shared/src`, `pnpm-lock.yaml`, `.env.example`
+      and every `package.json` measured at **zero lines**; the only api-side addition is the
+      validation test.
+      **They ship as EXAMPLES and a TEST is what keeps them honest** (D-C17): a live workflow here
+      would need a workbench and a registered MCP server this repo's CI does not have, so it would be
+      permanently red or permanently skipped. `apps/api/test/ci-examples.test.ts` (12 cases) asserts
+      the coverage by `readdirSync` equality (a second live workflow goes red rather than unnoticed)
+      and validates the examples as **text**, with no YAML dependency: every `uses:` pinned to a major
+      and drawn from a four-entry allow-list, the CLI called only as `node apps/cli/dist/index.js`,
+      measure and assert as **separate** steps, `continue-on-error` on no executable line, nothing
+      credential-shaped (checked through `redactSecurityEvidence` — the **D-SP4 masks**, not a third
+      pattern set), no absolute local path, and — the assertion that earns its keep — **every shipped
+      gate file still parsing against `assertionDocumentSchema` and still single-family**, so a schema
+      change that invalidated a published example is caught here rather than by a stranger who copied
+      it.
+      **Measured, not assumed, about the linter:** Biome **does** check the two new `.json` gate files
+      (`biome check examples/` → `Checked 2 files`, exit 0 with the formatter enabled — they were
+      formatted, not excluded) and **does not** see YAML at all (`Checked 0 files` on Biome 1.9.4),
+      which is precisely why the text test exists.
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`typecheck` **0** · shared **152/152** · cli **87/87** · api **3450 passed / 7 failed** — the
+      pre-existing compatibility-roster failures — a **+12-test** delta, all passing · `build` **0** ·
+      `lint` **2** errors, both the pre-existing oversized `all-models.json`; web **3574 passed / 5
+      skipped**, run separately); every zero-line-diff claim including `.github/workflows`; and **two
+      independent teeth checks** — rewriting one workflow's scan step as `pnpm --silent mcpfp scan …`
+      turned **3** tests red (both D-C19 assertions and the distinct-steps one), and appending a
+      scan-family rule to the suite gate file turned the `assertionDocumentSchema` test red with the
+      D-C13 refinement message; both restored, `git status` clean.
+      **NOT verified by anyone, and this is the WP's honest limit: the example workflows have never
+      been executed by GitHub Actions.** This repo has no place to run them (that is D-C17's whole
+      point). They were checked as text, and additionally parsed with a throwaway script to confirm
+      each yields a well-formed job — but no runner has executed a single step, so nothing here is
+      proven against real Actions expression evaluation, `gh pr comment`, or `pnpm/action-setup`
+      behaviour. The command lines were checked against `apps/cli/src/{help,cli}.ts` and the command
+      sources rather than executed, and topology A's `POST /api/servers` body was checked against
+      `serverConfigInputSchema` by reading it.
+      **Four deviations, all declared:** `user-guide/22-mcpfp-cli.md` is two hunks rather than one
+      (the second removes that page's "not built yet" bullet, whose entire content was this WP —
+      shipping the workflow while still calling it unbuilt is a contradiction, not a style nit);
+      `user-guide/README.md` gained one index line (a guide page absent from its own index is a
+      defect); topology B builds only the CLI (`pnpm --filter "@mcp-token-footprint/cli..." build`),
+      since nothing but the thin HTTP client runs on that runner; and one footprint gate file serves
+      both topologies (its baseline rules are inert in A, live in B), so a team graduating from A to B
+      changes its workflow, not its budget.
+      **One pre-existing defect this WP surfaced and did NOT fix** (`docker-compose.yml`'s healthcheck
+      fetches `http://127.0.0.1:8081/api/health` from **inside** the container, where the app listens
+      on **8080**). Owner-facing. The other one it found — `README.md` claiming a root
+      `.github/workflows/ci.yml` runs the quality gate on every push — **was** corrected by the
+      orchestrator in the merge commit that follows, since `CLAUDE.md` and
+      `.claude/rules/quality-gates.md` had already been corrected when WP M.4 landed and only the
+      README was missed.
 
 ## Phase 3 — Posture integration
 - [ ] WP 3.1 — `no-new-security-findings` assertion — depends: 1.3 ✅, security-posture 1.2 · spec: [`wp-3.1-no-new-security-findings.md`](./wp-3.1-no-new-security-findings.md). **Serialize after WP 2.2** — both edit `packages/shared/src/ci-assertions.ts` and `apps/api/src/assertions/service.ts`.
@@ -431,6 +490,54 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-20 · D-C17 / D-C18 / D-C19 locked at the WP 2.3 kickoff** (packaging the gate as a
+  GitHub Actions workflow). Full text + the design they bind:
+  [`wp-2.3-github-actions.md`](./wp-2.3-github-actions.md). Shipped as
+  `examples/github-actions/{mcpfp-footprint-gate.yml,mcpfp-remote-gate.yml,mcpfp.assert.json,mcpfp.suite.assert.json}`
+  + [`user-guide/23-ci-github-actions.md`](../../user-guide/23-ci-github-actions.md), and pinned by
+  `apps/api/test/ci-examples.test.ts`.
+  - **D-C17 — the packaged workflow ships as an EXAMPLE, and a TEST is what keeps it honest.** A live
+    `.github/workflows/mcpfp-gate.yml` here would need a running workbench *and* a registered MCP
+    server this repo's CI does not have: it would be permanently red or permanently skipped, and a
+    skipped gate in the repository that publishes gates is worse than no gate. This repo keeps
+    exactly one workflow (`mcp-self-scan.yml`, the D-MCP5 dogfood gate) — the coverage assertion is a
+    `readdirSync` equality, so adding a second one goes red rather than unnoticed. The examples are
+    validated as **text** (no YAML dependency): every `uses:` pinned to a major and drawn from a
+    four-entry allow-list, the CLI called only as `node apps/cli/dist/index.js`, measure and assert in
+    separate steps, `continue-on-error` on no executable line, nothing credential-shaped (through
+    `redactSecurityEvidence` — the D-SP4 masks, not a third pattern set) and no absolute local path in
+    an example or in the guide. The assertion that earns its keep: **every shipped gate file still
+    parses against `assertionDocumentSchema` and is still single-family**, so a schema change that
+    invalidated an example is caught here rather than by a stranger who copied it.
+  - **D-C18 — two topologies, and the ephemeral one is documented with what it CANNOT gate.**
+    **(A) ephemeral workbench on the runner** — the built API on the runner host, reached on
+    `127.0.0.1` with no token (D-C2). The database is created empty every run, so every scan is a
+    first scan: `no-new-tools`, `no-removed-tools` and `max-scan-delta` report SKIP on every single
+    run and the job still exits 0 (D-C8 case 1), and no suite gate is possible at all because a fresh
+    database holds no provider credentials, no environments and no saved suites. A delta gate in
+    topology A is decoration, and the docs say so in those words — in the guide, in the rule×topology
+    table, **and in the workflow's own banner**, because a reader who copies only the YAML must still
+    learn it. **(B) persistent shared workbench** — reached over the network with `MCPFP_URL` /
+    `MCPFP_TOKEN` from repository secrets; the only topology with history and credentials, so the only
+    one where baselines, suite runs and grade gates mean anything. One footprint gate file serves both
+    (its baseline rules are inert in A, live in B) so a team graduating from A to B changes its
+    workflow, not its budget.
+  - **D-C19 — the examples invoke the built CLI entry point directly, never `pnpm mcpfp`.**
+    `node apps/cli/dist/index.js …`. pnpm's banner lands on **stdout** (corrupting
+    `--format json > file`), and `pnpm exec` / `pnpm --silent` **collapse a non-zero child exit onto
+    1** (measured on pnpm 9.15.4) — turning "the gate could not run" into "the gate said no", which is
+    the one distinction the whole exit-code contract exists to preserve. A test asserts no executable
+    line in any example matches `pnpm --silent`, `pnpm exec mcpfp` or `pnpm mcpfp`, and that every
+    line referencing `apps/cli` spells the entry point exactly. Comment lines are exempt on purpose:
+    each example's banner *explains* the rule, and a checker that read the explanation as a violation
+    would make the only honest way to document it a way to break it.
+
+  _Rationale:_ WPs 1.2/1.3 made "the gate said no" and "the gate could not run" different exit codes;
+  this WP is the packaging that keeps them different in somebody else's repository. The two ways a
+  copied gate silently stops meaning anything are running it through pnpm (D-C19) and running it
+  against a database with no history (D-C18), so both are named in the file a reader copies, not only
+  in the guide they might not open.
 
 - **2026-08-20 · D-C13 / D-C14 / D-C15 / D-C16 locked at the WP 2.2 kickoff** (suite/grade
   assertions + the baseline-delta PR-comment artifact). Full text + the design they bind:
