@@ -50,7 +50,8 @@ import {
  * test rather than a silent change in what a CI gate counts (D-SP5).
  *
  * WP 1.1 froze the eleven `subject: "server"` ids; WP 1.3 ADDED the seven `subject: "skill"` ids
- * below without touching one of them, which is why `SECURITY_ANALYZER_VERSION` is still 1.
+ * below without touching one of them. The version moved to 2 for a different reason — a matcher
+ * inside `annotation.open-world-unmarked` was tightened — never for a rename or a re-severitying.
  */
 const FROZEN_SERVER_RULES: Record<string, SecuritySeverity> = {
   "annotation.destructive-unmarked": "warning",
@@ -172,7 +173,7 @@ describe("security rule registry (D-SP2)", () => {
     }
   });
 
-  it("keeps WP 1.1's eleven server rules byte-frozen, which is why the version is still 1", () => {
+  it("keeps WP 1.1's eleven server rules byte-frozen: no rename, no re-severitying", () => {
     // The forcing function for D-SP2. Adding the seven skill ids is additive; re-pointing, renaming
     // or re-severitying one of the eleven is not, and would demand a `SECURITY_ANALYZER_VERSION`
     // bump — so it must be a red test, not a judgement call.
@@ -182,7 +183,7 @@ describe("security rule registry (D-SP2)", () => {
       assert.equal(rule.severity, severity, `${id} changed severity`);
       assert.equal(rule.subject, "server", `${id} changed subject`);
     }
-    assert.equal(SECURITY_ANALYZER_VERSION, 1);
+    assert.equal(SECURITY_ANALYZER_VERSION, 2);
   });
 });
 
@@ -295,7 +296,7 @@ describe("computeSecurityScore (D-SP3)", () => {
 
   it("echoes the analyzer version so a stored score is never re-banded later", () => {
     assert.equal(computeSecurityScore([]).analyzerVersion, SECURITY_ANALYZER_VERSION);
-    assert.equal(SECURITY_ANALYZER_VERSION, 1);
+    assert.equal(SECURITY_ANALYZER_VERSION, 2);
   });
 });
 

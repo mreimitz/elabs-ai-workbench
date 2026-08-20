@@ -7,6 +7,7 @@ import Database from "better-sqlite3";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import {
+  SECURITY_ANALYZER_VERSION,
   SECURITY_MAX_DESCRIPTION_CHARS,
   SECURITY_MAX_FINDINGS_PER_TOOL,
   SECURITY_RULES,
@@ -464,6 +465,72 @@ test("rule 7 · NEAR-MISS NEGATIVE — a declared open-world tool, and a purely 
   );
 });
 
+// Analyzer version 2 — the two false positives this rule produced against THIS APP's own MCP mount,
+// preserved verbatim as fixtures. Both matched a noun in the description that named data the tool
+// RETURNS; neither tool reaches anything, both read the local database. A local-only tool that
+// happens to describe a URL-shaped field is the single most likely way this rule cries wolf, so the
+// real offenders are the regression test.
+test("rule 7 · NEAR-MISS NEGATIVE — a description naming RETURNED data is silent (analyzer v2)", () => {
+  // Fired under v1 on the word "url" in "command/url".
+  assert.deepEqual(
+    ruleOpenWorldUnmarked(
+      tool({
+        toolName: "servers_list",
+        description:
+          "List every registered MCP server with its redacted config (transport, command/url, auth kind). Secret values are never included — only hasEnvSecrets/hasHeaderSecrets booleans.",
+      }),
+    ),
+    [],
+  );
+  // Fired under v1 on the word "upload" in "source (upload/GitHub)".
+  assert.deepEqual(
+    ruleOpenWorldUnmarked(
+      tool({
+        toolName: "skills_list",
+        description:
+          "List registered Agent Skills: name, source (upload/GitHub), current version id, version count.",
+      }),
+    ),
+    [],
+  );
+  // The bare stems are nouns as often as verbs, so none of them fires from prose alone.
+  for (const description of [
+    "Returns the search index size.",
+    "Lists every upload in the workspace.",
+    "Reports the remote id recorded at import time.",
+    "See https://docs.example.com for the field reference.",
+  ]) {
+    assert.deepEqual(
+      ruleOpenWorldUnmarked(tool({ toolName: "read_record", description })),
+      [],
+      `"${description}" should not fire from a description alone`,
+    );
+  }
+});
+
+test("rule 7 · the NAME still carries the full term list, so a real reacher is not missed", () => {
+  // Every stem the description no longer accepts still fires from the name, where the author chose
+  // the word to say what the tool DOES.
+  for (const toolName of [
+    "fetch_page",
+    "web_search",
+    "download_report",
+    "remote_exec",
+    "http_get",
+  ]) {
+    const findings = ruleOpenWorldUnmarked(tool({ toolName, description: "Returns a record." }));
+    assert.equal(findings.length, 1, `${toolName} should fire from its name`);
+    assert.equal(findings[0]?.ruleId, "annotation.open-world-unmarked");
+  }
+  // And an action inflection in the description fires on its own, with no help from the name.
+  assert.equal(
+    ruleOpenWorldUnmarked(
+      tool({ toolName: "sync_records", description: "Downloads the latest records each night." }),
+    ).length,
+    1,
+  );
+});
+
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 // Rule 8 — schema.secret-shaped-parameter
 // ══════════════════════════════════════════════════════════════════════════════════════════════
@@ -777,7 +844,11 @@ test("A4 — a clean server scores 100/clean and lists nothing", () => {
   const report = analyzeScan(portsFor(scan([CLEAN_TOOL])), "scan_1");
   assert.deepEqual(report.findings, []);
   assert.deepEqual(report.counts, { error: 0, warning: 0, info: 0, total: 0 });
-  assert.deepEqual(report.score, { value: 100, band: "clean", analyzerVersion: 1 });
+  assert.deepEqual(report.score, {
+    value: 100,
+    band: "clean",
+    analyzerVersion: SECURITY_ANALYZER_VERSION,
+  });
   assert.equal(report.truncated, false);
   assert.deepEqual(report.subject, {
     kind: "server",

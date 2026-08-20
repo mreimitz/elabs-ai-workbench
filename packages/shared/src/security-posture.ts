@@ -46,10 +46,18 @@ import { z } from "zod";
  * Bumped when a rule's MEANING changes, a weight changes, or the report shape changes — i.e. whenever
  * two reports would no longer be comparable. Mirrors `TOKEN_COUNTING_VERSION`'s job for token counts:
  * a consumer that compares two reports MUST check this first (D-SP3). Adding a NEW rule id is
- * additive and leaves this at 1; re-pointing an existing id at a different check is forbidden
+ * additive and leaves this alone; re-pointing an existing id at a different check is forbidden
  * outright (D-SP2), so this constant never has to paper over a rename.
+ *
+ * **Version 2 (2026-08-20) — `annotation.open-world-unmarked` was tightened.** Its description
+ * matcher now accepts only action inflections (`fetches`, `downloads`, …), not the nouns that share
+ * their stems, after the rule fired twice on this app's own MCP mount for words that named data the
+ * tool *returns* rather than anything it reaches. The rule still asks the same question; it asks it
+ * more precisely, so a finding produced under version 1 may be absent under version 2. That is
+ * exactly the "not comparable" condition this constant exists to make visible — a diff across the
+ * change is refused rather than reporting a finding as resolved that nobody fixed.
  */
-export const SECURITY_ANALYZER_VERSION = 1;
+export const SECURITY_ANALYZER_VERSION = 2;
 
 /**
  * Ordered worst-first, which is also the order findings are emitted in (D-SP6) and the order the

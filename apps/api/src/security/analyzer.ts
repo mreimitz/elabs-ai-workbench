@@ -545,10 +545,11 @@ export function ruleReadonlyContradiction(tool: ToolScan): SecurityFinding[] {
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
 /**
- * Terms that suggest a tool reaches outside the host's control.
+ * Terms in a tool's NAME that suggest it reaches outside the host's control.
  *
- * `https` sits beside `http` because the token matcher treats `https` as its own token, so a
- * description full of `https://` URLs would otherwise never match `http`.
+ * A name is a label the server author chose for what the tool DOES, so a noun here is as strong a
+ * signal as a verb: `fetch_page`, `web_search`, `download_report`, `remote_exec`. `https` sits
+ * beside `http` because the token matcher treats `https` as its own token.
  *
  * What it deliberately does NOT match: `search` inside a compound token (`researcher`, `websearch`
  * are single tokens and do not match `search` — that is the token boundary doing its job), nor a
@@ -557,7 +558,7 @@ export function ruleReadonlyContradiction(tool: ToolScan): SecurityFinding[] {
  * a finding here is a nudge, and treating it as anything more would be severity inflation.
  */
 // biome-ignore format: one inflection family per line — the grouping IS the review surface
-export const OPEN_WORLD_TERMS = [
+export const OPEN_WORLD_NAME_TERMS = [
   "fetch", "fetches", "fetched", "fetching",
   "http", "https",
   "url", "urls", "uri", "uris",
@@ -569,7 +570,38 @@ export const OPEN_WORLD_TERMS = [
   "remote",
 ] as const;
 
-export const OPEN_WORLD_TERM_PATTERN = tokenPattern(OPEN_WORLD_TERMS);
+/**
+ * Terms in a tool's DESCRIPTION that suggest it reaches outside the host's control — a deliberately
+ * SMALLER list than {@link OPEN_WORLD_NAME_TERMS}, and the same split rule 6 already makes between a
+ * name and a description.
+ *
+ * A description is prose, and prose names the data a tool RETURNS as often as it names what the tool
+ * does. Two real false positives on this app's own MCP mount are why this list is narrow:
+ * `servers_list` was flagged for the word "url" in *"transport, command/url, auth kind"* — a field it
+ * returns — and `skills_list` for "upload" in *"source (upload/GitHub)"*, an enum value it returns.
+ * Neither tool reaches anything; both read the local database.
+ *
+ * So only unambiguous **action inflections** survive here: a description has to say the tool *fetches*
+ * or *downloads*, not merely that the word `url` appears somewhere in it. Nothing was added to the
+ * vocabulary — this is the existing list, split.
+ *
+ * What it deliberately does NOT match, all of them nouns that routinely name returned data or a
+ * config field: `url`/`uri`, `web`, `remote`, `http`/`https` (a documentation link in a description is
+ * a citation, not a network call), and the bare verb stems `fetch`, `search`, `browse`, `download`,
+ * `upload`, which are equally common as nouns ("the search index", "an upload"). Each of those still
+ * fires from the tool's NAME, where it is a claim about behaviour rather than about a payload.
+ */
+// biome-ignore format: one inflection family per line — the grouping IS the review surface
+export const OPEN_WORLD_DESCRIPTION_TERMS = [
+  "fetches", "fetched", "fetching",
+  "searches", "searching",
+  "browses", "browsing",
+  "downloads", "downloading",
+  "uploads", "uploading",
+] as const;
+
+export const OPEN_WORLD_NAME_PATTERN = tokenPattern(OPEN_WORLD_NAME_TERMS);
+export const OPEN_WORLD_DESCRIPTION_PATTERN = tokenPattern(OPEN_WORLD_DESCRIPTION_TERMS);
 
 /** The plan lists "external api" as a phrase, which is not a token — it gets its own matcher. */
 export const OPEN_WORLD_PHRASE_PATTERN = /external\s+api/i;
@@ -581,11 +613,13 @@ export function ruleOpenWorldUnmarked(tool: ToolScan): SecurityFinding[] {
 
   const name = readText(tool.toolName);
   const description = readText(tool.description);
-  for (const [source, where] of [
-    [name, "name"],
-    [description, "description"],
+  // The name gets the full term list; the description gets action inflections only. `external api`
+  // is unambiguous wherever it appears, so the phrase matcher applies to both.
+  for (const [source, where, pattern] of [
+    [name, "name", OPEN_WORLD_NAME_PATTERN],
+    [description, "description", OPEN_WORLD_DESCRIPTION_PATTERN],
   ] as const) {
-    const token = matchToken(OPEN_WORLD_TERM_PATTERN, source);
+    const token = matchToken(pattern, source);
     const phrase = OPEN_WORLD_PHRASE_PATTERN.exec(source);
     const hit =
       token !== null && (phrase === null || token.index <= phrase.index)

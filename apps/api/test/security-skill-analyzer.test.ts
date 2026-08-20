@@ -7,6 +7,7 @@ import Database from "better-sqlite3";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import {
+  SECURITY_ANALYZER_VERSION,
   SECURITY_MAX_FINDINGS_PER_TOOL,
   SECURITY_REDACTION_MARKER,
   SECURITY_RULES,
@@ -668,7 +669,11 @@ test("A7/A8 — a plain-prose skill scores 100/clean and its subject is the exac
   const report = analyzeSkillVersion(portsFor(version(), [SKILL_MD], CLEAN_BODY), "skl_1", "ver_1");
   assert.deepEqual(report.findings, []);
   assert.deepEqual(report.counts, { error: 0, warning: 0, info: 0, total: 0 });
-  assert.deepEqual(report.score, { value: 100, band: "clean", analyzerVersion: 1 });
+  assert.deepEqual(report.score, {
+    value: 100,
+    band: "clean",
+    analyzerVersion: SECURITY_ANALYZER_VERSION,
+  });
   assert.deepEqual(report.subject, {
     kind: "skill",
     id: "ver_1",
@@ -687,7 +692,11 @@ test("A8 (anti-inflation) — a skill that ships scripts and links out scores 98
   const body = `${CLEAN_BODY}\n\nFetch https://api.example.com/v1/roster first.`;
   const oneOfEach = portsFor(version(), [SKILL_MD, file("scripts/run.py")], body);
   const report = analyzeSkillVersion(oneOfEach, "skl_1", "ver_1");
-  assert.deepEqual(report.score, { value: 98, band: "low", analyzerVersion: 1 });
+  assert.deepEqual(report.score, {
+    value: 98,
+    band: "low",
+    analyzerVersion: SECURITY_ANALYZER_VERSION,
+  });
   assert.deepEqual(ruleIdsOf(report.findings), [
     "skill-surface.executable-scripts",
     "skill-surface.network-reference",
@@ -699,7 +708,11 @@ test("A8 (anti-inflation) — a skill that ships scripts and links out scores 98
     "skl_1",
     "ver_1",
   );
-  assert.deepEqual(many.score, { value: 98, band: "low", analyzerVersion: 1 });
+  assert.deepEqual(many.score, {
+    value: 98,
+    band: "low",
+    analyzerVersion: SECURITY_ANALYZER_VERSION,
+  });
 });
 
 test("A8 — a deliberately poisoned skill lands in the expected band, counts describing ALL", () => {
@@ -810,7 +823,11 @@ test("A13 — a non-string allowedTools yields a report, and THAT rule contribut
     false,
     "'we could not read it' is not a finding",
   );
-  assert.deepEqual(report.score, { value: 100, band: "clean", analyzerVersion: 1 });
+  assert.deepEqual(report.score, {
+    value: 100,
+    band: "clean",
+    analyzerVersion: SECURITY_ANALYZER_VERSION,
+  });
 });
 
 test("A13 — an empty file path, a 500 KB body and a single 200 KB line each yield a report", () => {
