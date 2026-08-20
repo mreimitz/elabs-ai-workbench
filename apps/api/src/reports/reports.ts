@@ -13,21 +13,33 @@ import type {
   RunStep,
   ScanDetail,
   Scenario,
+  SecurityPostureSection,
   TestAttachment,
   Test,
   TokenProfileRef,
 } from "@mcp-token-footprint/shared";
 import { CONTEXT_SEGMENTS, MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
 import { buildRunKpiByStep, type RunKpis } from "./run-kpi-by-step.js";
+// RM-20 WP 2.2 — the ONE posture-section derivation. Both scan exports call it; neither renders the
+// section itself. The import is one-directional on purpose: `security-section.ts` reaches only for
+// `@mcp-token-footprint/shared`, so this file can depend on it without a value-level cycle.
+import { renderSecuritySection } from "./security-section.js";
 
-export function createJsonReport(scan: ScanDetail) {
+/**
+ * `security` is the RM-20 WP 2.2 posture section, and it is **optional and additive** (D-SP24): when
+ * it is absent the returned object is byte-identical to what this function returned before, which is
+ * what keeps the workbench MCP server's `workbench://reports/scan/{id}/json` resource unchanged. A
+ * present section is either the analyzer's own report or an honest reason there is none.
+ */
+export function createJsonReport(scan: ScanDetail, security?: SecurityPostureSection) {
   return {
     generatedAt: new Date().toISOString(),
     scan,
+    ...(security === undefined ? {} : { security }),
   };
 }
 
-export function createMarkdownReport(scan: ScanDetail): string {
+export function createMarkdownReport(scan: ScanDetail, security?: SecurityPostureSection): string {
   const lines = [
     "# MCP Token Footprint Report",
     "",
@@ -43,11 +55,19 @@ export function createMarkdownReport(scan: ScanDetail): string {
     `- Largest tool: ${scan.largestToolName ?? "n/a"}, ${scan.largestToolTokens} tokens`,
     `- Raw tools/list bytes: ${scan.totalRawBytes}`,
     "",
+  ];
+
+  // Directly under the summary, because posture is a headline fact about a server rather than an
+  // appendix — a reviewer who reads only the top of this document should still see it. `undefined`
+  // contributes NO lines, so a caller that asked for no posture gets the document it always got.
+  lines.push(...renderSecuritySection(security));
+
+  lines.push(
     "## Top Tools",
     "",
     "| Rank | Tool | Tokens | Description | Schema | Contribution |",
     "|---:|---|---:|---:|---:|---:|",
-  ];
+  );
 
   scan.tools.slice(0, 25).forEach((tool, index) => {
     lines.push(

@@ -1531,6 +1531,12 @@ await registerReportRoutes(
     suiteRuns: suiteRunRepository,
     skills,
   },
+  // RM-20 WP 2.2 — the posture section in the scan + server exports. The SAME binding the CI
+  // assertions engine is given above and the SAME repositories `registerSecurityRoutes` uses, so an
+  // exported document, the Security tab and the `no-new-security-findings` gate can never disagree
+  // about one scan's posture (D-MCP4/D-SP7). Nothing is persisted (D-SP8) — it is computed on read,
+  // per request, exactly like `GET /api/scans/:scanId/security`.
+  { analyze: (scanId) => analyzeScan({ scans, servers, oauth: oauthRepository }, scanId) },
 );
 // Workbench MCP server (Phase MCP, WP M.1 reads + WP M.3 writes) — tools + report resources over the
 // SAME repositories and services every route above uses. `runReports` is the run-report assembly the

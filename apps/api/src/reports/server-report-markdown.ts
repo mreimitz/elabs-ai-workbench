@@ -44,6 +44,9 @@ import {
   worstSeverity,
 } from "@mcp-token-footprint/shared";
 import { escapeMarkdownTable, escapeText } from "./reports.js";
+// RM-20 WP 2.2 — the SAME posture-section renderer the scan export uses. This file renders no part
+// of the section itself; if it did, the two documents could drift.
+import { renderSecuritySection } from "./security-section.js";
 
 // ── Markdown vocabulary (the only NEW presentation knowledge — bracket tags, no colour, no emoji) ───
 
@@ -137,6 +140,10 @@ export function createServerMarkdownReport(report: ServerReport, detail: DetailL
 
   renderHeader(lines, report, detailLabel);
   renderExecutiveSummary(lines, report, serverFindings, totalFindings);
+  // RM-20 WP 2.2 — the security posture, immediately after the executive summary and before the
+  // compatibility findings: it is a headline fact about the server, not an appendix. `undefined`
+  // contributes NO lines, so a report built without an analyzer renders exactly as it always did.
+  lines.push(...renderSecuritySection(report.security));
   renderServerFindings(lines, serverFindings, byId, detail, detailLabel);
   renderServerLedger(lines, report);
   renderToolDetail(lines, report, byId, detail, detailLabel);
