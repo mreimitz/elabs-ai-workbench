@@ -83,7 +83,11 @@ function toolNameOf(tool: ToolScan): string {
  * {@link EVIDENCE_CONTEXT_CHARS} either side, and the match's offset in the SOURCE text (not in the
  * excerpt) so a reader can find it again. The excerpt is redacted downstream, never here.
  */
-function evidenceAround(text: string, index: number, length: number): { raw: string; offset: number } {
+function evidenceAround(
+  text: string,
+  index: number,
+  length: number,
+): { raw: string; offset: number } {
   const start = Math.max(0, index - EVIDENCE_CONTEXT_CHARS);
   const end = Math.min(text.length, index + length + EVIDENCE_CONTEXT_CHARS);
   return { raw: text.slice(start, end), offset: index };
@@ -324,7 +328,8 @@ export function ruleInjectionPhrasing(tool: ToolScan): SecurityFinding[] {
   const matches: { index: number; length: number; phrase: string; order: number }[] = [];
   INJECTION_PATTERNS.forEach(({ entry, pattern }, order) => {
     const match = pattern.exec(description);
-    if (match) matches.push({ index: match.index, length: match[0].length, phrase: entry.phrase, order });
+    if (match)
+      matches.push({ index: match.index, length: match[0].length, phrase: entry.phrase, order });
   });
   if (matches.length === 0) return [];
 
@@ -334,7 +339,8 @@ export function ruleInjectionPhrasing(tool: ToolScan): SecurityFinding[] {
   if (first === undefined) return [];
 
   const others = matches.length - 1;
-  const suffix = others === 0 ? "" : ` (${others} further phrase${others === 1 ? "" : "s"} also matched)`;
+  const suffix =
+    others === 0 ? "" : ` (${others} further phrase${others === 1 ? "" : "s"} also matched)`;
   return [
     createSecurityFinding({
       ruleId: "poisoning.injection-phrasing",
@@ -375,7 +381,8 @@ export const HIDDEN_PSEUDO_TAG_PATTERN =
  * Does NOT match "note to self", "note to the caller", or a description that merely contains the word
  * "assistant" — the address form is what makes it an out-of-band instruction.
  */
-export const HIDDEN_MODEL_ADDRESS_PATTERN = /note to (?:the )?(?:assistant|model|ai)\b|ai instructions?:/i;
+export const HIDDEN_MODEL_ADDRESS_PATTERN =
+  /note to (?:the )?(?:assistant|model|ai)\b|ai instructions?:/i;
 
 const HIDDEN_INSTRUCTION_PATTERNS: readonly { label: string; pattern: RegExp }[] = [
   { label: "an HTML comment", pattern: HIDDEN_HTML_COMMENT_PATTERN },
@@ -482,7 +489,12 @@ export function ruleInvisibleUnicode(tool: ToolScan): SecurityFinding[] {
     );
   }
 
-  const offending: { path: string; where: string; source: string; hit: NonNullable<ReturnType<typeof findInvisible>> }[] = [];
+  const offending: {
+    path: string;
+    where: string;
+    source: string;
+    hit: NonNullable<ReturnType<typeof findInvisible>>;
+  }[] = [];
   for (const parameter of collectSchemaParameters(tool.inputSchema)) {
     const inKey = findInvisible(parameter.name);
     if (inKey !== null) {
@@ -961,8 +973,12 @@ export function ruleBroadOAuthScope(input: AnalyzerInput): SecurityFinding[] {
     createSecurityFinding({
       ruleId: "oauth.broad-scope",
       anchor: { kind: "server" },
-      message: `The stored OAuth grant for "${serverName}" includes ${broad.length} broad scope${broad.length === 1 ? "" : "s"} out of ${scopes.length} granted; if this server is compromised the blast radius is everything they reach.`,
-      evidence: { raw: broad.join(", "), offset: 0 },
+      message: `The stored OAuth grant for "${serverName}" includes ${broad.length} broad scope${broad.length === 1 ? "" : "s"} (${broad.join(", ")}) out of ${scopes.length} granted; if this server is compromised the blast radius is everything they reach.`,
+      // The WHOLE grant, in the space-delimited form OAuth stores it: an operator reviewing scope
+      // breadth needs to see what else was asked for, not only the entries that tripped the rule. It
+      // is also the tighter secrecy guard — anything that ever reached this list would show up here,
+      // which is what `apps/api/test/security-analyzer.test.ts`'s D-SP9 test reads.
+      evidence: { raw: scopes.join(" "), offset: 0 },
     }),
   ];
 }
@@ -1045,17 +1061,13 @@ export function analyzeScanTools(input: AnalyzerInput): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
 
   for (const [ruleId, rule] of Object.entries(SERVER_RULES)) {
-    findings.push(
-      ...runRule(ruleId as SecurityRuleId, rule, input, reported, input.onRuleError),
-    );
+    findings.push(...runRule(ruleId as SecurityRuleId, rule, input, reported, input.onRuleError));
   }
 
   const tools = Array.isArray(input.scan.tools) ? input.scan.tools : [];
   for (const tool of tools) {
     for (const [ruleId, rule] of Object.entries(TOOL_RULES)) {
-      findings.push(
-        ...runRule(ruleId as SecurityRuleId, rule, tool, reported, input.onRuleError),
-      );
+      findings.push(...runRule(ruleId as SecurityRuleId, rule, tool, reported, input.onRuleError));
     }
   }
 
