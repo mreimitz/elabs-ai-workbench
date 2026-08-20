@@ -24,11 +24,15 @@ import {
   compareSecurityFindings,
   computeSecurityScore,
   createSecurityFinding,
+  diffSecurityReports,
   findPrefixedCredential,
   redactSecurityEvidence,
+  securityDiffQuerySchema,
   securityFindingAnchorKey,
+  securityFindingCountsSchema,
   securityFindingIdentity,
   securityFindingSchema,
+  securityPostureDiffSchema,
   securityReportSchema,
 } from "./security-posture.js";
 
@@ -768,6 +772,287 @@ describe("wire schemas", () => {
     assert.equal(
       securityReportSchema.safeParse({ ...report, score: { ...report.score, band: "fine" } })
         .success,
+      false,
+    );
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// WP 1.4 — the posture diff
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// `diffSecurityReports` is the ONE answer to "what changed between these two reports", and these are
+// its teeth: that "new" is set membership by (ruleId, anchor) and not a count (D-C20), that the four
+// meaningless pairings are refused rather than answered (D-SP10/D-SP16/D-C22's shared instinct), that
+// the buckets partition both reports exactly, and that the diff is clock-free.
+
+/** A report of `findings`, with everything else derived exactly as the real services derive it. */
+function reportOf(
+  findings: SecurityFinding[],
+  overrides: Partial<SecurityReport> = {},
+): SecurityReport {
+  const counts = { error: 0, warning: 0, info: 0, total: findings.length };
+  for (const finding of findings) counts[finding.severity] += 1;
+  return {
+    analyzerVersion: SECURITY_ANALYZER_VERSION,
+    generatedAt: "2026-08-20T12:00:00.000Z",
+    subject: {
+      kind: "server",
+      id: "scan_old",
+      ownerId: "srv_1",
+      name: "Everything",
+      capturedAt: "2026-08-20T10:00:00.000Z",
+    },
+    findings,
+    counts,
+    score: computeSecurityScore(findings),
+    truncated: false,
+    ...overrides,
+  };
+}
+
+/** A finding on one tool, through the sanctioned constructor so D-SP5 picks the severity. */
+function toolFinding(ruleId: SecurityRuleId, toolName: string, evidence?: string): SecurityFinding {
+  return createSecurityFinding({
+    ruleId,
+    anchor: { kind: "tool", toolName },
+    message: `${ruleId} fired on "${toolName}".`,
+    ...(evidence === undefined ? {} : { evidence: { raw: evidence } }),
+  });
+}
+
+const DIFF_ERROR_RULE = "poisoning.injection-phrasing" satisfies SecurityRuleId;
+const DIFF_WARNING_RULE = "annotation.destructive-unmarked" satisfies SecurityRuleId;
+const DIFF_INFO_RULE = "schema.undescribed-parameter" satisfies SecurityRuleId;
+
+describe("diffSecurityReports — the three buckets (WP 1.4)", () => {
+  it("partitions the two reports: added / resolved / unchanged, by identity and not by count", () => {
+    // The fixture that earns its keep: one finding resolved and a DIFFERENT one added, so every
+    // count on both sides is byte-identical and only set membership can tell them apart.
+    const shared = [toolFinding(DIFF_ERROR_RULE, "alpha"), toolFinding(DIFF_WARNING_RULE, "beta")];
+    const baseline = reportOf([...shared, toolFinding(DIFF_ERROR_RULE, "gone")]);
+    const subject = reportOf([...shared, toolFinding(DIFF_ERROR_RULE, "arrived")], {
+      subject: { ...baseline.subject, id: "scan_new" },
+    });
+    assert.deepEqual(subject.counts, baseline.counts, "the fixture only bites while counts match");
+
+    const diff = diffSecurityReports(baseline, subject);
+    assert.deepEqual(
+      diff.added.map((finding) => finding.anchor),
+      [{ kind: "tool", toolName: "arrived" }],
+    );
+    assert.deepEqual(
+      diff.resolved.map((finding) => finding.anchor),
+      [{ kind: "tool", toolName: "gone" }],
+    );
+    assert.deepEqual(diff.unchanged, shared);
+  });
+
+  it("treats the same rule on the same tool with different evidence as UNCHANGED", () => {
+    // A vendor rewords a poisoned description. It is still the same finding — a gate or a UI that
+    // called this "one resolved, one new" is a gate somebody switches off inside a week.
+    const baseline = reportOf([toolFinding(DIFF_ERROR_RULE, "alpha", "ignore previous rules")]);
+    const subject = reportOf([toolFinding(DIFF_ERROR_RULE, "alpha", "disregard prior guidance")]);
+
+    const diff = diffSecurityReports(baseline, subject);
+    assert.deepEqual(diff.added, []);
+    assert.deepEqual(diff.resolved, []);
+    assert.equal(diff.unchanged.length, 1);
+    // …and it is the SUBJECT's instance that is carried, because its evidence is the live text.
+    assert.match(diff.unchanged[0]?.evidence?.excerpt ?? "", /disregard prior guidance/);
+  });
+
+  it("keeps both partition invariants over every anchor kind, including the subject-level ones", () => {
+    const anchors: SecurityFindingAnchor[] = [
+      SERVER,
+      SKILL,
+      { kind: "tool", toolName: "alpha" },
+      { kind: "parameter", toolName: "alpha", parameterPath: "token" },
+      { kind: "file", path: "scripts/run.py" },
+    ];
+    const all = anchors.map((anchor) =>
+      createSecurityFinding({ ruleId: DIFF_ERROR_RULE, anchor, message: "fired." }),
+    );
+    const baseline = reportOf(all.slice(0, 3));
+    const subject = reportOf(all.slice(2));
+
+    const diff = diffSecurityReports(baseline, subject);
+    assert.equal(diff.added.length + diff.unchanged.length, subject.findings.length);
+    assert.equal(diff.resolved.length + diff.unchanged.length, baseline.findings.length);
+    assert.equal(diff.added.length, 2);
+    assert.equal(diff.resolved.length, 2);
+    assert.equal(diff.unchanged.length, 1);
+  });
+
+  it("counts each bucket by severity, and never off a report's own counts", () => {
+    const baseline = reportOf([toolFinding(DIFF_INFO_RULE, "stays")]);
+    const subject = reportOf([
+      toolFinding(DIFF_INFO_RULE, "stays"),
+      toolFinding(DIFF_ERROR_RULE, "new_error"),
+      toolFinding(DIFF_WARNING_RULE, "new_warning"),
+    ]);
+
+    const diff = diffSecurityReports(baseline, subject);
+    assert.deepEqual(diff.counts.added, { error: 1, warning: 1, info: 0, total: 2 });
+    assert.deepEqual(diff.counts.resolved, { error: 0, warning: 0, info: 0, total: 0 });
+    assert.deepEqual(diff.counts.unchanged, { error: 0, warning: 0, info: 1, total: 1 });
+  });
+
+  it("emits each bucket in the source report's own compareSecurityFindings order", () => {
+    const ordered = [
+      toolFinding(DIFF_ERROR_RULE, "a"),
+      toolFinding(DIFF_WARNING_RULE, "b"),
+      toolFinding(DIFF_INFO_RULE, "c"),
+    ].sort(compareSecurityFindings);
+    const subject = reportOf(ordered);
+    const diff = diffSecurityReports(reportOf([]), subject);
+    assert.deepEqual(diff.added, ordered, "added inherits the subject report's emit order");
+    assert.deepEqual(
+      diff.added,
+      [...diff.added].sort(compareSecurityFindings),
+      "so it is already in the one total order (D-SP6)",
+    );
+  });
+
+  it("is byte-stable: the same pair diffed twice serializes identically", () => {
+    const baseline = reportOf([toolFinding(DIFF_ERROR_RULE, "gone")]);
+    const subject = reportOf([toolFinding(DIFF_WARNING_RULE, "arrived")]);
+    assert.equal(
+      JSON.stringify(diffSecurityReports(baseline, subject)),
+      JSON.stringify(diffSecurityReports(baseline, subject)),
+    );
+  });
+
+  it("diffs a report against ITSELF as all-unchanged, delta 0", () => {
+    const report = reportOf([
+      toolFinding(DIFF_ERROR_RULE, "alpha"),
+      toolFinding(DIFF_INFO_RULE, "b"),
+    ]);
+    const diff = diffSecurityReports(report, report);
+    assert.deepEqual(diff.added, []);
+    assert.deepEqual(diff.resolved, []);
+    assert.equal(diff.unchanged.length, 2);
+    assert.equal(diff.score.delta, 0);
+  });
+});
+
+describe("diffSecurityReports — the score delta and the dating (WP 1.4)", () => {
+  it("echoes both scores and reports subject − baseline, so improving is POSITIVE", () => {
+    const baseline = reportOf([toolFinding(DIFF_ERROR_RULE, "alpha")]); // 85
+    const subject = reportOf([]); // 100
+    const improved = diffSecurityReports(baseline, subject);
+    assert.deepEqual(improved.score.baseline, baseline.score);
+    assert.deepEqual(improved.score.subject, subject.score);
+    assert.equal(improved.score.delta, 15);
+
+    // …and a posture that got worse is a negative delta, which the schema must accept.
+    const worse = diffSecurityReports(subject, baseline);
+    assert.equal(worse.score.delta, -15);
+    assert.equal(securityPostureDiffSchema.safeParse(worse).success, true);
+  });
+
+  it("dates itself from the two reports and never from a clock", () => {
+    const baseline = reportOf([], { generatedAt: "2026-08-20T09:00:00.000Z" });
+    const subject = reportOf([], { generatedAt: "2026-08-20T17:30:00.000Z" });
+    assert.equal(diffSecurityReports(baseline, subject).generatedAt, "2026-08-20T17:30:00.000Z");
+    // The later instant wins whichever side carries it — the diff is dated by its freshest input.
+    assert.equal(diffSecurityReports(subject, baseline).generatedAt, "2026-08-20T17:30:00.000Z");
+  });
+
+  it("echoes the analyzer version and both subject refs", () => {
+    const baseline = reportOf([]);
+    const subject = reportOf([], { subject: { ...baseline.subject, id: "scan_new" } });
+    const diff = diffSecurityReports(baseline, subject);
+    assert.equal(diff.analyzerVersion, SECURITY_ANALYZER_VERSION);
+    assert.equal(diff.baseline.id, "scan_old");
+    assert.equal(diff.subject.id, "scan_new");
+  });
+});
+
+describe("diffSecurityReports — the four refusals (WP 1.4)", () => {
+  const baseline = reportOf([]);
+
+  it("refuses two different subject KINDS", () => {
+    const skillReport = reportOf([], {
+      subject: { ...baseline.subject, kind: "skill" },
+    });
+    assert.throws(
+      () => diffSecurityReports(baseline, skillReport),
+      /baseline is a "server" report and the subject a "skill" report/,
+    );
+  });
+
+  it("refuses two different OWNERS — a posture diff is one server, or one skill", () => {
+    const otherServer = reportOf([], {
+      subject: { ...baseline.subject, id: "scan_new", ownerId: "srv_2" },
+    });
+    assert.throws(() => diffSecurityReports(baseline, otherServer), /belongs to "srv_1"/);
+  });
+
+  it("refuses two different ANALYZER VERSIONS, in both directions (D-C22's instinct)", () => {
+    const newer = reportOf([], { analyzerVersion: SECURITY_ANALYZER_VERSION + 1 });
+    assert.throws(() => diffSecurityReports(baseline, newer), /not on the same scale/);
+    assert.throws(() => diffSecurityReports(newer, baseline), /not on the same scale/);
+  });
+
+  it("refuses a TRUNCATED report on either side, and names the side", () => {
+    const truncated = reportOf([], {
+      truncated: true,
+      counts: { error: 300, warning: 0, info: 0, total: 300 },
+    });
+    assert.throws(
+      () => diffSecurityReports(truncated, baseline),
+      /the baseline produced more than/,
+    );
+    assert.throws(() => diffSecurityReports(baseline, truncated), /the subject produced more than/);
+    assert.throws(
+      () => diffSecurityReports(truncated, truncated),
+      /the baseline and the subject produced more than/,
+    );
+    // A partial set is never quietly answered as "nothing changed".
+    assert.throws(() => diffSecurityReports(baseline, truncated), /not a verdict/);
+  });
+});
+
+describe("securityPostureDiffSchema + securityDiffQuerySchema (WP 1.4)", () => {
+  const diff = diffSecurityReports(
+    reportOf([toolFinding(DIFF_ERROR_RULE, "gone")]),
+    reportOf([toolFinding(DIFF_WARNING_RULE, "arrived")], {
+      subject: { ...reportOf([]).subject, id: "scan_new" },
+    }),
+  );
+
+  it("round-trips a real diff and rejects an unknown key at every level", () => {
+    assert.deepEqual(securityPostureDiffSchema.parse(diff), diff);
+    assert.equal(securityPostureDiffSchema.safeParse({ ...diff, note: "extra" }).success, false);
+    assert.equal(
+      securityPostureDiffSchema.safeParse({
+        ...diff,
+        counts: { ...diff.counts, dropped: { error: 0, warning: 0, info: 0, total: 0 } },
+      }).success,
+      false,
+    );
+    assert.equal(
+      securityPostureDiffSchema.safeParse({ ...diff, score: { ...diff.score, ratio: 1 } }).success,
+      false,
+    );
+  });
+
+  it("validates the report counts and the diff counts against ONE extracted schema", () => {
+    const counts = { error: 1, warning: 0, info: 0, total: 1 };
+    assert.deepEqual(securityFindingCountsSchema.parse(counts), counts);
+    assert.equal(securityFindingCountsSchema.safeParse({ ...counts, extra: 1 }).success, false);
+    assert.equal(securityFindingCountsSchema.safeParse({ ...counts, error: -1 }).success, false);
+  });
+
+  it("requires an explicit, non-blank baseline and refuses an unknown query key", () => {
+    assert.deepEqual(securityDiffQuerySchema.parse({ baseline: " scan_old " }), {
+      baseline: "scan_old",
+    });
+    assert.equal(securityDiffQuerySchema.safeParse({}).success, false);
+    assert.equal(securityDiffQuerySchema.safeParse({ baseline: "   " }).success, false);
+    // `?baseline=…&minSeverity=error` is a caller who believes they set a floor. Say so.
+    assert.equal(
+      securityDiffQuerySchema.safeParse({ baseline: "scan_old", minSeverity: "error" }).success,
       false,
     );
   });
