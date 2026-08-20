@@ -40,6 +40,15 @@ TIMESTAMP_RE = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
 DATE_RE = re.compile(r"^## (\d{4}-\d{2}-\d{2})$")
 LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
 PLACEHOLDER_RE = re.compile(r"\{\{[^}]+\}\}")
+# A fenced code block or an inline code span. Placeholders inside code are document
+# content -- GitHub Actions ${{ }} expressions, mustache prompt templates, JSX props --
+# not an unfilled generator template, so PROFILE009 must not fire on them.
+CODE_SPAN_RE = re.compile(r"(?ms)^[ \t]*(?:```|~~~).*?^[ \t]*(?:```|~~~)[ \t]*$|`[^`\n]*`")
+
+
+def strip_code(text: str) -> str:
+    """Blank out fenced blocks and inline code spans, preserving line count."""
+    return CODE_SPAN_RE.sub(lambda match: re.sub(r"[^\n]", " ", match.group(0)), text)
 DELIVERED_HEADING = "## Delivered increments"
 INCREMENT_RE = re.compile(r"^###\s+(RM-\d{2,})(?:\s|$)")
 MILESTONES_HEADING = "## Milestones"
@@ -498,7 +507,7 @@ def validate_concept(
     placeholder_text = text
     if concept_type == "Source Reference":
         placeholder_text = body.split("## Extracted content", 1)[0]
-    if PLACEHOLDER_RE.search(placeholder_text):
+    if PLACEHOLDER_RE.search(strip_code(placeholder_text)):
         issues.append(
             Issue("profile", "PROFILE009", rel, "live concept contains a template placeholder")
         )
