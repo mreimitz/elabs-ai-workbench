@@ -123,8 +123,143 @@ describe("tokens.css — the one mapping file (D-IL5)", () => {
     }
   });
 
-  it("names a separation floor the tuning is aimed at", () => {
-    assert.ok(ILLUS_FACE_SEPARATION_FLOOR > 0 && ILLUS_FACE_SEPARATION_FLOOR < 1);
+  it("pins the separation floor at research 3.3's value, not merely at some number", () => {
+    // 20%, exactly. If this constant moves, the two arithmetic tests below quietly start measuring
+    // a different promise than the one tokens.css documents — so the value itself is pinned here,
+    // once, and a change to it has to be a deliberate edit to this line.
+    assert.equal(ILLUS_FACE_SEPARATION_FLOOR, 0.2);
+  });
+});
+
+// ── The arithmetic behind the tuning (research 3.3) ──────────────────────────────────────────────
+// tokens.css claims, in prose, that its four mix percentages clear a 20% adjacent-face separation
+// floor and — on the light stage — land inside research 3.3's ratio bands. A comment cannot go red.
+// This can: it reads the percentages back OUT of the CSS and recomputes the claim, so editing a mix
+// without redoing the arithmetic fails the gate.
+//
+// This is NOT WP 0.2's job. WP 0.2 measures the RESOLVED values a browser computes, in dev mode,
+// which catches an upstream token bump this test cannot see. Both should exist: this one is the
+// unit test over arithmetic the file already asserts in words.
+describe("tokens.css — the tuned mixes really clear the separation floor", () => {
+  /**
+   * The oklch LIGHTNESS channel of the only two tokens a face is derived from, copied from the
+   * INSTALLED @elabs-ai/components-tokens@4.0.0 theme stylesheets:
+   *
+   *   apps/web/node_modules/@elabs-ai/components-tokens/dist/themes/light.css
+   *       --card L 1.000  ·  --foreground L 0.300
+   *   apps/web/node_modules/@elabs-ai/components-tokens/dist/themes/dark.css
+   *       --card L 0.250  ·  --foreground L 0.950
+   *
+   * Copied on purpose rather than re-read from `node_modules`: a test that followed the installed
+   * files would silently absorb an upstream bump instead of failing on it. When brand-ui moves,
+   * THIS is where the new numbers land — and the failure that sends you here is the point.
+   *
+   * Keyed by the selector that declares each theme's face mixes. Light is the app's default, so it
+   * lives on `:root`; dark overrides the two side faces only.
+   */
+  const THEME_LIGHTNESS: ReadonlyArray<{
+    selector: string;
+    theme: string;
+    surface: number;
+    ink: number;
+  }> = [
+    { selector: ":root", theme: "light", surface: 1.0, ink: 0.3 },
+    { selector: '[data-theme="dark"]', theme: "dark", surface: 0.25, ink: 0.95 },
+  ];
+
+  /** Research 3.3's target band for each side face, as a share of the top face's lightness. */
+  const LIGHT_RATIO_BANDS = {
+    left: { min: 0.75, max: 0.8 },
+    right: { min: 0.55, max: 0.6 },
+  } as const;
+
+  /**
+   * The mix fraction a face declaration carries, read back out of tokens.css — never hardcoded
+   * here, so that editing the CSS is what moves this test. The top face mixes nothing: it IS the
+   * surface, in every theme.
+   */
+  function mixFraction(face: string, block: Block): number {
+    const value = block.declarations.get(face) ?? ROOT?.declarations.get(face);
+    assert.ok(value, `${face} resolves to no declaration for ${block.selector}`);
+    if (value === "var(--illus-surface)") return 0;
+    const digits = /(\d+)%\)$/.exec(value)?.[1];
+    assert.ok(digits, `${face} declares no mix percentage: ${value}`);
+    return Number(digits) / 100;
+  }
+
+  /** What a mix of surface toward ink does to the lightness channel, at fraction `p`. */
+  const mixedLightness = (surface: number, ink: number, p: number): number =>
+    surface * (1 - p) + ink * p;
+
+  /** Relative separation, stated the way research 3.3 states it: against the LIGHTER of the pair. */
+  const separation = (a: number, b: number): number => Math.abs(a - b) / Math.max(a, b);
+
+  function facesFor(entry: (typeof THEME_LIGHTNESS)[number]) {
+    const block = BLOCKS.find((candidate) => candidate.selector === entry.selector);
+    assert.ok(block, `tokens.css declares no ${entry.selector} block`);
+    const [top, left, right] = ILLUS_FACE_TOKENS;
+    return {
+      top: mixedLightness(entry.surface, entry.ink, mixFraction(top, block)),
+      left: mixedLightness(entry.surface, entry.ink, mixFraction(left, block)),
+      right: mixedLightness(entry.surface, entry.ink, mixFraction(right, block)),
+    };
+  }
+
+  it("clears the adjacent-face separation floor in both themes", () => {
+    for (const entry of THEME_LIGHTNESS) {
+      const faces = facesFor(entry);
+      for (const [from, to] of [
+        ["top", "left"],
+        ["left", "right"],
+      ] as const) {
+        const measured = separation(faces[from], faces[to]);
+        assert.ok(
+          measured >= ILLUS_FACE_SEPARATION_FLOOR,
+          `${entry.theme}: ${from} to ${to} separates by ${(measured * 100).toFixed(1)}% ` +
+            `(L ${faces[from].toFixed(3)} vs ${faces[to].toFixed(3)}), under the ` +
+            `${(ILLUS_FACE_SEPARATION_FLOOR * 100).toFixed(0)}% floor. Re-tune the mix in tokens.css.`,
+        );
+      }
+    }
+  });
+
+  it("lands the light stage inside research 3.3's ratio bands", () => {
+    const light = THEME_LIGHTNESS.find((entry) => entry.theme === "light");
+    assert.ok(light, "the light stage is declared above");
+    const faces = facesFor(light);
+    for (const face of ["left", "right"] as const) {
+      const band = LIGHT_RATIO_BANDS[face];
+      const ratio = faces[face] / faces.top;
+      assert.ok(
+        ratio >= band.min && ratio <= band.max,
+        `light: the ${face} face is ${(ratio * 100).toFixed(1)}% of the top face, outside the ` +
+          `${(band.min * 100).toFixed(0)}-${(band.max * 100).toFixed(0)}% band research 3.3 asks for.`,
+      );
+    }
+  });
+
+  it("holds the dark stage to the floor ONLY, and records why the bands do not apply", () => {
+    // The light bands are deliberately not applied here, and that is the WP 0.1 deviation on the
+    // record rather than an omission. On a dark stage `--card` sits at L 0.250 with only
+    // `--background` (L 0.210) beneath it, so mixing toward ink cannot darken a face by 20% — it
+    // LIGHTENS the side faces instead, which research 3.3 explicitly accepts as how lighting flips
+    // on a dark ground. Expressed as a share of the top face those faces therefore exceed 100%, and
+    // a band written for the light stage would reject a file behaving exactly as designed.
+    //
+    // The flip inverts D-IL2's "top lightest -> right darkest" on dark, which is an OWNER-ACCEPTANCE
+    // question a gate cannot settle. What the gate CAN hold is the invariant that survives it: the
+    // order of the three faces, and the separation between them (asserted in both themes above).
+    const dark = THEME_LIGHTNESS.find((entry) => entry.theme === "dark");
+    assert.ok(dark, "the dark stage is declared above");
+    const faces = facesFor(dark);
+    assert.ok(
+      faces.left > faces.top && faces.right > faces.left,
+      "on dark the side faces catch light, in the same top -> left -> right order",
+    );
+    assert.ok(
+      faces.left / faces.top > LIGHT_RATIO_BANDS.left.max,
+      "a light-stage ratio band would reject the dark tuning by construction — hence floor only",
+    );
   });
 });
 
