@@ -461,8 +461,8 @@ Formats: `human` (default), `json`, `markdown`.
   ```
 
   The same body renders identically every time it is asked for, and it carries **no credential and no
-  path from your machine** — it is safe to post publicly. Posting it is your pipeline's job for now; a
-  packaged GitHub Actions workflow that does it for you is planned.
+  path from your machine** — it is safe to post publicly. Posting it is your pipeline's job — see
+  [GitHub Actions with `mcpfp`](./23-ci-github-actions.md) for two workflows that do exactly that.
 
 **The format changes only how the result is written, never what it is.** A failing gate exits `1`
 whether you asked for `human`, `json` or `markdown`, and a gate that could not run exits `2` in all
@@ -599,12 +599,6 @@ them is evidence that your footprint is fine.
 ---
 
 ## What is not built yet
-
-One planned piece is not in it:
-
-- **Posting the pull-request comment for you** — a packaged GitHub Actions workflow that runs the
-  gate and puts `--format markdown`'s output on the PR. *(Work package 2.3.)* The comment **body**
-  is built today: `mcpfp assert --format markdown` writes it, and any pipeline can post it.
 
 Assertions cover **footprint and change** (tokens, tool counts, added and removed tools) and **suite
 quality** (a minimum mean score, a maximum cost). Rules about *security findings* arrive with a later

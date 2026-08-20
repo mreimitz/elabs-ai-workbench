@@ -164,6 +164,10 @@ read-only, returns no secret values, and lives behind a Settings › Features sw
 [Workbench agent playbook](user-guide/20-workbench-mcp-server.md). We hold it to our own standard:
 `pnpm mcp:self-scan` points the app's discovery scanner at its own mount and fails if the tool
 definitions exceed their token budget (currently **21 tools · 2,224 tokens** against a 3,000 budget).
+The same gate is yours to run: the `mcpfp` CLI plus two copyable workflows in
+[`examples/github-actions/`](examples/github-actions/) fail a pull request when a server's footprint
+(or a suite's quality) moves outside budget — see
+[Gating a pull request](user-guide/23-ci-github-actions.md).
 
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](user-guide/README.md) for the full picture.
