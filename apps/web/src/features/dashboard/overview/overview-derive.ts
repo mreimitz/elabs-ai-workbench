@@ -139,7 +139,9 @@ export function buildBucketAxis(
  *
  * This is only ever applied to counts. A MEASUREMENT series (a server's footprint) is never
  * zero-filled: a bucket with no successful scan is a real gap, and zero-filling it would claim the
- * surface collapsed to nothing. Any point whose bucket is outside `axis` is kept (never dropped) and
+ * surface collapsed to nothing. (The hero chart's {@link buildStandingSeries} carries the last
+ * *successful* figure forward across such a gap, which is the opposite move: it repeats a real
+ * measurement rather than inventing a zero.) Any point whose bucket is outside `axis` is kept (never dropped) and
  * the result is sorted ascending, so a bucket/window mismatch degrades into an odd axis rather than
  * silently losing data.
  */
@@ -282,6 +284,60 @@ function footprintsOf(
 }
 
 /**
+ * The hero chart's plotted lines (dashboard-bento WP 2.3) — every server that has ever been measured
+ * successfully, carried forward across the buckets where it was not.
+ *
+ * Owner, 2026-08-20: *"fleet footprint shows only scanned MCP servers which have been scanned during
+ * the selected time and the result drops if a scan wasnt successfull. but we should show all MCP
+ * servers there and get the number from the last successfull scan."* Two separate defects sat behind
+ * that sentence, and this function answers both:
+ *
+ * 1. **Population.** The lines used to be built from the range-scoped response, so a server nobody
+ *    happened to scan inside the selected window had no line at all — even though its footprint is a
+ *    known standing quantity. `footprints` here is the STANDING population, so the window can no
+ *    longer delete a server from the chart.
+ * 2. **Continuity.** A bucket with no *successful* scan carries `totalTokens: null` and was simply
+ *    dropped, so a failed scan broke the line — or, where a later bucket existed, dragged it toward
+ *    the next real value as if the surface had shrunk. Every series is now **last-observation-carried
+ *    -forward** over one shared axis: the value at a bucket is the newest successful measurement at
+ *    or before it, so a line is flat where nothing was measured and steps only where a real
+ *    successful scan changed the number.
+ *
+ * Three honesty rules bound the carry:
+ *
+ * - **Nothing is invented before a server's first successful scan.** There is no back-fill with 0 —
+ *   a 0 would claim someone measured an empty surface. A server's line simply starts where its first
+ *   real measurement is.
+ * - **The axis is made of real measurements only.** It is the union of the bucket starts at which
+ *   *some* server was successfully measured, so no x-position is manufactured. A failed scan
+ *   therefore contributes no point of its own; it is invisible, which is exactly "never lowers, never
+ *   breaks". (It is also what keeps the plotted-point count bounded by the scan history rather than
+ *   by the length of the calendar.)
+ * - **A server with no successful scan is absent, not zeroed.** It never reaches this function; the
+ *   caller names it in `unmeasuredServers` instead.
+ */
+export function buildStandingSeries(
+  footprints: readonly ServerFootprint[],
+): { serverId: string; serverName: string; points: OverviewPoint[] }[] {
+  const axis = [
+    ...new Set(footprints.flatMap((entry) => entry.points.map((point) => point.bucketStart))),
+  ].sort((a, b) => a.localeCompare(b));
+  return footprints.map((entry) => {
+    const measuredByBucket = new Map(entry.points.map((point) => [point.bucketStart, point.value]));
+    const points: OverviewPoint[] = [];
+    let carried: number | null = null;
+    for (const bucketStart of axis) {
+      const value = measuredByBucket.get(bucketStart);
+      if (value !== undefined) carried = value;
+      // Before this server's first successful scan there is nothing to carry — emit nothing.
+      if (carried === null) continue;
+      points.push({ bucketStart, value: carried });
+    }
+    return { serverId: entry.serverId, serverName: entry.serverName, points };
+  });
+}
+
+/**
  * The hero tile's data.
  *
  * ── THE WINDOW SPLIT (the defect this signature exists to prevent) ────────────────────────────────
@@ -299,10 +355,23 @@ function footprintsOf(
  * Returns `null` — an `empty` section, the tile removes itself — ONLY when the fleet has no
  * successful scan at all, ever.
  *
+ * ── WHAT WP 2.3 ADDED (and what it deliberately did NOT touch) ───────────────────────────────────
+ * The CHART no longer plots `perServer`. It plots {@link buildStandingSeries}, built from the
+ * standing population and carried forward across unmeasured buckets, so every server that has ever
+ * been measured has a line whatever window is selected and a failed scan can neither break a line
+ * nor drag it down. `perServer` keeps its old, window-scoped, measured-points-only meaning because
+ * two other tiles depend on exactly that: `MoversTile` subtracts a series' last two points to rank
+ * movement (a carried value would make every quiet server "move by 0" and empty the tile), and
+ * `StartupCostTile` draws the window's sparkline from it. The totals, Δ, mix, `firstTimeServers` and
+ * `latestMeasuredAt` arithmetic is untouched — it was already standing, and already correct.
+ *
  * `servers` supplies display-name fallbacks for a series whose `serverName` is null (a deleted
- * server keeps its id); it never widens or narrows the population. `windowed` defaults to
- * `standing`, which is the single-response shape the unit tests use (and means an omitted window is
- * treated as "the window covers everything", never as "the window is empty").
+ * server keeps its id), and — since WP 2.3 — is the only thing that knows a configured server
+ * exists at all, so it is also where `unmeasuredServers` comes from. It still never widens or
+ * narrows the *measured* population: a server it names but no scan measured is reported as an
+ * explicit exclusion, never plotted at 0. `windowed` defaults to `standing`, which is the
+ * single-response shape the unit tests use (and means an omitted window is treated as "the window
+ * covers everything", never as "the window is empty").
  */
 export function buildFootprintData(
   standing: ScanMetricsResponse,
@@ -346,12 +415,22 @@ export function buildFootprintData(
     { toolTokens: 0, resourceTokens: 0, promptTokens: 0 },
   );
 
+  // "All MCP servers" is honoured by accounting for every configured server: measured ones become
+  // lines, and the rest are named here. Never plotted at 0 — nobody measured them.
+  const measuredIds = new Set(perServer.map((entry) => entry.serverId));
+  const unmeasuredServers = servers
+    .filter((entry) => !measuredIds.has(entry.id))
+    .map((entry) => ({ serverId: entry.id, serverName: entry.name }))
+    .sort((a, b) => a.serverName.localeCompare(b.serverName));
+
   return {
     perServer: windowPerServer.map((entry) => ({
       serverId: entry.serverId,
       serverName: entry.serverName,
       points: entry.points,
     })),
+    standingSeries: buildStandingSeries(perServer),
+    unmeasuredServers,
     totalTokens,
     deltaTokens,
     firstTimeServers,

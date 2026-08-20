@@ -45,12 +45,54 @@ export type SectionEnvelope<T> = {
  * - `totalTokens` / `deltaTokens` / `firstTimeServers` / `mix` / `latestMeasuredAt` are
  *   **window-independent**: they come from the latest successful scan per server across ALL of
  *   history, whatever window the tab is showing.
- * - `perServer[].points` is **window-scoped**: it is the plotted trend, and a window with no scan
- *   in it genuinely has nothing to plot (`noActivityInWindow`), which the tile must SAY rather
- *   than vanish over.
+ * - `perServer[].points` is **window-scoped**: it is the window's raw measurement trace — the points
+ *   a scan actually produced inside the selected window, and nothing else. `MoversTile` ranks
+ *   movement from it (movement IS an event, so it must stay windowed) and `StartupCostTile` draws
+ *   its sparkline from it. A window with no scan in it genuinely has no such trace
+ *   (`noActivityInWindow`), which the tile must SAY rather than vanish over.
+ * - `standingSeries[].points` is **window-independent**: it is what the hero CHART plots — every
+ *   server that has ever been measured, carried forward from its last successful scan. Added by
+ *   dashboard-bento WP 2.3; see its own doc below for why it is a separate field rather than a
+ *   change to `perServer`.
  */
 export type FootprintData = {
   perServer: { serverId: string; serverName: string; points: OverviewPoint[] }[];
+  /**
+   * The hero chart's plotted lines — **standing**, not windowed (dashboard-bento WP 2.3).
+   *
+   * Owner, 2026-08-20: *"fleet footprint shows only scanned MCP servers which have been scanned
+   * during the selected time and the result drops if a scan wasnt successfull. but we should show
+   * all MCP servers there and get the number from the last successfull scan."* Both halves of that
+   * are encoded here:
+   *
+   * - **Population.** One entry per server with at least one successful scan **anywhere in
+   *   history**, not only the servers scanned inside the window. A footprint is a standing
+   *   quantity; a quiet window can remove a server's *activity*, never its *cost*.
+   * - **Continuity (last observation carried forward).** Every entry carries a value at every
+   *   bucket on the shared axis at or after its own first successful scan, so a failed or missing
+   *   scan holds the last known-good figure instead of breaking the line or dropping it toward
+   *   zero. The line is flat where nothing was measured and steps only where a real successful scan
+   *   changed the number.
+   * - **Never invented.** No point exists before a server's first successful scan (no back-fill
+   *   with 0 — that would be a fabricated measurement), and a server with NO successful scan is not
+   *   here at all; it is named in {@link FootprintData.unmeasuredServers} instead.
+   *
+   * It is a SEPARATE field from `perServer` on purpose: `MoversTile` derives "what moved" by
+   * subtracting a series' last two points, and carrying a value forward would turn every quiet
+   * server's Δ into a fabricated 0 and silently empty that tile.
+   */
+  standingSeries: { serverId: string; serverName: string; points: OverviewPoint[] }[];
+  /**
+   * Configured servers with **no successful scan on record, ever** — named on the tile, never
+   * plotted (dashboard-bento WP 2.3).
+   *
+   * "Show all MCP servers" is honoured by accounting for every server either as a line or as a
+   * named exclusion. A server that has never been measured has no honest value to draw: plotting it
+   * at 0 would state a measurement nobody took. Empty when every configured server has been
+   * measured, and empty when the producer was given no server catalog to compare against (the
+   * catalog is the only thing that knows a server exists at all).
+   */
+  unmeasuredServers: { serverId: string; serverName: string }[];
   /** Fleet total of the latest successful scan per server. Window-independent. */
   totalTokens: number;
   /** Fleet Δ over the SAME population `totalTokens` covers; `null` when nothing is comparable. */
@@ -67,9 +109,11 @@ export type FootprintData = {
    */
   latestMeasuredAt: string | null;
   /**
-   * `true` when the SELECTED WINDOW contains no measurement at all — i.e. `perServer` has no series
-   * to plot. The standing figures above still stand; the tile says "no scan activity in this
-   * window" instead of hiding itself.
+   * `true` when the SELECTED WINDOW contains no measurement at all — i.e. `perServer` is empty.
+   * The standing figures above still stand, and since WP 2.3 so do the plotted
+   * {@link FootprintData.standingSeries} lines: this flag now means "nothing was *scanned* in this
+   * window", NOT "there is nothing to plot". The tile states it as a note beside a chart that keeps
+   * drawing the fleet's standing footprint.
    */
   noActivityInWindow: boolean;
 };

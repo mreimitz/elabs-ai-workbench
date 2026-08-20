@@ -61,6 +61,10 @@ function footprint(over: Partial<FootprintData> = {}): FootprintData {
         points: BUCKETS.map((bucketStart, i) => ({ bucketStart, value: 580_000 + i * 5_000 })),
       },
     ],
+    // WP 2.3 contract additions — `StartupCostTile` draws its sparkline from the WINDOW (`perServer`)
+    // and reads neither of these; pinned empty so a future crossover would fail rather than pass.
+    standingSeries: [],
+    unmeasuredServers: [],
     totalTokens: 590_000,
     deltaTokens: 10_000,
     firstTimeServers: 0,

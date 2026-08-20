@@ -253,6 +253,12 @@ describe("useOverviewData", () => {
     expect(result.current.footprint.data?.noActivityInWindow).toBe(true);
     expect(result.current.footprint.data?.perServer).toEqual([]);
     expect(result.current.footprint.data?.latestMeasuredAt).toBe("2026-08-02T00:00:00.000Z");
+    // WP 2.3: the CHART's lines survive the quiet window too — they are built from the standing
+    // response, so "nobody scanned this week" can no longer erase a server from the plot.
+    expect(result.current.footprint.data?.standingSeries.map((entry) => entry.serverName)).toEqual([
+      "Files",
+    ]);
+    expect(result.current.footprint.data?.standingSeries[0]?.points.length).toBeGreaterThan(0);
   });
 
   test("the footprint is `empty` only when the fleet has NO successful scan at all", async () => {

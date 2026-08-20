@@ -24,6 +24,11 @@ function series(serverId: string, serverName: string, values: number[]): Series 
 function footprint(perServer: Series[]): FootprintData {
   return {
     perServer,
+    // WP 2.3 added two standing fields to the contract. `MoversTile` reads NEITHER — movement is an
+    // event, so it stays on the window-scoped `perServer` — and pinning them empty here keeps that
+    // independence honest: if the tile ever started reading them, these tests would go quiet, not green.
+    standingSeries: [],
+    unmeasuredServers: [],
     totalTokens: perServer.reduce((sum, s) => sum + (s.points[s.points.length - 1]?.value ?? 0), 0),
     deltaTokens: null,
     firstTimeServers: 0,

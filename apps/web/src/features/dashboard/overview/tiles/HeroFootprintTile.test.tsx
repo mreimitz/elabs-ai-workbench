@@ -151,26 +151,35 @@ import { HeroFootprintTile } from "./HeroFootprintTile";
 const BUCKET_A = "2026-08-01T00:00:00.000Z";
 const BUCKET_B = "2026-08-02T00:00:00.000Z";
 
+/**
+ * The two plotted lines. Since WP 2.3 the chart reads `standingSeries`, NOT `perServer` — the fixture
+ * gives both the same shape so every pre-WP-2.3 chart assertion below still measures what it always
+ * measured, while the tests that care about the difference override one field explicitly.
+ */
+const SERIES = [
+  {
+    serverId: "srv_9f3ab21c",
+    serverName: "Alpha",
+    points: [
+      { bucketStart: BUCKET_A, value: 100_000 },
+      { bucketStart: BUCKET_B, value: 120_000 },
+    ],
+  },
+  {
+    serverId: "srv_2c118be4",
+    serverName: "Bravo",
+    points: [
+      { bucketStart: BUCKET_A, value: 50_000 },
+      { bucketStart: BUCKET_B, value: 60_000 },
+    ],
+  },
+];
+
 function footprint(over: Partial<FootprintData> = {}): FootprintData {
   return {
-    perServer: [
-      {
-        serverId: "srv_9f3ab21c",
-        serverName: "Alpha",
-        points: [
-          { bucketStart: BUCKET_A, value: 100_000 },
-          { bucketStart: BUCKET_B, value: 120_000 },
-        ],
-      },
-      {
-        serverId: "srv_2c118be4",
-        serverName: "Bravo",
-        points: [
-          { bucketStart: BUCKET_A, value: 50_000 },
-          { bucketStart: BUCKET_B, value: 60_000 },
-        ],
-      },
-    ],
+    perServer: SERIES.map((series) => ({ ...series, points: [...series.points] })),
+    standingSeries: SERIES.map((series) => ({ ...series, points: [...series.points] })),
+    unmeasuredServers: [],
     totalTokens: 180_000,
     deltaTokens: 30_000,
     firstTimeServers: 0,
@@ -255,7 +264,18 @@ describe("HeroFootprintTile — the figures it states", () => {
 describe("HeroFootprintTile — a window with no scan activity", () => {
   // The browser-walk defect: the owner's 7-day window contained none of their 103 scans, so the
   // whole footprint section resolved to `empty` and this tile — carrying the fleet's startup token
-  // cost — removed itself. The figures are a STANDING measurement; only the trend is windowed.
+  // cost — removed itself. The figures are a STANDING measurement; WP 2.3 made the LINES standing
+  // too, so a quiet window is now a footnote rather than a replacement for the chart.
+  //
+  // ── CHANGED BY WP 2.3 (loudly, on purpose) ─────────────────────────────────────────────────────
+  // Three assertions in this block used to require the OPPOSITE and had to move: the quiet-window
+  // notice used to be a `StatePanel` rendered INSTEAD of the chart, and the fixture used to hand the
+  // tile nothing to plot. Owner, 2026-08-20: *"we should show all MCP servers there and get the
+  // number from the last successfull scan"* — a server's footprint does not stop existing because
+  // nobody scanned it this week, so the lines stay and the notice becomes a note beside them. What
+  // is preserved verbatim is every protective intent: the tile still does not vanish, the figures
+  // are still stated, the "last measured" date is still absent rather than fabricated when unknown,
+  // and the first-measured disclosure still survives.
   const quiet = () =>
     ready({
       perServer: [],
@@ -271,24 +291,127 @@ describe("HeroFootprintTile — a window with no scan activity", () => {
 
   test("says plainly that nothing was scanned in this window, and when it last was", () => {
     renderTile(quiet());
-    expect(screen.getByText("No scan activity in this window")).toBeInTheDocument();
+    expect(screen.getByText(/No scan activity in this window/)).toBeInTheDocument();
     expect(screen.getByText(/last measured/i)).toBeInTheDocument();
   });
 
-  test("no chart is rendered for a window with nothing to plot (never an empty axis)", () => {
+  test("the standing lines are STILL plotted — a quiet window removes activity, not the fleet", () => {
     renderTile(quiet());
-    expect(captured.charts).toHaveLength(0);
+    expect(captured.charts).toHaveLength(1);
+    expect(captured.lines.map((line) => line.dataKey)).toEqual(["srv_9f3ab21c", "srv_2c118be4"]);
   });
 
   test("a missing 'last measured' timestamp is simply absent — never a fabricated date", () => {
     renderTile(ready({ perServer: [], noActivityInWindow: true, latestMeasuredAt: null }));
-    expect(screen.getByText("No scan activity in this window")).toBeInTheDocument();
+    expect(screen.getByText(/No scan activity in this window/)).toBeInTheDocument();
     expect(screen.queryByText(/last measured/i)).not.toBeInTheDocument();
   });
 
   test("the first-measured disclosure survives a quiet window (it qualifies the Δ, not the chart)", () => {
     renderTile(ready({ perServer: [], noActivityInWindow: true, firstTimeServers: 1 }));
     expect(screen.getByText("Includes 1 server measured for the first time")).toBeInTheDocument();
+  });
+
+  test("with genuinely nothing to plot, no chart is drawn over an empty axis", () => {
+    // Defensive: the producer returns `null` (⇒ an empty section) when nothing was ever measured, so
+    // this state should be unreachable — but if it ever arrives, an honest notice beats a blank axis.
+    renderTile(ready({ perServer: [], standingSeries: [], noActivityInWindow: true }));
+    expect(captured.charts).toHaveLength(0);
+    expect(screen.getByText("No footprint to plot")).toBeInTheDocument();
+  });
+});
+
+describe("HeroFootprintTile — every server is accounted for (WP 2.3)", () => {
+  test("plots a server whose measurements are ALL outside the window (the standing population wins)", () => {
+    // The owner's report: a server nobody scanned inside the selected window had no line at all.
+    // `perServer` (the window's trace) is empty here; the standing series is not.
+    renderTile(
+      ready({
+        perServer: [],
+        noActivityInWindow: true,
+        standingSeries: [
+          {
+            serverId: "srv_quiet",
+            serverName: "Quiet server",
+            points: [{ bucketStart: BUCKET_A, value: 628 }],
+          },
+        ],
+      }),
+    );
+    expect(captured.lines.map((line) => line.dataKey)).toEqual(["srv_quiet"]);
+    expect(screen.getByText("Quiet server")).toBeInTheDocument();
+  });
+
+  test("names a server with no successful scan instead of plotting it at 0", () => {
+    renderTile(
+      ready({ unmeasuredServers: [{ serverId: "srv_new", serverName: "mcp-powerbi-fabric" }] }),
+    );
+    expect(
+      screen.getByText("1 server has no successful scan yet: mcp-powerbi-fabric"),
+    ).toBeInTheDocument();
+    // …and it is emphatically NOT a line: a 0 line would be a measurement nobody took.
+    expect(captured.lines.map((line) => line.dataKey)).not.toContain("srv_new");
+  });
+
+  test("several unmeasured servers are counted and named, long lists degrading to '+N more'", () => {
+    renderTile(
+      ready({
+        unmeasuredServers: [
+          { serverId: "s1", serverName: "Alpha-unscanned" },
+          { serverId: "s2", serverName: "Bravo-unscanned" },
+          { serverId: "s3", serverName: "Charlie-unscanned" },
+          { serverId: "s4", serverName: "Delta-unscanned" },
+        ],
+      }),
+    );
+    expect(
+      screen.getByText(
+        "4 servers have no successful scan yet: Alpha-unscanned, Bravo-unscanned, Charlie-unscanned +1 more",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  test("says nothing at all when every configured server has been measured", () => {
+    renderTile(ready());
+    expect(screen.queryByText(/no successful scan yet/)).not.toBeInTheDocument();
+  });
+
+  test("the chart receives EXACTLY one series per plotted server — no more, no fewer", () => {
+    renderTile(
+      ready({
+        standingSeries: [
+          { serverId: "a", serverName: "A", points: [{ bucketStart: BUCKET_A, value: 1 }] },
+          { serverId: "b", serverName: "B", points: [{ bucketStart: BUCKET_A, value: 2 }] },
+          { serverId: "c", serverName: "C", points: [{ bucketStart: BUCKET_A, value: 3 }] },
+        ],
+        // The WINDOW trace names a different, smaller population — the chart must ignore it.
+        perServer: [
+          { serverId: "a", serverName: "A", points: [{ bucketStart: BUCKET_A, value: 1 }] },
+        ],
+      }),
+    );
+    expect(captured.lines.map((line) => line.dataKey)).toEqual(["a", "b", "c"]);
+    expect(captured.lines.map((line) => line.stroke)).toEqual([
+      "var(--chart-1)",
+      "var(--chart-2)",
+      "var(--chart-3)",
+    ]);
+  });
+
+  test("eight plotted servers take eight DISTINCT ramp slots (the ramp is 12, it must not repeat)", () => {
+    renderTile(
+      ready({
+        standingSeries: Array.from({ length: 8 }, (_, i) => ({
+          serverId: `srv-${i}`,
+          serverName: `Server ${i}`,
+          points: [{ bucketStart: BUCKET_A, value: 100 + i }],
+        })),
+      }),
+    );
+    const strokes = captured.lines.map((line) => line.stroke);
+    expect(strokes).toHaveLength(8);
+    expect(new Set(strokes).size).toBe(8);
+    for (const stroke of strokes) expect(stroke).toMatch(/^var\(--chart-\d+\)$/);
   });
 });
 
@@ -343,16 +466,18 @@ describe("HeroFootprintTile — the props that actually reach the chart", () => 
   });
 
   test("the accessible description never states the fleet total over the PLOTTED server count", () => {
-    // The total is standing (whole fleet); the lines are only the servers scanned in this window, so
-    // the two counts are stated as two separate facts.
+    // The total is the whole fleet's current surface; the lines are one per MEASURED server, so the
+    // two counts stay two separate facts. WP 2.3 changed only the second clause's WORDING: the lines
+    // are no longer window-scoped, so "plotted in this window" would now be false — it says what
+    // each line's value actually is instead.
     renderTile(
       ready({
         totalTokens: 255_751,
-        perServer: [{ serverId: "srv_only", serverName: "Only", points: [] }],
+        standingSeries: [{ serverId: "srv_only", serverName: "Only", points: [] }],
       }),
     );
     expect(captured.charts[0]?.accessibleDescription).toBe(
-      "Fleet total 255,751 tokens; 1 server plotted in this window",
+      "Fleet total 255,751 tokens; 1 server plotted, each held at its last successful scan",
     );
   });
 });

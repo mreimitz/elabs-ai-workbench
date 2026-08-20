@@ -140,6 +140,9 @@ import { SurfaceMixTile } from "./SurfaceMixTile";
 function footprint(over: Partial<FootprintData> = {}): FootprintData {
   return {
     perServer: [],
+    // WP 2.3 contract additions — `SurfaceMixTile` reads neither; pinned empty so it stays that way.
+    standingSeries: [],
+    unmeasuredServers: [],
     totalTokens: 200_000,
     deltaTokens: null,
     firstTimeServers: 0,

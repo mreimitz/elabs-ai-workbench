@@ -21,6 +21,7 @@ import {
   buildCostByBasis,
   buildFootprintData,
   buildRunHealthData,
+  buildStandingSeries,
   densifyCounts,
   pickSeriesPerServer,
   previousRange,
@@ -567,6 +568,257 @@ describe("buildFootprintData — the footprint is a STANDING measurement, the tr
       ]),
     );
     expect(data?.latestMeasuredAt).toBe("2026-07-31T00:00:00.000Z");
+  });
+});
+
+describe("buildFootprintData — WP 2.3: the CHART plots every server, carried from its last success", () => {
+  // Owner, 2026-08-20: "fleet footprint shows only scanned MCP servers which have been scanned
+  // during the selected time and the result drops if a scan wasnt successfull. but we should show
+  // all MCP servers there and get the number from the last successfull scan."
+  //
+  // Two independent defects sat behind that sentence, and each has its own test below: the lines
+  // were built from the RANGE-SCOPED response (so a server nobody scanned this week vanished), and
+  // they plotted measured points only (so a FAILED scan broke the line or dragged it down).
+  //
+  // Note what is deliberately NOT changed: `perServer` keeps its window-scoped, measured-only
+  // meaning, because `MoversTile` subtracts its last two points to rank movement — carrying a value
+  // forward there would turn every quiet server into a fabricated "moved by 0" and empty that tile.
+
+  test("a server whose ONLY scan predates the window is still plotted (population is standing)", () => {
+    const standing = scanResponse([
+      scanSeries("old", "Long-quiet server", [
+        measured("2026-06-01T00:00:00.000Z", 628, {
+          deltaTotalTokens: null,
+          deltaComparable: false,
+        }),
+      ]),
+    ]);
+    // The window contains nothing at all — the exact shape that used to erase the chart.
+    const data = buildFootprintData(standing, [], scanResponse([]));
+    expect(data?.noActivityInWindow).toBe(true);
+    expect(data?.perServer).toEqual([]);
+    expect(data?.standingSeries).toEqual([
+      {
+        serverId: "old",
+        serverName: "Long-quiet server",
+        points: [{ bucketStart: "2026-06-01T00:00:00.000Z", value: 628 }],
+      },
+    ]);
+  });
+
+  test("a FAILED scan holds the previous value — the line neither breaks nor drops", () => {
+    // The real `mcp-assets` shape: success, success, then a failed scan. A second server keeps
+    // scanning afterwards, so the shared axis runs past the failure and the carry is observable.
+    const data = buildFootprintData(
+      scanResponse([
+        scanSeries("assets", "mcp-assets", [
+          measured("2026-07-01T00:00:00.000Z", 600, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+          measured("2026-07-02T00:00:00.000Z", 628, {
+            deltaTotalTokens: 28,
+            deltaComparable: true,
+          }),
+          unmeasured("2026-07-03T00:00:00.000Z"),
+        ]),
+        scanSeries("other", "Other", [
+          measured("2026-07-04T00:00:00.000Z", 100, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+        ]),
+      ]),
+    );
+    const assets = data?.standingSeries.find((entry) => entry.serverId === "assets");
+    expect(assets?.points).toEqual([
+      { bucketStart: "2026-07-01T00:00:00.000Z", value: 600 },
+      { bucketStart: "2026-07-02T00:00:00.000Z", value: 628 },
+      // The failed bucket contributes no axis position of its own (nothing was measured there), and
+      // the line runs on at its last GOOD figure — never 0, never a break, never a dive.
+      { bucketStart: "2026-07-04T00:00:00.000Z", value: 628 },
+    ]);
+    for (const point of assets?.points ?? []) expect(point.value).toBeGreaterThan(0);
+  });
+
+  test("nothing is invented BEFORE a server's first successful scan (no back-fill with 0)", () => {
+    const data = buildFootprintData(
+      scanResponse([
+        scanSeries("early", "Early", [
+          measured("2026-07-01T00:00:00.000Z", 1_000, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+          measured("2026-07-03T00:00:00.000Z", 1_200, {
+            deltaTotalTokens: 200,
+            deltaComparable: true,
+          }),
+        ]),
+        scanSeries("late", "Late", [
+          measured("2026-07-03T00:00:00.000Z", 50, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+        ]),
+      ]),
+    );
+    const late = data?.standingSeries.find((entry) => entry.serverId === "late");
+    // The shared axis has two positions; `late` starts at its first measurement, not at the axis.
+    expect(late?.points).toEqual([{ bucketStart: "2026-07-03T00:00:00.000Z", value: 50 }]);
+    expect(late?.points.some((point) => point.bucketStart === "2026-07-01T00:00:00.000Z")).toBe(
+      false,
+    );
+  });
+
+  test("a server with NO successful scan is NAMED, never plotted (not even as a 0 line)", () => {
+    const data = buildFootprintData(
+      scanResponse([
+        scanSeries("a", "Alpha", [
+          measured("2026-07-01T00:00:00.000Z", 100, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+        ]),
+        // Scanned repeatedly, never successfully — it has no honest value to draw.
+        scanSeries("failing", "All-failing", [unmeasured("2026-07-02T00:00:00.000Z")]),
+      ]),
+      [server("a", "Alpha"), server("failing", "All-failing"), server("never", "Never scanned")],
+    );
+    expect(data?.standingSeries.map((entry) => entry.serverId)).toEqual(["a"]);
+    expect(data?.unmeasuredServers).toEqual([
+      { serverId: "failing", serverName: "All-failing" },
+      { serverId: "never", serverName: "Never scanned" },
+    ]);
+    // …and the fleet total is untouched by either of them — no zero was added to anything.
+    expect(data?.totalTokens).toBe(100);
+  });
+
+  test("`unmeasuredServers` is empty when every configured server has been measured", () => {
+    const data = buildFootprintData(
+      scanResponse([
+        scanSeries("a", "Alpha", [
+          measured("2026-07-01T00:00:00.000Z", 100, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+        ]),
+      ]),
+      [server("a", "Alpha")],
+    );
+    expect(data?.unmeasuredServers).toEqual([]);
+  });
+
+  test("with NO server catalog nothing is claimed about servers — the exclusion list stays empty", () => {
+    // The catalog is the only thing that knows a server exists; without it, inventing an exclusion
+    // would be as dishonest as inventing a measurement.
+    const data = buildFootprintData(
+      scanResponse([
+        scanSeries("a", "Alpha", [
+          measured("2026-07-01T00:00:00.000Z", 100, {
+            deltaTotalTokens: null,
+            deltaComparable: false,
+          }),
+        ]),
+      ]),
+    );
+    expect(data?.unmeasuredServers).toEqual([]);
+  });
+
+  test("the window still decides `perServer` and `noActivityInWindow` — only the CHART went standing", () => {
+    const standing = scanResponse([
+      scanSeries("a", "Alpha", [
+        measured("2026-07-01T00:00:00.000Z", 100_000, {
+          deltaTotalTokens: null,
+          deltaComparable: false,
+        }),
+        measured("2026-07-20T00:00:00.000Z", 120_000, {
+          deltaTotalTokens: 20_000,
+          deltaComparable: true,
+        }),
+      ]),
+    ]);
+    const windowed = scanResponse([
+      scanSeries("a", "Alpha", [
+        measured("2026-07-20T00:00:00.000Z", 120_000, {
+          deltaTotalTokens: 20_000,
+          deltaComparable: true,
+        }),
+      ]),
+    ]);
+    const data = buildFootprintData(standing, [], windowed);
+    // The window's raw trace: one point (what `MoversTile`/`StartupCostTile` read).
+    expect(data?.perServer[0]?.points).toEqual([
+      { bucketStart: "2026-07-20T00:00:00.000Z", value: 120_000 },
+    ]);
+    // The chart's standing line: the whole history.
+    expect(data?.standingSeries[0]?.points).toHaveLength(2);
+    expect(data?.noActivityInWindow).toBe(false);
+  });
+});
+
+describe("buildStandingSeries — last observation carried forward, over one shared axis", () => {
+  const series = (
+    serverId: string,
+    points: { bucketStart: string; value: number }[],
+  ): Parameters<typeof buildStandingSeries>[0][number] => ({
+    serverId,
+    serverName: serverId.toUpperCase(),
+    points,
+    // Only `serverId`/`serverName`/`points` are read; the rest of `ServerFootprint` is irrelevant
+    // here and is filled with values that would be obviously wrong if it ever WERE read.
+    latest: measured("1970-01-01T00:00:00.000Z", -1, {
+      deltaTotalTokens: null,
+      deltaComparable: false,
+    }) as never,
+    deltaTokens: null,
+    firstMeasured: false,
+  });
+
+  test("every series is defined at every axis position at or after its own first measurement", () => {
+    const out = buildStandingSeries([
+      series("a", [
+        { bucketStart: "2026-07-01T00:00:00.000Z", value: 10 },
+        { bucketStart: "2026-07-05T00:00:00.000Z", value: 12 },
+      ]),
+      series("b", [{ bucketStart: "2026-07-03T00:00:00.000Z", value: 99 }]),
+    ]);
+    expect(out[0]?.points).toEqual([
+      { bucketStart: "2026-07-01T00:00:00.000Z", value: 10 },
+      { bucketStart: "2026-07-03T00:00:00.000Z", value: 10 }, // carried across b's scan
+      { bucketStart: "2026-07-05T00:00:00.000Z", value: 12 }, // steps only on a real measurement
+    ]);
+    expect(out[1]?.points).toEqual([
+      { bucketStart: "2026-07-03T00:00:00.000Z", value: 99 },
+      { bucketStart: "2026-07-05T00:00:00.000Z", value: 99 }, // held, not dropped
+    ]);
+  });
+
+  test("the axis is sorted chronologically whatever order the points arrive in", () => {
+    const out = buildStandingSeries([
+      series("a", [
+        { bucketStart: "2026-07-05T00:00:00.000Z", value: 12 },
+        { bucketStart: "2026-07-01T00:00:00.000Z", value: 10 },
+      ]),
+    ]);
+    expect(out[0]?.points.map((point) => point.bucketStart)).toEqual([
+      "2026-07-01T00:00:00.000Z",
+      "2026-07-05T00:00:00.000Z",
+    ]);
+    expect(out[0]?.points.map((point) => point.value)).toEqual([10, 12]);
+  });
+
+  test("no series carries a value before its own first measurement, and none is ever 0", () => {
+    const out = buildStandingSeries([
+      series("early", [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 5 }]),
+      series("late", [{ bucketStart: "2026-07-09T00:00:00.000Z", value: 7 }]),
+    ]);
+    expect(out[1]?.points).toEqual([{ bucketStart: "2026-07-09T00:00:00.000Z", value: 7 }]);
+    for (const entry of out)
+      for (const point of entry.points) expect(point.value).toBeGreaterThan(0);
+  });
+
+  test("an empty population yields an empty chart, not a fabricated axis", () => {
+    expect(buildStandingSeries([])).toEqual([]);
   });
 });
 
