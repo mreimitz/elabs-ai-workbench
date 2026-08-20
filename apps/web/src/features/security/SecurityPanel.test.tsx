@@ -212,7 +212,11 @@ describe("SecurityPanel — A3/D-SP23: a clean subject gets a real answer", () =
     renderPanel({ status: "data", data: report() });
     expect(screen.getByText("Nothing found")).toBeTruthy();
     expect(
-      screen.getByText(/security rules ran under analyzer v1 and reported 0 findings/),
+      screen.getByText(
+        new RegExp(
+          `security rules ran under analyzer v${SECURITY_ANALYZER_VERSION} and reported 0 findings`,
+        ),
+      ),
     ).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
   });

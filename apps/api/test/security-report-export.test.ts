@@ -7,6 +7,7 @@ import Database from "better-sqlite3";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import {
+  SECURITY_ANALYZER_VERSION,
   SECURITY_FINDING_LIMIT,
   SECURITY_REDACTION_MARKER,
   type ScanDetail,
@@ -321,7 +322,7 @@ test("A1 — GET /api/reports/scan/:id/json carries the posture section, counts 
   assert.deepEqual(section.report.findings, direct.findings);
   assert.deepEqual(section.report.counts, direct.counts);
   assert.deepEqual(section.report.score, direct.score);
-  assert.equal(section.report.analyzerVersion, 1);
+  assert.equal(section.report.analyzerVersion, SECURITY_ANALYZER_VERSION);
   assert.ok(
     section.report.counts.total > 0,
     "the fixture produced no findings, so this proves nothing",
