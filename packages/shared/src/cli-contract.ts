@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { SuiteRun, SuiteRunMember } from "./types.js";
 
 // ==================================================================================================
 // `mcpfp` CLI contract — the machine-output envelope, the exit codes, and the config file shape
@@ -129,3 +130,38 @@ export function createMcpfpOutput<T>(input: {
     data: input.data,
   };
 }
+
+// ── `mcpfp suite run` (WP 2.1) ────────────────────────────────────────────────────────────────────
+//
+// **D-C11 — the command WAITS by default, waits by POLLING, and maps a terminal suite-run status
+// onto an exit code.** A CI step that fires and forgets cannot gate anything, so waiting is the
+// default and `--no-wait` is the deliberate opt-out. It polls `GET /api/suite-runs/:id` rather than
+// consuming the SSE stream: an event-stream parser is exactly the dependency this CLI does not have
+// (D-C5), and the stream is the fragile half of the transport through proxies and CI runners. The
+// run happens in the API either way.
+//
+// `MCPFP_OUTPUT_VERSION` stays **1**: a new command putting a new `data` in the existing envelope is
+// precisely what `data` is for.
+
+/** How often `mcpfp suite run` re-reads the suite run while waiting. */
+export const MCPFP_SUITE_RUN_POLL_INTERVAL_MS = 5_000;
+
+/** Total wait budget for `mcpfp suite run` when `--wait` is not given. */
+export const MCPFP_SUITE_RUN_DEFAULT_WAIT_MS = 1_800_000; // 30 minutes
+
+/** Members `mcpfp suite run` lists in the HUMAN rendering. `--format json` carries all of them. */
+export const MCPFP_SUITE_RUN_MEMBER_ROWS = 10;
+
+/**
+ * `mcpfp suite run --format json`'s `data` (D-C12). Two API reads, composed here rather than in the
+ * command, because no single endpoint returns both and WP 2.2's PR artifact needs the member rows.
+ * Neither half is re-shaped by the CLI: `suiteRun` is `GET /api/suite-runs/:id` verbatim and
+ * `members` is `GET /api/suite-runs/:id/members` verbatim.
+ *
+ * `members` is `[]` under `--no-wait` — the run has not produced any yet, and an empty array is the
+ * honest answer rather than an absent field a consumer would have to special-case.
+ */
+export type McpfpSuiteRunResult = {
+  suiteRun: SuiteRun;
+  members: SuiteRunMember[];
+};
