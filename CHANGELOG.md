@@ -4,6 +4,102 @@ All notable changes to MCP Token Footprint. This project is single-owner and ver
 authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the `roadmap/*/STATUS.md`
 ledgers. Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — headless automation: the bench is operable by machines
+
+The **CI & headless automation** workstream is complete (all 11 WPs, Phases 1–3 + Phase MCP,
+decisions **D-C1–D-C22** and **D-MCP1–D-MCP13**), and **security-posture Phase 1** landed with it
+(WPs 1.1–1.2, decisions **D-SP1–D-SP11**). Everything the bench measures is now reachable three ways
+— over MCP, from a terminal, and from a build pipeline — through the same API, so all three give the
+same numbers. Authoritative per-WP state: [`roadmap/ci/STATUS.md`](./roadmap/ci/STATUS.md) and
+[`roadmap/security-posture/STATUS.md`](./roadmap/security-posture/STATUS.md).
+
+**The workbench MCP server can now act, not only read.** The `/api/mcp` mount grew three write tools
+— `scan_run` (`scan:run`), `suite_run_start` (`suites:run`), `run_plan_start` (`runs:launch`) — one
+per execute scope in the frozen D-C4 vocabulary, each re-projecting a service the HTTP API already
+exposes. A write tool answers with a **ticket, not an outcome**, and names the read tool that polls
+it; both launch tools carry the launcher's own advisory cost estimate (`buildRunPlanEstimate`,
+re-projected by import). `run_plan_start` refuses `source: "suite"` twice — the enum has no such
+member and the handler names `suite_run_start` — so `runs:launch` is never a back door onto a saved
+suite. **Nothing on the surface deletes, prunes, revokes or edits configuration, at any scope, at any
+phase** (D-MCP3, made mechanical by a test over the registered tool names). WP M.2's scope gate
+absorbed the first tools that actually need it with **zero change to itself**. The mount now measures
+**24 tools · 2,749 definition tokens** against the **unchanged** 3,000 budget.
+`createWorkbenchMcpServer`'s `caller` parameter lost its allow-everything default (D-MCP13) — a
+default-open parameter in an authorization path is a latent privilege escalation.
+
+**`mcpfp suite run`** starts a saved suite's matrix and waits for it by **polling**, not by consuming
+the SSE stream (an event-stream parser is exactly the dependency D-C5 refuses). `completed` exits
+**0**; `error`, `capped`, `stopped` and an exhausted wait budget all exit **2**; nothing here can emit
+`1`, which stays reserved to `mcpfp assert`. The wait covers the post-run **rating** as well as the
+terminal status, so a summary is never published while member grades are still landing.
+
+**Suite/grade assertions + the PR-comment artifact.** Two new rules — `min-suite-score` and
+`max-suite-cost` — over a suite run named by `{suite}` or `{suiteRun}`. A gate document stays
+**single-family**: one target, one family of rules, with the validation error naming *every* offending
+rule index, so "the footprint moved" and "the scores dropped" stay two answers in a build log. A
+**named** baseline is now always resolved and echoed even when no rule needs one (D-C14), so the
+artifact always has a delta to state. `renderAssertionMarkdown` is one pure function in
+`packages/shared` — not a second endpoint, not a CLI copy — and `mcpfp assert --format markdown`
+renders it; **the format never changes the exit code**. A suite gate **refuses a run that is not
+`completed` and settled**, an absent `ratingState` failing closed: a half-graded matrix read as a mean
+score would report a quality regression that is really grading latency.
+
+**Security posture, and a gate on it.** `packages/shared/src/security-posture.ts` declares a frozen
+**eleven-rule** server registry (4 `error` · 4 `warning` · 3 `info`), the finding/report/score shapes,
+and five pure functions — one score, one total order, one evidence redactor, one cap, and a finding
+factory that reads severity from the registry so a rule can never choose its own (D-SP5). The
+analyzer (`apps/api/src/security/`) serves `GET /api/scans/:scanId/security`: eleven deterministic
+rules over an already-persisted scan, **computed on read and persisted nowhere** (no migration, no
+table, no column), byte-stable for the same input, refusing a non-`success` scan with a 400 rather
+than scoring a partial tool list. Evidence is redacted **by construction** — invisible characters
+escaped so they are visible (a poisoning rule's whole job is to surface what you cannot see),
+credential-shaped runs masked *after* escaping so an injected zero-width space cannot split a token
+past the matcher, then truncated. The one credential read is `OAuthRepository.listGrantedScopes` —
+scope **names** only, never token material (**D-SP9, owner-reviewable**). Three of the plan's own
+near-miss fixtures forced the *matchers* to be tightened rather than the tests weakened: "will ignore
+previous drafts" is silent, `list_deleted_items` with `readOnlyHint: true` is silent, and
+`token_count` / `access_key_id` are silent while `secret_access_key` still fires.
+
+`no-new-security-findings` closes the loop: **"new" is set membership by `(ruleId, anchor)`, never a
+count** (D-C20). A count comparison would pass a release that resolved one finding and introduced a
+worse one, so the guardrail fixture has total, per-severity **and** per-rule counts identical on both
+sides. Evidence text is deliberately outside the identity — a reworded description that still trips
+the same rule on the same tool is the *same* finding, and a gate that fired on rewording gets switched
+off within a week. The default floor is `warning` (D-C21): hygiene does not break builds. A truncated
+report on either side is a **400**, never a fallback to counts.
+
+**CI packaging.** [`examples/github-actions/`](./examples/github-actions/) ships two copyable
+workflows — an ephemeral workbench on the runner and a persistent shared one — plus the two gate files
+they reference and [`user-guide/23-ci-github-actions.md`](./user-guide/23-ci-github-actions.md). They
+ship as **examples, not live workflows**: this repo has no workbench to run them against, and a
+permanently skipped gate in the repo that publishes gates is worse than no gate (D-C17). A text test
+holds them honest instead — pinned action majors from an allow-list, the CLI called only as
+`node apps/cli/dist/index.js` (D-C19 — `pnpm --silent` collapses exit 2 onto 1), measure and assert as
+separate steps, nothing credential-shaped, and **every shipped gate file still parsing against
+`assertionDocumentSchema`**. The ephemeral topology is documented with what it *cannot* gate: a fresh
+database has no history, so every baseline rule skips on every run.
+
+**Docs.** README gained a **"Drive it without a browser"** section (the three surfaces, the permission
+model, the exit-code contract); its section 10 and `CLAUDE.md`'s capability rows were corrected — both
+still described a read-only mount at 21 tools · 2,224 tokens. Two stale claims that a root
+`.github/workflows/ci.yml` runs the quality gate were removed from README (there is no `ci.yml`; the
+repo's only workflow is `mcp-self-scan.yml`), and `mcpfp assert`'s scope documentation was corrected
+in three places — since WP M.2 it needs only `read`.
+
+**No migration, no new runtime dependency, no new environment variable, and no change to the scope
+vocabulary** anywhere in this wave. `pnpm-lock.yaml` is byte-identical.
+
+Gate green on merged `main`: typecheck · build · **shared 152 · cli 87 · api 3,467 · web 3,574**
+tests · `pnpm mcp:self-scan` within budget. `pnpm test` and `pnpm lint` exit non-zero on **only** the
+pre-existing failures that predate this wave — 7 stale-model-roster tests
+(`compatibility-runner` / `compatibility-tool-findings` / `compatibility-session`) and 2 research JSON
+files over Biome's 1 MiB size cap.
+
+**Owner-acceptance pending**, tracked in both ledgers. The three that matter: the example workflows
+have **never been executed by GitHub Actions**; the security heuristics were reviewed against fixtures
+and **never against a corpus of real third-party MCP servers**, so their false-positive rate is
+unmeasured; and **D-SP9** — the one decryption-path touch in the workstream — wants explicit sign-off.
+
 ## Unreleased — design system migrated to `@elabs-ai/components-*` v4.0.0
 
 The UI design system moved off the private, vendored `@brand/*` tarballs (v1.9.0) onto the **public
