@@ -4,6 +4,7 @@ import {
   MCPFP_CONFIG_FILE_NAME,
   MCPFP_EXIT,
   MCPFP_OUTPUT_VERSION,
+  MCPFP_SUITE_RUN_DEFAULT_WAIT_MS,
   type McpfpExitCode,
 } from "@mcp-token-footprint/shared";
 import { createClient } from "./client.js";
@@ -14,6 +15,7 @@ import { isReportTarget, reportTargetTakesId, runReportCommand } from "./command
 import { runScanCommand } from "./commands/scan.js";
 import { runScansCommand } from "./commands/scans.js";
 import { runServersCommand } from "./commands/servers.js";
+import { runSuiteRunCommand } from "./commands/suite-run.js";
 import { resolveConfig } from "./config.js";
 import { CliError, describeUnexpectedError } from "./errors.js";
 import { renderCommandUsage, renderUsage } from "./help.js";
@@ -50,9 +52,11 @@ const SUPPORTED_FORMATS: Record<string, readonly OutputFormat[]> = {
   servers: ["human", "json"],
   scans: ["human", "json"],
   "config show": ["human", "json"],
-  // `markdown` is deliberately absent: the PR-comment artifact is WP 2.2's, and offering the flag
-  // before it exists would mean writing a human table into a file a later step tried to parse.
+  // `markdown` is deliberately absent from both of these: the PR-comment artifact is WP 2.2's, and
+  // offering the flag before it exists would mean writing a human table into a file a later step
+  // tried to parse as the artifact.
   assert: ["human", "json"],
+  "suite run": ["human", "json"],
 };
 
 export async function runCli(context: CliContext): Promise<McpfpExitCode> {
@@ -129,6 +133,9 @@ const OPTIONS = {
   scan: { type: "string" },
   baseline: { type: "string" },
   file: { type: "string" },
+  // `suite run` only (WP 2.1): the wait budget, and the opt-out from waiting at all (D-C11).
+  wait: { type: "string" },
+  "no-wait": { type: "boolean" },
   quiet: { type: "boolean" },
   help: { type: "boolean" },
   version: { type: "boolean" },
@@ -145,6 +152,8 @@ type ParsedValues = {
   scan?: string | undefined;
   baseline?: string | undefined;
   file?: string | undefined;
+  wait?: string | undefined;
+  "no-wait"?: boolean | undefined;
   quiet?: boolean | undefined;
 };
 
@@ -170,6 +179,17 @@ async function dispatch(
     if (values[flag] !== undefined && command !== "assert") {
       throw new CliError(`\`--${flag}\` only applies to \`mcpfp assert\`.`);
     }
+  }
+  for (const flag of ["wait", "no-wait"] as const) {
+    if (values[flag] !== undefined && command !== "suite") {
+      throw new CliError(`\`--${flag}\` only applies to \`mcpfp suite run\`.`);
+    }
+  }
+  // Naming both is not a preference the CLI can honour: one says "wait this long", the other says
+  // "do not wait". Silently letting `--no-wait` win would make a `--wait 600` in a pipeline look
+  // like it was respected.
+  if (values.wait !== undefined && values["no-wait"] === true) {
+    throw new CliError("`--wait` and `--no-wait` contradict each other — pass only one.");
   }
 
   const config = resolveConfig({ flags: values, env: context.env, cwd: context.cwd });
@@ -210,6 +230,11 @@ async function dispatch(
         scan: values.scan,
         baseline: values.baseline,
       });
+    case "suite-run":
+      return runSuiteRunCommand(commandContext, route.suiteRef, {
+        wait: values["no-wait"] !== true,
+        waitMs: resolveWaitMs(values.wait),
+      });
     case "report":
       await runReportCommand(commandContext, route.target, route.id);
       return MCPFP_EXIT.success;
@@ -227,6 +252,7 @@ async function dispatch(
 
 type Route =
   | { kind: "scan"; name: string; formatKey: string; serverRef: string }
+  | { kind: "suite-run"; name: string; formatKey: string; suiteRef: string }
   | { kind: "assert"; name: string; formatKey: string; file: string | undefined }
   | {
       kind: "report";
@@ -249,6 +275,26 @@ function routeFor(command: string, args: string[]): Route {
       });
     }
     return { kind: "scan", name: "scan", formatKey: "scan", serverRef };
+  }
+
+  if (command === "suite") {
+    // One subcommand today, and the same shape as `config`: a missing or wrong one is a named usage
+    // error rather than a command that quietly does nothing.
+    if (args[0] !== "run") {
+      throw new CliError(
+        args[0] === undefined
+          ? "`mcpfp suite` needs a subcommand. The only one is `run`."
+          : `Unknown suite subcommand "${args[0]}". The only one is \`run\`.`,
+        { details: [renderCommandUsage("suite run")] },
+      );
+    }
+    const suiteRef = args[1];
+    if (suiteRef === undefined) {
+      throw new CliError("`mcpfp suite run` needs a suite id or exact name.", {
+        details: [renderCommandUsage("suite run")],
+      });
+    }
+    return { kind: "suite-run", name: "suite run", formatKey: "suite run", suiteRef };
   }
 
   if (command === "assert") {
@@ -316,6 +362,23 @@ function resolveFormat(requested: string | undefined, formatKey: string): Output
     );
   }
   return requested;
+}
+
+/**
+ * `--wait <seconds>` → milliseconds. **Seconds, not milliseconds**, because a wait budget is a thing
+ * a person types by hand; `--timeout` stays in ms because it mirrors an environment variable that
+ * already was. A non-numeric, fractional or non-positive value is a `2` naming the flag — never a
+ * silent fall back to the 30-minute default, which in CI would look like the budget was honoured.
+ */
+function resolveWaitMs(raw: string | undefined): number {
+  if (raw === undefined) return MCPFP_SUITE_RUN_DEFAULT_WAIT_MS;
+  const seconds = Number(raw);
+  if (!Number.isInteger(seconds) || seconds <= 0) {
+    throw new CliError(
+      `\`--wait\` takes a positive whole number of seconds; got "${raw}".`,
+    );
+  }
+  return seconds * 1000;
 }
 
 /**
