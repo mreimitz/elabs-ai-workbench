@@ -53,7 +53,7 @@ import { WaitingForYouCard } from "./testing/WaitingForYouCard";
  * The band is gone with it. What remains is the FACET row — provider / server / environment / model
  * / suite / group-by, genuinely this tab's own — rendered frame-light (no `bg-card`, no border, no
  * gutter bleed) so it reads as this tab's content rather than a second chrome band under the page's
- * one toolbar (`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB2).
+ * one toolbar (`planning/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB2).
  *
  * DATA FLOW: `useTestingCatalog` fetches servers/environments/suites/tests ONCE (facet options +
  * leaderboard/expensive-run labels); `useTestingMetrics` re-fetches the whole metrics batch whenever

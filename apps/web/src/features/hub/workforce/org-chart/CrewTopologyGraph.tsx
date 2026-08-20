@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX9) — the STANDALONE, compact single-crew
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP2.5 · D-HUX9) — the STANDALONE, compact single-crew
 // topology renderer. WP2.4's crew-profile "Topology" section drops this in to preview how a crew will
 // execute (the same visual the Org chart tab draws inside each crew container). It reuses the shared
 // pure `buildCrewMemberLayout` + `buildCrewTopologyEdges`, so it stays dependency-light: WP2.4 imports

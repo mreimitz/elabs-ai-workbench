@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.4, §1.7 / R-UX5) — the citation surfaces: inline `[n]`
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.4, §1.7 / R-UX5) — the citation surfaces: inline `[n]`
 // chips woven into an answer, a per-message `Sources` panel, and a session-wide source rail. All three
 // resolve against the settled message's `citations[]` (the API post-pass guarantees every `[n]` a real
 // source — `hub/citations.ts`), so a marker with no matching citation renders as PLAIN TEXT, never a

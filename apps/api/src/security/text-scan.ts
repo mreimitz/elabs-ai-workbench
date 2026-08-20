@@ -1,4 +1,4 @@
-// The shared text heuristics (roadmap/security-posture/, WP 1.3 · **D-SP14**) — the ONE definition of
+// The shared text heuristics (planning/Roadmap/RM-20-security-posture/, WP 1.3 · **D-SP14**) — the ONE definition of
 // the three questions both analyzers ask of a block of untrusted text.
 //
 // "Does this text tell the model to override its instructions?", "does it carry a block addressed to

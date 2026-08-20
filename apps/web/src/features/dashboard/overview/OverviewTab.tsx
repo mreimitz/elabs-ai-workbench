@@ -42,7 +42,7 @@ import { useOverviewData } from "./use-overview-data";
  * 1. **The window control left.** It used to be a preset-only `ToggleGroup` in a `bg-card` band
  *    pinned inside this tab — a toolbar BELOW the tab strip, which is the inversion of the app's
  *    written order (breadcrumb → ONE toolbar row → content;
- *    `roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`, and `SkillInspector.tsx:538` as the built
+ *    `planning/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md`, and `SkillInspector.tsx:538` as the built
  *    reference). The range now lives in ONE page-level `ViewToolbar` above the tab strip
  *    (`DashboardView`), is a richer preset+calendar control, and scopes the Testing and Issues tabs
  *    too. This tab simply RECEIVES the resolved window.

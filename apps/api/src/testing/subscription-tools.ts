@@ -1,4 +1,4 @@
-// Claude subscription MCP-tool wiring (roadmap/claude-subscription/, WP 1.3).
+// Claude subscription MCP-tool wiring (planning/Roadmap/RM-09-claude-subscription/, WP 1.3).
 //
 // The subscription run path (claude-subscription-executor.ts) drives the owner's signed-in Claude
 // through the Agent SDK. Unlike the AI-SDK path — which builds ONE AI-SDK tool per allow-listed MCP

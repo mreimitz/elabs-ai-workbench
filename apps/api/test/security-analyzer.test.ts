@@ -45,7 +45,7 @@ import {
 import { registerSecurityRoutes } from "../src/security/routes.js";
 import { type SecurityAnalyzerPorts, analyzeScan } from "../src/security/service.js";
 
-// The server security analyzer (roadmap/security-posture/ WP 1.2 — A1..A13).
+// The server security analyzer (planning/Roadmap/RM-20-security-posture/ WP 1.2 — A1..A13).
 //
 // The analyzer is pure (D-SP7), so most of this file hands it plain `ScanDetail`/`ToolScan` objects
 // and never opens a database. **Every rule has a POSITIVE fixture and a NEAR-MISS NEGATIVE fixture**
@@ -823,7 +823,7 @@ test("A5 (D-SP6) — the order the SERVER listed its tools in cannot change the 
 });
 
 test("A6 (D-SP7) — analyzeScanTools is pure: data in, findings out", () => {
-  // The signature takes ONLY data, which is what lets roadmap/ci/ WP 3.1 call it with the ScanDetail
+  // The signature takes ONLY data, which is what lets planning/Roadmap/RM-08-ci/ WP 3.1 call it with the ScanDetail
   // the assertions engine already holds instead of round-tripping through HTTP.
   const findings = analyzeScanTools({ scan: scan([CLEAN_TOOL]), oauthScopes: null });
   assert.deepEqual(findings, []);

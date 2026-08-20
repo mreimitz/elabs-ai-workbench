@@ -1,5 +1,5 @@
 // Assistant (WP 0.1) — persistence for the embedded Claude agent chat feature
-// (roadmap/assistant/00-plan.md §4, decisions D-AS1…D-AS18). This repository owns the three
+// (planning/Roadmap/RM-02-assistant/00-plan.md §4, decisions D-AS1…D-AS18). This repository owns the three
 // migration-v20 tables (`assistant_credentials`, `assistant_threads`, `assistant_events`) and is the
 // ONLY code in the app that touches them directly — later WPs (session engine WP 1.1, auth routes
 // WP 0.2, permission protocol WP 2.1) build on top of it rather than querying SQLite themselves.

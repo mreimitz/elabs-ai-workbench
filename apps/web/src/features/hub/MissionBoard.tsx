@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7 · D-AH8/D-AH9 · R-UX4/R-UX9) — the live MISSION BOARD,
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7 · D-AH8/D-AH9 · R-UX4/R-UX9) — the live MISSION BOARD,
 // rendered IN-BAND in the transcript once a mission is approved/running/done. It reconstructs its whole
 // state from the parent session's event log ALONE (R-SES1) — the same invariant the API's
 // `hub/missions/board.ts` reducer holds; `reconstructMissionBoard` here is the web mirror.

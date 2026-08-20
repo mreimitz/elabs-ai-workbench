@@ -69,7 +69,7 @@ type FormState = {
   oauthClientId: string;
   oauthClientSecret: string;
   customHeadersText: string;
-  // Server type assignment (roadmap/server-types, D-ST5 — a label + status, never config/secrets).
+  // Server type assignment (planning/Roadmap/completed/RM-21-server-types, D-ST5 — a label + status, never config/secrets).
   // `null` = Untyped. Sent on both create and update so the picker can assign OR clear a type.
   typeId: string | null;
 };
@@ -99,7 +99,7 @@ type ConnectionErrors = { url?: string; command?: string };
 export function ServerWizard(props: {
   open: boolean;
   server: ServerConfig | null;
-  /** Server types (roadmap/server-types) offered by the optional "Type" picker. Defaults to none. */
+  /** Server types (planning/Roadmap/completed/RM-21-server-types) offered by the optional "Type" picker. Defaults to none. */
   serverTypes?: ServerType[];
   onOpenChange: (open: boolean) => void;
   onCreateServer: (input: ServerConfigInput) => Promise<ServerConfig>;
@@ -164,7 +164,7 @@ export function ServerWizard(props: {
     [form.transport],
   );
 
-  // Type-picker options (roadmap/server-types WP 2.2): the "No type / Untyped" choice always leads,
+  // Type-picker options (planning/Roadmap/completed/RM-21-server-types WP 2.2): the "No type / Untyped" choice always leads,
   // then every server type with its lifecycle status inline in the label. Rendered even with zero
   // types so "No type" is always selectable.
   const typeOptions = useMemo(
@@ -468,7 +468,7 @@ export function ServerWizard(props: {
                 onChange={(event) => setFormValue("name", event.target.value)}
               />
             </FieldRow>
-            {/* Optional type assignment (roadmap/server-types WP 2.2). Untyped by default; the
+            {/* Optional type assignment (planning/Roadmap/completed/RM-21-server-types WP 2.2). Untyped by default; the
             option label carries the lifecycle status. Manage the list from the servers rail. */}
             <SelectField
               id="wizard-type"

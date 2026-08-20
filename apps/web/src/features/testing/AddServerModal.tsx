@@ -62,7 +62,7 @@ export function AddServerModal(props: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   servers: ServerConfig[];
-  /** Server types (roadmap/server-types) — read-only type/status per row + the attach-by-type source. */
+  /** Server types (planning/Roadmap/completed/RM-21-server-types) — read-only type/status per row + the attach-by-type source. */
   serverTypes?: ServerType[];
   latestScans: Map<string, ScanDetail>;
   existing: AllowedServer[];

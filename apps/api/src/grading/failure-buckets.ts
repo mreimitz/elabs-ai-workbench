@@ -21,7 +21,7 @@ import type { JudgeGenerate, JudgeGenerateResult } from "./judge.js";
  * failure taxonomy ({@link FailureBucket}[]) via ONE provider judge call, then persists that taxonomy as
  * DERIVED data onto the suite run's `aggregates_json`.
  *
- * HARD invariants (roadmap/benchmarks/conventions.md + the WP 3.5 spec):
+ * HARD invariants (planning/Roadmap/RM-07-benchmarks/conventions.md + the WP 3.5 spec):
  *   - NEVER unprompted. There is NO auto-trigger path — the ONLY caller is the explicit
  *     `POST /api/suite-runs/:id/failure-buckets` route. The run/grade/orchestrator lifecycle never
  *     references this module (asserted by a static scan in the test).

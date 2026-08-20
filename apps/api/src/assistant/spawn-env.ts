@@ -30,7 +30,7 @@ export interface SpawnEnvOptions {
  * than merging with `process.env` (see the installed `@anthropic-ai/claude-agent-sdk` `.d.ts`,
  * `Options.env`) — so whatever this function returns *is* the child's whole environment.
  *
- * Per `.claude/rules/mcp-and-security.md` and D-AS17 (roadmap/assistant/decisions.md), the child
+ * Per `.claude/rules/mcp-and-security.md` and D-AS17 (planning/Roadmap/RM-02-assistant/decisions.md), the child
  * must carry ONLY what it needs to run the CLI and authenticate — never `MCP_SECRET_KEY`,
  * `DATABASE_PATH`, or any other app secret/config. `HOME` and `CLAUDE_CONFIG_DIR` are scoped
  * under the assistant data dir so the child never reads or writes the operator's real `~/.claude`

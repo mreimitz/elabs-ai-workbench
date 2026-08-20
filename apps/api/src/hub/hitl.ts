@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.3 — the OWNER-FOLDED GAP-A/GAP-B live HITL seam) —
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.3 — the OWNER-FOLDED GAP-A/GAP-B live HITL seam) —
 // the coordinator that bridges a RUNNING turn's tool wrapper (which awaits a decision *inside*
 // `streamText`) and the decision routes (which resolve it), plus the MCP `elicitation/create`
 // responder routing.

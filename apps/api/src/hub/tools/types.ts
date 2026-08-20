@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.5, D-AH1…D-AH20, §1.6) — the tool-registry core types.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.5, D-AH1…D-AH20, §1.6) — the tool-registry core types.
 //
 // "One registry, three sources": in-process BUILT-INS (this file's `HubBuiltinTool`), bridged MCP
 // tools (`./mcp-bridge.ts`, reusing `testing/tool-bridge.ts`'s translation), and skill-provided

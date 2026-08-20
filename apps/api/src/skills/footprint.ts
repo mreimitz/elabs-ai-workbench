@@ -2,7 +2,7 @@ import type { SkillFileKind, SkillManifest, TokenProfileId } from "@mcp-token-fo
 import { getTokenCounter } from "../token-counting/profiles.js";
 import type { TokenCounter } from "../token-counting/types.js";
 
-// Three-level token footprint for a skill version (research/skill-registry/11 + 06):
+// Three-level token footprint for a skill version (planning/Research/RS-02-skill-registry/notes/11-skill-loading-in-real-products.md + 06):
 //   L1 = name + description tokens (always-loaded metadata, from the manifest)
 //   L2 = SKILL.md body tokens (loaded when the skill triggers)
 //   L3 = sum of every OTHER text file's tokens (references/scripts/assets/other, loaded on demand)

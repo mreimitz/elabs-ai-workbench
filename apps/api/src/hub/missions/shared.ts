@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7) — pure helpers shared by the mission planner,
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7) — pure helpers shared by the mission planner,
 // orchestrator, synthesizer and board reducer. No I/O, no model calls — safe to import anywhere.
 
 import type {

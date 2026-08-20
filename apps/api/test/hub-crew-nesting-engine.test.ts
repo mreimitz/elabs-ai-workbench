@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP2.1 · D-CN1/D-CN2/D-CN3/D-CN4/D-CN6) — the RECURSION HEART of the
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP2.1 · D-CN1/D-CN2/D-CN3/D-CN4/D-CN6) — the RECURSION HEART of the
 // engine, driven entirely by STUBBED seams (injected `runAgent`/`resolveCrew`; NO real provider or MCP
 // server is ever contacted). File lives at `apps/api/test/` because the api runner globs `test/*.test.ts`.
 //

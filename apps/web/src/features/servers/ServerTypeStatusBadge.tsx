@@ -1,7 +1,7 @@
 import type { ServerTypeStatus } from "@mcp-token-footprint/shared";
 import { Badge } from "@elabs-ai/components-ui";
 
-// The lifecycle-status chip for a server TYPE (roadmap/server-types, D-ST1). This is a distinct
+// The lifecycle-status chip for a server TYPE (planning/Roadmap/completed/RM-21-server-types, D-ST1). This is a distinct
 // vocabulary from the app's process-status chip (`components/StatusBadge` over `lib/status`, which
 // maps scan/run outcomes) — production/RC/beta/deprecated describe a fleet's maturity, not a run's
 // result — so it composes the `@elabs-ai/components-ui` `Badge` with its built-in tone variants directly rather

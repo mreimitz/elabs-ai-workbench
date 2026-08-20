@@ -43,7 +43,9 @@ talks to MCP servers over **stdio** and **streamable HTTP**.
 > [`planning/Roadmap/completed/RM-29-unified-sessions/STATUS.md`](./planning/Roadmap/completed/RM-29-unified-sessions/STATUS.md)) are **authoritative** for what is
 > in-progress / done / owner-pending. This table and every other doc **link** to them rather than
 > restate per-WP state, so status lives in exactly one place. The older narrative roadmap docs
-> (`ROADMAP.md`, `planning/Roadmap/00-`…`02-`) are **historical** — see the pointer at the top of each.
+> (`ROADMAP.md`, and the MVP-era planning docs now filed under
+> [`planning/Roadmap/RM-31-mvp-footprint-analyzer/`](./planning/Roadmap/RM-31-mvp-footprint-analyzer/))
+> are **historical** — see the pointer at the top of each.
 
 1. **Connect to multiple MCP servers** and extract *all* details (`initialize`, `tools/list`,
    names, descriptions, input schemas, annotations; `resources/list`, `prompts/list`).
@@ -77,7 +79,7 @@ talks to MCP servers over **stdio** and **streamable HTTP**.
 | **Versioned DB migrations + scan/run delete + retention** | ✅ Built (`PRAGMA user_version` migrations in `db/database.ts`; `DELETE /api/scans/:id` · `DELETE /api/runs/:id`; `POST /api/maintenance/{checkpoint,vacuum,prune-scans}`; `SCAN_RETENTION_PER_SERVER`) |
 | **CI + lint** | ✅ Built (Biome via `pnpm lint`/`pnpm format`, `biome.json`). **The four-command quality gate is run locally** — the repo's only workflow is `.github/workflows/mcp-self-scan.yml` (the D-MCP5 dogfood gate); there is no `ci.yml` |
 | **Polished UI/UX** | ✅ Web UI rebuilt on the `@elabs-ai/components-*` design system (exposes 2 themes: `light` default + `dark`, plus a **System** OS-preference option; per-action busy state, error surfacing, shared formatters/components); typecheck + build green |
-| **UX overhaul — one shell, one grammar, applied to every view + the rebuilt Compare Workspace** | ✅ Built on `ux/integration` (all 34 WPs, Phases 0–5). One page shell (PageShell/PageHeader + scroll contract S22), one tab shell (TabPanel, stable strip), one status vocabulary (StatusBadge/`lib/status`), one modal system (4 dialog tiers), one form kit (`components/form/*`), one table recipe (TableToolbar + `lib/table` pinning/sticky); master-detail views (Servers/Scans/Skills/Collections) unified via the AppShell `fullBleed+secondaryContent` variant (D-UX14); workflow cross-links (scan Δ + diff-vs-previous, console turn/error/trace links, skills usage + test-this-skill, operational dashboard, launcher cost preview via additive `GET /api/estimate/run-plan`); **Compare Workspace rebuilt per audit §H** (letter-chip run identity + URL state, Summary Δ-matrix + verdict sentences, Flow LCS trace-diff + lenses, lossless drill drawer, change markers + next-steps, suite compare) — the efficiency radar deleted. Gate green throughout (web tests 68→254, API 851→867). Plan + authoritative ledger: [`planning/Roadmap/RM-30-ux-overhaul/`](./planning/Roadmap/RM-30-ux-overhaul/) ([`STATUS.md`](./planning/Roadmap/RM-30-ux-overhaul/STATUS.md), [`verification-report.md`](./planning/Roadmap/RM-30-ux-overhaul/verification-report.md)). Source of findings: [`UI-UX-AUDIT-2026-07-05.md`](./UI-UX-AUDIT-2026-07-05.md). **Owner-acceptance walk pending** (two-theme + keyboard + shell walks + a real compare-workspace decision; provider-key-only checks — live run-console replay, skill Trace, model rosters, live cost preview — listed in the ledger's Owner-acceptance section). Not yet merged to `main` (owner merges `ux/integration → main`). |
+| **UX overhaul — one shell, one grammar, applied to every view + the rebuilt Compare Workspace** | ✅ Built on `ux/integration` (all 34 WPs, Phases 0–5). One page shell (PageShell/PageHeader + scroll contract S22), one tab shell (TabPanel, stable strip), one status vocabulary (StatusBadge/`lib/status`), one modal system (4 dialog tiers), one form kit (`components/form/*`), one table recipe (TableToolbar + `lib/table` pinning/sticky); master-detail views (Servers/Scans/Skills/Collections) unified via the AppShell `fullBleed+secondaryContent` variant (D-UX14); workflow cross-links (scan Δ + diff-vs-previous, console turn/error/trace links, skills usage + test-this-skill, operational dashboard, launcher cost preview via additive `GET /api/estimate/run-plan`); **Compare Workspace rebuilt per audit §H** (letter-chip run identity + URL state, Summary Δ-matrix + verdict sentences, Flow LCS trace-diff + lenses, lossless drill drawer, change markers + next-steps, suite compare) — the efficiency radar deleted. Gate green throughout (web tests 68→254, API 851→867). Plan + authoritative ledger: [`planning/Roadmap/RM-30-ux-overhaul/`](./planning/Roadmap/RM-30-ux-overhaul/) ([`STATUS.md`](./planning/Roadmap/RM-30-ux-overhaul/STATUS.md), [`verification-report.md`](./planning/Roadmap/RM-30-ux-overhaul/verification-report.md)). Source of findings: `UI-UX-AUDIT-2026-07-05.md` — **never committed to this repository**; the findings it carried survive as the WP specs and the `verification-report.md` in the item folder. **Owner-acceptance walk pending** (two-theme + keyboard + shell walks + a real compare-workspace decision; provider-key-only checks — live run-console replay, skill Trace, model rosters, live cost preview — listed in the ledger's Owner-acceptance section). Not yet merged to `main` (owner merges `ux/integration → main`). |
 | **Testing — run engine (agent loop + MCP tool bridge, multi-provider)** | ✅ Built (API; Phase 0–2) |
 | **Testing — token/context accounting, guardrails + pricing** | ✅ Built (API; Phase 0–2; cost cap rejects unpriced models) |
 | **Testing — run persistence (full replay) + SSE streaming/run control** | ✅ Built (API; Phase 0–2; startup orphan reconciliation) |
@@ -148,12 +150,14 @@ state are the [`planning/Roadmap/RM-24-skills/STATUS.md`](./planning/Roadmap/RM-
 
 ## 2. Repository layout
 
-This repo (`elabs-ai-workbench`) currently contains one app under `mcp-token-footprint/`.
-**That folder is the project root** — `CLAUDE.md`, `.claude/`, `package.json`, and
-`pnpm-workspace.yaml` all live there.
+The repository (`elabs-ai-workbench`) **is** the project root — `CLAUDE.md`, `.claude/`,
+`package.json` and `pnpm-workspace.yaml` all live at the top level. (Older documents describe a
+`mcp-token-footprint/` subfolder holding the app; that folder no longer exists, and every path in
+this file is relative to the repository root. The npm package scope is still
+`@mcp-token-footprint/*` — the scope kept the original name, the directory did not.)
 
 ```
-mcp-token-footprint/
+elabs-ai-workbench/
 ├── apps/
 │   ├── api/        Fastify API: DB, MCP client, token counting, scans, OAuth, reports, static serving
 │   ├── cli/        `mcpfp` — a thin HTTP client of a RUNNING api (no DB, no MCP, no secrets)

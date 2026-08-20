@@ -814,7 +814,7 @@ test.skip("skill design → education layer: problems panel + legend + what-is-t
   }
 });
 
-// ── Unified Sessions (roadmap/unified-sessions/, WP3.R) — seeded session-state review ──────────────
+// ── Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.R) — seeded session-state review ──────────────
 //
 // Seeds one persisted run per (backend kind × session state) DIRECTLY into the built API's SQLite via
 // the SAME reusable harness the WP3.R conformance test proves (`apps/api/scripts/seed-sessions.ts` →
@@ -989,7 +989,7 @@ async function openNewSessionDialog(page: Page): Promise<void> {
     .click();
 }
 
-// ── Assistant Hub (roadmap/assistant-hub/, WP4.4 + WP4.1) — stubbed-model e2e flows ─────────────────
+// ── Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.4 + WP4.1) — stubbed-model e2e flows ─────────────────
 //
 // Drives the REAL hub engine (turn-engine's `streamText` tool loop; the mission planner/agent-runner/
 // synthesizer's `generateObject`/`generateText` calls) against a deterministic in-process stub model

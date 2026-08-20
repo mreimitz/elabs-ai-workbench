@@ -27,7 +27,7 @@ import {
 } from "./use-hub-models";
 
 /**
- * `HubModelPicker` — THE model picker (D-MI7, `roadmap/model-identity/` WP 4.1).
+ * `HubModelPicker` — THE model picker (D-MI7, `planning/Roadmap/RM-16-model-identity/` WP 4.1).
  * ==============================================================================================
  *
  * One component replacing four implementations across nine call sites: a two-step family/model

@@ -8,7 +8,7 @@ import { httpError } from "../utils/errors.js";
 import type { ApiTokenService } from "./service.js";
 
 /**
- * Service-token CRUD (roadmap/ci/ WP 1.1) — Settings › API tokens talks to exactly these three routes.
+ * Service-token CRUD (planning/Roadmap/RM-08-ci/ WP 1.1) — Settings › API tokens talks to exactly these three routes.
  *
  * `GET    /api/tokens`     → `{ tokens }` — redacted rows (prefix only; `ApiToken` has no secret field).
  * `POST   /api/tokens`     → `{ token, secret }` — **the only place the plaintext ever appears**.

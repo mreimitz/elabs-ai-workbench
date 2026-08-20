@@ -35,7 +35,7 @@ import { type CommandContext, emitJson } from "./context.js";
  *
  * **Nothing here decides pass or fail.** The API evaluates every rule and returns an
  * `AssertionReport`; this file reads `report.passed` / `report.counts` and renders. That is the
- * client invariant (`roadmap/ci/README.md`) — the same rules must produce the same verdict whether
+ * client invariant (`planning/Roadmap/RM-08-ci/item.md`) — the same rules must produce the same verdict whether
  * they were run from a terminal, from CI, or (later) from the workbench's own UI, and a second
  * implementation in the CLI is exactly how that stops being true.
  *

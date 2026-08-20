@@ -1,4 +1,4 @@
-// Observability — custom chart composer persistence (roadmap/observability/, WP2.7, D-OB22).
+// Observability — custom chart composer persistence (planning/Roadmap/RM-17-observability/, WP2.7, D-OB22).
 //
 // CRUD + reorder + clone over `dashboard_charts` (migration v45) — user-defined charts on the Testing
 // dashboard (measure(s) [SAME-UNIT constraint] + filter/groupBy/bucket + chart type). Mirrors

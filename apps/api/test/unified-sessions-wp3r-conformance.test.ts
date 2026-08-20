@@ -1,4 +1,4 @@
-// Unified Sessions (roadmap/unified-sessions/, WP3.R) — the label-table CONFORMANCE proof.
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.R) — the label-table CONFORMANCE proof.
 //
 // REFUTES the claim that the console renders the new session model correctly across every backend kind
 // and state. It seeds one persisted `runs` row per (kind × session state) DIRECTLY into a DB (the

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.4, D-AH7 · R-SK1…R-SK6/R-SK8) — skill ATTACHMENT
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.4, D-AH7 · R-SK1…R-SK6/R-SK8) — skill ATTACHMENT
 // resolution, the R-SK1 L1 listing-budget/demotion algorithm, and R-SK5 session-true usage. Composes
 // over the Skills registry's `SkillRepository` (`apps/api/src/skills/repository.ts`) exactly like the
 // Testing feature's `resolveAllowedSkills` (`apps/api/src/testing/scenario-service.ts`) — read-only,

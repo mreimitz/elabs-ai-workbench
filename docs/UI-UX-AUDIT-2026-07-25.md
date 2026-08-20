@@ -11,7 +11,7 @@
 
 The app is in much better shape than a list of 29 findings suggests. The design system is real and it is being used: `StatusBadge` is the only status chip in the codebase, `lib/status` is the only tone authority, tokens hold up in both themes with no raw hex, and **every icon-only button in the app has an accessible name** — I checked 124 of them and found exactly one gap. That is a better baseline than most commercial operator tools.
 
-The problem is not that standards are missing. **The problem is that the standards exist, are written down, are locked, and are only partly applied.** `roadmap/ux-overhaul/toolbar-standard-2026-07-11.md` (D-TB1–D-TB4) is a good standard. `ViewToolbar.tsx` restates it in code. `lib/table.tsx` ships a `shouldPaginate()` helper with a unit test explaining exactly the bug it prevents. Then Environments doesn't use `shouldPaginate()`, Agents & Crews still renders an H1 that D-TB1 retired, and the Dashboard filter row breaks the one rule `TableToolbar`'s own docblock puts in capital letters.
+The problem is not that standards are missing. **The problem is that the standards exist, are written down, are locked, and are only partly applied.** `planning/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md` (D-TB1–D-TB4) is a good standard. `ViewToolbar.tsx` restates it in code. `lib/table.tsx` ships a `shouldPaginate()` helper with a unit test explaining exactly the bug it prevents. Then Environments doesn't use `shouldPaginate()`, Agents & Crews still renders an H1 that D-TB1 retired, and the Dashboard filter row breaks the one rule `TableToolbar`'s own docblock puts in capital letters.
 
 So this audit is mostly not "design this better". It is "finish applying what you already decided", plus three genuine defects that are not cosmetic.
 
@@ -129,7 +129,7 @@ Three things make this the sharpest finding in the audit:
 
 1. It violates D-TB2 (*"No second header row"*), and the file's own comment at `:290` claims compliance with D-TB1/D-TB2.
 2. `ViewToolbar.tsx:55-61` gives, as its canonical MINIMAL USAGE example, **literally this view done correctly** — `left={<><SearchInput /><FilterBar /></>}` with `actions={<Button>New environment</Button>}`.
-3. `roadmap/ux-overhaul/verification-report.md:176` signs off *"D-TB2 (exactly one toolbar row): ✅ one ViewToolbar row per view"*. That sign-off is inaccurate.
+3. `planning/Roadmap/RM-30-ux-overhaul/verification-report.md:176` signs off *"D-TB2 (exactly one toolbar row): ✅ one ViewToolbar row per view"*. That sign-off is inaccurate.
 
 Compare **Sessions** and **Audit**, which do it right — search, facets, date range, count badge and the primary action all on one baseline-aligned row. Those two are the reference implementations; Environments should look like them.
 
@@ -381,7 +381,7 @@ Three of these appear within one component's toolbar. `SkillInspector.tsx:578` u
 
 For a business tool this is the highest-leverage item in section D. 72% of icon buttons are unlabelled to the eye, and this app's icons are not conventional — a pencil is obvious, `GitFork` / `ScanLine` / `Grid3x3` are not.
 
-**Unlike C-1 and B-2, there is no written rule to point at.** Grep for "icon-only" across `.claude/` and `roadmap/` returns one to-do note, not a standard. This is a gap to close, not drift to correct.
+**Unlike C-1 and B-2, there is no written rule to point at.** Grep for "icon-only" across `.claude/` and `planning/Roadmap/` returns one to-do note, not a standard. This is a gap to close, not drift to correct.
 
 **Fix.**
 1. Write it down as D-TB5 in `.claude/rules/`: *every icon-only control carries a Radix `Tooltip`; `title` is never used for this; `aria-label` is required and must match the tooltip text.*
@@ -463,7 +463,7 @@ So this doesn't drift a third time:
 - a test that fails on bare `enablePagination`
 - a test that fails on `SelectField` imported into a toolbar module
 - an `enforce-brand-ui`-style hook rejecting `title=` on a `<Button>` with no text child
-- correct `roadmap/ux-overhaul/verification-report.md:176`, which currently signs off a rule two views break
+- correct `planning/Roadmap/RM-30-ux-overhaul/verification-report.md:176`, which currently signs off a rule two views break
 
 ---
 

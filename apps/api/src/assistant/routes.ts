@@ -47,7 +47,7 @@ export interface AssistantRouteDeps {
   // when no live resolver is wired; otherwise the resolver's list wins (it internally falls back to the
   // same static roster, so the response is always usable).
   models: string[];
-  // roadmap/claude-subscription/ follow-up — the LIVE Claude-subscription roster resolver (the SAME one
+  // planning/Roadmap/RM-09-claude-subscription/ follow-up — the LIVE Claude-subscription roster resolver (the SAME one
   // the provider Model dropdown uses), so the dock's model list MATCHES the picker. Optional so existing
   // callers/tests keep working; absent → the static `models` above.
   subscriptionModels?: SubscriptionModelSource;

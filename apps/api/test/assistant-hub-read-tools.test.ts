@@ -1,4 +1,4 @@
-// Assistant operability (roadmap/assistant-operability/, WP 3.1) — the Hub READ toolset
+// Assistant operability (planning/Roadmap/RM-05-assistant-operability/, WP 3.1) — the Hub READ toolset
 // (hub_agents_list/hub_crews_list/hub_usage_summary), exercised DIRECTLY against a seeded fixture
 // `HubRepository`: each tool's `.handler(args, {})` is called exactly as the SDK would call it — no
 // SDK session, no MCP protocol round-trip (unit level, per the ground rules — mirrors

@@ -1,4 +1,4 @@
-// Observability — the `promote_to_test` action's draft-test builder (roadmap/observability/, WP4.1).
+// Observability — the `promote_to_test` action's draft-test builder (planning/Roadmap/RM-17-observability/, WP4.1).
 //
 // Creates a DRAFT {@link Test} from a terminal run so a good/bad run can be promoted into a reusable
 // regression test. The mapping is DOCUMENTED + deterministic (asserted by the watch tests):

@@ -122,7 +122,7 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
     // Claude subscription (WP 3.1, D-CS4/D-CS8, v29) — additive cost BASIS ('subscription_reference'
     // for a claude_subscription run's shadow price, NULL/'api_exact' otherwise).
     "cost_basis",
-    // Unified Sessions (roadmap/unified-sessions/, WP1.6, v31) — additive session-lifecycle columns.
+    // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6, v31) — additive session-lifecycle columns.
     "phase",
     "stop_reason_code",
     "ended_at",
@@ -130,10 +130,10 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
     "capabilities_json",
     "active_duration_ms",
     "total_duration_ms",
-    // Observability (roadmap/observability/, WP1.6, v35) — additive retention-classes column: a
+    // Observability (planning/Roadmap/RM-17-observability/, WP1.6, v35) — additive retention-classes column: a
     // pinned run is NEVER pruned by POST /api/maintenance/prune-runs.
     "pinned",
-    // Observability (roadmap/observability/, WP3.3, v42) — additive fork-lineage columns: a DERIVED
+    // Observability (planning/Roadmap/RM-17-observability/, WP3.3, v42) — additive fork-lineage columns: a DERIVED
     // run records the parent it was forked FROM and the step it was forked AT.
     "derived_from_run_id",
     "fork_step_id",
@@ -418,7 +418,7 @@ test("inserts and reads back one row per new table respecting FK ordering", () =
     // Claude subscription (WP 3.1, D-CS4/D-CS8, v29) — additive cost BASIS; NULL until a subscription
     // run's terminal kpi stamps 'subscription_reference'.
     cost_basis: null,
-    // Unified Sessions (roadmap/unified-sessions/, WP1.6, v31) — additive session-lifecycle columns;
+    // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6, v31) — additive session-lifecycle columns;
     // NULL/0(false) until the RunManager emit choke point or the /end,/seen routes populate them.
     phase: null,
     stop_reason_code: null,
@@ -427,10 +427,10 @@ test("inserts and reads back one row per new table respecting FK ordering", () =
     capabilities_json: null,
     active_duration_ms: null,
     total_duration_ms: null,
-    // Observability (roadmap/observability/, WP1.6, v35) — additive retention-classes column;
+    // Observability (planning/Roadmap/RM-17-observability/, WP1.6, v35) — additive retention-classes column;
     // every insert starts unpinned (0/false).
     pinned: 0,
-    // Observability (roadmap/observability/, WP3.3, v42) — additive fork-lineage columns; an ordinary
+    // Observability (planning/Roadmap/RM-17-observability/, WP3.3, v42) — additive fork-lineage columns; an ordinary
     // (non-forked) run reads them back NULL.
     derived_from_run_id: null,
     fork_step_id: null,

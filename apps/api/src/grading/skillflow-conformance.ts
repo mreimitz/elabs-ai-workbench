@@ -8,7 +8,7 @@ import type { GradeContext, Grader, GraderResult } from "./grader.js";
  * WP 2.2 trace alignment). No model, no MCP session, no execution, and — critically — NO re-alignment
  * and NO graph re-projection: it consumes the persisted `AssertionResult[]` and nothing else.
  *
- * HARD invariants (roadmap/benchmarks/conventions.md):
+ * HARD invariants (planning/Roadmap/RM-07-benchmarks/conventions.md):
  *   - NEVER re-projects a skill graph, re-aligns a trace, or calls a model. It reads `ctx.run`'s
  *     persisted verdicts ONLY. (Enforced by a static import assertion in
  *     `test/grading-skillflow-conformance.test.ts`: this file imports neither the skillflow

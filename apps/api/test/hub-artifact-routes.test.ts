@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.6, §1.4 / R-UX13) — the artifact REST surface over a REAL
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.6, §1.4 / R-UX13) — the artifact REST surface over a REAL
 // `HubRepository`, mirroring `hub-routes.test.ts`'s harness (a real `HubSessionService` with no model
 // ever invoked — artifact routes never touch the turn engine, so `resolveModel` is never called here).
 //

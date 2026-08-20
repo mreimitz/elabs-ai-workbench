@@ -59,7 +59,7 @@ export function modelFor(cred: DecryptedCredential, model: string): LanguageMode
       return createOpenAICompatible({ name: "ollama", baseURL, apiKey: cred.apiKey })(model);
     }
     case "claude_subscription":
-      // Claude subscription (roadmap/claude-subscription/, WP 0.1) never
+      // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.1) never
       // runs through the AI SDK loop / `modelFor()` (no API key — auth resolves from the owner's
       // signed-in subscription). The run engine branches to a dedicated executor
       // (`claude-subscription-executor`, later WP) at `RunService.execute()` instead.

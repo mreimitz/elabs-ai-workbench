@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7, §1.3 · D-AH8 · R-SES1) — the pure MISSION-BOARD
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7, §1.3 · D-AH8 · R-SES1) — the pure MISSION-BOARD
 // reducer. The single most important invariant of the mission (R-SES1 / the AG-UI rule): the WHOLE
 // board — plan, approval, every agent, every report, the synthesis + its partial mark — is
 // reconstructible from the parent session's `hub_events` ALONE. This function does exactly that, with
@@ -6,7 +6,7 @@
 // reconstructs the same shape independently; this API-side reducer is the replay-fidelity test's
 // authoritative source of truth.
 //
-// Crew nesting (roadmap/crew-nesting/, WP3.1 · D-CN7, R-SES1) — the reducer is now TREE-AWARE. A nested
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP3.1 · D-CN7, R-SES1) — the reducer is now TREE-AWARE. A nested
 // mission emits its own `plan_proposed` + per-member `agent_spawned` into the SAME root session log,
 // each carrying additive parent-linkage (`parentMissionId` / `parentAgentKey`). The reducer discovers
 // every mission node from those events, reduces each node with the EXACT single-mission logic, then

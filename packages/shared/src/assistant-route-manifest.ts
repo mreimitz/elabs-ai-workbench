@@ -168,7 +168,7 @@ export const ASSISTANT_ROUTE_MANIFEST: readonly AssistantRouteManifestEntry[] = 
     exempt: "Report route, no single-entity dock surface.",
   },
   {
-    // Advisor (roadmap/advisor/ WP 1.3). A report ROUTE whose subject is chosen in the URL query
+    // Advisor (planning/Roadmap/RM-01-advisor/ WP 1.3). A report ROUTE whose subject is chosen in the URL query
     // (`?scope=server|scenario|fleet&id=…`), not the path — so `resolveEntityPin` (which reads the
     // PATHNAME only) names no entity here, exactly as for `/reports/digest/:id` above. The operable
     // per-entity surfaces already exist and are pinned: `/servers/:serverId` (which carries the

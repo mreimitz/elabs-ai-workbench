@@ -1,4 +1,4 @@
-// Assistant Hub — v1-fixes F3 (roadmap/assistant-hub/mission-session-analysis-2026-07-20.md) — the
+// Assistant Hub — v1-fixes F3 (planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md) — the
 // mission READ builtins: the model-readable window onto this session's missions.
 //
 // Root cause they close: agent reports existed in the event log, on the board UI, and in the child

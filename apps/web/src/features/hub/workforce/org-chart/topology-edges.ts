@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX9) — the PURE, reusable topology→edge
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP2.5 · D-HUX9) — the PURE, reusable topology→edge
 // builder for a crew's INTRA-crew execution topology. This is the single source of truth WP2.4's
 // crew-profile Topology section imports (via {@link CrewTopologyGraph}) AND the Org chart tab's
 // {@link buildOrgChartModel} both draw from — so "a pipeline reads as a chain, a parallel as a fan, a

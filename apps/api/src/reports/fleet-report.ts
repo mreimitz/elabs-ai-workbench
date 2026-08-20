@@ -10,7 +10,7 @@
 // re-implements arithmetic that exists elsewhere, so the fleet report can never quietly disagree
 // with the page an operator drills into.
 //
-// DETERMINISM (roadmap/advisor/conventions.md, invariant 2): every list imposes its own total order
+// DETERMINISM (planning/Roadmap/RM-01-advisor/conventions.md, invariant 2): every list imposes its own total order
 // (never the repository's `ORDER BY`, which ties freely), and `generatedAt` comes from the advisor
 // context's INJECTED clock — so the same inputs under the same clock serialize byte-identically.
 //

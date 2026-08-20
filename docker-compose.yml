@@ -12,7 +12,7 @@ services:
       context: .
       dockerfile: Dockerfile
     # Reap orphaned/zombie children (tini-style PID 1 init). The Assistant feature spawns the
-    # Claude Agent SDK's CLI subprocess per session (roadmap/assistant/); without a real init
+    # Claude Agent SDK's CLI subprocess per session (planning/Roadmap/RM-02-assistant/); without a real init
     # process, a killed/crashed SDK child can be left as a zombie under the Node PID 1.
     init: true
     ports:
@@ -35,11 +35,11 @@ services:
       # reaches the app on the published host port. Left unset, every OAuth sign-in would come back
       # to a port nothing is listening on.
       OAUTH_REDIRECT_URL: http://127.0.0.1:8081/api/oauth/callback
-      # Temporary mitigation (roadmap/hub-fixes/ WP 0.1, analysis.md RC1): the code default
+      # Temporary mitigation (planning/Roadmap/RM-13-hub-fixes/ WP 0.1, analysis.md RC1): the code default
       # ("deferred") never promotes any MCP tool to callable, so no MCP tool is ever usable in a
       # hub session. Force "eager" until WP 1.1 flips the code default to "auto" — then remove this
       # override. Eager loads full tool definitions for every granted server, so scope sessions to
-      # ONE server (see user-guide/16-assistant-hub.md, "Scoped sessions + tool loading").
+      # ONE server (see planning/user-guide/DC-13-assistant-hub/16-assistant-hub.md, "Scoped sessions + tool loading").
       HUB_TOOL_LOADING_DEFAULT: eager
     restart: unless-stopped
     healthcheck:

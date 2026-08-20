@@ -9,7 +9,7 @@ import {
 } from "./constants.js";
 
 // ==================================================================================================
-// Workbench MCP server — the shared contract for the app's OWN MCP surface (roadmap/ci/mcp-server.md)
+// Workbench MCP server — the shared contract for the app's OWN MCP surface (planning/Roadmap/RM-08-ci/mcp-server.md)
 // ==================================================================================================
 // The MCP bench must be MCP-operable: an external agent (a Claude Code session in a skill repo, a CI
 // job) connects to this app over streamable HTTP and reads what it has already measured — scans,

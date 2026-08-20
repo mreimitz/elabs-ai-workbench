@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.4, D-AH12/R-SES6/R-MCP9) — the files/workspace/resource
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.4, D-AH12/R-SES6/R-MCP9) — the files/workspace/resource
 // REST surface, over a REAL `HubRepository` + a stubbed `HubSessionService` (never dispatches a turn —
 // these routes only need a session id to exist) + stub `ScanRepository`/`ScanService` for the resource
 // picker. Mirrors `apps/api/test/hub-routes.test.ts`'s harness shape and `skills-upload.test.ts`'s

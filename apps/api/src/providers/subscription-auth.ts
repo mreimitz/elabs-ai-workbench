@@ -1,7 +1,7 @@
 import { httpError } from "../utils/errors.js";
 
 /**
- * Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS7) — resolve a `claude_subscription`
+ * Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS7) — resolve a `claude_subscription`
  * provider credential's auth from the OWNER'S SIGNED-IN Claude subscription (`assistant_credentials`,
  * the single `claude_oauth` row — the SAME sign-in the embedded Assistant dock uses). This mirrors the
  * linked-auth pattern: auth is resolved from ANOTHER store at run

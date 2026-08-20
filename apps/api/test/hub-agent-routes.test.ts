@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.1, §1.4 / D-AH7) — the role-library + saved-crew REST
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.1, §1.4 / D-AH7) — the role-library + saved-crew REST
 // surface over a REAL `HubRepository`, mirroring `hub-artifact-routes.test.ts`'s harness (a real
 // `HubSessionService` with no model ever invoked — agent/crew routes never touch the turn engine, so
 // `resolveModel` is never called here).

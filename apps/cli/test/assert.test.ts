@@ -15,7 +15,7 @@ import {
 } from "@mcp-token-footprint/shared";
 import { runCliCapture, startStub, type StubRoutes, VALID_TOKEN } from "./harness.js";
 
-// `mcpfp assert`, end to end against a `node:http` stub of the workbench API (roadmap/ci/ WP 1.3 —
+// `mcpfp assert`, end to end against a `node:http` stub of the workbench API (planning/Roadmap/RM-08-ci/ WP 1.3 —
 // A5, A6, A7, A8, A9). The API evaluates; the CLI renders and picks an exit code. So everything here
 // is about the CLI's half of that split: which file it found, what it sent, what it printed, on
 // which stream, and what it exited with.
@@ -339,7 +339,7 @@ test("A6 — --output writes the same bytes to a file and leaves stdout empty", 
 test("A7 — the CLI trusts the API's verdict rather than recomputing it from the results", async () => {
   // A deliberately INCONSISTENT report: every result says "pass", but the API says the gate failed.
   // A CLI that re-derived the verdict from `results` would exit 0 here. The right answer is 1 — the
-  // API evaluates, the CLI renders (roadmap/ci/README.md's client invariant).
+  // API evaluates, the CLI renders (planning/Roadmap/RM-08-ci/item.md's client invariant).
   const contradictory = {
     ...report(),
     counts: { total: 2, passed: 1, failed: 1, skipped: 0 },

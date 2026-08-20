@@ -58,7 +58,7 @@ export interface AskUserBridge {
   /** A fresh correlation id for one question (the run service supplies `nanoid`). */
   newQuestionId(): string;
   /**
-   * Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US1/D-US3) — bracket this ask_user wait
+   * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US1/D-US3) — bracket this ask_user wait
    * with the run's SessionClock, the SAME way a `nextTurn` wait is bracketed: entering pauses stall
    * accounting and arms the wait-budget timer (the identical budget a `nextTurn` wait uses, per
    * D-US3 — "the wait budget applies to BOTH"); returns the clock's server-authored ISO-8601
@@ -139,7 +139,7 @@ function answerResultText(answer: string | null): string {
  * Core ask → emit `question`, block on the operator's answer, emit `question_resolved`, return the
  * answer text (or `null` if the run was stopped before an answer). Shared by both path adapters below.
  *
- * Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US1/D-US3) — the wait itself is bracketed by
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US1/D-US3) — the wait itself is bracketed by
  * the bridge's optional {@link AskUserBridge.enterWaiting}/{@link AskUserBridge.resumeFromWaiting}
  * (an executor's SessionClock coupling): entering emits the `waiting_input` phase event (reason
  * `"question"`, carrying the clock's deadline when one is armed) before the wait, and resuming clears

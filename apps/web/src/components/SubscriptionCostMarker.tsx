@@ -2,7 +2,7 @@ import type { CostBasis } from "@mcp-token-footprint/shared";
 import { Badge, Tooltip, TooltipContent, TooltipTrigger, cn } from "@elabs-ai/components-ui";
 
 /**
- * Claude subscription (roadmap/claude-subscription/, WP 3.1, D-CS4) — the shared accuracy marker for a
+ * Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.1, D-CS4) — the shared accuracy marker for a
  * cost figure that is a subscription SHADOW price rather than a billed charge. Reuses the "est." marker
  * convention `acme_answers` established (see `KpiRail`): a compact, muted "est." {@link Badge} carrying a
  * tooltip that explains the run's `costUsd` is exact tokens × the model's list rate on the Claude

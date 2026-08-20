@@ -30,7 +30,7 @@ import type { SuiteRunRepository } from "./suite-run-repository.js";
  * start path (no shortcut execution): full persistence, replay, console, per-run guardrails, and the
  * existing auto-grading hook all fire per cell exactly as for a standalone run.
  *
- * Invariants it upholds (`roadmap/benchmarks/conventions.md`):
+ * Invariants it upholds (`planning/Roadmap/RM-07-benchmarks/conventions.md`):
  *   - A cell IS a normal run — {@link SuiteRunStarter} is `runService.start` in production. Each run
  *     opens its OWN MCP sessions (that is what `runService.start` already does), so cells are isolated.
  *   - The aggregate cost cap is SOFT-STOP: on reaching it we stop SCHEDULING new cells, let in-flight

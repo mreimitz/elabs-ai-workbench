@@ -130,7 +130,7 @@ const STEP_SELECT = 1;
 const STEP_CONFIGURE = 2;
 
 /**
- * Unified Sessions (roadmap/unified-sessions/, WP3.4, D-US3/D-US7) — the SessionClock defaults the
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.4, D-US3/D-US7) — the SessionClock defaults the
  * effective-limits summary (below) renders. Mirrored by hand from the API source, NOT imported —
  * `apps/web` never imports `apps/api` source (the runtime boundary, `.claude/rules/architecture.md`)
  * and there is currently no read API serving these as data:
@@ -140,7 +140,7 @@ const STEP_CONFIGURE = 2;
  *    default in `apps/api/src/config/env.ts` (that one IS env-configurable, unlike the two above).
  * **Backend gap (flagged for a follow-up WP):** keeping these in sync by hand is fragile — a settings
  * read API (e.g. an addition to `GET /api/health` or a dedicated `GET /api/testing/session-defaults`)
- * should serve them as data instead. See `roadmap/unified-sessions/STATUS.md`.
+ * should serve them as data instead. See `planning/Roadmap/completed/RM-29-unified-sessions/STATUS.md`.
  */
 const SESSION_STALL_MS = 10 * 60_000;
 const SESSION_WAIT_BUDGET_MS = 10 * 60_000;
@@ -1262,7 +1262,7 @@ function describeWallCap(selected: Scenario[]): string {
 }
 
 /**
- * Unified Sessions (roadmap/unified-sessions/, WP3.4, D-US3/D-US7) — the effective-limits summary:
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.4, D-US3/D-US7) — the effective-limits summary:
  * the stall timeout, wait budget, wall cap, and (when relevant) subscription concurrency the run WILL
  * use, surfaced BEFORE the run starts. Pure/sync — no network round trip: there's no persisted run yet
  * to read a `capabilities` manifest from, and `POST /api/estimate/run-plan`'s response

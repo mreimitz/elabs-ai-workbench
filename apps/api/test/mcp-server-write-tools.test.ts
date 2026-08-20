@@ -54,7 +54,7 @@ import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
 // ==================================================================================================
-// Workbench MCP mount — the three WRITE tools (roadmap/ci/wp-m.3-write-tools.md)
+// Workbench MCP mount — the three WRITE tools (planning/Roadmap/RM-08-ci/wp-m.3-write-tools.md)
 // ==================================================================================================
 // Driven end to end: a real Fastify app carrying the real WP 1.1 token guard and the real mount, a
 // real in-process MCP client, real repositories over an in-memory SQLite, a REAL `ScanService`, and a

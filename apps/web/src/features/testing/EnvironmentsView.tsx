@@ -67,7 +67,7 @@ export function EnvironmentsView() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [providers, setProviders] = useState<ProviderCredential[]>([]);
   const [servers, setServers] = useState<ServerConfig[]>([]);
-  // Server types (roadmap/server-types) — read-only, feeds the editor's allowed-server type/status
+  // Server types (planning/Roadmap/completed/RM-21-server-types) — read-only, feeds the editor's allowed-server type/status
   // surfacing (WP 4.1). Best-effort: a missing/failed types API degrades to [] (no crash, no type
   // labels), so it must never fail the whole environments load.
   const [serverTypes, setServerTypes] = useState<ServerType[]>([]);
@@ -84,7 +84,7 @@ export function EnvironmentsView() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Scenario | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Scenario | null>(null);
-  // Advisor (roadmap/advisor/ WP 1.3) — the environment whose inline recommendation panel is open
+  // Advisor (planning/Roadmap/RM-01-advisor/ WP 1.3) — the environment whose inline recommendation panel is open
   // below the table. Environments have no per-entity ROUTE (selection lives in React state, as it
   // already does for the editor above), so the panel is opened from a row action and names the
   // environment it belongs to; the full, bookmarkable report is one click away at `/advisor`.
@@ -265,7 +265,7 @@ export function EnvironmentsView() {
         id: "provider",
         header: "Provider",
         value: (row) => providerById.get(row.providerId)?.label ?? row.providerId,
-        // D-MI6 (`roadmap/model-identity/`, WP 2.3): the badge shows the provider kind's DISPLAY
+        // D-MI6 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): the badge shows the provider kind's DISPLAY
         // name, never the raw wire literal — it used to read "claude_subscription".
         cell: (row) => {
           const provider = providerById.get(row.providerId);

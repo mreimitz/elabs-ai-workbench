@@ -128,7 +128,7 @@ export type ServerAuthType = (typeof SERVER_AUTH_TYPES)[number];
 export type ServerTypeStatus = (typeof SERVER_TYPE_STATUSES)[number];
 
 /**
- * Server type (roadmap/server-types, D-ST1/D-ST2): a first-class named group of MCP servers that
+ * Server type (planning/Roadmap/completed/RM-21-server-types, D-ST1/D-ST2): a first-class named group of MCP servers that
  * share one tool surface (e.g. "Acme-SaaS" = production fleet, "acme-stage" = beta/RC). Lifecycle
  * `status` lives on the type; each server references at most one type. Carries NO secrets and NO
  * connection config — the redaction model is untouched.
@@ -190,7 +190,7 @@ export type ServerConfigInput = {
   headers?: Record<string, string>;
   auth?: ServerAuthInput;
   /**
-   * Server type assignment (roadmap/server-types, additive — D-ST5). `null` explicitly clears the
+   * Server type assignment (planning/Roadmap/completed/RM-21-server-types, additive — D-ST5). `null` explicitly clears the
    * assignment on update; omitted keeps the current value. Unknown ids are rejected (400).
    */
   typeId?: string | null;
@@ -393,7 +393,7 @@ export type ScanRetentionResult = {
   prunedScanIds: string[];
 };
 
-// --- Observability — retention classes (roadmap/observability/, WP1.6) --------------------------
+// --- Observability — retention classes (planning/Roadmap/RM-17-observability/, WP1.6) --------------------------
 // Pin runs forever; prune the rest by class. A PINNED run is NEVER a prune candidate under ANY
 // policy — enforced by the repository (`pinned = 0` is always part of the victim query), not just by
 // convention. Pruning is OFF by default: an empty/absent policy (`byStatus: {}`) prunes nothing.
@@ -1372,7 +1372,7 @@ export type ContextSnapshot = {
 };
 
 /**
- * Claude subscription (roadmap/claude-subscription/, WP 0.1, D-CS8) — discriminates HOW a run's
+ * Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.1, D-CS8) — discriminates HOW a run's
  * `costUsd` was derived (D-CS4): reuse the "est." badge idea, don't invent a parallel one.
  *   - `"api_exact"`          — the default/normal path: a metered provider API call, real billed cost.
  *   - `"subscription_reference"` — the run went through a signed-in Claude subscription
@@ -1387,7 +1387,7 @@ export type ContextSnapshot = {
 export type CostBasis = "api_exact" | "subscription_reference";
 
 // ==================================================================================================
-// Unified Sessions — session contract (roadmap/unified-sessions/, WP1.1)
+// Unified Sessions — session contract (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1)
 // One shared lifecycle + capability vocabulary every run backend maps to. All additive: old persisted
 // runs/events carry none of these fields and replay unchanged.
 // ==================================================================================================
@@ -1458,7 +1458,7 @@ export type SessionCapabilities = {
 };
 
 /**
- * Observability (roadmap/observability/, WP3.3, D-OB18) — CAPABILITY gate (D-US4: gate on the manifest,
+ * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — CAPABILITY gate (D-US4: gate on the manifest,
  * never `providerKind === …`) for a MID-RUN fork: whether a run backend can be forked AT a step by
  * reconstructing + seeding its conversation prefix. True only for a session whose transcript is a
  * meaningful, replayable chat-completions history — i.e. it exposes context-window accounting AND
@@ -1524,14 +1524,14 @@ export type RunStep = {
   // runs + non-timed steps lack them); drives the run timeline / Gantt + real per-step LLM latency.
   startedAt?: string; // ISO-8601
   endedAt?: string; // ISO-8601
-  // Claude subscription (roadmap/claude-subscription/, WP 0.1, D-CS4) — true when this step's
+  // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.1, D-CS4) — true when this step's
   // token/byte footprint was counted LOCALLY (our own estimator, e.g. tiktoken over the request/
   // response we assembled) rather than read from a provider-reported usage block. Set on steps
   // produced by the `claude_subscription` executor (which has no billed-usage API); ordinary API-metered
   // providers never set it. Optional/additive — older runs and every other kind's steps lack it,
   // meaning "provider-reported/exact" as they always have.
   meteringEstimated?: boolean;
-  // Observability (roadmap/observability/, WP3.1, D-OB17) — step-hierarchy metadata. Both OPTIONAL +
+  // Observability (planning/Roadmap/RM-17-observability/, WP3.1, D-OB17) — step-hierarchy metadata. Both OPTIONAL +
   // ADDITIVE + FORWARD-ONLY: a step persisted before WP3.1 carries NEITHER and renders FLAT (never
   // backfilled). `parentStepId` links this step to an EARLIER step of the SAME run (validated at
   // persist — a dangling/forward reference is dropped to `undefined`); the tree is a RENDERING of these
@@ -1569,7 +1569,7 @@ export type RunEvent =
         tokensOut: number;
         contextTokens: number;
         costUsd: number;
-        // Claude subscription (roadmap/claude-subscription/, WP 0.1, D-CS8) — see {@link CostBasis}.
+        // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.1, D-CS8) — see {@link CostBasis}.
         // Optional/additive: absent (or `"api_exact"`) means the ordinary, exactly-billed `costUsd`
         // every consumer before this field already assumes.
         costBasis?: CostBasis;
@@ -1678,13 +1678,13 @@ export type RunSummary = {
    */
   ratingState?: RatingState;
   /**
-   * Claude subscription (roadmap/claude-subscription/, WP 0.1, D-CS8) — see {@link CostBasis}.
+   * Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.1, D-CS8) — see {@link CostBasis}.
    * Optional/additive: absent (or `"api_exact"`) means the ordinary, exactly-billed `costUsd` every
    * run before this field existed already carries. Only a `claude_subscription`-kind run sets
    * `"subscription_reference"`.
    */
   costBasis?: CostBasis;
-  // ── Unified Sessions (roadmap/unified-sessions/, WP1.1) — additive run-lifecycle surface ─────────
+  // ── Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1) — additive run-lifecycle surface ─────────
   // All optional + NULL-safe for old rows; populated server-side by WP1.6 (persistence + GET). A run
   // persisted before this workstream carries none of them and reads exactly as it always has.
   /** Machine-readable terminal reason (paired with the human `outcome`/stopReason); see {@link StopReasonCode}. */
@@ -1701,7 +1701,7 @@ export type RunSummary = {
   activeDurationMs?: number;
   /** Total wall-clock from start to terminal, INCLUDING waits (D-US3). */
   totalDurationMs?: number;
-  // ── Observability full-text search (roadmap/observability/, WP1.3, D-OB16) — additive/optional ───
+  // ── Observability full-text search (planning/Roadmap/RM-17-observability/, WP1.3, D-OB16) — additive/optional ───
   // Present ONLY on a `GET /api/runs?q=…` hit (the FTS-joined feed); absent on every ordinary list row
   // and every consumer/fixture that never searches. Both are DERIVED (a snippet of the matched index
   // document), never authoritative — the run's own fields are unchanged.
@@ -1710,14 +1710,14 @@ export type RunSummary = {
   /** Which content class the best match came from (see {@link SearchContentClass}). */
   searchMatchKind?: SearchContentClass;
   /**
-   * Observability (roadmap/observability/, WP1.6, D-OB…) — retention classes: whether this run is
+   * Observability (planning/Roadmap/RM-17-observability/, WP1.6, D-OB…) — retention classes: whether this run is
    * PINNED, which exempts it from EVERY `POST /api/maintenance/prune-runs` policy. Additive/optional
    * for wire compatibility with older fixtures; the backing `runs.pinned` column is NOT NULL (default
    * `false`), so a current server always sends it. Makes the WP1.1 `RunFilter.pinned` placeholder LIVE.
    */
   pinned?: boolean;
   /**
-   * Observability (roadmap/observability/, WP1.5, D-OB15) — a MINIMAL human-feedback aggregate chip:
+   * Observability (planning/Roadmap/RM-17-observability/, WP1.5, D-OB15) — a MINIMAL human-feedback aggregate chip:
    * this run's RUN-LEVEL (not step-scoped) feedback, one entry per distinct key (the latest write per
    * key wins). Absent when the run carries no run-level feedback. STRICTLY SEPARATE from grading —
    * never read by grading/suites/compare, never blended into any score/aggregate (AR6/D-OB15; see the
@@ -1725,7 +1725,7 @@ export type RunSummary = {
    */
   feedback?: RunFeedbackSummary[];
   /**
-   * Observability (roadmap/observability/, WP3.3, D-OB18) — fork lineage. Present ONLY on a DERIVED run
+   * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — fork lineage. Present ONLY on a DERIVED run
    * (one created by `POST /api/runs/:id/rerun`): `derivedFromRunId` is the parent run it was forked
    * from, and `forkStepId` (when set) is the parent step it was forked AT (absent ⇒ a whole-run
    * re-launch). A derived run is NEVER a suite member and is HIDDEN by default from the runs feed
@@ -1809,7 +1809,7 @@ export type RunDetail = RunSummary & {
    */
   openQuestions?: RunOpenQuestion[];
   /**
-   * Observability (roadmap/observability/, WP3.3, D-OB18) — the DERIVED runs forked FROM this run (the
+   * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — the DERIVED runs forked FROM this run (the
    * parent → child lineage direction; the child → parent direction is {@link RunSummary.derivedFromRunId}
    * on each child). Present (possibly empty) on a run's detail so the console can render a "forks"
    * indicator + link out; absent on wire fixtures that predate the field. Additive.
@@ -1883,7 +1883,7 @@ export type CompareRow = RunSummary & {
   model: string;
 };
 
-// --- Observability — RunFilter grammar (roadmap/observability/, WP1.1, D-OB1) ------------------
+// --- Observability — RunFilter grammar (planning/Roadmap/RM-17-observability/, WP1.1, D-OB1) ------------------
 // ONE serializable, AND-combined filter object shared by the runs feed, saved views, chart
 // drill-downs, watch rules and (later) the CLI. Every field is OPTIONAL; present fields are ANDed.
 // The zod schema (`runFilterSchema`) lives in schemas.ts; the parse/serialize helpers + the pure
@@ -2040,7 +2040,7 @@ export type RunFilterCandidate = {
   derived?: boolean;
 };
 
-// --- Observability — human feedback (roadmap/observability/, WP1.5, D-OB15) --------------------
+// --- Observability — human feedback (planning/Roadmap/RM-17-observability/, WP1.5, D-OB15) --------------------
 // ONE generic primitive for human signal on a run: a score and/or a note, scoped to the run as a
 // whole (`stepId` absent) or to one of its steps/turns (`stepId` set). STRICTLY SEPARATE from
 // grading (AR6/D-OB15) — nothing in grading/suites/compare reads `run_feedback`; see the WP1.5
@@ -2087,7 +2087,7 @@ export type RunFeedbackSummary = {
   score: number | null;
 };
 
-// --- Observability — model pricing editor (roadmap/observability/, WP2.6, D-OB22) ----------------
+// --- Observability — model pricing editor (planning/Roadmap/RM-17-observability/, WP2.6, D-OB22) ----------------
 // A DB-backed, editable pricing map so per-model prices no longer require a code edit. The code
 // table (`apps/api/src/providers/pricing.ts` `MODEL_PRICING`) is the SEED (`source: "seed"`, read-
 // only) + the belt-and-braces fallback; owners add/override with `source: "user"` rows. All prices
@@ -2180,7 +2180,7 @@ export type RunViewPatch = {
   sort?: unknown;
 };
 
-// --- Observability — watch rules (roadmap/observability/, WP4.1, D-OB19/D-OB21) ----------------
+// --- Observability — watch rules (planning/Roadmap/RM-17-observability/, WP4.1, D-OB19/D-OB21) ----------------
 // "When a run matches filter F, do action A." A rule is evaluated at the ONE post-terminal choke
 // point (after the run reaches a terminal status AND its rating axis settles — see reviewRun in
 // testing/run-service.ts) against the SAME shared {@link RunFilter} grammar the feed uses, via the
@@ -2367,7 +2367,7 @@ export type WatchWindowPreview = {
   windows: WatchWindowPreviewPoint[];
 };
 
-// --- Observability — notification center (roadmap/observability/, WP4.3, D-OB19) -----------------
+// --- Observability — notification center (planning/Roadmap/RM-17-observability/, WP4.3, D-OB19) -----------------
 // The persistent in-app notification center the `notify` watch action writes to — this UNBLOCKS the
 // WP4.1 inert seam (`watch/actions.ts` `WatchActionServices.notify`, undefined until this WP): the
 // action already calls it when present, so wiring a real implementation in `apps/api/src/index.ts` is
@@ -2431,7 +2431,7 @@ export type NotificationPruneResult = {
 };
 
 // --- Auto-Rating — mandatory post-run rating contract (WP 1.1, AR1–AR16) ----------------------
-// roadmap/auto-rating/README.md. Extends the Benchmarks grading contract above: base rating is
+// planning/Roadmap/RM-06-auto-rating/item.md. Extends the Benchmarks grading contract above: base rating is
 // three always-on graders (see {@link GRADER_IDS} / `BASE_RATING_GRADER_IDS`) that write ordinary
 // {@link RunGrade} rows; {@link RunReport} composes them on demand (no new per-run table, AR1) and
 // {@link SuiteReport} is the one new persisted artifact (`suite_run_reports.report_json`, WP 4.1).
@@ -2669,7 +2669,7 @@ export type SuiteReport = {
 // --- MCP × Model compatibility (Phase 5) -----------------------------------------------------
 // Results-only wire contract. The test catalog + model dataset stay API-side (they track the
 // fast-moving research schemas); only resolved results/heatmaps cross to the web. Source: the
-// research compatibility suite (research/token-context-comparison/03-compatibility-test-suite.md).
+// research compatibility suite (planning/Research/RS-01-token-context-comparison/outputs/03-compatibility-test-suite.md).
 
 export type CompatibilityVerdict = "pass" | "warn" | "fail" | "na";
 
@@ -2908,7 +2908,7 @@ export type ServerReport = {
 // Contract-first wire shapes for the Skills feature. The API is the only side that touches the
 // network/filesystem/git and decrypted secrets; the web receives REDACTED data only (the single
 // skill secret — a GitHub PAT — is never returned; exposed as `hasAuth: boolean`). Source of truth:
-// research/skill-registry/05-api-surface.md (types + zod), 03 (data model), 08 (attachment).
+// planning/Research/RS-02-skill-registry/outputs/05-api-surface.md (types + zod), 03 (data model), 08 (attachment).
 
 /** Where a skill was ingested from. */
 export type SkillSourceType = (typeof SKILL_SOURCE_TYPES)[number];
@@ -3092,7 +3092,7 @@ export type SkillUsage = {
 // normalized trace-event vocabulary — the alphabet a session (internal run OR uploaded log) speaks;
 // (3) the session-trace shape — a trace aligned against the graph. Projection + alignment are
 // deterministic and land in later WPs; this WP freezes the contract. All later additions are
-// ADDITIVE fields only. Source of truth: roadmap/skillflow/00-architecture.md (D2/D6/D7/D8).
+// ADDITIVE fields only. Source of truth: planning/Roadmap/RM-23-skillflow/00-architecture.md (D2/D6/D7/D8).
 
 /** A skill graph node kind (aligned with `SKILL_FILE_KINDS`, not a parallel taxonomy — D8). */
 export type SkillGraphNodeKind = (typeof SKILL_GRAPH_NODE_KINDS)[number];
@@ -3541,7 +3541,7 @@ export type SkillSuggestionsResponse = {
 // --- Skill IDE Phase 1 (WP 1.1) — quality / tool-validation / trigger / publish shapes ----------
 // The additive contract for the Skill IDE engines. Every shape is typed + zod'd + round-trip tested
 // here; the ENGINES that produce them (deterministic, versioned, never executing skill content —
-// I4/I5/I6/I8) land in later WPs. Source of truth: roadmap/skill-ide/00-architecture.md (I1–I8).
+// I4/I5/I6/I8) land in later WPs. Source of truth: planning/Roadmap/RM-22-skill-ide/00-architecture.md (I1–I8).
 
 /** Severity of a quality finding (I4) — drives the score weight and the UI band. */
 export type QualitySeverity = (typeof QUALITY_SEVERITIES)[number];
@@ -3888,7 +3888,7 @@ export type RunPlanEstimate = {
 // ==================================================================================================
 // Assistant (WP 0.1) — shared contract
 // ==================================================================================================
-// Embedded Claude agent chat (roadmap/assistant/00-plan.md, decisions D-AS1…D-AS18). This WP
+// Embedded Claude agent chat (planning/Roadmap/RM-02-assistant/00-plan.md, decisions D-AS1…D-AS18). This WP
 // freezes the wire + persistence contract; the session engine (WP 1.1), in-process MCP toolset
 // (WP 1.2), and dock UI (WP 1.3) build on it. Naming (hard rule, D-AS9): the feature is
 // "Assistant" everywhere — UI copy must never say "Claude Code" (Anthropic Agent SDK policy).
@@ -4170,7 +4170,7 @@ export type AssistantPruneResult = {
 };
 
 /**
- * Result of `POST /api/maintenance/prune-hub` (Assistant Hub, roadmap/assistant-hub/, WP4.3) — mirrors
+ * Result of `POST /api/maintenance/prune-hub` (Assistant Hub, planning/Roadmap/RM-03-assistant-hub/, WP4.3) — mirrors
  * {@link AssistantPruneResult}'s honesty-first shape. Three independent passes, all reported: day-based
  * ROOT-session retention (`retentionDays` — 0 means that pass is a no-op; a root's mission, if any, must
  * ALSO have reached a terminal status — see `hub/retention.ts`), orphaned `hub/ws/<sessionId>/`
@@ -4637,7 +4637,7 @@ export type IssueAssistUnmergeResult = {
   restoredIssueIds: string[];
 };
 
-// ── Observability — metrics endpoints (roadmap/observability/, WP1.2, D-OB13/D-OB14) ──────────────
+// ── Observability — metrics endpoints (planning/Roadmap/RM-17-observability/, WP1.2, D-OB13/D-OB14) ──────────────
 // The time-bucketed, group-able aggregate contract over runs + scans, computed ON DEMAND (no rollup
 // cache — every number recomputable from persisted rows; repeated calls identical). The query vocabulary
 // (buckets / groupBy / measures) is pinned in constants.ts; the query zod lives in schemas.ts.
@@ -4751,7 +4751,7 @@ export type ScanMetricsResponse = {
   servers: ScanMetricsSeries[];
 };
 
-// ── Observability — custom chart composer (roadmap/observability/, WP2.7, D-OB22) ─────────────────
+// ── Observability — custom chart composer (planning/Roadmap/RM-17-observability/, WP2.7, D-OB22) ─────────────────
 // A user-defined chart on the Testing dashboard: measure(s) [same-unit only] + filter/groupBy/bucket
 // + chart type, persisted + cloneable (`GET/POST /api/dashboard-charts`, `GET/PATCH/DELETE
 // /api/dashboard-charts/:id`, `POST /api/dashboard-charts/:id/clone`, `POST
@@ -4820,7 +4820,7 @@ export type DashboardChartReorderInput = {
   orderedIds: string[];
 };
 
-// ── Review queue lite (roadmap/observability/, WP4.5, D-OB22) ────────────────────────────────────
+// ── Review queue lite (planning/Roadmap/RM-17-observability/, WP4.5, D-OB22) ────────────────────────────────────
 // Structured human review WITHOUT multi-annotator/reservation machinery (single owner): a persisted,
 // named RUBRIC — a checklist of keys, each `thumbs`/`scale5`/`note` — walked keyboard-first over a
 // filtered set of runs (`GET/POST /api/review-rubrics`, `PATCH/DELETE /api/review-rubrics/:id`). A
@@ -4871,7 +4871,7 @@ export type ReviewRubricPatch = {
 };
 
 // ==================================================================================================
-// Assistant Hub — shared contract (roadmap/assistant-hub/, WP0.1, D-AH1…20)
+// Assistant Hub — shared contract (planning/Roadmap/RM-03-assistant-hub/, WP0.1, D-AH1…20)
 // The full-page, multi-model, multi-agent Assistant. ADDITIVE ONLY: nothing above changes. The SESSION
 // LIFECYCLE is REUSED verbatim from Unified Sessions (D-AH3 / §1.2): a hub session's `status` is a
 // {@link RunStatus}, its `phase` a {@link RunPhase}, its terminal reason a {@link StopReasonCode}, its
@@ -4911,7 +4911,7 @@ export type HubMemoryStatus = (typeof HUB_MEMORY_STATUSES)[number];
 export type HubLimitRetrySource = (typeof HUB_LIMIT_RETRY_SOURCES)[number];
 export type HubElicitationAction = (typeof HUB_ELICITATION_ACTIONS)[number];
 export type HubElicitationMode = (typeof HUB_ELICITATION_MODES)[number];
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP0.1) — additive closed unions (D-HUX8/10/11/16).
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP0.1) — additive closed unions (D-HUX8/10/11/16).
 /** A memory entry's SCOPE (D-HUX11): `profile` (global) · `project` · `agent` · `crew` — most-specific
  *  wins at injection. An un-scoped legacy row reads as `profile` (WP1.5 migration). */
 export type HubMemoryScope = (typeof HUB_MEMORY_SCOPES)[number];
@@ -5205,7 +5205,7 @@ export type HubAgentReport = {
  * contract description — the runtime shape is {@link HubAgentReport}), and hard-cap budgets.
  */
 /**
- * **Model identity (D-MI1, `roadmap/model-identity/`).** The id of the `provider_credentials` row that
+ * **Model identity (D-MI1, `planning/Roadmap/RM-16-model-identity/`).** The id of the `provider_credentials` row that
  * OWNS the chosen model — i.e. *which* credential runs it, not merely which model id was picked.
  *
  * Why it exists: **a model id does not identify a provider.** The signed-in Claude subscription
@@ -5942,7 +5942,7 @@ export type HubMemoryPatch = {
   scopeId?: string;
 };
 
-// --- Effective memory (roadmap/assistant-hub-ux/, WP1.5 → WP2.7 promotion, D-HUX11) ---------------
+// --- Effective memory (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.5 → WP2.7 promotion, D-HUX11) ---------------
 // The session's RESOLVED memory stack — profile → project → crew → agent, most-specific-wins on a
 // normalized-content conflict. Computed by `apps/api/src/hub/memory-resolver.ts`'s
 // `buildSessionEffectiveMemory`/`resolveEffectiveMemory` and surfaced on the additive `effectiveMemory`
@@ -6956,7 +6956,7 @@ export type HubAuditEntry = {
 export type HubAuditPage = { entries: HubAuditEntry[]; nextBefore?: string };
 
 // --- Advisor — evidenced recommendations (WP 1.1) ---------------------------------------------
-// roadmap/advisor/. Deterministic, versioned advice derived from persisted measurements. The app
+// planning/Roadmap/RM-01-advisor/. Deterministic, versioned advice derived from persisted measurements. The app
 // NEVER auto-applies any of this: a report is a set of suggestions, each carrying the entities it
 // was derived from, the assumptions it rests on, and — where it claims a saving — an explicitly
 // labeled estimate plus the basis to reproduce that number by hand.
@@ -7046,7 +7046,7 @@ export type AdvisorReportQuery = {
 };
 
 // --- Advisor — grade-aware provenance (WP 2.1) ------------------------------------------------
-// roadmap/advisor/phase-2-grade-aware/. A Phase 2 rule reads GRADES, which are themselves versioned
+// planning/Roadmap/RM-01-advisor/phase-2-grade-aware/. A Phase 2 rule reads GRADES, which are themselves versioned
 // and derived from specific suite runs. Recording both on the finding is what lets an operator (and
 // a later report) tell "this trim was validated against suite run X under grading version 1" apart
 // from "this trim rests on a newer, differently-computed grade" — the never-silently-compare rule
@@ -7201,7 +7201,7 @@ export type FleetSuitesSection = {
 /**
  * A security-posture roll-up, if some analyzer produced one.
  *
- * The analyzer itself is `roadmap/security-posture/` and is NOT built yet, so today this section
+ * The analyzer itself is `planning/Roadmap/RM-20-security-posture/` and is NOT built yet, so today this section
  * always renders its gap. The shape is deliberately generic (a version stamp, an optional score,
  * severity tallies, per-subject rows) — enough for the report to render a summary, and small enough
  * that the security-posture plan's own contract (its WP 1.1) can feed it without this file having

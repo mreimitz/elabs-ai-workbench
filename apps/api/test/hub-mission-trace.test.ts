@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP3.2 · D-CN7, R-SES1) — the hub RUN-REPORT's hierarchical
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP3.2 · D-CN7, R-SES1) — the hub RUN-REPORT's hierarchical
 // execution trace. These tests build raw `hub_events` BY HAND (no service, no DB, no provider, no MCP)
 // and feed them straight to the pure `buildMissionTraceForest`, asserting:
 //   • a 2-level tree groups into ONE root node whose `children` holds the nested sub-mission at depth 1;

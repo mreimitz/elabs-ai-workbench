@@ -80,7 +80,7 @@ function stripFrontmatter(markdown: string): string {
 
 // The security surface (scripts + their languages, network references, file/byte totals) is derived by
 // `deriveSkillSecuritySurface` in `packages/shared` — the SAME pure function the workbench MCP
-// server's `skills_security` tool calls (roadmap/ci/mcp-server.md, D-MCP4: one derivation, several
+// server's `skills_security` tool calls (planning/Roadmap/RM-08-ci/mcp-server.md, D-MCP4: one derivation, several
 // surfaces). It inspects, it never executes.
 
 export type SkillOverviewProps = {

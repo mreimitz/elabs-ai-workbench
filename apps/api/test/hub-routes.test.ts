@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.2, §1.4) — the Sessions API + SSE routes, over a REAL
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.2, §1.4) — the Sessions API + SSE routes, over a REAL
 // `HubRepository` + a REAL `HubSessionService` with a STUBBED model (mirrors `hub-session-service.test.ts`
 // and the testing feature's `run-stream-routes.test.ts` — no provider/MCP key is ever needed).
 //

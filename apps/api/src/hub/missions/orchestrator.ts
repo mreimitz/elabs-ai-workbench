@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7, §1.4/§1.5 · D-AH6/D-AH8/D-AH9) — the mission
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7, §1.4/§1.5 · D-AH6/D-AH8/D-AH9) — the mission
 // ORCHESTRATOR (`HubMissionService`): the flagship propose → approve → run → synthesize flow.
 //
 // Composition, not a fork: mission agents are CHILD HUB SESSIONS (`kind:'agent'`, parent+mission
@@ -219,7 +219,7 @@ export type HubMissionServiceConfig = HubMissionCaps & {
    *  mission SYNTHESIS turn. Absent ⇒ `pickSynthesisModel`: the parent session's model when structured-
    *  capable, else the first structured-capable plan model — never an `assistant|…` facade model, which
    *  drops the system prompt that carries the reports digest (the root cause of the blind synthesis in
-   *  roadmap/assistant-hub/mission-session-analysis-2026-07-20.md §1). */
+   *  planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md §1). */
   missionSynthesisModel?: string;
   /** hub-fixes (Defect 4, env `HUB_MISSION_AGENT_MAX_DURATION_S`) — an OVERALL per-agent wall cap (ms) for
    *  a mission slot (the child turn PLUS its report-extraction). A wedged agent is aborted so it can't stall

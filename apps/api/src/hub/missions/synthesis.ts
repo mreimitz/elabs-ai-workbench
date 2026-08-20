@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7, §1.7 · D-AH6/D-AH9/D-AH10) — mission SYNTHESIS.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7, §1.7 · D-AH6/D-AH9/D-AH10) — mission SYNTHESIS.
 //
 // Once the agents have reported, the synthesizer composes the final answer FROM their structured
 // reports and CITES them — carrying every agent's citations forward so every rendered `[n]` still

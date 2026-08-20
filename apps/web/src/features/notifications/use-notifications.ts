@@ -9,7 +9,7 @@ import {
 import { getErrorMessage } from "../../lib/errors";
 
 /** How many recent notifications the bell's popover keeps loaded — a compact recent-history list, not
- *  a full inbox (the notification center itself is a future surface; see roadmap/observability/). */
+ *  a full inbox (the notification center itself is a future surface; see planning/Roadmap/RM-17-observability/). */
 const BELL_PAGE_LIMIT = 20;
 
 export interface UseNotificationsState {

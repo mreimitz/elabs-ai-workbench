@@ -22,7 +22,7 @@ import { SkillRepository } from "../src/skills/repository.js";
 import { registerSkillRoutes } from "../src/skills/routes.js";
 import { toErrorMessage } from "../src/utils/errors.js";
 
-// H-4 (research/full-validation/02-api-review.md) — `registerSkillRoutes` now takes an optional
+// H-4 (planning/Research/RS-07-full-validation/notes/02-api-review.md) — `registerSkillRoutes` now takes an optional
 // `options.caps`, mirroring how `registerSkillflowRoutes` already receives `skillCaps`
 // (skill-ide-tree-ops-caps.test.ts covers that route). Before this fix, save-draft's tree-op apply
 // and BOTH scaffold create paths (blank + server) always fell back to the compiled-in

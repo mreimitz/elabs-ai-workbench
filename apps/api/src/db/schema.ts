@@ -153,7 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_mcp_oauth_flows_server
 
 CREATE TABLE IF NOT EXISTS provider_credentials (
   id TEXT PRIMARY KEY,
-  -- Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS6): 'claude_subscription' is
+  -- Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS6): 'claude_subscription' is
   -- admitted here. On an existing DB the CHECK is widened by migration v28's table rebuild (SQLite
   -- cannot ALTER a CHECK in place) and narrowed again by v56's rebuild, which drops the retired
   -- Answers-integration kind. A 'claude_subscription' row never carries an api_key_encrypted value — its
@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS runs (
   test_id TEXT NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
   scenario_id TEXT NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
   mode TEXT NOT NULL CHECK (mode IN ('automated','interactive')),
-  -- Unified Sessions (roadmap/unified-sessions/, WP1.1/WP1.6, D-US2) — 'ended' is the additive terminal
+  -- Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1/WP1.6, D-US2) — 'ended' is the additive terminal
   -- status of an INTERACTIVE session the operator deliberately closed via "End session" (never
   -- fake-'completed', never 'aborted'). Migration v31 widens this CHECK on an existing DB (SQLite
   -- cannot ALTER a CHECK in place — table rebuild, mirrors v5/v28's widening pattern).
@@ -278,14 +278,14 @@ CREATE TABLE IF NOT EXISTS runs (
   -- 'rating' while it runs, then a settled 'rated'/'failed'/'skipped'. Migration v27 backfills
   -- existing DBs (terminal rows -> 'rated' when base-rating grades exist, else 'skipped').
   rating_state TEXT NOT NULL DEFAULT 'pending',
-  -- Claude subscription (roadmap/claude-subscription/, WP 3.1, D-CS4/D-CS8) — HOW this run's
+  -- Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.1, D-CS4/D-CS8) — HOW this run's
   -- \`cost_usd\` was derived (shared CostBasis). NULL / 'api_exact' = the ordinary, exactly-billed cost
   -- every run before this carried; 'subscription_reference' = a \`claude_subscription\` run's SHADOW
   -- price (exact tokens x the model's list rate; marginal cost \$0 — a reference estimate, not a
   -- charge). Finalized from the run's terminal \`kpi\` \`costBasis\`; the UI/reports label it
   -- "est. · subscription". Additive/nullable; migration v29 backfills existing runs to NULL.
   cost_basis TEXT,
-  -- Unified Sessions (roadmap/unified-sessions/, WP1.6) — additive session-lifecycle surface. ALL
+  -- Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6) — additive session-lifecycle surface. ALL
   -- NULL-safe for every run persisted before this workstream (reads as absent/false, behaves exactly
   -- as before); migration v31 adds these on an existing DB (folded into the same rebuild that widens
   -- the \`status\` CHECK above, mirroring \`widenRunStepsTypeCheck\`'s dynamic-column-copy technique).
@@ -317,13 +317,13 @@ CREATE TABLE IF NOT EXISTS runs (
   capabilities_json TEXT,
   active_duration_ms INTEGER,
   total_duration_ms INTEGER,
-  -- Observability (roadmap/observability/, WP1.6) — retention classes: a PINNED run is NEVER pruned by
+  -- Observability (planning/Roadmap/RM-17-observability/, WP1.6) — retention classes: a PINNED run is NEVER pruned by
   -- \`POST /api/maintenance/prune-runs\`, regardless of policy. NOT NULL DEFAULT 0 so every existing run
   -- reads back unpinned; migration v35 adds this on an existing DB (\`ensureColumn\`, the v29 pattern — a
   -- plain additive column, no table rebuild). Makes the WP1.1 \`pinned\` RunFilter placeholder LIVE (see
   -- \`buildRunFilterWhere\` in run-repository.ts / metrics.ts and \`matchesRunFilter\` in shared).
   pinned INTEGER NOT NULL DEFAULT 0,
-  -- Observability (roadmap/observability/, WP3.3, D-OB18) — fork lineage. A DERIVED run (created by
+  -- Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — fork lineage. A DERIVED run (created by
   -- \`POST /api/runs/:id/rerun\`) records the PARENT run it was forked FROM and the parent STEP it was
   -- forked AT (NULL \`fork_step_id\` = a whole-run re-launch). BOTH NULL for an ordinary run. Deliberately
   -- NOT an FK (like \`suite_run_id\`): run history is immutable and must survive the parent's deletion, so
@@ -575,7 +575,7 @@ CREATE TABLE IF NOT EXISTS rating_issue_occurrences (
 CREATE INDEX IF NOT EXISTS idx_rating_issue_occurrences_issue
   ON rating_issue_occurrences(issue_id, created_at ASC);
 
--- Skills registry (Agent Skills) — content-addressed blob model. See research/skill-registry/03.
+-- Skills registry (Agent Skills) — content-addressed blob model. See planning/Research/RS-02-skill-registry/outputs/03-data-model.md.
 -- The logical skill (stable identity across versions).
 CREATE TABLE IF NOT EXISTS skills (
   id TEXT PRIMARY KEY,
@@ -651,7 +651,7 @@ CREATE INDEX IF NOT EXISTS idx_skill_files_blob ON skill_files(blob_sha);
 
 -- Skills attached to a test scenario (Phase 2 — WP 2.1). Mirrors scenario_servers, adding the one
 -- thing servers lack: version selection (auto-\`latest\` or a \`pinned\` fixed version). See
--- research/skill-registry/03-data-model.md + 08-scenario-attachment.md.
+-- planning/Research/RS-02-skill-registry/outputs/03-data-model.md + 08-scenario-attachment.md.
 CREATE TABLE IF NOT EXISTS scenario_skills (
   scenario_id       TEXT NOT NULL REFERENCES scenarios(id) ON DELETE CASCADE,
   skill_id          TEXT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
@@ -704,7 +704,7 @@ CREATE TABLE IF NOT EXISTS skill_server_bindings (
 -- A fresh DB never creates them (they are absent here); an existing DB drops them via migration v12
 -- (see db/database.ts). The trace-event vocabulary, markers, and aligner stay source-agnostic.
 
--- Assistant (WP 0.1, migration v20) — embedded Claude agent chat (roadmap/assistant/00-plan.md §4).
+-- Assistant (WP 0.1, migration v20) — embedded Claude agent chat (planning/Roadmap/RM-02-assistant/00-plan.md §4).
 -- One stored credential (D-AS1/D-AS2). Only kind = 'claude_oauth' is written today; the API-key
 -- fallback REFERENCES an existing provider_credentials row (kind 'anthropic') and is never
 -- duplicated here. token_encrypted is SecretStore-encrypted (enc:v1:…) and NEVER returned by any
@@ -962,7 +962,7 @@ CREATE TABLE IF NOT EXISTS review_rubrics (
   updated_at   TEXT NOT NULL
 );
 
--- Assistant Hub (roadmap/assistant-hub/, WP0.2, migration v47, D-AH1…D-AH20) ------------------------
+-- Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.2, migration v47, D-AH1…D-AH20) ------------------------
 -- The full-page, multi-model, multi-agent Assistant (\`hub\` domain, D-AH2). 13 BRAND-NEW tables,
 -- additive only — nothing above this section is touched, and the hub NEVER writes the testing tables
 -- (runs/run_steps/run_events/suites/grading) — see apps/api/src/hub/repository.ts, the only code that
@@ -1293,7 +1293,7 @@ CREATE TABLE IF NOT EXISTS hub_session_summaries (
 );
 CREATE INDEX IF NOT EXISTS idx_hub_session_summaries_session ON hub_session_summaries(session_id, upto_seq DESC);
 
--- Service tokens (roadmap/ci/ WP 1.1, D-C2) — the credential a headless caller (CI, the mcpfp CLI,
+-- Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2) — the credential a headless caller (CI, the mcpfp CLI,
 -- an external agent on the MCP mount) presents instead of a browser session. Stored HASHED: the
 -- plaintext is returned exactly once by POST /api/tokens and is unrecoverable from this row.
 -- \`token_hash\` is the SHA-256 hex of the FULL plaintext (\`mcpfp_…\` marker included) and is UNIQUE, so

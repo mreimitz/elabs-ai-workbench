@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.2 · §1.9 · R-UX4) — the PURE mission-topology graph
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.2 · §1.9 · R-UX4) — the PURE mission-topology graph
 // derivation. Given a topology + its agents (each with a live state) it lays out a directed graph
 // (deterministic node positions + edges) that a `@elabs-ai/components-flow` canvas renders. Kept side-effect-free and
 // framework-free so the layout is unit-tested in isolation (the React `TopologyGraph` component is a thin

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.3, R-SES8) — the in-transcript compaction marker. Proves
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.3, R-SES8) — the in-transcript compaction marker. Proves
 // the marker renders at the compaction boundary, is COLLAPSED by default, EXPANDS to reveal the exact
 // summary the model now carries (incl. the preserved user constraint), and surfaces the honest window
 // saving + what was cleared / re-attached / aimed at.

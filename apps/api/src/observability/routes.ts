@@ -1,5 +1,5 @@
 // Observability — metrics + saved-view + human-feedback + custom-chart + review-rubric routes
-// (roadmap/observability/, WP1.2/WP1.4/WP1.5/WP2.7/WP4.5, D-OB13/D-OB14/D-OB15/D-OB22).
+// (planning/Roadmap/RM-17-observability/, WP1.2/WP1.4/WP1.5/WP2.7/WP4.5, D-OB13/D-OB14/D-OB15/D-OB22).
 //
 //   GET /api/metrics/runs?filter=<RunFilter>&from&to&bucket=hour|day|week&groupBy=…&measures=…
 //   GET /api/metrics/scans?from&to&bucket=…&serverId=…

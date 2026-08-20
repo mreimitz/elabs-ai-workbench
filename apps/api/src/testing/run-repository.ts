@@ -533,7 +533,7 @@ export class RunRepository implements RunPersistenceSink {
     return id;
   }
 
-  // ── Unified Sessions (roadmap/unified-sessions/, WP1.6) — session-lifecycle write primitives ────
+  // ── Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6) — session-lifecycle write primitives ────
   // Standalone additive UPDATEs (the `setRatingState`/`saveAssertionResults` pattern above): each
   // touches ONLY its own column(s), never `status`/`outcome`/totals (owned by `finalize`), so they are
   // safe to call at any point in a run's lifecycle and can never mask an engine result. All are no-ops
@@ -811,7 +811,7 @@ export class RunRepository implements RunPersistenceSink {
   }
 
   /**
-   * Observability (roadmap/observability/, WP1.1, D-OB1) — translate the shared {@link RunFilter}
+   * Observability (planning/Roadmap/RM-17-observability/, WP1.1, D-OB1) — translate the shared {@link RunFilter}
    * grammar to a parameterized `SELECT * FROM runs` and return the matching {@link RunSummary}s. Powers
    * `GET /api/runs` with a filter/sort/pagination. Additive: `queryRuns({})` (empty filter, default
    * sort, no pagination) is byte-identical to `listRuns()` — the no-param feed path stays unchanged.
@@ -1593,7 +1593,7 @@ function toRunSummary(row: RunRow): RunSummary {
     ...(row.assertion_results_json
       ? { assertionResults: parseJsonObject<AssertionResult[]>(row.assertion_results_json, []) }
       : {}),
-    // ── Unified Sessions (roadmap/unified-sessions/, WP1.6) — additive run-lifecycle surface. All
+    // ── Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6) — additive run-lifecycle surface. All
     // NULL-safe: a run persisted before this workstream carries none of these and reads exactly as it
     // always has.
     stopReasonCode: (row.stop_reason_code ?? undefined) as StopReasonCode | undefined,

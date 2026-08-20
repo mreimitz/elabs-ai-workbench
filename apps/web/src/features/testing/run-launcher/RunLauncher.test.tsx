@@ -11,7 +11,7 @@ import type {
 } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 
-// Unified Sessions (roadmap/unified-sessions/, WP3.4) — the launcher's Configure step fetches its
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.4) — the launcher's Configure step fetches its
 // harness on open (suites/tests/environments/providers/collections) and debounces a cost-preview
 // estimate; stub every network call so the test never makes a real request (mirrors
 // EnvironmentEditor.test.tsx's `listProviderModels` stub).

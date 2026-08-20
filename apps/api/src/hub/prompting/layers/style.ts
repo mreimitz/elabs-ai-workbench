@@ -4,7 +4,7 @@
 // Why it exists: before this layer there was NO style rule anywhere in the hub prompt stack (the only
 // "no emoji" in the whole API was a comment in the scan-report renderer), so default model styling —
 // emoji headings, status-dot chips, filler enthusiasm — flowed straight into prose, markdown artifacts,
-// and GenUI card titles (roadmap/assistant-hub/mission-session-analysis-2026-07-20.md §3). One layer,
+// and GenUI card titles (planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md §3). One layer,
 // one source of truth; a user's explicit message-level request always overrides the default.
 
 import { HUB_PROMPT_SECTION_BUDGETS } from "../budgets.js";

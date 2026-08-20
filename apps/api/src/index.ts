@@ -36,7 +36,7 @@ import {
 import { config } from "./config/env.js";
 import { openDatabase } from "./db/database.js";
 import { registerMaintenanceRoutes } from "./db/maintenance.js";
-// CI & headless automation — Phase MCP WP M.1 (roadmap/ci/mcp-server.md): the workbench's OWN
+// CI & headless automation — Phase MCP WP M.1 (planning/Roadmap/RM-08-ci/mcp-server.md): the workbench's OWN
 // read-only MCP server, mounted on this same Fastify instance at `/api/mcp` (D-MCP1) behind the
 // `mcp_server` feature flag (D-MCP6). It re-projects the repositories constructed below — it never
 // constructs its own.
@@ -72,7 +72,7 @@ import { RunReportService } from "./grading/run-report.js";
 import { SkillflowConformanceGrader } from "./grading/skillflow-conformance.js";
 import { ToolHygieneGrader } from "./grading/tool-hygiene.js";
 import { createTrajectoryJudge } from "./grading/trajectory-judge.js";
-// Assistant Hub (roadmap/assistant-hub/, WP1.2) — sessions API + SSE. `HubRepository`/`HubSessionService`
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.2) — sessions API + SSE. `HubRepository`/`HubSessionService`
 // are WP1.1's; `createHubModelResolver`/`reconcileOrphanHubSessions`/`reconcileOrphanHubMissions`/
 // `registerHubRoutes` are this WP's / WP4.3's (orphan reconciliation breadth).
 import { HubRepository } from "./hub/repository.js";
@@ -108,7 +108,7 @@ import { createHubSubscriptionAdapter } from "./hub/subscription-adapter.js";
 import { createHubSubscriptionMcpResolver } from "./hub/subscription-tools.js";
 import { pruneHubData } from "./hub/retention.js";
 import type { HubNotifySink } from "./hub/turn-engine.js";
-// Assistant Hub (roadmap/assistant-hub/, WP1.7) — the mission orchestrator (propose → approve → run →
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7) — the mission orchestrator (propose → approve → run →
 // synthesize). Production model seams (planner/agent-runner/synthesizer) wrap AI-SDK generateObject/
 // generateText over the same provider store the session service resolves models from.
 import {
@@ -206,7 +206,7 @@ if (migratedSecretRows > 0) {
   );
 }
 const oauthRepository = new OAuthRepository(db, secretStore);
-// Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS7) — the assistant credential store is
+// Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS7) — the assistant credential store is
 // constructed HERE (ahead of its usual home near the session engine below) so a `claude_subscription`
 // provider credential can resolve its auth from the SAME signed-in subscription (`assistant_credentials`)
 // the embedded Assistant dock uses. `AssistantRepository` has no dependency on `ProviderRepository`, so
@@ -224,7 +224,7 @@ if (migratedProviderKeyRows > 0) {
 }
 const providers = new ProviderService(providerRepository);
 
-// --- Assistant Hub (roadmap/assistant-hub/, WP1.2): sessions API + SSE, over WP1.1's turn engine ---
+// --- Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.2): sessions API + SSE, over WP1.1's turn engine ---
 // On restart, any MISSION left mid-flight (`approved`/`running`/`synthesizing`) lost its in-memory
 // orchestrator FIRST (missions/orchestrator.ts's async `runMission` loop — the process is gone) →
 // reconcile it to `failed` + abort its still-non-terminal agent children (WP4.3 — a plain session-level
@@ -303,7 +303,7 @@ const runManager = new RunManager(runRepository);
 // credential store + the API-key fallback pointer; the flow manager drives `claude setup-token` in a
 // real PTY (NodePtyDriver). The token is stored encrypted and NEVER returned by any route or written to
 // a log. `assistantRepository` itself was already constructed further up (ahead of `providerRepository`,
-// roadmap/claude-subscription/ WP 0.2) so a `claude_subscription` provider credential can resolve its
+// planning/Roadmap/RM-09-claude-subscription/ WP 0.2) so a `claude_subscription` provider credential can resolve its
 // auth from this SAME store.
 // On restart, any assistant thread still marked `running` lost its in-memory SDK child → reconcile it
 // to `idle` (keeping its parked SDK session id so the next message resumes) + append a synthesized
@@ -347,7 +347,7 @@ const appSettings = new AppSettingsRepository(db);
 // curl would still start sessions and spend provider tokens.
 const featureFlags = new FeatureFlagsService(appSettings);
 registerFeatureRoutes(server, featureFlags);
-// Service tokens (roadmap/ci/ WP 1.1, D-C2) — the credential a headless caller (CI, the mcpfp CLI, an
+// Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2) — the credential a headless caller (CI, the mcpfp CLI, an
 // external agent on the MCP mount) presents instead of a browser session. The guard is a root
 // `onRequest` hook, registered right AFTER the feature guard on purpose: a switched-off feature should
 // read as switched off (403 feature_disabled), not as an auth problem. Posture: loopback stays open
@@ -917,7 +917,7 @@ const hubMissionService = new HubMissionService({
   resolveRoleSkills: (skillIds) => formatRoleSkillsContent(skills, skillIds),
   logger: { warn: (msg) => server.log.warn(msg) },
 });
-// The LIVE Claude-subscription model roster resolver (roadmap/claude-subscription/ follow-up): asks the
+// The LIVE Claude-subscription model roster resolver (planning/Roadmap/RM-09-claude-subscription/ follow-up): asks the
 // Agent SDK's `Query.supportedModels()` (the CLI picker's own source) through a SHORT-LIVED child,
 // caches it (~1h, keyed on the sign-in), and draws that ~1 GiB child from the SAME shared runs+judge gate
 // so it can't blow the memory budget alongside runs/judges. ANY error/timeout/not-signed-in → the static
@@ -1180,7 +1180,7 @@ const runService = new RunService(
   skills,
   gradeService,
   ratingIssueService,
-  // Claude subscription run path (roadmap/claude-subscription/, WP 1.2). The run driver is the SAME
+  // Claude subscription run path (planning/Roadmap/RM-09-claude-subscription/, WP 1.2). The run driver is the SAME
   // raw Agent-SDK driver kind the Auto-Rating CLI judge uses (a fresh instance — one driver per run).
   new SdkAgentSessionDriver(),
   // D-CS7 — subscription-ONLY auth: `resolveJudgeAuth()` reads the signed-in `claude_oauth`
@@ -1444,7 +1444,7 @@ await registerMaintenanceRoutes(
   { repository: hubRepository, dataDir: config.dataDirectory },
 );
 await registerCompareRoutes(server, scans);
-// Security posture (roadmap/security-posture/, WP 1.2 + WP 1.3) — `GET /api/scans/:scanId/security`
+// Security posture (planning/Roadmap/RM-20-security-posture/, WP 1.2 + WP 1.3) — `GET /api/scans/:scanId/security`
 // (the eleven deterministic rules over an already-persisted scan) and
 // `GET /api/skills/:id/versions/:vid/security` (the seven over an already-persisted skill version),
 // both scored by the shared contract. Read-only and computed on read (D-SP8 — nothing is persisted,
@@ -1453,7 +1453,7 @@ await registerCompareRoutes(server, scans);
 // The skills repository here is the SAME instance the `/api/skills*` routes use — the analyzer adds
 // no repository, no query and no method of its own.
 await registerSecurityRoutes(server, { scans, servers, oauth: oauthRepository, skills });
-// CI assertions (roadmap/ci/, WP 1.3) — `POST /api/assertions/evaluate`: evaluate a versioned
+// CI assertions (planning/Roadmap/RM-08-ci/, WP 1.3) — `POST /api/assertions/evaluate`: evaluate a versioned
 // `mcpfp.assert.json` against an ALREADY-persisted scan and return an itemized report. Read-only
 // (D-C9 — it never runs a scan), and every baseline question re-projects `buildComparison` above
 // rather than adding a second differ (D-MCP4). No migration, no feature flag, no web route.
@@ -1469,7 +1469,7 @@ await registerAssertionRoutes(server, {
   // and `GET /api/scans/:scanId/security` can never disagree about a scan's posture.
   security: { analyze: (scanId) => analyzeScan({ scans, servers, oauth: oauthRepository }, scanId) },
 });
-// Advisor (roadmap/advisor/, WP 1.2) — `GET /api/advisor/report`: deterministic, versioned
+// Advisor (planning/Roadmap/RM-01-advisor/, WP 1.2) — `GET /api/advisor/report`: deterministic, versioned
 // recommendations derived from data the app already persists (scans + runs + environments). Read-only;
 // the four rules see only the narrow read ports built here, never a DB handle or a secret.
 await registerAdvisorRoutes(server, {
@@ -1666,7 +1666,7 @@ await registerAssistantRoutes(server, {
     skillQualityL2TokenCeiling: config.skillQualityL2TokenCeiling,
   },
 });
-// Assistant Hub (roadmap/assistant-hub/, WP4.3, R-SES9/R-UX11) — the notification-center hook for the
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.3, R-SES9/R-UX11) — the notification-center hook for the
 // hub's three signals (waiting_input / mission-terminal / session budget-trip), reusing the SAME
 // `notificationRepository`/`notificationHub` the WP4.3 (Observability) notification center + the issue-
 // regression/digest notices above already publish through — no new transport. Wrapped in try/catch:
@@ -1725,7 +1725,7 @@ const hubNotify: HubNotifySink = (event) => {
   }
 };
 
-// Assistant Hub (roadmap/assistant-hub/, WP1.2) — projects/sessions CRUD + turns + SSE, mounted at
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.2) — projects/sessions CRUD + turns + SSE, mounted at
 // /api/hub/*. Missions/agents/crews/artifacts/library/memory blocks are additive seams later WPs (1.6,
 // 1.7, 2.1, …) add to `hub/routes.ts` itself — this mount line does not change as they land.
 await registerHubRoutes(server, {

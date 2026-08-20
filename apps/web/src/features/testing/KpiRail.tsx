@@ -59,7 +59,7 @@ import { deriveHotspots, type Hotspot, type HotspotKind } from "./hotspots";
  * renders exactly the tile set its declared manifest implies; a FUTURE backend with a new capability
  * combination renders correctly with zero new branches here — the whole point of D-US4.
  *
- * Observability (roadmap/observability/, WP 3.2 — a DIFFERENT plan/WP than the D-US4 tile logic above,
+ * Observability (planning/Roadmap/RM-17-observability/, WP 3.2 — a DIFFERENT plan/WP than the D-US4 tile logic above,
  * despite the coincidentally identical "WP 3.2" number) ADDS ONLY the {@link HotspotsStrip} below the
  * tile grid — up to three jump-links to the run's true extremes (slowest / costliest / largest
  * context-window jump step), themselves capability-gated via `deriveHotspots` (`./hotspots.ts`) rather

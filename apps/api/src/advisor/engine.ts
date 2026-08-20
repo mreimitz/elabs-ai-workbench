@@ -2,7 +2,7 @@
 // emitted → dedupe → sort → stamp. Pure over its inputs; the DB lives behind the context's read
 // ports (`types.ts`), never here.
 //
-// DETERMINISM CONTRACT (roadmap/advisor/conventions.md, invariant 2). Given the same rules, the
+// DETERMINISM CONTRACT (planning/Roadmap/RM-01-advisor/conventions.md, invariant 2). Given the same rules, the
 // same context data and the same clock, `runAdvisor` produces a BYTE-IDENTICAL report — same
 // numbers, same array order, same `generatedAt`. Three things make that true:
 //

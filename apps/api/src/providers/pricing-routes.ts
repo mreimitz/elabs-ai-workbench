@@ -1,4 +1,4 @@
-// Observability — model pricing CRUD routes (roadmap/observability/, WP2.6, D-OB22).
+// Observability — model pricing CRUD routes (planning/Roadmap/RM-17-observability/, WP2.6, D-OB22).
 //
 //   GET    /api/pricing          — list every entry (seed + user)
 //   GET    /api/pricing/:id      — one entry

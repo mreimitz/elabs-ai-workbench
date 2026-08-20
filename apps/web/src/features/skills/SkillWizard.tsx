@@ -33,7 +33,7 @@ type WizardStep = "source" | "detail" | "review";
 // Accept a .zip archive or a bare SKILL.md (matches the API's upload ingestion).
 const UPLOAD_ACCEPT = ".zip,.md";
 
-// Mirrors the API's manifest name rule (research/skill-registry/01-agent-skills-format.md,
+// Mirrors the API's manifest name rule (planning/Research/RS-02-skill-registry/notes/01-agent-skills-format.md,
 // apps/api/src/skills/manifest.ts) — lowercase letters/digits, single hyphens, no leading/
 // trailing/consecutive hyphens. Client-side so the wizard can gate "Continue" and show an inline
 // hint instead of round-tripping to the API just to learn the name is invalid.

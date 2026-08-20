@@ -99,7 +99,7 @@ export function ServersView(props: {
   latestScan: ScanDetail | null;
   scanHistory: ScanSummary[];
   selectedServer: ServerConfig | null;
-  /** Server types (roadmap/server-types) — resolves the selected server's type for the toolbar +
+  /** Server types (planning/Roadmap/completed/RM-21-server-types) — resolves the selected server's type for the toolbar +
    *  profile badges. Defaults to none. */
   serverTypes?: ServerType[];
   onAddServer: () => void;
@@ -286,7 +286,7 @@ export function ServersView(props: {
   const busyScan = props.isBusy(`server:scan:${server.id}`);
   const busyTest = props.isBusy(`server:test:${server.id}`);
   const authLabel = server.authType === "none" ? "No auth" : server.authType;
-  // The selected server's resolved type (roadmap/server-types). A dangling `typeId` (its type was
+  // The selected server's resolved type (planning/Roadmap/completed/RM-21-server-types). A dangling `typeId` (its type was
   // deleted out from under it) resolves to null and reads as Untyped — never a crash.
   const serverType = server.typeId
     ? ((props.serverTypes ?? []).find((type) => type.id === server.typeId) ?? null)
@@ -477,7 +477,7 @@ export function ServersView(props: {
               >
                 {authLabel}
               </Badge>
-              {/* Server type (roadmap/server-types WP 2.2): the type NAME as an outline chip + its
+              {/* Server type (planning/Roadmap/completed/RM-21-server-types WP 2.2): the type NAME as an outline chip + its
                   lifecycle status via the shared ServerTypeStatusBadge. Hidden when the server has no
                   (known) type. */}
               {serverType ? (
@@ -567,7 +567,7 @@ export function ServersView(props: {
             // Open-count badge only when > 0 — a clean server's Issues tab carries no number.
             count: openIssuesCount && openIssuesCount > 0 ? openIssuesCount : undefined,
           },
-          // Advisor (roadmap/advisor/ WP 1.3) — the inline recommendation panel for THIS server.
+          // Advisor (planning/Roadmap/RM-01-advisor/ WP 1.3) — the inline recommendation panel for THIS server.
           // Deliberately un-counted: a count would force the report to be fetched on every server
           // page load just to badge a tab nobody opened.
           { value: "advisor", label: "Advisor" },

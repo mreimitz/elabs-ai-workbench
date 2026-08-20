@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX8/9) — the PURE Org chart model builder.
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP2.5 · D-HUX8/9) — the PURE Org chart model builder.
 // Given the crew + role library and the org rail's `?scope`, it produces the full `@elabs-ai/components-flow`
 // node/edge model: one `FlowGroupNode` per crew (tinted by its crew color, member `FlowNode`s
 // re-parented inside drawing the crew's real topology), plus an Unassigned / Archived lane. Lanes are

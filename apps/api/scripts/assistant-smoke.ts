@@ -65,7 +65,7 @@ async function main(): Promise<void> {
         env,
         cwd: scratchDir,
         maxTurns: 1,
-        // D-AS17 sandbox rule (roadmap/assistant/decisions.md): no filesystem settings, no
+        // D-AS17 sandbox rule (planning/Roadmap/RM-02-assistant/decisions.md): no filesystem settings, no
         // built-in tools — this smoke only needs one text turn, nothing else.
         settingSources: [],
         tools: [],

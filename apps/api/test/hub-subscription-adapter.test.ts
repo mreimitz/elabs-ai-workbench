@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.5, §1.5 / D-AH3 / D-AH17) — the `claude_subscription`
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.5, §1.5 / D-AH3 / D-AH17) — the `claude_subscription`
 // turn executor, exercised ENTIRELY through a SCRIPTED FAKE `AgentSessionDriver` + a stub auth resolver
 // + a fake throwaway-workspace factory (the SAME DI-seam discipline `claude-subscription-executor.test.ts`
 // uses). NO SDK is imported, NO child is spawned, NO Anthropic call is made, and the real filesystem is

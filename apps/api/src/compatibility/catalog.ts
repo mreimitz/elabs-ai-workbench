@@ -1,5 +1,5 @@
 // Loads + types the bundled compatibility test catalog (the source of truth for the rules; the
-// research file research/token-context-comparison/tests/test-catalog.json, copied to ./data by
+// research file planning/Research/RS-01-token-context-comparison/outputs/tests/test-catalog.json, copied to ./data by
 // `pnpm build:model-data`). The engine never hand-authors test logic — it reads this.
 
 import { readFileSync } from "node:fs";

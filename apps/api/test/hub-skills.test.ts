@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.4, R-SK1…R-SK6/R-SK8) — skill attachment: resolution +
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.4, R-SK1…R-SK6/R-SK8) — skill attachment: resolution +
 // frontmatter superset, the R-SK1 L1 listing budget/demotion, the `skills.load` built-in (enum-
 // constrained, dedupe, compaction-protection budgets), role-level preload (R-SK3), session-level
 // repository CRUD (`hub_session_skills`), and the `GET`/`PUT .../sessions/:id/skills` routes.

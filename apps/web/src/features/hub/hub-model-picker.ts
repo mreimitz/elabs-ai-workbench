@@ -13,7 +13,7 @@ import {
 } from "./use-hub-models";
 
 /**
- * `HubModelPicker`'s pure data layer (D-MI7, `roadmap/model-identity/` WP 4.1).
+ * `HubModelPicker`'s pure data layer (D-MI7, `planning/Roadmap/RM-16-model-identity/` WP 4.1).
  * ==============================================================================================
  *
  * Kept framework-free so the two load-bearing behaviours can be unit-tested without rendering a

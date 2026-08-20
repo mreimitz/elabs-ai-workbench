@@ -29,7 +29,7 @@ import {
   requestPathIsUnderStrict,
 } from "../src/utils/request-path.js";
 
-// Service tokens (roadmap/ci/ WP 1.1, D-C2) — the GUARD, over a real Fastify app and a real SQLite
+// Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2) — the GUARD, over a real Fastify app and a real SQLite
 // `api_tokens` table. The posture under test is the whole point of the WP: loopback stays open so the
 // browser UI is unregressed, any NON-loopback caller must present a valid bearer token, a BAD token
 // always fails (loopback included), and an authenticated token is coarsely scope-checked with deletes

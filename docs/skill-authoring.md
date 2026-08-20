@@ -70,7 +70,7 @@ explicitly ("see /report") or moved to L3.
 
 ### `gatekeeper-no-breadcrumb` — decision points leave markers · [enforced, measured]
 Branch points ("if X do A else B") are where skills silently derail. The breadcrumb convention
-(`[skillflow:gate=<nodeId> route=<edgeId>]`, see `roadmap/skillflow/breadcrumb-convention.md`)
+(`[skillflow:gate=<nodeId> route=<edgeId>]`, see `planning/Roadmap/RM-23-skillflow/breadcrumb-convention.md`)
 turns "probably took branch A" into a checkable claim your test runs verify.
 **Do:** instruct the agent to emit the marker at each gatekeeper; keep branches mutually
 exclusive and explicitly worded.

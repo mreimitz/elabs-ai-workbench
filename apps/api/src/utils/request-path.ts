@@ -1,5 +1,5 @@
 /**
- * Request-path normalization for the root `onRequest` guards (roadmap/ci/ WP 1.1).
+ * Request-path normalization for the root `onRequest` guards (planning/Roadmap/RM-08-ci/ WP 1.1).
  *
  * ## Why this exists
  *

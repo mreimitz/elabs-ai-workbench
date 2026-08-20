@@ -15,7 +15,7 @@ export type SkillFileDiff = {
   to: SkillFileContent;
 };
 
-/** The manifest fields we surface in the field-level diff (research/skill-registry/04). */
+/** The manifest fields we surface in the field-level diff (planning/Research/RS-02-skill-registry/outputs/04-versioning-and-diff.md). */
 const MANIFEST_FIELDS = [
   "name",
   "description",
@@ -26,7 +26,7 @@ const MANIFEST_FIELDS = [
 ] as const;
 
 /**
- * The full-tree "what-changed" diff between two immutable versions (research/skill-registry/04).
+ * The full-tree "what-changed" diff between two immutable versions (planning/Research/RS-02-skill-registry/outputs/04-versioning-and-diff.md).
  *
  * Computed on demand from two `skill_files` maps — never stored. Works identically for uploaded and
  * GitHub skills because both are just content-addressed file maps by diff time.

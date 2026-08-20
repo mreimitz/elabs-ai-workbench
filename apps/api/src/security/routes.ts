@@ -1,4 +1,4 @@
-// The security-posture endpoints (roadmap/security-posture/):
+// The security-posture endpoints (planning/Roadmap/RM-20-security-posture/):
 //
 //   GET /api/scans/:scanId/security                       → `SecurityReport`      (WP 1.2)
 //   GET /api/skills/:id/versions/:vid/security            → `SecurityReport`      (WP 1.3)

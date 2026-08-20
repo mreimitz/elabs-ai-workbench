@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.5, §1.4 / D-AH12, D-AH7) — the review REST surface over a
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.5, §1.4 / D-AH12, D-AH7) — the review REST surface over a
 // REAL `HubRepository`, mirroring `hub-artifact-routes.test.ts`'s harness. The critic model call is a
 // pure DI seam (`HubRouteDeps.reviewAgentRunner`) — no real AI-SDK model is ever built here.
 //

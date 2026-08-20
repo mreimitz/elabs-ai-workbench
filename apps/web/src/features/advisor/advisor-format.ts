@@ -10,7 +10,7 @@ import { formatCostUsd, formatNumber } from "../../lib/format";
 // ==================================================================================================
 // Advisor WP 1.3 — the display vocabulary (pure, unit-tested)
 // ==================================================================================================
-// Two invariants from `roadmap/advisor/conventions.md` are enforced HERE, in the only place the web
+// Two invariants from `planning/Roadmap/RM-01-advisor/conventions.md` are enforced HERE, in the only place the web
 // turns advisor numbers into words:
 //   • invariant 4 — "estimates are labeled". Every savings figure renders through
 //     {@link formatAdvisorSavings}, which puts the word "Estimated" in the sentence itself (not only

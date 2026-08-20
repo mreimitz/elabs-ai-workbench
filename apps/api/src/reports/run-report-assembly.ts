@@ -10,7 +10,7 @@ import { createRunJsonReport, createRunMarkdownReport } from "./reports.js";
  *
  * It exists as its own module because there are now TWO callers: the HTTP export routes
  * (`GET /api/reports/run/:id/{json,markdown}`) and the workbench MCP server's `run_report` tool +
- * `workbench://reports/run/{runId}.{md,json}` resources (roadmap/ci/mcp-server.md, D-MCP4 — the MCP
+ * `workbench://reports/run/{runId}.{md,json}` resources (planning/Roadmap/RM-08-ci/mcp-server.md, D-MCP4 — the MCP
  * layer re-projects existing server-side code, it never re-derives it). Keeping the recipe here means
  * the export and the MCP resource can never disagree about what a run report contains.
  *

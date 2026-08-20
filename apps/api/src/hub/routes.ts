@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.2, §1.4) — the Sessions API + SSE surface over WP1.1's
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.2, §1.4) — the Sessions API + SSE surface over WP1.1's
 // `HubSessionService`/`HubRepository`. This is the ONLY hub file this WP owns; every other `hub/*`
 // module is READ, never modified.
 //
@@ -1778,7 +1778,7 @@ function registerHubContextRoutes(app: FastifyInstance, deps: HubRouteDeps): voi
   });
 }
 
-// ── WP4.2 audit (roadmap/assistant-hub/, §1.4 / D-AH13, R-UX7) ─────────────────────────────────────
+// ── WP4.2 audit (planning/Roadmap/RM-03-assistant-hub/, §1.4 / D-AH13, R-UX7) ─────────────────────────────────────
 //
 // One route: `GET /api/hub/audit` — a filterable (session/kind/tool/time), paginated (limit/before)
 // window over `hub/audit.ts`'s `listHubAudit` projection. Read-only; the projection itself documents
@@ -2444,7 +2444,7 @@ function registerHubArtifactRoutes(
   });
 }
 
-// ── WP3.4 files/workspace (roadmap/assistant-hub/, §1.3/§1.4/§1.6, D-AH12, R-SES6, R-MCP7/9) ───────
+// ── WP3.4 files/workspace (planning/Roadmap/RM-03-assistant-hub/, §1.3/§1.4/§1.6, D-AH12, R-SES6, R-MCP7/9) ───────
 //
 // Three registration functions, one theme:
 //   - `registerHubFileRoutes` — content-addressed uploads (`hub_files`/`hub_file_links`, WP0.2's
@@ -2812,7 +2812,7 @@ function registerHubResourceRoutes(
   });
 }
 
-// ── WP2.1 agents/crews (roadmap/assistant-hub/, §1.4 / D-AH7) ──────────────────────────────────────
+// ── WP2.1 agents/crews (planning/Roadmap/RM-03-assistant-hub/, §1.4 / D-AH7) ──────────────────────────────────────
 //
 // The role library (`hub_agents`) and saved crews (`hub_crews`) are plain CRUD resources — no session/
 // SSE/turn-engine involvement (a role/crew is a reusable DEFINITION the planner and the web Agents view
@@ -2950,7 +2950,7 @@ function registerHubCrewRoutes(
   });
 }
 
-// ── WP3.2 memory (roadmap/assistant-hub/, §1.4 / D-AH11a) ──────────────────────────────────────────
+// ── WP3.2 memory (planning/Roadmap/RM-03-assistant-hub/, §1.4 / D-AH11a) ──────────────────────────────────────────
 //
 // `hub_memory` CRUD, the standalone Memory panel's data surface (list/create/edit/archive/delete) AND
 // the `memory.propose_save` built-in's "explicit save" endpoint (`hub/tools/builtins/memory.ts`
@@ -3036,7 +3036,7 @@ function registerHubMemoryRoutes(
   });
 }
 
-// ── WP3.5 reviews (roadmap/assistant-hub/, §1.4 / D-AH12, D-AH7) ───────────────────────────────────
+// ── WP3.5 reviews (planning/Roadmap/RM-03-assistant-hub/, §1.4 / D-AH12, D-AH7) ───────────────────────────────────
 //
 // Five routes:
 //   - `GET  /api/hub/artifacts/:id/reviews`         — list an artifact's reviews (newest last).

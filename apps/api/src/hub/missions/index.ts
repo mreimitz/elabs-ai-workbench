@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7) — the mission sub-module public surface. The hub
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7) — the mission sub-module public surface. The hub
 // wiring (`index.ts`) and the routes barrel (`hub/routes.ts`) import from here.
 export {
   AGENT_REPORT_PROJECTED_NOTE,

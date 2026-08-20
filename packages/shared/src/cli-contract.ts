@@ -3,10 +3,10 @@ import type { SuiteRun, SuiteRunMember } from "./types.js";
 
 // ==================================================================================================
 // `mcpfp` CLI contract — the machine-output envelope, the exit codes, and the config file shape
-// (roadmap/ci/, WP 1.2)
+// (planning/Roadmap/RM-08-ci/, WP 1.2)
 // ==================================================================================================
 // The CLI is a THIN CLIENT of a running workbench API: transport + formatting, nothing else (see
-// `roadmap/ci/README.md`'s "The CLI is a client" invariant). What it prints under `--format json`,
+// `planning/Roadmap/RM-08-ci/item.md`'s "The CLI is a client" invariant). What it prints under `--format json`,
 // what it exits with, and what it reads out of `mcpfp.config.json` are wire-adjacent contracts, so
 // they are declared HERE rather than inside `apps/cli` — for three concrete reasons:
 //
@@ -21,7 +21,7 @@ import type { SuiteRun, SuiteRunMember } from "./types.js";
 //   3. A future server-side consumer (an assertion report, an artifact writer) can type against the
 //      same envelope without depending on the CLI.
 //
-// Locked decisions this module encodes (2026-08-19, `roadmap/ci/wp-1.2-mcpfp-cli.md`):
+// Locked decisions this module encodes (2026-08-19, `planning/Roadmap/RM-08-ci/wp-1.2-mcpfp-cli.md`):
 //
 //   • **D-C5 — argument parsing has no dependency.** `node:util`'s `parseArgs` + global `fetch`. A
 //     four-command CLI is not a reason to take on `commander`/`yargs`, so `pnpm-lock.yaml` gains no
@@ -75,7 +75,7 @@ export type McpfpOutput<T> = {
  *
  * The distinction that matters in CI: **a non-2xx API response is a `2`, not a `1`.** "The gate said
  * no" and "the gate could not run" are different outcomes and a pipeline must be able to tell them
- * apart — `roadmap/ci/README.md`'s invariant, pinned by a test.
+ * apart — `planning/Roadmap/RM-08-ci/item.md`'s invariant, pinned by a test.
  */
 export const MCPFP_EXIT = { success: 0, assertionFailure: 1, error: 2 } as const;
 

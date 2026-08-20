@@ -1,4 +1,4 @@
-// Unified Sessions — the ONE shared terminal table (roadmap/unified-sessions/, WP1.1, D-US1/D-US2).
+// Unified Sessions — the ONE shared terminal table (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1, D-US1/D-US2).
 //
 // Every run backend (the AI-SDK engine, the Claude-subscription child) ends
 // a run through this single function, so the SAME cause produces the SAME terminal triple everywhere

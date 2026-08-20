@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.4, R-MCP7) — the output-cap SPILL TARGET wired into the
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.4, R-MCP7) — the output-cap SPILL TARGET wired into the
 // LIVE turn, end-to-end. WP0.5 already unit-tests `applyOutputCap` in isolation (`hub-tool-policy.test.ts`)
 // and WP1.4 already unit-tests the SpillCard given a hand-fed `HubToolArtifact` (web); this file proves
 // the missing middle: a REAL oversized MCP `tools/call` result, driven through `HubSessionService` +

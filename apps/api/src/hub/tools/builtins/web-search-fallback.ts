@@ -1,4 +1,4 @@
-// Assistant Hub — v1-fixes F6 (roadmap/assistant-hub/mission-session-analysis-2026-07-20.md §4) — the
+// Assistant Hub — v1-fixes F6 (planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md §4) — the
 // APP-LEVEL `web.search` fallback: a provider CHAIN that gives every model kind real web search,
 // "exactly like a session with Claude", instead of the pre-fix native-only design (anthropic/openai/
 // google) that left subscription, openai_compatible, ollama and facade sessions with no search at all.

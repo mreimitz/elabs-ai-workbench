@@ -90,7 +90,7 @@ import {
 export type ModelFactory = (cred: DecryptedCredential, model: string) => LanguageModel;
 
 /**
- * The subscription auth-resolver seam (roadmap/claude-subscription/, WP 1.2, D-CS7). Resolves the
+ * The subscription auth-resolver seam (planning/Roadmap/RM-09-claude-subscription/, WP 1.2, D-CS7). Resolves the
  * DECRYPTED signed-in Claude subscription as a spawn-env {@link AssistantAuthSource}, or `null` when
  * no subscription is signed in. Production wires `AssistantAuthService.resolveJudgeAuth`, which is
  * subscription-only and NEVER consults the API-key fallback — so a subscription RUN can only ever run
@@ -269,7 +269,7 @@ export type RunHandle = {
 };
 
 /**
- * Observability (roadmap/observability/, WP3.3, D-OB18) — the ADDITIVE seed a FORK carries into the
+ * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — the ADDITIVE seed a FORK carries into the
  * EXISTING run-start path. It is the only new thing threaded through `start`/`execute`/the three resolve
  * methods; a NON-fork run passes `undefined` and every path is byte-identical to before. Skill-version
  * overrides ride the pre-existing {@link SkillOverrides} `start` param, NOT this object.
@@ -359,7 +359,7 @@ export class RunService {
      */
     private readonly issues?: RatingIssueService,
     /**
-     * Claude subscription run driver (roadmap/claude-subscription/, WP 1.2). The raw Agent-SDK
+     * Claude subscription run driver (planning/Roadmap/RM-09-claude-subscription/, WP 1.2). The raw Agent-SDK
      * {@link AgentSessionDriver} the `claude_subscription` executor drives — production wires a
      * `new SdkAgentSessionDriver()` (the SAME driver kind the Auto-Rating CLI judge uses); tests inject
      * a scripted fake so the suite spawns NO real child. Optional so every existing caller/test
@@ -375,7 +375,7 @@ export class RunService {
      */
     private readonly subscriptionAuth?: ClaudeSubscriptionAuthResolver,
     /**
-     * Claude subscription concurrency pool (roadmap/claude-subscription/, WP 2.1, D-CS2/D-CS10). Its
+     * Claude subscription concurrency pool (planning/Roadmap/RM-09-claude-subscription/, WP 2.1, D-CS2/D-CS10). Its
      * `.shared` gate is the SINGLE runs+judge budget threaded onto every subscription run's
      * {@link ClaudeSubscriptionRunConfig.concurrency} — the SAME instance the Auto-Rating CLI judge
      * acquires, so the TOTAL of (in-flight subscription runs + in-flight CLI judges) never exceeds the
@@ -388,7 +388,7 @@ export class RunService {
      */
     private readonly subscriptionConcurrency?: SubscriptionConcurrencyPool,
     /**
-     * Claude subscription LIVE model roster (roadmap/claude-subscription/ follow-up). The SAME cached
+     * Claude subscription LIVE model roster (planning/Roadmap/RM-09-claude-subscription/ follow-up). The SAME cached
      * resolver the provider dropdown + assistant dock use, consumed here as a
      * {@link SupportedModelIdSource} so {@link resolveClaudeSubscription} can reject a run whose selected
      * model the signed-in subscription does NOT offer — reading the CACHE only (NO hot-path spawn). When
@@ -398,7 +398,7 @@ export class RunService {
      */
     private readonly subscriptionModels?: SupportedModelIdSource,
     /**
-     * Observability watch rules (roadmap/observability/, WP4.1, D-OB19/D-OB21). The POST-HOC OBSERVER
+     * Observability watch rules (planning/Roadmap/RM-17-observability/, WP4.1, D-OB19/D-OB21). The POST-HOC OBSERVER
      * evaluated at the SAME post-terminal choke point auto-rating uses ({@link reviewRun}), AFTER the
      * run is terminal AND its rating axis has settled. Optional so every existing caller/test constructs
      * {@link RunService} unchanged (absent → watch rules simply never fire). It can NEVER mutate run
@@ -470,7 +470,7 @@ export class RunService {
   }
 
   /**
-   * Observability (roadmap/observability/, WP3.3, D-OB18) — the bench-native "Open in Playground": FORK
+   * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — the bench-native "Open in Playground": FORK
    * a TERMINAL run into a NEW, fully-persisted, gradeable, comparable run. This is an ADDITIVE path — it
    * VALIDATES, RECONSTRUCTS the parent's conversation prefix (pure {@link reconstructForkPrefix}), then
    * SEEDS a new run through the SAME {@link start} path with that prefix + the overrides. It never touches
@@ -737,7 +737,7 @@ export class RunService {
         skillOverrides,
         forkSeed,
       );
-      // Unified Sessions (roadmap/unified-sessions/, WP1.3) — thread the engine's optional SessionClock
+      // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3) — thread the engine's optional SessionClock
       // duration `meta` through to the RunManager choke point verbatim (see `RunEmitMeta`); an engine
       // event that carries none (every non-terminal emit) leaves `meta` `undefined`, unchanged from before.
       return await runAgentLoop(runId, cfg, (event, meta) =>
@@ -885,7 +885,7 @@ export class RunService {
    * graders on any terminal status; expectation graders completed-only + expectations-gated), and
    * {@link evaluateRunAssertions} deliberately stays completed-only — this wrapper changes neither.
    *
-   * WP 3.3 (roadmap/claude-subscription/) confirmation — this method is called from {@link start}'s
+   * WP 3.3 (planning/Roadmap/RM-09-claude-subscription/) confirmation — this method is called from {@link start}'s
    * `.then` chain UNCONDITIONALLY, for every provider kind (`claude_subscription` included): there is
    * no kind check anywhere in this method, in {@link GradeService.gradeRun}, or in its per-grader
    * `isEligible` gate (mandatory base-rating graders run on ANY terminal run status; expectation
@@ -1008,7 +1008,7 @@ export class RunService {
    * a stopped run). The abort listener and {@link answerQuestion} both use the map as the single
    * resolve-once guard (a `delete` that returns `false` means the other side already settled it).
    *
-   * Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US1/D-US3) — the optional `clockCell` is a
+   * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US1/D-US3) — the optional `clockCell` is a
    * mutable box the AI-SDK engine path fills in AFTER this bridge is built (via `EngineConfig.
    * onSessionClockReady` — the bridge has to exist before `tools`, which has to exist before
    * `EngineConfig`, which is where the engine's SessionClock is actually constructed). Reading
@@ -1324,7 +1324,7 @@ export class RunService {
     const effectiveModel = forkSeed?.modelOverride ?? scenario.model;
     const effectiveUserPrompt = forkSeed?.promptOverride ?? test.userPrompt;
 
-    // Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US4) — persist this run's static capability
+    // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US4) — persist this run's static capability
     // manifest right at the start of the AI-SDK engine path (the five chat-completions provider kinds
     // all share `ENGINE_SESSION_CAPABILITIES` — see `session-capabilities.ts`), so it's queryable via
     // `GET /api/runs/:id` from the moment the run exists, before the first event even streams.
@@ -1533,7 +1533,7 @@ export class RunService {
       // Automated runs pass no `interactive`, so they run a single opener turn unchanged.
       abortSignal: control.abort.signal,
       ...(control.mode === "interactive" ? { interactive: this.nextTurnProvider(control) } : {}),
-      // Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US1/D-US3) — capture the engine's own
+      // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US1/D-US3) — capture the engine's own
       // SessionClock into `clockCell` (so the ask_user bridge built above can bracket its wait with the
       // SAME clock a `nextTurn` wait uses). WP1.7 — the engine now clears its own `starting`/
       // `waiting_input` phase by emitting `{type:"phase",phase:null}` through the normal event choke

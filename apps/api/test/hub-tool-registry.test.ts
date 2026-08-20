@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.5, §1.6) — grants resolution (R-MCP1), the MCP-bridge
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.5, §1.6) — grants resolution (R-MCP1), the MCP-bridge
 // collision-namespacing adapter, the deferred/auto tool-loading heuristic with MEASURED tokens
 // (R-MCP2), and the composed registry.
 import assert from "node:assert/strict";

@@ -1,4 +1,4 @@
-// Assistant operability (roadmap/assistant-operability/, WP 5.1, D-AO7) — the Hub WRITE toolset
+// Assistant operability (planning/Roadmap/RM-05-assistant-operability/, WP 5.1, D-AO7) — the Hub WRITE toolset
 // (hub_agent_create/hub_agent_update/hub_crew_create/hub_crew_update), exercised DIRECTLY against a
 // seeded fixture `HubRepository`: each tool's `.handler(args, {})` is called exactly as the SDK would
 // call it — no SDK session, no MCP protocol round-trip (unit level, mirroring

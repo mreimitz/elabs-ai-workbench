@@ -12,7 +12,7 @@ import type { AssistantAuthSource } from "../src/assistant/spawn-env.js";
 import type { ConcurrencyGate } from "../src/testing/subscription-concurrency.js";
 import { SubscriptionModelResolver } from "../src/providers/subscription-models.js";
 
-// The LIVE Claude-subscription model roster resolver (roadmap/claude-subscription/ follow-up). Every
+// The LIVE Claude-subscription model roster resolver (planning/Roadmap/RM-09-claude-subscription/ follow-up). Every
 // case injects a SCRIPTED FAKE driver returning a FIXED `DriverModelInfo[]` — NO real child is spawned,
 // NO Anthropic call is made, NO real filesystem is touched (the workspace factory is a stub).
 

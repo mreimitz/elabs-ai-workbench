@@ -117,7 +117,7 @@ async function listOpenAiCompatible(
 }
 
 /**
- * Claude subscription (roadmap/claude-subscription/) — this kind's "models" are the Claude tiers the
+ * Claude subscription (planning/Roadmap/RM-09-claude-subscription/) — this kind's "models" are the Claude tiers the
  * signed-in subscription grants, NOT a REST roster: there is no per-credential API key to call a
  * provider with (auth resolves from the owner's signed-in Claude subscription — see
  * `apps/api/src/assistant/`). The LIVE list comes from the Agent SDK's own roster

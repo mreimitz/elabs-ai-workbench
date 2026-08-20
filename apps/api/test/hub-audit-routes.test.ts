@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP4.2, §1.4 / D-AH13, R-UX7) — `GET /api/hub/audit` over a
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.2, §1.4 / D-AH13, R-UX7) — `GET /api/hub/audit` over a
 // REAL `HubRepository`, mirroring `hub-memory-routes.test.ts`'s harness (a real `HubSessionService`
 // with no model ever invoked — the audit projection never touches the turn engine, it only reads
 // `hub_events` back). Events are seeded directly via `repo.appendEvent` (the same choke point the

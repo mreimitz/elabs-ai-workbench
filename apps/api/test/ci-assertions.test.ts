@@ -47,7 +47,7 @@ import { analyzeScan } from "../src/security/service.js";
 import { SecretStore } from "../src/secrets/secret-store.js";
 import { ServerRepository } from "../src/servers/repository.js";
 
-// The CI assertions engine (roadmap/ci/ WP 1.3 — A1..A4). No DB, no network, no MCP: the engine
+// The CI assertions engine (planning/Roadmap/RM-08-ci/ WP 1.3 — A1..A4). No DB, no network, no MCP: the engine
 // takes three read functions, so a test hands it scans directly and the whole rule surface,
 // including every D-C8 unevaluable case, is exercised in-process.
 

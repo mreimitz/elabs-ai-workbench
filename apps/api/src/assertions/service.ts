@@ -1,4 +1,4 @@
-// The CI assertions engine (roadmap/ci/, WP 1.3) — evaluates a `mcpfp.assert.json` document against
+// The CI assertions engine (planning/Roadmap/RM-08-ci/, WP 1.3) — evaluates a `mcpfp.assert.json` document against
 // a scan the workbench has ALREADY persisted and returns an itemized `AssertionReport`.
 //
 // Three properties this file exists to hold:

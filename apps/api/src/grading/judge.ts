@@ -14,7 +14,7 @@ import type { GradeContext, Grader, GraderResult } from "./grader.js";
  * Vertex/Gemini specifics to our provider layer — same rubric, same `<rating>N</rating>` protocol,
  * same expected-rating-over-top-k-logprobs weighting.
  *
- * HARD invariants (roadmap/benchmarks/conventions.md + the WP 1.3 spec):
+ * HARD invariants (planning/Roadmap/RM-07-benchmarks/conventions.md + the WP 1.3 spec):
  *   - The judge NEVER executes anything — no MCP call, no code/skill run. It READS the persisted run +
  *     the test's authored expectations (documents) and makes exactly ONE provider call.
  *   - Grading NEVER blocks/mutates a run. A stuck or failed judge yields a `run_grades` row with

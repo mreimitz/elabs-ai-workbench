@@ -8,7 +8,7 @@
 // prompt (`opts.system`) forwarded verbatim as the driver's `systemPrompt` — NEVER the assistant persona
 // (D-AS9 is satisfied by forwarding `opts.system`, since this module never references the persona prompt).
 //
-// HARD invariants (roadmap/auto-rating/README.md AR11/AR13/AR14/AR16, D-AS9/D-AS11/D-AS17):
+// HARD invariants (planning/Roadmap/RM-06-auto-rating/item.md AR11/AR13/AR14/AR16, D-AS9/D-AS11/D-AS17):
 //   - AR14: a memory semaphore (default 1, `AUTO_RATING_MAX_CONCURRENCY`) bounds concurrent CLI children
 //     (~1 GiB each) — acquired BEFORE spawning, released in a `finally`.
 //   - AR13: real token counts come from WP 2.1's `turn_done.usage`; cost is the CALLER's concern (0 for a
@@ -23,7 +23,7 @@
 //     CLAUDE_CONFIG_DIR (where the per-call JSONL transcript lands) and is removed in a `finally` — the
 //     real assistant home is never touched.
 //
-// WP 3.3 (roadmap/claude-subscription/, D-CS10) confirmation — this module rates BOTH kinds of run
+// WP 3.3 (planning/Roadmap/RM-09-claude-subscription/, D-CS10) confirmation — this module rates BOTH kinds of run
 // (API-keyed and `claude_subscription`) identically; there is nothing kind-aware in this file. When a
 // `claude_subscription` run is being rated, its judge call above is a SIBLING ~1 GiB child of the run
 // that just finished, so `deps.gate` (WP 2.1's `SubscriptionConcurrencyPool.shared`, injected from

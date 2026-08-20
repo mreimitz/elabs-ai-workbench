@@ -1,5 +1,5 @@
 // Assistant Hub — the `claude_subscription` chat session's REAL MCP tool wiring
-// (roadmap/model-identity/, WP3.2, locked decision **D-MI3**).
+// (planning/Roadmap/RM-16-model-identity/, WP3.2, locked decision **D-MI3**).
 //
 // ## Why this module exists
 //

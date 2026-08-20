@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.5, D-AH1…D-AH20) — the per-session workspace filesystem
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.5, D-AH1…D-AH20) — the per-session workspace filesystem
 // plumbing. Per execution-plan §1.3: "Workspace (not a table): `/data/hub/ws/<sessionId>/` on the
 // `/data` volume; pruned with the session (and by the maintenance endpoint, Wave 4)." This module owns
 // ONLY the filesystem confinement (path resolution/guards, tree listing, text read/write/edit) — the

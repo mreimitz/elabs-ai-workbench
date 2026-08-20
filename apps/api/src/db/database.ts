@@ -432,7 +432,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     // latest shape) and creates them on an existing (pre-v20) DB. No existing table/column is
     // touched, so this is forward-safe and requires no rebuild.
     //
-    // NOTE — version-number drift: `roadmap/assistant/00-plan.md` §4 and its WP 0.1 brief were
+    // NOTE — version-number drift: `planning/Roadmap/RM-02-assistant/00-plan.md` §4 and its WP 0.1 brief were
     // written naming this migration "v19", but by the time this WP landed, v19 (Testing-UX
     // suite-run member index, above) already occupied that slot — so this is v20, and
     // `LATEST_SCHEMA_VERSION` (auto-derived below) becomes 20. The four version-literal test locks
@@ -568,7 +568,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v25 — Server types (roadmap/server-types, D-ST6): a first-class grouping entity for MCP
+    // v25 — Server types (planning/Roadmap/completed/RM-21-server-types, D-ST6): a first-class grouping entity for MCP
     // servers ("SaaS" = production fleet, "stage" = beta/RC). Lifecycle status lives ON
     // the type (D-ST1); each server references at most one type. Fully ADDITIVE — a new table
     // (`CREATE TABLE IF NOT EXISTS`, no-op on a fresh DB where schema.ts already built it) plus one
@@ -700,7 +700,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v28 — Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS6): widen
+    // v28 — Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS6): widen
     // `provider_credentials.kind`'s CHECK to admit 'claude_subscription', mirroring v23's
     // add-kind rebuild (SQLite cannot ALTER a CHECK in place — the canonical widening is
     // a table rebuild: create the new-shape table, copy every existing column verbatim, drop the old
@@ -712,7 +712,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     up: (db) => widenProviderCredentialsKindCheck(db),
   },
   {
-    // v29 — Claude subscription (roadmap/claude-subscription/, WP 3.1, D-CS4/D-CS8): persist the run's
+    // v29 — Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.1, D-CS4/D-CS8): persist the run's
     // cost BASIS so the Runs feed + Compare (which read `runs`-table columns via `toRunSummary`, not the
     // live `kpi` event) can mark a subscription run's shadow-priced `cost_usd` "est. · subscription".
     // A single ADDITIVE nullable `ensureColumn` (the v2/v11/v18/v24 pattern — plain TEXT, no CHECK, so
@@ -753,7 +753,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v31 — Unified Sessions (roadmap/unified-sessions/, WP1.6, D-US1/D-US2): the session-lifecycle
+    // v31 — Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6, D-US1/D-US2): the session-lifecycle
     // persistence surface. Two things land in ONE rebuild (SQLite cannot ALTER a CHECK in place, so the
     // status-CHECK widening forces a rebuild anyway — folding the 7 new columns into the SAME rebuild
     // avoids a second full-table rewrite):
@@ -1252,7 +1252,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v47 — Assistant Hub (roadmap/assistant-hub/, WP0.2, D-AH1…D-AH20): the 13 brand-new `hub_*`
+    // v47 — Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.2, D-AH1…D-AH20): the 13 brand-new `hub_*`
     // tables backing the full-page, multi-model, multi-agent Assistant. DDL is IDENTICAL to
     // schema.ts's baseline (the v20/v40/v43/v44/v45/v46 brand-new-table pattern — safe in both the
     // baseline CREATE TABLE and this migration; no "column doesn't exist yet" ordering hazard, since
@@ -1483,7 +1483,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v49 — Assistant Hub UX (roadmap/assistant-hub-ux/, WP1.0s, D-HUX4/D-HUX8/D-HUX11, P2/P4): the
+    // v49 — Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.0s, D-HUX4/D-HUX8/D-HUX11, P2/P4): the
     // Wave-1 DB schema substrate. Lands ALL of Wave 1's additive `hub_*` columns in ONE migration so the
     // parallel API WPs (memory scopes, agent/crew identity, session archive) never touch `db/` and never
     // collide on a migration version. Four plain ADDITIVE `ensureColumn`s (the v2/v11/v18/v24/v29/v35
@@ -1622,7 +1622,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v55 — model identity (D-MI1, `roadmap/model-identity/`): pin WHICH provider credential runs a hub
+    // v55 — model identity (D-MI1, `planning/Roadmap/RM-16-model-identity/`): pin WHICH provider credential runs a hub
     // session / a saved agent, instead of re-guessing the provider from the model NAME. A model id does
     // NOT identify a provider — the signed-in Claude subscription deliberately reports Anthropic's
     // CANONICAL ids (`providers/subscription-models.ts`, so `resolvePrice`/MODEL_CONTEXT_LIMITS exact-key
@@ -1836,7 +1836,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
     },
   },
   {
-    // v58 — service tokens (roadmap/ci/ WP 1.1, D-C2): the brand-new `api_tokens` table backing the
+    // v58 — service tokens (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2): the brand-new `api_tokens` table backing the
     // credential a headless caller (CI, the `mcpfp` CLI, an external agent on the MCP mount) presents
     // instead of a browser session. DDL is IDENTICAL to schema.ts's baseline (the v40/…/v48 brand-new-
     // table pattern — safe in both the baseline CREATE TABLE and this migration, with no "column

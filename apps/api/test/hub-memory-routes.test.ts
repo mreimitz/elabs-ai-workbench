@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.2, §1.4 / D-AH11a) — the `hub_memory` REST surface over a
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.2, §1.4 / D-AH11a) — the `hub_memory` REST surface over a
 // REAL `HubRepository`, mirroring `hub-agent-routes.test.ts`'s harness (a real `HubSessionService` with
 // no model ever invoked — memory routes never touch the turn engine).
 //

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7 · D-AH6/D-AH7 · R-UX6) — the editable MISSION PLAN
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7 · D-AH6/D-AH7 · R-UX6) — the editable MISSION PLAN
 // card, rendered IN-BAND when the planner has proposed a team (`plan_proposed`) and the mission is
 // still awaiting approval. Composes `@elabs-ai/components-ai`'s `Plan*` shell + `@elabs-ai/components-ui` primitives (brand-ui
 // only, both themes). Each agent shows its role, model chip, target, brief, per-agent RATIONALE

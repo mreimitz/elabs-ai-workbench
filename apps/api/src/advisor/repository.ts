@@ -3,7 +3,7 @@
 // This is the ONE place that binds the app's concrete repositories to the advisor's narrow read
 // ports. Rules never import a repository, never see a `Database`, and never touch the secret store —
 // they receive an {@link AdvisorContext} and can only read what these ports expose
-// (roadmap/advisor/conventions.md, runtime boundary).
+// (planning/Roadmap/RM-01-advisor/conventions.md, runtime boundary).
 //
 // It is called `repository.ts` because it is the advisor's data-access layer; there is deliberately
 // no SQL of its own. Everything the advisor reads is already persisted and already has a repository

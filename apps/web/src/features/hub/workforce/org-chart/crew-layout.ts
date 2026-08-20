@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX9) — the PURE, shared per-crew member
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP2.5 · D-HUX9) — the PURE, shared per-crew member
 // layout: it turns one crew (+ the role library it draws from) into positioned `@elabs-ai/components-flow`
 // member nodes and topology-true edges, arranged by the library's own dagre auto-layout
 // (`layoutFlow` — NO hand-placed coordinates, D-HUX9). Both {@link buildOrgChartModel} (the Org

@@ -746,7 +746,7 @@ export class SkillRepository {
   }
 
   /**
-   * Version label priority (research/skill-registry/04): `metadata.version` when present AND not
+   * Version label priority (planning/Research/RS-02-skill-registry/outputs/04-versioning-and-diff.md): `metadata.version` when present AND not
    * already used by another version of this skill → git short-sha (GitHub) → `v{seq}`.
    */
   private deriveLabel(skillId: string, meta: CreateVersionMeta, seq: number): string {

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.5) — `hub/workspace.ts`: the per-session workspace
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.5) — `hub/workspace.ts`: the per-session workspace
 // filesystem confinement (path-traversal-guarded; content read/written, NEVER executed).
 import assert from "node:assert/strict";
 import fs from "node:fs";

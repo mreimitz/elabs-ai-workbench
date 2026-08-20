@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP1.5, D-HUX11) — scoped memory CRUD + the entity guard +
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.5, D-HUX11) — scoped memory CRUD + the entity guard +
 // the repository-backed effective-stack builder + the additive `effectiveMemory` on the session context
 // payload + the scoped proposal flow. The PURE ordering/conflict logic is proved in
 // `hub-memory-resolver.test.ts`; this file proves the wiring over a REAL migrated DB (v49) and the real

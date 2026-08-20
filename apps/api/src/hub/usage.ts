@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP4.1, R-UX6/R-UX8) — `GET /api/hub/usage` aggregates. Pure
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.1, R-UX6/R-UX8) — `GET /api/hub/usage` aggregates. Pure
 // rollups over `HubRepository.listSessions()`/`listMissions()` (the running per-session/per-mission
 // totals the turn engine + mission orchestrator already accumulate as they go — never re-derived from
 // replaying the event log). Kept as a standalone module (not inlined in `hub/routes.ts`, which the

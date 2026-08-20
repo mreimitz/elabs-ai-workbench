@@ -50,7 +50,7 @@ export class ProviderService {
   // returned. Cached for MODEL_CACHE_TTL_MS per credential. Throws a 404 for an unknown id (via
   // get/getDecrypted) and a 4xx/5xx httpError when the provider can't be reached.
   //
-  // `subscriptionModels` (roadmap/claude-subscription/ follow-up) is the LIVE Claude-subscription roster
+  // `subscriptionModels` (planning/Roadmap/RM-09-claude-subscription/ follow-up) is the LIVE Claude-subscription roster
   // resolver, threaded from the route. A `claude_subscription` credential carries NO key to decrypt —
   // `getDecrypted` THROWS `brokenSubscriptionAuthError` when signed out — so its roster is resolved via
   // the resolver directly (which independently resolves the sign-in and falls back to the static roster),

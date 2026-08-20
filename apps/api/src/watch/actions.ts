@@ -1,4 +1,4 @@
-// Observability — the CLOSED watch-rule action set + its executor (roadmap/observability/, WP4.1).
+// Observability — the CLOSED watch-rule action set + its executor (planning/Roadmap/RM-17-observability/, WP4.1).
 //
 // Each action is executed through an injected {@link WatchActionServices} seam (real services in
 // prod; stubs in tests) and returns a structured {@link WatchRuleEventResult} (never throws — a

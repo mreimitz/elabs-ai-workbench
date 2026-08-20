@@ -1,4 +1,4 @@
-// Assistant operability (roadmap/assistant-operability/, WP 5.1, D-AO7) — the Hub WRITE toolset:
+// Assistant operability (planning/Roadmap/RM-05-assistant-operability/, WP 5.1, D-AO7) — the Hub WRITE toolset:
 // `hub_agent_create` / `hub_agent_update` / `hub_crew_create` / `hub_crew_update`. These let the dock
 // CREATE and EDIT agent roles + saved crews from the (deliberately unpinned) `/assistant/agents` page —
 // the owner-hit symptom D-AO7 fixes ("create the crew and the agents" was refused because that page is

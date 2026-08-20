@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.5, §1.6) — the annotation-informed approval-policy CORE
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.5, §1.6) — the annotation-informed approval-policy CORE
 // (R-MCP3), output-size warn/cap + spill (R-MCP7), and structured-output validation + the isError
 // fold (R-MCP6).
 import assert from "node:assert/strict";

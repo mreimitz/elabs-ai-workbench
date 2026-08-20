@@ -1,4 +1,4 @@
-// Observability — the watch-rule engine (roadmap/observability/, WP4.1, D-OB19/D-OB21).
+// Observability — the watch-rule engine (planning/Roadmap/RM-17-observability/, WP4.1, D-OB19/D-OB21).
 //
 // The ONE on-terminal evaluation entry point: {@link WatchEngine.onRunSettled} is called from the
 // SINGLE post-finish choke point (testing/run-service.ts `reviewRun`, AFTER the run reaches a terminal

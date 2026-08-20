@@ -135,7 +135,7 @@ export type ProviderCredentialRow = {
     | "google"
     | "openai_compatible"
     | "ollama"
-    // Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS6/D-CS7): admitted by migration
+    // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS6/D-CS7): admitted by migration
     // v28's widened CHECK. No `api_key_encrypted` is ever stored for this kind — auth resolves from
     // `assistant_credentials` at run time (see `providers/subscription-auth.ts`).
     | "claude_subscription";
@@ -242,7 +242,7 @@ export type RunRow = {
   // 'subscription_reference' for a `claude_subscription` run's shadow price. Migration v29 adds the
   // column (existing runs backfill NULL); finalized from the terminal kpi's `costBasis`.
   cost_basis: string | null;
-  // Unified Sessions (roadmap/unified-sessions/, WP1.6) — additive session-lifecycle columns. ALL
+  // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6) — additive session-lifecycle columns. ALL
   // NULL-safe for every run persisted before this workstream (migration v31 backfills nothing but the
   // shape itself — a pre-existing row simply reads these as NULL/0). See schema.ts's `runs` DDL
   // comment for what each column means.
@@ -550,7 +550,7 @@ export type SkillServerBindingRow = {
 };
 
 // --- Assistant (WP 0.1, migration v20) ------------------------------------------------------------
-// Embedded Claude agent chat (roadmap/assistant/00-plan.md §4). All three tables are additive
+// Embedded Claude agent chat (planning/Roadmap/RM-02-assistant/00-plan.md §4). All three tables are additive
 // (`CREATE TABLE IF NOT EXISTS`, the v17 `skill_server_bindings` pattern — see db/database.ts v20).
 
 // One stored credential (D-AS1/D-AS2). Today only `kind = 'claude_oauth'` is written; the API-key
@@ -736,7 +736,7 @@ export type ReviewRubricRow = {
   updated_at: string;
 };
 
-// --- Assistant Hub (roadmap/assistant-hub/, WP0.2, migration v47) ---------------------------------
+// --- Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.2, migration v47) ---------------------------------
 // The full-page, multi-model, multi-agent Assistant (`hub` domain, D-AH2). All 13 tables are
 // brand-new + additive (the v20/v40/.../v46 "CREATE TABLE IF NOT EXISTS" pattern — see
 // db/schema.ts's "Assistant Hub" section + db/database.ts v47). Owned exclusively by

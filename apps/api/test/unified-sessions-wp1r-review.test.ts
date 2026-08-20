@@ -1,4 +1,4 @@
-// Unified Sessions — WP1.R adversarial review (roadmap/unified-sessions/, execution-plan §2 WP1.R).
+// Unified Sessions — WP1.R adversarial review (planning/Roadmap/completed/RM-29-unified-sessions/, execution-plan §2 WP1.R).
 //
 // Authored by the ADVERSARIAL REVIEWER to REFUTE the wave's invariants, not summarize them.
 //

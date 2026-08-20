@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP2.3 · D-CN6/D-CN9 · map §2 R6 / §5-6) — the SECURITY ENVELOPE +
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP2.3 · D-CN6/D-CN9 · map §2 R6 / §5-6) — the SECURITY ENVELOPE +
 // RUN-CONTROL reaching EVERY level of a nested crew tree, driven entirely by STUBBED seams (injected
 // `runAgent`/`resolveCrew`; NO real provider or MCP server is ever contacted). File lives at `apps/api/test/`
 // because the api runner globs `test/*.test.ts`.

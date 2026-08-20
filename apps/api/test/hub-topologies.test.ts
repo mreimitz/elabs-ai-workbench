@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.2) — the mission TOPOLOGY strategies + saved-crew
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.2) — the mission TOPOLOGY strategies + saved-crew
 // instantiation, driven by STUBBED model seams (no provider/API key). File lives at `apps/api/test/`
 // because the api runner globs `test/*.test.ts`.
 //

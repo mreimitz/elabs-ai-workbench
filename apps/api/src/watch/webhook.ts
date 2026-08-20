@@ -1,4 +1,4 @@
-// Observability — webhook test-fire (roadmap/observability/, WP4.3, D-OB19).
+// Observability — webhook test-fire (planning/Roadmap/RM-17-observability/, WP4.3, D-OB19).
 //
 //   POST /api/watch-rules/:id/test-fire
 //

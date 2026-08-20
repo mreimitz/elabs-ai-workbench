@@ -1,4 +1,4 @@
-// Observability — notification center routes (roadmap/observability/, WP4.3, D-OB19).
+// Observability — notification center routes (planning/Roadmap/RM-17-observability/, WP4.3, D-OB19).
 //
 //   GET  /api/notifications           (filter unread/severity/date, paged)
 //   POST /api/notifications/:id/read

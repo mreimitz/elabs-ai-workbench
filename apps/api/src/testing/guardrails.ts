@@ -7,7 +7,7 @@ import type { GuardrailConfig } from "@mcp-token-footprint/shared";
  * remaining budgets are enforced here and, on trip, stop the loop with `outcome: "stopped_guardrail"`
  * and `stop_reason` = the named key (decision #11 — no wall-clock).
  *
- * Unified Sessions (roadmap/unified-sessions/, WP1.3) — `engine.ts` maps a tripped budget to the
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3) — `engine.ts` maps a tripped budget to the
  * shared `terminalFor` table's machine-readable `StopReasonCode` at the point it consumes
  * {@link GuardrailState.tripped} (`GUARDRAIL_TRIP_CAUSES` in `engine.ts`): `maxTokens` →
  * `max_tokens`, `maxContextTokens` → `max_context_tokens`, `maxCostUsd` → `max_cost`, `maxToolCalls` →

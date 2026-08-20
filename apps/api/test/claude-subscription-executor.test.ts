@@ -31,7 +31,7 @@ import {
   type SkillFileBytesReader,
 } from "../src/testing/subscription-skill-tools.js";
 
-// WP 1.1 (roadmap/claude-subscription/) — the subscription run executor, exercised ENTIRELY through a
+// WP 1.1 (planning/Roadmap/RM-09-claude-subscription/) — the subscription run executor, exercised ENTIRELY through a
 // SCRIPTED FAKE driver + a stub auth resolver + a fake throwaway-workspace factory. NO SDK is imported,
 // NO child is spawned, NO Anthropic call is made, and the real filesystem is never touched. Live
 // subscription behavior is OWNER-ACCEPTANCE — never faked or asserted here.

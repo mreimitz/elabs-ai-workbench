@@ -1,4 +1,4 @@
-// Unified Sessions (roadmap/unified-sessions/, WP3.R) — the REUSABLE session-state seed harness.
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.R) — the REUSABLE session-state seed harness.
 //
 // It seeds one persisted `runs` row per **backend kind × new session state** DIRECTLY into a DB (the
 // findings/08-runs-session-rework verification pattern — NO provider key, NO live LLM, NO engine

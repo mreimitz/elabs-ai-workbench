@@ -145,7 +145,7 @@ export const MCP_NAV_ITEMS: NavItem[] = [
   { path: "/servers", label: "MCP Servers", icon: Server },
   { path: "/scans", label: "Scans", icon: ScanLine },
   { path: "/compare/scans", label: "Compare", icon: GitCompareArrows },
-  // Advisor (roadmap/advisor/ WP 1.3) — evidenced recommendations over the measurements the MCP
+  // Advisor (planning/Roadmap/RM-01-advisor/ WP 1.3) — evidenced recommendations over the measurements the MCP
   // group above produces (scans/footprints) plus the run history. It sits here rather than under
   // Testing so the four load-bearing Testing items stay as they are.
   { path: "/advisor", label: "Advisor", icon: Lightbulb },
@@ -260,7 +260,7 @@ export type AppShellProps = {
   onDockOpenChange?: (open: boolean) => void;
   /**
    * Whether the Assistant is reachable AT ALL right now — hides both the TopNav toggle and the dock
-   * itself when false (D-AS: "until an auth source exists the dock toggle is hidden", `roadmap/assistant/00-plan.md` §3.5).
+   * itself when false (D-AS: "until an auth source exists the dock toggle is hidden", `planning/Roadmap/RM-02-assistant/00-plan.md` §3.5).
    * Defaults to false so every existing `AppShell` caller (which passes none of the dock props) renders
    * byte-identical to before this WP.
    */

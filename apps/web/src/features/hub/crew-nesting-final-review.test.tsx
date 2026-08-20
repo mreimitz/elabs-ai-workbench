@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP5.R · D-CN10 refute doctrine · README §6 invariants) — the WEB
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP5.R · D-CN10 refute doctrine · README §6 invariants) — the WEB
 // half of the FINAL, whole-feature adversarial refute-review. Two probes only reachable in the browser
 // layer:
 //   • P-CYC4 — the UI cycle-reject UX (D-CN8): the crew profile modal's author-time cycle/over-depth
@@ -13,7 +13,7 @@
 // This is NOT a summary pass — each probe is a concrete ATTACK (a graph mutated into a cycle, an
 // over-depth candidate, a cyclic parent-linkage event log) that either fails to break the invariant
 // (REFUTED) or succeeds (a FINDING kept as a `.skip`). Verdicts recorded in
-// `roadmap/crew-nesting/phase-5-close/5.R-review.md`. NOTE: the both-theme + keyboard-focus visual walk
+// `planning/Roadmap/RM-10-crew-nesting/phase-5-close/5.R-review.md`. NOTE: the both-theme + keyboard-focus visual walk
 // of the cycle-reject UX + nested board stays OWNER-ACCEPTANCE (a rendered-app check an agent cannot do)
 // — seeded into the residual-risk summary; this suite proves the LOGIC + the DOM affordance, not pixels.
 

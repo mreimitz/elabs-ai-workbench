@@ -2,7 +2,7 @@
 
 All notable changes to MCP Token Footprint. This project is single-owner and versioned loosely; the
 authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
-`planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `roadmap/*/STATUS.md`;
+`planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
 ## Unreleased — one governed home for research, planning and the guide
@@ -15,7 +15,7 @@ Each investigation is a tagged `RS-NN` topic, each initiative a tagged `RM-NN` i
 `STATUS.md` work-package ledger, and each part of the system a tagged `DC-NN` documentation subject
 that holds both the record of what shipped and that part of the manual. Tags are two digits,
 allocated atomically and never reused, so a cross-reference stays valid for the life of the project.
-The loose `research/`, `roadmap/` and `user-guide/` trees are gone; 569 documents moved into tagged
+The loose `planning/Research/`, `planning/Roadmap/` and `planning/user-guide/` trees are gone; 569 documents moved into tagged
 folders and every internal link was re-pointed.
 
 **A plan can no longer be quietly "finished".** Work is planned as an `RM` item, built against its
@@ -43,8 +43,8 @@ The **CI & headless automation** workstream is complete (all 11 WPs, Phases 1–
 decisions **D-C1–D-C22** and **D-MCP1–D-MCP13**), and **security-posture Phase 1** landed with it
 (WPs 1.1–1.2, decisions **D-SP1–D-SP11**). Everything the bench measures is now reachable three ways
 — over MCP, from a terminal, and from a build pipeline — through the same API, so all three give the
-same numbers. Authoritative per-WP state: [`roadmap/ci/STATUS.md`](./roadmap/ci/STATUS.md) and
-[`roadmap/security-posture/STATUS.md`](./roadmap/security-posture/STATUS.md).
+same numbers. Authoritative per-WP state: [`planning/Roadmap/RM-08-ci/STATUS.md`](./planning/Roadmap/RM-08-ci/STATUS.md) and
+[`planning/Roadmap/RM-20-security-posture/STATUS.md`](./planning/Roadmap/RM-20-security-posture/STATUS.md).
 
 **The workbench MCP server can now act, not only read.** The `/api/mcp` mount grew three write tools
 — `scan_run` (`scan:run`), `suite_run_start` (`suites:run`), `run_plan_start` (`runs:launch`) — one
@@ -103,7 +103,7 @@ report on either side is a **400**, never a fallback to counts.
 
 **CI packaging.** [`examples/github-actions/`](./examples/github-actions/) ships two copyable
 workflows — an ephemeral workbench on the runner and a persistent shared one — plus the two gate files
-they reference and [`user-guide/23-ci-github-actions.md`](./user-guide/23-ci-github-actions.md). They
+they reference and [`planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md`](./planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md). They
 ship as **examples, not live workflows**: this repo has no workbench to run them against, and a
 permanently skipped gate in the repo that publishes gates is worse than no gate (D-C17). A text test
 holds them honest instead — pinned action majors from an allow-list, the CLI called only as
@@ -197,7 +197,7 @@ multi-model, multi-agent workspace distinct from the existing right-side dock (r
 assistant"**, copy-only). Built on the existing multi-provider inference, MCP-bridge, skills, and
 token-metering infrastructure, adopting the Unified-Sessions contract verbatim (`phase`,
 `stopReasonCode`, capability manifests, `SessionClock`, cursor-resumable SSE). Plan + locked
-decisions D-AH1–D-AH20 at [`roadmap/assistant-hub/`](./roadmap/assistant-hub/).
+decisions D-AH1–D-AH20 at [`planning/Roadmap/RM-03-assistant-hub/`](./planning/Roadmap/RM-03-assistant-hub/).
 
 - **Three session modes** — `chat` (multi-model conversation over registered MCP tools + skills),
   `research` (citations-first, search-grounded), and `mission` (the harness below); model
@@ -237,12 +237,12 @@ decisions D-AH1–D-AH20 at [`roadmap/assistant-hub/`](./roadmap/assistant-hub/)
   wizard — no bundled key, no built-in search engine), and skill L1/L2/L3 budget-aware loading.
 - New `hub_*` tables (migrations v47–v48) + `apps/api/src/hub/**` (turn engine, missions, tools,
   prompting, genui) + `apps/web/src/features/hub/**`; documented in
-  [`user-guide/16-assistant-hub.md`](./user-guide/16-assistant-hub.md). Built on
+  [`planning/user-guide/DC-13-assistant-hub/16-assistant-hub.md`](./planning/user-guide/DC-13-assistant-hub/16-assistant-hub.md). Built on
   `feat/assistant-hub` (all 5 waves); an e2e smoke test drives the full propose→approve→run→
   synthesize flow against a deterministic stubbed model (`e2e/fixtures/hub-stub-llm-server.ts`) —
   no real provider key needed. **Not yet merged to `main`** (owner merges); live-provider/
   subscription/real-research-server walks are owner-acceptance (see the ledger's Owner-acceptance
-  section and [`roadmap/assistant-hub/owner-acceptance-walk.md`](./roadmap/assistant-hub/owner-acceptance-walk.md)).
+  section and [`planning/Roadmap/RM-03-assistant-hub/owner-acceptance-walk.md`](./planning/Roadmap/RM-03-assistant-hub/owner-acceptance-walk.md)).
 
 #### Assistant Hub UX rebuild (Waves 0–4, 24 WPs)
 
@@ -261,8 +261,8 @@ refactored into four scopes (profile/project/agent/crew) with clear effective-st
 in the workspace Context section. Navigation was consolidated 6→4 (Assistant + Sessions child,
 Agents & Crews, Projects, Audit) with transparent legacy redirects (`/assistant/memory` →
 `?memory=profile`, `/assistant/usage` → `?tab=usage`). Plan + 24 WPs across Waves 0–4 at
-[`roadmap/assistant-hub-ux/`](./roadmap/assistant-hub-ux/) (ledger:
-[`STATUS.md`](./roadmap/assistant-hub-ux/STATUS.md), [`execution-plan.md`](./roadmap/assistant-hub-ux/execution-plan.md));
+[`planning/Roadmap/completed/RM-04-assistant-hub-ux/`](./planning/Roadmap/completed/RM-04-assistant-hub-ux/) (ledger:
+[`STATUS.md`](./planning/Roadmap/completed/RM-04-assistant-hub-ux/STATUS.md), [`execution-plan.md`](./planning/Roadmap/completed/RM-04-assistant-hub-ux/execution-plan.md));
 all decisions D-HUX1–16 + pre-flight P1–P4 locked; Wave 0 was contracts + unblockers (WP0.1 wire,
 WP0.2 shell registry, WP0.3 silent-create-role fix, WP0.4 hub-ux constants); Waves 1–3 delivered
 workspace + meta rail + sessions + workforce + memory + usage + nav consolidation + retirement
@@ -270,13 +270,13 @@ sweep (MemoryView/UsageView/SessionRail/WorkspaceFilesPanel deleted, zero live i
 e2e, WP4.2 visual/a11y + owner-acceptance walk, WP4.3 docs + stale-comment cleanup, WP4.4
 integration train. Owner-acceptance pending: live provider keys, real mission, real search server,
 both-theme + keyboard walk (see ledger's Owner-acceptance section and
-[`owner-acceptance-walk.md`](./roadmap/assistant-hub-ux/owner-acceptance-walk.md)).
+[`owner-acceptance-walk.md`](./planning/Roadmap/completed/RM-04-assistant-hub-ux/owner-acceptance-walk.md)).
 
 ### Unified Sessions — one run/session lifecycle across every backend (Phases 0–5)
 
 Consolidated the run backends (the AI-SDK engine, Claude subscription, and the since-removed vendor assistant) onto **one
 session lifecycle**, so a run reads, streams, and renders the same way regardless of provider. Plan +
-locked decisions D-US1–D-US26 at [`roadmap/unified-sessions/`](./roadmap/unified-sessions/).
+locked decisions D-US1–D-US26 at [`planning/Roadmap/completed/RM-29-unified-sessions/`](./planning/Roadmap/completed/RM-29-unified-sessions/).
 
 - **One terminal vocabulary** — a shared `terminalFor()` table maps each end cause to the canonical
   `(status, outcome, stopReasonCode)` triple, plus a `phase` axis (`queued`/`waiting_input`/…) and an
@@ -304,7 +304,7 @@ locked decisions D-US1–D-US26 at [`roadmap/unified-sessions/`](./roadmap/unifi
   overrides), a per-facade concurrency cap → `429` + `Retry-After` (`OPENAI_FACADE_MAX_CONCURRENCY`),
   and vendor `vendor_assistant`/`citations` fields; the internal the vendor executor is untouched, so the answer
   is byte-identical. Mounted in `apps/api/src/index.ts` with real provider-layer deps; documented in
-  [`user-guide/15-openai-endpoint.md`](./user-guide/15-openai-endpoint.md). Every tenant call is
+  `user-guide/15-openai-endpoint.md` (since removed with the rest of that vendor's documentation). Every tenant call is
   stubbed in tests — no real the vendor tenant is ever contacted.
 
 ## 0.2.0 — 2026-07-02 — Docs & process remediation wave
@@ -333,15 +333,15 @@ Documentation-and-process pass reconciling the docs to what the code actually is
   refreshed Acceptance Criteria.
 - **roadmap:** `00-product-brief.md` non-goals trimmed to auth/cloud (removed conversation replay,
   LLM proxy mode, provider token adapters — now delivered/in-scope); `ROADMAP.md`,
-  `roadmap/01-architecture.md`, `roadmap/02-implementation-plan.md` marked historical with a
+  `planning/user-guide/DC-21-architecture/01-architecture.md`, `planning/Roadmap/RM-31-mvp-footprint-analyzer/02-implementation-plan.md` marked historical with a
   "current state" pointer to CLAUDE.md + the STATUS ledgers.
-- **Single source of truth:** stated in CLAUDE.md that `roadmap/*/STATUS.md` ledgers are
+- **Single source of truth:** stated in CLAUDE.md that `planning/Roadmap/*/STATUS.md` ledgers are
   authoritative for in-flight status; other docs link rather than restate.
 
 ### Process hygiene (#22)
 
 - **Themes:** replaced the stale "six themes" with "two themes (the vendor bright/dark pair)" across
-  the Testing WP specs (`roadmap/testing/phase-*/WP-*.md`) and both `/next-wp` definitions. Did not
+  the Testing WP specs (`planning/Roadmap/RM-26-testing/phase-*/WP-*.md`) and both `/next-wp` definitions. Did not
   re-add blueprint/light/dark/high-contrast.
 - **`/next-wp` dedup:** the `next-wp` skill (`.claude/skills/next-wp/SKILL.md`) is now the single
   canonical definition; the command (`.claude/commands/next-wp.md`) is reduced to a thin pointer so
@@ -350,8 +350,8 @@ Documentation-and-process pass reconciling the docs to what the code actually is
   `.claude/commands/file-issue.md`, `.claude/rules/quality-gates.md.probe`, and
   `.claude/commands/brand-ui-update.md` (each self-described as safe to delete). Updated the
   CLAUDE.md §10 `.claude/` map to be accurate (adds `next-wp`, drops deleted files).
-- **Owner-acceptance tracking:** added an "Owner acceptance" section to `roadmap/testing/STATUS.md`
-  and `roadmap/skills/STATUS.md` (one tickable line per deferred owner visual/a11y/e2e item) plus
+- **Owner-acceptance tracking:** added an "Owner acceptance" section to `planning/Roadmap/RM-26-testing/STATUS.md`
+  and `planning/Roadmap/RM-24-skills/STATUS.md` (one tickable line per deferred owner visual/a11y/e2e item) plus
   the rule that a new phase shouldn't open with prior owner-acceptance items unresolved.
 - **Versioning:** bumped root `package.json` to `0.2.0` and added this changelog. Per-phase git tags
   remain an owner action.
@@ -362,4 +362,4 @@ Documentation-and-process pass reconciling the docs to what the code actually is
 
 Initial startup-footprint MVP and the expanded target build-out (scans, token counting, cross-server
 compare, tool playground, Testing console, Skills registry, MCP × model compatibility). See the
-`roadmap/` history and the `roadmap/*/STATUS.md` ledgers.
+`planning/Roadmap/` history and the `planning/Roadmap/*/STATUS.md` ledgers.

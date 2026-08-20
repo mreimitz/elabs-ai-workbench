@@ -1095,7 +1095,7 @@ const FIX_TARGET_META: Record<FixTarget, { label: string; variant: BadgeVariant 
 /**
  * Which judge source produced the LLM base-rating facets (AR2/AR3) — CLI, a provider judge, or none.
  *
- * D-MI5 (`roadmap/model-identity/`, WP 2.3): qualified to "Claude CLI **judge**". The
+ * D-MI5 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): qualified to "Claude CLI **judge**". The
  * `claude_subscription` RUN provider now displays as "Anthropic CLI" (`PROVIDER_KIND_META`); this is
  * the Auto-Rating judge provider (`CLAUDE_CLI_PROVIDER_ID`), a different thing that happens to run on
  * the same subscription. The word "judge" is what stops a reader merging the two.

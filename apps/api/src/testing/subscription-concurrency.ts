@@ -1,4 +1,4 @@
-// Claude subscription concurrency budget (roadmap/claude-subscription/, WP 2.1 — D-CS2/D-CS10).
+// Claude subscription concurrency budget (planning/Roadmap/RM-09-claude-subscription/, WP 2.1 — D-CS2/D-CS10).
 //
 // The app spawns TWO kinds of ~1 GiB Claude Agent-SDK child: a subscription RUN
 // ({@link import("./claude-subscription-executor.js").runClaudeSubscription}) and the Auto-Rating CLI
@@ -25,7 +25,7 @@ export interface ConcurrencyGate {
 }
 
 /**
- * Unified Sessions (roadmap/unified-sessions/, WP1.4, D-US1/D-US6) — an OPTIONAL queue-VISIBILITY facet
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.4, D-US1/D-US6) — an OPTIONAL queue-VISIBILITY facet
  * a {@link ConcurrencyGate} may additionally implement, so a caller can compute an honest, race-free
  * 1-based queue POSITION for its own upcoming `acquire()` call and emit a
  * `{type:"phase",phase:"queued",detail:{position}}` event BEFORE actually calling `acquire()` (D-US1).
@@ -125,7 +125,7 @@ export class SubscriptionConcurrencyPool {
    */
   readonly shared: ConcurrencyGate;
   /**
-   * Unified Sessions (roadmap/unified-sessions/, WP1.4/WP1.7, D-US6) — a SEPARATE budget dedicated to
+   * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.4/WP1.7, D-US6) — a SEPARATE budget dedicated to
    * subscription RUNS, decoupled from {@link shared} (which the CLI judge alone bounds against) — its
    * OWN semaphore/counter, never `shared`'s. Sized by `runsMaxConcurrency` (production:
    * `config.subscriptionRunsMaxConcurrency`, i.e. `SUBSCRIPTION_RUNS_MAX_CONCURRENCY` — see

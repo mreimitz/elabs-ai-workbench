@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP1.6) — worktask 1: "make from/to/projectId actually
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.6) — worktask 1: "make from/to/projectId actually
 // filter (verify + tests — flagged unexercised)".
 //
 // The pre-existing `hub-usage.test.ts` only proved `from`/`to`/`projectId` filtering by calling

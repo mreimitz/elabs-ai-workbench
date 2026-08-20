@@ -1,7 +1,7 @@
 // Helpers shared by the four deterministic advisor rules (WP 1.2).
 //
 // Everything here reads ONLY through the {@link AdvisorContext} ports — no DB handle, no MCP, no
-// secrets (roadmap/advisor/conventions.md, runtime boundary). Every helper that returns a list
+// secrets (planning/Roadmap/RM-01-advisor/conventions.md, runtime boundary). Every helper that returns a list
 // imposes its OWN total order rather than trusting the repository's `ORDER BY`, because the report's
 // determinism contract (engine.ts) is only as strong as the order of the data the rules walk:
 // `ServerRepository.list()` orders by `updated_at DESC`, which ties freely, and SQLite makes no

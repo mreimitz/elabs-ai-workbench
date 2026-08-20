@@ -78,7 +78,7 @@ const ISSUE_PARAM = "issue";
  *
  * The `bg-card`/`border-b`/gutter-bleed band this row used to sit in is gone with the same change:
  * the page host (`DashboardView`) owns the one command-bar surface now, and these controls are this
- * tab's own content (`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB2).
+ * tab's own content (`planning/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB2).
  */
 export function IssuesFleetTab({
   range,

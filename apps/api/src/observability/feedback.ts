@@ -1,4 +1,4 @@
-// Observability — human feedback (roadmap/observability/, WP1.5, D-OB15).
+// Observability — human feedback (planning/Roadmap/RM-17-observability/, WP1.5, D-OB15).
 //
 // One generic primitive for human signal on a run: a score and/or note, scoped to the run as a whole
 // or to one of its steps (turns). STRICTLY SEPARATE from grading (AR6/D-OB15) — nothing in

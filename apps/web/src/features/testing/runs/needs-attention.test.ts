@@ -23,7 +23,7 @@ function run(over: Partial<RunSummary> & { id: string }): RunSummary {
   };
 }
 
-// Unified Sessions (roadmap/unified-sessions/, WP3.3) — the execution-plan's own formula, verbatim:
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.3) — the execution-plan's own formula, verbatim:
 // `pendingInput || (unseen && !running)`.
 describe("runNeedsAttention", () => {
   test("pendingInput: a LIVE run paused on the operator (running + waiting_input) needs attention", () => {

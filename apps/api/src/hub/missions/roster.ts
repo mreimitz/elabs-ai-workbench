@@ -106,7 +106,7 @@ export type HubModelRef = {
 };
 
 /**
- * assistant-hub v1-fixes (F1 — roadmap/assistant-hub/mission-session-analysis-2026-07-20.md) — pick the
+ * assistant-hub v1-fixes (F1 — planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md) — pick the
  * model for the mission SYNTHESIS turn. The synthesizer's whole instruction (reports digest + numbered
  * sources) rides the SYSTEM prompt, so the model must actually receive system prompts — an `assistant|…`
  * facade model does not (single-shot Q&A; the observed failure was a "synthesis" generated from the bare

@@ -9,7 +9,7 @@ import { isSettledRatingState, type RunEvent, type RunStatus } from "@mcp-token-
  * run service guarantees a settled rating event after every terminal status (finally-style), so this
  * cannot leak; `detach` still force-drops without either.
  *
- * Unified Sessions (roadmap/unified-sessions/, WP1.6, D-US2) — `ended` JOINS this set: an interactive
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6, D-US2) — `ended` JOINS this set: an interactive
  * session the operator explicitly closed (`POST /api/runs/:id/end`) is just as terminal as any other
  * disposition for terminal-detection, stream-close (routes.ts `isTerminalSseStatus`), and orphan
  * reconciliation (`RunRepository.abortOrphanedRuns`) purposes.
@@ -30,7 +30,7 @@ export function isTerminalStatus(status: RunStatus): boolean {
 export type RunEventListener = (event: RunEvent) => void;
 
 /**
- * Unified Sessions (roadmap/unified-sessions/, WP1.6, D-US3) — SessionClock-derived durations that ride
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6, D-US3) — SessionClock-derived durations that ride
  * ALONGSIDE a terminal `status` event on the emit path, NOT as part of the wire {@link RunEvent} itself
  * (the WP1.1 contract's `status` member carries no duration fields — only `RunSummary.activeDurationMs`/
  * `totalDurationMs` do, both populated server-side from here). Optional on every field: an executor that
@@ -92,7 +92,7 @@ type ActiveRun = {
    */
   ratingSettled: boolean;
   /**
-   * Unified Sessions (roadmap/unified-sessions/, WP1.6) — set true once {@link RunManager.
+   * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6) — set true once {@link RunManager.
    * markUserInitiatedStop} has been called for this run: its upcoming terminal disposition was an
    * OPERATOR action (Stop or End session), not a guardrail/error/provider terminal the engine reached
    * on its own. Read via {@link RunManager.wasUserInitiatedStop} — a caller (the `/stop`/`/end` route
@@ -159,7 +159,7 @@ export class RunManager {
   }
 
   /**
-   * Unified Sessions (roadmap/unified-sessions/, WP1.6) — mark this run's upcoming terminal as
+   * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6) — mark this run's upcoming terminal as
    * OPERATOR-initiated (the `/stop` or `/end` route). Call BEFORE aborting the live loop / emitting the
    * terminal event, so {@link wasUserInitiatedStop} can be read synchronously while the run is still
    * registered. No-op for an unknown/already-settled run.

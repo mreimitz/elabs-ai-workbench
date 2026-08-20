@@ -2,7 +2,7 @@ import type { RunSummary } from "@mcp-token-footprint/shared";
 import { runNeedsAttention } from "@mcp-token-footprint/shared";
 
 /**
- * Unified Sessions (roadmap/unified-sessions/, WP3.3) — the "Needs attention" rule. The canonical
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.3) — the "Needs attention" rule. The canonical
  * predicate now lives ONCE in `packages/shared` (`run-filter.ts` `runNeedsAttention`) so the web feed
  * and the `RunFilter.needsAttention` filter (owner-requested follow-up) express the rule's MEANING in
  * exactly one place; this module re-exports it (structurally: a `RunSummary` carries the

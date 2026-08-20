@@ -15,7 +15,7 @@ import {
 } from "@mcp-token-footprint/shared";
 import { runCliCapture, startStub, type StubRoutes, VALID_TOKEN } from "./harness.js";
 
-// `mcpfp suite run`, end to end against a `node:http` stub of the workbench API (roadmap/ci/ WP 2.1
+// `mcpfp suite run`, end to end against a `node:http` stub of the workbench API (planning/Roadmap/RM-08-ci/ WP 2.1
 // — A1, A2, A4, A5, A6, A8). No real workbench, no provider, no database: the matrix runs in the
 // API, so a stub that speaks the same four routes is a complete substitute for it.
 //

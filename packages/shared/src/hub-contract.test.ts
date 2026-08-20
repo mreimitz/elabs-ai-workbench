@@ -1163,7 +1163,7 @@ test("hubProjectInputSchema requires a non-empty name and rejects unknown keys",
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════════
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP0.1) — additive extensions (D-HUX8/10/11/16, P2/P4).
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP0.1) — additive extensions (D-HUX8/10/11/16, P2/P4).
 // The bar (WP0.1 acceptance): every new field is optional/additive and OLD payloads (which never
 // carried them) still parse. Each block below proves both — the new shape parses AND the pre-extension
 // shape parses unchanged.

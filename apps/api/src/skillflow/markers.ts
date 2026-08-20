@@ -1,7 +1,7 @@
 import { SKILLFLOW_MARKER_PATTERN } from "@mcp-token-footprint/shared";
 
 /**
- * WP 3.2 — the shared breadcrumb-marker matcher (roadmap/skillflow/breadcrumb-convention.md, D7b).
+ * WP 3.2 — the shared breadcrumb-marker matcher (planning/Roadmap/RM-23-skillflow/breadcrumb-convention.md, D7b).
  * A skill instructs the agent to emit a single bracketed line at each gatekeeper decision, e.g.
  *
  *   [skillflow:gate=route-input route=r-csv]

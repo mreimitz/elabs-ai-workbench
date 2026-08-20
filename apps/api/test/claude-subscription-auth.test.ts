@@ -13,7 +13,7 @@ import {
 import { SecretStore } from "../src/secrets/secret-store.js";
 import { toErrorMessage } from "../src/utils/errors.js";
 
-// Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS7). All paths are exercised with a
+// Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS7). All paths are exercised with a
 // STUBBED assistant-credential reader + a real in-memory DB — no Claude CLI / real sign-in is ever
 // touched here (that is the executor's job, a later WP).
 

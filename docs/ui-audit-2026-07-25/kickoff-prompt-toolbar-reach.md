@@ -10,11 +10,11 @@ You are the **orchestrator and the project owner** for a new plan. You hold owne
 
 ## Phase I — scaffold the plan (do this first, yourself, no sub-agents)
 
-Create `roadmap/toolbar-reach/` in the house shape (`.claude/skills/next-wp/references/plan-layout.md`):
+Create `planning/Roadmap/completed/RM-28-toolbar-reach/` in the house shape (`.claude/skills/next-wp/references/plan-layout.md`):
 
 - `README.md` — index, the thesis, and the **parallel execution map** (batch table below)
 - `conventions.md` — shared implementation rules for this plan (below)
-- `STATUS.md` — the ledger, seeded from `assets/STATUS.template.md`, every WP open, using the legend from `roadmap/ux-overhaul/STATUS.md` (`[ ]` / `[~]` / `[x]` + date + branch `wp/toolbar-reach/<id>`)
+- `STATUS.md` — the ledger, seeded from `assets/STATUS.template.md`, every WP open, using the legend from `planning/Roadmap/RM-30-ux-overhaul/STATUS.md` (`[ ]` / `[~]` / `[x]` + date + branch `wp/toolbar-reach/<id>`)
 - `phase-0-defects.md`, `phase-1-contract.md`, `phase-2-apply.md`, `phase-3-affordances.md`, `phase-4-guardrails.md` — the WP specs
 
 Base branch: **`ui/toolbar-reach`**, cut from `main`. You merge validated WP branches into it. You decide when it goes to `main`.
@@ -23,7 +23,7 @@ Every WP spec must carry: **Findings covered · Domain (exact file list) · Depe
 
 ### The thesis — put this at the top of `README.md`
 
-> This plan does not design anything new. The standards already exist, are written down, and are owner-locked — `roadmap/ux-overhaul/toolbar-standard-2026-07-11.md` (D-TB1–D-TB4), `ViewToolbar.tsx`'s docblock, `lib/table.tsx`'s `shouldPaginate()`. They are only partly applied. This plan finishes applying them, fixes three real defects, and then installs guardrails so the same drift can't recur a third time.
+> This plan does not design anything new. The standards already exist, are written down, and are owner-locked — `planning/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md` (D-TB1–D-TB4), `ViewToolbar.tsx`'s docblock, `lib/table.tsx`'s `shouldPaginate()`. They are only partly applied. This plan finishes applying them, fixes three real defects, and then installs guardrails so the same drift can't recur a third time.
 
 ### Owner decisions to LOCK in `README.md` before dispatching
 
@@ -37,7 +37,7 @@ Record these as locked, with today's date, in the style of `D-TB1`…`D-TB4`:
 - **D-TB10 — route vs dialog.** Anything an operator would bookmark, deep-link or share is a route; anything transient is a dialog. Every route must render something useful with zero query params.
 - **D-TB11 — status density is a variant, not an exception.** `ScansTab.tsx`'s D4 decision (quiet muted text for success in a dense list) is correct and is preserved — but implemented as a `quiet` prop on `StatusBadge`, so `StatusBadge`'s "every state chip renders through here" claim stays true.
 
-Also correct `roadmap/ux-overhaul/verification-report.md:176`, which currently signs off *"D-TB2 (exactly one toolbar row): ✅ one ViewToolbar row per view"* — Environments and the Dashboard Testing tab break it. An inaccurate sign-off is why this drift survived; fix the record.
+Also correct `planning/Roadmap/RM-30-ux-overhaul/verification-report.md:176`, which currently signs off *"D-TB2 (exactly one toolbar row): ✅ one ViewToolbar row per view"* — Environments and the Dashboard Testing tab break it. An inaccurate sign-off is why this drift survived; fix the record.
 
 ### `conventions.md` must state
 
@@ -60,7 +60,7 @@ Decomposed so that every WP in a batch has a **disjoint file domain**. Where two
 | **0.1** Run-console switcher merge | A-1 | `features/testing/RunConsole.tsx` + tests | **opus**, effort high |
 | **0.2** New-run entry + re-run row | A-2, A-3 | `features/testing/RunConsoleRoute.tsx`, `features/testing/RunBar.tsx`, `features/command-palette/CommandPalette.tsx`, `features/testing/RunsView.tsx` (launcher param only) + tests | **opus**, effort medium |
 | **0.3** Pagination guard sweep | C-8 (5 of 6 sites) | `features/testing/collections/CollectionTests.tsx`, `features/skills/SkillVersions.tsx`, `features/skills/ScaffoldFromServerWizard.tsx`, `features/servers/ServersView.tsx` | **haiku**, effort low |
-| **0.4** Correct the record | — | `roadmap/ux-overhaul/verification-report.md`, `components/TableToolbar.tsx` docblock (mark superseded by D-TB6; no code change yet) | **haiku**, effort low |
+| **0.4** Correct the record | — | `planning/Roadmap/RM-30-ux-overhaul/verification-report.md`, `components/TableToolbar.tsx` docblock (mark superseded by D-TB6; no code change yet) | **haiku**, effort low |
 
 **0.1 is the highest-value WP in the plan and the one most likely to be done badly.** It is not a styling change. `RunConsole.tsx` has two view switchers writing one `leftView` state with non-overlapping value sets, so the segmented control misreports state in both directions (verified live — see audit screenshots 06/07). The fix is to merge into the single `TabPanel` strip (`Chat · Steps · Turns · Trace · Analytics · Report`), delete the `ToggleGroup` and the coercing ternary at `:815`, and leave the search field alone. Acceptance must include: every tab value has a panel, every panel has a tab, and no code path can set `leftView` to a value the strip doesn't render.
 
@@ -130,7 +130,7 @@ Brief all four identically: convert to `IconButton`, one `label` per control, de
 
 **4.2 and 4.3 are the only genuinely open design questions** in the plan and the reason they run last, at opus with high effort. 4.2: Scans is list-first (you arrive to scan history, not a pre-selected scan), unlike Servers and Skills which are correctly master-detail. 4.3: Suites, Review and Rubrics are first-class concepts reachable only by URL — surface them **without adding nav items**; the 4-item Testing section is a hard-won simplification.
 
-**Then run the owner-acceptance walk yourself** (you are the owner): every touched view, both themes, keyboard-only traversal, and measured toolbar geometry. Record it as `roadmap/toolbar-reach/verification-report.md` in the shape of `roadmap/ux-overhaul/verification-report.md` — and this time, do not sign off a rule you have not measured on every view.
+**Then run the owner-acceptance walk yourself** (you are the owner): every touched view, both themes, keyboard-only traversal, and measured toolbar geometry. Record it as `planning/Roadmap/completed/RM-28-toolbar-reach/verification-report.md` in the shape of `planning/Roadmap/RM-30-ux-overhaul/verification-report.md` — and this time, do not sign off a rule you have not measured on every view.
 
 ---
 

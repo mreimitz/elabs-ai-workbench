@@ -43,7 +43,7 @@ import {
 import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
-// WP 1.2 (roadmap/claude-subscription/) — the RunService `execute()` fork that routes a
+// WP 1.2 (planning/Roadmap/RM-09-claude-subscription/) — the RunService `execute()` fork that routes a
 // `claude_subscription` credential to the subscription executor (parallel to the acme_answers branch)
 // instead of the AI-SDK agent loop. Exercised ENTIRELY through a SCRIPTED FAKE driver + a stub auth
 // resolver: NO SDK is imported, NO child is spawned, NO Anthropic call is made, and the not-signed-in
@@ -818,7 +818,7 @@ test("a claude_subscription run with a PINNED skill attachment resolves the pinn
   assert.equal(detail.skills[0]?.skillVersionId, seeded.versionId, "pinned stays on the fixed version");
 });
 
-// ── LIVE-roster model validation (roadmap/claude-subscription/ follow-up) ───────────────────────────
+// ── LIVE-roster model validation (planning/Roadmap/RM-09-claude-subscription/ follow-up) ───────────────────────────
 // `resolveClaudeSubscription` rejects a run whose selected model the signed-in subscription does NOT
 // offer — but ONLY when the LIVE list is available from the resolver's cache (no hot-path spawn). When
 // the live list is unavailable (fallback in effect → `cachedSupportedModelIds()` returns undefined) the

@@ -2,7 +2,7 @@
 // `packages/shared` (`AdvisorReport` & friends); this file describes what a rule *is* and what it
 // is allowed to read.
 //
-// Runtime-boundary rule (roadmap/advisor/conventions.md): a rule NEVER opens its own DB handle.
+// Runtime-boundary rule (planning/Roadmap/RM-01-advisor/conventions.md): a rule NEVER opens its own DB handle.
 // It reads the narrow, read-only ports on {@link AdvisorContext}, which the real repositories
 // satisfy structurally — so the engine is testable with plain fakes, and a rule physically cannot
 // reach past the read model into writes, MCP connections, or secrets.

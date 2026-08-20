@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.4, §1.7 / D-AH10) — the first-class citation pipeline.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.4, §1.7 / D-AH10) — the first-class citation pipeline.
 //
 // The contract (§1.7, reviewed adversarially — R-UX5): EVERY rendered `[n]` resolves to a real source,
 // and a source keeps its number for the whole session (no drift across turns). This module is the ONE

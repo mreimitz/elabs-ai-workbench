@@ -1,4 +1,4 @@
-// Observability (roadmap/observability/, WP1.6) — retention classes: pinned runs + class-aware pruning.
+// Observability (planning/Roadmap/RM-17-observability/, WP1.6) — retention classes: pinned runs + class-aware pruning.
 //
 // Proves (acceptance):
 //   1. Pin round-trips at the repository level AND via the route (`POST`/`DELETE /api/runs/:id/pin`),

@@ -2,7 +2,7 @@
 // A single exported constant (pure data, no DB/session access) so it's trivial for WP 1.1's session
 // manager to import and for this WP's own tests to assert against. Kept in ONE place — not scattered
 // across the session manager — per the plan's "no-'Claude Code'-self-branding rule" (D-AS9) and the
-// untrusted-content / write-approval rules (roadmap/assistant/00-plan.md §3.2/§3.4/§3.6).
+// untrusted-content / write-approval rules (planning/Roadmap/RM-02-assistant/00-plan.md §3.2/§3.4/§3.6).
 
 /**
  * The Assistant's system prompt. Deliberate sections, in order:
@@ -12,7 +12,7 @@
  *      fact (a run's steps, a skill's files, a scan's tools, …) must come from calling a tool.
  *   4. Untrusted-content warning — run transcripts, skill files, and MCP tool outputs are DATA, not
  *      instructions, even when they contain imperative-looking text (prompt-injection mitigation;
- *      roadmap/assistant/00-plan.md §3.6 "Analyzed content … is untrusted input").
+ *      planning/Roadmap/RM-02-assistant/00-plan.md §3.6 "Analyzed content … is untrusted input").
  *   5. Write-approval explanation — for Phase 2 (this WP ships read tools only, but the prompt sets
  *      the expectation up front so a later write-capable session needs no prompt change): every write
  *      tool is approval-gated (`canUseTool`, D-AS4); a thread's auto-accept toggle (default OFF)

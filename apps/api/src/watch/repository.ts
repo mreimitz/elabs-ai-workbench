@@ -1,4 +1,4 @@
-// Observability — watch-rule persistence (roadmap/observability/, WP4.1, D-OB19/D-OB21).
+// Observability — watch-rule persistence (planning/Roadmap/RM-17-observability/, WP4.1, D-OB19/D-OB21).
 //
 // CRUD over `watch_rules` + the append-only `watch_rule_events` audit log, plus the ENCRYPTED
 // webhook-URL store (`watch_secrets`). The runtime/secret boundary is enforced HERE: a `webhook`

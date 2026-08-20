@@ -20,7 +20,7 @@ export const HUB_ELIGIBLE_PROVIDER_KINDS: readonly ProviderKind[] = [
 /**
  * The hub-eligible kinds named in prose for the "Assistant isn't configured" empty state.
  *
- * D-MI6 (`roadmap/model-identity/`, WP 2.3): GENERATED from {@link HUB_ELIGIBLE_PROVIDER_KINDS} ×
+ * D-MI6 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): GENERATED from {@link HUB_ELIGIBLE_PROVIDER_KINDS} ×
  * the one label registry in `packages/shared`, mirroring the API's own `NO_PROVIDER_MESSAGE`
  * (`apps/api/src/hub/routes.ts`). Both rosters used to be hand-written sentences that named
  * providers differently from Settings and could silently omit a newly-added kind.
@@ -68,7 +68,7 @@ export type HubModelCredentialIssue = {
 };
 
 /**
- * D-MI8 (`roadmap/model-identity/`, WP 3.1) — the identity of a roster ROW: a model id **per
+ * D-MI8 (`planning/Roadmap/RM-16-model-identity/`, WP 3.1) — the identity of a roster ROW: a model id **per
  * credential**. Two credentials can expose byte-identical model ids (the subscription roster
  * deliberately emits Anthropic's canonical `claude-sonnet-5` / `claude-opus-4-8` /
  * `claude-haiku-4-5-20251001` so `resolvePrice` / `MODEL_CONTEXT_LIMITS` stay exact-key lookups), so
@@ -267,7 +267,7 @@ export function useHubModelRoster(): HubModelRoster {
  * `claude_subscription` reuses the Anthropic mark (it IS Claude); `openai_compatible`/`ollama` pass
  * their own kind through as the fallback string (no dedicated logo in the set, but a stable label).
  *
- * D-MI6 (`roadmap/model-identity/`, WP 2.3): the mapping itself now lives in the ONE registry in
+ * D-MI6 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): the mapping itself now lives in the ONE registry in
  * `packages/shared` (`PROVIDER_KIND_META[kind].logoProvider`) alongside the labels, so a glyph and a
  * name can never disagree about which provider a model belongs to. This stays exported under its
  * original name for its existing call sites (`Composer`, `NewSessionDialog`, agent-profile
@@ -300,7 +300,7 @@ export type HubModelFamily = { kind: ProviderKind; label: string; models: HubMod
  * first-seen roster order (credential-then-model, the order `useHubModelRoster` keeps), so the picker
  * is deterministic. Models within a family keep their roster order.
  *
- * D-MI6 (`roadmap/model-identity/`, WP 2.3): the family label comes from the ONE registry in
+ * D-MI6 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): the family label comes from the ONE registry in
  * `packages/shared` (`providerKindLabel`). It used to come from a local `HUB_FAMILY_LABELS`
  * `Record<ProviderKind, string>` — one of the five disagreeing vocabularies — which is now DELETED
  * (nothing outside this file imported it). Exhaustiveness is still enforced, now at the registry:

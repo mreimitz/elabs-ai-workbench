@@ -178,7 +178,7 @@ export class ServerRepository {
     return migrated;
   }
 
-  /** 400 guard: a create/update may only assign an existing server type (roadmap/server-types). */
+  /** 400 guard: a create/update may only assign an existing server type (planning/Roadmap/completed/RM-21-server-types). */
   private assertTypeExists(typeId: string | null | undefined): void {
     if (!typeId) return;
     const row = this.db.prepare("SELECT 1 FROM server_types WHERE id = ?").get(typeId);

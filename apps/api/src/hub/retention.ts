@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP4.3) — retention / pruning, mirroring the Assistant
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.3) — retention / pruning, mirroring the Assistant
 // feature's `assistant/retention.ts` day-based + orphan-sweep pattern (`SCAN_RETENTION_PER_SERVER`'s
 // day-based semantics — 0 = keep everything). `POST /api/maintenance/prune-hub` (`db/maintenance.ts`)
 // calls `pruneHubData` below. Three independent passes, all reported honestly in the result:

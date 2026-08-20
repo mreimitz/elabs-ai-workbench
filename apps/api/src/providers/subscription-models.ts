@@ -1,4 +1,4 @@
-// Claude subscription LIVE model roster (roadmap/claude-subscription/ follow-up).
+// Claude subscription LIVE model roster (planning/Roadmap/RM-09-claude-subscription/ follow-up).
 //
 // The `claude_subscription` provider kind's "models" are the Claude tiers the signed-in subscription
 // grants. The Agent SDK exposes the LIVE list the CLI picker uses via `Query.supportedModels()` — but

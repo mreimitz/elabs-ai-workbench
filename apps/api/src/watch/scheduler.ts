@@ -1,4 +1,4 @@
-// Observability — the windowed watch-rule TICKER (roadmap/observability/, WP4.2, D-OB19).
+// Observability — the windowed watch-rule TICKER (planning/Roadmap/RM-17-observability/, WP4.2, D-OB19).
 //
 // A SINGLETON in-process ticker that evaluates enabled `windowed` rules on an interval (default every
 // 5 min) and ONCE on boot (catch-up). It is HONEST about the app not always running (D-OB19): the

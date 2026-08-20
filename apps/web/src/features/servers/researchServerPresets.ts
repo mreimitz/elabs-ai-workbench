@@ -1,7 +1,7 @@
 import type { ServerConfig } from "@mcp-token-footprint/shared";
 
 /**
- * Assistant Hub (roadmap/assistant-hub/, WP4.4 — R-MCP13) — the bundled RESEARCH-SERVER RECIPE: a
+ * Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.4 — R-MCP13) — the bundled RESEARCH-SERVER RECIPE: a
  * curated list of well-known search/fetch MCP servers offered as ready-to-fill config templates in
  * the "Add MCP server" wizard (`ServerWizard.tsx`). Each preset only prefills the CONNECTION shape
  * (transport/command/args) and the env variable NAME the server expects — never a value. The owner
@@ -11,7 +11,7 @@ import type { ServerConfig } from "@mcp-token-footprint/shared";
  *
  * These are all published stdio MCP server packages launched via `npx` — the same "Local command"
  * transport every other stdio server in this app uses, so no new transport/auth surface is needed.
- * See `user-guide/16-assistant-hub.md`'s "Set up a research server" section for the walkthrough.
+ * See `planning/user-guide/DC-13-assistant-hub/16-assistant-hub.md`'s "Set up a research server" section for the walkthrough.
  */
 export type ResearchServerPreset = {
   id: string;

@@ -1,8 +1,8 @@
-// The security-posture service (roadmap/security-posture/, WP 1.2 + WP 1.3) — turns a persisted scan,
+// The security-posture service (planning/Roadmap/RM-20-security-posture/, WP 1.2 + WP 1.3) — turns a persisted scan,
 // or a persisted skill version, into a `SecurityReport`.
 //
 // The split with `analyzer.ts` is D-SP7 and it is deliberate: the ANALYZER is pure (data in, findings
-// out, no db/clock/network) so `roadmap/ci/` WP 3.1 can call it with the `ScanDetail` its assertions
+// out, no db/clock/network) so `planning/Roadmap/RM-08-ci/` WP 3.1 can call it with the `ScanDetail` its assertions
 // engine already holds; this file owns the I/O, the refusal, the ordering, the capping and the score.
 //
 //   • **D-SP8 — a report is computed on read and persisted NOWHERE.** It is a pure derivation of rows

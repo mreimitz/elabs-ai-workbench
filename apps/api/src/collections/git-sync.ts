@@ -46,7 +46,7 @@ import { httpError } from "../utils/errors.js";
  * NEVER a force-push**) → reconcile the DB from the merged worktree → push. A conflict surfaces as a
  * per-file {@link SyncConflict} list and STOPS (no push); `resolve` finishes the in-progress merge.
  *
- * INVARIANTS (roadmap/benchmarks/conventions.md):
+ * INVARIANTS (planning/Roadmap/RM-07-benchmarks/conventions.md):
  *  - The PAT is obtained ONLY via {@link CollectionRepository.decryptPat} (internal), injected via the
  *    argv-only {@link withToken} helper, NEVER written to `.git/config` (the clone's origin url is
  *    scrubbed to the tokenless url immediately after clone; every fetch/push passes the auth url as an

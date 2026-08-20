@@ -95,7 +95,7 @@ export function EnvironmentEditor(props: {
   scenario: Scenario | null;
   providers: ProviderCredential[];
   servers: ServerConfig[];
-  /** Server types (roadmap/server-types) — used, read-only, to surface each allowed server's
+  /** Server types (planning/Roadmap/completed/RM-21-server-types) — used, read-only, to surface each allowed server's
    *  type + lifecycle status. Optional/defaulted so callers that don't have types still render. */
   serverTypes?: ServerType[];
   latestScans: Map<string, ScanDetail>;
@@ -231,7 +231,7 @@ export function EnvironmentEditor(props: {
     });
   }
 
-  // D-MI6 (`roadmap/model-identity/`, WP 2.3): show the provider kind's DISPLAY name, never the raw
+  // D-MI6 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): show the provider kind's DISPLAY name, never the raw
   // wire literal — this option used to read "My key · claude_subscription".
   const providerOptions = useMemo(
     () =>
@@ -300,7 +300,7 @@ export function EnvironmentEditor(props: {
     return map;
   }, [skills]);
 
-  // Server-type lookup (read-only, roadmap/server-types WP 4.1). A server's `typeId` only counts
+  // Server-type lookup (read-only, planning/Roadmap/completed/RM-21-server-types WP 4.1). A server's `typeId` only counts
   // when it references a KNOWN type; a dangling id (its type was deleted) resolves to `null` and
   // renders as "Untyped" — never crashes.
   const typesById = useMemo(
@@ -740,7 +740,7 @@ export function EnvironmentEditor(props: {
             onChange={(value) => patchGuardrail("maxCostUsd", value)}
           />
         </FieldRow>
-        {/* Unified Sessions (roadmap/unified-sessions/, D-US3) — this is the wall CAP, opt-in only:
+        {/* Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, D-US3) — this is the wall CAP, opt-in only:
             leave it empty for no cap (the app default), matching the session clock's actual behavior
             (the previous "30 min default" placeholder here was stale — both executors went cap-less by
             default once WP1.3–1.7 adopted the SessionClock). */}

@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 
-// Assistant Hub (roadmap/assistant-hub/, WP4.4) — a tiny, deterministic OpenAI-COMPATIBLE chat
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.4) — a tiny, deterministic OpenAI-COMPATIBLE chat
 // endpoint that stands in for a real LLM in the e2e smoke walk. The app's `openai_compatible`
 // provider kind (`apps/api/src/providers/registry.ts`) just needs a base URL — no real network call
 // is ever made, so this in-process HTTP server lets the smoke test drive the REAL hub engine

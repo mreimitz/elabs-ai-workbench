@@ -447,7 +447,7 @@ test("migration v18 — pre-v18 DB gains skill_versions.intent_log_json (additiv
 });
 
 // ── Migration v20 (Assistant WP 0.1) — assistant_credentials/threads/events; v21 adds settings ─────
-// NOTE: roadmap/assistant/00-plan.md §4 originally numbered this migration "v19", but v19 (Testing-UX
+// NOTE: planning/Roadmap/RM-02-assistant/00-plan.md §4 originally numbered this migration "v19", but v19 (Testing-UX
 // suite-run member index, above) landed first — this is v20 (see db/database.ts). Later WPs added
 // v21 (assistant_settings), v22 (suite_run_reports), v23 (provider_credentials server link), and v24
 // (scenarios.answers_mode — both later reverted by v56).
@@ -458,7 +458,7 @@ test("migration v20 — a fresh DB stamps LATEST (58) and carries the 3 assistan
   assert.equal(
     LATEST_SCHEMA_VERSION,
     58,
-    "LATEST_SCHEMA_VERSION auto-derived to 58 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, roadmap/ci WP 1.1)",
+    "LATEST_SCHEMA_VERSION auto-derived to 58 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1)",
   );
   assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
   for (const table of ["assistant_credentials", "assistant_threads", "assistant_events"]) {
@@ -2657,7 +2657,7 @@ test("migration v57 — stale notification/digest deep links are rewritten to ro
   );
 });
 
-// ══ v58 — service tokens (roadmap/ci/ WP 1.1, D-C2): the api_tokens table ═════════════════════════
+// ══ v58 — service tokens (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2): the api_tokens table ═════════════════════════
 // A2's two paths: a FRESH DB boots from schema.ts with `api_tokens` present (every migration no-ops
 // and the version is stamped), and a DB stamped at 57 gains the table in place with its data intact.
 

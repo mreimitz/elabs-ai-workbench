@@ -730,7 +730,7 @@ const FIX_TARGET_META: Record<FixTarget, { label: string; variant: BadgeVariant 
 /**
  * Which judge source produced the per-test-group agreement calls (AR2/AR3) — CLI, provider, or none.
  *
- * D-MI5 (`roadmap/model-identity/`, WP 2.3): qualified to "Claude CLI **judge**", matching
+ * D-MI5 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): qualified to "Claude CLI **judge**", matching
  * `ReportTab.tsx` and Settings — see the note there. The `claude_subscription` RUN provider is
  * "Anthropic CLI"; this is the judge provider (`CLAUDE_CLI_PROVIDER_ID`), a different thing.
  */

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7, §1.4) — the MISSION REST surface, mounted additively
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7, §1.4) — the MISSION REST surface, mounted additively
 // from `hub/routes.ts` (like WP1.6's `registerHubArtifactRoutes`). All events are fanned out over the
 // PARENT session's SSE channel (`channels.sinkFor(mission.sessionId)`) — the same replay-then-live
 // stream the conversation already uses; no new transport.

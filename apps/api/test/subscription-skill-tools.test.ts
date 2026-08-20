@@ -16,7 +16,7 @@ import {
   type SkillFileBytesReader,
 } from "../src/testing/subscription-skill-tools.js";
 
-// WP 1.4 (roadmap/claude-subscription/, D-CS9 — skills half) — the read-only skill-materialization +
+// WP 1.4 (planning/Roadmap/RM-09-claude-subscription/, D-CS9 — skills half) — the read-only skill-materialization +
 // disclosure-tool helper the subscription executor wires. Exercised directly (no fake driver, no SDK
 // `query()`) against the REAL filesystem under a throwaway temp dir — every test cleans its own dir up.
 
