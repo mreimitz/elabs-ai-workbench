@@ -187,7 +187,7 @@ function registerRunRoutes(
     return reply.code(202).send(body);
   });
 
-  // Observability (roadmap/observability/, WP3.3, D-OB18) — FORK a terminal run into a NEW derived run.
+  // Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — FORK a terminal run into a NEW derived run.
   // Validates (source terminal, not a suite member → 409; a mid-run fork on a kind whose manifest can't
   // seed a prefix → 422; overrides), reconstructs the parent-conversation prefix (pure `fork.ts`), and
   // seeds a new run through the SAME start path with lineage. Returns the derived run id + stream URL
@@ -287,7 +287,7 @@ function registerRunRoutes(
     return reply.code(202).send({ ok: true });
   });
 
-  // Unified Sessions (roadmap/unified-sessions/, WP1.6, D-US2) — End session: the operator's explicit
+  // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6, D-US2) — End session: the operator's explicit
   // "close this interactive session" action. Valid ONLY for a live, non-terminal INTERACTIVE run — a
   // completed/automated/already-ended run 409s.
   //
@@ -341,7 +341,7 @@ function registerRunRoutes(
     return reply.code(202).send({ ok: true });
   });
 
-  // Observability (roadmap/observability/, WP1.6) — retention classes: pin/unpin a run. A pinned run
+  // Observability (planning/Roadmap/RM-17-observability/, WP1.6) — retention classes: pin/unpin a run. A pinned run
   // is NEVER a `POST /api/maintenance/prune-runs` victim, regardless of policy. 404s if unknown
   // (`setPinned` throws); idempotent otherwise.
   app.post("/api/runs/:id/pin", async (request): Promise<RunPinResult> => {

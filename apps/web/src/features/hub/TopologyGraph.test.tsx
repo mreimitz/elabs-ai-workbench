@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.2 · R-UX4) — the topology-graph renderer + the live
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.2 · R-UX4) — the topology-graph renderer + the live
 // mission-board mapping. Renders the REAL @elabs-ai/components-flow canvas under jsdom (the SkillGraphCanvas precedent
 // — ResizeObserver is polyfilled in vitest.setup), asserting node labels reach the DOM.
 

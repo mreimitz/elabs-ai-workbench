@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.3, §1.3 / R-SES8 · R-SK2) — context-window management:
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.3, §1.3 / R-SES8 · R-SK2) — context-window management:
 // summaries & compaction for the AI-SDK chat turn engine.
 //
 // Compaction shrinks what the MODEL sees when a session's reconstructed history approaches the model's

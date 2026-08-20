@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP1.1, D-CN4/D-CN5) — the pure, repository-free crew-graph
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP1.1, D-CN4/D-CN5) — the pure, repository-free crew-graph
 // resolution heart. Two functions over a `Map<crewId, HubCrew>` substrate with DELIBERATELY DIFFERENT
 // cycle postures (D-CN4's two-layer guard, and the WP1.1 "two cycle postures are load-bearing" note):
 //

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.5, §1.6) — the built-in tool catalog:
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.5, §1.6) — the built-in tool catalog:
 // files.{list,read,write,edit}, artifacts.{create,update}, memory.propose_save,
 // mission.propose_plan, tasks.{create,update,list} + `safeExecuteBuiltin`'s error-containment
 // guarantee.

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.4, D-AH12) — the upload size-cap guard. Mirrors
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.4, D-AH12) — the upload size-cap guard. Mirrors
 // `apps/api/src/skills/caps.ts`'s zip-bomb-guard PATTERN (a per-file byte cap, one clear 400 on
 // breach) rather than importing it directly: uploads and skill trees are different domains with
 // different defaults (a hub upload is a single file per request, not a whole tree), so this stays a

@@ -5,7 +5,7 @@ import type { StepSink } from "./tool-bridge.js";
 /**
  * WP 2.2 — faithful skill-context injection for the run engine.
  *
- * How a real product loads a skill (see `research/skill-registry/11-skill-loading-in-real-products.md`):
+ * How a real product loads a skill (see `planning/Research/RS-02-skill-registry/notes/11-skill-loading-in-real-products.md`):
  *
  *   - **L1 (metadata) — always.** The `name` + `description` + an on-disk `location` of every attached
  *     skill is injected into the system prompt up front, as the `<available_skills>` block (the

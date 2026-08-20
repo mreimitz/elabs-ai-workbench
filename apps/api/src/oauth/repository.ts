@@ -45,7 +45,7 @@ export class OAuthRepository {
   /**
    * The granted OAuth scope NAMES for a server, or `null` when none are stored.
    *
-   * **D-SP9 (roadmap/security-posture/ WP 1.2).** This is the ONLY projection of the encrypted
+   * **D-SP9 (planning/Roadmap/RM-20-security-posture/ WP 1.2).** This is the ONLY projection of the encrypted
    * credential blob that leaves this module for the security analyzer, and it deliberately cannot
    * carry anything else: it reads `tokens.scope` (falling back to the registered
    * `clientInformation.scope`, which is what a server asked for when no grant has been stored yet),

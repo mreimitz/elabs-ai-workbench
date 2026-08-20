@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP4.2, D-AH13, R-UX7) — the read-only Audit-timeline
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.2, D-AH13, R-UX7) — the read-only Audit-timeline
 // PROJECTION over `hub_events`: normalizes tool calls, approvals, mission-agent spawns, and model
 // calls (D-AH13's four categories, verbatim: "tool calls, approvals, agent spawns, model calls") into
 // one merged `HubAuditEntry` per real-world action, across EVERY session. This module never mutates

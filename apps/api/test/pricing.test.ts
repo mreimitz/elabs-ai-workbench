@@ -107,7 +107,7 @@ test("isModelPriced — distinguishes a genuinely unknown model from a priced/ze
   assert.equal(isModelPriced("no-such-model-9000"), false, "an unpriced model is reported unknown");
 });
 
-// --- D-MI11 (roadmap/model-identity/) — every roster model must be priced AND have a context window.
+// --- D-MI11 (planning/Roadmap/RM-16-model-identity/) — every roster model must be priced AND have a context window.
 //
 // The owner's failing Hub session ran on `claude-sonnet-5`, which was absent from BOTH
 // `MODEL_CONTEXT_LIMITS` and `MODEL_PRICING`: the research dataset snapshot (as-of 2026-06-21)

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.4, §1.6 / R-MCP1) — server-level tool grants v1 wired
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.4, §1.6 / R-MCP1) — server-level tool grants v1 wired
 // through the session-service, end-to-end with the citation apparatus, over a STUBBED model + a STUBBED
 // MCP session (no provider, no child process, no live server). Proves: a granted server's tool is built
 // into the model surface (WP0.5 bridge), the emitted tool_call part is tagged `source:"mcp"` + its

@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP1.6, D-HUX10) — `GET /api/hub/usage/summary`
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.6, D-HUX10) — `GET /api/hub/usage/summary`
 // per-entity usage summaries: `buildHubUsageSummary` (apps/api/src/hub/usage.ts).
 //
 // Proves:

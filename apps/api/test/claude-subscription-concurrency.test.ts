@@ -44,7 +44,7 @@ import {
 import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
-// WP 2.1 (roadmap/claude-subscription/, D-CS2/D-CS10) — the ONE shared runs+judge concurrency budget +
+// WP 2.1 (planning/Roadmap/RM-09-claude-subscription/, D-CS2/D-CS10) — the ONE shared runs+judge concurrency budget +
 // the per-provider cap, exercised ENTIRELY through SCRIPTED FAKE drivers + stub auth/workspace seams. NO
 // SDK is imported, NO child is spawned, NO Anthropic call is made, and the real filesystem is never
 // touched. The crux this file proves: a subscription RUN child and the Auto-Rating CLI JUDGE child draw

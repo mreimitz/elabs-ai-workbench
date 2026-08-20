@@ -3,7 +3,7 @@ import { CardDescription, cn } from "@elabs-ai/components-ui";
 
 /**
  * ProseCardDescription — a measure-capped `CardDescription` (finding 9 / D-IC9, upstream gap #5 —
- * see `roadmap/interface-craft/upstream-gaps.md`).
+ * see `planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md`).
  *
  * UPSTREAM GAP #5 IS CLOSED. `CardDescription` used to set no `max-w`, so a description in a
  * full-width card ran to the container edge — measured 190ch worst case in this app (the

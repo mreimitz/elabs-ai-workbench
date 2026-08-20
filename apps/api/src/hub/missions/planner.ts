@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7, §1.4/§1.5 · D-AH6/D-AH9) — the mission PLANNER.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7, §1.4/§1.5 · D-AH6/D-AH9) — the mission PLANNER.
 //
 // The planner turn analyzes the user's prompt and proposes a team as a STRUCTURED `HubMissionPlan`
 // (topology, per-agent role snapshot + brief + model + grants + budgets + rationale + cost estimate).

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.1, §1.5 / D-AH3 / D-AH4 / D-US4) — the hub's capability
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.1, §1.5 / D-AH3 / D-AH4 / D-US4) — the hub's capability
 // manifest per model kind.
 //
 // The hub REUSES the Unified-Sessions capability manifests VERBATIM (`capabilitiesForProviderKind` in

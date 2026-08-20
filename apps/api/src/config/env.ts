@@ -181,7 +181,7 @@ export const config = {
   // prunes older scans for that server (apps/api/src/scans/service.ts) and the maintenance endpoint
   // can prune on demand across all servers.
   scanRetentionPerServer: readNonNegativeInt(process.env.SCAN_RETENTION_PER_SERVER, 0),
-  // Service tokens (roadmap/ci/ WP 1.1, D-C2) — force token auth on LOOPBACK too. Default false: a
+  // Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2) — force token auth on LOOPBACK too. Default false: a
   // request from 127.0.0.0/8 / ::1 passes exactly as it did before service tokens existed, so the
   // browser UI on the host is unaffected. A request from any OTHER address always requires a valid
   // `Authorization: Bearer mcpfp_…` regardless of this setting — that part is not configurable.
@@ -189,7 +189,7 @@ export const config = {
   // Settings › API tokens unreachable, since a token may never manage tokens: mint the tokens you
   // need first, then switch this on. See apps/api/src/api-tokens/guard.ts.
   apiAuthRequired: readBoolean(process.env.API_AUTH_REQUIRED, false),
-  // Assistant (roadmap/assistant/, WP 0.3) — the embedded Claude agent chat. All agent state
+  // Assistant (planning/Roadmap/RM-02-assistant/, WP 0.3) — the embedded Claude agent chat. All agent state
   // (SDK CLAUDE_CONFIG_DIR, HOME, materialized skill workspaces) lives under this dir so it
   // persists on the same /data volume as the DB in Docker and never touches the operator's real
   // ~/.claude state. See apps/api/src/assistant/spawn-env.ts for how it's used to build the SDK
@@ -258,13 +258,13 @@ export const config = {
     process.env.ASSISTANT_TITLE_TIMEOUT_MS,
     ASSISTANT_DEFAULT_TITLE_TIMEOUT_MS,
   ),
-  // Auto-Rating (roadmap/auto-rating/, WP 2.2, AR14) — max concurrent Claude-CLI judge one-shots. Each
+  // Auto-Rating (planning/Roadmap/RM-06-auto-rating/, WP 2.2, AR14) — max concurrent Claude-CLI judge one-shots. Each
   // CLI judge spawns a Claude Agent SDK child (~1 GiB resident), so the CLI-judge chain acquires this
   // semaphore before spawning and releases it in a finally. Default 1 (serial) bounds memory on a
   // constrained box; raise it only where headroom allows. Positive-int, opt-in via env; never blocks a
   // run (AR11 — grading is out-of-band).
   autoRatingMaxConcurrency: readPositiveInt(process.env.AUTO_RATING_MAX_CONCURRENCY, 1),
-  // Unified Sessions (roadmap/unified-sessions/, WP1.4, D-US6) — max concurrent subscription-RUN
+  // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.4, D-US6) — max concurrent subscription-RUN
   // Agent-SDK children, DECOUPLED from `autoRatingMaxConcurrency` (the CLI-judge budget
   // claude-cli-judge.ts draws from): each budget is its OWN semaphore/counter
   // (subscription-concurrency.ts's `SubscriptionConcurrencyPool.runs` vs `.shared`), so a suite of
@@ -280,7 +280,7 @@ export const config = {
   // the literal "false" disables (mirrors dockerMode's `=== "true"`). No per-test opt-out. Injected into
   // GradeService (apps/api/src/index.ts) so grading stays offline-testable.
   autoRatingEnabled: process.env.AUTO_RATING_ENABLED !== "false",
-  // Observability (roadmap/observability/, WP5.2, D-OB20) — the OPT-IN LLM assist pass over the
+  // Observability (planning/Roadmap/RM-17-observability/, WP5.2, D-OB20) — the OPT-IN LLM assist pass over the
   // deterministic fleet clusters. Its OWN setting + OWN concurrency, DELIBERATELY separate from
   // Auto-Rating's (the Q7 lesson): the assist pass draws on `issueAssistMaxConcurrency`, NOT
   // `autoRatingMaxConcurrency`, so bounding one never bounds the other.
@@ -293,7 +293,7 @@ export const config = {
   //     Only the literal true/1/yes/on enables it; even when enabled, an assist error NEVER breaks the
   //     sweep (the after-sweep hook is fully guarded).
   issueAssistEnabledAfterSweep: readBoolean(process.env.ISSUE_ASSIST_AFTER_SWEEP, false),
-  // Assistant Hub (roadmap/assistant-hub/, WP0.5) — tool-registry defaults consumed by
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.5) — tool-registry defaults consumed by
   // `hub/tools/loading.ts` (R-MCP2, the deferred/tool-search/auto heuristic) and
   // `hub/tools/output-caps.ts` (R-MCP7, the warn/cap + workspace-spill path). Note for later WPs:
   // `config/env.ts` now carries these `HUB_*` knobs alongside the pre-existing `ASSISTANT_*`/
@@ -321,7 +321,7 @@ export const config = {
   //     MAX spills to the session workspace as a file + a reference card (R-MCP7).
   hubMcpOutputWarnTokens: readPositiveInt(process.env.HUB_MCP_OUTPUT_WARN_TOKENS, 10_000),
   hubMcpOutputMaxTokens: readPositiveInt(process.env.HUB_MCP_OUTPUT_MAX_TOKENS, 25_000),
-  // Assistant Hub (roadmap/assistant-hub/, WP3.4, D-AH12) — the upload size cap
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.4, D-AH12) — the upload size cap
   // (`hub/files/caps.ts`'s zip-bomb-guard pattern). Env-overridable, defaulting to the shared
   // constant like `SKILL_MAX_FILE_BYTES`'s own `SKILL_MAX_FILE_BYTES` env override above.
   hubFileMaxBytes: readPositiveInt(process.env.HUB_FILE_MAX_BYTES, HUB_FILE_MAX_BYTES),
@@ -332,7 +332,7 @@ export const config = {
   // constant when no explicit cap is threaded in, so the guard is active even before this config
   // value is wired into a call site.
   hubWsMaxFileBytes: readPositiveInt(process.env.HUB_WS_MAX_FILE_BYTES, HUB_WS_MAX_FILE_BYTES),
-  // Assistant Hub (roadmap/assistant-hub/, WP1.1) — session-engine knobs consumed by
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.1) — session-engine knobs consumed by
   // `hub/session-service.ts` (§1.5). Additive only, alongside the WP0.5 `HUB_TOOL_*`/`HUB_MCP_*`
   // knobs above — never touching them. Stall/wait budgets are NOT knobs here: they inherit the
   // Unified-Sessions `SessionClock` defaults (10-min stall / 10-min wait, `session-clock.ts`), per
@@ -349,7 +349,7 @@ export const config = {
   //     silently falls back to the deterministic title on any error/timeout (and is a no-op unless a
   //     title-refine seam is wired). Set HUB_AUTO_TITLE=false to keep the deterministic title only.
   hubAutoTitle: readBoolean(process.env.HUB_AUTO_TITLE, true),
-  // Assistant Hub (roadmap/assistant-hub/, WP1.7) — MISSION knobs consumed by `hub/missions/*`
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7) — MISSION knobs consumed by `hub/missions/*`
   // (§1.4/§1.5, D-AH6/D-AH8/D-AH9). Additive only, alongside the WP0.5/WP1.1 `HUB_*` knobs above.
   // These are HARD CAPS + autonomy thresholds enforced server-side regardless of the plan's own
   // `budgets` or any autonomy dial (D-AH9): a plan's `maxAgents`/`maxParallel`/`maxCostUsd` are
@@ -371,7 +371,7 @@ export const config = {
   //     value when the plan names none). Generous but bounded; must stay >= the default budget.
   //     Default $10.00.
   hubMissionMaxBudgetUsd: readPositiveFloat(process.env.HUB_MISSION_MAX_BUDGET_USD, 10.0),
-  //   - HUB_MISSION_MAX_DEPTH — crew-nesting (roadmap/crew-nesting/, D-CN3/D-CN10) the max nesting
+  //   - HUB_MISSION_MAX_DEPTH — crew-nesting (planning/Roadmap/RM-10-crew-nesting/, D-CN3/D-CN10) the max nesting
   //     depth a mission tree may reach (root = depth 1; a nested sub-mission adds a level). Default 2
   //     (root + one nested level). Setting this to 1 reproduces today's exact pre-nesting behavior (a
   //     `crewId` member is rejected at author time as over-depth) — enforcement of the ceiling itself
@@ -431,7 +431,7 @@ export const config = {
   //     auto-runs read-only-on-trusted tools; `threshold` behaves like `auto` at the tool floor (its
   //     agent/cost ceilings govern MISSION launch). HARD caps are enforced server-side regardless.
   hubDefaultAutonomy: readAutonomyLevel(process.env.HUB_DEFAULT_AUTONOMY),
-  // Assistant Hub (roadmap/assistant-hub/, WP2.4, R-SK1/R-SK2) — SKILL attachment knobs consumed by
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.4, R-SK1/R-SK2) — SKILL attachment knobs consumed by
   // `hub/skill-attachments.ts` (the L1 listing budget + least-recently-invoked demotion) and
   // `hub/tools/builtins/skills.ts` (the `skills.load` on-demand compaction-protection budgets).
   // Additive only, alongside the WP0.5/1.1/1.7 `HUB_*` knobs above.
@@ -452,7 +452,7 @@ export const config = {
     process.env.HUB_SKILL_COMPACTION_TOKENS_TOTAL,
     25_000,
   ),
-  // Assistant Hub (roadmap/assistant-hub/, WP3.3, R-SES8) — CONTEXT-WINDOW compaction knobs consumed by
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.3, R-SES8) — CONTEXT-WINDOW compaction knobs consumed by
   // `hub/compaction.ts` (clear-tool-outputs-first → summarize; thrash-stop; skill re-attach). Additive
   // only, alongside the WP2.4 `HUB_SKILL_*` knobs above.
   //   - HUB_COMPACTION_THRESHOLD_FRACTION — compact when the reconstructed history reaches this fraction
@@ -462,20 +462,20 @@ export const config = {
   //   - HUB_COMPACTION_KEEP_RECENT_TURNS — how many recent user turns stay HOT (verbatim, never cleared
   //     or summarized) through a compaction. Default 4.
   hubCompactionKeepRecentTurns: readPositiveInt(process.env.HUB_COMPACTION_KEEP_RECENT_TURNS, 4),
-  // Assistant Hub (roadmap/assistant-hub/, WP2.6, R-GUI4) — the bounded machine-hinted GenUI repair loop.
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.6, R-GUI4) — the bounded machine-hinted GenUI repair loop.
   //   - HUB_GENUI_MAX_REPAIR_ATTEMPTS — how many times a `present`/`prompt_user` spec that fails the
   //     catalog allowlist is fed typed errors back to the model to re-emit before the tool gives up and
   //     returns a recovery envelope (rendered as an honest recovery card; the model falls back to
   //     markdown). Default 2. A repair attempt is one re-emit; the initial call is not counted.
   hubGenuiMaxRepairAttempts: readNonNegativeInt(process.env.HUB_GENUI_MAX_REPAIR_ATTEMPTS, 2),
-  // Assistant Hub (roadmap/assistant-hub/, WP3.1, D-AH11c) — the project INSTRUCTIONS + PINNED FILES
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.1, D-AH11c) — the project INSTRUCTIONS + PINNED FILES
   // LAYER 6b injection cap (`prompting/budgets.ts`'s "the injected memory/project bodies are capped
   // by the turn engine" contract — the layer's own `budgetTokens` covers only the static framing
   // prose). `hub/turn-engine.ts` truncates the assembled project-context string to this many
   // characters before handing it to `projectLayer`/`assembleSessionPrompt`'s `project` injection.
   // Default 8,000 chars (~2,000 tokens at a rough 4-chars/token ratio).
   hubProjectContextMaxChars: readPositiveInt(process.env.HUB_PROJECT_CONTEXT_MAX_CHARS, 8_000),
-  // Assistant Hub (roadmap/assistant-hub/, WP4.3) — root-session/workspace/file retention window in
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.3) — root-session/workspace/file retention window in
   // days for `POST /api/maintenance/prune-hub` (apps/api/src/hub/retention.ts). 0 = disabled (keep
   // everything) — the SAME opt-in-retention convention as `scanRetentionPerServer`/
   // `assistantSessionRetentionDays`; safe-by-default, an operator turns it on explicitly.

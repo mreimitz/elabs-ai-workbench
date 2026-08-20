@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP4.1, R-UX6/R-UX8) — `GET /api/hub/usage` aggregates.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.1, R-UX6/R-UX8) — `GET /api/hub/usage` aggregates.
 //
 // Proves (acceptance):
 //   1. Totals + byModel/byProvider sum EVERY session (top-level + mission-agent children).

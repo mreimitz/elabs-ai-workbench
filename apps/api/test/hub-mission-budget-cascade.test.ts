@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP2.2 · D-CN3, closing R4/R1/R3) — the WHOLE-TREE BUDGET CASCADE:
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP2.2 · D-CN3, closing R4/R1/R3) — the WHOLE-TREE BUDGET CASCADE:
 // a monotone-non-increasing allocation (`sum(child allocations) ≤ parent allocation` at EVERY node, so
 // aggregate spend can never exceed the root `min(requested, HUB_MISSION_MAX_BUDGET_USD)`), a whole-tree
 // propose gate (transitive agent count / tree-bounded cost / total-agent 400), a cascading run-time trip,

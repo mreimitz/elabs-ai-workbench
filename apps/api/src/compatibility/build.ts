@@ -4,7 +4,7 @@
 //
 // This is the TypeScript port of the research reference `comparison/build_comparison.py` (Decision 2:
 // no Python in the runtime or quality gate). The per-provider JSON files under
-// `research/token-context-comparison/data/**` remain the human-curated source of truth; this code
+// `planning/Research/RS-01-token-context-comparison/outputs/data/**` remain the human-curated source of truth; this code
 // merges them into the flat `all-models.json` index the compatibility engine reads, and derives the
 // model-context-window + pricing maps the run engine consumes (Decision 1: unify on the dataset).
 
@@ -251,7 +251,7 @@ export function renderSharedGenerated(all: AllModels): string {
     .map((k) => `  ${JSON.stringify(k)}: ${JSON.stringify(pricing[k])}`)
     .join(",\n");
   return `// GENERATED — do not edit by hand.
-// Source of truth: research/token-context-comparison/data/**; regenerate with \`pnpm build:model-data\`.
+// Source of truth: planning/Research/RS-01-token-context-comparison/outputs/data/**; regenerate with \`pnpm build:model-data\`.
 // Derived from the model-comparison dataset (as-of ${all.as_of}; ${all.model_count} models).
 
 /** Context window (tokens) per model id, for every model with a documented window. */

@@ -45,7 +45,7 @@ export type EngineConfig = {
   /** Opener user turn (test.userPrompt). Interactive mode appends more turns later (WP 2.2). */
   userPrompt: string;
   /**
-   * Observability (roadmap/observability/, WP3.3, D-OB18) — fork seed. When a run is a FORK of a prior
+   * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — fork seed. When a run is a FORK of a prior
    * run, the reconstructed conversation prefix (`fork.ts`) is prepended BEFORE the opener user turn, so
    * the model continues from the parent's transcript with the (possibly overridden) final user prompt as
    * the new turn. ADDITIVE: an ordinary run omits it → `messages` is exactly `[{role:"user",...}]` as
@@ -120,7 +120,7 @@ export type EngineConfig = {
    */
   interactive?: InteractiveTurns;
   /**
-   * Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US3/D-US7) — SessionClock stall/wait-budget
+   * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US3/D-US7) — SessionClock stall/wait-budget
    * tuning OVERRIDES, for tests only. Omitted (the production path) uses the library defaults (10 min
    * stall / 10 min wait; see `session-clock.ts`). The wall-cap deadline is NOT configured here — it is
    * derived from `guardrails.maxRunDurationMs` (opt-in: undefined/0 ⇒ no cap, per D-US3 — no wall
@@ -143,7 +143,7 @@ export type EngineConfig = {
 };
 
 /**
- * Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US3) — this engine no longer defaults its OWN
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US3) — this engine no longer defaults its OWN
  * wall-clock cap to 30 min: the cap is opt-in only (undefined/0 on `guardrails.maxRunDurationMs` ⇒ no
  * cap), and idle/stall detection is now owned by {@link SessionClock}'s stall + wait-budget timers
  * (10 min / 10 min defaults), not a bespoke idle timer (the old `DEFAULT_IDLE_TIMEOUT_MS`/
@@ -349,7 +349,7 @@ function clientToolCallCount(step: StepResult<ToolSet>): number {
  *   - `finish` → final `kpi` + a terminal `status`
  *   - `error` → an `error` RunEvent + an `error` terminal status (a transport/request failure)
  *
- * Unified Sessions (roadmap/unified-sessions/, WP1.3) — lifecycle timing is now owned by a per-run
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3) — lifecycle timing is now owned by a per-run
  * {@link SessionClock} (stall / wait-budget / opt-in wall-cap) instead of the old bespoke idle-timeout
  * racer + hard-coded 30-min deadline; EVERY terminal path resolves its `{status,outcome,stopReasonCode}`
  * triple through the shared `terminalFor` table (`session-terminal.ts`) so the same cause produces the
@@ -428,7 +428,7 @@ export async function runAgentLoop(
   // they're first read.
   const guardrailCfg = cfg.guardrails ?? {};
 
-  // Unified Sessions (roadmap/unified-sessions/, WP1.3, D-US3/D-US7) — the ONE timer engine driving
+  // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3, D-US3/D-US7) — the ONE timer engine driving
   // this run's stall / wait-budget / (opt-in) wall-cap timers, replacing the old bespoke idle-timeout
   // racer + hard-coded 30-min deadline. `clockAbort` is the abort signal the clock drives: firing ANY
   // cause (stalled / wait_expired / max_duration) aborts it, which is combined into `effectiveSignal`

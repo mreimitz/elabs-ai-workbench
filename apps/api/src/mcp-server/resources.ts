@@ -10,7 +10,7 @@ import { buildRunJsonReport, buildRunMarkdownReport } from "../reports/run-repor
 import type { WorkbenchMcpDeps } from "./tools.js";
 
 // ==================================================================================================
-// Workbench MCP server — report RESOURCES (roadmap/ci/mcp-server.md, WP M.1)
+// Workbench MCP server — report RESOURCES (planning/Roadmap/RM-08-ci/mcp-server.md, WP M.1)
 // ==================================================================================================
 // The big documents — a run report, a scan report — are exposed as MCP **resources** rather than
 // (only) tools so a host can pull one on demand without paying for it inside a tool result. Each is a

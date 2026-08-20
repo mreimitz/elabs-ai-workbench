@@ -40,7 +40,7 @@ import type { RunRepository } from "../testing/run-repository.js";
 import { toErrorMessage } from "../utils/errors.js";
 
 // ==================================================================================================
-// Workbench MCP server — the tool surface (roadmap/ci/mcp-server.md, WP M.1 reads + WP M.3 writes)
+// Workbench MCP server — the tool surface (planning/Roadmap/RM-08-ci/mcp-server.md, WP M.1 reads + WP M.3 writes)
 // ==================================================================================================
 // Every handler below is a thin re-projection of a repository or service call that ALREADY exists in
 // this app (D-MCP4: "no logic in the MCP layer"). Where a derivation was only reachable from a React

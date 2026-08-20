@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP5.R · D-CN10 refute doctrine · README §6 invariants) — the
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP5.R · D-CN10 refute doctrine · README §6 invariants) — the
 // FINAL, WHOLE-FEATURE adversarial refute-review, run end-to-end across the fully-integrated feature
 // (execution engine + board/replay + report), AFTER every Phase 2-4 WP landed (2.1/2.2/2.3/2.R,
 // 3.1/3.2, 4.1/4.2/4.3). This is the D-CN10 close-out capstone — it (a) re-runs every invariant `2.R`
@@ -14,7 +14,7 @@
 // (→ a FINDING, kept as a `.skip`/xtest with a `// FINDING:` comment so the gate stays green). Every
 // probe drives the SAME injectable stub-runner seam `hub-crew-nesting-wp2r-review.test.ts` uses — NO
 // provider key, NO real child process, NO MCP server, NO live child spawn. The verdict for each probe
-// is recorded in `roadmap/crew-nesting/phase-5-close/5.R-review.md` with the product `file:line` it
+// is recorded in `planning/Roadmap/RM-10-crew-nesting/phase-5-close/5.R-review.md` with the product `file:line` it
 // refutes against.
 //
 // The probe set (the WP-5.R-final-review.md ledger — every one gets an explicit verdict, none "n/a"):

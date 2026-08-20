@@ -1,4 +1,4 @@
-// Assistant Hub — v1-fixes F1/F2/F7 pure units (roadmap/assistant-hub/mission-session-analysis-2026-07-20.md).
+// Assistant Hub — v1-fixes F1/F2/F7 pure units (planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md).
 //
 // The mission-memory primitives that close the "model context = UI context" gap:
 //   • `pickSynthesisModel` (F1) — the synthesis turn never runs on an `assistant|…` facade model.

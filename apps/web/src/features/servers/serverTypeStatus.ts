@@ -2,7 +2,7 @@ import type { ServerTypeStatus } from "@mcp-token-footprint/shared";
 import { SERVER_TYPE_STATUSES } from "@mcp-token-footprint/shared";
 
 /**
- * Human labels for a server type's lifecycle status (roadmap/server-types, D-ST1). Shared by the
+ * Human labels for a server type's lifecycle status (planning/Roadmap/completed/RM-21-server-types, D-ST1). Shared by the
  * wizard's type Select and the Manage-types form so option/select copy never drifts. The
  * `ServerTypeStatusBadge` owns the same vocabulary for its coloured chip — this is the plain-text
  * variant used inside `<Select>` options where a Badge would be the wrong element.

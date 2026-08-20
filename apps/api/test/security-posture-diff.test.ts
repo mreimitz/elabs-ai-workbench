@@ -21,7 +21,7 @@ import { SkillRepository } from "../src/skills/repository.js";
 import { registerSecurityRoutes } from "../src/security/routes.js";
 import { diffScanPosture, diffSkillPosture } from "../src/security/service.js";
 
-// The posture diff (roadmap/security-posture/ WP 1.4 — A1..A13).
+// The posture diff (planning/Roadmap/RM-20-security-posture/ WP 1.4 — A1..A13).
 //
 // A NEW file, for the same reason WP 1.3 opened one: `apps/api/test/security-analyzer.test.ts` is
 // D-SP14's byte-identical proof and must stay that way, and `apps/api/test/ci-assertions.test.ts` is

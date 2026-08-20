@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ApiToken } from "@mcp-token-footprint/shared";
 
-// Settings › API tokens (roadmap/ci/ WP 1.1). The behaviour under test is the ONE-TIME REVEAL: the
+// Settings › API tokens (planning/Roadmap/RM-08-ci/ WP 1.1). The behaviour under test is the ONE-TIME REVEAL: the
 // server keeps only a digest, so if this pane ever fails to show the plaintext — or shows it again
 // later as if it could — the credential is either lost or misrepresented. The api module is mocked so
 // every call resolves deterministically and no real request is made.

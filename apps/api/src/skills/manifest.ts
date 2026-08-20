@@ -2,7 +2,7 @@ import type { SkillManifest } from "@mcp-token-footprint/shared";
 import { parse as parseYaml } from "yaml";
 
 // Parse + validate `SKILL.md` frontmatter per the Agent Skills spec
-// (research/skill-registry/01-agent-skills-format.md + schema/skill-manifest.schema.json).
+// (planning/Research/RS-02-skill-registry/notes/01-agent-skills-format.md + schema/skill-manifest.schema.json).
 //
 // A malformed skill must STILL be storable so the inspector can surface broken artifacts — this
 // function therefore NEVER throws: it always returns a best-effort `manifest` shape, a `valid`

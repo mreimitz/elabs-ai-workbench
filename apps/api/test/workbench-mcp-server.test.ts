@@ -46,7 +46,7 @@ import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
 // ==================================================================================================
-// Workbench MCP server (roadmap/ci/mcp-server.md, WP M.1) — driven by a REAL in-process MCP client
+// Workbench MCP server (planning/Roadmap/RM-08-ci/mcp-server.md, WP M.1) — driven by a REAL in-process MCP client
 // ==================================================================================================
 // The whole point of this WP is that an external agent can operate the bench over the protocol, so
 // these tests speak the protocol: a `Client` + `StreamableHTTPClientTransport` pointed at a listening

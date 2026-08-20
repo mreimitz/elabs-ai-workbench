@@ -1,4 +1,4 @@
-// Claude subscription skill wiring (roadmap/claude-subscription/, WP 1.4, D-CS9 — the skills half).
+// Claude subscription skill wiring (planning/Roadmap/RM-09-claude-subscription/, WP 1.4, D-CS9 — the skills half).
 //
 // Skills DO work on the subscription path.
 // Each of the run's attached skills is resolved (`ScenarioService.resolveAllowedSkills`, the SAME

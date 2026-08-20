@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.2, D-AH1…D-AH20) — persistence for the full-page,
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.2, D-AH1…D-AH20) — persistence for the full-page,
 // multi-model, multi-agent Assistant. This repository owns the 13 migration-v47 `hub_*` tables
 // (`hub_projects`, `hub_sessions`, `hub_events`, `hub_agents`, `hub_crews`, `hub_missions`,
 // `hub_artifacts`, `hub_artifact_versions`, `hub_reviews`, `hub_files`, `hub_file_links`,

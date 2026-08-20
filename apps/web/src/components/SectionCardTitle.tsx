@@ -21,7 +21,7 @@ import { cn } from "@elabs-ai/components-ui";
  *   the page's `h1` (sections sit at `h2`; a nested sub-section at `h3`).
  *
  * VENDOR BOUNDARY
- *   App-side override for upstream gap #3 (roadmap/interface-craft/upstream-gaps.md). The classes
+ *   App-side override for upstream gap #3 (planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md). The classes
  *   mirror `CardTitle` (vendor card.tsx:262) rather than composing it, because `CardTitle` is a bare
  *   `<div>` with no `as`/`asChild` seam to swap the tag. Delete this wrapper and pass `as`/`level`
  *   to `CardTitle` directly once `@elabs-ai/components-ui` `CardTitle` accepts a heading level upstream.

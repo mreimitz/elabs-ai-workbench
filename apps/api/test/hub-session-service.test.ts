@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.1) — the session-service lifecycle orchestration, over a
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.1) — the session-service lifecycle orchestration, over a
 // real repository + a STUBBED model (no provider). File at `apps/api/test/` (the api runner's glob).
 //
 // Proves: createSession persists the capability manifest; a dispatch runs a turn + sets a deterministic

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.1, §1.5 / D-AH3 / D-AH4) — the session-lifecycle
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.1, §1.5 / D-AH3 / D-AH4) — the session-lifecycle
 // orchestration between the routes (WP1.2) and the turn engine (`turn-engine.ts`).
 //
 // It owns the parts of §1.5 that are NOT one turn's pipeline: creating a session (with its capability

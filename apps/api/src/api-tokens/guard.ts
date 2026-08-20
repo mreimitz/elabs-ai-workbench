@@ -19,7 +19,7 @@ import {
 import type { ApiTokenAuthResult, ApiTokenService, AuthenticatedApiToken } from "./service.js";
 
 /**
- * The service-token guard (roadmap/ci/ WP 1.1, D-C2) — one root `onRequest` hook that decides whether
+ * The service-token guard (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2) — one root `onRequest` hook that decides whether
  * a request may proceed, and on whose authority.
  *
  * ## The posture: loopback stays open, remote requires a token

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7) — the mission orchestrator, driven by STUBBED model
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7) — the mission orchestrator, driven by STUBBED model
 // seams (no provider/API key). File lives at `apps/api/test/` because the api runner globs
 // `test/*.test.ts`.
 //
@@ -260,7 +260,7 @@ test("a proposed plan is editable (plan_updated) then approvable, and running it
   assert.equal(synthEvent(events)?.partial, false, "a full mission synthesizes non-partial");
 });
 
-// ── assistant-hub v1-fixes F1/F2/F7 (roadmap/assistant-hub/mission-session-analysis-2026-07-20.md) ──
+// ── assistant-hub v1-fixes F1/F2/F7 (planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md) ──
 test("v1-fixes F1/F2/F7: a completed mission synthesizes on a NON-facade model and persists mission_digest + mission_followups", async () => {
   const repo = openRepo();
   const session = missionSession(repo, "always_ask"); // session model: gpt-4o (structured-capable)

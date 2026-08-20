@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP1.5, D-HUX11) — the MEMORY INJECTION RESOLVER: given a
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.5, D-HUX11) — the MEMORY INJECTION RESOLVER: given a
 // session, compute its EFFECTIVE memory stack across the four scopes `profile` · `project` · `crew` ·
 // `agent` (migration v49). Two halves, deliberately separated so the ordering/conflict logic is a PURE,
 // exhaustively-testable function with no DB:
@@ -47,7 +47,7 @@ import type {
 } from "@mcp-token-footprint/shared";
 import type { HubRepository } from "./repository.js";
 
-// WP2.7 (roadmap/assistant-hub-ux/) — `HubEffectiveMemory`/`HubEffectiveMemoryEntry`/
+// WP2.7 (planning/Roadmap/completed/RM-04-assistant-hub-ux/) — `HubEffectiveMemory`/`HubEffectiveMemoryEntry`/
 // `HubEffectiveMemoryOverride`/`HubEffectiveMemoryLayerSummary` are now PROMOTED to
 // `@mcp-token-footprint/shared` (imported above) — this module used to declare them locally (WP1.5,
 // when the shared wire was frozen for that WP). Re-exported here so every existing importer of THIS

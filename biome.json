@@ -10,7 +10,10 @@
       "**/data-wt/**",
       "**/*.timestamp-*.mjs",
       "**/playwright-report/**",
-      "**/test-results/**"
+      "**/test-results/**",
+      ".claude/worktrees/**",
+      "apps/api/src/compatibility/data/all-models.json",
+      "planning/Research/RS-01-token-context-comparison/outputs/comparison/all-models.json"
     ]
   },
   "vcs": {

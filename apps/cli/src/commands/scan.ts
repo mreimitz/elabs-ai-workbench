@@ -20,7 +20,7 @@ const TOP_TOOLS = 5;
  *
  * **The scan happens in the API.** The CLI POSTs and formats what comes back; it never connects to
  * an MCP server, never spawns a stdio child, never counts a token. That is the client invariant
- * (`roadmap/ci/README.md`) and it is why `apps/cli` can depend on nothing but `shared`.
+ * (`planning/Roadmap/RM-08-ci/item.md`) and it is why `apps/cli` can depend on nothing but `shared`.
  *
  * ### Why the POST goes first
  *

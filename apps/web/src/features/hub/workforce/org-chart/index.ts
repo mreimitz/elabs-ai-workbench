@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5) — the workforce Org chart public surface.
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP2.5) — the workforce Org chart public surface.
 //
 // For Wave-2 integration: pass `<OrgChartTab />` as `WorkforceView`'s `orgChartTab` slot.
 // For WP2.4 (crew-profile Topology section): import `CrewTopologyGraph` + `buildCrewTopologyEdges`

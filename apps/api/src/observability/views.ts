@@ -1,4 +1,4 @@
-// Observability — saved views (roadmap/observability/, WP1.4).
+// Observability — saved views (planning/Roadmap/RM-17-observability/, WP1.4).
 //
 // Name + reuse ANY {@link RunFilter}: a saved view is a stored filter + opaque presentation hints,
 // selectable in the runs feed (WP2.3, later) and referenced by deep links. `filter_json` is VALIDATED

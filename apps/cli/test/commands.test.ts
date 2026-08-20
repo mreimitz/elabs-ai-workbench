@@ -15,7 +15,7 @@ import {
 } from "@mcp-token-footprint/shared";
 import { runCliCapture, startStub, type StubRoutes, VALID_TOKEN } from "./harness.js";
 
-// The commands, end to end against a `node:http` stub of the workbench API (roadmap/ci/ WP 1.2 —
+// The commands, end to end against a `node:http` stub of the workbench API (planning/Roadmap/RM-08-ci/ WP 1.2 —
 // A8, A9, A10, A12, A13, A14). No real workbench, no MCP server, no database: the CLI is a client,
 // so a stub that speaks the same routes is a complete substitute for it.
 

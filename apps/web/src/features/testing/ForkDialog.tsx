@@ -38,7 +38,7 @@ function stepLabel(step: RunStep): string {
 }
 
 /**
- * Observability (roadmap/observability/, WP3.3, D-OB18) — the "Open in Playground" fork dialog. Forks a
+ * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — the "Open in Playground" fork dialog. Forks a
  * TERMINAL run into a NEW derived run: edit the final prompt / model / temperature / skill version, pick
  * a fork point (whole-run re-launch, or — capability-gated — AT a step so the conversation prefix is
  * reconstructed + seeded), preview the cost (`GET /api/estimate/run-plan`, ESTIMATE-FIRST), then launch

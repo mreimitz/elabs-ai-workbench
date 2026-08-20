@@ -5,10 +5,10 @@ Produced with the `better-interface` skill (jakubkrehel/skills), coordinating `b
 findings).
 
 > **Provenance note (owner, 2026-07-25).** This file is the source of truth for the **interface-craft**
-> plan ([`roadmap/interface-craft/`](../roadmap/interface-craft/README.md)). It was produced against the
+> plan ([`planning/Roadmap/completed/RM-15-interface-craft/`](../planning/Roadmap/completed/RM-15-interface-craft/item.md)). It was produced against the
 > running app **before** the toolbar-reach plan merged to `main`; several `file:line`s have since
 > drifted (e.g. `TableToolbar.tsx` is now deleted; the Runs overflow wrapper moved to `RunsView.tsx:733`;
-> `AgentCard.tsx` gained a `title`). The plan's [`conventions.md`](../roadmap/interface-craft/conventions.md)
+> `AgentCard.tsx` gained a `title`). The plan's [`conventions.md`](../planning/Roadmap/completed/RM-15-interface-craft/conventions.md)
 > §5 tracks the known drift. Implement the finding **intent** against current source; report new drift.
 
 ## Scope and Coverage
@@ -183,7 +183,7 @@ not applied.
 `text-success` everywhere except `text-primary` at `SuiteDeltas.tsx:245`.
 **After:** Split the tokens: give `--success` its own value distinct from `--primary`, and `--ring` its
 own distinct from `--info`. Then pick one delta convention and apply it — the locked decision D-UX9
-already exists (`roadmap/ux-overhaul/STATUS.md:143`), it is simply implemented three ways.
+already exists (`planning/Roadmap/RM-30-ux-overhaul/STATUS.md:143`), it is simply implemented three ways.
 **Why:** One color, one meaning. Because `--ring === --info`, a keyboard user tabbing the Runs feed sees
 focus rings at the same lightness and chroma as the "Running" chips beside them — the focus indicator is
 camouflaged by content. And a filled green button (action), a green chip (success) and a green delta

@@ -1,4 +1,4 @@
-// Observability — RunFilter parse/serialize + the pure per-run predicate (roadmap/observability/,
+// Observability — RunFilter parse/serialize + the pure per-run predicate (planning/Roadmap/RM-17-observability/,
 // WP1.1, D-OB1). ONE helper so web URL state and the API agree byte-for-byte, and so a caller with a
 // SINGLE materialized run (watch rules, WP4.1) evaluates the SAME {@link RunFilter} object WITHOUT SQL.
 //

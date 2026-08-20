@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP4.1, §1.8/§1.6, R-SES7) — the CONTEXT INSPECTOR: itemize a
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.1, §1.8/§1.6, R-SES7) — the CONTEXT INSPECTOR: itemize a
 // session's current context window by layer, using the app's OWN counters end to end (the dogfood
 // discipline — no fabricated numbers, ever). Two complementary breakdowns:
 //

@@ -10,7 +10,7 @@ import { SESSION_TABLE_COLUMNS, toVisibleColumnSet } from "./run-columns";
 // (cmd-click / copy-link / middle-click), so every render needs a Router context or `<Link>` throws.
 
 /**
- * Claude subscription (roadmap/claude-subscription/, WP 3.1, D-CS4) — the Runs feed marks a
+ * Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.1, D-CS4) — the Runs feed marks a
  * `claude_subscription` run's cost "est. · subscription" (its `costUsd` is a shadow-price estimate,
  * marginal cost $0), reusing the shared `SubscriptionCostMarker`. An ordinary API-metered run shows the
  * cost number ALONE, with no marker. This locks both directions on the single-run feed row.

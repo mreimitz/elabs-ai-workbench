@@ -5,16 +5,16 @@ import type { RunPlanSource, SuiteRunStatus, TokenProfileId } from "./types.js";
 
 // ==================================================================================================
 // CI assertions contract — the `mcpfp.assert.json` document, the rule vocabulary, and the itemized
-// report the API returns (roadmap/ci/, WP 1.3)
+// report the API returns (planning/Roadmap/RM-08-ci/, WP 1.3)
 // ==================================================================================================
 // **Assertions are evaluated SERVER-SIDE and the CLI only renders the result** (the
-// `roadmap/ci/README.md` invariant). That is why the document shape, the rule union and the report
+// `planning/Roadmap/RM-08-ci/item.md` invariant). That is why the document shape, the rule union and the report
 // live here rather than in `apps/cli`: one declaration, imported by both ends, so neither can drift
 // into re-deriving the other's shape from prose. `apps/cli` cannot import `zod` at all (its only
 // runtime dependency is this package — D-C5), so the schema it validates a gate file with has to
 // live in a package that already depends on zod. This one does.
 //
-// Locked decisions this module encodes (2026-08-19, `roadmap/ci/wp-1.3-assertions.md`):
+// Locked decisions this module encodes (2026-08-19, `planning/Roadmap/RM-08-ci/wp-1.3-assertions.md`):
 //
 //   • **D-C3 — baseline semantics: symbolic in, concrete out.** A baseline may be named symbolically
 //     (`"previous"`) or as an explicit scan id; either way the API resolves it to exactly ONE
@@ -31,7 +31,7 @@ import type { RunPlanSource, SuiteRunStatus, TokenProfileId } from "./types.js";
 //   • **D-C9 — `assert` never runs a scan.** It evaluates an already-persisted one. Scanning is
 //     `mcpfp scan`; a CI job chains the two, which is what keeps the exit codes honest.
 //
-// Locked decisions WP 2.2 adds (2026-08-20, `roadmap/ci/wp-2.2-suite-assertions-artifact.md`). Every
+// Locked decisions WP 2.2 adds (2026-08-20, `planning/Roadmap/RM-08-ci/wp-2.2-suite-assertions-artifact.md`). Every
 // one of them is ADDITIVE — {@link ASSERTIONS_VERSION} stays 1 and every v1 document that validated
 // yesterday still validates today:
 //
@@ -53,7 +53,7 @@ import type { RunPlanSource, SuiteRunStatus, TokenProfileId } from "./types.js";
 //     the API, not here; see `apps/api/src/assertions/service.ts`. A half-graded matrix read as a
 //     mean score would report a quality regression that is really just grading latency.
 //
-// Locked decisions WP 3.1 adds (2026-08-20, `roadmap/ci/wp-3.1-no-new-security-findings.md`). All
+// Locked decisions WP 3.1 adds (2026-08-20, `planning/Roadmap/RM-08-ci/wp-3.1-no-new-security-findings.md`). All
 // three are ADDITIVE — {@link ASSERTIONS_VERSION} stays 1, and every v1 document still validates:
 //
 //   • **D-C20 — "new" is set membership by (ruleId, anchor), never a count.** The comparison is

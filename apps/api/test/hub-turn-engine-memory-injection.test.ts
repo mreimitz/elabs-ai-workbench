@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.0b, closes WP1.R-B, D-HUX11) — proves the turn
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP2.0b, closes WP1.R-B, D-HUX11) — proves the turn
 // engine injects the session's RESOLVED effective memory stack (WP1.5's `buildSessionEffectiveMemory`),
 // not a flat-global read of every active memory row. Companion to `hub-turn-engine.test.ts` (mirrors its
 // harness) and `hub-memory-scopes.test.ts` (which proves the resolver + the context-inspector's

@@ -3,7 +3,7 @@
 // JSON, hostile tool_search queries, repeated-search promotion, and the SSRF address/redirect matrix.
 // Every probe here is offline (no network, no provider). Where an existing suite already pins an
 // invariant, this file references it in a comment rather than duplicating — it adds only the genuinely
-// UNCOVERED adversarial edges found in the 7.R review (see roadmap/hub-fixes/review-7R.md).
+// UNCOVERED adversarial edges found in the 7.R review (see planning/Roadmap/RM-13-hub-fixes/review-7R.md).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";

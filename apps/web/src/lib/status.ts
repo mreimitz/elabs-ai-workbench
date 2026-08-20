@@ -123,7 +123,7 @@ export function deriveStatusView(raw: string | null | undefined): StatusView {
 }
 
 // ====================================================================================================
-// Unified Sessions (roadmap/unified-sessions/, WP3.1, D-US5) — the ONE run/session status derivation.
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.1, D-US5) — the ONE run/session status derivation.
 //
 // The LOCKED label table (execution-plan.md §1 / README D-US5) is a run/session-specific vocabulary,
 // distinct from `deriveStatusView` above (which stays the GENERIC raw-wire-value mapper shared by scans,
@@ -289,7 +289,7 @@ export const CLOSED_BADGE_STATUS_TONE: Record<
 };
 
 // ====================================================================================================
-// Fleet issues (roadmap/observability/, WP5.3) — the registry's OWN 3-state lifecycle dimension
+// Fleet issues (planning/Roadmap/RM-17-observability/, WP5.3) — the registry's OWN 3-state lifecycle dimension
 // (open/resolved/regressed), a strict superset of the per-run `RatingIssueStatus` (open/resolved)
 // `IssuesPanel.tsx` already renders with its own plain-Badge AR6 pattern. `regressed` gets the SAME
 // visual weight as a hard failure (red FILLED) — a resolved cluster reappearing is exactly as

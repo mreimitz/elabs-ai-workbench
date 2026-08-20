@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP1.5, D-HUX11) — the PURE effective-memory resolver
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.5, D-HUX11) — the PURE effective-memory resolver
 // (`hub/memory-resolver.ts`'s `resolveEffectiveMemory`). No DB: exhaustively proves the injection ORDER
 // (profile → project → crew → agent) and the CONFLICT rule (most-specific-wins, transparently shown),
 // plus the excluded cases (archived/proposed rows, skipped layers) the acceptance calls out. The

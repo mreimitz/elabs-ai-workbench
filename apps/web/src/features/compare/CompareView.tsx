@@ -170,7 +170,7 @@ export function CompareView(props: {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Server types (roadmap/server-types) — self-fetched (WP 4.1): CompareView owns this small
+  // Server types (planning/Roadmap/completed/RM-21-server-types) — self-fetched (WP 4.1): CompareView owns this small
   // directory itself (like other views fetch their own) rather than threading a prop through the
   // high-churn App.tsx. Read-only + best-effort: a missing/failed types API degrades to [] (no type
   // labels, no filter), never breaks the compare flow.

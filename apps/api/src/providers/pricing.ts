@@ -63,7 +63,7 @@ const LEGACY_MODEL_PRICING: Record<
 };
 
 // Current-generation ids the LIVE Anthropic / Claude-subscription rosters offer but the research
-// dataset SNAPSHOT (as-of 2026-06-21) predates (D-MI11, `roadmap/model-identity/`). The pricing twin
+// dataset SNAPSHOT (as-of 2026-06-21) predates (D-MI11, `planning/Roadmap/RM-16-model-identity/`). The pricing twin
 // of `ROSTER_GAP_MODEL_CONTEXT_LIMITS` in `packages/shared/src/constants.ts` — see that block for why
 // a gap here is not cosmetic: an unpriced model makes `isModelPriced()` false, which means a
 // cost-capped run is REFUSED rather than silently unbounded (issue #10), and `estimateCost()` returns

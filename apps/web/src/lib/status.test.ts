@@ -11,7 +11,7 @@ import {
   type RunStatusInput,
 } from "./status";
 
-// Unified Sessions (roadmap/unified-sessions/, WP3.1, D-US5) — behavior lock for the LOCKED label
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.1, D-US5) — behavior lock for the LOCKED label
 // table (execution-plan.md §1). Every row renders through `deriveRunStatusView`, the ONE derivation
 // `(status, outcome, stopReasonCode, phase, ratingState) → {label, tone, spinner}` every run/session
 // status surface adopts. This test covers EVERY row, including all 15 `StopReasonCode`s, so no surface

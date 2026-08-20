@@ -1,4 +1,4 @@
-// Assistant (WP 1.2) — the per-message context envelope renderer (roadmap/assistant/00-plan.md
+// Assistant (WP 1.2) — the per-message context envelope renderer (planning/Roadmap/RM-02-assistant/00-plan.md
 // §3.2: "Every user message carries a context envelope (current route, entity kind + id, active
 // tab) appended as structured context, so 'this run' resolves without the user pasting ids").
 //

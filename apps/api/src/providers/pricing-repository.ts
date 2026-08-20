@@ -1,4 +1,4 @@
-// Observability — DB-backed model pricing map (roadmap/observability/, WP2.6, D-OB22).
+// Observability — DB-backed model pricing map (planning/Roadmap/RM-17-observability/, WP2.6, D-OB22).
 //
 // The repository over `model_pricing`: CRUD for owner-added `user` rows (`seed` rows are read-only)
 // plus the RESOLVER (`resolve`) the pricing seam installs at startup. Resolution is deterministic and

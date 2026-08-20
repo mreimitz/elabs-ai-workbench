@@ -8,7 +8,7 @@ import { valueMatchGrader } from "./value-match.js";
  * (the LLM judges land in WP 1.3, the tool-hygiene / trajectory / conformance graders in WP 2.x) plug
  * in WITHOUT changing persistence or the auto-grade wiring.
  *
- * HARD invariants (roadmap/benchmarks/conventions.md): a grader NEVER executes anything — no MCP call,
+ * HARD invariants (planning/Roadmap/RM-07-benchmarks/conventions.md): a grader NEVER executes anything — no MCP call,
  * no code run, no skill execution. It reads ONLY the persisted run + the test's authored expectations
  * (documents), and returns a verdict. Grading never blocks/fails/mutates a run; `unevaluable` is never
  * a failure and never a 0 score.

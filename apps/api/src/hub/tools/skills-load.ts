@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.4, R-SK2/R-SK3) — the `skills.load` built-in: how a
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.4, R-SK2/R-SK3) — the `skills.load` built-in: how a
 // session-attached skill's L2 (SKILL.md body) or L3 (a referenced file) loads ON DEMAND, model-driven,
 // **enum-constrained** (the model picks a name from the L1 catalog it was already shown — never a free
 // string, never harness keyword matching). A fresh instance per turn (the enum is session-specific — the

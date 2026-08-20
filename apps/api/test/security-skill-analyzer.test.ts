@@ -43,7 +43,7 @@ import {
 } from "../src/security/skill-analyzer.js";
 import { type SecuritySkillPorts, analyzeSkillVersion } from "../src/security/service.js";
 
-// The skill security analyzer (roadmap/security-posture/ WP 1.3 — A1..A15).
+// The skill security analyzer (planning/Roadmap/RM-20-security-posture/ WP 1.3 — A1..A15).
 //
 // A NEW file on purpose. `apps/api/test/security-analyzer.test.ts` had to stay byte-identical, because
 // it is D-SP14's proof that moving the three shared text heuristics into `src/security/text-scan.ts`

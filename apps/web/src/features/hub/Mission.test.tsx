@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.7) — the mission UI: the event-log reducer
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.7) — the mission UI: the event-log reducer
 // (`reconstructMissionBoard`, R-SES1), the editable plan card (D-AH6/R-UX6), the live board
 // (R-UX4/R-UX9), and the in-band ConversationPane integration. The heavy `@elabs-ai/components-ai` surface is
 // stubbed via the shared hub mock (see `test-support/brand-ai-mock.tsx`).

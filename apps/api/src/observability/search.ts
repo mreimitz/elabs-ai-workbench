@@ -1,4 +1,4 @@
-// Observability — full-text search over run content (roadmap/observability/, WP1.3, D-OB16).
+// Observability — full-text search over run content (planning/Roadmap/RM-17-observability/, WP1.3, D-OB16).
 //
 // An SQLite FTS5 index (`run_search`) over the seven content classes a run produces, populated at
 // PERSISTENCE time (the run-repository step/terminal write path + the grade-repository rating write),

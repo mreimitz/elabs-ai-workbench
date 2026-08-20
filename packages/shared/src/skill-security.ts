@@ -1,6 +1,6 @@
 // Skill security surface — the deterministic, read-only "what could this skill reach?" summary shown
 // on the Skills inspector's Overview and projected by the workbench MCP server's `skills_security`
-// tool (roadmap/ci/mcp-server.md, D-MCP4: one derivation, several surfaces — never a second copy).
+// tool (planning/Roadmap/RM-08-ci/mcp-server.md, D-MCP4: one derivation, several surfaces — never a second copy).
 //
 // This derivation used to live INSIDE `apps/web/src/features/skills/SkillOverview.tsx`, which meant
 // the only way to answer "does this skill ship scripts / reference the network?" was to render the

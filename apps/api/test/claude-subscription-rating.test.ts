@@ -39,7 +39,7 @@ import { SubscriptionConcurrencyPool } from "../src/testing/subscription-concurr
 import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
-// WP 3.3 (roadmap/claude-subscription/) — auto-rating interaction for subscription runs. This is a
+// WP 3.3 (planning/Roadmap/RM-09-claude-subscription/) — auto-rating interaction for subscription runs. This is a
 // VERIFICATION workstream: WP 1.2 already chains `reviewRun` onto EVERY run regardless of provider kind
 // (`run-service.ts` `start()`), and `GradeService.gradeRun`/`isEligible` (`grade-service.ts`) carry NO
 // kind gate at all. WP 2.1 originally wired the ONE `SubscriptionConcurrencyPool.shared` gate into BOTH

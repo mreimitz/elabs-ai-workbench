@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP2.R · D-CN10 refute doctrine · README §6 invariants) — the
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP2.R · D-CN10 refute doctrine · README §6 invariants) — the
 // ADVERSARIAL REFUTE-REVIEW of the recursive execution heart (Phase 2 WP2.1/2.2/2.3 + WP3.1 replay).
 //
 // This is NOT a summary pass. Each of the ten probes below is a CONCRETE ATTACK — a branchy/deep tree,
@@ -7,7 +7,7 @@
 // succeeds (→ a FINDING, kept as a `.skip` with a `// FINDING:` comment). Every probe drives the injectable
 // stub-runner seam already used by `hub-missions.test.ts` / `hub-crew-nesting-engine.test.ts` — NO provider
 // key, NO real child process, NO MCP server. The verdict for each probe is recorded in
-// `roadmap/crew-nesting/phase-2-engine/2.R-review.md` with the product `file:line` it refutes against.
+// `planning/Roadmap/RM-10-crew-nesting/phase-2-engine/2.R-review.md` with the product `file:line` it refutes against.
 //
 // The ten probes (README §6 invariant matrix):
 //   1  budget monotonicity (D-CN3)              6  nested HITL deny + plan_proposed-is-not-a-gate (D-CN1/D-CN6)

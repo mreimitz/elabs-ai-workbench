@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.6, R-GUI1–8) — the Declarative GenUI module: the shared
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.6, R-GUI1–8) — the Declarative GenUI module: the shared
 // catalog registry/validator (allowlist = the security boundary), the prompt + JSON-schema compilers
 // (regenerated from the one registry so they can't disagree), the bounded machine-hinted repair loop,
 // and the `present`/`prompt_user` emission tools. Security-critical acceptance: allowlist bypass, prop

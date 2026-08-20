@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Security posture \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the security-posture plan, read and updated by /next-wp security-posture."
 tags: ["roadmap", "RM-20"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T17:10:00Z"
 status: "active"
 ---
 # Security posture — work-package status ledger · **PRIORITY: HIGH**
@@ -249,8 +249,11 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       two endpoints have never been called against real third-party scan or skill data.
 
 ## Phase 2 — Surfacing
-- [ ] WP 2.1 — UI: Security tabs, list badges, diff view (both themes)
-- [ ] WP 2.2 — report export integration
+- [ ] WP 2.1 — UI: Security tabs, list badges, diff view (both themes) — depends: 1.4 —
+      **status: in progress** (`wp/security-posture/2.1`, runs SOLO — it owns `apps/api/src/index.ts`
+      this round) · spec: [`wp-2.1-security-ui.md`](./wp-2.1-security-ui.md)
+- [ ] WP 2.2 — report export integration — depends: 1.4 — status: open (queued behind WP 2.1:
+      both need `apps/api/src/index.ts`) · spec: [`wp-2.2-report-export.md`](./wp-2.2-report-export.md)
 
 ## Decision log
 _Entries: date · decision · rationale._

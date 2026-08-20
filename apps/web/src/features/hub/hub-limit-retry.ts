@@ -4,7 +4,7 @@ import type { HubModelCredentialIssue, HubModelOption } from "./use-hub-models";
 
 /**
  * The limit-error banner's pure target-selection layer (D-MI1/D-MI9,
- * `roadmap/model-identity/` WP 4.3).
+ * `planning/Roadmap/RM-16-model-identity/` WP 4.3).
  * ==============================================================================================
  *
  * A `limit_error` offers to retry the turn on the **other auth source** (`retrySourcesFor`,

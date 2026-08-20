@@ -7,7 +7,7 @@ import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
  * dashboard-bento WP 2.1 — `InventoryTile`.
  *
  * `@elabs-ai/components-charts` is stubbed (its barrel resolves a broken deep `@visx/gradient`
- * subpath under jsdom) but the stub is **FAITHFUL**, per `roadmap/dashboard-bento/conventions.md`:
+ * subpath under jsdom) but the stub is **FAITHFUL**, per `planning/Roadmap/RM-11-dashboard-bento/conventions.md`:
  * it records `values` / `variant` / `emphasizeLast` / `label` / `className` / `preserveAspectRatio`
  * / `style.color` into readable attributes. An inert no-op mock — which is what the rest of this
  * repo's suites install — would let every one of the defects this tile exists to avoid pass the gate

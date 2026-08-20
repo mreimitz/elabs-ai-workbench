@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.3, R-SES8 · R-SK2) — the compaction module, driven by a
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.3, R-SES8 · R-SK2) — the compaction module, driven by a
 // char-as-token stub counter so thresholds are exact + a spy summarizer so ordering ("clear tool outputs
 // FIRST, summarize ONLY after") + the "never a loop" guarantee are directly observable.
 //

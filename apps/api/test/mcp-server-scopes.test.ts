@@ -46,7 +46,7 @@ import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
 // ==================================================================================================
-// Workbench MCP mount — SERVICE-TOKEN SCOPES (roadmap/ci/wp-m.2-mount-scopes.md)
+// Workbench MCP mount — SERVICE-TOKEN SCOPES (planning/Roadmap/RM-08-ci/wp-m.2-mount-scopes.md)
 // ==================================================================================================
 // Driven by a REAL in-process MCP client against a real Fastify app carrying the real WP 1.1 guard,
 // because the thing under test is a join across three layers: the guard decides who the caller is,

@@ -229,7 +229,7 @@ describe("DashboardView — the page toolbar (WP 2.2, Defect 1)", () => {
     expect(screen.getAllByRole("group", { name: "Dashboard date range" })).toHaveLength(1);
 
     // The written layout order is breadcrumb → ONE toolbar row → content
-    // (`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`); the Dashboard used to invert it.
+    // (`planning/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md`); the Dashboard used to invert it.
     const strip = screen.getByRole("tablist");
     const order = rangeControl().compareDocumentPosition(strip);
     expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

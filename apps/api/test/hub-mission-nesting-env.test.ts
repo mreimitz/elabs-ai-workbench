@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 /** The subset of `config` (apps/api/src/config/env.ts) these tests care about — WP 0.3
- *  (roadmap/crew-nesting/, D-CN3/D-CN10): the two new nested-crew-tree hard caps. */
+ *  (planning/Roadmap/RM-10-crew-nesting/, D-CN3/D-CN10): the two new nested-crew-tree hard caps. */
 interface HubMissionNestingConfigSlice {
   hubMissionMaxDepth: number;
   hubMissionMaxTotalAgents: number;

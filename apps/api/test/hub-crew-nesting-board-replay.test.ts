@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP3.1 · D-CN7, R-SES1) — the EVENT-SOURCED HIERARCHY proof. A
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP3.1 · D-CN7, R-SES1) — the EVENT-SOURCED HIERARCHY proof. A
 // nested-tree mission must reconstruct from `hub_events` ALONE. These tests build a 2-level tree of raw
 // events BY HAND (no service, no DB, no provider, no MCP) and feed them straight to the pure API board
 // reducer `reconstructMission`, asserting:

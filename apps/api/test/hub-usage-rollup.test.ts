@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP1.6, D-HUX10) — `GET /api/hub/usage/rollup` group-by
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.6, D-HUX10) — `GET /api/hub/usage/rollup` group-by
 // rollups: `buildHubUsageRollup` (apps/api/src/hub/usage.ts).
 //
 // Proves (WP1.6 acceptance — "attribution sums reconcile exactly; unattributed spend is visible, never

@@ -80,7 +80,7 @@ import { getErrorMessage } from "./lib/errors";
 import { formatDateTime } from "./lib/format";
 import { notifyError } from "./lib/notify";
 
-// ── Code-splitting (research/full-validation 03-web-review H1 + M1) ──────────────────────────────
+// ── Code-splitting (planning/Research/RS-07-full-validation 03-web-review H1 + M1) ──────────────────────────────
 // The heavy leaf surfaces are `React.lazy`-loaded so their code — Monaco (`@elabs-ai/components-editor`), React
 // Flow (`@xyflow/react` via `@elabs-ai/components-flow`), and charts (`@elabs-ai/components-charts`) — no longer lands in the
 // eager entry chunk. Each `lazy()` is a dynamic-import split point, so the vendor weight is pulled
@@ -99,7 +99,7 @@ const CompatibilityView = lazy(() =>
     default: m.CompatibilityView,
   })),
 );
-// Advisor (roadmap/advisor/, WP 1.3) — evidenced recommendations at `/advisor`. Read-only: the
+// Advisor (planning/Roadmap/RM-01-advisor/, WP 1.3) — evidenced recommendations at `/advisor`. Read-only: the
 // route renders suggestions + evidence links; nothing here is ever auto-applied.
 const AdvisorView = lazy(() =>
   import("./features/advisor/AdvisorView").then((m) => ({ default: m.AdvisorView })),
@@ -358,7 +358,7 @@ export function App() {
 
   const [health, setHealth] = useState<HealthPayload | null>(null);
   const [servers, setServers] = useState<ServerConfig[]>([]);
-  // Server types (roadmap/server-types) — the ServerRail groups + filters by them; the wizard picker
+  // Server types (planning/Roadmap/completed/RM-21-server-types) — the ServerRail groups + filters by them; the wizard picker
   // assigns them; the Manage-types dialog (below) creates/renames/restatuses/deletes them.
   const [serverTypes, setServerTypes] = useState<ServerType[]>([]);
   const [manageTypesOpen, setManageTypesOpen] = useState(false);
@@ -1456,7 +1456,7 @@ export function App() {
                   path="/testing/compatibility"
                   element={<CompatibilityView scans={scans} />}
                 />
-                {/* Advisor (roadmap/advisor/ WP 1.3) — the scope lives in the URL (`?scope=&id=`)
+                {/* Advisor (planning/Roadmap/RM-01-advisor/ WP 1.3) — the scope lives in the URL (`?scope=&id=`)
                 so a report is bookmarkable/shareable, and the bare route renders the FLEET report,
                 i.e. something useful with zero query params (D-TB10). */}
                 <Route path="/advisor" element={<AdvisorView />} />
@@ -1558,7 +1558,7 @@ export function App() {
           onTestServer={testServerConnection}
           onUpdateServer={updateServer}
         />
-        {/* Manage server types (roadmap/server-types WP 2.2). `onChanged` = the app's refreshAll so
+        {/* Manage server types (planning/Roadmap/completed/RM-21-server-types WP 2.2). `onChanged` = the app's refreshAll so
             BOTH server types AND servers reload (a delete detaches members → their typeId changes). */}
         <ManageServerTypesDialog
           open={manageTypesOpen}

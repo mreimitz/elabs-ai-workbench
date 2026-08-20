@@ -1,4 +1,4 @@
-// Unified Sessions (roadmap/unified-sessions/, WP3.R) — the REUSABLE seed-a-DB script.
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.R) — the REUSABLE seed-a-DB script.
 //
 // Seeds one persisted `runs` row per (backend kind × session state) into a real SQLite DB (the app's,
 // by default) so the running app renders every new session state WITHOUT a provider key / a live LLM —

@@ -3,7 +3,7 @@ import { serverTypeInputSchema, serverTypeUpdateSchema } from "@mcp-token-footpr
 import type { ServerTypeRepository } from "./repository.js";
 
 /**
- * Server-type CRUD (roadmap/server-types WP 1.1). Thin routes over the repository; the central
+ * Server-type CRUD (planning/Roadmap/completed/RM-21-server-types WP 1.1). Thin routes over the repository; the central
  * error handler formats 400 (zod / unknown typeId), 404, and 409 (duplicate name).
  */
 export async function registerServerTypeRoutes(

@@ -1,4 +1,4 @@
-// Claude subscription run executor (roadmap/claude-subscription/, WP 1.1 — the CRUX).
+// Claude subscription run executor (planning/Roadmap/RM-09-claude-subscription/, WP 1.1 — the CRUX).
 //
 // The app has TWO inference stacks. A regular run rides the Vercel-AI-SDK loop
 // ({@link import("./engine.js").runAgentLoop} → `streamText`). The owner's Claude *subscription*
@@ -323,7 +323,7 @@ export type ClaudeSubscriptionRunConfig = {
    */
   skillFileReader?: SkillFileBytesReader;
   /**
-   * Unified Sessions (roadmap/unified-sessions/, WP1.4, D-US4) — persist this run's capability manifest
+   * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.4, D-US4) — persist this run's capability manifest
    * ({@link SUBSCRIPTION_SESSION_CAPABILITIES}) at session start. Wired by the run service to
    * `RunRepository.setCapabilities` bound to this run's id (there is no `RunEvent` wire member for a
    * capability manifest — `RunSummary.capabilities` is read back from `capabilities_json`, WP1.6).
@@ -480,7 +480,7 @@ function stepAllocator(runId: string): (
 }
 
 /**
- * Unified Sessions (roadmap/unified-sessions/, WP1.4, D-US1/D-US6) — acquire a concurrency permit,
+ * Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.4, D-US1/D-US6) — acquire a concurrency permit,
  * emitting a `{type:"phase",phase:"queued",detail:{position}}` event FIRST when the gate has no free
  * permit right now, then clearing to `{type:"phase",phase:"starting"}` once the permit is actually
  * granted. A gate whose next `acquire()` would resolve IMMEDIATELY (a free permit) emits NEITHER phase

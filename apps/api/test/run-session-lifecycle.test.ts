@@ -1,4 +1,4 @@
-// Unified Sessions (roadmap/unified-sessions/, WP1.6) — persistence + API surface tests.
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.6) — persistence + API surface tests.
 //
 // Part A: repository-level unit tests (no HTTP, no engine) for the new session-lifecycle write
 // primitives (setCapabilities/setPhase/recordDurations/markEnded/markSeen), the NULL-safe read side

@@ -6,7 +6,7 @@ import type { ServerTypeRow } from "../db/rows.js";
 import { httpError } from "../utils/errors.js";
 
 /**
- * Server types (roadmap/server-types, D-ST1/D-ST2): a first-class named group of MCP servers that
+ * Server types (planning/Roadmap/completed/RM-21-server-types, D-ST1/D-ST2): a first-class named group of MCP servers that
  * share one tool surface. Lifecycle status lives on the type. Carries NO secrets and NO connection
  * config, so nothing here touches the SecretStore. Deleting a type detaches members (the
  * `mcp_servers.type_id` FK is ON DELETE SET NULL — D-ST4), never deletes servers.

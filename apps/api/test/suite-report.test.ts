@@ -219,7 +219,7 @@ function seedAnswerStep(db: AppDatabase, runId: string, text: string): void {
 }
 
 /**
- * Claude subscription (roadmap/claude-subscription/, WP 2.2, D-CS4/D-CS8) — insert a persisted `kpi`
+ * Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 2.2, D-CS4/D-CS8) — insert a persisted `kpi`
  * `run_events` row carrying `costBasis`, exactly like the live event stream the subscription executor
  * emits (`claude-subscription-executor.ts` `emitKpi`). `SuiteReportService` reads this back off
  * `RunRepository.getRun(...).events` (the run summary row itself has no `cost_basis` column — the

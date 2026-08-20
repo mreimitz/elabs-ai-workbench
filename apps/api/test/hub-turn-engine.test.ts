@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.1) — the turn engine, driven by a STUBBED AI-SDK model
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.1) — the turn engine, driven by a STUBBED AI-SDK model
 // (the `MockLanguageModelV3` + `simulateReadableStream` pattern the Testing engine tests use — no real
 // provider, no API key). File lives at `apps/api/test/` because the api runner globs `test/*.test.ts`.
 //

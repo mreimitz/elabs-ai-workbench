@@ -9,7 +9,7 @@ function shortId(id: string): string {
 }
 
 /**
- * Observability (roadmap/observability/, WP3.3, D-OB18) — the run console's fork LINEAGE banner, shown
+ * Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — the run console's fork LINEAGE banner, shown
  * in BOTH directions:
  *  - child → parent: a DERIVED run says "Forked from run … at step …" and links back to its parent.
  *  - parent → child: a run that has been forked shows a "forks" indicator listing its derived runs.

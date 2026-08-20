@@ -328,7 +328,7 @@ const SECTION_GROUPS: { label: string; sections: SectionDef[] }[] = [
     label: "System",
     sections: [
       {
-        // Service tokens (roadmap/ci/ WP 1.1) — machine-facing, so it sits with the other System
+        // Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1) — machine-facing, so it sits with the other System
         // panes rather than with the AI providers. It rides `/settings/:section`, adding NO new
         // `<Route>`, so `ASSISTANT_ROUTE_MANIFEST` and the assistant-route-operability gate are
         // untouched.
@@ -892,7 +892,7 @@ function GeneralSection(props: {
 /* ─────────────────────────────────────────────────────────────────────────────────────────────
  * Testing — the global session-clock defaults every run's `SessionClock` uses (D-US3/D-US7) and the
  * app-wide Claude-subscription run concurrency cap (D-US6). Read-only today (WP3.4 backend gap, see
- * `roadmap/unified-sessions/STATUS.md`): the stall timeout and wait budget are fixed constants with
+ * `planning/Roadmap/completed/RM-29-unified-sessions/STATUS.md`): the stall timeout and wait budget are fixed constants with
  * NO environment-variable override at all (`apps/api/src/testing/session-clock.ts`'s
  * `DEFAULT_STALL_MS`/`DEFAULT_WAIT_BUDGET_MS`, `session-capabilities.ts`'s
  * `ACME_ANSWERS_WAIT_BUDGET_MS`), and subscription concurrency IS an env var
@@ -1181,7 +1181,7 @@ function AboutSection(props: { health: HealthPayload | null }) {
 /**
  * A short label for the resolved rating source (Auto-Rating WP 2.3, AR3).
  *
- * D-MI5 (`roadmap/model-identity/`, WP 2.3): qualified to "Claude CLI **judge**". `claude_subscription`
+ * D-MI5 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): qualified to "Claude CLI **judge**". `claude_subscription`
  * — a run *provider* — now displays as "Anthropic CLI" (`PROVIDER_KIND_META`), while this is the
  * Auto-Rating judge provider (`CLAUDE_CLI_PROVIDER_ID`), a genuinely different thing. The word
  * "judge" is what keeps the two from reading as one provider.
@@ -1557,7 +1557,7 @@ function GradingSection() {
  * Providers — encrypted provider credentials (the Testing run engine's keys).
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
-// D-MI6 (`roadmap/model-identity/`, WP 2.3): the local `PROVIDER_KIND_LABELS` map that used to live
+// D-MI6 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): the local `PROVIDER_KIND_LABELS` map that used to live
 // here is deleted — provider-kind display names now come from the ONE registry in
 // `packages/shared` (`PROVIDER_KIND_META` / `providerKindLabel`), so Settings, the Dashboard's
 // testing filters, the Hub picker and the Environment views can no longer drift apart.
@@ -1576,7 +1576,7 @@ const BASE_URL_KINDS = new Set<ProviderKind>(["openai_compatible", "ollama"]);
 const REQUIRED_BASE_URL_KINDS = new Set<ProviderKind>([]);
 
 /**
- * Claude subscription (roadmap/claude-subscription/, WP 0.3, D-CS7) — this kind's ONLY auth is the
+ * Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.3, D-CS7) — this kind's ONLY auth is the
  * owner's signed-in Claude subscription (the same sign-in the Assistant dock uses), never a
  * `provider_credentials` API key. The create/edit form hides the key field entirely for these kinds
  * (not just makes it optional, unlike the BASE_URL_KINDS local providers) and shows the live

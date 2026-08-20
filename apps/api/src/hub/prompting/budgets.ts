@@ -1,6 +1,6 @@
 // Assistant Hub — per-section token budgets + measurement (D-AH14 / R-SES7).
 //
-// The targets are the ones written into `roadmap/assistant-hub/system-prompt-draft.md` (the "~N
+// The targets are the ones written into `planning/Roadmap/RM-03-assistant-hub/system-prompt-draft.md` (the "~N
 // tokens" annotations on each `[LAYER]`). For layers that carry a runtime injection (session
 // context, tools, GenUI catalog, memory, project, orchestration roster) the budget covers ONLY the
 // AUTHORED STATIC FRAME — the injected content is variable and budget-capped by its own owner (the

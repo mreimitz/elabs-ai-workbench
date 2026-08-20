@@ -14,7 +14,7 @@ import { runCli } from "../src/cli.js";
  *   • {@link runCliCapture} — `runCli` with argv/env/cwd/streams injected, returning the exact bytes
  *     stdout and stderr would have carried plus the exit code. In-process, so there is no child to
  *     spawn and no shell to mangle the exit code (`pnpm exec`, notably, collapses every non-zero exit
- *     to 1 — see `user-guide/22-mcpfp-cli.md`).
+ *     to 1 — see `planning/user-guide/DC-18-mcpfp-cli/22-mcpfp-cli.md`).
  */
 
 export type StubRequest = {

@@ -1,4 +1,4 @@
-// Assistant operability (roadmap/assistant-operability/, WP 3.1) — the Hub READ toolset:
+// Assistant operability (planning/Roadmap/RM-05-assistant-operability/, WP 3.1) — the Hub READ toolset:
 // `hub_agents_list` / `hub_crews_list` / `hub_usage_summary`. Backs the route-keyed `agents`/`hub`
 // starter chips added in WP 2.1 (analysis-only surfaces mirroring the existing `compatibility`
 // precedent — NOT new `ASSISTANT_ENTITY_KINDS`, see D-AO3) so those chips are actually answerable

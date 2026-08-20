@@ -4,7 +4,7 @@ export const TRANSPORT_TYPES = ["stdio", "streamable_http"] as const;
 
 export const SERVER_AUTH_TYPES = ["none", "bearer", "api_key", "oauth", "custom_headers"] as const;
 
-// Server types (roadmap/server-types, D-ST1): lifecycle status lives ON the type (a named group of
+// Server types (planning/Roadmap/completed/RM-21-server-types, D-ST1): lifecycle status lives ON the type (a named group of
 // servers sharing one tool surface), not on individual servers. Ordered by "productionness".
 export const SERVER_TYPE_STATUSES = [
   "production",
@@ -41,7 +41,7 @@ export const DEFAULT_COMPARE_THRESHOLD = 0.6;
 
 // --- Testing (runs) contract ---------------------------------------------------------------
 
-// `claude_subscription` (roadmap/claude-subscription/, WP 0.1) — the one kind that is NOT
+// `claude_subscription` (planning/Roadmap/RM-09-claude-subscription/, WP 0.1) — the one kind that is NOT
 // chat-completions-shaped: a selectable "model" that never goes through `modelFor()`/the AI-SDK loop, only through a dedicated
 // executor (`claude-subscription-executor`, later WP) that branches at `RunService.execute()`. Auth
 // resolves from the owner's SIGNED-IN Claude subscription (`assistant_credentials` — the same
@@ -60,7 +60,7 @@ export const PROVIDER_KINDS = [
   "claude_subscription",
 ] as const;
 
-// --- Provider-kind presentation (D-MI6, `roadmap/model-identity/`) -----------------------------
+// --- Provider-kind presentation (D-MI6, `planning/Roadmap/RM-16-model-identity/`) -----------------------------
 // THE single source of truth for how a {@link ProviderKind} is shown to a human. Before this, five
 // vocabularies disagreed — three `Record<ProviderKind, string>` maps (Settings, the Dashboard's
 // testing metrics, the Hub's own `HUB_FAMILY_LABELS`) plus two views rendering the RAW kind literal —
@@ -196,7 +196,7 @@ export const RUN_STATUSES = [
   "stopped",
   "error",
   "aborted",
-  // Unified Sessions (roadmap/unified-sessions/, WP1.1, D-US2) — the terminal status of an INTERACTIVE
+  // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1, D-US2) — the terminal status of an INTERACTIVE
   // session the operator deliberately closed via the "End session" action. Additive + appended (never
   // reordered): an interactive session ends as `ended` (paired with outcome `ended`, stopReasonCode
   // `session_ended`), never fake-`completed` and never `aborted`. Every run persisted before this member
@@ -213,12 +213,12 @@ export const RUN_OUTCOMES = [
   // Additive (SkillFlow WP 5.1 follow-up, owner decision 2026-07-03): the run completed normally but
   // at least one skill-gate assertion failed. Engine outcomes above are never masked by it.
   "assertions_failed",
-  // Unified Sessions (roadmap/unified-sessions/, WP1.1, D-US2) — the outcome partner of the `ended`
+  // Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1, D-US2) — the outcome partner of the `ended`
   // status: the operator ended an interactive session cleanly. Additive + appended.
   "ended",
 ] as const;
 
-// --- Unified Sessions — session contract (roadmap/unified-sessions/, WP1.1) --------------------
+// --- Unified Sessions — session contract (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1) --------------------
 // One shared lifecycle vocabulary every run backend (AI-SDK engine, Claude-subscription child) maps
 // to, so the same cause ends the same way everywhere. All additive: old
 // persisted runs/events carry none of these and replay unchanged.
@@ -322,7 +322,7 @@ export const RUN_STEP_TYPES = [
   "user_message",
 ] as const;
 
-// --- Observability — step-hierarchy span kinds (roadmap/observability/, WP3.1, D-OB17) ------------
+// --- Observability — step-hierarchy span kinds (planning/Roadmap/RM-17-observability/, WP3.1, D-OB17) ------------
 // A step's ROLE in the run's step TREE — a SEPARATE, additive classifier from {@link RUN_STEP_TYPES}
 // (the wire/DB step `type`, which is UNCHANGED). `spanKind` is OPTIONAL on every step: a step persisted
 // before WP3.1 carries none and renders FLAT (no backfill). Two families make up the union:
@@ -352,7 +352,7 @@ export const CONTEXT_SEGMENTS = [
   "output",
 ] as const;
 
-// --- Observability — RunFilter grammar (roadmap/observability/, WP1.1, D-OB1) -----------------
+// --- Observability — RunFilter grammar (planning/Roadmap/RM-17-observability/, WP1.1, D-OB1) -----------------
 // The one serializable filter object the runs feed, saved views, chart drill-downs, watch rules and
 // (later) the CLI all share. The TYPE + zod live in types.ts / schemas.ts; the parse/serialize +
 // the pure `matchesRunFilter` predicate live in `run-filter.ts`. These constants pin the wire vocabulary.
@@ -388,7 +388,7 @@ export const RUN_SORT_FIELDS = [
 
 export const RUN_SORT_DIRECTIONS = ["asc", "desc"] as const;
 
-// --- Observability — metrics endpoints (roadmap/observability/, WP1.2, D-OB13/D-OB14) ----------
+// --- Observability — metrics endpoints (planning/Roadmap/RM-17-observability/, WP1.2, D-OB13/D-OB14) ----------
 // The time-axis aggregation vocabulary shared by `GET /api/metrics/runs` + `GET /api/metrics/scans`
 // (computed ON DEMAND, no rollup cache). The wire TYPES live in types.ts; the query zod in schemas.ts.
 
@@ -440,7 +440,7 @@ export const RUN_METRICS_MEASURES = [
 // back to the STATIC per-kind manifest — never a `providerKind === …` fork in the aggregation).
 export const CAPABILITY_SPLIT_MEASURES = ["tokensIn", "tokensOut", "costUsd"] as const;
 
-// --- Observability — custom chart composer (roadmap/observability/, WP2.7, D-OB22) --------------
+// --- Observability — custom chart composer (planning/Roadmap/RM-17-observability/, WP2.7, D-OB22) --------------
 // User-defined charts on the Testing dashboard (`dashboard_charts`, migration v45): measure(s) +
 // filter + group-by + chart type, persisted + cloneable. The config surface is DELIBERATELY SMALL
 // (this is not a BI tool) and renders ONLY what the WP1.2 metrics services (`computeRunMetrics`/
@@ -507,7 +507,7 @@ export const DASHBOARD_CHART_SCAN_MEASURE_UNITS: Record<
   totalPrompts: "count",
 };
 
-// --- Observability — full-text search (roadmap/observability/, WP1.3, D-OB16) -------------------
+// --- Observability — full-text search (planning/Roadmap/RM-17-observability/, WP1.3, D-OB16) -------------------
 // The FTS5 index over run content (`run_search`) is populated at persistence time, backfilled once,
 // queried through the RunFilter `q` field, and rebuildable via `POST /api/maintenance/reindex-search`.
 // It is DERIVED state (conventions §1) — every indexed document is reconstructable from
@@ -550,7 +550,7 @@ export const SEARCH_CONTENT_LIMITS: Record<(typeof SEARCH_CONTENT_CLASSES)[numbe
 // when the indexed CONTENT shape changes so the next startup re-backfills existing runs once.
 export const SEARCH_INDEX_VERSION = 1;
 
-// --- Observability — saved views (roadmap/observability/, WP1.4) --------------------------------
+// --- Observability — saved views (planning/Roadmap/RM-17-observability/, WP1.4) --------------------------------
 // A saved view names a {@link RunFilter} for reuse (the runs feed, WP2.3, and deep links). Only the
 // name + filter carry API-enforced semantics (uniqueness, the RunFilter zod); `columns`/`sort` are
 // opaque presentation hints the web UI owns — the API bounds their SERIALIZED byte size (a zip-bomb-
@@ -560,7 +560,7 @@ export const RUN_VIEW_NAME_MAX_LENGTH = 200;
 // list / sort spec while rejecting an accidental (or abusive) multi-MB payload.
 export const RUN_VIEW_PRESENTATION_MAX_BYTES = 20 * 1024; // 20 KB
 
-// --- Observability — watch rules (roadmap/observability/, WP4.1, D-OB19/D-OB21) ------------------
+// --- Observability — watch rules (planning/Roadmap/RM-17-observability/, WP4.1, D-OB19/D-OB21) ------------------
 // "When a run matches filter F, do action A", evaluated at the ONE post-terminal choke point. The
 // action `type`s are a CLOSED set; the trigger + severity vocabularies are frozen enums. Rules are
 // strictly post-hoc OBSERVERS — see the {@link WatchRule} type doc.
@@ -584,7 +584,7 @@ export const WATCH_TEMPLATE_MAX_BYTES = 16 * 1024; // 16 KB
 // pipeline (the post-terminal review awaits the observer; this keeps that wait bounded).
 export const WATCH_WEBHOOK_TIMEOUT_MS = 10_000;
 
-// --- Observability — windowed watch rules (roadmap/observability/, WP4.2, D-OB19) ----------------
+// --- Observability — windowed watch rules (planning/Roadmap/RM-17-observability/, WP4.2, D-OB19) ----------------
 // A `windowed` rule (`WatchRuleTrigger` = "windowed") carries a `WatchWindowConfig`: a threshold
 // over a trailing, grid-ALIGNED time window ("error rate > 30% over 6h", "cost today > $5"). The
 // measure vocabulary is the SINGLE SOURCE (RUN_METRICS_MEASURES) — there is NO second aggregation
@@ -614,7 +614,7 @@ export const WATCH_CATCHUP_MAX_WINDOWS = 168;
 // accidental huge value can't be stored. A week is plenty for a "remind me again" cadence.
 export const WATCH_COOLDOWN_MAX_MINUTES = 7 * 24 * 60;
 
-// --- Observability — notification center (roadmap/observability/, WP4.3, D-OB19) -----------------
+// --- Observability — notification center (planning/Roadmap/RM-17-observability/, WP4.3, D-OB19) -----------------
 // The persistent in-app notification center the `notify` watch action (WP4.1, unblocked here) writes
 // to — the bell in the AppShell reads/streams these. Severities are the SAME closed vocabulary as
 // `WATCH_NOTIFY_SEVERITIES` above (a notification's severity IS the firing action's severity — no
@@ -626,7 +626,7 @@ export const NOTIFICATION_LIST_MAX_LIMIT = 200;
 // of age (an operator must see an alert at least once before it can be swept).
 export const NOTIFICATION_RETENTION_DAYS_DEFAULT = 30;
 
-// --- Observability — scheduled digest report (roadmap/observability/, WP5.5, D-OB22) --------------
+// --- Observability — scheduled digest report (planning/Roadmap/RM-17-observability/, WP5.5, D-OB22) --------------
 // The "since your last visit" briefing: a daily/weekly window-over-window comparison persisted as a
 // report artifact (JSON + Markdown), delivered as a quiet `info` notification. RIDES the WP4.2
 // scheduler (an additive `onDigest` tick) — settings live in `app_settings` under
@@ -678,7 +678,7 @@ export const SKILL_MAX_FILES = 2000; // file-count cap per skill version
 // The three shared shapes SkillFlow hangs off. SkillFlow is process-mining for Agent Skills: a
 // design-time graph projected from SKILL.md is conformance-checked against a session event log.
 // Everything here is a wire/contract vocabulary; projection + alignment (deterministic, no model
-// calls) land in later WPs. See roadmap/skillflow/00-architecture.md ("The three schemas") + D2/D6/D8.
+// calls) land in later WPs. See planning/Roadmap/RM-23-skillflow/00-architecture.md ("The three schemas") + D2/D6/D8.
 
 // Node kinds for the skill graph IR. Aligned with (not a parallel taxonomy to) `SKILL_FILE_KINDS`
 // (D8): `subroutine` = an ordered heading/section; `asset` = a bundled-file reference; `gatekeeper`
@@ -781,7 +781,7 @@ export const SKILLFLOW_ALIGNER_VERSION = 2;
 // The prefix that marks an in-file SkillFlow annotation, e.g. `<!-- skillflow:gate id=check-output -->`.
 export const SKILLFLOW_ANNOTATION_PREFIX = "skillflow:";
 
-// WP 3.2 — the breadcrumb marker convention (D7b, roadmap/skillflow/breadcrumb-convention.md): a
+// WP 3.2 — the breadcrumb marker convention (D7b, planning/Roadmap/RM-23-skillflow/breadcrumb-convention.md): a
 // single bracketed line an agent emits in its own prose at a gatekeeper decision, e.g.
 // `[skillflow:gate=route-input route=r-csv]`. This is the regex SOURCE (no flags — callers compile
 // it with `g`/`i` as needed) so both trace normalizers (`run-trace.ts`, `session-ingest.ts`) and the
@@ -896,7 +896,7 @@ export const SKILLFLOW_STATIC_SUGGESTION_RULES = [
 ] as const;
 
 // --- Skill IDE — Phase 1 contract (WP 1.1) -----------------------------------------------------
-// The additive contract layer the Skill IDE plan hangs off (roadmap/skill-ide/00-architecture.md,
+// The additive contract layer the Skill IDE plan hangs off (planning/Roadmap/RM-22-skill-ide/00-architecture.md,
 // I1–I8). Everything here is ADDITIVE — existing SkillFlow consumers compile unchanged. The engines
 // that CONSUME these shapes (quality, tool validation, publisher) land in later WPs; WP 1.1 freezes
 // the vocabulary + zod + version stamps.
@@ -956,7 +956,7 @@ export const SKILL_FILE_ENCODINGS = ["utf8", "base64"] as const;
 export const GITHUB_REPO_NAME_PATTERN = /^[A-Za-z0-9._-]{1,100}$/;
 
 // --- Benchmarks — output-quality grading contract (WP 1.1, B1–B5) -----------------------------
-// The additive contract the Benchmarks plan hangs off (roadmap/benchmarks/, B1–B15). WP 1.1 freezes
+// The additive contract the Benchmarks plan hangs off (planning/Roadmap/RM-07-benchmarks/, B1–B15). WP 1.1 freezes
 // the FULL downstream grading vocabulary (grader ids + finding shapes later graders consume) + the
 // version stamp so no later WP re-touches `packages/shared`. The engines that PRODUCE grades (the
 // graders, the judge, the suite runner) land in later WPs; here we only land types/zod/persistence.
@@ -973,7 +973,7 @@ export const GRADING_VERSION = 1;
 // trajectory vs `referenceLogic`; `skillflow_conformance` = grade derived from the SkillFlow
 // alignment of the run's attached skills.
 //
-// Auto-Rating (WP 1.1, roadmap/auto-rating/, AR1/AR5/AR6) APPENDS three ALWAYS-ON base-rating
+// Auto-Rating (WP 1.1, planning/Roadmap/RM-06-auto-rating/, AR1/AR5/AR6) APPENDS three ALWAYS-ON base-rating
 // graders — see {@link BASE_RATING_GRADER_IDS} — that run on every terminal run regardless of
 // `test.expectations` (unlike the six above, which only run when a test declares expectations):
 // `answer_validation` = does the final assistant answer address the test's initial prompt;
@@ -1019,7 +1019,7 @@ export const REFERENCE_LOGIC_KINDS = ["code", "text"] as const;
 export const TOOL_HYGIENE_SEVERITIES = ["low", "medium", "high"] as const;
 
 // --- Auto-Rating — mandatory post-run rating contract (WP 1.1, AR1–AR16) ----------------------
-// roadmap/auto-rating/README.md. Extends the Benchmarks grading system above: base rating is three
+// planning/Roadmap/RM-06-auto-rating/item.md. Extends the Benchmarks grading system above: base rating is three
 // ALWAYS-ON graders (see the {@link GRADER_IDS} roster comment) joining `run_grades` — append-only,
 // latest-per-grader wins, same `GRADING_VERSION` discipline, no new per-run table (AR1). This WP
 // lands only the contract (constants/types/zod); the graders themselves are later WPs.
@@ -1136,7 +1136,7 @@ const LEGACY_MODEL_CONTEXT_LIMITS: Record<string, number> = {
 };
 
 // Current-generation ids the LIVE provider rosters offer but the research dataset SNAPSHOT
-// (as-of 2026-06-21) predates (D-MI11, `roadmap/model-identity/`). Distinct from
+// (as-of 2026-06-21) predates (D-MI11, `planning/Roadmap/RM-16-model-identity/`). Distinct from
 // {@link LEGACY_MODEL_CONTEXT_LIMITS} above, which back-fills *previous*-generation ids: these are
 // current models the dataset simply hasn't been refreshed for yet.
 //
@@ -1149,7 +1149,7 @@ const LEGACY_MODEL_CONTEXT_LIMITS: Record<string, number> = {
 // This is a hand-maintained GAP-FILLER, not a second source of truth: it is merged BEFORE
 // `GENERATED_MODEL_CONTEXT_LIMITS`, so the moment the dataset is refreshed the dataset value wins
 // and the entry here becomes dead weight to be deleted. **Never hand-edit `model-data.generated.ts`**
-// — regenerate it from `research/token-context-comparison/data/**` with `pnpm build:model-data`.
+// — regenerate it from `planning/Research/RS-01-token-context-comparison/outputs/data/**` with `pnpm build:model-data`.
 //
 // Dated snapshot ids are listed explicitly next to their alias because every lookup in the app is an
 // EXACT-key map read (`MODEL_CONTEXT_LIMITS[modelId] ?? 0`) — there is no alias normalization, and
@@ -1169,7 +1169,7 @@ export const ROSTER_GAP_MODEL_CONTEXT_LIMITS: Record<string, number> = {
 // The authoritative, dataset-derived context windows (current-generation models) take precedence;
 // the legacy seed fills gaps for older ids the user might still run, and the roster-gap seed fills
 // current-generation ids the dataset snapshot predates. Single source of truth:
-// research/token-context-comparison/data/** → regenerate with `pnpm build:model-data` (Decision 1).
+// planning/Research/RS-01-token-context-comparison/outputs/data/** → regenerate with `pnpm build:model-data` (Decision 1).
 export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   ...LEGACY_MODEL_CONTEXT_LIMITS,
   ...ROSTER_GAP_MODEL_CONTEXT_LIMITS,
@@ -1247,8 +1247,8 @@ export const RUN_PLAN_ESTIMATE_CHARS_PER_TOKEN = 4;
 // ==================================================================================================
 // Assistant (WP 0.1) — shared contract
 // ==================================================================================================
-// Embedded Claude agent chat (roadmap/assistant/00-plan.md, decisions D-AS1…D-AS18 in
-// roadmap/assistant/decisions.md). This WP lands the wire + persistence CONTRACT only — the session
+// Embedded Claude agent chat (planning/Roadmap/RM-02-assistant/00-plan.md, decisions D-AS1…D-AS18 in
+// planning/Roadmap/RM-02-assistant/decisions.md). This WP lands the wire + persistence CONTRACT only — the session
 // engine (WP 1.1), in-process MCP toolset (WP 1.2), and dock UI (WP 1.3) build on it in later WPs.
 // Wire types are AssistantThread / AssistantEvent / AssistantAuthStatus / AssistantContextEnvelope
 // (types.ts); request schemas are in schemas.ts. Naming (hard rule, D-AS9): the feature is
@@ -1548,7 +1548,7 @@ export const REVIEW_RUBRIC_KEY_DESCRIPTION_MAX_LENGTH = 300;
 export const REVIEW_RUBRIC_MAX_KEYS = 20;
 
 // ==================================================================================================
-// Assistant Hub — shared contract vocabulary (roadmap/assistant-hub/, WP0.1, D-AH1…20) -------------
+// Assistant Hub — shared contract vocabulary (planning/Roadmap/RM-03-assistant-hub/, WP0.1, D-AH1…20) -------------
 // The full-page, multi-model, multi-agent Assistant. ADDITIVE ONLY: nothing above changes. Namespace
 // `HUB_*` (D-AH2). The SESSION LIFECYCLE vocabulary is REUSED verbatim from Unified Sessions — a hub
 // session's `status` is a {@link RUN_STATUSES} value, its `phase` a {@link RUN_PHASES} value, its
@@ -1619,7 +1619,7 @@ export const HUB_EVENT_TYPES = [
   "agent_spawned",
   "agent_report",
   "mission_synthesis",
-  // assistant-hub v1-fixes (F2/F7 — roadmap/assistant-hub/mission-session-analysis-2026-07-20.md):
+  // assistant-hub v1-fixes (F2/F7 — planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md):
   // `mission_digest` persists the mission's MODEL-VISIBLE outcome record (compact per-agent findings +
   // open questions) that history reconstruction folds into every later turn's context — closing the
   // "the UI shows the reports but the model can't see them" divergence. `mission_followups` records the
@@ -1846,7 +1846,7 @@ export const HUB_LIMIT_RETRY_SOURCES = ["api_key", "subscription", "other_model"
 // `name_only` attachment and an auto-demoted one render identically.
 export const HUB_SKILL_INVOCATION_MODES = ["model_invocable", "user_only", "name_only"] as const;
 
-// --- Assistant Hub UX — additive closed vocabularies (roadmap/assistant-hub-ux/, WP0.1) ----------
+// --- Assistant Hub UX — additive closed vocabularies (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP0.1) ----------
 // ADDITIVE ONLY (D-HUX16). These three closed unions are what every later Assistant-Hub-UX WP imports;
 // nothing above changes. Old payloads (which never carried these fields) still parse — the new fields
 // are optional on their entities' schemas.
@@ -1918,7 +1918,7 @@ export const HUB_MISSION_MAX_DEPTH = 2;
 export const HUB_MISSION_MAX_TOTAL_AGENTS = 24;
 
 // --- Advisor — deterministic recommendation contract (WP 1.1) ---------------------------------
-// roadmap/advisor/. The advisor is a READ MODEL over data the app already persists (`mcp_scans` /
+// planning/Roadmap/RM-01-advisor/. The advisor is a READ MODEL over data the app already persists (`mcp_scans` /
 // `mcp_tool_scans`, `runs` / `run_steps`, `scenarios`, and later `run_grades`) that turns those
 // measurements into evidenced recommendations. This WP lands the wire contract + the rule-engine
 // seam ONLY — the four deterministic rules and `GET /api/advisor/*` are WP 1.2.
@@ -1956,7 +1956,7 @@ export const ADVISOR_SEVERITIES = ["high", "medium", "info"] as const;
 export const ADVISOR_SAVINGS_UNITS = ["tokens_per_turn", "tokens", "usd_per_run"] as const;
 
 // --- Advisor — grade-aware rules (WP 2.1) -----------------------------------------------------
-// roadmap/advisor/phase-2-grade-aware/. Phase 2 joins the deterministic read model to the graded
+// planning/Roadmap/RM-01-advisor/phase-2-grade-aware/. Phase 2 joins the deterministic read model to the graded
 // side of the app (`run_grades` + `suite_runs`). Two things make that join honest:
 //   * a grade-aware finding carries `AdvisorGradeProvenance` — `GRADING_VERSION` plus the suite-run
 //     ids it read — so a recommendation computed under one grading version is never silently
@@ -1975,7 +1975,7 @@ export const ADVISOR_SAVINGS_UNITS = ["tokens_per_turn", "tokens", "usd_per_run"
 export const ADVISOR_QUALITY_BAR = 0.5;
 
 // --- Advisor — fleet report (WP 2.2) ----------------------------------------------------------
-// roadmap/advisor/phase-2-grade-aware/WP-2.2-fleet-report.md. `GET /api/reports/fleet/{json,
+// planning/Roadmap/RM-01-advisor/phase-2-grade-aware/WP-2.2-fleet-report.md. `GET /api/reports/fleet/{json,
 // markdown}` is an aggregate of what the app has ALREADY measured — servers + scan drift,
 // environment costs, suite grades, a posture summary when one exists — plus the fleet-scope advisor
 // recommendations. It is stamped `ADVISOR_VERSION` (above): the report is only as reproducible as

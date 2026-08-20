@@ -1,4 +1,4 @@
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP2.5 · D-HUX5/8/9) — the workforce "Org chart" tab.
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP2.5 · D-HUX5/8/9) — the workforce "Org chart" tab.
 // Fills `WorkforceView`'s `orgChartTab` slot (see that file's frame-API doc): it reads the org rail's
 // `?scope` itself (nothing threaded in as props), fetches the crew + role library, and renders the
 // pure {@link buildOrgChartModel} on a read-only `@elabs-ai/components-flow` canvas — crew containers tinted by

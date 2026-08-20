@@ -132,7 +132,7 @@ test("isChatModelId rejects non-chat modalities and accepts real chat models", (
   }
 });
 
-// --- Claude subscription roster (roadmap/claude-subscription/, WP 0.3, D-CS5) -------------------
+// --- Claude subscription roster (planning/Roadmap/RM-09-claude-subscription/, WP 0.3, D-CS5) -------------------
 // No REST call, no API key/baseUrl — the roster is the same static ASSISTANT_DEFAULT_MODEL_ROSTER
 // the embedded Assistant dock's model picker falls back to. A stub fetchImpl that throws on any
 // call proves no network round-trip happens for this kind.

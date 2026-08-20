@@ -6,7 +6,7 @@ import { after, test } from "node:test";
 import { MCPFP_DEFAULT_API_URL, MCPFP_DEFAULT_TIMEOUT_MS } from "@mcp-token-footprint/shared";
 import { runCliCapture, startStub, VALID_TOKEN } from "./harness.js";
 
-// Config resolution + the token-handling rules (roadmap/ci/ WP 1.2 — A5, A6, A7).
+// Config resolution + the token-handling rules (planning/Roadmap/RM-08-ci/ WP 1.2 — A5, A6, A7).
 //
 // Every case runs `config show --format json`, because that is the one command whose payload IS the
 // resolved config: the precedence table is asserted against what the CLI would actually use, not

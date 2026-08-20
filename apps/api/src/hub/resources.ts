@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.4, R-MCP9) — MCP resource attachment. Event-sourced (no
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.4, R-MCP9) — MCP resource attachment. Event-sourced (no
 // new table, per §1.3's "Workspace (not a table)" precedent extended to resources): a session's
 // currently-attached resource set is reconstructed by replaying its `resource_attached`/
 // `resource_removed` events, exactly the idiom `turn-engine.ts`'s `HubSteeringQueue.reconstructPending`

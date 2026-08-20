@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP4.R — FINAL review + owner-acceptance assembly, D-AH18).
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.R — FINAL review + owner-acceptance assembly, D-AH18).
 //
 // These are the WP4.R final-reviewer SEED PROBES: they seed realistic sessions/missions through the
 // REAL engine with a STUBBED model (no provider key, no network) and assert end-to-end behavior across

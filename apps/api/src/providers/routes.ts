@@ -9,7 +9,7 @@ import type { SubscriptionModelSource } from "./subscription-models.js";
 export async function registerProviderRoutes(
   app: FastifyInstance,
   providers: ProviderService,
-  // The LIVE Claude-subscription roster resolver (roadmap/claude-subscription/ follow-up), threaded from
+  // The LIVE Claude-subscription roster resolver (planning/Roadmap/RM-09-claude-subscription/ follow-up), threaded from
   // `index.ts` DI (mirrors the `fetchImpl` injectable-seam style). Optional so existing callers/tests
   // construct the routes unchanged; when absent, a `claude_subscription` credential falls back to the
   // static roster inside `listModels`.

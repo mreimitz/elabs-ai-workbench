@@ -25,7 +25,7 @@ beforeEach(() => {
   vi.mocked(api.getDigestSchedule).mockResolvedValue(DEFAULT_SCHEDULE);
 });
 
-// Unified Sessions (roadmap/unified-sessions/, WP3.4, D-US3/D-US6/D-US7) — the Settings → Testing
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.4, D-US3/D-US6/D-US7) — the Settings → Testing
 // card. Fully read-only today (no settings-persistence API exists for either the session-clock
 // timer defaults or the subscription-run concurrency cap — see the WP3.4 report's backend-gap
 // list), so this only asserts the informational read-out renders the right figures and flags the

@@ -13,7 +13,7 @@ import {
   renderAssertionMarkdown,
 } from "./ci-assertions.js";
 
-// `renderAssertionMarkdown` — the PR-comment artifact (roadmap/ci/ WP 2.2, **D-C15**).
+// `renderAssertionMarkdown` — the PR-comment artifact (planning/Roadmap/RM-08-ci/ WP 2.2, **D-C15**).
 //
 // This is the ONE place the comment body is built: not a second API endpoint (the evaluation is
 // server-side; the formatting is the client's job — D-C6) and not a private copy in `apps/cli`

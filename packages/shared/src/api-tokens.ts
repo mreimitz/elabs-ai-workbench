@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // ==================================================================================================
-// Service tokens — the API-token contract for headless/automation callers (roadmap/ci/, WP 1.1)
+// Service tokens — the API-token contract for headless/automation callers (planning/Roadmap/RM-08-ci/, WP 1.1)
 // ==================================================================================================
 // The workbench's measurements have to be usable WITHOUT a browser: a CI job, the `mcpfp` CLI (WP 1.2),
 // or an external agent on the MCP mount (WP M.2) needs a credential that is not a browser session and
@@ -9,7 +9,7 @@ import { z } from "zod";
 // shape, and it lives in `packages/shared` so the guard, the routes, the Settings pane and the CLI all
 // resolve to ONE definition rather than four drifting copies.
 //
-// Locked owner decisions this encodes (2026-08-19, `roadmap/ci/wp-1.1-service-tokens.md`):
+// Locked owner decisions this encodes (2026-08-19, `planning/Roadmap/RM-08-ci/wp-1.1-service-tokens.md`):
 //
 //   • **D-C2 — loopback stays open, remote requires a token.** A request from 127.0.0.0/8 / ::1 passes
 //     exactly as today (the browser UI is unaffected); a request from anywhere else must present a
@@ -91,7 +91,7 @@ export const API_TOKEN_PREFIX_LENGTH = 8;
  * A plain SHA-256 is CORRECT here and is not an oversight: the thing being hashed is a 256-bit
  * uniformly random secret this app generated, not a low-entropy human password, so there is no
  * dictionary to run and a slow KDF buys nothing but per-request latency on the hot auth path.
- * (`roadmap/team-server/` uses scrypt precisely because ITS input is a human-chosen password.)
+ * (`planning/Roadmap/RM-25-team-server/` uses scrypt precisely because ITS input is a human-chosen password.)
  */
 export const API_TOKEN_HASH_ALGORITHM = "sha256";
 

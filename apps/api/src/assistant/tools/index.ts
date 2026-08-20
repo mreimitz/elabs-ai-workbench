@@ -1,4 +1,4 @@
-// Assistant (WP 1.2) — the in-process MCP read toolset (roadmap/assistant/00-plan.md §3.2). One
+// Assistant (WP 1.2) — the in-process MCP read toolset (planning/Roadmap/RM-02-assistant/00-plan.md §3.2). One
 // `createSdkMcpServer` instance whose tools call the EXISTING app repositories directly (same
 // process — no HTTP hop, no secrets over the wire). Every tool here is a READ (never gated by the
 // Phase 2 approval protocol) and calls into repository/service code that already exists elsewhere in

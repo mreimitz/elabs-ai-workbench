@@ -1,5 +1,5 @@
 // Per-model severity resolver — faithful TypeScript port of the research reference
-// research/token-context-comparison/tests/resolve_model_severity.py (Decision 2). A fixture-parity
+// planning/Research/RS-01-token-context-comparison/outputs/tests/resolve_model_severity.py (Decision 2). A fixture-parity
 // test (compatibility-resolve.test.ts) reproduces the Python demo output exactly so the two stay in
 // lockstep.
 //

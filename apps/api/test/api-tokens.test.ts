@@ -26,7 +26,7 @@ import { ApiTokenService, generateToken, hashToken } from "../src/api-tokens/ser
 import { applyMigrations, type AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
 
-// Service tokens (roadmap/ci/ WP 1.1) — the CONTRACT (the frozen scope vocabulary + zod), the token
+// Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1) — the CONTRACT (the frozen scope vocabulary + zod), the token
 // service (generation, hashing at rest, revocation) and the three CRUD routes. The guard's posture is
 // covered separately in `api-tokens-guard.test.ts`. Fully offline.
 

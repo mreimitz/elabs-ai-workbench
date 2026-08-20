@@ -21,7 +21,7 @@ import { type CommandContext, emitJson } from "./context.js";
  *
  * **The matrix runs in the API.** The CLI POSTs, re-reads a read endpoint until the run settles, and
  * formats what comes back; it never executes a test, never calls a provider and never counts a
- * token. That is the client invariant (`roadmap/ci/README.md`) and it is why `apps/cli` can depend
+ * token. That is the client invariant (`planning/Roadmap/RM-08-ci/item.md`) and it is why `apps/cli` can depend
  * on nothing but `shared`.
  *
  * ### D-C11 — waits by default, waits by POLLING, and maps the terminal status onto an exit code

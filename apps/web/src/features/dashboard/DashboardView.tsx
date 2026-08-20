@@ -58,7 +58,7 @@ function isDashboardTab(value: string | null): value is DashboardTab {
  *
  * ── THE TOOLBAR ORDER, PUT BACK THE RIGHT WAY UP (WP 2.2, Defect 1) ──────────────────────────────
  * The app's written layout order is **breadcrumb → ONE `ViewToolbar` row → content**
- * (`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB1/D-TB2), and every other view follows
+ * (`planning/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB1/D-TB2), and every other view follows
  * it — `SkillInspector.tsx:538` is the built reference, with its toolbar ABOVE the tab strip. The
  * Dashboard did the opposite: the tab strip sat at page level and each tab pinned its OWN `bg-card`
  * toolbar band *inside* itself (the Overview's window control, the Testing tab's `FilterControls`,

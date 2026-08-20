@@ -145,7 +145,7 @@ describe("runStatusBadgeStatus — the coarse bucket (facets/rollups/decorative 
   });
 });
 
-// Unified Sessions (roadmap/unified-sessions/, WP3.1) — `deriveRunBarView` now ALSO returns a
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.1) — `deriveRunBarView` now ALSO returns a
 // `statusView` computed via the ONE locked-table derivation (`lib/status.ts` `deriveRunStatusView`),
 // which `RunBar`'s own badge renders through the app-local `StatusBadge` (replacing the previous
 // `@elabs-ai/components-ui`-closed-enum + hand-typed `PHASE_LABEL` render). This locks that adoption, the WP1.1

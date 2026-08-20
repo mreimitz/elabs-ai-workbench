@@ -7,5 +7,7 @@ if ! command -v python3 >/dev/null 2>&1; then
 fi
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+# The bundle root is this script's own grandparent, so the hook works whether the bundle is
+# opened as its own project or lives inside a larger repository.
+ROOT="$(cd "$DIR/../.." && pwd)"
 exec python3 "$DIR/../scripts/okf.py" --root "$ROOT" hook-pre

@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.4, §1.7 / D-AH10 / R-UX5) — the first-class citation
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.4, §1.7 / D-AH10 / R-UX5) — the first-class citation
 // pipeline: extraction → stable-per-session numbering → numbered-envelope injection → the `[n]`→
 // `citations[]` post-pass. The HEADLINE is the resolve-test (Acceptance): drive a stubbed tool result
 // carrying sources through a real turn → the model cites `[n]` → EVERY rendered marker resolves to a

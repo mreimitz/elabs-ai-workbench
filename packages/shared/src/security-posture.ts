@@ -2,12 +2,12 @@ import { z } from "zod";
 
 // ==================================================================================================
 // Security posture contract — the finding/report shapes, the frozen rule-id registry, the score, and
-// the one total order a report is emitted in (roadmap/security-posture/, WP 1.1)
+// the one total order a report is emitted in (planning/Roadmap/RM-20-security-posture/, WP 1.1)
 // ==================================================================================================
 // **This module analyses nothing.** Not one rule is implemented here. It is the declaration that the
 // server analyzer (WP 1.2), the skill analyzer (WP 1.3), the posture diff (WP 1.4), the Security tab
 // (WP 2.1), the report export (WP 2.2) and CI's `no-new-security-findings` assertion
-// (`roadmap/ci/` WP 3.1) all import — so that none of them re-derives a shape, a weight or a sort
+// (`planning/Roadmap/RM-08-ci/` WP 3.1) all import — so that none of them re-derives a shape, a weight or a sort
 // order from prose. The precedent is `ci-assertions.ts` (the CI gate contract, declared once and
 // consumed by both the API and the CLI) and `skill-security.ts` (a derivation lifted out of a React
 // component so both ends could reach it).
@@ -17,7 +17,7 @@ import { z } from "zod";
 // report share one copy of it, and it is why the analyzer's I/O lives in `apps/api` instead
 // (`.claude/rules/architecture.md` — a wire shape is declared in `packages/shared` first).
 //
-// Locked decisions this module encodes (roadmap/security-posture/wp-1.1-contract.md):
+// Locked decisions this module encodes (planning/Roadmap/RM-20-security-posture/wp-1.1-contract.md):
 //
 //   • **D-SP1 — the analyzer is a pure, versioned read-model declared here, and the contract lands
 //     before the first rule.** One module holds the shapes, the registry, the score and the ordering.
@@ -549,14 +549,14 @@ export function compareSecurityFindings(a: SecurityFinding, b: SecurityFinding):
   return compareStrings(a.message, b.message);
 }
 
-// ── Finding IDENTITY — "is this the same finding?" (roadmap/ci/ WP 3.1, D-C20) ──────────────────
+// ── Finding IDENTITY — "is this the same finding?" (planning/Roadmap/RM-08-ci/ WP 3.1, D-C20) ──────────────────
 //
 // Ordering answers "which finding comes first"; identity answers "is this the SAME finding as that
 // one". They are different questions and they must not be conflated: the sort is a total order over
 // every field (so a report serializes byte-identically), whereas identity is deliberately COARSER.
 //
 // It lives here, in the contract, because more than one consumer needs one answer: CI's
-// `no-new-security-findings` gate (roadmap/ci/ WP 3.1) asks "was this finding already in the
+// `no-new-security-findings` gate (planning/Roadmap/RM-08-ci/ WP 3.1) asks "was this finding already in the
 // baseline?", and the posture diff (WP 1.4) asks "which findings are new / resolved / unchanged?".
 // Two implementations of "the same finding" is exactly how a diff and a gate end up disagreeing in
 // front of an operator, with no way to tell which one is lying.
@@ -800,7 +800,7 @@ export function createSecurityFinding(input: {
 // changed?** — and it answers it in exactly one place, for the same reason the score and the order
 // live in exactly one place (D-SP1).
 //
-// There is a concrete boundary this protects. `roadmap/ci/` WP 3.1's `no-new-security-findings`
+// There is a concrete boundary this protects. `planning/Roadmap/RM-08-ci/` WP 3.1's `no-new-security-findings`
 // gate did this set arithmetic inline, and WP 2.1's Security tab needs the same three buckets. Two
 // implementations of "what changed" is how a CI gate and a UI end up telling an operator different
 // stories about the same pair of scans, with no way to tell which one is lying — the failure D-C20

@@ -105,7 +105,7 @@ export function ServerRail(props: {
   latestScansByServer: Map<string, ScanSummary>;
   selectedServerId: string | null;
   servers: ServerConfig[];
-  /** Server types (roadmap/server-types) used to group + filter the rail. */
+  /** Server types (planning/Roadmap/completed/RM-21-server-types) used to group + filter the rail. */
   serverTypes: ServerType[];
   onAddServer: () => void;
   /** Open the Manage-types surface (create/rename/restatus/delete). Reachable at empty-fleet. */
@@ -248,7 +248,7 @@ export function ServerRail(props: {
           </Text>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          {/* Manage server types (roadmap/server-types WP 2.2) — reachable even at empty-fleet. */}
+          {/* Manage server types (planning/Roadmap/completed/RM-21-server-types WP 2.2) — reachable even at empty-fleet. */}
           <IconButton
             size="icon-sm"
             variant="ghost"

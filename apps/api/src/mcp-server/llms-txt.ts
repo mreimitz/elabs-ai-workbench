@@ -14,7 +14,7 @@ import {
 } from "@mcp-token-footprint/shared";
 
 // ==================================================================================================
-// Workbench MCP server — the `llms.txt`-style usage doc (roadmap/ci/mcp-server.md, WP M.4)
+// Workbench MCP server — the `llms.txt`-style usage doc (planning/Roadmap/RM-08-ci/mcp-server.md, WP M.4)
 // ==================================================================================================
 // Served as plain text at `GET /api/mcp/llms.txt`: the one page an external agent (or the human
 // pointing one at this bench) reads to learn what lives behind the mount and how to reach it.

@@ -197,7 +197,7 @@ export const updateFeatureFlags = (
 // The credential a headless caller (CI, the mcpfp CLI, an external agent on the MCP mount) presents
 // instead of a browser session. The API stores a SHA-256 digest and returns the plaintext exactly
 // ONCE — from `createApiToken` — so the caller of that function is the last chance to show it. It is
-// never persisted here, never put in localStorage, and never re-fetchable. See roadmap/ci/ WP 1.1.
+// never persisted here, never put in localStorage, and never re-fetchable. See planning/Roadmap/RM-08-ci/ WP 1.1.
 
 /** Every service token, newest first — redacted (`ApiToken` has no field that could hold a secret). */
 export const listApiTokens = (signal?: AbortSignal): Promise<ApiTokenListResponse> =>
@@ -273,7 +273,7 @@ export async function apiUpload<T>(
   return readResponse<T>(response);
 }
 
-// ── Server types (roadmap/server-types) ───────────────────────────────────────────────────────
+// ── Server types (planning/Roadmap/completed/RM-21-server-types) ───────────────────────────────────────────────────────
 // A server type is a first-class named group of MCP servers sharing one tool surface, carrying a
 // lifecycle `status` (D-ST1) + a computed `memberCount`. The Servers rail groups + filters by type
 // (WP 2.1); the wizard picker + Manage-types surface (WP 2.2) create/rename/restatus/delete them.
@@ -479,7 +479,7 @@ export const markRunSeen = (runId: string): Promise<void> =>
 /** Delete a run (cascades to its steps + events; a live run is aborted server-side first). */
 export const deleteRun = (runId: string): Promise<void> => apiDelete(`/api/runs/${runId}`);
 
-// ── Observability — runs feed upgrade (roadmap/observability/, WP2.3) ──────────────────────────
+// ── Observability — runs feed upgrade (planning/Roadmap/RM-17-observability/, WP2.3) ──────────────────────────
 // The runs feed's RunFilter-bound query, saved views (WP1.4 CRUD), and retention pin (WP1.6) toggle.
 // `filter=` is ALWAYS built via the shared `serializeRunFilter` helper (never hand-rolled JSON), per
 // the WP1.1 contract every other RunFilter-bound caller in this file already follows.
@@ -1458,7 +1458,7 @@ export const issuesExportUrl = (
   return `/api/issues/export/${format}?${params.toString()}`;
 };
 
-// ── Fleet issues (roadmap/observability/, WP5.3 — the Issues tab) ─────────────────────────────────
+// ── Fleet issues (planning/Roadmap/RM-17-observability/, WP5.3 — the Issues tab) ─────────────────────────────────
 // The WP5.1 fleet-aggregation surface on the SAME `/api/issues` routes above: an unfiltered list (the
 // tab filters lifecycle/entity/date CLIENT-SIDE over the full set, same recipe the Testing dashboard
 // uses for its own small catalogs) + the one-issue detail + the three lifecycle transitions. Issue
@@ -1513,7 +1513,7 @@ export const listIssueVerificationRuns = (
     signal,
   ).then((response) => response.runs);
 
-// ── Observability — metrics (roadmap/observability/, WP 2.2) ───────────────────────────────────
+// ── Observability — metrics (planning/Roadmap/RM-17-observability/, WP 2.2) ───────────────────────────────────
 // Thin, typed wrappers over the read-only `GET /api/metrics/{runs,scans}` endpoints (WP1.2, already
 // merged — see apps/api/src/observability/{metrics,routes}.ts). The `filter=` param is ALWAYS built
 // via the shared `serializeRunFilter` helper (never hand-rolled JSON) so the web's URL state and the
@@ -1767,7 +1767,7 @@ export const getDigestSchedule = (): Promise<DigestSchedule> =>
 export const putDigestSchedule = (schedule: DigestSchedule): Promise<DigestSchedule> =>
   apiPut<DigestSchedule>("/api/reports/digest/schedule", schedule);
 
-// ── Assistant Hub (roadmap/assistant-hub/, WP1.2 routes; WP1.3 web client) ─────────────────────────
+// ── Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.2 routes; WP1.3 web client) ─────────────────────────
 // Self-contained additive block (its OWN `import type`, mirroring the Digest block above) — sessions +
 // SSE only (WP1.3's owned surface); projects/missions/artifacts/memory/library land in later WPs.
 import type {
@@ -1869,7 +1869,7 @@ export const endHubSession = (id: string): Promise<HubSession> =>
 export const markHubSessionSeen = (id: string): Promise<void> =>
   apiPost<{ ok: true }>(`/api/hub/sessions/${id}/seen`, {}).then(() => undefined);
 
-// ── Assistant Hub — projects + pinned context (roadmap/assistant-hub/, WP3.1 routes + web client) ──
+// ── Assistant Hub — projects + pinned context (planning/Roadmap/RM-03-assistant-hub/, WP3.1 routes + web client) ──
 // Self-contained additive block (its OWN `import type`, mirroring the sibling Hub blocks): the
 // D-AH11(c) project library (`hub_projects`) CRUD + a project's PINNED FILES (small user-typed/
 // pasted text snippets — `apps/api/src/hub/routes.ts`'s `registerHubProjectRoutes` doc explains why
@@ -2103,7 +2103,7 @@ export const branchHubSession = (
   input?: { atSeq?: number; label?: string },
 ): Promise<HubSession> => apiPost<HubSession>(`/api/hub/sessions/${id}/branch`, input ?? {});
 
-// ── Assistant Hub missions (roadmap/assistant-hub/, WP1.7 routes; fix-web WP1.R GAP-E) ─────────────
+// ── Assistant Hub missions (planning/Roadmap/RM-03-assistant-hub/, WP1.7 routes; fix-web WP1.R GAP-E) ─────────────
 // Self-contained additive block (its OWN `import type`, mirroring the Sessions block above) — the
 // propose -> approve -> run -> synthesize flow's client wrappers. Every route is 202/fire-and-forget
 // or a synchronous DB write; the resulting `plan_proposed`/`plan_updated`/`plan_approved`/`agent_*`/
@@ -2182,7 +2182,7 @@ export const steerHubMissionAgent = (
     text,
   }).then(() => undefined);
 
-// ── Assistant Hub artifacts (roadmap/assistant-hub/, WP1.6 routes + web client; R-UX13) ────────────
+// ── Assistant Hub artifacts (planning/Roadmap/RM-03-assistant-hub/, WP1.6 routes + web client; R-UX13) ────────────
 // Self-contained additive block (its OWN `import type`, mirroring the Sessions block above) — the
 // canvas surface: list/create, versions (list + append — the direct-UI-edit path; the model's path is
 // the `artifacts.create`/`.update` built-ins, unaffected by this block), and export (md/html/json are
@@ -2266,7 +2266,7 @@ export function hubArtifactShareUrl(id: string, version?: number): string {
 export const fetchHubArtifactShareHtml = (id: string, version?: number): Promise<string> =>
   apiGetText(hubArtifactShareUrl(id, version));
 
-// ── Assistant Hub reviews (roadmap/assistant-hub/, WP3.5 routes + web client; D-AH12, D-AH7) ────────
+// ── Assistant Hub reviews (planning/Roadmap/RM-03-assistant-hub/, WP3.5 routes + web client; D-AH12, D-AH7) ────────
 // Self-contained additive block (its OWN `import type`, mirroring every other Hub block above): the
 // review workflow's data surface — spawn the critic, list/get, per-comment decisions (→ the
 // `HubReviewDecisionResult` envelope, `resultingVersion` present only when an accept produced a new
@@ -2324,7 +2324,7 @@ export const revertHubArtifactVersion = (
 ): Promise<HubArtifactVersion> =>
   apiPost<HubArtifactVersion>(`/api/hub/artifacts/${artifactId}/versions/${version}/revert`, {});
 
-// ── Assistant Hub files/workspace/resources (roadmap/assistant-hub/, WP3.4 routes + web client) ─────
+// ── Assistant Hub files/workspace/resources (planning/Roadmap/RM-03-assistant-hub/, WP3.4 routes + web client) ─────
 // Self-contained additive block (its OWN `import type`, mirroring every other Hub block above):
 // content-addressed uploads (D-AH12), the session workspace FileTree + produced-asset promote
 // (`hub/workspace.ts`), content-addressed snapshots (R-SES6), and MCP resource attachment (R-MCP9).
@@ -2474,7 +2474,7 @@ export const listHubResourceAttachments = (sessionId: string): Promise<HubResour
 export const removeHubResourceAttachment = (sessionId: string, resourceId: string): Promise<void> =>
   apiDelete(`/api/hub/sessions/${sessionId}/resources/${resourceId}`);
 
-// ── Assistant Hub — role library + saved crews (roadmap/assistant-hub/, WP2.1 routes + web client) ──
+// ── Assistant Hub — role library + saved crews (planning/Roadmap/RM-03-assistant-hub/, WP2.1 routes + web client) ──
 // Self-contained additive block (its OWN `import type`, mirroring the Digest/Hub blocks above): the
 // D-AH7 role library (`hub_agents`) and saved crews (`hub_crews`) CRUD, the Agents view's data surface.
 import type {
@@ -2522,7 +2522,7 @@ export const updateHubCrew = (id: string, patch: HubCrewPatch): Promise<HubCrew>
 /** Crews have no archive column (`HubCrew` carries no `archivedAt`) — delete is the only discard path. */
 export const deleteHubCrew = (id: string): Promise<void> => apiDelete(`/api/hub/crews/${id}`);
 
-// ── Assistant Hub — memory (roadmap/assistant-hub/, WP3.2 routes + web client; D-AH11a) ────────────────
+// ── Assistant Hub — memory (planning/Roadmap/RM-03-assistant-hub/, WP3.2 routes + web client; D-AH11a) ────────────────
 // Self-contained additive block (its OWN `import type`, mirroring the block above): the Memory panel's
 // CRUD surface, plus the propose→explicit-save accept action the ConversationPane's proposal chips use.
 import type {
@@ -2591,7 +2591,7 @@ export const acceptHubMemoryProposal = (
 
 export const deleteHubMemory = (id: string): Promise<void> => apiDelete(`/api/hub/memory/${id}`);
 
-// ── Assistant Hub — audit timeline (roadmap/assistant-hub/, WP4.2 routes + web client; D-AH13) ──────
+// ── Assistant Hub — audit timeline (planning/Roadmap/RM-03-assistant-hub/, WP4.2 routes + web client; D-AH13) ──────
 // Self-contained additive block (its OWN `import type`, mirroring the memory block above): the global,
 // filterable Audit timeline over `hub_events` (`hub/audit.ts`'s read-only projection).
 import type { HubAuditEntry, HubAuditKind, HubAuditPage } from "@mcp-token-footprint/shared";
@@ -2623,7 +2623,7 @@ export const listHubAudit = (filter?: HubAuditFilter): Promise<HubAuditPage> => 
 
 export type { HubAuditEntry };
 
-// ── Advisor — evidenced recommendations (roadmap/advisor/, WP 1.2 routes + WP 1.3 web client) ───────
+// ── Advisor — evidenced recommendations (planning/Roadmap/RM-01-advisor/, WP 1.2 routes + WP 1.3 web client) ───────
 // Self-contained additive block (its OWN `import type`, mirroring the hub-audit block above). The
 // advisor is a READ MODEL: one GET, no writes, no auto-apply — the report is a set of suggestions the
 // operator acts on by hand (README invariant 1).

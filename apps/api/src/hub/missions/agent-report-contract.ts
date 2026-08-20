@@ -1,5 +1,5 @@
 // Assistant Hub — the PROMPT-ENFORCED mission-agent report contract
-// (roadmap/model-identity/, WP4.2, locked decision **D-MI4**).
+// (planning/Roadmap/RM-16-model-identity/, WP4.2, locked decision **D-MI4**).
 //
 // ## Why this module exists
 //

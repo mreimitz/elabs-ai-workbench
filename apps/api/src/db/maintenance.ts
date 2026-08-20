@@ -140,7 +140,7 @@ export async function registerMaintenanceRoutes(
     });
   });
 
-  // Assistant Hub (roadmap/assistant-hub/, WP4.3) — prune root sessions/workspaces/files. `?days=`
+  // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.3) — prune root sessions/workspaces/files. `?days=`
   // overrides the configured default; both 0/absent mean "use the configured retention" (0 = disabled
   // for the day-gated root-session pass — the orphan workspace-dir + files sweeps still run
   // unconditionally, mirroring prune-assistant's convention).
@@ -152,7 +152,7 @@ export async function registerMaintenanceRoutes(
     return pruneHubData({ repository: hub.repository, dataDir: hub.dataDir, days });
   });
 
-  // Observability (roadmap/observability/, WP1.6) — retention classes: the persisted per-status prune
+  // Observability (planning/Roadmap/RM-17-observability/, WP1.6) — retention classes: the persisted per-status prune
   // policy an operator edits in Settings → Storage. Absent → the empty/default policy (pruning OFF).
   app.get("/api/maintenance/run-retention-policy", async (): Promise<RunRetentionPolicy> =>
     readRunRetentionPolicy(appSettings),

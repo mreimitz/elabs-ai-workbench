@@ -1,4 +1,4 @@
-// Unified Sessions — the static capability manifests (roadmap/unified-sessions/, WP1.1, D-US4).
+// Unified Sessions — the static capability manifests (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1, D-US4).
 //
 // A {@link SessionCapabilities} manifest declares what a run backend CAN DO (live text/reasoning, tool
 // calls, a meaningful context window, token/cost fidelity, follow-ups, ask-user, a wait budget). The

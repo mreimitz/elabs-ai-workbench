@@ -30,8 +30,8 @@
 Every UI limitation this project hit that should be **standard functionality in `@elabs-ai/components-*`**, with the
 workaround we were forced to build locally. Compiled 2026-08-01 against **brand-ui v1.9.0** (then vendored under
 `vendor/brand/`) from: the app source (`apps/web/src/`), the recorded upstream-gap ledgers
-([`roadmap/interface-craft/upstream-gaps.md`](../roadmap/interface-craft/upstream-gaps.md),
-[`roadmap/assistant-hub/brand-ui-upstream-prompt.md`](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)),
+([`planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md`](../planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md),
+[`planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md`](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)),
 the per-plan `STATUS.md` gap notes, and the two UI audits in [`/docs`](.).
 
 **Ground rule this project ran under:** `.claude/rules/brand-ui-only.md` — every visible element is a
@@ -64,7 +64,7 @@ Severity: **P0** = blocked or shipped a defect · **P1** = forced a durable loca
 | [9](#9-build-packaging--testability) | build / DX | 6 |
 
 > **→ To hand this to a coding agent in the brand-ui repo, use
-> [`brand-ui-handover/`](./brand-ui-handover/00-README.md)** — 6 self-contained, batched prompts with
+> `brand-ui-handover/`** — **never committed to this repository** — 6 self-contained, batched prompts with
 > upstream paths, inlined evidence and per-item acceptance criteria. This file is the reference index;
 > that pack is the executable form.
 >
@@ -117,7 +117,7 @@ mis-buckets the running turn's late events. Every consumer must add its own guar
 It can't take the app's `IconButton` treatment (tooltip == `aria-label`), so the speech-input control
 is the **one** icon-only control in the whole app still carrying a bare native `title` — invisible to
 assistive tech, ~1.5 s OS delay, unstyled.
-- **Evidence:** [`toolbar-reach/verification-report.md:158`](../roadmap/toolbar-reach/verification-report.md)
+- **Evidence:** [`toolbar-reach/verification-report.md:158`](../planning/Roadmap/completed/RM-28-toolbar-reach/verification-report.md)
 - **Ask:** compose `PromptInputButton` from `@elabs-ai/components-ui` `Button` and give it a `label`-driven tooltip.
 
 ### AI-5 · `MessageBranch*` is uncontrolled — `defaultBranch` is read once, at mount — P1
@@ -142,27 +142,27 @@ No `@`-mention/inline-chip editor exists anywhere in `@elabs-ai/components-*`, s
 An assistant that asks structured questions needs a form inside a message bubble. Nothing ships.
 - **Ask (already filed in detail):** `MessageForm` + zod `FormSpec`, deliberately shaped to also serve
   **MCP elicitation `requestedSchema`** (spec 2025-11-25) so one renderer covers both.
-- **Spec:** [`brand-ui-upstream-prompt.md` §A](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
+- **Spec:** [`brand-ui-upstream-prompt.md` §A](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)
 
 ### AI-9 · No model-emittable in-message `Table` — P1
 `@elabs-ai/components-data`'s `DataTable` is app chrome, not message content. There is no lightweight, never-throws,
 streaming-tolerant table for LLM output.
 - **Ask:** `MessageTable` + `TableSpec` (column formats, graceful truncation notice, never throws).
-- **Spec:** [`brand-ui-upstream-prompt.md` §B](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
+- **Spec:** [`brand-ui-upstream-prompt.md` §B](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)
 
 ### AI-10 · No part-grouping engine for reasoning/tool traces — P2
 Collapsing adjacent reasoning/tool parts into groups (with status roll-up and stable identity across
 streaming re-renders) is re-implemented per consumer.
 - **Ask:** `GroupedParts` + `groupPartByType`, with `display: "inline" | "standalone"` so approval cards
-  can never fold into a thinking accordion. [§C](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
+  can never fold into a thinking accordion. [§C](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)
 
-### AI-11 · No message edit-in-place — P2 · [§D](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
-### AI-12 · No per-message feedback control — P2 · [§E](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
-### AI-13 · No selection/quote toolbar over transcript text — P2 · [§F](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
-### AI-14 · `Suggestion(s)` has no streaming trailing-loader — P2 · [§G](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)
+### AI-11 · No message edit-in-place — P2 · [§D](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)
+### AI-12 · No per-message feedback control — P2 · [§E](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)
+### AI-13 · No selection/quote toolbar over transcript text — P2 · [§F](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)
+### AI-14 · `Suggestion(s)` has no streaming trailing-loader — P2 · [§G](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)
 
 > AI-8…AI-14 were already written up as a coding-agent brief for the brand-ui monorepo
-> ([`brand-ui-upstream-prompt.md`](../roadmap/assistant-hub/brand-ui-upstream-prompt.md)) — that document
+> ([`brand-ui-upstream-prompt.md`](../planning/Roadmap/RM-03-assistant-hub/brand-ui-upstream-prompt.md)) — that document
 > is the ready-to-execute version of these seven.
 
 ---
@@ -213,7 +213,7 @@ renders it (`:682`). The diagnosis exists upstream; the fix doesn't.
 The unified Runs feed needs suite rows that expand to member runs. `DataTable` can't, so that entire
 view was rebuilt on raw `@elabs-ai/components-ui` `Table*` + `@elabs-ai/components-data` `SearchInput`/`FacetFilter` — losing
 virtualization and every `DataTable` affordance.
-- **Evidence:** [`testing-ia/STATUS.md:138`](../roadmap/testing-ia/STATUS.md)
+- **Evidence:** [`testing-ia/STATUS.md:138`](../planning/Roadmap/RM-27-testing-ia/STATUS.md)
 
 ### DATA-7 · `FacetFilter` and `@elabs-ai/components-ui` form controls don't share a control height — P2
 A guaranteed height/baseline mismatch on **every** mixed toolbar row. Residual of audit finding C-1
@@ -221,7 +221,7 @@ A guaranteed height/baseline mismatch on **every** mixed toolbar row. Residual o
 `h-26`/`h-30` figures were *rendered* measurements, not literal classes — a grep of v1.9.0 source finds
 neither.** The misalignment is real; the cause may be padding/border/line-height. Re-measure before filing.
 - **Ask:** a shared, density-aware control-height token consumed by both packages.
-- **Evidence:** [`toolbar-reach/verification-report.md:62-64`](../roadmap/toolbar-reach/verification-report.md)
+- **Evidence:** [`toolbar-reach/verification-report.md:62-64`](../planning/Roadmap/completed/RM-28-toolbar-reach/verification-report.md)
 - **Ask:** one shared control-height token across `@elabs-ai/components-ui` and `@elabs-ai/components-data`.
 
 ---
@@ -280,13 +280,13 @@ Five pairs measured below 4.5:1 at their rendered 11–13 px sizes: `light` `--p
 `--success` 4.31, `--info` 3.76; `dark` `--destructive` 3.02. Each theme was clearly tuned
 independently with no shared on-fill check — dark had already solved four of five and simply never got
 the same treatment for `--destructive-foreground`.
-- **Evidence:** [`upstream-gaps.md §1`](../roadmap/interface-craft/upstream-gaps.md)
+- **Evidence:** [`upstream-gaps.md §1`](../planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md)
 - **Workaround:** an `@theme` override block + a `tokens-contrast.test.ts` gate asserting all 5 pairs × 2 themes.
 
 ### TOK-2 · Byte-identical semantic tokens — P0
 `--primary === --success` and `--ring === --info`, **in both themes**. A focus ring is indistinguishable
 from an "Info"/"Running" chip; an action is indistinguishable from a success, by colour alone.
-- **Evidence:** [`upstream-gaps.md §2`](../roadmap/interface-craft/upstream-gaps.md), [`app.css:309-344`](../apps/web/src/styles/app.css#L309-L344)
+- **Evidence:** [`upstream-gaps.md §2`](../planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md), [`app.css:309-344`](../apps/web/src/styles/app.css#L309-L344)
 
 ### TOK-3 · **No `--shadow-*` tokens at all** — every Tailwind `shadow-*` utility is a transparent no-op — P0
 `getComputedStyle(:root).getPropertyValue('--shadow-2xl')` → `""`. In Tailwind v4 that resolves to
@@ -335,7 +335,7 @@ to coerce a persisted `blueprint` back. Three defenses for one config need.
 > This section is the "**missing standardized toolbars**" item. It is the largest structural gap: the
 > library ships shell furniture but no *grammar* for what goes in a view, so every view invented its own
 > — and we then had to run a whole remediation plan
-> ([`roadmap/toolbar-reach/`](../roadmap/toolbar-reach/README.md)) to converge them.
+> ([`planning/Roadmap/completed/RM-28-toolbar-reach/`](../planning/Roadmap/completed/RM-28-toolbar-reach/item.md)) to converge them.
 
 ### CHROME-1 · **No standardized view toolbar** — P0
 There is no component for the single most repeated row in any operator app: *state + context + filters
@@ -356,7 +356,7 @@ on the left, actions on the right*. The consequences we measured across ~40 rout
 `@elabs-ai/components-ui`'s `PageShell` has no `headerVariant="toolbar"` slot, so we maintain a **local `PageShell`**
 that every feature view imports instead. Two views accidentally imported the real one and silently lost
 their toolbar — exactly the kind of drift a library should make impossible.
-- **Evidence:** [`ux-overhaul/STATUS.md:284-290`](../roadmap/ux-overhaul/STATUS.md), [`components/PageShell.tsx`](../apps/web/src/components/PageShell.tsx)
+- **Evidence:** [`ux-overhaul/STATUS.md:284-290`](../planning/Roadmap/RM-30-ux-overhaul/STATUS.md), [`components/PageShell.tsx`](../apps/web/src/components/PageShell.tsx)
 
 ### CHROME-3 · No modal tier system — P1
 `Dialog`/`AlertDialog`/`Sheet` are primitives with no guidance on size, scroll ownership, footer order,
@@ -418,7 +418,7 @@ It renders `<div className="text-title">`, never a heading. A card titling a rea
 `h2`/`h3`, so live DOM on Runs/Servers/Dashboard returned **one heading each** (the `sr-only` h1) — a
 screen-reader user cannot move between sections.
 - **Workaround:** [`SectionCardTitle.tsx`](../apps/web/src/components/SectionCardTitle.tsx)
-- **Ask:** `as` / `level` on `CardTitle`. — [`upstream-gaps.md §3`](../roadmap/interface-craft/upstream-gaps.md)
+- **Ask:** `as` / `level` on `CardTitle`. — [`upstream-gaps.md §3`](../planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md)
 
 ### API-2 · `AlertTitle` hardcodes `<h5>` with no `as`/`asChild` — P1
 Its type signature even mismatches (`forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLHeadingElement>>`).
@@ -430,46 +430,46 @@ read the full text — worst on composed labels like `${server} · ${date} · ${
 discriminating token is the one that gets cut (audit C-4).
 - **Workaround:** [`TitledSelectTrigger.tsx`](../apps/web/src/components/TitledSelectTrigger.tsx) — requires
   `selectedLabel` so a call site *cannot forget it*.
-- **Ask:** a default `title`, or expose the selected label. — [`upstream-gaps.md §4`](../roadmap/interface-craft/upstream-gaps.md)
+- **Ask:** a default `title`, or expose the selected label. — [`upstream-gaps.md §4`](../planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md)
 
 ### API-4 · `CardDescription` has no measure cap — P1
 No `max-w`, so prose in a full-width card runs edge to edge — **measured 190 characters per line**.
 - **Workaround:** [`ProseCardDescription.tsx`](../apps/web/src/components/ProseCardDescription.tsx) (`max-w-[68ch]`)
-- **Ask:** cap prose components by default, or ship a `prose` variant. — [`upstream-gaps.md §5`](../roadmap/interface-craft/upstream-gaps.md)
+- **Ask:** cap prose components by default, or ship a `prose` variant. — [`upstream-gaps.md §5`](../planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md)
 
 ### API-5 · `CardDescription` **silently drops its own `text-muted-foreground`** — P1 (bug)
 A `tailwind-merge` interaction with `text-wrap-balance` removes it — reproducible with **zero** wrapper
 or `className` involvement: `cn("text-sm text-muted-foreground text-wrap-balance")` →
 `"text-sm text-wrap-balance"`. Every `CardDescription` in every consuming app renders at default
 foreground instead of muted.
-- **Evidence:** [`upstream-gaps.md §6`](../roadmap/interface-craft/upstream-gaps.md)
+- **Evidence:** [`upstream-gaps.md §6`](../planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md)
 
 ### API-6 · `Combobox` has no `disabled` prop — P1
 We shipped a **disabled `Input` standing in for a disabled `Combobox`** — visibly a different control.
-- **Evidence:** [`ux-overhaul/STATUS.md:122`](../roadmap/ux-overhaul/STATUS.md)
+- **Evidence:** [`ux-overhaul/STATUS.md:122`](../planning/Roadmap/RM-30-ux-overhaul/STATUS.md)
 
 ### API-7 · `Combobox` has no `aria-label`/`aria-labelledby`/`id` passthrough and doesn't spread props — P1
 `ComboboxProps` is closed to `{options, value, onValueChange, placeholder, searchPlaceholder, emptyText,
 className}`. The trigger's accessible name is the *selected value*, and a wrapping `<label>` would
 clobber it — so the control's **purpose** can never be announced.
 - **Workaround:** wrap in a `role="group"` labelled "Session switcher".
-- **Evidence:** [`owner-acceptance-walk.md` Appendix 2](../roadmap/assistant-hub-ux/owner-acceptance-walk.md)
+- **Evidence:** [`owner-acceptance-walk.md` Appendix 2](../planning/Roadmap/completed/RM-04-assistant-hub-ux/owner-acceptance-walk.md)
 
 ### API-8 · `Checkbox` has **no indeterminate glyph** — P1 (a11y)
 `checked="indeterminate"` correctly emits `aria-checked="mixed"`, but the drawn mark is **visually
 identical to checked**. A tri-state "select all tools" master checkbox is unreadable sighted.
 - **Workaround:** an adjacent "N / M tools" badge to disambiguate.
-- **Evidence:** [`owner-acceptance-walk.md` Appendix 1](../roadmap/assistant-hub-ux/owner-acceptance-walk.md)
+- **Evidence:** [`owner-acceptance-walk.md` Appendix 1](../planning/Roadmap/completed/RM-04-assistant-hub-ux/owner-acceptance-walk.md)
 
 ### API-9 · `Slider` doesn't forward props to its hardcoded thumb — P1 (a11y)
 `aria-valuetext` (e.g. "step 3 of 12" on a replay scrubber) can only be set via a scoped ref-effect that
 reaches into the rendered Radix thumb.
-- **Evidence:** [`testing/STATUS.md:51`](../roadmap/testing/STATUS.md)
+- **Evidence:** [`testing/STATUS.md:51`](../planning/Roadmap/RM-26-testing/STATUS.md)
 
 ### API-10 · `Progress` has no destructive/tripped variant — P1
 A guardrail meter that has been exceeded can't be shown as such; we signal it with a `text-destructive`
 **label** beside a still-normal-coloured bar.
-- **Evidence:** [`testing/STATUS.md:41`](../roadmap/testing/STATUS.md)
+- **Evidence:** [`testing/STATUS.md:41`](../planning/Roadmap/RM-26-testing/STATUS.md)
 
 ### API-11 · `StatusBadge` is a closed 7-state enum with no density mode — P1
 It can't express states this app genuinely has (gray-outline `aborted`, amber-outline
@@ -481,7 +481,7 @@ as muted text rather than an all-green wall of chips.
 
 ### API-12 · `Tree`'s interactive label can't right-align accessories — P1
 Per-file token badges had to be dropped from the skill workspace explorer.
-- **Evidence:** [`skill-ide/STATUS.md:29`](../roadmap/skill-ide/STATUS.md)
+- **Evidence:** [`skill-ide/STATUS.md:29`](../planning/Roadmap/RM-22-skill-ide/STATUS.md)
 
 ### API-13 · No `IconButton` primitive (tooltip == `aria-label`) — P1
 The library ships `Button size="icon"` and `Tooltip` separately, so the app drifted into **three**
@@ -583,7 +583,7 @@ children, prop-spread order, internal DOM structure) — which is exactly where 
 ## Appendix — explicitly *not* upstream issues
 
 Recorded so they aren't re-filed. From
-[`interface-craft/conventions.md §6`](../roadmap/interface-craft/conventions.md): raising `active:scale`,
+[`interface-craft/conventions.md §6`](../planning/Roadmap/completed/RM-15-interface-craft/conventions.md): raising `active:scale`,
 icon-size normalization, concentric radius, `text-base sm:text-sm`, logical-property conversion. Also
 **not** gaps: `@elabs-ai/components-ui` `Tree` for file explorers (correct, use it), `Charts/AutoChart` and
 `AI/ChangeReview` (the two components explicitly cited as the *quality bar* the AI-8…AI-14 asks should

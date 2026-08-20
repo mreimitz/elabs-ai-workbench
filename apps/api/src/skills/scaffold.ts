@@ -16,8 +16,9 @@ export type BlankSkillFile = {
   content: Buffer;
 };
 
-// Mirrors `apps/api/src/skills/manifest.ts` NAME_MAX/NAME_PATTERN (research/skill-registry/01-agent
-// -skills-format.md) — kept in sync by hand since manifest.ts doesn't export its constants. Any
+// Mirrors `apps/api/src/skills/manifest.ts` NAME_MAX/NAME_PATTERN
+// (planning/Research/RS-02-skill-registry/notes/01-agent-skills-format.md) — kept in sync by hand
+// since manifest.ts doesn't export its constants. Any
 // scaffolded name must pass `parseSkillManifest` validation unchanged.
 const NAME_MAX = 64;
 const NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;

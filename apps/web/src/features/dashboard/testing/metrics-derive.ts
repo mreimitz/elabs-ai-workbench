@@ -115,7 +115,7 @@ export function humanize(id: string): string {
  * Provider-kind display labels — `FilterControls.tsx`'s facet options AND the
  * `groupBy="providerKind"` label resolver below both read this.
  *
- * D-MI6 (`roadmap/model-identity/`, WP 2.3): this is now a **derived projection** of the one
+ * D-MI6 (`planning/Roadmap/RM-16-model-identity/`, WP 2.3): this is now a **derived projection** of the one
  * registry in `packages/shared` (`PROVIDER_KIND_META` / {@link providerKindLabel}), not a
  * hand-written vocabulary. It authors no strings, so it cannot drift from Settings / the Hub
  * picker / the Environment views the way the map it replaced did. The symbol name is kept so

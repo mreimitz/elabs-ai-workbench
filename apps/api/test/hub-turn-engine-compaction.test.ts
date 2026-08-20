@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP3.3, R-SES8) — the turn engine's compaction SEAM, driven by
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP3.3, R-SES8) — the turn engine's compaction SEAM, driven by
 // the same stubbed AI-SDK model harness the WP1.1 engine tests use. Proves the engine integration
 // (distinct from `hub-compaction.test.ts`, which proves the compaction logic itself):
 //   • ready path — a compaction runs at turn start, its `compaction` event is persisted BEFORE the

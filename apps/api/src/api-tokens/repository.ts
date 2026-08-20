@@ -6,7 +6,7 @@ import {
 import type { AppDatabase } from "../db/database.js";
 
 /**
- * `api_tokens` SQL (roadmap/ci/ WP 1.1). Owns every statement against the table and nothing else —
+ * `api_tokens` SQL (planning/Roadmap/RM-08-ci/ WP 1.1). Owns every statement against the table and nothing else —
  * hashing, token generation and the auth posture live in `service.ts` / `guard.ts`.
  *
  * **No method on this class ever accepts or returns a plaintext token.** The repository only ever

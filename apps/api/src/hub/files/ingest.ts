@@ -1,4 +1,4 @@
-// Assistant Hub — v1-fixes (attachment ingestion, roadmap/assistant-hub/mission-session-analysis-2026-07-20.md
+// Assistant Hub — v1-fixes (attachment ingestion, planning/Roadmap/RM-03-assistant-hub/mission-session-analysis-2026-07-20.md
 // "make attachments readable to every model") — file → markdown conversion for chat attachments.
 //
 // Pre-fix behavior: only text-like MIME types were inlined; everything else (pdf/docx/xlsx/pptx) rode

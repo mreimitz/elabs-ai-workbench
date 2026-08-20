@@ -1,4 +1,4 @@
-// Observability — fork-from-step prefix reconstruction (roadmap/observability/, WP3.3, D-OB18).
+// Observability — fork-from-step prefix reconstruction (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18).
 //
 // The PURE, DETERMINISTIC heart of "Open in Playground": given a persisted run's ordered `run_steps`
 // and a fork point (`fromStepId`), rebuild the conversation PREFIX (a `ModelMessage[]`) up to and

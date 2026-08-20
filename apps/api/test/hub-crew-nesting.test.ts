@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP1.1, D-CN4/D-CN5/D-CN10) — the author-time integrity heart.
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP1.1, D-CN4/D-CN5/D-CN10) — the author-time integrity heart.
 //
 // Behavior lock for:
 //   1. `crew-resolution.ts` is PURE (no repository/service import; operates over a plain `Map` + caps).

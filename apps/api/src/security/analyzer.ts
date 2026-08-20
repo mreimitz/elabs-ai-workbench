@@ -1,11 +1,11 @@
-// The server security analyzer (roadmap/security-posture/, WP 1.2) — the eleven rules of
+// The server security analyzer (planning/Roadmap/RM-20-security-posture/, WP 1.2) — the eleven rules of
 // `SECURITY_RULES` implemented as PURE functions over a `ScanDetail` the caller already holds.
 //
 // Five properties this file exists to hold:
 //
 //   • **D-SP7 — it is a pure function over already-loaded data.** No database handle, no clock, no
 //     network, no MCP connection, no config, no module-level mutable state. `apps/api/src/security/
-//     service.ts` does the loading and the scoring; `roadmap/ci/` WP 3.1 will call `analyzeScanTools`
+//     service.ts` does the loading and the scoring; `planning/Roadmap/RM-08-ci/` WP 3.1 will call `analyzeScanTools`
 //     directly with the `ScanDetail` the assertions engine is already holding, rather than round-
 //     tripping through HTTP.
 //   • **D-SP5 — a rule never chooses a severity.** Every finding is built by `createSecurityFinding`,
@@ -879,7 +879,7 @@ function runRule<T>(
  * produce them; ORDERING, CAPPING and SCORING are the service's job, because the sort is contract
  * (`compareSecurityFindings`) and applying it twice would be two sources of one truth.
  *
- * `roadmap/ci/` WP 3.1 calls exactly this with the `ScanDetail` the assertions engine already holds.
+ * `planning/Roadmap/RM-08-ci/` WP 3.1 calls exactly this with the `ScanDetail` the assertions engine already holds.
  */
 export function analyzeScanTools(input: AnalyzerInput): SecurityFinding[] {
   const reported = new Set<SecurityRuleId>();

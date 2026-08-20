@@ -9,7 +9,7 @@ import {
 
 /**
  * TitledSelectTrigger — the one recovery mechanism for a clipped `<Select>` value (D-IC10,
- * `roadmap/interface-craft/upstream-gaps.md` #4).
+ * `planning/Roadmap/completed/RM-15-interface-craft/upstream-gaps.md` #4).
  * =============================================================================================
  *
  * WHY IT EXISTS

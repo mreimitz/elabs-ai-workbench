@@ -1,4 +1,4 @@
-// Unified Sessions — SessionClock (roadmap/unified-sessions/, WP1.2, D-US3/D-US7).
+// Unified Sessions — SessionClock (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.2, D-US3/D-US7).
 //
 // Before this module each executor hand-rolled its own timer logic: the engine raced an idle timeout
 // against a hard-coded 30-min wall deadline (`DEFAULT_MAX_RUN_DURATION_MS` in engine.ts), the

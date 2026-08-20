@@ -174,16 +174,31 @@ function leadingNumber(v: unknown): number | null {
   return null;
 }
 
-/** Parse a documented byte size into bytes ("512KB" → 524288). Caller guarantees a byte unit. */
-function sizeToBytes(v: unknown): number | null {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
+const BYTE_MULTIPLIER: Record<string, number> = {
+  B: 1,
+  BYTE: 1,
+  BYTES: 1,
+  KB: 1024,
+  MB: 1_048_576,
+  GB: 1_073_741_824,
+};
+
+/**
+ * Parse a documented byte size into bytes. The dataset writes the same cap two ways — as one string
+ * ("512KB") or as a `value`/`unit` pair (`512` + `"KB"`, which is what the 2026-08-19 refresh
+ * normalized OpenAI to) — so the numeric form MUST be scaled by the node's own unit. Reading a bare
+ * `512` as 512 bytes would flag every tool result over half a kilobyte.
+ */
+function sizeToBytes(v: unknown, unitHint = ""): number | null {
+  const hint = BYTE_MULTIPLIER[unitHint.trim().toUpperCase()];
+  if (typeof v === "number" && Number.isFinite(v)) return v * (hint ?? 1);
   if (typeof v !== "string") return null;
   const m = /^([\d.]+)\s*(B|KB|MB|GB)?$/i.exec(v.trim());
   if (!m || !m[1]) return null;
   const n = Number(m[1]);
-  const unit = (m[2] ?? "B").toUpperCase();
-  const mul = unit === "GB" ? 1_073_741_824 : unit === "MB" ? 1_048_576 : unit === "KB" ? 1024 : 1;
-  return n * mul;
+  // An explicit suffix on the string wins; otherwise fall back to the node's unit, then bytes.
+  const mul = m[2] ? BYTE_MULTIPLIER[m[2].toUpperCase()] : (hint ?? 1);
+  return n * (mul ?? 1);
 }
 
 /**
@@ -203,7 +218,7 @@ function toolResultByteCap(model: FlatModel): number | null {
   // string ("512KB") or carries an explicit byte unit.
   if (unit && !BYTE_UNITS.has(unit)) return null;
   if (!unit && typeof n.value === "number") return null; // unitless number → not a byte cap
-  return sizeToBytes(n.value);
+  return sizeToBytes(n.value, unit);
 }
 
 /**

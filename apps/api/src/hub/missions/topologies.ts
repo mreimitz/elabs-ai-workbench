@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.2 · §1.9 · D-AH6/D-AH7/D-AH9 · R-SK7/R-UX4) — the mission
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.2 · §1.9 · D-AH6/D-AH7/D-AH9 · R-SK7/R-UX4) — the mission
 // TOPOLOGY strategies + saved-crew instantiation. WP1.7 shipped the `parallel` fan-out inline in the
 // orchestrator; this module GENERALIZES it into four interchangeable scheduling strategies, all driven
 // through the SAME orchestrator primitives (spawn → run one child agent → collect a structured report →

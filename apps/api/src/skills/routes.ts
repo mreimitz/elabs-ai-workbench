@@ -134,7 +134,7 @@ export async function registerSkillRoutes(
   // compiled-in `DEFAULT_INGEST_CAPS`.
   const caps = options.caps ?? DEFAULT_INGEST_CAPS;
 
-  // Diffs are derived on demand from two immutable versions — never stored (research/skill-registry/04).
+  // Diffs are derived on demand from two immutable versions — never stored (planning/Research/RS-02-skill-registry/outputs/04-versioning-and-diff.md).
   const diffService = new SkillDiffService(repo);
 
   // --- GitHub discovery -------------------------------------------------------------------------

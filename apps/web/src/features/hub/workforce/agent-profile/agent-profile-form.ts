@@ -29,7 +29,7 @@ export type AgentProfileFormValue = {
   systemPrompt: string;
   defaultModel: string;
   /**
-   * D-MI1/D-MI7 (`roadmap/model-identity/`, WP 4.1) — WHICH credential `defaultModel` was picked
+   * D-MI1/D-MI7 (`planning/Roadmap/RM-16-model-identity/`, WP 4.1) — WHICH credential `defaultModel` was picked
    * from. `null` = unpinned: the API falls back to its name heuristic, which is exactly how a
    * subscription-intended agent silently ran on the metered Anthropic key. The picker sets it
    * alongside the model id and they are always written together.

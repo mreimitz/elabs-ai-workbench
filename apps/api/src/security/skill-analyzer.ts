@@ -1,4 +1,4 @@
-// The skill security analyzer (roadmap/security-posture/, WP 1.3) — the seven `skill-surface.*` rules
+// The skill security analyzer (planning/Roadmap/RM-20-security-posture/, WP 1.3) — the seven `skill-surface.*` rules
 // of `SECURITY_RULES` implemented as PURE functions over data the caller already loaded.
 //
 // It is the sibling of `analyzer.ts` and holds the same five properties, for the same reasons:

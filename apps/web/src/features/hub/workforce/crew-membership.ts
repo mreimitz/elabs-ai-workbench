@@ -1,4 +1,4 @@
-// Crew nesting (roadmap/crew-nesting/, WP4.2 · D-CN8) — the PURE, cycle-safe, memoised client-side
+// Crew nesting (planning/Roadmap/RM-10-crew-nesting/, WP4.2 · D-CN8) — the PURE, cycle-safe, memoised client-side
 // closure helper every N-level workforce surface (OrgRail, CrewCard, CrewHeaderCard, DirectoryTab,
 // the org-chart canvas) builds its recursive counts/membership from. `apps/api/src/hub/missions/
 // crew-resolution.ts`'s WP1.1 read-time rollup is the server-side sibling — it cannot be imported

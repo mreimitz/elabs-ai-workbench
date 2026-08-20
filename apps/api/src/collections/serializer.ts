@@ -13,7 +13,7 @@ import {
  * standalone: the WP 4.2 git engine will materialize a working clone from `testToFile`/`suiteToFile`
  * and re-import remote files through `fileToTestInput`/`fileToSuiteInput`.
  *
- * INVARIANTS (roadmap/benchmarks/conventions.md):
+ * INVARIANTS (planning/Roadmap/RM-07-benchmarks/conventions.md):
  *  - Exported files carry NO secrets and NO local-only references (no provider/server ids, no DB ids,
  *    no timestamps). `externalKey` is the ONLY identity that leaves the API.
  *  - Serialization is deterministic — recursively key-sorted, 2-space indent, trailing newline — so git

@@ -171,7 +171,7 @@ export class SuiteReportService {
     // (AR11). A crash in this step (unexpected — each group is already internally guarded) just leaves the
     // report's honest 4.1-era placeholders in place rather than losing the deterministic analytics.
     let judgeLedger: JudgeLedgerTotals = NEUTRAL_JUDGE_LEDGER;
-    // Claude subscription (roadmap/claude-subscription/, WP 2.2, D-CS4/D-CS8) — the member run ids
+    // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 2.2, D-CS4/D-CS8) — the member run ids
     // whose `costUsd` is a subscription SHADOW-price estimate (never billed), read from the SAME
     // member data `enrichWithAgreement` already fetches (no extra I/O). Stays the empty set — never a
     // throw — when enrichment didn't run or found none; the findings/narrative markers below simply

@@ -8,7 +8,7 @@ import type { AssistantEntityKind } from "./types.js";
 // module is the ONE place the exact wording lives — both `apps/api` (the data-aware
 // `GET /api/assistant/starters` service, `apps/api/src/assistant/starters.ts`) and `apps/web` (the
 // dock's empty-state chip render, a later WP) read from it. Authored verbatim from
-// `roadmap/assistant/refinement-03-session-starters.md` §"The catalog" — labels/prompt text/scope
+// `planning/Roadmap/RM-02-assistant/refinement-03-session-starters.md` §"The catalog" — labels/prompt text/scope
 // markers (`[A]`/`[W]`/`[?cond]`) are NOT paraphrased.
 //
 // Curated + free (D-AS28): every entry here is STATIC text, computed with zero LLM calls. The only

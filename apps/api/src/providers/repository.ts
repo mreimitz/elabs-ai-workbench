@@ -16,7 +16,7 @@ export class ProviderRepository {
   constructor(
     private readonly db: AppDatabase,
     private readonly secrets: SecretStore,
-    // Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS7): resolves the signed-in Claude
+    // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS7): resolves the signed-in Claude
     // subscription's OAuth token from `assistant_credentials`. Optional so every existing/
     // non-`claude_subscription` path + test constructs the repository unchanged; a
     // `claude_subscription` credential without a resolver configured is auth-broken.
@@ -113,7 +113,7 @@ export class ProviderRepository {
 
   // INTERNAL ONLY — never leaves the API process; never exposed by a route.
   //
-  // Claude subscription (roadmap/claude-subscription/, WP 0.2, D-CS7): a `claude_subscription`
+  // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 0.2, D-CS7): a `claude_subscription`
   // credential carries NO stored key at all — its `apiKey` is ALWAYS the signed-in subscription's
   // resolved OAuth token (from `assistant_credentials`), reusing the `apiKey` field. A broken/absent
   // sign-in throws {@link brokenSubscriptionAuthError} rather than returning a partial/

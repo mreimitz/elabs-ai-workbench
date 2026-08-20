@@ -100,7 +100,7 @@ async function renderEditorSettled(scenario: Scenario) {
   return result;
 }
 
-// Unified Sessions (roadmap/unified-sessions/, WP3.4, D-US3/D-US7) — the Guardrails section's wall-cap
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP3.4, D-US3/D-US7) — the Guardrails section's wall-cap
 // field (`maxRunDurationMs`, the only stall/wait-adjacent field with a real backend surface — see
 // GuardrailConfig in packages/shared) round-trips through the editor unchanged, and the two read-only
 // stall/wait figures (no backend field exists for either) render the correct per-kind default.

@@ -16,7 +16,7 @@ import {
 import { openHubSessionStream, type HubSseFrame } from "../../lib/api";
 
 /**
- * Assistant Hub (roadmap/assistant-hub/, WP1.3, §1.4/§1.9) — the SSE client for one hub session.
+ * Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.3, §1.4/§1.9) — the SSE client for one hub session.
  *
  * Mirrors `features/testing/use-run-stream.ts` (seq-dedup, replay-then-live, terminal-ONLY errors —
  * `.claude/rules/loading-states.md`) but a hub session has NO per-request terminal status: it is a

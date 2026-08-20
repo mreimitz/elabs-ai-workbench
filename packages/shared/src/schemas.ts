@@ -152,7 +152,7 @@ export const serverAuthTypeSchema = z.enum(SERVER_AUTH_TYPES);
 
 export const serverTypeStatusSchema = z.enum(SERVER_TYPE_STATUSES);
 
-// Server types (roadmap/server-types, D-ST1/D-ST2): a named group of servers sharing one tool
+// Server types (planning/Roadmap/completed/RM-21-server-types, D-ST1/D-ST2): a named group of servers sharing one tool
 // surface; lifecycle status lives on the type. No secrets, no connection config.
 export const serverTypeInputSchema = z.object({
   name: z.string().trim().min(1),
@@ -198,7 +198,7 @@ export const serverConfigInputSchema = z
     url: z.string().trim().url().optional(),
     headers: z.record(z.string()).default({}),
     auth: serverAuthInputSchema.optional(),
-    // Server type assignment (roadmap/server-types, additive — D-ST5). Null clears on update.
+    // Server type assignment (planning/Roadmap/completed/RM-21-server-types, additive — D-ST5). Null clears on update.
     typeId: z.string().trim().min(1).nullable().optional(),
   })
   .superRefine((value, ctx) => {
@@ -487,7 +487,7 @@ export const runGradeSchema = z.object({
 });
 
 // --- Auto-Rating — mandatory post-run rating contract (WP 1.1, AR1–AR16) ----------------------
-// roadmap/auto-rating/README.md. Additive-only, mirrors the TS shapes in types.ts exactly (same
+// planning/Roadmap/RM-06-auto-rating/item.md. Additive-only, mirrors the TS shapes in types.ts exactly (same
 // optionality). Reuses `runGradeSchema`/`assertionResultSchema` above rather than re-declaring them.
 
 /**
@@ -895,7 +895,7 @@ export const runTurnSchema = z.object({
   text: z.string().min(1),
 });
 
-// Observability (roadmap/observability/, WP3.3, D-OB18) — body of `POST /api/runs/:id/rerun`. Fork a
+// Observability (planning/Roadmap/RM-17-observability/, WP3.3, D-OB18) — body of `POST /api/runs/:id/rerun`. Fork a
 // TERMINAL run into a NEW, fully-persisted, gradeable derived run. ALL fields optional/additive:
 //  * `fromStepId` — the parent step to fork AT (its conversation prefix ≤ this step is reconstructed +
 //    seeded into the new run). OMITTED ⇒ a whole-run re-launch with the overrides (works for EVERY kind).
@@ -927,7 +927,7 @@ export const runAnswerSchema = z.object({
   answer: z.string().min(1),
 });
 
-// --- Observability — RunFilter grammar (roadmap/observability/, WP1.1, D-OB1) ------------------
+// --- Observability — RunFilter grammar (planning/Roadmap/RM-17-observability/, WP1.1, D-OB1) ------------------
 // The zod validator for the shared {@link RunFilter} type (types.ts). Consumed by both the
 // `run-filter.ts` parse helper (URL `filter=` JSON + aliases) and any endpoint accepting a filter.
 // `.strict()` so an unknown/mistyped key surfaces as a ZodError -> 400 (acceptance #2). Every field
@@ -988,7 +988,7 @@ export const runSortSchema = z.object({
   direction: runSortDirectionSchema,
 });
 
-// --- Observability — human feedback (roadmap/observability/, WP1.5, D-OB15) ---------------------
+// --- Observability — human feedback (planning/Roadmap/RM-17-observability/, WP1.5, D-OB15) ---------------------
 // The zod validator for `POST /api/runs/:id/feedback` — an UPSERT keyed on (run, step, key,
 // source='human'; see {@link RunFeedbackInput}). `.strict()` so an unknown key is a ZodError -> 400.
 // At least one of `score`/`comment` is required (a feedback row with neither carries no signal).
@@ -1007,7 +1007,7 @@ export const runFeedbackInputSchema = z
     path: ["score"],
   });
 
-// --- Observability — model pricing editor (roadmap/observability/, WP2.6, D-OB22) ----------------
+// --- Observability — model pricing editor (planning/Roadmap/RM-17-observability/, WP2.6, D-OB22) ----------------
 // `POST /api/pricing` / `PATCH /api/pricing/:id`. Prices are USD per 1M tokens (`.nonnegative()` — a
 // negative price is nonsense and would corrupt the spend cap). `modelMatch` is bounded (a bound that
 // also caps regex-source length as a light ReDoS guardrail — see pricing-repository.ts). When
@@ -1055,7 +1055,7 @@ export const modelPricingPatchSchema = modelPricingBaseSchema
   .strict()
   .superRefine(refineRegex);
 
-// --- Observability — saved views (roadmap/observability/, WP1.4) --------------------------------
+// --- Observability — saved views (planning/Roadmap/RM-17-observability/, WP1.4) --------------------------------
 // `POST /api/run-views` / `PATCH /api/run-views/:id`. `filter` reuses `runFilterSchema` (the SAME
 // validator `GET /api/runs`/`GET /api/metrics/*` apply — a stored filter re-executes identically);
 // `columns`/`sort` are opaque web-owned presentation hints, bounded only by SERIALIZED byte size
@@ -1090,7 +1090,7 @@ export const runViewPatchSchema = z
   })
   .strict();
 
-// --- Observability — watch rules (roadmap/observability/, WP4.1, D-OB19/D-OB21) ------------------
+// --- Observability — watch rules (planning/Roadmap/RM-17-observability/, WP4.1, D-OB19/D-OB21) ------------------
 // `POST /api/watch-rules` / `PATCH /api/watch-rules/:id`. `filter` reuses `runFilterSchema` (the SAME
 // validator the feed uses — a rule's filter is evaluated by the pure `matchesRunFilter` predicate at
 // the post-terminal choke point). The action set is a CLOSED discriminated union; the `webhook`
@@ -1214,7 +1214,7 @@ export const watchWindowPreviewRequestSchema = z
   })
   .strict();
 
-// --- Observability — notification center (roadmap/observability/, WP4.3) -------------------------
+// --- Observability — notification center (planning/Roadmap/RM-17-observability/, WP4.3) -------------------------
 // `GET /api/notifications` query filters, parsed from string query params by the route (booleans/
 // numbers coerced there) THEN validated here — a malformed `severity`/out-of-range `limit` is a
 // ZodError -> 400, same discipline as every other wire input. `.strict()` so an unknown key 400s.
@@ -1229,7 +1229,7 @@ export const notificationListQuerySchema = z
   })
   .strict();
 
-// --- Observability — retention classes (roadmap/observability/, WP1.6) --------------------------
+// --- Observability — retention classes (planning/Roadmap/RM-17-observability/, WP1.6) --------------------------
 // The `GET`/`PUT /api/maintenance/run-retention-policy` body + the optional override
 // `POST /api/maintenance/prune-runs` accepts. Keyed by RunStatus so an unknown/mistyped key is a
 // ZodError -> 400; the repository additionally ignores any non-terminal status entry (pending/running
@@ -1247,7 +1247,7 @@ export const runRetentionPolicySchema = z
   })
   .strict();
 
-// --- Observability — scheduled digest report (roadmap/observability/, WP5.5, D-OB22) --------------
+// --- Observability — scheduled digest report (planning/Roadmap/RM-17-observability/, WP5.5, D-OB22) --------------
 // `GET`/`PUT /api/reports/digest/schedule` body + the `?window=` query `POST /api/reports/digest/
 // generate` accepts. `.strict()` so an unknown key 400s, mirroring every other settings body here.
 
@@ -1316,7 +1316,7 @@ export const compatibilityHeatmapQuerySchema = z.object({
 // --- Skills (Agent Skill registry + versioning) — Phase 1 contract ---------------------------
 // Contract-first zod for the Skills feature (mirrors the TS types 1:1). The API validates request
 // bodies with these; the GitHub PAT (`auth.token`) is accepted here but never echoed back (the
-// `Skill` view is redacted to `hasAuth: boolean`). Source: research/skill-registry/05 + 08.
+// `Skill` view is redacted to `hasAuth: boolean`). Source: planning/Research/RS-02-skill-registry/outputs/05-api-surface.md + 08.
 
 /**
  * SSRF guard for a user-supplied git repo URL. The URL is handed straight to `git clone`, so an
@@ -1555,7 +1555,7 @@ export const suiteRunReportQuerySchema = z.object({
 // --- SkillFlow (graph IR + trace vocabulary + session-trace) — Phase 1 contract (WP 1.0) ------
 // Contract-first zod mirroring the SkillFlow TS types 1:1. These are the ONE locked contract every
 // later SkillFlow WP consumes (projector, aligner, routes, web) — later changes are additive fields
-// only. Source of truth: roadmap/skillflow/00-architecture.md ("The three schemas", D2/D6/D7/D8).
+// only. Source of truth: planning/Roadmap/RM-23-skillflow/00-architecture.md ("The three schemas", D2/D6/D7/D8).
 
 /** File-kind enum reused by asset nodes (D8 — no parallel taxonomy). */
 export const skillFileKindSchema = z.enum(SKILL_FILE_KINDS);
@@ -2060,7 +2060,7 @@ export const skillSuggestionsResponseSchema = z.object({
 
 // --- Skill IDE Phase 1 (WP 1.1) — quality / tool-validation / trigger / publish zod --------------
 // Contract-first zod mirroring the Skill IDE TS types 1:1. The ENGINES producing these land in later
-// WPs; WP 1.1 freezes + round-trip-tests the shapes. Source: roadmap/skill-ide/00-architecture.md.
+// WPs; WP 1.1 freezes + round-trip-tests the shapes. Source: planning/Roadmap/RM-22-skill-ide/00-architecture.md.
 
 /** A single deterministic quality finding (I4): rule id, severity, message, optional anchor + fix. */
 export const qualityFindingSchema = z.object({
@@ -2318,7 +2318,7 @@ export const skillUsageSchema = z.object({
 // ==================================================================================================
 // Assistant (WP 0.1) — request contract
 // ==================================================================================================
-// Embedded Claude agent chat (roadmap/assistant/00-plan.md). These are the request-body schemas for
+// Embedded Claude agent chat (planning/Roadmap/RM-02-assistant/00-plan.md). These are the request-body schemas for
 // the routes WP 0.2/1.1/2.1 implement; see types.ts for the response-side wire shapes
 // (AssistantThread/AssistantEvent/AssistantAuthStatus/AssistantContextEnvelope).
 
@@ -2619,7 +2619,7 @@ export const issueAssistJudgeOutputSchema = z.object({
 
 export type IssueAssistJudgeOutput = z.infer<typeof issueAssistJudgeOutputSchema>;
 
-// --- Unified Sessions — session contract (roadmap/unified-sessions/, WP1.1) --------------------
+// --- Unified Sessions — session contract (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.1) --------------------
 // Zod partners of the `types.ts` session contract. All additive (new exports). `sessionCapabilities-
 // Schema` parses the persisted `capabilities_json` (WP1.6); `runEventSchema` is a faithful (loose on
 // the heavy `step`/`kpi` payloads) parser for the SSE/replay `RunEvent` union — its `session-contract`
@@ -2792,7 +2792,7 @@ export const suiteRunEventSchema = z
   ])
   .and(z.object({ seq: z.number().int().nonnegative().optional() }));
 
-// --- Observability — metrics endpoints (roadmap/observability/, WP1.2, D-OB13/D-OB14) ----------
+// --- Observability — metrics endpoints (planning/Roadmap/RM-17-observability/, WP1.2, D-OB13/D-OB14) ----------
 // Query-param zod for `GET /api/metrics/{runs,scans}`. The RunFilter itself is parsed by the shared
 // `parseRunFilterFromQuery` helper (run-filter.ts); these validate the metrics-specific axes on top.
 
@@ -2805,7 +2805,7 @@ export const runMetricsMeasuresSchema = z
   .array(runMetricsMeasureSchema)
   .nonempty("At least one measure is required");
 
-// --- Observability — custom chart composer (roadmap/observability/, WP2.7, D-OB22) ----------------
+// --- Observability — custom chart composer (planning/Roadmap/RM-17-observability/, WP2.7, D-OB22) ----------------
 // `POST /api/dashboard-charts` / `PATCH /api/dashboard-charts/:id` / `POST
 // /api/dashboard-charts/reorder`. Reuses the metrics endpoints' OWN vocabulary directly
 // (`runMetricsMeasureSchema`/`runMetricsGroupBySchema`/`metricsBucketSchema`, defined just above) and
@@ -2897,7 +2897,7 @@ export const dashboardChartReorderInputSchema = z
   })
   .strict();
 
-// --- Review queue lite (roadmap/observability/, WP4.5, D-OB22) ----------------------------------
+// --- Review queue lite (planning/Roadmap/RM-17-observability/, WP4.5, D-OB22) ----------------------------------
 // `POST /api/review-rubrics` / `PATCH /api/review-rubrics/:id`. `.strict()` throughout so an unknown
 // key is a ZodError -> 400. Keys are re-validated on every READ too (mirrors run_views/dashboard_charts'
 // toPublic discipline) — a stored rubric always re-renders identically.
@@ -2952,7 +2952,7 @@ export const reviewRubricPatchSchema = z
   .strict();
 
 // ==================================================================================================
-// Assistant Hub — zod partners of the types.ts contract (roadmap/assistant-hub/, WP0.1)
+// Assistant Hub — zod partners of the types.ts contract (planning/Roadmap/RM-03-assistant-hub/, WP0.1)
 // ADDITIVE ONLY (all new exports). The Unified-Sessions schemas declared ABOVE are REUSED verbatim
 // (D-AH3): `runPhaseSchema`, `waitingInputReasonSchema`, `stopReasonCodeSchema`,
 // `sessionCapabilitiesSchema`, `sessionCostBasisSchema`, and `z.enum(RUN_STATUSES)` — never re-declared.
@@ -2991,7 +2991,7 @@ export const hubMemoryKindSchema = z.enum(HUB_MEMORY_KINDS);
 export const hubMemorySourceSchema = z.enum(HUB_MEMORY_SOURCES);
 export const hubMemoryStatusSchema = z.enum(HUB_MEMORY_STATUSES);
 export const hubLimitRetrySourceSchema = z.enum(HUB_LIMIT_RETRY_SOURCES);
-// Assistant Hub UX (roadmap/assistant-hub-ux/, WP0.1) — additive enum schemas (D-HUX8/10/11/16).
+// Assistant Hub UX (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP0.1) — additive enum schemas (D-HUX8/10/11/16).
 export const hubMemoryScopeSchema = z.enum(HUB_MEMORY_SCOPES);
 export const hubCrewColorSchema = z.enum(HUB_CREW_COLORS);
 export const hubUsageGroupBySchema = z.enum(HUB_USAGE_GROUP_BYS);
@@ -3234,7 +3234,7 @@ export const hubSkillAttachmentInputSchema = z
     }
   });
 
-// Model identity (D-MI1, `roadmap/model-identity/`) — the `provider_credentials` id a chosen model runs
+// Model identity (D-MI1, `planning/Roadmap/RM-16-model-identity/`) — the `provider_credentials` id a chosen model runs
 // on. Adding it to the `.strict()` input schemas is MANDATORY, not cosmetic: a strict schema REJECTS an
 // unknown key with a 400, so the field could not be sent at all without this. `hubPlannedAgentSchema` is
 // a stripping `z.object` instead, where the failure is worse because it is silent — the same D-CN5
@@ -3749,7 +3749,7 @@ export const hubMemoryPatchSchema = z
   })
   .strict();
 
-// --- Effective memory (roadmap/assistant-hub-ux/, WP1.5 → WP2.7 promotion, D-HUX11) ---------------
+// --- Effective memory (planning/Roadmap/completed/RM-04-assistant-hub-ux/, WP1.5 → WP2.7 promotion, D-HUX11) ---------------
 // Mirrors the shared TS shapes in `types.ts` exactly — see that file's section doc for the reasoning.
 
 export const hubEffectiveMemoryEntrySchema = z.object({

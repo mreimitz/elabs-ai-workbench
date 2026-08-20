@@ -1,4 +1,4 @@
-// Observability — review queue lite (roadmap/observability/, WP4.5, D-OB22, FINAL WP).
+// Observability — review queue lite (planning/Roadmap/RM-17-observability/, WP4.5, D-OB22, FINAL WP).
 //
 // Structured human review WITHOUT multi-annotator/reservation machinery (D-OB22, single owner): a
 // persisted, named RUBRIC — a checklist of keys, each `thumbs`/`scale5`/`note` — walked keyboard-first

@@ -23,7 +23,7 @@ type Mode = { kind: "list" } | { kind: "create" } | { kind: "edit"; type: Server
 const DEFAULT_STATUS: ServerTypeStatus = "production";
 
 /**
- * Manage-types surface (roadmap/server-types WP 2.2): create / rename / restatus / edit-description /
+ * Manage-types surface (planning/Roadmap/completed/RM-21-server-types WP 2.2): create / rename / restatus / edit-description /
  * delete server types, with member counts and a delete-DETACHES confirmation (D-ST4 — deleting a type
  * sets its members to Untyped, it never deletes servers).
  *

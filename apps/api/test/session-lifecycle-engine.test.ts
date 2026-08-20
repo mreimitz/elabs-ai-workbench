@@ -1,4 +1,4 @@
-// Unified Sessions (roadmap/unified-sessions/, WP1.3) — engine-level SessionClock lifecycle tests.
+// Unified Sessions (planning/Roadmap/completed/RM-29-unified-sessions/, WP1.3) — engine-level SessionClock lifecycle tests.
 //
 // Drives the REAL `runAgentLoop` (mock model + stub MCP session, per the WP1.3 stub pattern — no API
 // key, no child process, no real tenant) through every new terminal cause the engine now resolves via

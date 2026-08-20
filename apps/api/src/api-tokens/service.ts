@@ -15,7 +15,7 @@ import { nanoid } from "nanoid";
 import type { ApiTokenAuthRow, ApiTokenRepository } from "./repository.js";
 
 /**
- * Service tokens (roadmap/ci/ WP 1.1) — generation, hashing, and the authenticate step the guard calls.
+ * Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1) — generation, hashing, and the authenticate step the guard calls.
  *
  * **The plaintext token lives in exactly two places and nowhere else:** the value returned once from
  * {@link ApiTokenService.create}, and the `Authorization` header a caller presents. It is never
@@ -29,7 +29,7 @@ import type { ApiTokenAuthRow, ApiTokenRepository } from "./repository.js";
  * Hash a plaintext token for storage/lookup. Plain SHA-256 over the FULL token (`mcpfp_` marker
  * included) — deliberate, not an oversight: the input is a 256-bit uniformly random secret this app
  * generated, so there is no dictionary to run against it and a slow KDF would only add latency to the
- * hot auth path. (`roadmap/team-server/` uses scrypt because ITS input is a human-chosen password.)
+ * hot auth path. (`planning/Roadmap/RM-25-team-server/` uses scrypt because ITS input is a human-chosen password.)
  * Do not "fix" this to bcrypt/scrypt without changing what is being hashed.
  */
 export function hashToken(plaintext: string): string {

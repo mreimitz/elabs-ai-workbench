@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.1, D-AH4 / D-US4) — the hub capability manifest per kind.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.1, D-AH4 / D-US4) — the hub capability manifest per kind.
 // Proves the hub REUSES the Unified-Sessions manifests (never forks them), constrains the model surface
 // to D-AH4, and sets `askUser` from `exposeAskUser` — off by default (mission
 // agent/synthesis turns), on for interactive foreground sessions (which expose the reused `ask_user`).

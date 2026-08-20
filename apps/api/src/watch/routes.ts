@@ -1,4 +1,4 @@
-// Observability — watch-rule CRUD + audit + windowed-preview routes (roadmap/observability/, WP4.1 +
+// Observability — watch-rule CRUD + audit + windowed-preview routes (planning/Roadmap/RM-17-observability/, WP4.1 +
 // WP4.2, D-OB19/D-OB21).
 //
 //   GET/POST   /api/watch-rules

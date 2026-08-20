@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP0.2, D-AH1…D-AH20) — migration v47 + HubRepository.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP0.2, D-AH1…D-AH20) — migration v47 + HubRepository.
 //
 // NOTE on file location: the WP text says "co-located `*.test.ts`" next to `hub/repository.ts`, but
 // `apps/api`'s test script is `tsx --test test/*.test.ts` — a flat, non-recursive glob over
@@ -91,7 +91,7 @@ test("migration v47 — a fresh DB carries every hub_* table (schema.ts baseline
   assert.equal(
     LATEST_SCHEMA_VERSION,
     58,
-    "LATEST_SCHEMA_VERSION auto-derived to 58 (v47 = the 13 Assistant Hub hub_* tables, WP0.2; v48 = hub_session_skills, WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, roadmap/ci WP 1.1)",
+    "LATEST_SCHEMA_VERSION auto-derived to 58 (v47 = the 13 Assistant Hub hub_* tables, WP0.2; v48 = hub_session_skills, WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1)",
   );
   assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
   for (const table of HUB_TABLES) {
@@ -215,7 +215,7 @@ test("migration v49 — a fresh DB carries the 4 Wave-1 hub_* columns (schema.ts
   assert.equal(
     LATEST_SCHEMA_VERSION,
     58,
-    "LATEST_SCHEMA_VERSION auto-derived to 58 (v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, roadmap/ci WP 1.1)",
+    "LATEST_SCHEMA_VERSION auto-derived to 58 (v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1)",
   );
   assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
 
@@ -963,7 +963,7 @@ test("migration v54 — a fresh DB carries hub_missions.parent_mission_id/depth/
   assert.equal(
     LATEST_SCHEMA_VERSION,
     58,
-    "LATEST_SCHEMA_VERSION auto-derived to 58 (v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, roadmap/ci WP 1.1)",
+    "LATEST_SCHEMA_VERSION auto-derived to 58 (v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1)",
   );
   assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
   const cols = columns(db, "hub_missions");

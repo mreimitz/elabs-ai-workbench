@@ -1,4 +1,4 @@
-// The CI assertions endpoint (roadmap/ci/, WP 1.3): `POST /api/assertions/evaluate`.
+// The CI assertions endpoint (planning/Roadmap/RM-08-ci/, WP 1.3): `POST /api/assertions/evaluate`.
 //
 // Thin route, per the API convention: parse the shared zod body, delegate to the engine, let the
 // central error handler format anything thrown (`ZodError` → 400; `httpError(400, …)` → 400). It

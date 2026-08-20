@@ -1,4 +1,4 @@
-// Assistant Hub — WP1.R Wave-1 ADVERSARIAL REVIEW probes (roadmap/assistant-hub/, D-AH18).
+// Assistant Hub — WP1.R Wave-1 ADVERSARIAL REVIEW probes (planning/Roadmap/RM-03-assistant-hub/, D-AH18).
 //
 // These are REFUTATION probes authored by the Wave-1 reviewer (read-only on implementation). They
 // attack the Wave-1 invariants at the seams the owning WPs' own happy-path tests do NOT cover:

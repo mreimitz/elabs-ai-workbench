@@ -199,7 +199,7 @@ export function createRunJsonReport(
       contextLimit: limit ?? null,
       endStateContextTokens: endState,
       estimatedCostUsd: run.costUsd,
-      // Claude subscription (roadmap/claude-subscription/, WP 3.2, D-CS4/D-CS8) — a machine-readable
+      // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.2, D-CS4/D-CS8) — a machine-readable
       // marker for HOW `estimatedCostUsd` was derived, mirroring {@link RunSummary.costBasis}. Present
       // ONLY for a `claude_subscription` run (`"subscription_reference"` — a shadow reference estimate,
       // marginal cost $0, never a billed charge); absent for every ordinary run, so this report stays

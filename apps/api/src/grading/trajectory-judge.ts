@@ -27,7 +27,7 @@ import {
  * point, NO provider call (no wasted judge cost). `grade()` is therefore only ever reached with a
  * present `referenceLogic`.
  *
- * HARD invariants (roadmap/benchmarks/conventions.md + the WP 2.2 spec):
+ * HARD invariants (planning/Roadmap/RM-07-benchmarks/conventions.md + the WP 2.2 spec):
  *   - NEVER executes anything — no MCP call, no code/skill run. It READS the persisted run's steps + the
  *     test's authored `referenceLogic` (a document handed to the judge, NEVER run) and makes exactly ONE
  *     provider call. Tool arguments/results in the digest are OPAQUE data (redacted on persistence).

@@ -8,7 +8,7 @@ import {
   type SuiteRunReportData,
 } from "../src/reports/suite-run-report.js";
 
-// Claude subscription (roadmap/claude-subscription/, WP 3.2, D-CS4/D-CS8) — the suite-run report
+// Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.2, D-CS4/D-CS8) — the suite-run report
 // mirrors the run report's `costBasis` marker + accuracy footnote for any member whose cost is a
 // subscription shadow-price estimate (WP 2.2 already read `costBasis` off member runs for the
 // cross-run rating report's `subscriptionRunIds`; this covers the SAME marker on the suite-run

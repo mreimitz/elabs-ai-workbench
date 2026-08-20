@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP2.2 · §1.9 · R-UX4) — the mission TOPOLOGY GRAPH renderer.
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP2.2 · §1.9 · R-UX4) — the mission TOPOLOGY GRAPH renderer.
 // A thin `@elabs-ai/components-flow` canvas over the pure {@link deriveTopologyGraph} layout: it draws the mission's
 // team as a directed graph (agents → synthesis / judge / resolver) with LIVE state coloured onto each
 // node (waiting → default, working → accent, reported → success, did-not-report → destructive; the

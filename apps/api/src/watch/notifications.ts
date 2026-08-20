@@ -1,4 +1,4 @@
-// Observability — the notification center (roadmap/observability/, WP4.3, D-OB19).
+// Observability — the notification center (planning/Roadmap/RM-17-observability/, WP4.3, D-OB19).
 //
 // This module is the whole reason the WP4.1 `notify` seam existed: `WatchActionServices.notify` was
 // left `undefined` in `index.ts` ("inert until WP4.3", `watch/actions.ts`) — the `notify` action

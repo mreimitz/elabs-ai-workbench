@@ -15,7 +15,7 @@
  * "Logged in as …" line for this flow, and it persists no account record in its config dir. So the
  * account identity is genuinely NOT derivable from anything we hold — this panel must never
  * fabricate one. Surfacing the real account requires running the OAuth exchange ourselves with a
- * `user:profile` scope; that is parked as a workstream (see roadmap/assistant/wp-oauth-identity.md).
+ * `user:profile` scope; that is parked as a workstream (see planning/Roadmap/RM-02-assistant/wp-oauth-identity.md).
  *
  * What the panel does instead: state the constraint plainly, and give the owner a first-class way
  * to RESET the token (delete it + end live sessions) and mint a fresh one — which is also how you

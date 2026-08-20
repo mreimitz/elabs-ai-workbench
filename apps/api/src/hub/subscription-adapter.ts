@@ -1,4 +1,4 @@
-// Assistant Hub (roadmap/assistant-hub/, WP1.5, §1.5 / D-AH3 / D-AH17) — the `claude_subscription`
+// Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP1.5, §1.5 / D-AH3 / D-AH17) — the `claude_subscription`
 // turn executor.
 //
 // The session-service's model-resolution branch point (`session-service.ts`) delegates a
