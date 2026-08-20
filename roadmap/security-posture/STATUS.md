@@ -174,7 +174,71 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       `apps/api/test/compatibility-data.test.ts` as the home of the pre-existing failures. They
       actually live in `compatibility-runner.test.ts` (5), `compatibility-tool-findings.test.ts` (1)
       and `compatibility-session.test.ts` (1). The count (7) was right; the file was not.
-- [ ] WP 1.4 — posture diff (scan↔scan, version↔version)
+- [x] WP 1.4 — posture diff (scan↔scan, version↔version) — done 2026-08-20 ·
+      `wp/security-posture/1.4` · spec: [`wp-1.4-posture-diff.md`](./wp-1.4-posture-diff.md).
+      **One differ, in the contract, re-projected by the CI gate.** `diffSecurityReports(baseline,
+      subject)` in `packages/shared/src/security-posture.ts` is now the only definition of which
+      findings are `added` / `resolved` / `unchanged`, and
+      `no-new-security-findings` in `apps/api/src/assertions/service.ts` reads `.added` off it instead
+      of building its own identity `Set` — **`apps/api/test/ci-assertions.test.ts` stayed
+      byte-identical and green (56/56)**, which is the proof the re-point moved no gate behaviour.
+      Served at **`GET /api/scans/:scanId/security/diff?baseline=`** and
+      **`GET /api/skills/:id/versions/:vid/security/diff?baseline=`** — each a sub-path of the report
+      it diffs, so no discriminator parameter is needed. Both sides analysed through the SAME
+      `analyzeScan` / `analyzeSkillVersion` the report routes serve (D-MCP4), so a diff and a report
+      can never disagree about one subject's posture. Decisions **D-SP17–D-SP20** in the log below.
+      **Computed on read, persisted nowhere** (pinned by a `sqlite_master` + `PRAGMA user_version`
+      comparison across a service call and a real HTTP request). No migration, no dependency, no
+      environment variable, no feature flag, and **`apps/api/src/index.ts` is a zero-line diff** — the
+      diff needed no port the report routes did not already receive.
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`typecheck` **0** · shared **179/179** [162 before] · cli **87/87** · api **3537 passed / 7
+      failed** — a **+18-test** delta, all passing · `build` **0** · `lint` **2** errors; web
+      **332 files, 3574 passed / 5 skipped**, run separately and identical to the baseline). The 7 api
+      failures are byte-for-byte the pre-existing compatibility list and the 2 lint errors the two
+      oversized `all-models.json` files — both re-run against `main` itself in the WP 1.3 round and
+      confirmed to reproduce there. Every zero-line-diff path re-checked with an explicit
+      `git -C <worktree> diff main..HEAD`, including `ci-assertions.test.ts`, `index.ts`, all three
+      analyzer files, `packages/shared/src/{index,ci-assertions,schemas}.ts` and `roadmap/**`. The one
+      edit to an existing declaration in WP 1.1's contract — extracting `securityFindingCountsSchema`
+      out of `securityReportSchema`'s inline `counts` literal — was checked against `main` and is
+      **behaviour-identical** (the original literal was `.strict()` too).
+      **Four independent teeth checks**, each applied then reverted: dropping the analyzer-version
+      refusal from the shared differ turned the four-refusals test red; dating the diff from the
+      baseline instead of the later instant turned the dating test red; **emptying the gate's `added`
+      bucket turned SIX `ci-assertions` tests red**, which is the direct proof the CI gate genuinely
+      flows through the shared differ; and removing the service's cross-owner refusal turned both the
+      400-naming test and the "400s, not 500s" test red. `git status` clean afterwards.
+      **A process failure of the orchestrator's, not the implementer's — recorded because it changes
+      how this ledger should be read.** The WP spec was authored at kickoff but left **untracked in
+      the primary working tree**, so it was absent from the implementer's worktree (created from a
+      commit) and **the implementer never saw it**. It said so plainly rather than inventing one, and
+      derived the design from the README, the D-SP1–D-SP16 log, WP 1.1–1.3 as the house pattern, and
+      its brief. The orchestrator then compared the shipped design against the unseen draft, judged it
+      acceptable — **better in two places**: `counts` per bucket is a full severity tally rather than a
+      bare number, and the route shape reuses the report's own path instead of inventing a
+      `?subject=` discriminator — and **rewrote the spec to describe what shipped**, with a provenance
+      note at its top and the draft's unbuilt ideas recorded as follow-ups. The lesson: **commit a WP
+      spec before dispatching.**
+      **Three deviations, all declared:** (1) `apps/api/test/security-skill-analyzer.test.ts` is
+      +11/−5 because its route-surface assertion is deliberately **exhaustive** ("exactly TWO security
+      routes"); it was updated to list all four rather than weakened — the assertion working as
+      designed. (2) The `securityFindingCountsSchema` extraction above (−6 lines in the contract), so
+      the diff's three tallies and the report's one tally share a definition. (3) The gate's `carried`
+      still reads `subjectReport.counts.total - added.length` rather than `diff.unchanged.length`;
+      they are provably equal because the truncation guard above it makes `counts.total ===
+      findings.length`, and keeping the expression keeps the re-point's behavioural surface minimal.
+      **Three follow-ups deliberately not built** (none a defect; all additive, all in the spec's
+      closing section): an `evidenceChanged` flag so WP 2.1 can show that a vendor reworded a
+      description under an otherwise-unchanged finding; duplicate-identity pairing (the differ uses
+      `Set`s, so if one side ever carried two findings sharing `(ruleId, anchor)` the extra would not
+      appear as resolved — no rule emits duplicate identities today); and collapsing D-SP18's
+      belt-and-braces refusals to one message table (the *conditions* have one definition, the
+      *wording* exists twice, and both copies are tested).
+      **Not verified:** nothing was run against the running app or a browser — this WP adds no UI
+      (that is WP 2.1). The routes were exercised over a real in-process Fastify instance with the
+      real repositories and a real migrated SQLite database, not against `http://localhost:8081`. The
+      two endpoints have never been called against real third-party scan or skill data.
 
 ## Phase 2 — Surfacing
 - [ ] WP 2.1 — UI: Security tabs, list badges, diff view (both themes)
@@ -344,7 +408,59 @@ _Entries: date · decision · rationale._
   issue a clean bill of health it cannot stand behind. D-SP15 draws the read boundary explicitly so
   the gap is a documented bound rather than an unnoticed blind spot.
 
+- **2026-08-20 · D-SP17–D-SP20, locked from the shipped WP 1.4 implementation.** Full text + the
+  design they bind: [`wp-1.4-posture-diff.md`](./wp-1.4-posture-diff.md) (whose provenance note
+  explains that it documents what shipped rather than what was specified in advance — see the WP line
+  above). Implemented in `packages/shared/src/security-posture.ts` +
+  `apps/api/src/security/{service,routes}.ts` and pinned by
+  `apps/api/test/security-posture-diff.test.ts` + `packages/shared/src/security-posture.test.ts`.
+  - **D-SP17 — there is exactly ONE differ, it lives in the contract, and the CI gate re-projects
+    it.** `diffSecurityReports(baseline, subject)` does the set arithmetic once, in
+    `packages/shared`, where the web bundle, the API and the assertions engine can all reach it.
+    `no-new-security-findings` reads `.added` off it rather than re-deriving membership — the
+    assertions engine's own header already said that rule "analyses NOTHING… re-project, don't
+    reimplement" (D-MCP4/D-SP7), and this makes it literally true. Two implementations of "which
+    findings are new" is how a diff view and a CI gate end up disagreeing in front of an operator
+    with no way to tell which one is lying. **`apps/api/test/ci-assertions.test.ts` stayed
+    byte-identical and green**, and emptying the gate's `added` bucket turns six of its tests red —
+    the gate demonstrably runs through the shared differ.
+  - **D-SP18 — the differ refuses an incomparable pair ITSELF, and the service refuses again with an
+    HTTP message.** Deliberate belt-and-braces rather than an oversight: the shared throw means a
+    future caller — WP 2.1, an export, another gate — cannot skip the check by forgetting to call a
+    predicate, while the service's `httpError(400, …)` is the one an operator actually reads. A test
+    pins the difference by asserting the HTTP caller sees **400 and not 500**, which is exactly what
+    regresses if the service guard is removed and only the shared one remains. The cost is two sets of
+    wording for one set of conditions, recorded as a follow-up.
+  - **D-SP19 — four refusals, each a 400 naming itself.** (a) subject-kind mismatch — a server report
+    against a skill report shares no anchor vocabulary; (b) **different owner** — "added" and
+    "resolved" are only meaningful about ONE subject over time, and the cross-server question is
+    `GET /api/compare`'s and always was; (c) analyzer-version mismatch — findings from different
+    analyzer versions are not on the same scale (the existing D-C22 guard, now shared); (d) either
+    side truncated — a shortened list would answer "what changed among the ones we listed", which is
+    not a verdict, and would report findings as *resolved* purely because they fell off the other
+    side's list. Precedent throughout: D-C8's `deltasComparable === false` is a 400, never a
+    suppressed-to-zero pass.
+  - **D-SP20 — the diff is dated from its two reports, never from a clock.**
+    `packages/shared/src/security-posture.ts` has no clock and must not grow one, so `generatedAt` is
+    the **later** of the two reports' own instants — the diff is as fresh as its freshest side. That
+    is also what makes the determinism test meaningful: a fixed pair of reports diffs to a
+    byte-identical answer every time. `score.delta` is `subject − baseline`, so **positive is an
+    improvement**; the JSDoc says so, because half of readers will assume the opposite.
+
+  _Rationale:_ D-SP17 is the whole point of the WP — the diff exists so a gate and a human can be
+  told the same story, and that only holds if there is one differ. D-SP18/D-SP19 are the same
+  discipline D-SP10 and D-SP16 already applied to the reports themselves: refuse rather than answer
+  confidently wrong. D-SP20 keeps the contract pure and the answer reproducible, which is what every
+  downstream consumer — the UI, the export, the gate — is quietly relying on.
+
 ## Owner acceptance (owner-only)
+- [ ] **WP 1.4 — the diff on YOUR own history, and the four refusals.** Pick a server you have
+      scanned more than once and call
+      `GET /api/scans/:scanId/security/diff?baseline=<an older scan of the same server>`; do the same
+      for two versions of one skill. The question is whether `added` / `resolved` / `unchanged` match
+      what you believe actually changed, and whether the four refusals (different server, server-vs-
+      skill, analyzer-version mismatch, a truncated report) read as helpful rather than obstructive —
+      accepted: ____
 - [ ] **WP 1.3 — the false-positive rate on YOUR real skills, and the two narrowings.** Call
       `GET /api/skills/:id/versions/:vid/security` for the skills you have actually registered. Two
       judgement calls are yours to confirm: a **bare HTML comment in a SKILL.md does not fire**
