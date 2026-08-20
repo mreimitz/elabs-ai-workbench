@@ -31,7 +31,7 @@
       "cached_input_per_mtok_usd": 1,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/anthropic.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
       "detail": {
         "id": "claude-fable-5",
         "display_name": "Claude Fable 5",
@@ -469,7 +469,7 @@
       "cached_input_per_mtok_usd": 1,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/anthropic.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
       "detail": {
         "id": "claude-mythos-5",
         "display_name": "Claude Mythos 5",
@@ -907,7 +907,7 @@
       "cached_input_per_mtok_usd": 0.5,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/anthropic.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
       "detail": {
         "id": "claude-opus-5",
         "display_name": "Claude Opus 5",
@@ -1344,7 +1344,7 @@
       "cached_input_per_mtok_usd": 0.2,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/anthropic.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
       "detail": {
         "id": "claude-sonnet-5",
         "display_name": "Claude Sonnet 5",
@@ -1781,7 +1781,7 @@
       "cached_input_per_mtok_usd": 0.5,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/anthropic.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
       "detail": {
         "id": "claude-opus-4-8",
         "display_name": "Claude Opus 4.8",
@@ -2219,7 +2219,7 @@
       "cached_input_per_mtok_usd": 0.3,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/anthropic.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
       "detail": {
         "id": "claude-sonnet-4-6",
         "display_name": "Claude Sonnet 4.6",
@@ -2656,7 +2656,7 @@
       "cached_input_per_mtok_usd": 0.1,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/anthropic.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
       "detail": {
         "id": "claude-haiku-4-5",
         "display_name": "Claude Haiku 4.5",
@@ -3092,7 +3092,7 @@
       "cached_input_per_mtok_usd": 0.075,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/google-gemini.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/google-gemini.json",
       "detail": {
         "id": "gemini-3.7-flash",
         "display_name": "Gemini 3.7 Flash",
@@ -3523,7 +3523,7 @@
       "cached_input_per_mtok_usd": 0.075,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/google-gemini.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/google-gemini.json",
       "detail": {
         "id": "gemini-3.6-flash",
         "display_name": "Gemini 3.6 Flash",
@@ -3951,7 +3951,7 @@
       "cached_input_per_mtok_usd": 0.15,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/google-gemini.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/google-gemini.json",
       "detail": {
         "id": "gemini-3.5-flash",
         "display_name": "Gemini 3.5 Flash",
@@ -4381,7 +4381,7 @@
       "cached_input_per_mtok_usd": 0.03,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/google-gemini.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/google-gemini.json",
       "detail": {
         "id": "gemini-3.5-flash-lite",
         "display_name": "Gemini 3.5 Flash-Lite",
@@ -4809,7 +4809,7 @@
       "cached_input_per_mtok_usd": 0.025,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/google-gemini.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/google-gemini.json",
       "detail": {
         "id": "gemini-3.1-flash-lite",
         "display_name": "Gemini 3.1 Flash-Lite",
@@ -5236,7 +5236,7 @@
       "cached_input_per_mtok_usd": 0.125,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/google-gemini.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/google-gemini.json",
       "detail": {
         "id": "gemini-2.5-pro",
         "display_name": "Gemini 2.5 Pro",
@@ -5664,7 +5664,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "per_seat_monthly",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/microsoft-copilot.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/microsoft-copilot.json",
       "detail": {
         "id": "microsoft-365-copilot",
         "display_name": "Microsoft 365 Copilot",
@@ -6092,7 +6092,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "free_or_subscription",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/microsoft-copilot.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/microsoft-copilot.json",
       "detail": {
         "id": "microsoft-copilot-consumer",
         "display_name": "Microsoft Copilot (Consumer / copilot.microsoft.com)",
@@ -6508,7 +6508,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "ai_credits_per_token",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/microsoft-copilot.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/microsoft-copilot.json",
       "detail": {
         "id": "github-copilot",
         "display_name": "GitHub Copilot (model-picker surface; VS Code / IDE / CLI / Copilot app)",
@@ -6932,7 +6932,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "copilot_credits_usage_based",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/microsoft-copilot.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/microsoft-copilot.json",
       "detail": {
         "id": "microsoft-copilot-cowork",
         "display_name": "Microsoft Copilot Cowork",
@@ -7350,7 +7350,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "copilot_credits_usage_based",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/microsoft-copilot.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/microsoft-copilot.json",
       "detail": {
         "id": "microsoft-copilot-studio",
         "display_name": "Microsoft Copilot Studio (agent platform)",
@@ -7767,7 +7767,7 @@
       "cached_input_per_mtok_usd": 0.02,
       "billing_unit": "ai_credits_per_token",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/microsoft-copilot.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/microsoft-copilot.json",
       "detail": {
         "id": "mai-code-1-1-flash",
         "display_name": "MAI-Code-1.1-Flash",
@@ -8186,7 +8186,7 @@
       "cached_input_per_mtok_usd": 0.15,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/mistral.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/mistral.json",
       "detail": {
         "id": "mistral-medium-3-5",
         "display_name": "Mistral Medium 3.5",
@@ -8627,7 +8627,7 @@
       "cached_input_per_mtok_usd": 0.015,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/mistral.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/mistral.json",
       "detail": {
         "id": "mistral-small-2603",
         "display_name": "Mistral Small 4",
@@ -9068,7 +9068,7 @@
       "cached_input_per_mtok_usd": 0.05,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/saas/mistral.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/mistral.json",
       "detail": {
         "id": "mistral-large-2512",
         "display_name": "Mistral Large 3",
@@ -9509,7 +9509,7 @@
       "cached_input_per_mtok_usd": 0.5,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/openai.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/openai.json",
       "detail": {
         "id": "gpt-5.6-sol",
         "display_name": "GPT-5.6 Sol",
@@ -9954,7 +9954,7 @@
       "cached_input_per_mtok_usd": 0.2,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/openai.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/openai.json",
       "detail": {
         "id": "gpt-5.6-terra",
         "display_name": "GPT-5.6 Terra",
@@ -10399,7 +10399,7 @@
       "cached_input_per_mtok_usd": 0.02,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/openai.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/openai.json",
       "detail": {
         "id": "gpt-5.6-luna",
         "display_name": "GPT-5.6 Luna",
@@ -10844,7 +10844,7 @@
       "cached_input_per_mtok_usd": 0.5,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/openai.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/openai.json",
       "detail": {
         "id": "gpt-5.5",
         "display_name": "GPT-5.5",
@@ -11286,7 +11286,7 @@
       "cached_input_per_mtok_usd": 0.25,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/openai.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/openai.json",
       "detail": {
         "id": "gpt-5.4",
         "display_name": "GPT-5.4",
@@ -11727,7 +11727,7 @@
       "cached_input_per_mtok_usd": 0.075,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/openai.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/openai.json",
       "detail": {
         "id": "gpt-5.4-mini",
         "display_name": "GPT-5.4 mini",
@@ -12168,7 +12168,7 @@
       "cached_input_per_mtok_usd": 0.5,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/xai-grok.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/xai-grok.json",
       "detail": {
         "id": "grok-4.6",
         "display_name": "Grok 4.6",
@@ -12595,7 +12595,7 @@
       "cached_input_per_mtok_usd": 0.3,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/xai-grok.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/xai-grok.json",
       "detail": {
         "id": "grok-4.5",
         "display_name": "Grok 4.5",
@@ -13021,7 +13021,7 @@
       "cached_input_per_mtok_usd": 0.2,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/xai-grok.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/xai-grok.json",
       "detail": {
         "id": "grok-4.3",
         "display_name": "Grok 4.3",
@@ -13448,7 +13448,7 @@
       "cached_input_per_mtok_usd": 0.2,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/xai-grok.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/xai-grok.json",
       "detail": {
         "id": "grok-4.20-multi-agent-0309",
         "display_name": "Grok 4.20 Multi-Agent",
@@ -13871,7 +13871,7 @@
       "cached_input_per_mtok_usd": 0.2,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/saas/xai-grok.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/xai-grok.json",
       "detail": {
         "id": "grok-build-0.1",
         "display_name": "Grok Build 0.1",
@@ -14298,7 +14298,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "tokens (hosted API) or compute (self-host)",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/alibaba-qwen.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/alibaba-qwen.json",
       "detail": {
         "id": "Qwen/Qwen3.8-2.4T-A95B",
         "display_name": "Qwen3.8-2.4T-A95B (Qwen3.8-Max, open weights)",
@@ -14773,7 +14773,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "tokens (hosted API) or compute (self-host)",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/alibaba-qwen.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/alibaba-qwen.json",
       "detail": {
         "id": "Qwen/Qwen3.8-27B",
         "display_name": "Qwen3.8-27B",
@@ -15249,7 +15249,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "tokens (hosted API) or compute (self-host)",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/alibaba-qwen.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/alibaba-qwen.json",
       "detail": {
         "id": "Qwen/Qwen3.6-27B",
         "display_name": "Qwen3.6-27B",
@@ -15728,7 +15728,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "tokens (hosted API) or compute (self-host)",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/alibaba-qwen.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/alibaba-qwen.json",
       "detail": {
         "id": "Qwen/Qwen3.6-35B-A3B",
         "display_name": "Qwen3.6-35B-A3B",
@@ -16204,7 +16204,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "tokens (hosted API) or compute (self-host)",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/alibaba-qwen.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/alibaba-qwen.json",
       "detail": {
         "id": "Qwen/Qwen3.5-35B-A3B",
         "display_name": "Qwen3.5-35B-A3B",
@@ -16681,7 +16681,7 @@
       "cached_input_per_mtok_usd": 0.044,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/deepseek.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/deepseek.json",
       "detail": {
         "id": "deepseek-ai/DeepSeek-V4-Pro-0813",
         "display_name": "DeepSeek-V4-Pro-0813",
@@ -17154,7 +17154,7 @@
       "cached_input_per_mtok_usd": 0.014,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/deepseek.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/deepseek.json",
       "detail": {
         "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
         "display_name": "DeepSeek-V4-Flash-0731",
@@ -17627,7 +17627,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/deepseek.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/deepseek.json",
       "detail": {
         "id": "deepseek-ai/DeepSeek-V4-Pro",
         "display_name": "DeepSeek-V4-Pro",
@@ -18098,7 +18098,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/deepseek.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/deepseek.json",
       "detail": {
         "id": "deepseek-ai/DeepSeek-V4-Flash",
         "display_name": "DeepSeek-V4-Flash",
@@ -18567,7 +18567,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": true,
-      "source_file": "research/token-context-comparison/data/open-weight/deepseek.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/deepseek.json",
       "detail": {
         "id": "deepseek-ai/DeepSeek-V3.2",
         "display_name": "DeepSeek-V3.2",
@@ -19030,7 +19030,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/google-gemma.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/google-gemma.json",
       "detail": {
         "id": "google/gemma-4-31B-it",
         "display_name": "Gemma 4 31B Instruct",
@@ -19502,7 +19502,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/google-gemma.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/google-gemma.json",
       "detail": {
         "id": "google/gemma-4-12B-it",
         "display_name": "Gemma 4 12B Unified Instruct",
@@ -19968,7 +19968,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/google-gemma.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/google-gemma.json",
       "detail": {
         "id": "google/gemma-4-E4B-it",
         "display_name": "Gemma 4 E4B Instruct",
@@ -20438,7 +20438,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/meta-llama.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/meta-llama.json",
       "detail": {
         "id": "meta-llama/Llama-4-Scout-17B-16E-Instruct",
         "display_name": "Llama 4 Scout (17B×16E)",
@@ -20904,7 +20904,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/meta-llama.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/meta-llama.json",
       "detail": {
         "id": "meta-llama/Llama-4-Maverick-17B-128E-Instruct",
         "display_name": "Llama 4 Maverick (17B×128E)",
@@ -21367,7 +21367,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/meta-llama.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/meta-llama.json",
       "detail": {
         "id": "meta-llama/Llama-4-Behemoth-288B-16E",
         "display_name": "Llama 4 Behemoth (288B×16E)",
@@ -21799,7 +21799,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/meta-llama.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/meta-llama.json",
       "detail": {
         "id": "meta-models/Muse-Glimmer-30B",
         "display_name": "Muse Glimmer 30B",
@@ -22263,7 +22263,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "tokens",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/meta-llama.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/meta-llama.json",
       "detail": {
         "id": "muse-spark-1.2",
         "display_name": "Muse Spark 1.2 (Meta Model API)",
@@ -22724,7 +22724,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/microsoft-phi.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/microsoft-phi.json",
       "detail": {
         "id": "microsoft/phi-4",
         "display_name": "Phi-4",
@@ -23194,7 +23194,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/microsoft-phi.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/microsoft-phi.json",
       "detail": {
         "id": "microsoft/Phi-4-mini-instruct",
         "display_name": "Phi-4-mini-instruct",
@@ -23664,7 +23664,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/microsoft-phi.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/microsoft-phi.json",
       "detail": {
         "id": "microsoft/Phi-4-multimodal-instruct",
         "display_name": "Phi-4-multimodal-instruct",
@@ -24135,7 +24135,7 @@
       "cached_input_per_mtok_usd": null,
       "billing_unit": "compute",
       "reasoning_billed_as_output": null,
-      "source_file": "research/token-context-comparison/data/open-weight/microsoft-phi.json",
+      "source_file": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/microsoft-phi.json",
       "detail": {
         "id": "microsoft/Phi-4-reasoning-vision-15B",
         "display_name": "Phi-4-reasoning-vision-15B",

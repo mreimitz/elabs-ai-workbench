@@ -62,7 +62,7 @@ export type FleetSuitePort = {
 /**
  * A security-posture roll-up provider.
  *
- * `roadmap/security-posture/` — the analyzer that would implement this — is NOT built (every WP in
+ * `planning/Roadmap/RM-20-security-posture/` — the analyzer that would implement this — is NOT built (every WP in
  * its ledger is open), so nothing supplies one today and the posture section renders its honest gap.
  * The seam exists so that plan can feed the report without reopening this file, and so the populated
  * rendering is exercisable by a test rather than being unreachable prose.
@@ -380,7 +380,7 @@ function buildSuitesSection(deps: FleetReportDeps): FleetSuitesSection {
 // ── Posture ─────────────────────────────────────────────────────────────────────────────────────
 
 /**
- * The posture roll-up "when available" — and it is not available yet. `roadmap/security-posture/` is
+ * The posture roll-up "when available" — and it is not available yet. `planning/Roadmap/RM-20-security-posture/` is
  * planned but unstarted (its ledger has no ticked WP and no `SECURITY_ANALYZER_VERSION` exists), so
  * with no provider wired the section says exactly that, by name. It does NOT fall back to some other
  * measurement dressed up as a posture score: reusing, say, compatibility findings would put a number
@@ -391,7 +391,7 @@ function buildPostureSection(deps: FleetReportDeps): FleetPostureSection {
   if (!summary) {
     return {
       summary: null,
-      gap: "No security-posture analyzer has produced a summary — the posture analyzer (roadmap/security-posture/) is not built yet, so this section is unmeasured rather than clean.",
+      gap: "No security-posture analyzer has produced a summary — the posture analyzer (planning/Roadmap/RM-20-security-posture/) is not built yet, so this section is unmeasured rather than clean.",
     };
   }
   if (summary.findingCounts.length === 0 && summary.subjects.length === 0) {

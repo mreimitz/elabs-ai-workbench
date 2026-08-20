@@ -16,6 +16,10 @@
     "test": "pnpm -r --if-present test",
     "lint": "biome check --formatter-enabled=false .",
     "mcpfp": "pnpm --filter @mcp-token-footprint/cli run mcpfp --",
+    "okf": "python3 planning/.claude/scripts/okf.py --root planning",
+    "okf:validate": "python3 planning/.claude/scripts/okf.py --root planning validate",
+    "okf:sync": "python3 planning/.claude/scripts/okf.py --root planning sync-indexes",
+    "okf:test": "python3 -m unittest discover -s planning/.claude/tests -p 'test_*.py'",
     "format": "biome format --write .",
     "test:e2e": "pnpm build && playwright test"
   },

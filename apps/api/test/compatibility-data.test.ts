@@ -17,7 +17,7 @@ import { estimateCost, MODEL_PRICING } from "../src/providers/pricing.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../..");
-const researchDir = path.join(repoRoot, "research/token-context-comparison");
+const researchDir = path.join(repoRoot, "planning/Research/RS-01-token-context-comparison/outputs");
 const read = (p: string) => readFileSync(p, "utf8");
 
 // --- Drift: the committed bundled assets must equal a fresh build from the research SoT ----------

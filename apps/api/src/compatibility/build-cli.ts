@@ -1,5 +1,6 @@
 // CLI: regenerate the bundled model-comparison assets + the derived shared slice from the
-// research source-of-truth (`research/token-context-comparison/data/**`). Run after editing any
+// research source-of-truth (`planning/Research/RS-01-token-context-comparison/outputs/data/**`).
+// Run after editing any
 // provider data file:
 //
 //     pnpm build:model-data
@@ -20,7 +21,7 @@ import { buildAllModels, renderSharedGenerated, serializeAllModels } from "./bui
 const here = path.dirname(fileURLToPath(import.meta.url));
 // src/compatibility → src → api → apps → <repo root>
 const repoRoot = path.resolve(here, "../../../..");
-const researchDir = path.join(repoRoot, "research/token-context-comparison");
+const researchDir = path.join(repoRoot, "planning/Research/RS-01-token-context-comparison/outputs");
 const dataDir = path.join(researchDir, "data");
 const appDataDir = path.join(repoRoot, "apps/api/src/compatibility/data");
 const sharedGenerated = path.join(repoRoot, "packages/shared/src/model-data.generated.ts");

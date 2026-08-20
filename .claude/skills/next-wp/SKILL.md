@@ -21,11 +21,18 @@ You are the **orchestrator**. Sub-agents implement; you select, validate, integr
 - **maxAgents** — parallel sub-agents, default **4**, hard cap **4**.
 
 ## Project defaults (this repo)
-- Plans live under `roadmap/PLAN/` (e.g. `roadmap/testing/`). The master index is that folder's
-  `README.md`; shared implementation rules are its `conventions.md`; the ledger is its `STATUS.md`.
+- Plans are **roadmap items in the planning bundle**: `planning/Roadmap/RM-NN-<slug>/` (e.g.
+  `planning/Roadmap/RM-26-testing/`). A plan argument may be the **tag** (`RM-26`) or the **slug**
+  (`testing`) — resolve it against `planning/Roadmap/RM-*/` first, then `planning/Roadmap/completed/RM-*/`
+  (a completed item is finished: report that and stop rather than reopening it). The master index is that
+  folder's `item.md` (**not** a `README.md` — those are banned inside `planning/`); shared implementation
+  rules are its `conventions.md`; the ledger is its `STATUS.md`.
+- Every file in a plan folder is a typed OKF concept with frontmatter. When you edit `STATUS.md` or a WP
+  spec, **update its `timestamp` in the same write** — the `okf-pre` hook rejects a meaningful edit that
+  does not. Never add a `README.md`, never hand-move a folder, never set an item's status to `done`.
 - Quality gate (definition of done): `pnpm typecheck && pnpm test && pnpm build && pnpm lint` — see
-  `.claude/rules/quality-gates.md`. Linting is **Biome** (`pnpm lint`); the root
-  `.github/workflows/ci.yml` runs the same set.
+  `.claude/rules/quality-gates.md`. Linting is **Biome** (`pnpm lint`); the gate is run **locally**
+  (this repo has no `ci.yml`). `pnpm okf:validate` must also stay green after any bundle edit.
 - Obey the repo rules: contract-first (shared types/zod first), the API runtime/secret boundary,
   `brand-ui` only + semantic tokens + the **two themes** (`light`, `dark`), kebab/PascalCase naming.
 
@@ -35,8 +42,8 @@ defines the ledger format and how to parse and update it. Read them if the plan'
 ## Workflow
 
 ### 0. Preconditions
-Resolve the plan folder. If it doesn't exist, stop and list candidate plans (folders with a `README.md`
-+ WP specs). Check `git status`; commit/stash stray changes or warn before creating worktrees. Find the
+Resolve the plan folder. If it doesn't exist, stop and list candidate plans (`planning/Roadmap/RM-*/`
+folders with an `item.md` + WP specs). Check `git status`; commit/stash stray changes or warn before creating worktrees. Find the
 git root with `git rev-parse --show-toplevel`.
 
 ### 1. Load the ledger
@@ -47,7 +54,7 @@ dependencies, seed every WP open, using `assets/STATUS.template.md` as the shape
 ### 2. Select the batch (dependency-aware, parallel-safe)
 Take WPs that are **open** AND whose **dependencies are all done**. Among those pick up to `maxAgents`,
 honoring:
-- the **recommended build order** in the plan's `README.md` (e.g. a vertical slice first);
+- the **recommended build order** in the plan's `item.md` (e.g. a vertical slice first);
 - **minimal file overlap** — read each candidate's **Files** section; never run two WPs that modify the
   same file in parallel. A WP touching many shared files runs **solo**;
 - **owner-gated** WPs (needs a credential, a vendored artifact, an approval): if the gate isn't met,
@@ -84,9 +91,33 @@ When an agent reports back, **validate — don't take "done" on faith**:
   Keep the ledger at `status: in review`. Re-validate until it passes or is genuinely blocked.
 - **Integrate validated branches one at a time.** If two conflict, merge one, then have the other rebase.
 
-### 6. Close out
-Update `STATUS.md` and the task list. Summarize: WPs **ticked off** (with branch/commit), WPs still **in
-refine**, WPs **blocked** (unmet deps, conflicts, or owner actions — name them). Offer to run the next batch.
+### 6. Close out — the front page follows the work
+Update `STATUS.md` and the task list. Then, **in the same commit as the tick**:
+
+- Update the capability table in `README.md` — move what this WP made real out of "planned" and into
+  what the app does today, and correct anything the WP made false.
+- Add a `CHANGELOG.md` entry.
+- **Verify each claim by running it** — the running app or a passing test — never from the WP
+  description. A ledger box does not tick while the front page still describes software that does not
+  match.
+
+Summarize: WPs **ticked off** (with branch/commit), WPs still **in refine**, WPs **blocked** (unmet deps,
+conflicts, or owner actions — name them). Offer to run the next batch.
+
+### 7. When the last box ticks — the plan is not finished
+A ledger with no open boxes means the code is done, not that the item is. Complete the lifecycle
+(`CLAUDE.md` §11):
+
+1. Make sure every `planning/user-guide/DC-NN-*/` subject the delivery touched exists — create it with
+   `/new-docu` if it does not. Subjects are **parts of the system**, not roadmap items.
+2. Retire the item in one transaction:
+   `python3 planning/.claude/scripts/okf.py --root planning complete-roadmap --tag RM-NN --docu DC-NN
+   --shipped "…" --deviation "…" --gap "…" --code-path "…" --docu-status current`.
+   Write `--shipped`, `--deviation` and `--gap` from the ledger's own evidence — what shipped, how it
+   differed from the plan, and what was deliberately left out or left unverified. The command refuses
+   while any box is open; that refusal is correct — never reach for `--no-ledger`.
+3. Apply the stale-reference report it prints, then confirm with
+   `… check-references --tag RM-NN`.
 
 ## Guardrails
 - **Never tick off** a WP unless the gate is green **and** every Acceptance item is met. Report honestly:

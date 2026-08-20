@@ -173,7 +173,7 @@ definitions exceed their budget (currently **24 tools · 2,749 tokens** against 
 [Drive it without a browser](#drive-it-without-a-browser) below.**
 
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
-> See the [user guide](user-guide/README.md) for the full picture.
+> See the [user guide](planning/user-guide/DC-01-getting-started/00-guide-map.md) for the full picture.
 
 ### Two themes
 
@@ -192,9 +192,9 @@ all give the same numbers. Pick by who is asking.
 
 | You want… | Use | Guide |
 | --- | --- | --- |
-| an **AI agent** to read and operate the bench | the **MCP mount** at `/api/mcp` | [Workbench agent playbook](user-guide/20-workbench-mcp-server.md) |
-| to script it from a **terminal** | the **`mcpfp` CLI** | [The mcpfp CLI](user-guide/22-mcpfp-cli.md) |
-| a **pull request** to fail on a regression | a **gate file** + the CLI | [Gating a pull request](user-guide/23-ci-github-actions.md) |
+| an **AI agent** to read and operate the bench | the **MCP mount** at `/api/mcp` | [Workbench agent playbook](planning/user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md) |
+| to script it from a **terminal** | the **`mcpfp` CLI** | [The mcpfp CLI](planning/user-guide/DC-18-mcpfp-cli/22-mcpfp-cli.md) |
+| a **pull request** to fail on a regression | a **gate file** + the CLI | [Gating a pull request](planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md) |
 
 ### An agent can read — and, if you let it, act
 
@@ -398,7 +398,7 @@ packages/
   there is no `ci.yml`. The repo's only workflow is `.github/workflows/mcp-self-scan.yml`, which
   asserts the workbench MCP server's own definition-token budget. Copyable CI gates for *your*
   repository live in [`examples/github-actions/`](./examples/github-actions/) — see
-  [`user-guide/23-ci-github-actions.md`](./user-guide/23-ci-github-actions.md).
+  [`planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md`](./planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md).
 
 ## Data & security
 
@@ -423,12 +423,21 @@ This project evolves quickly. The authoritative, per-capability picture of **wha
 planned** lives in:
 
 - **[`CLAUDE.md`](CLAUDE.md)** — the capability table and working rules (start here).
-- **[`roadmap/*/STATUS.md`](roadmap/)** — the in-flight ledgers, authoritative for per-work-package
-  status.
+- **[`planning/Roadmap/roadmap.md`](planning/Roadmap/roadmap.md)** — the generated master roadmap:
+  every initiative with its status, every research topic, every documentation subject.
+- **[`planning/Roadmap/RM-*/STATUS.md`](planning/Roadmap/)** — the in-flight ledgers, authoritative
+  for per-work-package status. Finished initiatives move to
+  [`planning/Roadmap/completed/`](planning/Roadmap/completed/), where each one's delivery is
+  recorded as an increment in the documentation subject it shipped into.
 - **[`CHANGELOG.md`](CHANGELOG.md)** — notable changes over time.
-- **[`user-guide/`](user-guide/README.md)** — a task-oriented guide written for people who *use* the
+- **[`planning/user-guide/`](planning/user-guide/DC-01-getting-started/00-guide-map.md)** — a task-oriented guide written for people who *use* the
   app (key concepts, connecting servers, testing, comparing runs, the Assistant, and
-  more).
+  more), organized one subject per part of the system.
+
+All research, planning and guide documents live in one Open Knowledge Format bundle at
+[`planning/`](planning/). Work is planned as a tagged roadmap item, built against that item's
+ledger, recorded in a documentation subject, and then retired — the rule is §11 of
+[`CLAUDE.md`](CLAUDE.md).
 
 ## The design system
 
