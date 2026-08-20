@@ -10,8 +10,8 @@ argument-hint: "[the part of the system this documents]"
 
 Create a new documentation subject.
 
-`Docu/` is organized by **subject** — one folder per part of the system (the connector SDK, the
-Qlik write connector, the sync engine), not one per roadmap item. A single roadmap item usually
+`user-guide/` is organized by **subject** — one folder per part of the system (the scanner, the
+testing console, the skills registry, the CLI), not one per roadmap item. A single roadmap item usually
 delivers into several subjects, and a subject accumulates increments over many roadmap items.
 
 Before creating one, check whether an existing subject already covers the area:

@@ -1,7 +1,7 @@
 ---
 type: "Agent Command"
 title: "Complete Roadmap Item"
-description: "Retire a finished roadmap item: record what shipped in Docu and move the item to Roadmap/completed/."
+description: "Retire a finished roadmap item: record what shipped in user-guide and move the item to Roadmap/completed/."
 tags: ["agent", "command", "roadmap", "documentation", "lifecycle", "okf"]
 timestamp: "2026-08-20T00:00:00Z"
 status: "active"
@@ -20,7 +20,8 @@ check is itself a violation.
 The command refuses unless all of the following hold:
 
 - the bundle validates clean;
-- every task on the item's board in `tools/agent-plan/tasks.json` has status `done`;
+- every work-package box in the item's own `STATUS.md` ledger is ticked (`--ledger` names an
+  extra ledger; `--no-ledger` waives the gate and exists ONLY for an item that never had one);
 - at least one existing `DC-NN` documentation subject is named, none of them superseded or
   archived, and none already recording this item.
 
@@ -51,7 +52,7 @@ validates. Any failure rolls the whole thing back.
 ## Afterwards
 
 The command prints every reference outside the OKF bundle that still points at the old path —
-the repository-root guides and the `inputs` entries in `tools/agent-plan/tasks.json`. It never
+the repository-root guides and rules that still name the old path. It never
 edits outside its own root. Apply those edits yourself, then confirm:
 
 ```text

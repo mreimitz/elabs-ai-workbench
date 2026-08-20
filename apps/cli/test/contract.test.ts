@@ -11,7 +11,7 @@ import {
 } from "@mcp-token-footprint/shared";
 
 // The invariants that make this package a CLIENT rather than a second copy of the app
-// (roadmap/ci/ WP 1.2 — A2, A3, A4, A11). These are structural assertions over the manifest and the
+// (planning/Roadmap/RM-08-ci/ WP 1.2 — A2, A3, A4, A11). These are structural assertions over the manifest and the
 // source tree, deliberately not over behaviour: the failure they exist to catch is somebody reaching
 // for `@modelcontextprotocol/sdk` or `commander` in six months because it was momentarily convenient.
 
@@ -45,7 +45,7 @@ test("A2 — the CLI's only runtime dependency is @mcp-token-footprint/shared", 
   for (const name of forbidden) {
     assert.ok(
       !declared.includes(name),
-      `${name} must not be a dependency of apps/cli — the CLI is a client (roadmap/ci/README.md).`,
+      `${name} must not be a dependency of apps/cli — the CLI is a client (planning/Roadmap/RM-08-ci/item.md).`,
     );
   }
 });
@@ -125,13 +125,16 @@ test("A4 — the config-file schema is strict, so a typo'd key is an error", () 
   assert.ok(!mcpfpConfigFileSchema.safeParse({ timeoutMs: -1 }).success);
 });
 
-test("A11 — MCPFP_EXIT matches the exit-code invariant in roadmap/ci/README.md", () => {
+test("A11 — MCPFP_EXIT matches the exit-code invariant in the RM-08 roadmap item", () => {
   assert.deepEqual(MCPFP_EXIT, { success: 0, assertionFailure: 1, error: 2 });
 
-  const readme = fs.readFileSync(path.join(REPO_ROOT, "roadmap", "ci", "README.md"), "utf8");
-  assert.match(readme, /0 pass/);
-  assert.match(readme, /1 assertion failure/);
-  assert.match(readme, /2 execution\/config error/);
+  const plan = fs.readFileSync(
+    path.join(REPO_ROOT, "planning", "Roadmap", "RM-08-ci", "item.md"),
+    "utf8",
+  );
+  assert.match(plan, /0 pass/);
+  assert.match(plan, /1 assertion failure/);
+  assert.match(plan, /2 execution\/config error/);
 });
 
 /**

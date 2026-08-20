@@ -1,5 +1,5 @@
 // User-guide screenshot capture against the running app (http://localhost:8080).
-// Writes fresh PNGs into user-guide/images/ using the guide's existing filenames (so all
+// Writes fresh PNGs into planning/user-guide/DC-23-product-overview/images/ using the guide's existing filenames (so all
 // ![](./images/xx.png) references immediately show current UI) plus a few new ones for the
 // sections added in the 2026-07 update pass. Not part of the build.
 //
@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const outDir = path.join(rootDir, "user-guide", "images");
+const outDir = path.join(rootDir, "planning", "user-guide", "DC-23-product-overview", "images");
 const BASE = process.env.BASE_URL ?? "http://localhost:8080";
 
 // Live entity ids (probed via /api on this instance).

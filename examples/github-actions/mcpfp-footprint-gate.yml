@@ -1,6 +1,6 @@
 # TOPOLOGY A — an EXAMPLE workflow. Copy it into your own repository's `.github/workflows/`.
 #
-# This repository does not run it (roadmap/ci/ D-C17): it would need a workbench and a registered
+# This repository does not run it (planning/Roadmap/RM-08-ci/ D-C17): it would need a workbench and a registered
 # MCP server that this repo's CI does not have, so it would be permanently red or permanently
 # skipped — and a skipped gate in the repo that publishes gates is worse than no gate. The only
 # workflow here is `mcp-self-scan.yml`. This file is validated as TEXT by
@@ -33,7 +33,7 @@
 #   Both 1 and 2 fail the job. The scan and the assert are two separate steps, so the job log always
 #   says WHICH of them produced the code (D-C9).
 #
-# Full walkthrough: user-guide/23-ci-github-actions.md
+# Full walkthrough: planning/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md
 name: MCP footprint gate (ephemeral workbench)
 
 on:
