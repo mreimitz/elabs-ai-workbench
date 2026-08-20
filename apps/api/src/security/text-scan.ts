@@ -17,8 +17,9 @@
 // the proof the extraction preserved behaviour, which is why it was not allowed to be touched.
 //
 // This module is PURE, to the same standard `analyzer.ts` is held to (D-SP7): no database handle, no
-// clock, no network, no filesystem, no module-level mutable state. A test reads this source and fails
-// on `better-sqlite3`, `node:fs`, `fastify`, `new Date(` or `Date.now(`.
+// clock, no network, no filesystem, no module-level mutable state. A test reads this source verbatim
+// and fails on the same five forbidden tokens it checks `analyzer.ts` for — which is why they are not
+// spelled out in this comment: the check reads the RAW file, so naming them here would fail it.
 
 // ── Shared text helpers ─────────────────────────────────────────────────────────────────────────
 
