@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Security posture \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the security-posture plan, read and updated by /next-wp security-posture."
 tags: ["roadmap", "RM-20"]
-timestamp: "2026-08-20T17:10:00Z"
+timestamp: "2026-08-20T19:30:00Z"
 status: "active"
 ---
 # Security posture — work-package status ledger · **PRIORITY: HIGH**
@@ -249,11 +249,85 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       two endpoints have never been called against real third-party scan or skill data.
 
 ## Phase 2 — Surfacing
-- [ ] WP 2.1 — UI: Security tabs, list badges, diff view (both themes) — depends: 1.4 —
-      **status: in progress** (`wp/security-posture/2.1`, runs SOLO — it owns `apps/api/src/index.ts`
-      this round) · spec: [`wp-2.1-security-ui.md`](./wp-2.1-security-ui.md)
-- [ ] WP 2.2 — report export integration — depends: 1.4 — status: open (queued behind WP 2.1:
-      both need `apps/api/src/index.ts`) · spec: [`wp-2.2-report-export.md`](./wp-2.2-report-export.md)
+- [x] WP 2.1 — UI: Security tabs, list badges, diff view (both themes) — done 2026-08-20 ·
+      `wp/security-posture/2.1` · spec: [`wp-2.1-security-ui.md`](./wp-2.1-security-ui.md).
+      **The analyzer is on the page.** A Security tab on the scan detail and in the skill inspector
+      (findings worst-first in the report's own order, redacted evidence, score + band +
+      per-severity tiles), a posture badge per server in the servers rail, and a baseline-picker diff
+      inside each tab. Decisions **D-SP21–D-SP23** in the log below. 22 files; **no migration, no
+      dependency, no environment variable, no feature flag — and `apps/api/src/index.ts` is a
+      zero-line diff**, better than the spec anticipated: `GET /api/security/summary`'s port is
+      optional and the real `ScanRepository` already satisfies it structurally.
+      **The gate is FULLY GREEN for the first time in this workstream** — `typecheck` 0 · shared
+      **182/182** · cli **87/87** · api **3547/3547, zero failures** · web **337 files, 3611 passed /
+      5 skipped** · `build` 0 · `lint` **0 errors** · `pnpm okf:validate` PASS. The 7 compatibility
+      failures and the 2 oversized-`all-models.json` lint errors that every previous line in this
+      ledger reports as pre-existing were fixed on `main` (`6c3225d`, `88acce2`) while this WP was
+      building; the orchestrator merged `main` into the branch and re-ran the whole gate on the
+      merged result, which is the number above.
+      **Verified by the orchestrator, not taken on report:** the 22-file diff against the true merge
+      base (`b796bb7` — `main` moved twice mid-flight, so `main..HEAD` was misleading and was not
+      used); every zero-line-diff path, including `apps/api/src/index.ts`, `apps/web/src/App.tsx`,
+      `packages/shared/src/assistant-route-manifest.ts`, `apps/api/src/reports/**` and `planning/**`;
+      that **no `<Route>` was added** (D-SP21) and both `assistant-route-operability` test files are
+      untouched and green; that no raw interactive HTML, no colour literal and no
+      `dangerouslySetInnerHTML` appears in the new feature folder; and that counts are read off
+      `counts`, never off `findings.length`.
+      **Five teeth checks, one of which failed and was sent back.** Four bit: fabricating a clean
+      score for a never-scanned server turned A6's omission test red; making `anchorLabel` return
+      "This server" for a skill anchor turned both A2 tests red; dropping
+      `|| diffState.status === "error"` from `showReportFindings` turned all four A5 refusal tests
+      red. The fifth did **not**: swapping the scan tab's badge from `counts.total` to
+      `findings.length` left all 43 tests green — the code was right, the guard was missing. The
+      agent was sent back for exactly that gap and added a truncated-report fixture
+      (`findings.length === 200`, `counts.total === 240`, `truncated: true`) in **both** hosts;
+      re-running the same teeth check afterwards turns both new tests red. It also caught its own
+      flake in the process: the first version asserted synchronously and lost about one run in three,
+      so it moved to `await findByText` and proved six consecutive green runs.
+      **Ten deviations, all declared by the agent.** The load-bearing three: the report fetch lives at
+      the **page** level, not inside the panel, because Radix unmounts inactive tab content and the
+      strip must badge a count before the tab is ever opened (the `useRatingIssues` precedent
+      `SkillInspector` already uses); `SecurityPanel` owns the diff load too, because A5 requires it
+      to keep rendering the current report **when the diff is refused**, which it can only decide if
+      it can see the diff's state — the agent's first cut had the diff self-fetch and four A5 tests
+      went red, which is how it found this; and the **tab itself** became `?tab=` URL state in both
+      hosts, since a shared `?baseline=` link that reloaded onto the Tools tab would defeat A4. The
+      rest: two exhaustive route-surface assertions updated FOUR→FIVE rather than weakened; a
+      never-settling stub added to `ServerRail.test.tsx`; a deferred-only import cycle between
+      `SecurityDiffPanel` and `SecurityPanel` (one findings table rather than a fifth module to break
+      an arrow that never fires — **flagged for review**); the summary endpoint returning a bare array
+      with an optional port; "nothing changed" firing on `added` + `resolved` being empty rather than
+      all three buckets; sorting disabled on the findings tables so no operator click can replace the
+      analyzer's severity order with an alphabetical one; and two self-review fixes in its last
+      commit. One the agent did not declare, cosmetic and behaviour-identical: Biome reflowed WP
+      1.1's `skill` zod variant across three lines.
+      **A process failure that RECURRED, in a new form.** The WP spec was committed to `main`
+      (`55f308b`) **before** dispatch this time — the WP 1.4 lesson — but the agent's worktree was
+      still cut from `b796bb7`, one commit earlier, so the spec was again absent from its checkout.
+      It said so and read the file from the primary checkout by absolute path. Committing first is
+      necessary and **not sufficient**: brief the agent with the spec's absolute path as well.
+      **Verified in the running app by the IMPLEMENTER, not by the orchestrator** (stated plainly
+      because the distinction matters for an owner-acceptance item): it built and served the real
+      API + SPA on a scratch `DATA_DIR` — the owner's `data/app.sqlite` was never touched — seeded a
+      deliberately unhealthy stdio MCP fixture scanned twice, a clean variant, the workbench's own
+      `/api/mcp` mount, a never-scanned server and a two-version skill, then walked both themes with
+      screenshots: the rail badges, the findings tab, the clean empty state, both diffs, the
+      "nothing changed" state, the evidence and rationale popovers, the refused-diff Alert (replayed
+      from a real 400 body — a refusal is unreachable through the picker by design), and a keyboard
+      walk whose focus ring it probed against pre-existing controls as a control group. It measured
+      rendered WCAG contrast on 13 elements per theme, worst **4.59:1**, all AA.
+      `pnpm exec brand-ui audit apps/web/src/features/security/` → **0 style issues, 0 blocking, 0
+      advisory**. **The orchestrator did not look at the app.**
+      **Could not be exercised live:** a `truncated` report (needs >200 findings from one subject —
+      test-only), a refusal produced by clicking (unreachable by design), and the analyzer-version
+      refusal (unreachable while one build analyses both sides).
+      **One observation, not a defect:** the workbench's own `/api/mcp` mount scores **49 / high
+      risk** against its own analyzer — 51 `info` findings, all undescribed parameters and
+      unconstrained object schemas. That is the analyzer telling the truth about the bench's own tool
+      surface, and it is an owner decision, not a bug in this WP.
+- [ ] WP 2.2 — report export integration — depends: 1.4 — status: open (unblocked — WP 2.1 merged
+      without touching `apps/api/src/index.ts`, so the file it was queued behind is free) ·
+      spec: [`wp-2.2-report-export.md`](./wp-2.2-report-export.md)
 
 ## Decision log
 _Entries: date · decision · rationale._
@@ -464,7 +538,52 @@ _Entries: date · decision · rationale._
   confidently wrong. D-SP20 keeps the contract pure and the answer reproducible, which is what every
   downstream consumer — the UI, the export, the gate — is quietly relying on.
 
+- **2026-08-20 · D-SP21–D-SP23 locked at the WP 2.1 kickoff.** Full text + the design they bind:
+  [`wp-2.1-security-ui.md`](./wp-2.1-security-ui.md). Implemented in
+  `apps/web/src/features/security/*` + `apps/api/src/security/{service,routes}.ts` and pinned by
+  `apps/web/src/features/security/*.test.tsx`, `apps/web/src/features/scans/ScansView.test.tsx` and
+  `apps/api/test/security-fleet-summary.test.ts`.
+  - **D-SP21 — the Security tab is a TAB, not a route, and the diff is URL state inside it.** Both
+    tabs live inside routes that already exist, and the baseline is a query parameter
+    (`?tab=security&baseline=<id>`). Two reasons, both load-bearing. It satisfies
+    `.claude/rules/routes-vs-dialogs.md` — the state is genuinely deep-linkable — without inventing a
+    place that renders nothing with zero query params. And **no `<Route>` is added**, so
+    `.claude/rules/assistant-operability.md`'s `ASSISTANT_ROUTE_MANIFEST` and its gate stay untouched;
+    adding a route here would have been an owner-visible decision about the assistant's surface, not a
+    side-effect of a tab. The tab itself had to join the URL as `?tab=` for the same reason the
+    baseline did: a shared link that reloaded onto the Tools tab with an orphaned `?baseline=` would
+    defeat the point.
+  - **D-SP22 — the fleet badge reads ONE endpoint, computed on read like every other posture answer.**
+    `GET /api/security/summary` re-projects `analyzeScan` over each server's latest **`success`** scan
+    (D-MCP4 — the badge and the tab can never disagree), and **omits** a server with no usable scan
+    rather than inventing a neutral score for it. One request for the whole list: a naive per-row
+    badge would issue one request per server, and a fleet of forty would feel it. Persists nothing
+    (D-SP8), pinned by a `sqlite_master` + `user_version` + row-count snapshot.
+  - **D-SP23 — a clean subject gets a real answer, not an empty table.** Score 100 / band `clean`
+    renders a state that *says* it is clean and names what was checked (the rule count and the
+    analyzer version); a diff where nothing was added or resolved says so and states the carry-over
+    count. A blank panel is indistinguishable from a broken one, and this surface exists to be
+    trusted when it reports nothing.
+
+  _Rationale:_ D-SP21 keeps a whole-app invariant (every route is assistant-operable) from being
+  quietly widened by a feature tab. D-SP22 is the same "one derivation, several surfaces" discipline
+  D-MCP4 and D-SP17 already applied to the analyzer and the differ, applied now to the list. D-SP23 is
+  the UI half of the honesty the refusals give the API: this workstream's whole value is that you can
+  believe it when it says there is nothing wrong.
+
 ## Owner acceptance (owner-only)
+- [ ] **WP 2.1 — the two-theme, keyboard walk, in YOUR browser.** The implementing agent walked
+      `light` and `dark` with screenshots and measured contrast (worst 4.59:1, all AA); **the
+      orchestrator did not look at the app at all**. Open a scan's Security tab and a skill's, pick a
+      baseline on each, and check the servers rail badges. Three things are worth your eye
+      specifically: the evidence cell (invisible characters must be *visible* as `\uXXXX`, credentials
+      masked), the clean-subject and "nothing changed" states (they should read as answers, not as
+      emptiness), and the focus ring on the new controls in **light**, where this app carries a
+      deliberate token override — accepted: ____
+- [ ] **The bench's own MCP mount scores 49 / high risk.** 51 `info` findings against
+      `/api/mcp`, all undescribed parameters and unconstrained object schemas. The analyzer is telling
+      the truth about our own tool surface. Decide whether that is a backlog item for the MCP mount or
+      an accepted characteristic — accepted: ____
 - [ ] **WP 1.4 — the diff on YOUR own history, and the four refusals.** Pick a server you have
       scanned more than once and call
       `GET /api/scans/:scanId/security/diff?baseline=<an older scan of the same server>`; do the same

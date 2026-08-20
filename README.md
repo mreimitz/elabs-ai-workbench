@@ -172,6 +172,27 @@ definitions exceed their budget (currently **24 tools · 2,749 tokens** against 
 **This is one of three ways to drive the bench without opening it — see
 [Drive it without a browser](#drive-it-without-a-browser) below.**
 
+### 11 · Security posture
+
+Every scan and every skill version carries a **Security** tab: findings ranked worst-first, each
+naming the rule that fired, what it fired on, and the matched evidence — with invisible characters
+made visible and anything credential-shaped masked before it reaches the screen. A 0–100 score and a
+risk band sit above them, and the servers list carries a posture badge per server so a fleet-level
+problem is visible before you drill in.
+
+Eighteen deterministic rules run over data the app has **already stored** — no MCP call, no skill
+execution, no network. Eleven look at a server's tool surface: injection phrasing and hidden
+instruction blocks in descriptions, invisible unicode, annotations that contradict the tool they
+describe, credential-shaped parameters, unconstrained schemas, and OAuth grants broader than the job
+needs. Seven look at a skill: the same steering heuristics over `SKILL.md`, a credential committed
+into the body, a wildcard `allowed-tools` grant, and the scripts and network references it ships.
+
+Pick an older scan or version as a baseline and the tab becomes a **diff** — what was added, what was
+resolved, what carries over. It refuses rather than guesses: two different servers, a server against
+a skill, two different analyzer versions, or a truncated report each get an explanation instead of a
+misleading answer. The same comparison backs the `no-new-security-findings` CI gate, so the page and
+the pull request can never tell you different stories.
+
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](planning/user-guide/DC-01-getting-started/00-guide-map.md) for the full picture.
 

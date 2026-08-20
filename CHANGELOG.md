@@ -5,6 +5,37 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — security posture, on the page
+
+The deterministic security analyzer built over the previous four work packages is now **visible**.
+Every scan and every skill version has a **Security tab**: findings worst-first, each naming the rule
+that fired, what it fired on, and the matched evidence. Invisible characters are rendered visibly as
+`\uXXXX` — surfacing them is the entire point of the rule that finds them — and anything
+credential-shaped is masked to `«redacted»` before it reaches the screen. A 0–100 score and a risk
+band sit above the list; the servers list carries a posture badge per server, fed by **one**
+`GET /api/security/summary` request rather than one per row.
+
+Pick a baseline and the tab becomes a diff — added, resolved, carried over — with the selection in
+the URL, so the state is shareable and survives a reload. **A comparison that cannot be trusted is
+refused rather than answered**: two different servers, a server against a skill, two different
+analyzer versions, or a report whose list was truncated each produce an explanation with the current
+report still on screen. A subject with nothing wrong says so and names what was checked, because a
+blank panel is indistinguishable from a broken one.
+
+The analyzer itself reads only what the app has **already stored** — no MCP connection, no skill
+execution, no network — and persists nothing: every posture answer is computed on read. Eighteen
+frozen rules: eleven over a server's tool surface (injection phrasing, hidden instruction blocks,
+invisible unicode, annotations that contradict their own tool, credential-shaped parameters,
+unconstrained schemas, OAuth scope breadth) and seven over a skill (the same steering heuristics over
+`SKILL.md`, a credential in the body, a wildcard `allowed-tools` grant, shipped scripts, network
+references).
+
+The CI gate's `no-new-security-findings` rule was re-pointed at the same comparison the tab uses, so
+the page and the pull request cannot disagree about which findings are new. Its own test file was
+left byte-identical through that change, which is the proof no gate behaviour moved.
+
+No migration, no new dependency, no feature flag.
+
 ## Unreleased — one governed home for research, planning and the guide
 
 Every research, roadmap and user-guide document now lives in a single **Open Knowledge Format
