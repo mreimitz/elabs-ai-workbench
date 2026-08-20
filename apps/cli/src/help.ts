@@ -6,14 +6,17 @@ import {
   MCPFP_CONFIG_FILE_NAME,
   MCPFP_DEFAULT_API_URL,
   MCPFP_DEFAULT_TIMEOUT_MS,
+  MCPFP_SUITE_RUN_DEFAULT_WAIT_MS,
+  MCPFP_SUITE_RUN_MEMBER_ROWS,
+  MCPFP_SUITE_RUN_POLL_INTERVAL_MS,
 } from "@mcp-token-footprint/shared";
 
 /**
  * Usage text. Plain, wrapped by hand, no dependency and no colour — a CI log is not a terminal.
  *
  * It documents what is actually shipped and, at the end, what deliberately is not, naming the work
- * packages that will: `suite run` (WP 2.1), the baseline-delta PR comment (WP 2.2). A CLI that
- * silently lacks the command someone read about is worse than one that says "not built yet".
+ * package that will: the baseline-delta PR comment (WP 2.2). A CLI that silently lacks the command
+ * someone read about is worse than one that says "not built yet".
  *
  * The `assert` topic's rule table is GENERATED from {@link ASSERTION_RULE_META} rather than typed
  * out here, so the prose an operator reads cannot drift from the schema that validates their file.
@@ -26,6 +29,7 @@ Usage
 
 Commands
   scan <server>              Run a discovery scan. <server> is a server id OR its exact name.
+  suite run <suite>          Run a saved suite's matrix and wait for it. <suite> is an id OR name.
   assert [file]              Evaluate ${MCPFP_ASSERT_FILE_NAME} against a scan. Exits 1 if a rule fails.
   report scan <scanId>       The scan (token-footprint) report.
   report server <scanId>     The server-level report for that scan.
@@ -44,6 +48,8 @@ Global options
   --file <path>        assert: use this gate file instead of searching for one (same as [file]).
   --scan <scanId>      assert: assert against this exact scan, overriding the document's target.
   --baseline <ref>     assert: "previous" or a scan id, overriding the document's baseline.
+  --wait <seconds>     suite run: the total wait budget. default ${Math.round(MCPFP_SUITE_RUN_DEFAULT_WAIT_MS / 1000)}
+  --no-wait            suite run: return as soon as the run has started, without waiting for it.
   --format <fmt>       human (default) | json | markdown. Not every command supports every format.
   --output <file>      Write the payload to a file instead of stdout (parent dirs are created).
   --quiet              Suppress progress narration on stderr. Errors and warnings still print.
@@ -56,7 +62,8 @@ Configuration
   Storing a token in the file works but is discouraged — prefer MCPFP_TOKEN in CI.
 
   A loopback instance is open and needs no token unless it runs with API_AUTH_REQUIRED=true; a
-  remote one always does. \`scan\` needs a token with the \`scan:run\` scope; everything else needs \`read\`.
+  remote one always does. \`scan\` needs a token with the \`scan:run\` scope; \`suite run\` needs
+  \`suites:run\` to start the matrix PLUS \`read\` to poll it; everything else needs \`read\`.
 
 Output
   stdout carries the payload; stderr carries progress, warnings and errors. So
@@ -73,7 +80,7 @@ Exit codes
   2  execution, config or transport error (bad flags, unreachable API, non-2xx response, failed scan)
 
 Not built yet
-  suite run (WP 2.1) · the baseline-delta PR-comment artifact (WP 2.2).`;
+  The baseline-delta PR-comment artifact (WP 2.2).`;
 }
 
 /** Per-command detail for `mcpfp help <command>`. Falls back to the full usage text. */
@@ -95,6 +102,40 @@ function renderRuleTable(): string {
     return `  ${kind.padEnd(width)}  ${meta.summary}${marker}`;
   }).join("\n");
 }
+
+const SUITE_RUN_HELP = `mcpfp suite run <suite> [--wait <seconds>] [--no-wait] [--format human|json]
+                        [--output <path>] [--quiet]
+
+Starts a saved suite's matrix run (every test × scenario × repetition) and, by DEFAULT, waits for it
+and prints a summary. <suite> is a suite id or its exact name; an ambiguous name lists the candidate
+ids and exits 2. The matrix runs in the API — the CLI starts it, re-reads it, and formats it.
+
+Waiting
+  It waits by POLLING \`GET /api/suite-runs/:id\` every ${Math.round(MCPFP_SUITE_RUN_POLL_INTERVAL_MS / 1000)} seconds, not by consuming
+  the live event stream: polling a read endpoint is the half of the transport that survives proxies
+  and CI runners, and parsing an event stream would be a dependency this CLI does not have.
+
+  --wait <seconds>  the TOTAL budget (default ${Math.round(MCPFP_SUITE_RUN_DEFAULT_WAIT_MS / 60_000)} minutes). Running out while the matrix is still
+                    going exits 2 and names the suite-run id, so you can go and look at it.
+  --no-wait         return as soon as the run has started, exit 0, and report it with no members.
+
+  The wait also covers the post-run RATING: it ends on a terminal status AND a settled review, so a
+  summary is never published while member grades are still landing. If the budget runs out with a
+  terminal status but an unsettled rating, the exit code still comes from the status and a warning
+  says the grades may be incomplete — \`--quiet\` does not silence that warning.
+
+Exit codes
+  0  completed (or --no-wait: the run started)
+  2  error, capped (the aggregate cost cap soft-stopped the matrix), stopped (an operator halted it),
+     the wait budget ran out while it was still running, or the request could not be made
+
+What it prints
+  The suite run's identity and status, the rolled-up aggregates (cells, mean grade, std-dev, pass
+  rate, tokens, execution + judge cost) and the ${MCPFP_SUITE_RUN_MEMBER_ROWS} worst-scoring member runs. \`--format json\` carries
+  { "suiteRun", "members" } — both verbatim from the API, ALL members, in the usual envelope.
+
+Needs a token with the \`suites:run\` scope to start the matrix, plus \`read\` to poll it (and to
+resolve <suite> when it is a name).`;
 
 const COMMAND_HELP: Record<string, string> = {
   assert: `mcpfp assert [file] [--file <path>] [--server <id|name>] [--scan <scanId>]
@@ -139,8 +180,9 @@ Baselines
 Exit codes
   0  every rule passed (skips allowed)   1  at least one rule failed   2  the gate could not run
 
-Needs no token on a loopback instance. A remote caller needs a token with an execute scope (e.g.
-Run scans) — the endpoint is a POST, and this build maps scopes by method.`,
+Needs no token on a loopback instance. A remote caller needs a token with the \`read\` scope: the
+endpoint only reads an already-persisted scan, and \`POST /api/assertions/evaluate\` is mapped to
+\`read\` per-route (D-C10, closed by WP M.2) rather than by HTTP method.`,
   scan: `mcpfp scan <server> [--format human|json]
 
 Runs a discovery scan against a registered MCP server and prints its token footprint. <server> is a
@@ -149,6 +191,13 @@ runs in the API — the CLI never connects to an MCP server.
 
 Needs a token with the \`scan:run\` scope (and \`read\`, if <server> is a name that has to be resolved).
 Exits 2 if the scan itself fails, so a broken server cannot pass a CI step.`,
+  /**
+   * Registered under BOTH keys, because `mcpfp help suite` is what a person types and
+   * `mcpfp help "suite run"` is what the command is called. One string, two lookups — never two
+   * texts that can drift.
+   */
+  suite: SUITE_RUN_HELP,
+  "suite run": SUITE_RUN_HELP,
   report: `mcpfp report scan <scanId>   [--format human|json|markdown]
 mcpfp report server <scanId> [--format human|json|markdown]
 mcpfp report run <runId>     [--format human|json|markdown]
