@@ -56,8 +56,14 @@ import { z } from "zod";
  * more precisely, so a finding produced under version 1 may be absent under version 2. That is
  * exactly the "not comparable" condition this constant exists to make visible — a diff across the
  * change is refused rather than reporting a finding as resolved that nobody fixed.
+ *
+ * **Version 3 (2026-08-20) — the score gained a per-severity deduction cap.** The sum was unbounded,
+ * so a large, well-behaved tool surface scored like a dangerous one: this app's own mount, with zero
+ * `error` and zero `warning` findings and 49 hygiene `info` findings, scored 51/`high`. See
+ * {@link SECURITY_SEVERITY_DEDUCTION_CAP}. Every score changes, so version 2 and version 3 reports
+ * are not comparable.
  */
-export const SECURITY_ANALYZER_VERSION = 2;
+export const SECURITY_ANALYZER_VERSION = 3;
 
 /**
  * Ordered worst-first, which is also the order findings are emitted in (D-SP6) and the order the
@@ -430,22 +436,61 @@ export const SECURITY_SEVERITY_DEDUCTION: Record<SecuritySeverity, number> = {
   info: 1,
 };
 
+/**
+ * **The most a severity may deduct IN TOTAL, however many findings of it there are.** Added in
+ * analyzer version 3, because the unbounded sum made the score a measure of SURFACE SIZE rather than
+ * of risk.
+ *
+ * The case that forced it was this app's own MCP mount: 24 tools, **zero** `error` findings, **zero**
+ * `warning` findings, and 49 `info` findings — every one of them "this parameter has no description".
+ * That scored **51/100, band `high`** — the same band as a server carrying three genuine
+ * tool-poisoning errors. The plan calls severity inflation a defect, and that was one.
+ *
+ * The principle: **hygiene is a bounded concern; danger is not.** Ten undescribed parameters and
+ * fifty tell an operator the same single fact — *this server does not describe its parameters* — so
+ * the fiftieth must not cost what the first did. An `error` means the server is actively trying to
+ * steer a model, and there is no honest ceiling on how many separate ways it can be doing that, so
+ * `error` is deliberately **uncapped**.
+ *
+ * The caps are stated as their own findings-equivalent so they read as a decision rather than a magic
+ * number: `info` stops counting after **10** findings, `warning` after **5**. A report with no
+ * `error` therefore floors at 100 − 25 − 10 = **65**, and an `info`-only report floors at **90**,
+ * which is `low` — the band an all-hygiene report should have had all along.
+ */
+export const SECURITY_SEVERITY_DEDUCTION_CAP: Record<SecuritySeverity, number> = {
+  error: Number.POSITIVE_INFINITY,
+  warning: 25,
+  info: 10,
+};
+
 // ── D-SP3 · the score ───────────────────────────────────────────────────────────────────────────
 
 /**
- * The ONE place a posture score is computed. Sum the per-severity deductions, subtract from 100,
- * floor at 0 (a server with eight `error` findings is not "-20 secure"), then band it.
+ * The ONE place a posture score is computed. Sum the per-severity deductions **capped per severity**
+ * by {@link SECURITY_SEVERITY_DEDUCTION_CAP}, subtract from 100, floor at 0 (a server with eight
+ * `error` findings is not "-20 secure"), then band it.
  *
  * Bands break at exactly 100 / 90 / 70: `clean` means literally nothing was found, so a single `info`
  * drops out of it — that is the point, an operator should be able to trust `clean`.
+ *
+ * The per-severity cap (analyzer version 3) is what stops the score measuring surface size: an
+ * `info`-only report can no longer fall below 90, so fifty hygiene nudges land in `low` where they
+ * belong instead of in `high` beside a poisoned server. `error` is uncapped on purpose. See
+ * {@link SECURITY_SEVERITY_DEDUCTION_CAP} for the reasoning and the case that forced it.
  *
  * The returned {@link SecurityScore.analyzerVersion} echoes {@link SECURITY_ANALYZER_VERSION} so a
  * stored score can never be silently compared against, or re-banded by, a later build's thresholds.
  */
 export function computeSecurityScore(findings: readonly SecurityFinding[]): SecurityScore {
-  let deduction = 0;
+  // Tally per severity FIRST, so each severity's cap applies to its own total rather than to the
+  // running sum — capping the mixed sum would let a single error swallow the whole info allowance.
+  const perSeverity: Record<SecuritySeverity, number> = { error: 0, warning: 0, info: 0 };
   for (const finding of findings) {
-    deduction += SECURITY_SEVERITY_DEDUCTION[finding.severity];
+    perSeverity[finding.severity] += SECURITY_SEVERITY_DEDUCTION[finding.severity];
+  }
+  let deduction = 0;
+  for (const severity of SECURITY_SEVERITIES) {
+    deduction += Math.min(perSeverity[severity], SECURITY_SEVERITY_DEDUCTION_CAP[severity]);
   }
   const value = Math.max(0, 100 - deduction);
   let band: SecurityScoreBand;

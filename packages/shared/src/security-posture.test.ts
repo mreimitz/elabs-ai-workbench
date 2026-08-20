@@ -12,6 +12,7 @@ import {
   SECURITY_SCORE_BANDS,
   SECURITY_SEVERITIES,
   SECURITY_SEVERITY_DEDUCTION,
+  SECURITY_SEVERITY_DEDUCTION_CAP,
   SECURITY_SUBJECT_KINDS,
   type SecurityFinding,
   type SecurityFindingAnchor,
@@ -50,8 +51,9 @@ import {
  * test rather than a silent change in what a CI gate counts (D-SP5).
  *
  * WP 1.1 froze the eleven `subject: "server"` ids; WP 1.3 ADDED the seven `subject: "skill"` ids
- * below without touching one of them. The version moved to 2 for a different reason — a matcher
- * inside `annotation.open-world-unmarked` was tightened — never for a rename or a re-severitying.
+ * below without touching one of them. The version moved to 2 and then 3 for different reasons — a
+ * matcher inside `annotation.open-world-unmarked` was tightened, then the score gained a per-severity
+ * deduction cap — never for a rename or a re-severitying.
  */
 const FROZEN_SERVER_RULES: Record<string, SecuritySeverity> = {
   "annotation.destructive-unmarked": "warning",
@@ -183,7 +185,7 @@ describe("security rule registry (D-SP2)", () => {
       assert.equal(rule.severity, severity, `${id} changed severity`);
       assert.equal(rule.subject, "server", `${id} changed subject`);
     }
-    assert.equal(SECURITY_ANALYZER_VERSION, 2);
+    assert.equal(SECURITY_ANALYZER_VERSION, 3);
   });
 });
 
@@ -296,7 +298,7 @@ describe("computeSecurityScore (D-SP3)", () => {
 
   it("echoes the analyzer version so a stored score is never re-banded later", () => {
     assert.equal(computeSecurityScore([]).analyzerVersion, SECURITY_ANALYZER_VERSION);
-    assert.equal(SECURITY_ANALYZER_VERSION, 2);
+    assert.equal(SECURITY_ANALYZER_VERSION, 3);
   });
 });
 
@@ -679,7 +681,21 @@ describe("capSecurityFindings", () => {
     assert.equal(capped.truncated, true);
     // The whole point of the split: the true totals survive the cap, so a gate cannot be fooled.
     assert.equal(findings.length, SECURITY_FINDING_LIMIT + 5);
+    // 205 `info` findings deduct `SECURITY_SEVERITY_DEDUCTION_CAP.info` and no more (analyzer v3):
+    // an all-hygiene report cannot be driven below `low` by sheer volume.
+    assert.equal(computeSecurityScore(findings).value, 100 - SECURITY_SEVERITY_DEDUCTION_CAP.info);
+  });
+
+  it("scores over ALL findings, not just the ones the display cap listed", () => {
+    // The property the assertion above used to carry before `info` was capped. `error` is uncapped
+    // on purpose, so it is the severity that still proves the score sees past the listed 200.
+    const findings = findingsOfSeverity("error", SECURITY_FINDING_LIMIT + 5);
+    assert.equal(capSecurityFindings(findings).findings.length, SECURITY_FINDING_LIMIT);
     assert.equal(computeSecurityScore(findings).value, 0);
+    // …and it is genuinely the count that drives it: seven errors already floor the score at 0,
+    // whereas seven `info` findings do not come close.
+    assert.equal(computeSecurityScore(findingsOfSeverity("error", 7)).value, 0);
+    assert.equal(computeSecurityScore(findingsOfSeverity("info", 7)).value, 93);
   });
 });
 
