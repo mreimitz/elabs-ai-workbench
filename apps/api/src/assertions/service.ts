@@ -1026,7 +1026,10 @@ function severityAtLeast(severity: SecuritySeverity, floor: SecuritySeverity): b
   return SECURITY_SEVERITIES.indexOf(severity) <= SECURITY_SEVERITIES.indexOf(floor);
 }
 
-/** `error · poisoning.injection-phrasing · tool "search_issues" — <the finding's own sentence>`. */
+/**
+ * `<severity> · <ruleId> · tool "…" — <the finding's own sentence>`. Every component is a VALUE read
+ * off the finding; no rule id and no severity is ever written down in this directory.
+ */
 function describeFinding(finding: SecurityFinding): string {
   return `${finding.severity} · ${finding.ruleId} · ${describeAnchor(finding.anchor)} — ${finding.message}`;
 }
