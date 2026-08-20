@@ -3,8 +3,8 @@ type: "Research Topic"
 title: "InsightBench Assessment"
 description: "Assess the external insights-bench research pipeline against this workbench and decide what, if anything, to adopt for output-quality benchmarking."
 tags: ["research", "RS-08"]
-timestamp: "2026-08-20T13:58:39Z"
-status: "active"
+timestamp: "2026-08-20T13:47:37Z"
+status: "done"
 ---
 
 # InsightBench Assessment

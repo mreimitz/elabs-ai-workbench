@@ -3,7 +3,7 @@ type: "Research Topic"
 title: "Product Open Questions"
 description: "Keep the unresolved product questions from the original planning phase in one place, so a decision is recorded rather than re-argued."
 tags: ["research", "RS-10"]
-timestamp: "2026-08-20T13:58:39Z"
+timestamp: "2026-08-20T13:47:37Z"
 status: "active"
 ---
 

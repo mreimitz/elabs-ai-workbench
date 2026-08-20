@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Assistant — embedded Claude agent chat"
 description: "Embed a real Claude agent in the app as a right-hand dock with page hooks, running on the owner's subscription with an API-key fallback, reading app data through in-process MCP tools and writing only behind an approval protocol."
 tags: ["roadmap", "RM-02"]
-timestamp: "2026-08-20T13:58:40Z"
-status: "planned"
+timestamp: "2026-08-20T13:47:37Z"
+status: "active"
 ---
 
 # Assistant — embedded Claude agent chat

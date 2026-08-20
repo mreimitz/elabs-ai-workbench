@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-20T13:58:57Z"
+timestamp: "2026-08-20T14:01:41Z"
 status: "active"
 ---
 
@@ -13,37 +13,37 @@ This concept is the live project-level index of roadmap items and research topic
 
 ## Roadmap Items
 
-* [RM-01-advisor](RM-01-advisor/item.md) — Advisor — evidenced recommendations from measurements · `planned`
-* [RM-02-assistant](RM-02-assistant/item.md) — Assistant — embedded Claude agent chat · `planned`
-* [RM-03-assistant-hub](RM-03-assistant-hub/item.md) — Assistant Hub — the full-page multi-model, multi-agent assistant · `planned`
-* [RM-04-assistant-hub-ux](RM-04-assistant-hub-ux/item.md) — Assistant Hub UX — rebuild onto the app shell grammar · `planned`
-* [RM-05-assistant-operability](RM-05-assistant-operability/item.md) — Assistant operability — every view exposes an assistant interface · `planned`
-* [RM-06-auto-rating](RM-06-auto-rating/item.md) — Auto-Rating — mandatory post-run validation and reports · `planned`
-* [RM-07-benchmarks](RM-07-benchmarks/item.md) — Benchmarks — output-quality grading and suite mass-runs · `planned`
-* [RM-08-ci](RM-08-ci/item.md) — CI & headless automation — tokens, CLI, assertions and the workbench MCP server · `planned`
-* [RM-09-claude-subscription](RM-09-claude-subscription/item.md) — Claude subscription as a run model · `planned`
-* [RM-10-crew-nesting](RM-10-crew-nesting/item.md) — Hierarchical crews — runtime-recursive crew composition · `planned`
-* [RM-11-dashboard-bento](RM-11-dashboard-bento/item.md) — Dashboard bento — the homepage Overview · `planned`
-* [RM-12-findings](RM-12-findings/item.md) — UI audit and remediation programme (2026-06) · `planned`
-* [RM-13-hub-fixes](RM-13-hub-fixes/item.md) — Assistant Hub defect-fix workstream · `planned`
+* [RM-01-advisor](RM-01-advisor/item.md) — Advisor — evidenced recommendations from measurements · `active`
+* [RM-02-assistant](RM-02-assistant/item.md) — Assistant — embedded Claude agent chat · `active`
+* [RM-03-assistant-hub](RM-03-assistant-hub/item.md) — Assistant Hub — the full-page multi-model, multi-agent assistant · `active`
+* [RM-04-assistant-hub-ux](RM-04-assistant-hub-ux/item.md) — Assistant Hub UX — rebuild onto the app shell grammar · `active`
+* [RM-05-assistant-operability](RM-05-assistant-operability/item.md) — Assistant operability — every view exposes an assistant interface · `active`
+* [RM-06-auto-rating](RM-06-auto-rating/item.md) — Auto-Rating — mandatory post-run validation and reports · `active`
+* [RM-07-benchmarks](RM-07-benchmarks/item.md) — Benchmarks — output-quality grading and suite mass-runs · `active`
+* [RM-08-ci](RM-08-ci/item.md) — CI & headless automation — tokens, CLI, assertions and the workbench MCP server · `active`
+* [RM-09-claude-subscription](RM-09-claude-subscription/item.md) — Claude subscription as a run model · `active`
+* [RM-10-crew-nesting](RM-10-crew-nesting/item.md) — Hierarchical crews — runtime-recursive crew composition · `active`
+* [RM-11-dashboard-bento](RM-11-dashboard-bento/item.md) — Dashboard bento — the homepage Overview · `active`
+* [RM-12-findings](RM-12-findings/item.md) — UI audit and remediation programme (2026-06) · `archived`
+* [RM-13-hub-fixes](RM-13-hub-fixes/item.md) — Assistant Hub defect-fix workstream · `active`
 * [RM-14-illustrations](RM-14-illustrations/item.md) — Illustration design system — theme-token-driven blueprint illustrations · `planned`
-* [RM-15-interface-craft](RM-15-interface-craft/item.md) — Interface Craft — write the six rules that were never written · `planned`
-* [RM-16-model-identity](RM-16-model-identity/item.md) — Model identity — a model choice means the model and the credential · `planned`
-* [RM-17-observability](RM-17-observability/item.md) — Observability — fleet monitoring, search and issues · `planned`
+* [RM-15-interface-craft](RM-15-interface-craft/item.md) — Interface Craft — write the six rules that were never written · `active`
+* [RM-16-model-identity](RM-16-model-identity/item.md) — Model identity — a model choice means the model and the credential · `active`
+* [RM-17-observability](RM-17-observability/item.md) — Observability — fleet monitoring, search and issues · `active`
 * [RM-18-platform](RM-18-platform/item.md) — Platform hardening — the cross-cutting operability items · `planned`
 * [RM-19-release](RM-19-release/item.md) — Release & delivery — the offline hand-off bundle · `planned`
-* [RM-20-security-posture](RM-20-security-posture/item.md) — Security posture — a deterministic analyzer over persisted scans and skills · `planned`
-* [RM-21-server-types](RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `planned`
-* [RM-22-skill-ide](RM-22-skill-ide/item.md) — Skill IDE — an enterprise IDE for Agent Skills · `planned`
-* [RM-23-skillflow](RM-23-skillflow/item.md) — SkillFlow — the visual skill designer and tracer · `planned`
-* [RM-24-skills](RM-24-skills/item.md) — Skills registry and inspector · `planned`
+* [RM-20-security-posture](RM-20-security-posture/item.md) — Security posture — a deterministic analyzer over persisted scans and skills · `active`
+* [RM-21-server-types](RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `active`
+* [RM-22-skill-ide](RM-22-skill-ide/item.md) — Skill IDE — an enterprise IDE for Agent Skills · `active`
+* [RM-23-skillflow](RM-23-skillflow/item.md) — SkillFlow — the visual skill designer and tracer · `active`
+* [RM-24-skills](RM-24-skills/item.md) — Skills registry and inspector · `active`
 * [RM-25-team-server](RM-25-team-server/item.md) — Team server — shared-instance operation · `planned`
-* [RM-26-testing](RM-26-testing/item.md) — Testing — the agent run engine and console · `planned`
-* [RM-27-testing-ia](RM-27-testing-ia/item.md) — Testing IA consolidation — Collections as the test home · `planned`
-* [RM-28-toolbar-reach](RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `planned`
-* [RM-29-unified-sessions](RM-29-unified-sessions/item.md) — Unified Sessions — one session experience across every run backend · `planned`
-* [RM-30-ux-overhaul](RM-30-ux-overhaul/item.md) — UX Overhaul — one shell, one grammar, every view · `planned`
-* [RM-31-mvp-footprint-analyzer](RM-31-mvp-footprint-analyzer/item.md) — Startup-footprint MVP and the expanded target · `planned`
+* [RM-26-testing](RM-26-testing/item.md) — Testing — the agent run engine and console · `active`
+* [RM-27-testing-ia](RM-27-testing-ia/item.md) — Testing IA consolidation — Collections as the test home · `active`
+* [RM-28-toolbar-reach](RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `active`
+* [RM-29-unified-sessions](RM-29-unified-sessions/item.md) — Unified Sessions — one session experience across every run backend · `active`
+* [RM-30-ux-overhaul](RM-30-ux-overhaul/item.md) — UX Overhaul — one shell, one grammar, every view · `active`
+* [RM-31-mvp-footprint-analyzer](RM-31-mvp-footprint-analyzer/item.md) — Startup-footprint MVP and the expanded target · `archived`
 
 ## Completed Roadmap Items
 
@@ -52,16 +52,16 @@ No roadmap items have been completed yet.
 ## Research Topics
 
 * [RS-01-token-context-comparison](../Research/RS-01-token-context-comparison/topic.md) — Token & Context Comparison — LLM Baseline Dataset · `active`
-* [RS-02-skill-registry](../Research/RS-02-skill-registry/topic.md) — Skill Registry & Inspector · `active`
-* [RS-03-unified-run-sessions](../Research/RS-03-unified-run-sessions/topic.md) — Unified Run Sessions · `active`
-* [RS-04-langsmith-observability](../Research/RS-04-langsmith-observability/topic.md) — LangSmith Observability vs. This App · `active`
-* [RS-05-langfuse-landscape](../Research/RS-05-langfuse-landscape/topic.md) — Langfuse & the Alternatives Landscape · `active`
-* [RS-06-agentic-session-sota](../Research/RS-06-agentic-session-sota/topic.md) — Agentic-Session State of the Art · `active`
-* [RS-07-full-validation](../Research/RS-07-full-validation/topic.md) — Full-Validation Production-Readiness Review · `active`
-* [RS-08-insights-bench-assessment](../Research/RS-08-insights-bench-assessment/topic.md) — InsightBench Assessment · `active`
-* [RS-09-token-counting-strategy](../Research/RS-09-token-counting-strategy/topic.md) — Token Counting Strategy · `active`
+* [RS-02-skill-registry](../Research/RS-02-skill-registry/topic.md) — Skill Registry & Inspector · `done`
+* [RS-03-unified-run-sessions](../Research/RS-03-unified-run-sessions/topic.md) — Unified Run Sessions · `done`
+* [RS-04-langsmith-observability](../Research/RS-04-langsmith-observability/topic.md) — LangSmith Observability vs. This App · `done`
+* [RS-05-langfuse-landscape](../Research/RS-05-langfuse-landscape/topic.md) — Langfuse & the Alternatives Landscape · `done`
+* [RS-06-agentic-session-sota](../Research/RS-06-agentic-session-sota/topic.md) — Agentic-Session State of the Art · `done`
+* [RS-07-full-validation](../Research/RS-07-full-validation/topic.md) — Full-Validation Production-Readiness Review · `done`
+* [RS-08-insights-bench-assessment](../Research/RS-08-insights-bench-assessment/topic.md) — InsightBench Assessment · `done`
+* [RS-09-token-counting-strategy](../Research/RS-09-token-counting-strategy/topic.md) — Token Counting Strategy · `done`
 * [RS-10-open-questions](../Research/RS-10-open-questions/topic.md) — Product Open Questions · `active`
-* [RS-11-testing-ui-concept](../Research/RS-11-testing-ui-concept/topic.md) — Testing Console UI Concept · `active`
+* [RS-11-testing-ui-concept](../Research/RS-11-testing-ui-concept/topic.md) — Testing Console UI Concept · `done`
 
 ## Documentation
 

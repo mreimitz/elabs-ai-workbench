@@ -3,8 +3,8 @@ type: "Research Topic"
 title: "Token Counting Strategy"
 description: "Decide how the workbench counts tokens: which profiles exist, what a tool's token total actually measures, and how counts stay comparable across scans."
 tags: ["research", "RS-09"]
-timestamp: "2026-08-20T13:58:39Z"
-status: "active"
+timestamp: "2026-08-20T13:47:37Z"
+status: "done"
 ---
 
 # Token Counting Strategy

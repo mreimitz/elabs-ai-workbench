@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Startup-footprint MVP and the expanded target"
 description: "Record the original startup-footprint MVP programme and the expanded-target scope note that superseded it, so the reasoning behind today's north star stays readable."
 tags: ["roadmap", "RM-31"]
-timestamp: "2026-08-20T13:58:57Z"
-status: "planned"
+timestamp: "2026-08-20T13:47:37Z"
+status: "archived"
 ---
 
 # Startup-footprint MVP and the expanded target

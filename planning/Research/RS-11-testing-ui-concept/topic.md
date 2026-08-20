@@ -3,8 +3,8 @@ type: "Research Topic"
 title: "Testing Console UI Concept"
 description: "Work out what the agent testing console should look like — the conversation, the cost and context rails, the inspector and the replay experience — before any of it was built."
 tags: ["research", "RS-11"]
-timestamp: "2026-08-20T13:58:39Z"
-status: "active"
+timestamp: "2026-08-20T13:47:37Z"
+status: "done"
 ---
 
 # Testing Console UI Concept
