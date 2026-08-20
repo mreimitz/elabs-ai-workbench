@@ -71,6 +71,6 @@ remote. Honest reporting: lead with what you did **not** verify (visual/a11y cla
 app at `localhost:8080`, not a mock).
 
 ## Reference
-Design detail per topic in [`../../research/skill-registry/`](../../Research/RS-02-skill-registry/):
+Design detail per topic in [`../../research/skill-registry/`](/Research/RS-02-skill-registry/):
 data model `03`, versioning/diff `04`, API `05`, ingestion/GitHub `06`, UI `07`, attachment `08`,
 skill-loading research `11`. Cite these instead of duplicating.

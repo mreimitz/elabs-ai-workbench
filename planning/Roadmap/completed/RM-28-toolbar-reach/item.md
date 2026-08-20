@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Toolbar Reach — apply the standards already locked"
 description: "Close the twenty-nine findings of the UI/UX audit by settling the toolbar, route-versus-dialog and icon-affordance contracts and applying them across every view."
 tags: ["roadmap", "RM-28"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "active"
+timestamp: "2026-08-20T14:03:58Z"
+status: "done"
 ---
 
 # Toolbar Reach — apply the standards already locked
@@ -19,11 +19,11 @@ The app had locked standards in principle and then applied them unevenly, leavin
 
 ## Milestones
 
-- [ ] Phase 0 — defects.
-- [ ] Phase 1 — settle the contract.
-- [ ] Phase 2 — apply it.
-- [ ] Phase 3 — icon affordances at scale.
-- [ ] Phase 4 — guardrails and acceptance.
+- [x] Phase 0 — defects.
+- [x] Phase 1 — settle the contract.
+- [x] Phase 2 — apply it.
+- [x] Phase 3 — icon affordances at scale.
+- [x] Phase 4 — guardrails and acceptance.
 
 ## Linked research
 
@@ -49,7 +49,7 @@ explanation"; "'Latest server footprint' renders status a third way").
 **This plan does not design anything new.** The standards already exist, are written down, and are
 owner-locked:
 
-- [`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`](../RM-30-ux-overhaul/toolbar-standard-2026-07-11.md)
+- [`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`](/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md)
   (D-TB1–D-TB4) — breadcrumb owns identity, exactly one toolbar row per view, no assistant hooks
   outside the dock, one metric one home.
   > **D-TB1 amended 2026-07-25 (owner):** the breadcrumb owns page *identity*, not document
@@ -57,7 +57,7 @@ owner-locked:
   > `CardTitle` is not acceptable for a section title). WP 1.2 (delete `PageHeader`) removed the last
   > visible H1 and so cemented a one-invisible-heading outline; the amendment (interface-review
   > finding 6) supplies the semantic-layer replacement. Implemented by the **interface-craft** plan
-  > ([`roadmap/interface-craft/`](../RM-15-interface-craft/item.md), WP 1.1 / D-IC5), which follows this
+  > ([`roadmap/interface-craft/`](/Roadmap/completed/RM-15-interface-craft/item.md), WP 1.1 / D-IC5), which follows this
   > one. See the amendment block in the standard doc.
 - `components/ViewToolbar.tsx` (`../../apps/web/src/components/ViewToolbar.tsx`)'s docblock — the one-row
   grammar, restated in code, with the **correct** Environments example (`ViewToolbar.tsx:55-61`) already
@@ -130,7 +130,7 @@ as "what needs me" — is **correct and preserved**. But it is implemented as a 
 here so one concept has one rendering" claim (`StatusBadge.tsx:12-16`) **stays true**. One component, one
 concept, two densities.
 
-> **Record correction (owner):** [`roadmap/ux-overhaul/verification-report.md:176`](../RM-30-ux-overhaul/verification-report.md)
+> **Record correction (owner):** [`roadmap/ux-overhaul/verification-report.md:176`](/Roadmap/RM-30-ux-overhaul/verification-report.md)
 > currently signs off *"D-TB2 (exactly one toolbar row): ✅ one `ViewToolbar` row per view"*. Environments
 > and the Dashboard Testing tab break it. An inaccurate sign-off is *why this drift survived a verification
 > pass*. **WP 0.4** corrects the record (and marks `TableToolbar`'s docblock superseded by D-TB6).

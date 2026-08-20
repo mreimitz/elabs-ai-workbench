@@ -18,7 +18,7 @@ breadth in WP 2.3.
 ## Why / references
 Scope decisions #1 (both run modes), #6 (allow-list). [`../references.md`](../references.md) → *AI SDK
 — Tool Calling* and *Loop Control* (`streamText`, `tools`, `stopWhen`, `stepCountIs`, `onStepFinish`),
-*MCP TypeScript SDK* (callTool error model). UI legibility goals: [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §3.
+*MCP TypeScript SDK* (callTool error model). UI legibility goals: [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §3.
 
 ## Files (new)
 - `apps/api/src/testing/tool-bridge.ts`  — MCP defs → AI SDK tools

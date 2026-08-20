@@ -9,7 +9,7 @@ status: "final"
 # WP M.2 — service-token scopes on the workbench MCP mount
 
 Phase MCP of [`mcp-server.md`](./mcp-server.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules:
-the [testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+the [testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.1 (service tokens — done 2026-08-19, `wp/ci/1.1`), WP M.1 (the read-only MCP
 mount — done 2026-08-19, `wp/ci/M.1`).
@@ -71,8 +71,8 @@ adds nothing to the mechanism itself).
 4. **An audit line per tool call** — tool name, the calling token's **display prefix** (never the
    secret), outcome, duration — on the existing Fastify/pino logger.
 5. **Docs** — the mount's scope requirements in
-   [`user-guide/20-workbench-mcp-server.md`](../../user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md) and
-   [`user-guide/21-service-tokens.md`](../../user-guide/DC-17-service-tokens/21-service-tokens.md), and in the served
+   [`user-guide/20-workbench-mcp-server.md`](/user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md) and
+   [`user-guide/21-service-tokens.md`](/user-guide/DC-17-service-tokens/21-service-tokens.md), and in the served
    `llms.txt` so an agent that is refused can read why.
 
 ### Explicitly NOT in this WP

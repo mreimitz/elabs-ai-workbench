@@ -12,7 +12,7 @@ New workstream adding **output-quality measurement** to the Testing feature: gra
 (ground truth + LLM-as-judge + deterministic graders), **suite mass-runs** (test × scenario
 matrix, parallel, repetitions), result analytics (quality × cost), and **Collections** synced
 two-way with GitHub repos. Concept origin: the `insights-bench` prototype analyzed in
-[`../research/insights-bench-assessment.md`](../../Research/RS-08-insights-bench-assessment/notes/insights-bench-assessment.md) —
+[`../research/insights-bench-assessment.md`](/Research/RS-08-insights-bench-assessment/notes/insights-bench-assessment.md) —
 we adopt its methodology (G-Eval judge with logprob weighting, trajectory-vs-reference judging,
 `answerable:false` semantics), not its execution machinery (our run engine already captures
 exactly, not self-reported, what that pipeline begs the agent to record).
@@ -158,7 +158,7 @@ Runs **in parallel with Skill IDE** via `/next-wp benchmarks`, own
 - No background sync, no webhooks, no multi-user.
 - No golden-run trajectory reference (B6).
 - Failure-bucket taxonomy never runs unprompted (B9.4). **Amended 2026-07-11 (owner,
-  auto-rating AR12):** the mandatory suite report in [`../auto-rating/`](../RM-06-auto-rating/) may
+  auto-rating AR12):** the mandatory suite report in [`../auto-rating/`](/Roadmap/RM-06-auto-rating/) may
   invoke failure-bucket clustering automatically after a suite-run with ≥2 members; the manual
   `POST /api/suite-runs/:id/failure-buckets` endpoint stays.
 

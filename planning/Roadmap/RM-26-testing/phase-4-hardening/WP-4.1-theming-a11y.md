@@ -17,7 +17,7 @@ verified stable under load.
 ## Why / references
 `.claude/rules/styling-and-tokens.md` (two themes, tokens only),
 `.claude/rules/interaction-guidelines.md` (focus, keyboard, virtualization), UI concept
-[`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §10.
+[`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §10.
 
 ## Scope / checklist
 - **Themes:** verify `light` and `dark` by

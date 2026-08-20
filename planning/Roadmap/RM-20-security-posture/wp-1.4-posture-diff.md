@@ -9,7 +9,7 @@ status: "final"
 # WP 1.4 — posture diff: scan↔scan and version↔version (added / resolved / unchanged findings)
 
 Phase 1 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.1 (`SecurityReport`, `compareSecurityFindings`, `securityFindingIdentity`),
 WP 1.2 (`analyzeScan`), WP 1.3 (`analyzeSkillVersion`).

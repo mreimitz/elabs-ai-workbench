@@ -37,7 +37,7 @@ A crew could only be a flat list of agents, so an operator could not compose a l
 > WP index, dependency graph, invariants); it does **not** restate per-WP status.
 
 Shared doctrine every WP assumes: [`conventions.md`](./conventions.md) (extends
-[`../testing/conventions.md`](../RM-26-testing/conventions.md)). Grounding evidence (the seven subsystem
+[`../testing/conventions.md`](/Roadmap/RM-26-testing/conventions.md)). Grounding evidence (the seven subsystem
 maps this plan was authored from) is summarised in [`references.md`](./references.md).
 
 ---
@@ -77,11 +77,11 @@ flatten.
 
 | | |
 |---|---|
-| **Original (D-AH9, [`assistant-hub/README.md:67`](../RM-03-assistant-hub/item.md))** | "Decomposition depth is **1** (planner only) in v1; recursion is a flagged future option." Enforced *structurally*: `proposePlan` requires `session.kind === 'chat'` (`orchestrator.ts:330` (`../../apps/api/src/hub/missions/orchestrator.ts`)); the `mission.propose_plan` builtin is withheld from agent sessions (`tools/builtins/index.ts` (`../../apps/api/src/hub/tools/builtins/index.ts`)); `HubMissionPlan.agents` is a **flat** array. |
+| **Original (D-AH9, [`assistant-hub/README.md:67`](/Roadmap/RM-03-assistant-hub/item.md))** | "Decomposition depth is **1** (planner only) in v1; recursion is a flagged future option." Enforced *structurally*: `proposePlan` requires `session.kind === 'chat'` (`orchestrator.ts:330` (`../../apps/api/src/hub/missions/orchestrator.ts`)); the `mission.propose_plan` builtin is withheld from agent sessions (`tools/builtins/index.ts` (`../../apps/api/src/hub/tools/builtins/index.ts`)); `HubMissionPlan.agents` is a **flat** array. |
 | **Amendment (D-CN1)** | Depth **> 1 is permitted only for saved-crew *composition*** via `crewId` members, expanded by the deterministic instantiation engine, bounded by `HUB_MISSION_MAX_DEPTH`, a whole-tree agent cap, and the whole-tree budget ceiling. Agents *still* cannot spawn: the propose gate and withheld builtin **stay**. The planner path stays depth-flat. |
 
 A WP that believes a D-CN decision is wrong **STOPS and writes a STATUS blocker** — it does not
-improvise (house rule; see [`assistant-hub/README.md`](../RM-03-assistant-hub/item.md)).
+improvise (house rule; see [`assistant-hub/README.md`](/Roadmap/RM-03-assistant-hub/item.md)).
 
 ---
 

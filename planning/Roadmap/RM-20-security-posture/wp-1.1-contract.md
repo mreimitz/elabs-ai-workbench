@@ -9,7 +9,7 @@ status: "final"
 # WP 1.1 — the security-posture contract: findings, report, score, rule-id registry
 
 Phase 1 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** nothing.
 **Consumed by:** WP 1.2 (the server analyzer implements the rule ids declared here), WP 1.3/1.4/2.x

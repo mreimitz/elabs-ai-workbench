@@ -3,7 +3,7 @@ type: "Roadmap Item"
 title: "Assistant Hub — the full-page multi-model, multi-agent assistant"
 description: "Build the full-page Assistant: general-purpose identity, chat, research and mission session modes, a planner that proposes subagent teams with per-agent grants and budgets, declarative generative UI, artifacts, memory and usage telemetry."
 tags: ["roadmap", "RM-03"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:37Z"
 status: "active"
 ---
 
@@ -114,7 +114,7 @@ The decisions above are refined by a **normative requirement catalog** —
 [`requirements.md`](./requirements.md) (R-SES / R-MCP / R-SK / R-UX ids, each MUST/SHOULD-graded
 and mapped to its owning WP) — distilled from the researched state of the art in MCP tool
 handling, skill handling, and Fable-5-session interaction/visual feedback. Evidence:
-[`research/agentic-session-sota/`](../../Research/RS-06-agentic-session-sota/) (docs 00–03,
+[`research/agentic-session-sota/`](/Research/RS-06-agentic-session-sota/) (docs 00–03,
 web-verified 2026-07-17). WP Acceptance includes the WP's MUST-graded requirements; the annex's
 WP impact map is authoritative for which requirement binds where.
 
@@ -154,7 +154,7 @@ Five waves — full WP detail, file ownership, dependency graph and the orchestr
 - **The [P2] register in [`requirements.md`](./requirements.md)** — programmatic tool calling,
   the MCP Apps/tasks extensions, provider-side compaction betas, `/btw`-style side questions,
   session insights, OS push, scheduled sessions — researched, deliberately deferred.
-- Replacing the deterministic [`advisor`](../RM-01-advisor/) or auto-rating pipelines — the Hub may
+- Replacing the deterministic [`advisor`](/Roadmap/RM-01-advisor/) or auto-rating pipelines — the Hub may
   *consume* their outputs later; it does not duplicate them.
 
 ## 6. Risks & open questions
@@ -183,12 +183,12 @@ Five waves — full WP detail, file ownership, dependency graph and the orchestr
 
 - Execution: [`execution-plan.md`](./execution-plan.md) · [`requirements.md`](./requirements.md)
   (normative R-catalog) · [`kickoff-prompt.md`](./kickoff-prompt.md) · [`STATUS.md`](./STATUS.md)
-- Research evidence: [`research/agentic-session-sota/`](../../Research/RS-06-agentic-session-sota/)
+- Research evidence: [`research/agentic-session-sota/`](/Research/RS-06-agentic-session-sota/)
   (00 Fable-session anatomy · 01 MCP tool handling · 02 skills · 03 interaction & feedback ·
   04 generative UI / Agent2UI — Thesys OpenUI · CopilotKit · assistant-ui, with the
   system-prompt playbook and the `@elabs-ai/components-ai` gap list)
-- Context this builds on: [`roadmap/unified-sessions/`](../RM-29-unified-sessions/) (session contract),
-  [`roadmap/claude-subscription/`](../RM-09-claude-subscription/) (subscription executor patterns),
-  [`roadmap/assistant/`](../RM-02-assistant/) (the dock — what this is NOT),
-  [`roadmap/observability/`](../RM-17-observability/) (sequencing sibling),
+- Context this builds on: [`roadmap/unified-sessions/`](/Roadmap/completed/RM-29-unified-sessions) (session contract),
+  [`roadmap/claude-subscription/`](/Roadmap/RM-09-claude-subscription/) (subscription executor patterns),
+  [`roadmap/assistant/`](/Roadmap/RM-02-assistant/) (the dock — what this is NOT),
+  [`roadmap/observability/`](/Roadmap/RM-17-observability/) (sequencing sibling),
   `vendor/brand-ui-agent-kit/llms/ai.txt` + `playbooks/ai-assistant.md` (the component vocabulary).

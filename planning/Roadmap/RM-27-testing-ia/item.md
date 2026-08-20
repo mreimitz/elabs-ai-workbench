@@ -38,11 +38,11 @@ The Testing area had grown seven navigation entries and three ways to start a ru
 > (both themes / a11y / redirects / click-through) is **not done** — no provider key; tracked in the
 > ledger's Owner-acceptance section.
 
-Decision record: [`../testing/ia-restructure-handover.md`](../RM-26-testing/ia-restructure-handover.md)
+Decision record: [`../testing/ia-restructure-handover.md`](/Roadmap/RM-26-testing/ia-restructure-handover.md)
 (owner Q1–Q3 + PM Q4a–Q4d + owner addendum, all 2026-07-04). Living state:
 [`STATUS.md`](./STATUS.md) (driven by `/next-wp testing-ia`). Shared rules:
 [`conventions.md`](./conventions.md) (thin — mostly points at
-[`../testing/conventions.md`](../RM-26-testing/conventions.md)).
+[`../testing/conventions.md`](/Roadmap/RM-26-testing/conventions.md)).
 
 ## What we're building
 

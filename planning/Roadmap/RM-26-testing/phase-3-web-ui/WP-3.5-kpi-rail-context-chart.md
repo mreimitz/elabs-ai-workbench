@@ -15,7 +15,7 @@ The right-pane top zones: live KPI counters and the context-window timeline — 
 centerpiece.
 
 ## Why / references
-UI concept [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§4 Zone A** (KPI rail wireframe)
+UI concept [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§4 Zone A** (KPI rail wireframe)
 and **§4 Zone B** (context-window chart wireframe). Data model:
 [`../references.md`](../references.md) → *Braintrust — token usage* (utilization %, composition,
 per-step) and *Klipfolio* (critical metric upper-left, 5–10 KPIs). Chart lib = `@elabs-ai/components-charts`

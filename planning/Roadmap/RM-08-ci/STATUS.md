@@ -297,7 +297,7 @@ wp/ci/<id>`.
       `mcpfp-remote-gate.yml` (a persistent shared instance reached with `MCPFP_URL`/`MCPFP_TOKEN`
       from repository secrets, the only topology where deltas and suite gates mean anything), plus
       the two gate files they reference and
-      [`user-guide/23-ci-github-actions.md`](../../user-guide/DC-19-ci-github-actions/23-ci-github-actions.md). Decisions
+      [`user-guide/23-ci-github-actions.md`](/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md). Decisions
       **D-C17–D-C19** in the log below. **No source change at all** — `.github/workflows`,
       `apps/cli`, `apps/api/src`, `apps/web`, `packages/shared/src`, `pnpm-lock.yaml`, `.env.example`
       and every `package.json` measured at **zero lines**; the only api-side addition is the
@@ -522,7 +522,7 @@ wp/ci/<id>`.
       `tools/list` returns) grouped by a new `WORKBENCH_MCP_TOOL_FAMILIES` declaration, so it cannot
       drift; it sits *under* the mount path, so the `mcp_server` feature's existing `/api/mcp` prefix
       403s it with the endpoint it documents (`GET /api/mcp` itself still answers 405). **(b)**
-      [`user-guide/20-workbench-mcp-server.md`](../../user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md) — the
+      [`user-guide/20-workbench-mcp-server.md`](/user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md) — the
       owner-facing playbook (connect Claude Code / Cursor, worked questions, the read-only guarantee,
       the Settings › Features switch, what is *not* built yet). **(c) The D-MCP5 dogfood gate:**
       `pnpm mcp:self-scan` serves the real mount on an ephemeral loopback port against a throwaway DB
@@ -596,7 +596,7 @@ MCP) here._
   GitHub Actions workflow). Full text + the design they bind:
   [`wp-2.3-github-actions.md`](./wp-2.3-github-actions.md). Shipped as
   `examples/github-actions/{mcpfp-footprint-gate.yml,mcpfp-remote-gate.yml,mcpfp.assert.json,mcpfp.suite.assert.json}`
-  + [`user-guide/23-ci-github-actions.md`](../../user-guide/DC-19-ci-github-actions/23-ci-github-actions.md), and pinned by
+  + [`user-guide/23-ci-github-actions.md`](/user-guide/DC-19-ci-github-actions/23-ci-github-actions.md), and pinned by
   `apps/api/test/ci-examples.test.ts`.
   - **D-C17 — the packaged workflow ships as an EXAMPLE, and a TEST is what keeps it honest.** A live
     `.github/workflows/mcpfp-gate.yml` here would need a running workbench *and* a registered MCP
@@ -958,7 +958,7 @@ MCP) here._
   - **D-MCP6 — Feature flag:** ships behind a Settings › Features flag (the `feature-flags.ts`
     registry precedent); off = 403 `feature_disabled` on the mount, nav untouched.
 
-  _Rationale:_ [`research/langfuse-landscape/`](../../Research/RS-05-langfuse-landscape/) `01 §G10` +
+  _Rationale:_ [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/) `01 §G10` +
   the `02` matrix row "Exposes an MCP server over itself" — every compared platform (Langfuse,
   LangSmith, Phoenix, Opik, Braintrust, Weave) ships one; the MCP workbench does not.
 

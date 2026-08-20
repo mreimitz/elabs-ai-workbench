@@ -15,7 +15,7 @@ Author scenarios (the harness) and tests (the workloads), including the server�
 **live static footprint**, profile selection, system prompt, guardrails, and attachments.
 
 ## Why / references
-Scope decisions #5–#7, #11, #13–#15. UI concept [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md)
+Scope decisions #5–#7, #11, #13–#15. UI concept [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md)
 §6 (pre-run shows the frozen config + baseline footprint) and §9 (component mapping). The allow-list
 footprint reuses existing scan/token data — the app's core strength.
 

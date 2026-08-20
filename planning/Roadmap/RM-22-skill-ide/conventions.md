@@ -8,7 +8,7 @@ status: "final"
 ---
 # Skill IDE plan — conventions
 
-The [SkillFlow conventions](../RM-23-skillflow/conventions.md) apply **verbatim** to every Skill IDE
+The [SkillFlow conventions](/Roadmap/RM-23-skillflow/conventions.md) apply **verbatim** to every Skill IDE
 work package: quality gate (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`),
 contract-first in `packages/shared` (WP 1.1 owns the contract; later WPs additive-only),
 never-execute invariant, deterministic/versioned engines, storage immutability, round-trip

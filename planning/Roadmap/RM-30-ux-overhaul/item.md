@@ -39,7 +39,7 @@ orchestrating parallel worktree sub-agents.
 
 **Read order for any agent entering this plan:**
 1. `/CLAUDE.md` + `.claude/rules/*` (repo law — brand-ui only, contract-first, quality gate)
-2. [`../testing/conventions.md`](../RM-26-testing/conventions.md) (stack ground truth, API layering)
+2. [`../testing/conventions.md`](/Roadmap/RM-26-testing/conventions.md) (stack ground truth, API layering)
 3. [`conventions.md`](./conventions.md) (UX-program-specific rules: verification, shells, domains)
 4. [`orchestration.md`](./orchestration.md) (PM only: scheduling, worktrees, merge protocol)
 5. [`STATUS.md`](./STATUS.md) (**authoritative ledger** — the only live state)

@@ -576,7 +576,12 @@ def validate_concept(
 
 
 def resolve_link(root: Path, source: Path, target: str) -> Optional[Path]:
-    target = target.strip().split(maxsplit=1)[0]
+    # An anchor-only link ("[x](#section)") reaches here as an empty head via
+    # split_link_target, so guard before indexing the split.
+    pieces = target.strip().split(maxsplit=1)
+    if not pieces:
+        return None
+    target = pieces[0]
     target = target.split("#", 1)[0].split("?", 1)[0]
     if not target or target.startswith("#"):
         return None

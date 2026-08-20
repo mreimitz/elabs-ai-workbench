@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Interface Craft — write the six rules that were never written"
 description: "Close the fifteen findings of the cross-discipline interface review by writing and applying the accessibility, layout, writing, typography, colour and component rules the app had been following only by habit."
 tags: ["roadmap", "RM-15"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "active"
+timestamp: "2026-08-20T14:03:58Z"
+status: "done"
 ---
 
 # Interface Craft — write the six rules that were never written
@@ -19,11 +19,11 @@ A cross-discipline review returned a blocking verdict on five high findings, all
 
 ## Milestones
 
-- [ ] Phase 0 — independent structural fixes.
-- [ ] Phase 1 — structure.
-- [ ] Phase 2 — consistency.
-- [ ] Phase 3 — voice.
-- [ ] Phase 4 — close and guardrails.
+- [x] Phase 0 — independent structural fixes.
+- [x] Phase 1 — structure.
+- [x] Phase 2 — consistency.
+- [x] Phase 3 — voice.
+- [x] Phase 4 — close and guardrails.
 
 ## Linked research
 
@@ -90,8 +90,8 @@ and built a two-track architecture to avoid colliding with it. **That is no long
     (`AgentCard.tsx:186,234`); **`CrewCard.tsx:60` did not**. The remainder is **folded into WP 2.1**.
   - **0.c (D-TB1 amendment — section-titling cards need a semantic heading)** is recorded, as
     instructed, next to the original D-TB1 in
-    [`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`](../RM-30-ux-overhaul/toolbar-standard-2026-07-11.md)
-    and cross-linked from [`roadmap/toolbar-reach/README.md`](../RM-28-toolbar-reach/item.md). It is
+    [`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`](/Roadmap/RM-30-ux-overhaul/toolbar-standard-2026-07-11.md)
+    and cross-linked from [`roadmap/toolbar-reach/README.md`](/Roadmap/completed/RM-28-toolbar-reach/item.md). It is
     restated here as **D-IC5** and implemented by **WP 1.1**.
 - **The kickoff's "Sequencing note — Track 2 cannot overlap toolbar-reach" is obsolete.** It mapped
   every remaining finding to a colliding toolbar-reach WP. Those WPs are merged, so there is nothing
@@ -135,7 +135,7 @@ as a "Running" chip, and a filled green button / green success chip / green impr
 one screen with only position to disambiguate.
 
 ### D-IC3 — One delta convention, implemented once
-Reaffirm **D-UX9** ([`roadmap/ux-overhaul/STATUS.md:143`](../RM-30-ux-overhaul/STATUS.md)) and move it into a
+Reaffirm **D-UX9** ([`roadmap/ux-overhaul/STATUS.md:143`](/Roadmap/RM-30-ux-overhaul/STATUS.md)) and move it into a
 single shared helper (`lib/delta.ts`). **No view computes its own delta tone.** Today six surfaces
 disagree: "worse" is amber on Scans and red on all five Compare surfaces; "better" is `text-success`
 everywhere **except** `text-primary` at `SuiteDeltas.tsx:245`.

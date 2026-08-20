@@ -27,7 +27,7 @@ wp/testing-ia/<id>`.
 > below. Origin push + a PR are owner-gated (not done).
 
 > Plan + decisions in [`README.md`](./item.md); decision record in
-> [`../testing/ia-restructure-handover.md`](../RM-26-testing/ia-restructure-handover.md). **Execute in
+> [`../testing/ia-restructure-handover.md`](/Roadmap/RM-26-testing/ia-restructure-handover.md). **Execute in
 > parallel:** follow the batch map in README §Parallel execution map (batch 1: 1.1 ∥ 1.2 ·
 > batch 2: 2.1 ∥ 2.2 ∥ 3.0 · batch 3: 3.1 ∥ 3.2 ∥ 4.1 · then 3.3 → 3.4 → 4.2 solo) — one
 > worktree sub-agent per WP, never two agents on the same file. **Kickoff (owner):** lock

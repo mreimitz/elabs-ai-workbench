@@ -3,7 +3,7 @@ type: "Research Topic"
 title: "Unified Run Sessions"
 description: "Work out why a run session looks and behaves differently depending on which backend executed it, and define one session contract that covers the API engine, the CLI subscription engine and the vendor assistant wrapper."
 tags: ["research", "RS-03"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:37Z"
 status: "done"
 ---
 
@@ -35,8 +35,8 @@ Every difference between the three backends is named, and the contract answers e
 
 **Status: IMPLEMENTED (2026-07-16).** All decisions **D-US1…D-US15** have shipped in Waves 1–5 +
 the OpenAI-compat facade. The authoritative record of what was built lives in
-[`roadmap/unified-sessions/STATUS.md`](../../Roadmap/RM-29-unified-sessions/STATUS.md) (the ledger);
-decisions are in [`roadmap/unified-sessions/README.md`](../../Roadmap/RM-29-unified-sessions/item.md).
+[`roadmap/unified-sessions/STATUS.md`](../../Roadmap/completed/RM-29-unified-sessions/STATUS.md) (the ledger);
+decisions are in [`roadmap/unified-sessions/README.md`](../../Roadmap/completed/RM-29-unified-sessions/item.md).
 These research docs remain the evidence base; where doc 01's concept v0 differs from a locked
 decision (e.g. extend-button vs stall-based clock, End-session→completed vs the `ended` terminal),
 **the D-US table wins**.

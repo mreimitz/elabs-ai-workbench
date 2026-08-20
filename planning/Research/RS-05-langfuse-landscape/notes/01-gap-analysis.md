@@ -1,11 +1,12 @@
 ---
 type: "Research Note"
-title: "01 \u2014 Gap analysis: Langfuse vs. this app"
+title: "01 — Gap analysis: Langfuse vs. this app"
 description: "Comparison across twelve dimensions, then the honest inverse (where this app is ahead), then a"
 tags: ["research", "RS-05"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:37Z"
 status: "final"
 ---
+
 # 01 — Gap analysis: Langfuse vs. this app
 
 Comparison across twelve dimensions, then the honest inverse (where this app is ahead), then a
@@ -25,7 +26,7 @@ build/buy calculus is real, not hypothetical).
 
 **How this relates to the LangSmith analysis:** the observability roadmap
 ([`roadmap/observability/`](../../../Roadmap/RM-17-observability/), D-OB1–28) and unified sessions
-([`roadmap/unified-sessions/`](../../../Roadmap/RM-29-unified-sessions/), D-US1–15) were derived from the
+([`roadmap/unified-sessions/`](../../../Roadmap/completed/RM-29-unified-sessions), D-US1–15) were derived from the
 LangSmith gaps. So the interesting question here is not "does Langfuse expose gaps" (mostly the
 same ones) but **"does Langfuse change the plan"**: each dimension below carries a *plan status*
 — `planned` (a locked WP covers it), `plan+` (planned, but Langfuse adds a pattern worth

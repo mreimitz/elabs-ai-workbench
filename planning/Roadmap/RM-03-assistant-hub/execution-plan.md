@@ -188,7 +188,7 @@ tool/skill budget knobs: `HUB_TOOL_LOADING_DEFAULT` (`deferred`) ·
 
 [`requirements.md`](./requirements.md) — the R-catalog (R-SES/R-MCP/R-SK/R-UX/R-GUI,
 MUST/SHOULD/[P2]) distilled from
-[`research/agentic-session-sota/`](../../Research/RS-06-agentic-session-sota/) docs 00–04 (04 adds
+[`research/agentic-session-sota/`](/Research/RS-06-agentic-session-sota/) docs 00–04 (04 adds
 declarative generative UI from Thesys OpenUI / CopilotKit / assistant-ui, incl. the §4
 system-prompt playbook WP0.3 implements and the `@elabs-ai/components-ai` upstream gap list WP2.6 files).
 **A WP's Acceptance includes its MUST-graded requirements per the annex's WP impact map**

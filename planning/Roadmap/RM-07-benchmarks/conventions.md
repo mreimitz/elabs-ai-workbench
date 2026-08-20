@@ -8,7 +8,7 @@ status: "final"
 ---
 # Benchmarks — shared conventions
 
-The [`testing`](../RM-26-testing/conventions.md) and [`skillflow`](../RM-23-skillflow/conventions.md)
+The [`testing`](/Roadmap/RM-26-testing/conventions.md) and [`skillflow`](/Roadmap/RM-23-skillflow/conventions.md)
 conventions apply verbatim (contract-first in `packages/shared`, runtime/secret boundary,
 `@elabs-ai/components-*`-only UI in both themes, honest reporting, gate =
 `pnpm typecheck && pnpm test && pnpm build && pnpm lint`). Additions specific to this workstream:

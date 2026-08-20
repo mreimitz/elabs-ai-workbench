@@ -80,6 +80,6 @@ visual claims cite the running app at `localhost:8080`, both themes.
 
 ## Reference
 Architecture + locked decisions: [`00-architecture.md`](./00-architecture.md). Existing plans this
-one builds on: [`../skills/`](../RM-24-skills/) (registry, attachment, never-execute invariant),
-[`../testing/`](../RM-26-testing/) (run engine, `run_steps`, console UI). Skill-format ground truth:
-[`../../research/skill-registry/01-agent-skills-format.md`](../../Research/RS-02-skill-registry/notes/01-agent-skills-format.md).
+one builds on: [`../skills/`](/Roadmap/RM-24-skills/) (registry, attachment, never-execute invariant),
+[`../testing/`](/Roadmap/RM-26-testing/) (run engine, `run_steps`, console UI). Skill-format ground truth:
+[`../../research/skill-registry/01-agent-skills-format.md`](/Research/RS-02-skill-registry/notes/01-agent-skills-format.md).

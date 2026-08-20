@@ -9,7 +9,7 @@ status: "final"
 # WP 2.1 — `mcpfp suite run`: trigger, poll, result summary
 
 Phase 2 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.2 (the `mcpfp` CLI — done 2026-08-19, `wp/ci/1.2`), Benchmarks WP 3.2 (the
 suite-run orchestrator — done; `POST /api/suites/:id/run` + the suite-run read surface exist).

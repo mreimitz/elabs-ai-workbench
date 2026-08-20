@@ -15,7 +15,7 @@ The right-pane bottom zone: a virtualized, filterable step/packet log, and the d
 "select and inspect every package."
 
 ## Why / references
-UI concept [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§4 Zone C** (step-log wireframe)
+UI concept [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§4 Zone C** (step-log wireframe)
 and **§5** (packet inspector wireframe + tabs). Design lessons:
 [`../references.md`](../references.md) → *MLflow — best UI* (click a span → detail panel; stable under
 load) and *Braintrust* (scale rows by cost so the expensive step pops); *MCP Inspector* (raw JSON

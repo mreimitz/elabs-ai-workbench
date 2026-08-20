@@ -10,7 +10,7 @@ status: "final"
 
 > **Status: PROPOSED 2026-08-18 — owner-gated backlog** (same posture as this folder's
 > Phase 5). Two small grading-domain features imported from the landscape research
-> ([`research/langfuse-landscape/01-gap-analysis.md`](../../Research/RS-05-langfuse-landscape/notes/01-gap-analysis.md)
+> ([`research/langfuse-landscape/01-gap-analysis.md`](/Research/RS-05-langfuse-landscape/notes/01-gap-analysis.md)
 > §G7; Braintrust "rewind" in §02). Follows the single-WP-doc precedent of
 > [`wp-ai-pattern-grader.md`](./wp-ai-pattern-grader.md). AR1–AR16 untouched; AR6
 > (append-only `run_grades`, expectation metrics keep their meaning) is the hard constraint

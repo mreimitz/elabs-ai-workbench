@@ -39,7 +39,7 @@ human) to implement a single WP without needing the rest of the conversation.
 ## Read these first (in order)
 
 1. [`../09-testing.md`](./09-testing-scope.md) — **scope**: the 16 locked product decisions.
-2. [`../10-testing-ui-concept.md`](../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) — **UI concept**: wireframes
+2. [`../10-testing-ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) — **UI concept**: wireframes
    + `@elabs-ai/components-*` component mapping. Phase 3 WPs reference its sections directly.
 3. [`conventions.md`](./conventions.md) — **shared rules** every WP assumes (repo patterns,
    contract-first flow, security boundary, definition of done, how to work a WP). Each WP file stays

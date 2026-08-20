@@ -9,7 +9,7 @@ status: "final"
 # WP 2.2 — suite/grade assertions + the baseline-delta PR-comment artifact
 
 Phase 2 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.3 (the assertions engine + `mcpfp assert` — done 2026-08-19, `wp/ci/1.3`),
 WP 2.1 (`mcpfp suite run` — the command that produces the suite run a suite gate asserts against).

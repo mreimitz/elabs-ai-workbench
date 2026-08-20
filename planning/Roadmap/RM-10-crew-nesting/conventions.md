@@ -11,7 +11,7 @@ status: "final"
 Shared rules and repo patterns so each WP spec stays focused on its own work. If a WP contradicts
 this file, the WP is wrong — fix the WP. The generic repo doctrine (stack ground truth, package
 boundaries, persistence, web conventions, naming) lives in
-[`../testing/conventions.md`](../RM-26-testing/conventions.md) and applies verbatim; this file adds the
+[`../testing/conventions.md`](/Roadmap/RM-26-testing/conventions.md) and applies verbatim; this file adds the
 **crew-nesting-specific** doctrine that the D-CN decisions impose.
 
 ## The quality gate (definition of done)

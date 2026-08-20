@@ -36,7 +36,7 @@ assertions, exit codes, and a PR-comment artifact — so a repository owning an 
 skill can gate every change on footprint, quality, and posture deltas.
 
 Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp ci`). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) apply; decisions below to be locked at kickoff.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) apply; decisions below to be locked at kickoff.
 
 ## What we're building
 
@@ -57,7 +57,7 @@ Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp ci`). Shared rules
    agents (Claude Code, Cursor, CI) — a streamable-HTTP MCP mount on the API projecting the
    read surface, then token-scoped writes. Plan, decisions **D-MCP1–6**, and WPs **M.1–M.4**:
    [`mcp-server.md`](./mcp-server.md) (evidence:
-   [`research/langfuse-landscape/`](../../Research/RS-05-langfuse-landscape/) — every compared
+   [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/) — every compared
    platform ships an MCP server over itself).
 
 ## Decisions to lock at kickoff (owner)

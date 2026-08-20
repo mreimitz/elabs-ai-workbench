@@ -14,7 +14,7 @@ status: "final"
 
 Normative refinement of the locked decisions **D-AH1…20** ([README](./item.md)) with
 state-of-the-art specifics. Evidence lives in
-[`research/agentic-session-sota/`](../../Research/RS-06-agentic-session-sota/) (docs 00–03); this annex
+[`research/agentic-session-sota/`](/Research/RS-06-agentic-session-sota/) (docs 00–03); this annex
 is what WPs implement. **MUST** = acceptance-blocking for the owning WP; **SHOULD** = implement
 unless a STATUS blocker records why not; **[P2]** = flagged future scope, do not build in v1.
 Nothing here reopens a locked decision; where a requirement sharpens one, the D-AH id is cited.

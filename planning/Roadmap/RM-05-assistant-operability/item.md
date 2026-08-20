@@ -39,7 +39,7 @@ context/suggestion/navigation registries. This workstream makes assistant-operab
 gated rule** and brings the Hub up to that bar.
 
 Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp assistant-operability`). Shared rules:
-the [testing conventions](../RM-26-testing/conventions.md) apply (gate, contract-first shared→api→web,
+the [testing conventions](/Roadmap/RM-26-testing/conventions.md) apply (gate, contract-first shared→api→web,
 package boundaries); plan-specific doctrine is in this README's Invariants. Decisions D-AO1–D-AO6
 below are locked into `STATUS.md`'s Decision log at kickoff.
 

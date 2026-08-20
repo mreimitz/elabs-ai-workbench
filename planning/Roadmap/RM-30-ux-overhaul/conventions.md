@@ -8,7 +8,7 @@ status: "final"
 ---
 # UX-overhaul conventions — every sub-agent reads this before coding
 
-Layered ON TOP of [`../testing/conventions.md`](../RM-26-testing/conventions.md) (stack, gate,
+Layered ON TOP of [`../testing/conventions.md`](/Roadmap/RM-26-testing/conventions.md) (stack, gate,
 contract-first, API layering) and `.claude/rules/*` (brand-ui only, tokens, secrets). If this file
 contradicts a WP spec, this file wins; if it contradicts `/CLAUDE.md`, CLAUDE.md wins.
 

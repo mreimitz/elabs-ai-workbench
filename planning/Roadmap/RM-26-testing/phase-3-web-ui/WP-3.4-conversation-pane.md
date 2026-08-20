@@ -14,7 +14,7 @@ status: "final"
 The left pane: streaming conversation with reasoning, tool-call cards, and the interactive composer.
 
 ## Why / references
-UI concept [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§3** (conversation + tool-call
+UI concept [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§3** (conversation + tool-call
 card wireframe). SOTA chat patterns: [`../references.md`](../references.md) → *IntuitionLabs*,
 *TheFrontKit* (streaming + reasoning + tool execution displays are table stakes). Events from WP 2.2.
 

@@ -30,9 +30,9 @@ Skills consume model context exactly as tool definitions do, and the workbench c
 
 Executable plan for the **Skill Registry & Inspector** feature and its **scenario attachment**,
 driven by `/next-wp skills`. The design/research this plan implements lives in
-[`../../research/skill-registry/`](../../Research/RS-02-skill-registry/) (read its `README.md` first);
+[`../../research/skill-registry/`](/Research/RS-02-skill-registry/) (read its `README.md` first);
 every decision is locked in
-[`../../research/skill-registry/10-open-questions.md`](../../Research/RS-02-skill-registry/notes/10-open-questions.md).
+[`../../research/skill-registry/10-open-questions.md`](/Research/RS-02-skill-registry/notes/10-open-questions.md).
 
 Shared rules: [`conventions.md`](./conventions.md). Living state: [`STATUS.md`](./STATUS.md).
 

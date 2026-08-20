@@ -8,7 +8,7 @@ status: "final"
 ---
 # Testing IA — conventions
 
-The [testing conventions](../RM-26-testing/conventions.md) apply in full (stack ground truth, quality
+The [testing conventions](/Roadmap/RM-26-testing/conventions.md) apply in full (stack ground truth, quality
 gate, security boundary). Additions specific to this workstream:
 
 - **Contract-first, additive-only.** Every wire change lands in `packages/shared`

@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Server types — a first-class grouping for MCP servers"
 description: "Give MCP servers a first-class type, so servers sharing a tool surface and configuration shape can be grouped, filtered and bound to as a type rather than one server at a time."
 tags: ["roadmap", "RM-21"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "active"
+timestamp: "2026-08-20T14:02:56Z"
+status: "done"
 ---
 
 # Server types — a first-class grouping for MCP servers
@@ -19,10 +19,10 @@ A skill authored against one production server broke the moment it was pointed a
 
 ## Milestones
 
-- [ ] Phase 1 — contract, schema and API.
-- [ ] Phase 2 — the Servers UI.
-- [ ] Phase 3 — skill type binding.
-- [ ] Phase 4 — downstream awareness.
+- [x] Phase 1 — contract, schema and API.
+- [x] Phase 2 — the Servers UI.
+- [x] Phase 3 — skill type binding.
+- [x] Phase 4 — downstream awareness.
 
 ## Linked research
 

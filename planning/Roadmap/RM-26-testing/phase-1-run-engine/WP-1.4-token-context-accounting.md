@@ -23,7 +23,7 @@ oversized tool schemas inflate prompt tokens — exactly what we visualize). Fie
 *OpenTelemetry GenAI* (`input_tokens`/`output_tokens`/cache/reasoning). Anthropic cache fields per
 *Anthropic prompt caching*. Reuse the `TokenCounter` interface
 (`apps/api/src/token-counting/types.ts`) and profiles (`profiles.ts`). Extends
-[`../../04-token-counting-strategy.md`](../../../Research/RS-09-token-counting-strategy/outputs/token-counting-strategy.md) from "definition only" to
+[`../../04-token-counting-strategy.md`](/Research/RS-09-token-counting-strategy/outputs/token-counting-strategy.md) from "definition only" to
 "definition + runtime".
 
 ## Files (new)

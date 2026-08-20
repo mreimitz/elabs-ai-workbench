@@ -16,7 +16,7 @@ and observe runs.
 
 ## Why / references
 Web has no router and no streaming (`conventions.md` → Web). UI concept
-[`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §1 (nav placement). SSE protocol = WP 2.2;
+[`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §1 (nav placement). SSE protocol = WP 2.2;
 `RunEvent` = WP 0.3.
 
 ## Files

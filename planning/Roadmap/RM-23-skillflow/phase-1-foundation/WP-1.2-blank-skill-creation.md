@@ -19,7 +19,7 @@ lands, immediately designable.
 ## Why / references
 D3. The wizard (`SkillWizard`, skills WP 1.6) and the ingest path (`SkillIngestService`, skills
 WP 1.3) already exist — this WP adds a source, not a pipeline. Scaffold must satisfy the manifest
-rules in [`../../../research/skill-registry/01-agent-skills-format.md`](../../../Research/RS-02-skill-registry/notes/01-agent-skills-format.md).
+rules in [`../../../research/skill-registry/01-agent-skills-format.md`](/Research/RS-02-skill-registry/notes/01-agent-skills-format.md).
 
 ## Files
 - `packages/shared/src/{types,schemas}.ts` *(modify)* — extend the create-skill body with

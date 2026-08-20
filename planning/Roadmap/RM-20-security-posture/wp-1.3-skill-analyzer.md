@@ -9,7 +9,7 @@ status: "final"
 # WP 1.3 — skill analyzer: security-surface roll-up into the same report shape + score
 
 Phase 1 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.1 (the contract — the shapes, the score, the ordering, the redactor, the finding
 factory) and, in practice, WP 1.2's `apps/api/src/security/` module, whose text heuristics this WP

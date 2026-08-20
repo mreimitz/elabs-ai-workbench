@@ -16,7 +16,7 @@ each LLM — server-, tool-, session-, and aggregate-level — backed by a prove
 It is **additive**: the run engine (Phase 1–4) explicitly defers hard tool caps, schema
 micro-limits, result-size, timeouts, rate limits, and client caps to this suite. The full design +
 verified ground truth is in the approved plan; the research spec is
-[`03-compatibility-test-suite.md`](../../../Research/RS-01-token-context-comparison/outputs/03-compatibility-test-suite.md)
+[`03-compatibility-test-suite.md`](/Research/RS-01-token-context-comparison/outputs/03-compatibility-test-suite.md)
 (31 tests) with the machine catalog `tests/test-catalog.json`.
 
 ## Source-of-truth & maintenance (the durable answer)

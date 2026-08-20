@@ -3,7 +3,7 @@ type: "Research Topic"
 title: "Langfuse & the Alternatives Landscape"
 description: "Answer whether Langfuse — or any alternative observability platform — changes the already-locked observability plan, and identify what is genuinely net-new."
 tags: ["research", "RS-05"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:37Z"
 status: "done"
 ---
 
@@ -37,7 +37,7 @@ Every compared platform is evidenced, and the handoff states plainly which findi
 This bundle *extends* [`../langsmith-observability/`](../RS-04-langsmith-observability/)
 (2026-07-16), whose gaps were already converted into the locked
 [`roadmap/observability/`](../../Roadmap/RM-17-observability/) (D-OB1–28) and
-[`roadmap/unified-sessions/`](../../Roadmap/RM-29-unified-sessions/) (D-US1–15) plans. The framing
+[`roadmap/unified-sessions/`](../../Roadmap/completed/RM-29-unified-sessions) (D-US1–15) plans. The framing
 question here is therefore different: **does Langfuse (or any alternative) change the plan,
 and what is net-new?**
 

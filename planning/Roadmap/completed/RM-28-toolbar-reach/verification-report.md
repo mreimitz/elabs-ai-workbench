@@ -22,7 +22,7 @@ A-1…D-10 + 3 retractions).
 > geometry in both themes** (numbers below). Content-dependent rows (Compatibility, Compare, Usage) and the
 > run-console visuals are **owner-pending** — they need seeded data or a provider key that this environment
 > lacks — and are marked as such, not signed off. This is the correction the plan demanded of
-> [`../ux-overhaul/verification-report.md:176`](../RM-30-ux-overhaul/verification-report.md) (which WP 0.4 fixed).
+> [`../ux-overhaul/verification-report.md:176`](/Roadmap/RM-30-ux-overhaul/verification-report.md) (which WP 0.4 fixed).
 
 ---
 

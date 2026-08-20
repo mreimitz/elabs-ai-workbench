@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Unified Sessions — one session experience across every run backend"
 description: "Give the three run backends one session contract: a shared terminal table, an additive ended terminal state, a stall-based clock with no default wall cap, a persisted phase, a capability manifest, one status module and cursor-resumable streaming."
 tags: ["roadmap", "RM-29"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "active"
+timestamp: "2026-08-20T14:03:37Z"
+status: "done"
 ---
 
 # Unified Sessions — one session experience across every run backend
@@ -19,11 +19,11 @@ The same event ended three different ways depending on the backend, interactive 
 
 ## Milestones
 
-- [ ] Wave 1 — the contract and the clock.
-- [ ] Wave 2 — stream robustness.
-- [ ] Wave 3 — one console.
-- [ ] Wave 4 — the OpenAI-compatible facade.
-- [ ] Wave 5 — integration and docs.
+- [x] Wave 1 — the contract and the clock.
+- [x] Wave 2 — stream robustness.
+- [x] Wave 3 — one console.
+- [x] Wave 4 — the OpenAI-compatible facade.
+- [x] Wave 5 — integration and docs.
 
 ## Linked research
 
@@ -32,7 +32,7 @@ The same event ended three different ways depending on the backend, interactive 
 ## Plan overview (from the original plan README)
 
 **Status:** ready to start (decisions locked 2026-07-16). Concept + evidence live in
-[`research/unified-run-sessions/`](../../Research/RS-03-unified-run-sessions/) (docs 00–04); this folder
+[`research/unified-run-sessions/`](/Research/RS-03-unified-run-sessions/) (docs 00–04); this folder
 is the implementation workstream. Owner-locked decisions below are **D-US1…D-US15** — agents must
 not reopen them.
 

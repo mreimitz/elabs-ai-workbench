@@ -30,7 +30,7 @@ Canonical first use cases (owner-stated):
 **Naming (hard rule):** the feature is called **"Assistant"** everywhere (dock title, settings
 card, routes `/api/assistant/*`, dirs `apps/{api,web}/src/**/assistant/`). Per Anthropic's Agent
 SDK policy it must **never brand itself "Claude Code"**; UI copy says "powered by your Claude
-subscription". No collision with the planned deterministic [`roadmap/advisor/`](../RM-01-advisor/)
+subscription". No collision with the planned deterministic [`roadmap/advisor/`](/Roadmap/RM-01-advisor/)
 workstream (that one computes evidenced recommendations; this one is a conversational agent —
 they complement, and Advisor output becomes Assistant context later).
 
@@ -46,7 +46,7 @@ they complement, and Advisor output becomes Assistant context later).
   "Agent SDK credit" plan explicitly named subscription-authenticated third-party apps). Status
   quo: SDK usage **draws from the subscription's 5-hour/weekly limits**; billing treatment is
   explicitly in flux. **Hard-prohibited:** offering claude.ai login to a product's *users*
-  (⚠ constrains [`roadmap/team-server/`](../RM-25-team-server/) — see §9), spoofing the Claude Code
+  (⚠ constrains [`roadmap/team-server/`](/Roadmap/RM-25-team-server/) — see §9), spoofing the Claude Code
   client, branding as "Claude Code".
 - **Fallback:** an Anthropic **API key** (reusing the existing encrypted
   `provider_credentials` rows) is a per-session alternative source — never a silent fallback
@@ -254,7 +254,7 @@ DELETE /api/assistant/auth        (sign out)  GET    /api/assistant/threads/:id/
 | **Tests / environments** | author tests + expectations/graders from a prose goal or a failing run; set up an environment reproducing a failure | tests/env write tools (P2) |
 | **Collections / GitHub** | draft PR descriptions, collection READMEs/changelogs | collection read/write (P2) |
 | **Global (any page)** | ad-hoc questions over all data ("which server got more expensive since May?"); draft bespoke markdown reports; app-usage help | read tools + reports |
-| **Later workstreams** | explain security-posture findings + draft remediations ([`security-posture`](../RM-20-security-posture/)); interactive companion to [`advisor`](../RM-01-advisor/) output | their read APIs once built |
+| **Later workstreams** | explain security-posture findings + draft remediations ([`security-posture`](/Roadmap/RM-20-security-posture/)); interactive companion to [`advisor`](/Roadmap/RM-01-advisor/) output | their read APIs once built |
 
 ## 7. Phases & work packages
 
@@ -314,7 +314,7 @@ Agent execution schedule (orchestrator, per-WP models, parallel waves):
 - **No autonomous/background sessions** (interactive only; scheduled analysis could later reuse
   the engine).
 - **No agent access to app source code, DB file, secrets, or exec/network.**
-- Not a replacement for [`advisor`](../RM-01-advisor/) (deterministic, evidenced) or SkillFlow's
+- Not a replacement for [`advisor`](/Roadmap/RM-01-advisor/) (deterministic, evidenced) or SkillFlow's
   fracture→suggestion loop — the Assistant complements both.
 
 ## 9. Risks & open questions
@@ -323,7 +323,7 @@ Agent execution schedule (orchestrator, per-WP models, parallel waves):
   usage is the status quo but may change. Mitigation: API-key fallback is first-class; re-verify
   policy at each phase start.
 - **Team-server collision:** offering claude.ai login to *other users* of a shared instance is
-  prohibited. When [`team-server`](../RM-25-team-server/) lands, the Assistant stays **owner-credential
+  prohibited. When [`team-server`](/Roadmap/RM-25-team-server/) lands, the Assistant stays **owner-credential
   only** (admin-gated) or per-user **API keys** — decide there, not here.
 - **PTY fragility:** `setup-token` output parsing can break on CLI updates → paste fallback is
   permanent; SDK version pinned; PTY flow covered by a parse-fixture test.

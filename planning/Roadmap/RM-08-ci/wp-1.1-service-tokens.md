@@ -9,7 +9,7 @@ status: "final"
 # WP 1.1 — Contract + service tokens (`api_tokens`, auth middleware, Settings UI)
 
 Phase 1 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** nothing. **Consumed by:** WP 1.2 (`mcpfp` CLI), WP M.2 (scopes on the MCP mount),
 `roadmap/team-server/`.

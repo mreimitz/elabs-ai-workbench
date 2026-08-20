@@ -15,7 +15,7 @@ Persist provider credentials, scenarios, tests, and full replayable runs. Decisi
 
 ## Why / references
 Data-model sketch in [`../../09-testing.md`](../09-testing-scope.md) §8; existing model in
-[`../../03-data-model.md`](../../../user-guide/DC-21-architecture/03-data-model.md). Follow the **idempotent append** rule in
+[`../../03-data-model.md`](/user-guide/DC-21-architecture/03-data-model.md). Follow the **idempotent append** rule in
 `conventions.md` — add `CREATE TABLE IF NOT EXISTS` blocks, never rewrite existing ones.
 
 ## Files

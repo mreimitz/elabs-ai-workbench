@@ -15,7 +15,7 @@ The locked two-pane console frame: the top run-bar, the resizable split, the pre
 run lifecycle states. This is the container WP 3.4–3.7 fill.
 
 ## Why / references
-UI concept [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§2** (top-level frame + run-bar
+UI concept [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§2** (top-level frame + run-bar
 wireframe), **§6** (pre-run), **§7** (lifecycle + replay). Component/token mapping in UI §9–§10.
 `RunEvent` status handling = WP 0.3 / 2.2.
 

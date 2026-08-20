@@ -15,7 +15,7 @@ Reopen a saved run in the same console, read-only, with a timeline scrubber that
 any step.
 
 ## Why / references
-UI concept [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§7** (replay run-bar wireframe).
+UI concept [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§7** (replay run-bar wireframe).
 Decision #8 (full replayable artifact). Data from WP 1.6 (`GET /api/runs/:id` → `RunDetail`).
 
 ## Files

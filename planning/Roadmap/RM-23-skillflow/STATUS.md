@@ -21,7 +21,7 @@ a box **only** when that WP's Acceptance is met and the gate
 > `2.1 → 2.2 → 2.3`, then fan out `3.1 ∥ 4.1`.
 
 > **Entry precondition:** the skills plan's deferred owner-acceptance items
-> ([`../skills/STATUS.md`](../RM-24-skills/STATUS.md) — Phase 1 & Phase 2 visual/a11y walks) must be
+> ([`../skills/STATUS.md`](/Roadmap/RM-24-skills/STATUS.md) — Phase 1 & Phase 2 visual/a11y walks) must be
 > closed **or explicitly waived by the owner (with a note here)** before WP 1.0 starts.
 > Waived/closed: **waived by owner 2026-07-03** — go given for SkillFlow implementation; the
 > skills-plan Phase 1/2 visual/a11y walks remain open in `../skills/STATUS.md` and should still

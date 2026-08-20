@@ -11,7 +11,7 @@ status: "final"
 > **Status: PROPOSED 2026-08-18 — pending owner lock.** New phase inside the CI & headless
 > automation workstream (referenced from this folder's README/STATUS as **Phase MCP**; WPs
 > below numbered **WP M.1–M.4** to avoid renumbering the existing plan). Evidence:
-> [`research/langfuse-landscape/`](../../Research/RS-05-langfuse-landscape/) — `01 §G10` and the
+> [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/) — `01 §G10` and the
 > `02` matrix row "Exposes an MCP server over itself": **every compared platform (Langfuse,
 > LangSmith, Phoenix, Opik, Braintrust, Weave) ships one; the MCP workbench does not.**
 
@@ -86,7 +86,7 @@ Docs cross-link from README/CLAUDE.md.
 
 Where it landed: `GET /api/mcp/llms.txt` (rendered by `apps/api/src/mcp-server/llms-txt.ts` from the
 registered definitions + `WORKBENCH_MCP_TOOL_FAMILIES`, so the doc cannot drift from `tools/list`);
-[`user-guide/20-workbench-mcp-server.md`](../../user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md); the gate is
+[`user-guide/20-workbench-mcp-server.md`](/user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md); the gate is
 `pnpm mcp:self-scan` (`apps/api/src/mcp-server/self-scan{,-cli}.ts` → gitignored
 `.artifacts/mcp-self-scan/footprint.{json,md}`, exit 1 over budget / 2 on failure), run in CI by
 `.github/workflows/mcp-self-scan.yml` and in `pnpm test` by

@@ -10,7 +10,7 @@ status: "final"
 
 > **Status: PROPOSED 2026-08-18 — owner-gated backlog.** Three small testing-domain
 > features imported from the landscape research
-> ([`research/langfuse-landscape/`](../../Research/RS-05-langfuse-landscape/) — `01 §G11`,
+> ([`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/) — `01 §G11`,
 > `02 §3`, `03 §5`). Single-WP-doc per the `wp-*.md` precedent; independent parts, each
 > individually droppable. No wire breaks — additive fields/routes only, shared-contract
 > first per `.claude/rules/architecture.md`.

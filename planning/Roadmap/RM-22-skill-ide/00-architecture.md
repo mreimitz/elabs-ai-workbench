@@ -8,7 +8,7 @@ status: "final"
 ---
 # Skill IDE — architecture & locked decisions
 
-Successor plan to [`../skillflow/`](../RM-23-skillflow/) (all 13 WPs shipped). Skill IDE turns the
+Successor plan to [`../skillflow/`](/Roadmap/RM-23-skillflow/) (all 13 WPs shipped). Skill IDE turns the
 Skills + SkillFlow features into an enterprise-grade IDE. Every SkillFlow decision (D1–D8,
 as amended) remains binding; the decisions below extend them.
 

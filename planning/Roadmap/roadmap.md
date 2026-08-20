@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-20T14:01:41Z"
+timestamp: "2026-08-20T14:04:08Z"
 status: "active"
 ---
 
@@ -16,7 +16,6 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-01-advisor](RM-01-advisor/item.md) — Advisor — evidenced recommendations from measurements · `active`
 * [RM-02-assistant](RM-02-assistant/item.md) — Assistant — embedded Claude agent chat · `active`
 * [RM-03-assistant-hub](RM-03-assistant-hub/item.md) — Assistant Hub — the full-page multi-model, multi-agent assistant · `active`
-* [RM-04-assistant-hub-ux](RM-04-assistant-hub-ux/item.md) — Assistant Hub UX — rebuild onto the app shell grammar · `active`
 * [RM-05-assistant-operability](RM-05-assistant-operability/item.md) — Assistant operability — every view exposes an assistant interface · `active`
 * [RM-06-auto-rating](RM-06-auto-rating/item.md) — Auto-Rating — mandatory post-run validation and reports · `active`
 * [RM-07-benchmarks](RM-07-benchmarks/item.md) — Benchmarks — output-quality grading and suite mass-runs · `active`
@@ -27,27 +26,27 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-12-findings](RM-12-findings/item.md) — UI audit and remediation programme (2026-06) · `archived`
 * [RM-13-hub-fixes](RM-13-hub-fixes/item.md) — Assistant Hub defect-fix workstream · `active`
 * [RM-14-illustrations](RM-14-illustrations/item.md) — Illustration design system — theme-token-driven blueprint illustrations · `planned`
-* [RM-15-interface-craft](RM-15-interface-craft/item.md) — Interface Craft — write the six rules that were never written · `active`
 * [RM-16-model-identity](RM-16-model-identity/item.md) — Model identity — a model choice means the model and the credential · `active`
 * [RM-17-observability](RM-17-observability/item.md) — Observability — fleet monitoring, search and issues · `active`
 * [RM-18-platform](RM-18-platform/item.md) — Platform hardening — the cross-cutting operability items · `planned`
 * [RM-19-release](RM-19-release/item.md) — Release & delivery — the offline hand-off bundle · `planned`
 * [RM-20-security-posture](RM-20-security-posture/item.md) — Security posture — a deterministic analyzer over persisted scans and skills · `active`
-* [RM-21-server-types](RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `active`
 * [RM-22-skill-ide](RM-22-skill-ide/item.md) — Skill IDE — an enterprise IDE for Agent Skills · `active`
 * [RM-23-skillflow](RM-23-skillflow/item.md) — SkillFlow — the visual skill designer and tracer · `active`
 * [RM-24-skills](RM-24-skills/item.md) — Skills registry and inspector · `active`
 * [RM-25-team-server](RM-25-team-server/item.md) — Team server — shared-instance operation · `planned`
 * [RM-26-testing](RM-26-testing/item.md) — Testing — the agent run engine and console · `active`
 * [RM-27-testing-ia](RM-27-testing-ia/item.md) — Testing IA consolidation — Collections as the test home · `active`
-* [RM-28-toolbar-reach](RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `active`
-* [RM-29-unified-sessions](RM-29-unified-sessions/item.md) — Unified Sessions — one session experience across every run backend · `active`
 * [RM-30-ux-overhaul](RM-30-ux-overhaul/item.md) — UX Overhaul — one shell, one grammar, every view · `active`
 * [RM-31-mvp-footprint-analyzer](RM-31-mvp-footprint-analyzer/item.md) — Startup-footprint MVP and the expanded target · `archived`
 
 ## Completed Roadmap Items
 
-No roadmap items have been completed yet.
+* [RM-04-assistant-hub-ux](completed/RM-04-assistant-hub-ux/item.md) — Assistant Hub UX — rebuild onto the app shell grammar · `done`
+* [RM-15-interface-craft](completed/RM-15-interface-craft/item.md) — Interface Craft — write the six rules that were never written · `done`
+* [RM-21-server-types](completed/RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `done`
+* [RM-28-toolbar-reach](completed/RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `done`
+* [RM-29-unified-sessions](completed/RM-29-unified-sessions/item.md) — Unified Sessions — one session experience across every run backend · `done`
 
 ## Research Topics
 
@@ -66,25 +65,25 @@ No roadmap items have been completed yet.
 ## Documentation
 
 * [DC-01-getting-started](../user-guide/DC-01-getting-started/doc.md) — Getting started & key concepts · `draft`
-* [DC-02-mcp-servers](../user-guide/DC-02-mcp-servers/doc.md) — MCP server connections · `draft`
+* [DC-02-mcp-servers](../user-guide/DC-02-mcp-servers/doc.md) — MCP server connections · `current`
 * [DC-03-scans-and-footprint](../user-guide/DC-03-scans-and-footprint/doc.md) — Discovery scans & token footprint · `draft`
 * [DC-04-comparison](../user-guide/DC-04-comparison/doc.md) — Comparison · `draft`
 * [DC-05-tool-playground](../user-guide/DC-05-tool-playground/doc.md) — Tool playground · `draft`
 * [DC-06-reports](../user-guide/DC-06-reports/doc.md) — Reports & exports · `draft`
-* [DC-07-skills](../user-guide/DC-07-skills/doc.md) — Skills registry, inspector and IDE · `draft`
-* [DC-08-testing-console](../user-guide/DC-08-testing-console/doc.md) — Testing console & run sessions · `draft`
+* [DC-07-skills](../user-guide/DC-07-skills/doc.md) — Skills registry, inspector and IDE · `current`
+* [DC-08-testing-console](../user-guide/DC-08-testing-console/doc.md) — Testing console & run sessions · `current`
 * [DC-09-suites-and-benchmarks](../user-guide/DC-09-suites-and-benchmarks/doc.md) — Suites & benchmarks · `draft`
 * [DC-10-compatibility](../user-guide/DC-10-compatibility/doc.md) — Model compatibility · `draft`
 * [DC-11-observability](../user-guide/DC-11-observability/doc.md) — Observability · `draft`
 * [DC-12-app-assistant](../user-guide/DC-12-app-assistant/doc.md) — The app assistant dock · `draft`
-* [DC-13-assistant-hub](../user-guide/DC-13-assistant-hub/doc.md) — Assistant Hub · `draft`
+* [DC-13-assistant-hub](../user-guide/DC-13-assistant-hub/doc.md) — Assistant Hub · `current`
 * [DC-14-settings-and-features](../user-guide/DC-14-settings-and-features/doc.md) — Settings & feature flags · `draft`
 * [DC-15-operations](../user-guide/DC-15-operations/doc.md) — Operations & troubleshooting · `draft`
 * [DC-16-workbench-mcp-server](../user-guide/DC-16-workbench-mcp-server/doc.md) — The workbench MCP server · `draft`
 * [DC-17-service-tokens](../user-guide/DC-17-service-tokens/doc.md) — Service tokens · `draft`
 * [DC-18-mcpfp-cli](../user-guide/DC-18-mcpfp-cli/doc.md) — The mcpfp CLI · `draft`
 * [DC-19-ci-github-actions](../user-guide/DC-19-ci-github-actions/doc.md) — CI & GitHub Actions gates · `draft`
-* [DC-20-user-interface](../user-guide/DC-20-user-interface/doc.md) — The application shell & interface standards · `draft`
+* [DC-20-user-interface](../user-guide/DC-20-user-interface/doc.md) — The application shell & interface standards · `current`
 * [DC-21-architecture](../user-guide/DC-21-architecture/doc.md) — Architecture & data model · `draft`
 * [DC-22-packaging-and-deployment](../user-guide/DC-22-packaging-and-deployment/doc.md) — Packaging & deployment · `draft`
 * [DC-23-product-overview](../user-guide/DC-23-product-overview/doc.md) — Product overview · `draft`

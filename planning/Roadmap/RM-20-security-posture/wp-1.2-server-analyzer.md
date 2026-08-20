@@ -9,7 +9,7 @@ status: "final"
 # WP 1.2 — server analyzer: poisoning / annotation / schema / OAuth rules + score
 
 Phase 1 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.1 (the contract — the eleven rule ids, the shapes, the score, the ordering, the
 redactor).

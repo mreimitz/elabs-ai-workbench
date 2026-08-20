@@ -65,7 +65,7 @@ text):
   **Model:** opus · medium.
 
 **The work.** The convention already exists and is **locked** — **D-UX9**
-([`roadmap/ux-overhaul/STATUS.md:143`](../RM-30-ux-overhaul/STATUS.md)). You are not choosing a convention, you
+([`roadmap/ux-overhaul/STATUS.md:143`](/Roadmap/RM-30-ux-overhaul/STATUS.md)). You are not choosing a convention, you
 are implementing the one you have, **once**:
 - `lib/delta.ts` — the single authority mapping a delta's (sign × meaning: is-higher-better?) → a tone
   token (the D-UX9 convention; read `:143` and implement **that** — if it is ambiguous, **report to the

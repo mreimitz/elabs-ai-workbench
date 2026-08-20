@@ -1,11 +1,12 @@
 ---
 type: "Status Ledger"
-title: "observability \u2014 work-package status ledger"
+title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:37Z"
 status: "active"
 ---
+
 # observability — work-package status ledger
 
 Living state for the observability plan, read and updated by the `next-wp` skill (and the
@@ -16,7 +17,7 @@ quality gate is green.
 **Legend:** `[ ]` open · `[x]` done. A trailing `status:` note marks `in progress` / `in review`.
 Done lines record the date + branch: `… — done YYYY-MM-DD · wp/observability/<id>`.
 
-⚠️ **Workstream gate (D-OB27/28):** [`roadmap/unified-sessions/`](../RM-29-unified-sessions/STATUS.md)
+⚠️ **Workstream gate (D-OB27/28):** [`roadmap/unified-sessions/`](/Roadmap/completed/RM-29-unified-sessions/STATUS.md)
 Waves 1–3 run FIRST. WPs marked `owner-gated: unified-sessions Wave N merged` stay blocked until
 the owner confirms that merge. Un-gated WPs (2.6) may run in the window if the repo is free.
 
@@ -27,7 +28,7 @@ Files sections overlap (`packages/shared`, `testing/run-service.ts` + executors,
 surfaces). See `kickoff-prompt.md` for the cross-session contention override.
 
 📎 **Post-completion amendment (2026-08-19, proposed — pending owner lock):** follow-up items
-**AM-OB1–14** from [`research/langfuse-landscape/`](../../Research/RS-05-langfuse-landscape/) —
+**AM-OB1–14** from [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/) —
 [`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md) — plus the proposed
 [`WP 3.5 agent-graph lens`](./phase-3-console/WP-3.5-agent-graph.md) (deps 3.1/3.2 ✅).
 Nothing picked up; no locked decision reopened.

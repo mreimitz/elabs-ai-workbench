@@ -9,7 +9,7 @@ status: "final"
 # WP 2.3 — GitHub Actions packaging: workflow example + docs
 
 Phase 2 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 2.2 (the PR-comment artifact the workflow posts).
 **Consumed by:** nobody in-repo — this WP's output is copied by *other* repositories.

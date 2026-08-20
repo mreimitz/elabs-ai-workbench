@@ -38,7 +38,7 @@ Shared rules: [`conventions.md`](./conventions.md). Living state: [`STATUS.md`](
 
 Owner directive (2026-07-04): adopt the quality-measurement concept from the
 `insights-bench` prototype (see
-[`../research/insights-bench-assessment.md`](../../Research/RS-08-insights-bench-assessment/notes/insights-bench-assessment.md)) —
+[`../research/insights-bench-assessment.md`](/Research/RS-08-insights-bench-assessment/notes/insights-bench-assessment.md)) —
 enhance the Test entity for much richer tests, add parallel mass-runs of multiple tests, and
 import/export/**two-way sync** tests with folders of GitHub repos.
 

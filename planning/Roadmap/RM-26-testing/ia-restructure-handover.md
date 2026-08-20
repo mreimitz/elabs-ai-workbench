@@ -10,8 +10,8 @@ status: "final"
 
 > Status: **DECISION-COMPLETE (2026-07-04)** — Q4 was settled by PM review the same day (see
 > [PM decisions](#pm-decisions-2026-07-04--q4-settled) below). This doc is now the **decision
-> record**; the executable implementation plan lives at [`../testing-ia/`](../RM-27-testing-ia/)
-> (ledger: [`STATUS.md`](../RM-27-testing-ia/STATUS.md), driven by `/next-wp testing-ia` with parallel
+> record**; the executable implementation plan lives at [`../testing-ia/`](/Roadmap/RM-27-testing-ia/)
+> (ledger: [`STATUS.md`](/Roadmap/RM-27-testing-ia/STATUS.md), driven by `/next-wp testing-ia` with parallel
 > worktree sub-agents). **Update 2026-07-05: the testing-ia plan is now BUILT** — all 11 WPs merged
 > to local `main`, gate green (697 API tests, migration v16); the live-app owner-acceptance walk is the
 > only pending item (see the ledger's Owner-acceptance section). Everything referenced here is already
@@ -115,7 +115,7 @@ the itch. Locked decisions (numbering continues the owner's Q1–Q3):
   repeatable. "Run a collection" (Q3) is path 1 with the plan built from the collection's tests.
 - **Execution directive:** implement via `/next-wp testing-ia` — the plan is sliced so up to 4
   worktree sub-agents run **in parallel** wherever WPs touch disjoint files; see the parallel
-  batch map in [`../testing-ia/README.md`](../RM-27-testing-ia/item.md).
+  batch map in [`../testing-ia/README.md`](/Roadmap/RM-27-testing-ia/item.md).
 
 ## Owner addendum (2026-07-04, after the PM decisions) — Runs logic + results view
 
@@ -156,9 +156,9 @@ Cross-cutting Testing + Benchmarks data-model + IA change, medium-large blast ra
 
 ## Next steps
 1. ~~PM decides Q4~~ — **done 2026-07-04** (see PM decisions above; Q1–Q3 re-validated unchanged).
-2. ~~Turn this into a full implementation plan~~ — **done**: [`roadmap/testing-ia/`](../RM-27-testing-ia/)
+2. ~~Turn this into a full implementation plan~~ — **done**: [`roadmap/testing-ia/`](/Roadmap/RM-27-testing-ia/)
    (README = plan + parallel batch map, phase files = WP specs with Files/Acceptance,
-   [`STATUS.md`](../RM-27-testing-ia/STATUS.md) = authoritative ledger).
+   [`STATUS.md`](/Roadmap/RM-27-testing-ia/STATUS.md) = authoritative ledger).
 3. **Execute:** `/next-wp testing-ia` — parallel worktree sub-agents per batch, validate against
    each WP's Acceptance + the quality gate, tick the ledger. Owner locks D-T4–D-T6 at kickoff.
 

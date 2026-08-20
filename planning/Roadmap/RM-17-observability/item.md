@@ -3,7 +3,7 @@ type: "Roadmap Item"
 title: "Observability — fleet monitoring, search and issues"
 description: "Build the monitoring layer on top of the session contract: metrics over time, full-text search with a filter grammar and saved views, a human-feedback backbone, console depth, watch rules, fleet issues, a pricing editor and scheduled digests."
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:37Z"
 status: "active"
 ---
 
@@ -33,7 +33,7 @@ The app recorded every run but offered no way to see the fleet, search it, be al
 
 ## Plan overview (from the original plan README)
 
-**Status:** planned, HIGH priority — starts **after [`roadmap/unified-sessions/`](../RM-29-unified-sessions/)
+**Status:** planned, HIGH priority — starts **after [`roadmap/unified-sessions/`](/Roadmap/completed/RM-29-unified-sessions)
 Waves 1–3 merge** (D-OB27/28; the un-gated WPs below may start sooner). Authoritative in-flight
 state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp observability`). Shared rules:
 [`conventions.md`](./conventions.md). Orchestrator start:
@@ -41,7 +41,7 @@ state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp observability`). Shared r
 
 > **Reconciliation note (2026-07-16):** this plan originally carried a Phase 0 that folded the
 > unified-run-sessions concept in. A parallel owner session locked that scope separately as
-> [`roadmap/unified-sessions/`](../RM-29-unified-sessions/) (**D-US1–D-US15**). The owner ruled:
+> [`roadmap/unified-sessions/`](/Roadmap/completed/RM-29-unified-sessions) (**D-US1–D-US15**). The owner ruled:
 > **D-US wins wholesale**; Phase 0 + the SSE WP were dropped from this plan (specs preserved
 > under [`_superseded/`](./_superseded/)). This plan **consumes** the session contract —
 > `stopReasonCode` (incl. `stalled` / `wait_expired` / `session_ended`), persisted `phase`,
@@ -49,10 +49,10 @@ state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp observability`). Shared r
 > disposition, the one status module — and never redefines it.
 
 **Research basis (read before re-litigating anything):**
-[`research/langsmith-observability/`](../../Research/RS-04-langsmith-observability/) (feature
+[`research/langsmith-observability/`](/Research/RS-04-langsmith-observability/) (feature
 inventory, gap analysis, concept waves O1–O5, Q-OB1–13) and
-[`research/unified-run-sessions/`](../../Research/RS-03-unified-run-sessions/) (session-contract
-concept C1–C5, Q1–Q12 — implemented by [`roadmap/unified-sessions/`](../RM-29-unified-sessions/), which
+[`research/unified-run-sessions/`](/Research/RS-03-unified-run-sessions/) (session-contract
+concept C1–C5, Q1–Q12 — implemented by [`roadmap/unified-sessions/`](/Roadmap/completed/RM-29-unified-sessions), which
 this plan consumes).
 
 ## Mission
@@ -69,7 +69,7 @@ Where LangSmith ends at "open a PR", this app closes the loop by proving the fix
 | # | Decision |
 |---|---|
 | D-OB1 | Scope: full concept in one workstream (Phases 1–5 after reconciliation). Later phases gate on earlier; stopping after any phase leaves a coherent product. |
-| D-OB2–D-OB10 | **Superseded (2026-07-16) by D-US1–D-US15** in [`roadmap/unified-sessions/`](../RM-29-unified-sessions/item.md). The session contract (lifecycle/phases, `ended` terminal + `seen`, stall-based clock with NO default wall cap + 10-min wait budget → `wait_expired`, capability manifest, status vocabulary, queue visibility, SSE cursor resume, timer defaults) is owned there. Where this plan's earlier text conflicts (End-session→completed, Extend button, wall-cap default), **the D-US table wins**. |
+| D-OB2–D-OB10 | **Superseded (2026-07-16) by D-US1–D-US15** in [`roadmap/unified-sessions/`](/Roadmap/completed/RM-29-unified-sessions/item.md). The session contract (lifecycle/phases, `ended` terminal + `seen`, stall-based clock with NO default wall cap + 10-min wait budget → `wait_expired`, capability manifest, status vocabulary, queue visibility, SSE cursor resume, timer defaults) is owned there. Where this plan's earlier text conflicts (End-session→completed, Extend button, wall-cap default), **the D-US table wins**. |
 | D-OB11 | IA: the **Dashboard grows tabs — Scans \| Testing \| Issues**. Nav stays 4 items. |
 | D-OB12 | Entity scope v1: **runs + scans**. Assistant-dock sessions out of scope (revisit with unified Q11). |
 | D-OB13 | Metrics computed **on demand** (SQL + indexes), perf acceptance <500 ms @ 50k synthetic runs; a rollup-cache WP exists only as owner-gated backlog if profiling fails. |

@@ -9,7 +9,7 @@ status: "final"
 # Amendment — Langfuse & landscape follow-ups (2026-08-18, corrected 2026-08-19)
 
 **Status: PROPOSED — pending owner lock.** Follow-up items for the **completed** observability
-workstream, derived from [`research/langfuse-landscape/`](../../Research/RS-05-langfuse-landscape/)
+workstream, derived from [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/)
 (Langfuse post-v4 + Phoenix/Opik/Braintrust/Weave, primary sources fetched 2026-08-18).
 Numbered **AM-OB1…AM-OB14**; on owner lock, renumber into D-OB29+ or hold as a follow-up WP
 list — owner's choice.
@@ -108,7 +108,7 @@ below MUST ship a faithful-stub test per the `time-axis-charts.test.tsx` pattern
 
 ## Out of scope of this amendment
 
-Workbench MCP server ([`roadmap/ci/mcp-server.md`](../RM-08-ci/mcp-server.md)); judge preview +
-re-rate window ([`roadmap/auto-rating/wp-judge-preview-and-rerate.md`](../RM-06-auto-rating/wp-judge-preview-and-rerate.md));
-compare/launcher follow-ons ([`roadmap/testing/wp-compare-launcher-followons.md`](../RM-26-testing/wp-compare-launcher-followons.md));
+Workbench MCP server ([`roadmap/ci/mcp-server.md`](/Roadmap/RM-08-ci/mcp-server.md)); judge preview +
+re-rate window ([`roadmap/auto-rating/wp-judge-preview-and-rerate.md`](/Roadmap/RM-06-auto-rating/wp-judge-preview-and-rerate.md));
+compare/launcher follow-ons ([`roadmap/testing/wp-compare-launcher-followons.md`](/Roadmap/RM-26-testing/wp-compare-launcher-followons.md));
 OTLP export + MCP `_meta` context propagation (one-page options in research `01 §G12`, no WP).

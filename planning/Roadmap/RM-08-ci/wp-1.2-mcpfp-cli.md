@@ -9,7 +9,7 @@ status: "final"
 # WP 1.2 — `mcpfp` CLI skeleton (config, `scan` + `report`, JSON/markdown output)
 
 Phase 1 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.1 (service tokens — done 2026-08-19, `wp/ci/1.1`).
 **Consumed by:** WP 1.3 (`assert`), WP 2.1 (`suite run`), WP 2.2 (PR-comment artifact),

@@ -11,7 +11,7 @@ status: "superseded"
 > **Historical planning document** (the original MVP build order — largely shipped, and it
 > describes a since-removed local `packages/brand-ui` adapter). **Current state: see
 > `../CLAUDE.md` (`../CLAUDE.md`) and the authoritative in-flight ledgers
-> [`testing/STATUS.md`](../RM-26-testing/STATUS.md) / [`skills/STATUS.md`](../RM-24-skills/STATUS.md)**; the active,
+> [`testing/STATUS.md`](/Roadmap/RM-26-testing/STATUS.md) / [`skills/STATUS.md`](/Roadmap/RM-24-skills/STATUS.md)**; the active,
 > executable plans are under `roadmap/testing/` and `roadmap/skills/`.
 
 ## Phase 0: Scaffold

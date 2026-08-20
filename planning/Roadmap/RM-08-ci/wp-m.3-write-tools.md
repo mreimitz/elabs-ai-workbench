@@ -9,7 +9,7 @@ status: "final"
 # WP M.3 — scoped write tools on the workbench MCP mount
 
 Phase MCP of [`mcp-server.md`](./mcp-server.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules:
-the [testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+the [testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP M.1 (the read-only mount — done 2026-08-19, `wp/ci/M.1`), WP M.2 (the scope
 mechanism — done 2026-08-20, `wp/ci/M.2`).
@@ -97,10 +97,10 @@ mechanism — done 2026-08-20, `wp/ci/M.2`).
 5. **`createWorkbenchMcpServer`'s `caller` parameter made required** (D-MCP13), with every call site
    updated to pass one explicitly.
 6. **Docs** — the write surface, its scopes, and its cost behaviour in
-   [`user-guide/20-workbench-mcp-server.md`](../../user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md) (which
+   [`user-guide/20-workbench-mcp-server.md`](/user-guide/DC-16-workbench-mcp-server/20-workbench-mcp-server.md) (which
    currently states the mount is read-only — that sentence must become accurate, not disappear) and a
    scope-to-capability line in
-   [`user-guide/21-service-tokens.md`](../../user-guide/DC-17-service-tokens/21-service-tokens.md).
+   [`user-guide/21-service-tokens.md`](/user-guide/DC-17-service-tokens/21-service-tokens.md).
 
 ### Explicitly NOT in this WP
 

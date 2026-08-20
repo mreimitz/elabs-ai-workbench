@@ -77,7 +77,7 @@ Loop Control*" or "see *Braintrust — token usage*").
 | Topic | Internal doc | WPs |
 | ----- | ------------ | --- |
 | Product decisions (16) | [`../09-testing.md`](./09-testing-scope.md) §1 | all |
-| Run console layout / run-bar | [`../10-…ui-concept.md`](../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §2 | 3.3 |
+| Run console layout / run-bar | [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) §2 | 3.3 |
 | Conversation pane / tool cards | UI §3 | 3.4 |
 | KPI rail + context chart | UI §4 (Zones A,B) | 3.5 |
 | Step log + packet inspector | UI §4 Zone C, §5 | 3.6 |
@@ -87,6 +87,6 @@ Loop Control*" or "see *Braintrust — token usage*").
 | Component gaps | UI §11 | 0.1, 3.3, 3.7 |
 | DevTools-inspired Inspector (right pane) | [`../12-…`](./12-testing-inspector-devtools.md) + UI §4–§5 | 3.3, 3.5, 3.6, 3.9, 3.10 |
 | Data model sketch | [`../09-…md`](./09-testing-scope.md) §8 | 0.4 |
-| Existing data model | [`../03-data-model.md`](../../user-guide/DC-21-architecture/03-data-model.md) | 0.4 |
-| Token strategy | [`../04-token-counting-strategy.md`](../../Research/RS-09-token-counting-strategy/outputs/token-counting-strategy.md) | 1.4 |
+| Existing data model | [`../03-data-model.md`](/user-guide/DC-21-architecture/03-data-model.md) | 0.4 |
+| Token strategy | [`../04-token-counting-strategy.md`](/Research/RS-09-token-counting-strategy/outputs/token-counting-strategy.md) | 1.4 |
 | Security rules | `.claude/rules/mcp-and-security.md` | 1.1, 1.6 |

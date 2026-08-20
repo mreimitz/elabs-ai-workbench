@@ -3,7 +3,7 @@ type: "Research Topic"
 title: "LangSmith Observability vs. This App"
 description: "Determine exactly what LangSmith's observability suite does better for monitoring sessions, debugging sessions and fleet-level reporting, and what it would take to close the gaps that matter."
 tags: ["research", "RS-04"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:37Z"
 status: "done"
 ---
 
@@ -36,7 +36,7 @@ Each gap is evidenced against live product documentation and carries a concrete 
 **Date:** 2026-07-16 · **Status:** decided — the implementation plan + locked decisions
 (D-OB1–D-OB28) live at [`roadmap/observability/`](../../Roadmap/RM-17-observability/) (27 WPs,
 Phases 1–5, per-WP model map, `/next-wp`-ready), which starts **after**
-[`roadmap/unified-sessions/`](../../Roadmap/RM-29-unified-sessions/) (D-US1–15) ships the session
+[`roadmap/unified-sessions/`](../../Roadmap/completed/RM-29-unified-sessions) (D-US1–15) ships the session
 contract this layer aggregates by. This folder remains the evidence base; the concept's open
 questions (Q-OB1–13) were answered by the owner on 2026-07-16 and are recorded in that plan's
 README (Q-OB items overlapping the session contract are superseded by D-US — see D-OB27).

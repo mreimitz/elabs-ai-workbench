@@ -1,11 +1,12 @@
 ---
 type: "Work Package Spec"
-title: "One-row toolbar standard \u2014 audit & plan \u00b7 2026-07-11"
-description: "Status: PLANNED (report only \u2014 owner decision 2026-07-11; no code changed yet)."
+title: "One-row toolbar standard — audit & plan · 2026-07-11"
+description: "Status: PLANNED (report only — owner decision 2026-07-11; no code changed yet)."
 tags: ["roadmap", "RM-30"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T14:03:58Z"
 status: "final"
 ---
+
 # One-row toolbar standard — audit & plan · 2026-07-11
 
 **Status: PLANNED (report only — owner decision 2026-07-11; no code changed yet).**
@@ -37,7 +38,7 @@ onboarding value move to an info tooltip on the toolbar; the rest are dropped.
 > replacement. This clause supplies it. Toolbar-reach WP 1.2 deleted `PageHeader` on D-TB1's
 > authority and did not cause this — it removed the last counterexample, which is why the standard
 > now spells the semantic-heading obligation out. Restated as **D-IC5** in the interface-craft plan
-> ([`roadmap/interface-craft/README.md`](../RM-15-interface-craft/item.md)), which implements it
+> ([`roadmap/interface-craft/README.md`](/Roadmap/completed/RM-15-interface-craft/item.md)), which implements it
 > (WP 1.1: a `SectionCardTitle` wrapper that renders `h2`/`h3` while keeping `text-title`; applied
 > only where a card titles a genuine section — decorative card titles stay `div`).
 

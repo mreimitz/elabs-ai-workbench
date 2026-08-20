@@ -9,7 +9,7 @@ status: "final"
 # WP 3.1 — the `no-new-security-findings` assertion
 
 Phase 3 of [`README.md`](./item.md). Ledger: [`STATUS.md`](./STATUS.md). Shared rules: the
-[testing conventions](../RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
+[testing conventions](/Roadmap/RM-26-testing/conventions.md) + the repo rules in `.claude/rules/`.
 
 **Depends on:** WP 1.3 (the assertions engine), **WP 2.2** (which last touched
 `packages/shared/src/ci-assertions.ts` and `apps/api/src/assertions/service.ts` — **this WP must be

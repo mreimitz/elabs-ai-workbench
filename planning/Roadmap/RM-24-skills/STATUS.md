@@ -17,7 +17,7 @@ a box **only** when that WP's Acceptance is met and the gate
 `blocked`. Done lines record date + branch: `… — done <YYYY-MM-DD> · wp/skills/<id>`.
 
 > All decisions are locked — see
-> [`../../research/skill-registry/10-open-questions.md`](../../Research/RS-02-skill-registry/notes/10-open-questions.md).
+> [`../../research/skill-registry/10-open-questions.md`](/Research/RS-02-skill-registry/notes/10-open-questions.md).
 > Recommended first slice: `1.0 → 1.1 → 1.2 → 1.3`, then fan out `1.4 ∥ 1.5 ∥ 1.7`, then `1.6 → 1.8
 > → 1.9`, then Phase 2 `2.1 → 2.2 → 2.3`.
 

@@ -42,7 +42,7 @@ This is **not a parallel structure**: it blends into the existing Benchmarks gra
 the suite-run console.
 
 Living state: [`STATUS.md`](./STATUS.md) (driven by `/next-wp auto-rating`). Extends
-[`roadmap/benchmarks/`](../RM-07-benchmarks/) (B1–B15; **B15 amended**, see AR12) and builds on the
+[`roadmap/benchmarks/`](/Roadmap/RM-07-benchmarks/) (B1–B15; **B15 amended**, see AR12) and builds on the
 testing-ia one-engine model (D-T3: everything is a plan → suite-run).
 
 ## What we're building

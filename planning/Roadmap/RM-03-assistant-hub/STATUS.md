@@ -19,7 +19,7 @@ the quality gate is green (`pnpm typecheck && pnpm test && pnpm build && pnpm li
 **Decisions locked 2026-07-17 (owner planning session): D-AH1…D-AH20 — see README. Do not reopen.**
 **Requirements annex added 2026-07-17 (owner-requested SOTA research): [`requirements.md`](./requirements.md)
 (R-SES/R-MCP/R-SK/R-UX; MUST-graded items are part of the owning WP's Acceptance per the annex's
-WP impact map). Evidence: [`research/agentic-session-sota/`](../../Research/RS-06-agentic-session-sota/) docs 00–03.**
+WP impact map). Evidence: [`research/agentic-session-sota/`](/Research/RS-06-agentic-session-sota/) docs 00–03.**
 **R-catalog v2 same day (owner-requested GenUI research + scope selection): added R-GUI1–8
 (declarative generative UI — evidence doc 04: Thesys OpenUI · CopilotKit · assistant-ui, incl.
 the system-prompt playbook for WP 0.3), R-UX13 (artifact share/export), R-MCP13 (research-server

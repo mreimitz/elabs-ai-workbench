@@ -38,7 +38,7 @@ The validated architecture and every locked decision live in
 Living state: [`STATUS.md`](./STATUS.md).
 
 > **Precondition (skills-ledger rule):** the deferred owner-acceptance items in
-> [`../skills/STATUS.md`](../RM-24-skills/STATUS.md) must be closed or explicitly waived before
+> [`../skills/STATUS.md`](/Roadmap/RM-24-skills/STATUS.md) must be closed or explicitly waived before
 > Phase 1 here opens.
 
 ## What we're building

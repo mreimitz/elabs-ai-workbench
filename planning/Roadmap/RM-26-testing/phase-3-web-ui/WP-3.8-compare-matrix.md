@@ -15,7 +15,7 @@ The benchmark payoff: compare runs of the **same test across different scenarios
 local) side by side.
 
 ## Why / references
-UI concept [`../10-…ui-concept.md`](../../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§8** (compare matrix wireframe).
+UI concept [`../10-…ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) **§8** (compare matrix wireframe).
 Decision #5 (matrix). Data from `GET /api/runs/compare?ids=…` → `CompareRow[]` (WP 2.2). This is the
 repo's `qlabs-ai-benchmark` reason-for-being; relates to existing `apps/web/src/lib/compare.ts`.
 

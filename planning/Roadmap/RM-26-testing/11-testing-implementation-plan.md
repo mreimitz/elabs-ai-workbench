@@ -30,5 +30,5 @@ roadmap/testing/
 ```
 
 Companion docs: [`09-testing.md`](./09-testing-scope.md) (scope) ·
-[`10-testing-ui-concept.md`](../../Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) (UI wireframes, referenced by the
+[`10-testing-ui-concept.md`](/Research/RS-11-testing-ui-concept/notes/testing-ui-concept.md) (UI wireframes, referenced by the
 Phase 3 specs).
