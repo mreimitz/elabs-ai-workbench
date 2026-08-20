@@ -174,8 +174,18 @@ export function OverviewTab({
       ) : (
         <ScrollArea className="min-h-0 flex-1">
           {/* `pr-3` keeps the last column clear of the scrollbar; `pb-4` gives the final row the same
-              breathing room the page gutter gives the first. */}
-          <div className="pr-3 pb-4">
+              breathing room the page gutter gives the first.
+
+              `pt-2` is NOT decorative spacing — it is headroom for the hover gesture. Upstream makes
+              elevation the hover state: `bentoGridItemVariants` carries
+              `hover:-translate-y-1` (4px of upward travel) plus `hover:shadow-xl` and a brightened
+              `hover:border-ring/40` edge — and that edge is what actually carries the lift in the
+              dark theme, where the shadow's black ink barely reads. With the grid flush against the
+              top of this scroll container, hovering a FIRST-ROW tile moved its top border out of the
+              container and clipped it (owner-reported 2026-08-20). 8px clears the 4px travel with
+              room for the border to stay whole. Do not remove it to "tighten" the layout, and do not
+              "fix" a future clip by deleting the travel — the gesture is correct, the box was tight. */}
+          <div className="pt-2 pr-3 pb-4">
             {firstPaint ? (
               <OverviewBentoSkeleton />
             ) : (

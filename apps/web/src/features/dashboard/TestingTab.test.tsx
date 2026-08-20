@@ -410,6 +410,53 @@ describe("TestingTab — URL → state → fetch round trip (acceptance #2)", ()
   });
 });
 
+describe("TestingTab — the shared page range (dashboard-bento WP 2.2, Defect 2)", () => {
+  test("the page range is the window the metrics are actually fetched for", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab();
+
+    await waitFor(() => expect(getRunMetricsMock.mock.calls.length).toBeGreaterThan(0));
+    const [firstCall] = getRunMetricsMock.mock.calls;
+    expect(firstCall?.[0].from).toBe(RANGE.from);
+    expect(firstCall?.[0].to).toBe(RANGE.to);
+  });
+
+  test("a trailing-24h page range buckets HOURLY — the instants reach the bucket choice too", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab(["/dashboard?tab=testing"], resolveDashboardRange({ kind: "preset", preset: "24h" }));
+
+    await waitFor(() => expect(getRunMetricsMock.mock.calls.length).toBeGreaterThan(0));
+    // A day-granular projection of "the last 24 hours" spans two calendar days and would bucket
+    // daily; the shared range hands over exact instants, so the granularity stays honest.
+    expect(getRunMetricsMock.mock.calls.some((call) => call[0].bucket === "hour")).toBe(true);
+  });
+
+  test("a drill-down href carries the page range's own window, not a re-derived one", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab();
+    await waitFor(() => expect(screen.getByText("Guardrail stops by reason")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: /open runs for max turns/i }));
+    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("/testing/runs?filter="));
+    const encoded = (screen.getByTestId("location").textContent ?? "").split("filter=")[1] as string;
+    const filter = parseRunFilter(decodeURIComponent(encoded));
+    expect(filter.dateFrom).toBe(RANGE.from);
+    expect(filter.dateTo).toBe(RANGE.to);
+  });
+
+  test("the tab renders NO date control of its own any more", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab();
+    await waitFor(() => expect(screen.getByText("Runs & error rate over time")).toBeInTheDocument());
+    // `DateRangePicker`'s trigger is the only `aria-haspopup="dialog"` control this tab rendered.
+    expect(document.querySelector('[aria-haspopup="dialog"]')).toBeNull();
+  });
+});
+
 describe("TestingTab — drill-down wiring (end-to-end navigate)", () => {
   test("clicking a guardrail reason's drill row navigates to the runs feed with the exact stopReasonCode filter", async () => {
     installCatalog();

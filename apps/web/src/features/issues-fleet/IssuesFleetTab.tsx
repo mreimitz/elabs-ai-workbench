@@ -179,11 +179,12 @@ export function IssuesFleetTab({
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-3">
       {/* dashboard-bento WP 2.2 — the FACET row, frame-light (the `bg-card` + `border-b` +
           gutter-bleed band it used to sit in was a second toolbar under the page's one toolbar).
-          Same shape as the Testing tab's own facet row. */}
-      <div className="shrink-0 px-4 pt-4">
+          It sits flush with the page gutter, exactly like the Testing tab's own facet row, so the
+          two tabs measure as the same row in the same place. */}
+      <div className="shrink-0">
         <ViewToolbar
           left={
             <>
@@ -203,7 +204,7 @@ export function IssuesFleetTab({
         />
       </div>
 
-      <div className="flex flex-col gap-3 px-4 pb-4">
+      <div className="flex flex-col gap-3 pb-4">
         <IssueTriageTable
           issues={visible}
           selectedId={selectedId}

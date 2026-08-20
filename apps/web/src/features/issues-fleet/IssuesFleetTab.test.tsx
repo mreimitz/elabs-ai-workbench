@@ -173,6 +173,53 @@ describe("IssuesFleetTab — filtering + search narrow the list", () => {
   });
 });
 
+describe("IssuesFleetTab — the page range scopes the list (dashboard-bento WP 2.2, Defect 2)", () => {
+  test("a window that excludes every fixture empties the list, and the count says so", async () => {
+    // The fixtures' `fleet.lastSeenAt` all land in July 2026; this window is August.
+    renderTab(
+      { status: "data", data: ALL_FLEET_FIXTURES },
+      { range: resolveDashboardRange({ kind: "custom", from: "2026-08-01", to: "2026-08-31" }) },
+    );
+    expect(screen.queryByText(OPEN_FLEET_ISSUE.title)).not.toBeInTheDocument();
+    // Honest disclosure: the badge names how much of the fleet is being hidden, so a narrowed list
+    // can never be mistaken for the whole one.
+    expect(screen.getByText("0 of 3 issues")).toBeInTheDocument();
+    await waitFor(() => expect(mockGetAssistantAuthStatus).toHaveBeenCalled());
+  });
+
+  test("a window that includes only ONE fixture shows exactly that one", async () => {
+    // `SPARSE_RESOLVED_FLEET_ISSUE` was last seen 2026-07-02; the other two on 2026-07-10 / 07-15.
+    renderTab(
+      { status: "data", data: ALL_FLEET_FIXTURES },
+      { range: resolveDashboardRange({ kind: "custom", from: "2026-07-01", to: "2026-07-05" }) },
+    );
+    expect(screen.getByText(SPARSE_RESOLVED_FLEET_ISSUE.title)).toBeInTheDocument();
+    expect(screen.queryByText(REGRESSED_FLEET_ISSUE.title)).not.toBeInTheDocument();
+    expect(screen.getByText("1 of 3 issues")).toBeInTheDocument();
+    await waitFor(() => expect(mockGetAssistantAuthStatus).toHaveBeenCalled());
+  });
+
+  test("the upper bound is genuinely INCLUSIVE of its final day", async () => {
+    // The bound is an ISO instant (`…T23:59:59.999Z`), not `YYYY-MM-DD`: `filterFleetIssues`
+    // compares lexically, and a date-only upper bound sorts BEFORE every timestamp on that day, so
+    // it used to drop the whole of its own last day.
+    renderTab(
+      { status: "data", data: ALL_FLEET_FIXTURES },
+      { range: resolveDashboardRange({ kind: "custom", from: "2026-07-10", to: "2026-07-10" }) },
+    );
+    expect(screen.getByText(OPEN_FLEET_ISSUE.title)).toBeInTheDocument();
+    await waitFor(() => expect(mockGetAssistantAuthStatus).toHaveBeenCalled());
+  });
+
+  test("the tab renders NO date control of its own — the range lives in the page toolbar", async () => {
+    renderTab();
+    // `DateRangePicker`'s trigger is the only `aria-haspopup="dialog"` control this row rendered.
+    // (The table still has a "Last seen" COLUMN — that is a sort header, not a filter.)
+    expect(document.querySelector('[aria-haspopup="dialog"]')).toBeNull();
+    await waitFor(() => expect(mockGetAssistantAuthStatus).toHaveBeenCalled());
+  });
+});
+
 describe("IssuesFleetTab — selecting a row opens the detail drawer + updates the URL", () => {
   test("clicking a row opens the Sheet showing its detail and writes ?issue=", async () => {
     renderTab();

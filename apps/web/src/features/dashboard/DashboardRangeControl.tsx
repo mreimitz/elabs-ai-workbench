@@ -74,21 +74,42 @@ export function DashboardRangeControl({ range, onChange }: DashboardRangeControl
     [],
   );
 
-  const value: DateRange = useMemo(
-    () => ({ from: new Date(range.from), to: new Date(range.to) }),
-    [range.from, range.to],
-  );
+  /**
+   * The window as two local `Date`s for the picker + calendar.
+   *
+   * A CUSTOM range is rebuilt from its own calendar dates at LOCAL midnight, not from the resolved
+   * instants: those are UTC day bounds, and `2026-08-14T23:59:59.999Z` read in any positive-offset
+   * timezone is 15 August — the trigger would show a range one day wider than the one that is
+   * actually applied. A PRESET has no calendar dates to go back to; its bounds are genuine instants,
+   * so they convert directly.
+   */
+  const value: DateRange = useMemo(() => {
+    if (range.selection.kind === "custom") {
+      return {
+        from: new Date(`${range.selection.from}T00:00:00`),
+        to: new Date(`${range.selection.to}T00:00:00`),
+      };
+    }
+    return { from: new Date(range.from), to: new Date(range.to) };
+  }, [range.selection, range.from, range.to]);
 
   return (
     // `DateRangePicker` exposes no `aria-label` (its trigger names itself by its value), so the
     // group names what the control is FOR. The muted prefix is the same label-in-row treatment every
     // other toolbar control in this app uses (`FilterControls`' "Suite:", "Group by:").
-    <div
-      role="group"
+    // `<fieldset>` rather than a `div role="group"`: Biome's `a11y/useSemanticElements` wants the
+    // real element, and this repo already takes that route (`hub/ArtifactCanvas.tsx`'s
+    // `<fieldset className="min-w-0">`). Tailwind's preflight strips fieldset's default border,
+    // margin and padding, so the row treatment is unchanged; `min-w-0` keeps it shrinkable in the
+    // flex toolbar (a fieldset's default `min-width: min-content` would otherwise refuse to shrink).
+    <fieldset
       aria-label="Dashboard date range"
       className="flex min-w-0 shrink-0 items-center gap-1.5"
     >
-      <Text as="span" variant="meta" tone="muted" aria-hidden>
+      {/* Hidden below `sm`: at 375 px the trigger's own two dates already fill the row, and the
+          group's `aria-label` (not this prefix) is what names the control to assistive tech, so
+          dropping it costs nothing and keeps the page free of horizontal scroll. */}
+      <Text as="span" variant="meta" tone="muted" aria-hidden className="hidden sm:inline">
         Range:
       </Text>
       <DateRangePicker
@@ -112,8 +133,8 @@ export function DashboardRangeControl({ range, onChange }: DashboardRangeControl
         presets={presets}
         numberOfMonths={2}
         placeholder="Date range"
-        className="w-auto min-w-[10rem] shrink-0"
+        className="w-auto shrink-0"
       />
-    </div>
+    </fieldset>
   );
 }

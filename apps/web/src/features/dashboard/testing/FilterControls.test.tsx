@@ -59,6 +59,26 @@ describe("FilterControls — WP 2.1 (C-1) SelectField → bare Select", () => {
   });
 });
 
+describe("FilterControls — WP 2.2 (Defect 2): the date range moved to the page toolbar", () => {
+  test("renders NO date-range control of its own any more", () => {
+    renderControls();
+    // The picker's trigger is the only `aria-haspopup="dialog"` button this row ever rendered.
+    expect(
+      screen.queryByRole("button", { name: /date range|jul|aug/i }),
+    ).not.toBeInTheDocument();
+    expect(document.querySelector('[aria-haspopup="dialog"]')).toBeNull();
+  });
+
+  test("still renders every facet that IS this tab's own", () => {
+    renderControls();
+    for (const facet of ["Provider", "Server", "Environment", "Model"]) {
+      expect(screen.getByRole("button", { name: new RegExp(facet) })).toBeInTheDocument();
+    }
+    expect(screen.getByRole("combobox", { name: "Suite" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Group by" })).toBeInTheDocument();
+  });
+});
+
 describe("FilterControls — WP 2.1 (C-5) count badge", () => {
   test("omits the count badge until the caller has a real run count", () => {
     renderControls({}, undefined);

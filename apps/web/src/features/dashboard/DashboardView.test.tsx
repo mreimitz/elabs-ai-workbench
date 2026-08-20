@@ -303,6 +303,16 @@ describe("DashboardView — default tab + deep link", () => {
     expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
     await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
   });
+
+  test("a prototype key as ?tab= is 'unrecognized', not a function off Object.prototype", async () => {
+    // The retired-tab lookup is a `Map`, not an object literal — `{scans:"overview"}["toString"]`
+    // resolves off the prototype chain and would hand `TabPanel` a function as its active value.
+    renderDashboard({}, { initialEntries: ["/dashboard?tab=toString"] });
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+    // It is not a RETIRED tab either, so the (unknown) param is left alone rather than rewritten.
+    expect(location()).toHaveTextContent("tab=toString");
+  });
 });
 
 describe("DashboardView — tab switch updates the URL (restore-on-reload)", () => {

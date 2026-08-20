@@ -38,7 +38,14 @@ const DEFAULT_TAB: DashboardTab = "overview";
  * its other moved routes (`App.tsx`'s `<Navigate>` redirects): it resolves, silently, to the tab
  * that absorbed it, and the stale param is dropped from the URL so a reload is clean.
  */
-const RETIRED_TABS: Record<string, DashboardTab> = { scans: "overview" };
+const RETIRED_TABS = new Map<string, DashboardTab>([["scans", "overview"]]);
+
+/** Where a `?tab=` value resolves, or `undefined` if it names nothing. A `Map`, not an object
+ *  literal, so a hand-typed `?tab=toString` reads as "unknown" instead of resolving to
+ *  `Object.prototype.toString` off the prototype chain and handing `TabPanel` a function. */
+function resolveRetiredTab(raw: string | null): DashboardTab | undefined {
+  return raw === null ? undefined : RETIRED_TABS.get(raw);
+}
 
 function isDashboardTab(value: string | null): value is DashboardTab {
   return value != null && (DASHBOARD_TABS as readonly string[]).includes(value);
@@ -98,7 +105,7 @@ export function DashboardView(props: {
   const rawTab = searchParams.get("tab");
   const tab: DashboardTab = isDashboardTab(rawTab)
     ? rawTab
-    : ((rawTab === null ? undefined : RETIRED_TABS[rawTab]) ?? DEFAULT_TAB);
+    : (resolveRetiredTab(rawTab) ?? DEFAULT_TAB);
 
   const setTab = (value: string) => {
     setSearchParams(
@@ -115,7 +122,7 @@ export function DashboardView(props: {
   // A link to a retired tab still lands somewhere real (above); drop the stale param so a reload,
   // a bookmark or a copied URL is clean. Effect rather than render-time, because navigating during
   // render is a React anti-pattern — and `{ replace: true }` so it never adds a history entry.
-  const retiredTab = rawTab !== null && !isDashboardTab(rawTab) && rawTab in RETIRED_TABS;
+  const retiredTab = !isDashboardTab(rawTab) && resolveRetiredTab(rawTab) !== undefined;
   useEffect(() => {
     if (!retiredTab) return;
     setSearchParams(
