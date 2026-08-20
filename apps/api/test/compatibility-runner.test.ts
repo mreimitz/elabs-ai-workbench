@@ -25,14 +25,18 @@ const find = (results: { testId: string }[], id: string) => results.find((r) => 
 
 test("hard tool-count cap: 200 tools fails on a capped model, na on an uncapped one", () => {
   const s = scan({ totalTools: 200 });
-  const gpt = find(runServerLevel(s, "gpt-5.5"), "SERVER_TOOL_COUNT_HARD");
-  assert.equal(gpt?.verdict, "fail");
-  assert.equal(gpt?.severity, "blocker");
-  assert.equal(gpt?.measured.value, 200);
-  assert.equal(gpt?.threshold.value, 128);
+  // Mistral still documents max_tools_hard = 128. OpenAI does NOT: the 2026-08-19 dataset refresh
+  // withdrew its number because no tier-1 page states one, so gpt-5.5 is an `na` here too now.
+  const capped = find(runServerLevel(s, "mistral-medium-3-5"), "SERVER_TOOL_COUNT_HARD");
+  assert.equal(capped?.verdict, "fail");
+  assert.equal(capped?.severity, "blocker");
+  assert.equal(capped?.measured.value, 200);
+  assert.equal(capped?.threshold.value, 128);
 
   const claude = find(runServerLevel(s, "claude-opus-4-8"), "SERVER_TOOL_COUNT_HARD");
   assert.equal(claude?.verdict, "na", "Anthropic has no per-request hard cap → na");
+  const gpt = find(runServerLevel(s, "gpt-5.5"), "SERVER_TOOL_COUNT_HARD");
+  assert.equal(gpt?.verdict, "na", "OpenAI publishes no hard tool count → na, not an invented cap");
 });
 
 test("aggregate cap binds Anthropic via the 10k catalog ceiling (the real gate)", () => {
@@ -67,7 +71,7 @@ test("duplicate tool names fail (blocker)", () => {
 
 test("tool-level: name length + pattern + schema property count", () => {
   const longName: ToolInput = {
-    toolName: "x".repeat(70),
+    toolName: "x".repeat(130),
     descriptionTokens: 10,
     totalTokens: 100,
     description: "ok",
@@ -75,7 +79,13 @@ test("tool-level: name length + pattern + schema property count", () => {
   };
   const tl = runToolLevel(longName, "gpt-5.5");
   assert.equal(tl.length, 16, "16 tool-level static tests (11 limits + 5 design-quality)");
-  assert.equal(find(tl, "TOOL_NAME_LENGTH")?.verdict, "fail", "70 > 64-char cap");
+  assert.equal(find(tl, "TOOL_NAME_LENGTH")?.verdict, "fail", "130 > OpenAI's 128-char cap");
+  // The same 130-char name is also over Anthropic's stricter 64-char cap.
+  assert.equal(
+    find(runToolLevel(longName, "claude-opus-4-8"), "TOOL_NAME_LENGTH")?.threshold.value,
+    64,
+    "Anthropic's tool-name cap is 64 characters",
+  );
   assert.equal(find(tl, "TOOL_DESCRIPTION_PRESENT")?.verdict, "pass");
 
   const badName: ToolInput = {
@@ -161,40 +171,49 @@ test("#5 band ladder: a sub-60 score stays red even with an unrelated warn (cata
   assert.equal(cell.band, "red");
 });
 
-test("#1/#4 M365's hard aggregate tool cap scores (blocker → red), not silently na", () => {
-  // microsoft-365-copilot has no documented context window; its binding limit is max_total_tools=10.
-  const env = find(
-    runServerLevel(scan({ totalTools: 50, totalTokens: 2_500 }), "microsoft-365-copilot"),
+test("aggregate tool count: a documented cap binds; M365's withdrawn plugin-object count does not", () => {
+  // The 2026-08-19 dataset refresh set microsoft-365-copilot's max_total_tools from 10 to null: the
+  // 10 was the declarative-agent manifest's `actions` ceiling — a count of plugin OBJECTS — which
+  // read on this axis made M365 look like a 10-TOOL ceiling beside GitHub Copilot's 128. It now
+  // lives in max_connected_servers. Undocumented must resolve to `na`, never to an invented cap.
+  const s = scan({ totalTools: 50, totalTokens: 2_500 });
+  const m365 = find(runServerLevel(s, "microsoft-365-copilot"), "ENV_AGGREGATE_TOOL_COUNT");
+  assert.equal(m365?.verdict, "na", "no aggregate tool cap is published for M365 → na");
+
+  // A model that DOES publish one is still scored, and a window-independent cap is not na-gated
+  // just because the count sits far below the model's window.
+  const capped = find(runServerLevel(s, "github-copilot"), "ENV_AGGREGATE_TOOL_COUNT");
+  assert.equal(capped?.verdict, "pass", "50 tools is inside GitHub Copilot's documented 128");
+  const over = find(
+    runServerLevel(scan({ totalTools: 300 }), "github-copilot"),
     "ENV_AGGREGATE_TOOL_COUNT",
   );
-  assert.equal(env?.verdict, "fail");
+  assert.equal(over?.verdict, "fail");
+  assert.equal(over?.severity, "blocker");
+  assert.equal(over?.threshold.value, 128);
   assert.equal(
-    env?.severity,
-    "blocker",
-    "window-independent cap must not be na-gated for a windowless model",
-  );
-  assert.equal(
-    scoreCell(
-      "microsoft-365-copilot",
-      runServerLevel(scan({ totalTools: 50, totalTokens: 2_500 }), "microsoft-365-copilot"),
-    ).band,
+    scoreCell("github-copilot", runServerLevel(scan({ totalTools: 300 }), "github-copilot")).band,
     "red",
   );
 });
 
-test("#7/#13 M365 SERVER_REQUEST_SIZE compares the token footprint against the 4,096-token plugin budget", () => {
-  const over = find(
+test("SERVER_REQUEST_SIZE is a BYTE ceiling: MB caps convert, an unpublished one is na", () => {
+  // The 2026-08-19 refresh moved M365's 4,096-TOKEN plugin I/O budget out of max_request_size,
+  // because across this dataset that field is the byte ceiling on the request payload (Anthropic
+  // 32 MB, Gemini 100 MB, OpenAI 512 MB). A token budget stored there made M365 look five orders
+  // of magnitude smaller than its peers and corrupted every cross-vendor comparison.
+  const m365 = find(
     runServerLevel(scan({ totalTokens: 5_000 }), "microsoft-365-copilot"),
     "SERVER_REQUEST_SIZE",
   );
-  assert.equal(over?.verdict, "fail");
-  assert.equal(over?.measured.unit, "tokens");
-  assert.equal(over?.threshold.value, 4_096);
-  const under = find(
-    runServerLevel(scan({ totalTokens: 2_000 }), "microsoft-365-copilot"),
-    "SERVER_REQUEST_SIZE",
-  );
-  assert.equal(under?.verdict, "pass");
+  assert.equal(m365?.verdict, "na", "Microsoft publishes no byte request ceiling → na");
+
+  // OpenAI publishes 512 MB; the MB → bytes conversion must happen, and a normal server passes.
+  const gpt = find(runServerLevel(scan({ totalRawBytes: 20_000 }), "gpt-5.5"), "SERVER_REQUEST_SIZE");
+  assert.equal(gpt?.verdict, "pass");
+  assert.equal(gpt?.measured.unit, "bytes");
+  assert.equal(gpt?.threshold.unit, "bytes");
+  assert.equal(gpt?.threshold.value, 512 * 1_048_576, "512 MB in bytes, not a bare 512");
 });
 
 test("#14 TOOL_DEFINITION_TOKENS: window-share fails on a small window, only warns on a large one", () => {
@@ -230,7 +249,9 @@ test("#6 SERVER_NAMESPACED_NAME_LENGTH carries the namespaced string so the coun
     totalTools: 1,
     tools: [{ toolName: "x".repeat(60), descriptionTokens: 1, totalTokens: 10 }],
   });
-  const offender = find(runServerLevel(s, "gpt-5.5"), "SERVER_NAMESPACED_NAME_LENGTH")
+  // Anthropic's 64-char cap is the one a 60-char tool name plus the "mcp__demo_server__" host
+  // prefix exceeds; OpenAI's cap is 128, so the same name is inside budget there.
+  const offender = find(runServerLevel(s, "claude-opus-4-8"), "SERVER_NAMESPACED_NAME_LENGTH")
     ?.affectedTools?.[0];
   assert.ok(offender);
   assert.equal(

@@ -200,7 +200,9 @@ test("buildToolFindings: each byTest entry's tools are sorted worst-severity fir
 
 test("buildToolFindings: phi-4 alone (no tool-name cap) does not produce a TOOL_NAME_LENGTH finding", () => {
   // The long name is a hard blocker on capped models but `na` where no cap is documented.
-  const capped = buildToolFindings(makeScan([tool(LONG_NAME, 300)]), ["gpt-5.5"]);
+  // Anthropic caps tool names at 64 characters, so the 77-char LONG_NAME is over on claude-opus-4-8
+  // (OpenAI's cap is 128, which LONG_NAME sits inside — see the runner test for that boundary).
+  const capped = buildToolFindings(makeScan([tool(LONG_NAME, 300)]), ["claude-opus-4-8"]);
   const uncapped = buildToolFindings(makeScan([tool(LONG_NAME, 300)]), ["microsoft/phi-4"]);
   assert.ok(
     capped.byTest.some((e) => e.testId === "TOOL_NAME_LENGTH"),
