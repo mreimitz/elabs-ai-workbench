@@ -120,6 +120,10 @@ import type {
 // model-identity WP3.3 (D-MI10) — `HubUsageProviderCredentialBucket.billing` reuses the ONE billing
 // vocabulary from the D-MI6 registry rather than re-declaring a parallel union here.
 import type { ProviderKindBilling } from "./constants.js";
+// RM-20 WP 2.2 (D-SP24) — `ServerReport.security` carries the posture section declared by the
+// security-posture contract, rather than a second description of it here. That module imports only
+// `zod`, so this direction of the dependency is the only one and there is no cycle.
+import type { SecurityPostureSection } from "./security-posture.js";
 
 export type TransportType = (typeof TRANSPORT_TYPES)[number];
 
@@ -2902,6 +2906,13 @@ export type ServerReport = {
   toolFindings: ToolFindingsReport;
   /** Full tool-test report for each tool that has ≥1 finding (the "detail if flagged" set). */
   flaggedToolTests: CompatibilityTestReport[];
+  /**
+   * RM-20 WP 2.2 (D-SP24) — the security-posture section: the analyzer's own report for this scan,
+   * or an honest reason one could not be produced. **Optional and additive** — absent when the
+   * builder was handed no analyzer at all, which is how every pre-existing caller keeps producing
+   * exactly the document it produced before. See `SecurityPostureSection` in `security-posture.ts`.
+   */
+  security?: SecurityPostureSection;
 };
 
 // --- Skills (Agent Skill registry + versioning) — Phase 1 contract ---------------------------
