@@ -51,12 +51,10 @@ import {
   type ReauthContext,
 } from "./features/servers/McpAuthProvider";
 import { ManageServerTypesDialog } from "./features/servers/ManageServerTypesDialog";
-import { ServerRail } from "./features/servers/ServerRail";
 import { ServerWizard } from "./features/servers/ServerWizard";
 import { SettingsDialog } from "./features/settings/SettingsView";
 import { ServerReportDialog } from "./features/reports/ServerReportDialog";
 import { ScaffoldFromServerWizard } from "./features/skills/ScaffoldFromServerWizard";
-import { SkillRail } from "./features/skills/SkillRail";
 import { SkillWizard } from "./features/skills/SkillWizard";
 import {
   apiDelete,
@@ -139,6 +137,9 @@ const ScansView = lazy(() =>
 const ServersView = lazy(() =>
   import("./features/servers/ServersView").then((m) => ({ default: m.ServersView })),
 );
+const ServersOverview = lazy(() =>
+  import("./features/servers/ServersOverview").then((m) => ({ default: m.ServersOverview })),
+);
 const ServerReportRoute = lazy(() =>
   import("./features/reports/ServerReportView").then((m) => ({ default: m.ServerReportRoute })),
 );
@@ -185,6 +186,9 @@ const SuiteDetail = lazy(() =>
 const SkillsView = lazy(() =>
   import("./features/skills/SkillsView").then((m) => ({ default: m.SkillsView })),
 );
+const SkillsOverview = lazy(() =>
+  import("./features/skills/SkillsOverview").then((m) => ({ default: m.SkillsOverview })),
+);
 const WatchRulesView = lazy(() =>
   import("./features/watch/WatchRulesView").then((m) => ({ default: m.WatchRulesView })),
 );
@@ -217,8 +221,8 @@ export const PAGESHELL_EXACT_ROUTES = new Set<string>([
   "/advisor", // advisor WP 1.3 (recommendation cards, centered reading surface)
   "/scans", // WP 2.3 (master-detail, in-view split)
   "/compare/scans", // WP 2.3
-  "/skills", // WP 2.8 (master-detail via SkillRail secondaryContent → D-UX14 variant)
-  "/servers", // WP 2.2b (master-detail via ServerRail secondaryContent → D-UX14 variant)
+  "/skills", // RM-32 WP 2.2 — the registry OVERVIEW (grouped grid ⇄ table); no rail
+  "/servers", // RM-32 WP 2.1 — the fleet OVERVIEW (grouped grid ⇄ table); no rail
   "/testing/runs", // WP 2.4 (unified runs feed, full-width)
   "/testing/runs/compare", // WP 4.1 (Compare Workspace — full PageShell surface)
   "/testing/collections", // WP 2.6 (collections list)
@@ -333,8 +337,6 @@ export function App() {
   const selectedSkillId = skillMatch?.params.skillId ?? null;
   const routeScanId = scanMatch?.params.scanId ?? null;
 
-  const isServersSection = location.pathname.startsWith("/servers");
-  const isSkillsSection = location.pathname.startsWith("/skills");
   // The Run console owns its own layout/scroll → full-bleed content (shell chrome stays mounted).
   // `/testing/runs/compare` lives under this prefix but is the Compare Workspace (a PageShell route,
   // WP 4.1), not a console — excluded here and mounted via PAGESHELL_EXACT_ROUTES. `/testing/runs/
@@ -358,7 +360,7 @@ export function App() {
 
   const [health, setHealth] = useState<HealthPayload | null>(null);
   const [servers, setServers] = useState<ServerConfig[]>([]);
-  // Server types (planning/Roadmap/completed/RM-21-server-types) — the ServerRail groups + filters by them; the wizard picker
+  // Server types (planning/Roadmap/completed/RM-21-server-types) — the overview groups + filters by them; the wizard picker
   // assigns them; the Manage-types dialog (below) creates/renames/restatuses/deletes them.
   const [serverTypes, setServerTypes] = useState<ServerType[]>([]);
   const [manageTypesOpen, setManageTypesOpen] = useState(false);
@@ -564,25 +566,9 @@ export function App() {
     void refreshAll().finally(() => setInitialLoading(false));
   }, []);
 
-  const sortedServers = useMemo(
-    () => [...servers].sort((left, right) => left.name.localeCompare(right.name)),
-    [servers],
-  );
-
   const selectedServer = useMemo(() => {
     return servers.find((server) => server.id === selectedServerId) ?? null;
   }, [selectedServerId, servers]);
-
-  // On `/servers` (or an invalid `/servers/:id`), redirect to the first server so the section always
-  // shows a concrete server. When there are no servers, ServersView renders its own empty state.
-  useEffect(() => {
-    if (!isServersSection || servers.length === 0) return;
-    const valid = selectedServerId !== null && servers.some((s) => s.id === selectedServerId);
-    if (!valid) {
-      const first = sortedServers[0];
-      if (first) navigate(`/servers/${first.id}`, { replace: true });
-    }
-  }, [isServersSection, servers, selectedServerId, sortedServers, navigate]);
 
   const latestScansByServer = useMemo(() => {
     const latest = new Map<string, ScanSummary>();
@@ -734,9 +720,11 @@ export function App() {
       try {
         await apiDelete(`/api/servers/${id}`);
         pushToast("success", "Server deleted");
+        // RM-32 D-OD1 — deleting the server you are LOOKING AT returns you to the fleet overview.
+        // It used to teleport to whichever server sorted next, which (now that `/servers` is a real
+        // place) silently swapped the page's subject for an unrelated one.
         if (selectedServerId === id) {
-          const nextServer = sortedServers.find((server) => server.id !== id) ?? null;
-          navigate(nextServer ? `/servers/${nextServer.id}` : "/servers", { replace: true });
+          navigate("/servers", { replace: true });
         }
         await refreshAll();
       } catch (error) {
@@ -745,7 +733,7 @@ export function App() {
         endBusy(key);
       }
     },
-    [navigate, pushToast, refreshAll, selectedServerId, sortedServers, beginBusy, endBusy],
+    [navigate, pushToast, refreshAll, selectedServerId, beginBusy, endBusy],
   );
 
   const testServer = useCallback(
@@ -859,21 +847,6 @@ export function App() {
   }, [deleteServer, pendingDeleteServer]);
 
   // --- Skills handlers -------------------------------------------------------------------------
-  const sortedSkills = useMemo(
-    () => [...skills].sort((left, right) => left.displayName.localeCompare(right.displayName)),
-    [skills],
-  );
-
-  // On `/skills` (or an invalid `/skills/:id`), redirect to the first skill; empty state otherwise.
-  useEffect(() => {
-    if (!isSkillsSection || skills.length === 0) return;
-    const valid = selectedSkillId !== null && skills.some((s) => s.id === selectedSkillId);
-    if (!valid) {
-      const first = sortedSkills[0];
-      if (first) navigate(`/skills/${first.id}`, { replace: true });
-    }
-  }, [isSkillsSection, skills, selectedSkillId, sortedSkills, navigate]);
-
   const openCreateSkill = useCallback(() => {
     setSkillWizardOpen(true);
   }, []);
@@ -994,9 +967,9 @@ export function App() {
       try {
         await deleteSkillRequest(id);
         pushToast("success", "Skill deleted");
+        // RM-32 D-OD1 — same as servers: back to the registry overview, not to an unrelated skill.
         if (selectedSkillId === id) {
-          const nextSkill = sortedSkills.find((skill) => skill.id !== id) ?? null;
-          navigate(nextSkill ? `/skills/${nextSkill.id}` : "/skills", { replace: true });
+          navigate("/skills", { replace: true });
         }
         await refreshAll();
       } catch (error) {
@@ -1005,7 +978,7 @@ export function App() {
         endBusy(key);
       }
     },
-    [navigate, pushToast, refreshAll, selectedSkillId, sortedSkills, beginBusy, endBusy],
+    [navigate, pushToast, refreshAll, selectedSkillId, beginBusy, endBusy],
   );
 
   const confirmDeleteSkill = useCallback((skill: Skill) => {
@@ -1019,8 +992,10 @@ export function App() {
 
   // ── Route-derived breadcrumbs (item 4). Depth-1 top-level views render none. ──────────────────
   const breadcrumbs = useMemo<Crumb[]>(() => {
+    // RM-32 D-OD5 — the server LEAF is contributed by `ServersView` as an interactive switcher
+    // through the breadcrumb slot; App only owns the parent crumb back to the overview.
     if (serverMatch && selectedServer) {
-      return [{ label: "MCP Servers", to: "/servers" }, { label: selectedServer.name }];
+      return [{ label: "MCP Servers", to: "/servers" }];
     }
     if (scanMatch) {
       return [
@@ -1032,9 +1007,10 @@ export function App() {
         },
       ];
     }
+    // RM-32 D-OD5 — the skill LEAF is the switcher `SkillsView` contributes through the breadcrumb
+    // slot; App owns only the parent crumb back to the registry overview.
     if (skillMatch) {
-      const skill = skills.find((s) => s.id === selectedSkillId);
-      return [{ label: "Skills", to: "/skills" }, { label: skill?.displayName ?? "Skill" }];
+      return [{ label: "Skills", to: "/skills" }];
     }
     if (location.pathname === "/testing/runs/compare") {
       return [{ label: "Runs", to: "/testing/runs" }, { label: "Compare" }];
@@ -1061,12 +1037,10 @@ export function App() {
         { label: routeCrumb ?? "Suite" },
       ];
     }
+    // RM-32 D-OD5 — the collection LEAF is the switcher `CollectionDetail` contributes through the
+    // breadcrumb slot; App owns only the parent crumb back to the overview.
     if (collectionMatch) {
-      const collection = collections.find((c) => c.id === collectionMatch.params.collectionId);
-      return [
-        { label: "Collections", to: "/testing/collections" },
-        { label: collection?.name ?? "Collection" },
-      ];
+      return [{ label: "Collections", to: "/testing/collections" }];
     }
     if (isReportRoute) {
       return [{ label: "Reports" }, { label: reportDialogScan?.serverName ?? "Server report" }];
@@ -1202,33 +1176,6 @@ export function App() {
     setRouteAnnouncement(pageTitle);
   }, [pageTitle]);
 
-  const secondaryContent = isServersSection ? (
-    <ServerRail
-      isBusy={isBusy}
-      latestScansByServer={latestScansByServer}
-      selectedServerId={selectedServer?.id ?? null}
-      servers={servers}
-      serverTypes={serverTypes}
-      onAddServer={openCreateServer}
-      onManageTypes={() => setManageTypesOpen(true)}
-      onDeleteServer={confirmDeleteServer}
-      onEditServer={openEditServer}
-      onRunScan={(id) => void runScan(id)}
-      onSelectServer={(id) => navigate(`/servers/${id}`)}
-      onTestServer={(id) => void testServer(id)}
-    />
-  ) : isSkillsSection ? (
-    <SkillRail
-      skills={skills}
-      selectedSkillId={selectedSkillId}
-      isBusy={isBusy}
-      onAddSkill={openCreateSkill}
-      onSelectSkill={(id) => navigate(`/skills/${id}`)}
-      onPullSkill={(id) => void pullSkillLatest(id)}
-      onDeleteSkill={confirmDeleteSkill}
-    />
-  ) : null;
-
   return (
     <ErrorBoundary>
       <McpAuthContextProvider api={mcpAuth.api}>
@@ -1240,8 +1187,6 @@ export function App() {
         <RouteCrumbProvider onChange={setRouteCrumb}>
           <AppShell
             breadcrumbs={breadcrumbs}
-            secondaryContent={secondaryContent}
-            secondaryTitle={isSkillsSection ? "Skills" : "Servers"}
             fullBleed={isRunConsoleRoute || isSuiteRunConsoleRoute || isCurrentRoutePageShell}
             hideChromeForPrint={isReportRoute}
             themePreference={themePreference}
@@ -1366,7 +1311,27 @@ export function App() {
                     </FeatureGate>
                   }
                 />
-                <Route path="/servers" element={<ServersRoute {...serversRouteProps()} />} />
+                {/* RM-32 D-OD1 — `/servers` is the OVERVIEW (a grouped grid ⇄ table of the whole
+                fleet), not a redirect to whichever server sorted first; `/servers/:serverId` is the
+                full-width detail, whose breadcrumb leaf switches servers. */}
+                <Route
+                  path="/servers"
+                  element={
+                    <ServersOverview
+                      isBusy={isBusy}
+                      initialLoading={initialLoading}
+                      servers={servers}
+                      serverTypes={serverTypes}
+                      latestScansByServer={latestScansByServer}
+                      onAddServer={openCreateServer}
+                      onManageTypes={() => setManageTypesOpen(true)}
+                      onDeleteServer={confirmDeleteServer}
+                      onEditServer={openEditServer}
+                      onRunScan={(id) => void runScan(id)}
+                      onTestServer={(id) => void testServer(id)}
+                    />
+                  }
+                />
                 <Route
                   path="/servers/:serverId"
                   element={<ServersRoute {...serversRouteProps()} />}
@@ -1399,13 +1364,17 @@ export function App() {
                 />
                 {/* Bare parent → the section's default view, not the dashboard catch-all (WP 0.3 / C1). */}
                 <Route path="/compare" element={<Navigate to="/compare/scans" replace />} />
+                {/* RM-32 D-OD1 — `/skills` is the registry OVERVIEW; `/skills/:skillId` is the
+                inspector, whose breadcrumb leaf switches skills. */}
                 <Route
                   path="/skills"
                   element={
-                    <SkillsView
+                    <SkillsOverview
                       skills={skills}
-                      selectedSkillId={selectedSkillId}
+                      isBusy={isBusy}
                       onAddSkill={openCreateSkill}
+                      onPullSkill={(id) => void pullSkillLatest(id)}
+                      onDeleteSkill={confirmDeleteSkill}
                     />
                   }
                 />
@@ -1655,6 +1624,8 @@ export function App() {
       latestScan: selectedServerLatestScan,
       scanHistory: selectedServerScanHistory,
       selectedServer,
+      servers,
+      latestScansByServer,
       serverTypes,
       onAddServer: openCreateServer,
       onEditServer: openEditServer,

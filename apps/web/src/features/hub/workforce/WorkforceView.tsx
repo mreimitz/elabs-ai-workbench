@@ -183,7 +183,7 @@ export function WorkforceView({
       </Heading>
       <div className="flex min-h-0 flex-1 gap-4">
         {/* The org rail is an INTERNAL sibling column (like the workspace's meta rail), not the
-            AppShell-level `secondaryContent` Servers/Skills use — WP2.1's App.tsx surface is scoped
+            AppShell-level rail Servers/Skills used to use — WP2.1's App.tsx surface is scoped
             to route lines only (see its own doc comment), so this view owns its full layout. */}
         {showRail ? (
           <OrgRail

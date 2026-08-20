@@ -44,7 +44,6 @@ import {
   TooltipContent,
   TooltipTrigger,
   cn,
-  useIsMobile,
 } from "@elabs-ai/components-ui";
 import { AppIcon } from "@elabs-ai/components-icons";
 import { BUILT_IN_THEME_META } from "@elabs-ai/components-tokens";
@@ -225,8 +224,6 @@ export const ACTIVE_NAV_INDICATOR_CLASS =
 export type AppShellProps = {
   /** Route-derived breadcrumbs. Rendered only at drill depth ≥ 2; the leaf is the current page. */
   breadcrumbs?: Crumb[];
-  secondaryContent?: ReactNode;
-  secondaryTitle?: string;
   /**
    * Render `<main>` edge-to-edge (no padding, no inner scroll) so a surface that owns its own
    * layout/scroll — like the Run console — gets the room. The sidebar + TopNav stay mounted and
@@ -250,8 +247,8 @@ export type AppShellProps = {
    */
   onOpenCommandPalette?: () => void;
   /**
-   * The Assistant dock's content (`AssistantDock`) — a flex sibling AFTER `<main>` (mirrors the left
-   * `secondaryContent` aside), resizable, collapsed by default. OPTIONAL and ADDITIVE: every existing
+   * The Assistant dock's content (`AssistantDock`) — a flex sibling AFTER `<main>`, resizable,
+   * collapsed by default. OPTIONAL and ADDITIVE: every existing
    * caller omits it, so the dock simply doesn't render (no toggle, no aside, no behavior change).
    */
   dockContent?: ReactNode;
@@ -332,8 +329,6 @@ function readStoredDockWidthPx(): number {
 
 export function AppShell({
   breadcrumbs = [],
-  secondaryContent,
-  secondaryTitle = "",
   fullBleed = false,
   hideChromeForPrint = false,
   themePreference,
@@ -363,16 +358,6 @@ export function AppShell({
   // page `children` (which set it) sit under the one provider around the whole shell subtree.
   const [breadcrumbSlot, setBreadcrumbSlot] = useState<ReactNode>(null);
 
-  // Below the brand-ui mobile breakpoint (<768px) the secondary rail's inline `md:block` aside is
-  // hidden, so the rail (the ONLY server/skill picker) would be unreachable. On mobile we surface
-  // the SAME rail element inside a left Sheet, opened from a TopNav button. The sheet closes on any
-  // route change — selecting a rail item navigates — so a pick dismisses it.
-  const isMobile = useIsMobile();
-  const [railOpen, setRailOpen] = useState(false);
-  const SecondaryIcon = secondaryTitle === "Skills" ? Sparkles : Server;
-  useEffect(() => {
-    setRailOpen(false);
-  }, [pathname]);
 
   // Assistant dock width (desktop only — the mobile Sheet is always full-width). Persisted so a
   // chosen size survives reload; re-read lazily (not on every render) via `useState`'s initializer.
@@ -440,37 +425,13 @@ export function AppShell({
   // The shell's existing content region (unchanged from before this WP) — extracted to a variable so
   // it can be reparented under the dock's `ResizablePanelGroup` when the dock is open, and rendered
   // exactly as before when it's not (see the two render paths below).
-  const mainRegion =
-    fullBleed && secondaryContent ? (
-      // Edge-to-edge master-detail (UX-overhaul): keep the list rail, but the main region is
-      // edge-to-edge (no padding, no inner scroll) so a PageShell width="master-detail" inside
-      // it owns its own gutter + scroll — the shell contract for Servers/Scans master-detail.
-      <div className="flex min-h-0 flex-1">
-        <aside
-          aria-label={secondaryTitle}
-          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-muted md:block"
-        >
-          {secondaryContent}
-        </aside>
-        <div className="app-shell-main min-w-0 flex-1 overflow-hidden">{children}</div>
-      </div>
-    ) : fullBleed ? (
-      // Edge-to-edge: no padding, no inner scroll — the surface owns its own layout/scroll
-      // (Run console). The sidebar + TopNav above stay mounted and interactive.
-      <div className="app-shell-main min-h-0 flex-1 overflow-hidden">{children}</div>
-    ) : secondaryContent ? (
-      <div className="flex min-h-0 flex-1">
-        <aside
-          aria-label={secondaryTitle}
-          className="hidden w-72 shrink-0 overflow-y-auto border-r border-border bg-muted md:block"
-        >
-          {secondaryContent}
-        </aside>
-        <div className="app-shell-main min-w-0 flex-1 overflow-y-auto p-6">{children}</div>
-      </div>
-    ) : (
-      <div className="app-shell-main min-h-0 flex-1 overflow-y-auto p-6">{children}</div>
-    );
+  const mainRegion = fullBleed ? (
+    // Edge-to-edge: no padding, no inner scroll — the surface owns its own layout/scroll (a
+    // PageShell route, the run console). The sidebar + TopNav above stay mounted and interactive.
+    <div className="app-shell-main min-h-0 flex-1 overflow-hidden">{children}</div>
+  ) : (
+    <div className="app-shell-main min-h-0 flex-1 overflow-y-auto p-6">{children}</div>
+  );
 
   // The TopNav element, extracted so BOTH dock branches render the identical bar: when the dock is
   // open it lives INSIDE the main (left) resizable panel — the dock is a full-height right column
@@ -487,25 +448,6 @@ export function AppShell({
           <span className="inline-flex items-center justify-center [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11">
             <SidebarTrigger className="[@media(pointer:coarse)]:size-11" />
           </span>
-          {isMobile && secondaryContent ? (
-            <Sheet open={railOpen} onOpenChange={setRailOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <SecondaryIcon aria-hidden />
-                  <span>{secondaryTitle}</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="flex w-full max-w-xs flex-col p-0">
-                <SheetHeader className="shrink-0 border-b border-border p-3 text-left">
-                  <SheetTitle>{secondaryTitle}</SheetTitle>
-                  <SheetDescription className="sr-only">
-                    Pick from {secondaryTitle}.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="min-h-0 flex-1 overflow-y-auto">{secondaryContent}</div>
-              </SheetContent>
-            </Sheet>
-          ) : null}
           {hasDrillDepth || breadcrumbSlot ? (
             <Breadcrumb>
               <BreadcrumbList>
@@ -902,7 +844,7 @@ export function AppShell({
 
           {/* Narrow viewports (< 1100px): the dock reuses the SAME right-`Sheet` pattern the left rail
             uses on mobile (above) instead of a permanent split, which would starve the content column
-            (item 8b). Its own breakpoint (`dockAsSheet`), higher than the left rail's 768px `isMobile`. */}
+            (item 8b). Its own breakpoint is `dockAsSheet` (~1100px), not brand-ui's 768px. */}
           {dockAsSheet ? (
             <Sheet
               open={dockAvailable && dockOpen}

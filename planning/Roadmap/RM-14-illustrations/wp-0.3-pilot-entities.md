@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 0.3 - pilot entities (mcp-server, skill, agent), registry v0.1 and the /illustrations gallery"
 description: "Phase 0 of 02-plan.md. Ledger: STATUS.md. Proves the visual language end-to-end: three real entities composed only from WP 0.2 primitives, catalogued in the registry, browsable at /illustrations in both themes."
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-20T22:30:00Z"
+timestamp: "2026-08-21T02:25:00Z"
 status: "final"
 ---
 # WP 0.3 — pilot entities + registry v0.1 + `/illustrations` gallery v0
@@ -85,6 +85,64 @@ string-set equality. **Do not touch** `ASSISTANT_ENTITY_KINDS`, `SCOPE_WRITE_TOO
 `deriveAssistantScope` (D-AO3 — frozen security boundary); the exemption is the sanctioned route,
 and it names WP 4.1 so it reads as visibly provisional.
 
+### 4b. The SECOND route registry — `PAGESHELL_EXACT_ROUTES` (added 2026-08-21 by the orchestrator)
+
+> Reported by the session that built **RM-32** (overview→detail restructure) and **verified against
+> the tree before being written here**. It is a separate registry from the assistant manifest above,
+> and it is the one that is easy to miss because **nothing fails when you forget it.**
+
+`apps/web/src/App.tsx` exports `PAGESHELL_EXACT_ROUTES` (a `Set<string>`, at `apps/web/src/App.tsx:217`
+as of 2026-08-21), consumed by `isPageShellRoute`. A route that is
+**absent** from that set mounts **padded and scrolling** instead of edge-to-edge. So the gallery
+needs `"/illustrations"` added there too — again **byte-identical** to the `path="…"` literal.
+
+The asymmetry is the trap. `apps/web/src/App.test.ts` carries a grep-proof test that every
+`PAGESHELL_EXACT_ROUTES` entry corresponds to a declared `<Route path>` — so a **dead entry** is
+caught. The **opposite** direction is not gated: a route with no entry is not a test failure, it is
+a silently wrong-looking page. Verify the gallery renders full-bleed **by looking**, not by
+assuming the gate would have told you.
+
+Three further details, all **verified against the source on 2026-08-21**, which decide how this WP
+must register the route:
+
+1. **`isPageShellRoute` matches exact OR prefix**, and a trailing-slash prefix does **not** cover
+   its own bare path — `"/illustrations".startsWith("/illustrations/")` is `false`. So even if this
+   WP (or a later one) adds `"/illustrations/"` to `PAGESHELL_ROUTE_PREFIXES` for a future detail
+   route, **`/illustrations` still needs its own entry in `PAGESHELL_EXACT_ROUTES`.** Registering
+   only the prefix is precisely the mount-looks-slightly-wrong failure with nothing red.
+2. **`PAGESHELL_ROUTE_PREFIXES` is ungated in BOTH directions.** The grep-proof loop iterates only
+   the exact `Set`; the prefix array is never reconciled against `App.tsx` at all. The "a dead entry
+   is caught" guarantee therefore holds for **exact routes only**. Anything this WP or a successor
+   puts in the prefix array has no coverage in either direction.
+3. The one partial reverse-direction check that exists — "registers exactly the current
+   `/assistant/*` routes" — asserts
+   `PAGESHELL_EXACT_ROUTES` filtered to `/assistant` **equals** `ASSISTANT_HUB_ROUTES`. **Both
+   operands are hand-maintained and neither is derived from `App.tsx`**, which decides exactly which
+   mistakes it catches:
+   - registry updated, literal forgotten → **fails** (registry superset);
+   - literal updated, registry forgotten → **fails** (literal superset);
+   - a new `/assistant/*` `<Route>` declared and **neither** touched → **passes silently.** Both
+     sides are still equal to each other; they are simply both wrong.
+
+   That last case is the failure mode this WP must not repeat, and it is why the check covers the
+   Hub *slice* rather than providing general coverage. Do not read it as a safety net.
+
+> **Open follow-up, deliberately NOT claimed by RM-14 (orchestrator note, 2026-08-21):** the reverse
+> assertion is small — the grep-proof test already holds a parsed `declaredRoutePaths` set, so
+> iterating it and requiring each declared path be covered by an exact entry or a prefix is a few
+> lines in the same test. It is not a one-liner: it needs an explicit carve-out for the `<Navigate>`
+> redirect routes, which legitimately never mount (the same exemption the assistant manifest makes
+> with `surface: "redirect"`), plus the `*` catch-all and `/`. That converts a whole class of silent
+> layout bugs into a red test, but it is **shell-gate hardening, not illustration work**, and it
+> touches a file no RM-14 WP otherwise owns. It needs its own roadmap item and an owner decision —
+> an implementing agent must **not** fold it into this WP unopposed.
+
+**Also from RM-32, if it has landed by the time you build this:** `AppShell`'s `secondaryContent` /
+`secondaryTitle` props and the mobile rail `Sheet` are **removed** (both list rails were deleted, so
+nothing passed them). Mount the gallery with `fullBleed` + `breadcrumbs`; there is no rail prop any
+more. If RM-32 is still uncommitted when this WP is dispatched, the orchestrator resolves that
+first — two sessions must not edit `App.tsx` in the same tree.
+
 ## Out of scope (explicitly)
 
 Any fourth entity, the scene spec's layout engine or renderer, explain mode, persistence, assistant
@@ -98,6 +156,9 @@ tools, the scaffold script (WP 1.4).
 4. `assistant-route-operability` passes **with** the manifest entry — and, as a **teeth check
    performed and reported**, fails when the entry is temporarily removed. Restore it.
 5. `enforce-brand-ui` and `check-tokens` clean across `apps/web/src/features/illustrations`.
+5b. `"/illustrations"` is present in **both** route registries — `ASSISTANT_ROUTE_MANIFEST` and
+   `PAGESHELL_EXACT_ROUTES` — and the gallery is confirmed **full-bleed by looking** (§4b: the
+   missing-entry direction is not test-gated).
 6. Keyboard: the grid is reachable, focus is visible, the port-overlay toggle is operable.
 7. Live walk by the implementing agent at `http://127.0.0.1:5173/illustrations`, **both themes**,
    with a screenshot of each in the done-line. This does **not** replace the owner walk below.

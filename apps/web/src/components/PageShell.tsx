@@ -67,9 +67,10 @@ import { cn } from "@elabs-ai/components-ui";
  *                         Collections list, Compatibility. DEFAULT.
  *     • "centered"      — `mx-auto max-w-[1400px]`. Reading/config surfaces: Overview (Dashboard),
  *                         Composer (Compare, Run launcher) and Settings.
- *     • "master-detail" — full width. The detail pane fills its column; the fixed 288px list panel
- *                         is a SIBLING structure (AppShell's `secondaryContent` rail), not a
- *                         content max-width. Servers / Scans / Skills detail.
+ *     • "master-detail" — full width. A detail pane reached by drilling in from a list. RM-32 removed
+ *                         the fixed 288px sibling rail this used to sit beside (the list is now an
+ *                         overview PAGE, and switching entities is a breadcrumb popover), so the mode
+ *                         is now purely a record of the archetype. Servers / Scans detail.
  *     • "workbench"     — full width. Dense operator surfaces (Run console, Tool playground); the
  *                         320px side rail that stacks below content under 1200px is supplied by the
  *                         VIEW, not by PageShell.

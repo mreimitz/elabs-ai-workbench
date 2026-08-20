@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Collection } from "@mcp-token-footprint/shared";
 import { Badge, Button, Heading, StatePanel, Tabs, TabsContent, TabsList, TabsTrigger, Text, toast } from "@elabs-ai/components-ui";
@@ -21,6 +21,8 @@ import { RunLauncher } from "../run-launcher/RunLauncher";
 import { CollectionTests } from "./CollectionTests";
 import { CollectionSuites } from "./CollectionSuites";
 import { CollectionGit } from "./CollectionGit";
+import { CollectionBreadcrumbSwitcher } from "./CollectionBreadcrumbSwitcher";
+import { useSetBreadcrumbSlot } from "../../../components/breadcrumb-slot";
 import { notifyError } from "../../../lib/notify";
 
 type DetailTab = "tests" | "suites" | "git";
@@ -96,6 +98,15 @@ export function CollectionDetail() {
       setDeleting(false);
     }
   }, [collectionId, navigate]);
+
+  // RM-32 D-OD5 — the breadcrumb LEAF switches collections. Contributed before the loading/not-found
+  // early returns so the hook order is stable; it renders nothing until the collection resolves,
+  // because a switcher trigger with no identity is worse than the static crumb it replaces.
+  const breadcrumbSwitcher = useMemo(
+    () => (collection ? <CollectionBreadcrumbSwitcher collection={collection} /> : null),
+    [collection],
+  );
+  useSetBreadcrumbSlot(breadcrumbSwitcher);
 
   if (loading) {
     return (

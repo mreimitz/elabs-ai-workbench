@@ -33,6 +33,13 @@ import {
 } from "@elabs-ai/components-ui";
 import { SearchInput } from "@elabs-ai/components-data";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@elabs-ai/components-ui";
+import {
   ClipboardCheck,
   ClipboardList,
   Download,
@@ -58,6 +65,14 @@ import { FieldRow } from "../../../components/FieldRow";
 import { IconButton } from "../../../components/IconButton";
 import { ImportInsightBenchDialog } from "./ImportInsightBenchDialog";
 import { lastSyncedLabel, syncChips } from "./collection-status";
+import {
+  EntityBrowser,
+  EntityCard,
+  ViewModeToggle,
+  useEntityBrowserState,
+} from "../../../components/entity-browser";
+import { collectionBindingGroupBy, isBound, orderCollections } from "./collection-groups";
+import { col } from "../../../lib/table";
 import { notifyError } from "../../../lib/notify";
 
 type StatusEntry = { state?: CollectionSyncState; loading: boolean; error?: string };
@@ -79,9 +94,6 @@ export function CollectionsView() {
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Collection | null>(null);
-  // C-7 (empty toolbar) — once there's something to search, the toolbar's `left` cluster carries a
-  // real search field (matching the EnvironmentsView B-2 fix) instead of sitting near-empty.
-  const [search, setSearch] = useState("");
 
   const loadStatus = useCallback(async (id: string) => {
     setStatuses((prev) => ({ ...prev, [id]: { ...prev[id], loading: true, error: undefined } }));
@@ -125,17 +137,62 @@ export function CollectionsView() {
   }, [load]);
 
   // Local pinned first (there is exactly one `isDefault`), the rest in API order.
-  const ordered = useMemo(() => {
-    const local = collections.filter((c) => c.isDefault);
-    const rest = collections.filter((c) => !c.isDefault);
-    return [...local, ...rest];
-  }, [collections]);
+  const ordered = useMemo(() => orderCollections(collections), [collections]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return ordered;
-    return ordered.filter((c) => c.name.toLowerCase().includes(q));
-  }, [ordered, search]);
+  // RM-32 WP 2.3 — the list renders through the shared `EntityBrowser` (grouped cards ⇄ grouped
+  // table). The browser is CONTROLLED: its search / group-by / view-mode live here so they can sit in
+  // this view's single `ViewToolbar` row (D-TB2) rather than in a second toolbar of the browser's own.
+  const groupBys = useMemo(() => [collectionBindingGroupBy()], []);
+  const browser = useEntityBrowserState<Collection>({ storageKey: "collections", groupBys });
+
+  const columns = useMemo(
+    () => [
+      col<Collection>({ id: "name", header: "Name", value: (collection) => collection.name }),
+      col<Collection>({
+        id: "kind",
+        header: "Kind",
+        value: (collection) => (isBound(collection) ? "Git-bound" : "Local"),
+      }),
+      col<Collection>({
+        id: "repo",
+        header: "Repository",
+        value: (collection) => collection.repoUrl ?? "—",
+        cell: (collection) =>
+          collection.repoUrl ? (
+            <span className="block min-w-0 truncate font-mono" title={collection.repoUrl}>
+              {collection.repoUrl}
+            </span>
+          ) : (
+            "—"
+          ),
+      }),
+      col<Collection>({
+        id: "branch",
+        header: "Branch",
+        value: (collection) => collection.branch ?? "—",
+      }),
+      col<Collection>({
+        id: "sync",
+        header: "Sync",
+        value: (collection) => {
+          const entry = statuses[collection.id];
+          if (!isBound(collection)) return "local only";
+          if (entry?.error) return "status unavailable";
+          if (!entry?.state) return "…";
+          return syncChips(entry.state)
+            .map((chip) => chip.label)
+            .join(", ");
+        },
+        cell: (collection) => <SyncCell collection={collection} status={statuses[collection.id]} />,
+      }),
+      col<Collection>({
+        id: "lastSynced",
+        header: "Last synced",
+        value: (collection) => lastSyncedLabel(collection),
+      }),
+    ],
+    [statuses],
+  );
 
   const handleCreate = useCallback(
     async (name: string) => {
@@ -196,25 +253,42 @@ export function CollectionsView() {
           }
           left={
             collections.length > 0 ? (
-              <div className="w-56 min-w-[10rem]">
-                <SearchInput
-                  value={search}
-                  onValueChange={setSearch}
-                  placeholder="Search collections…"
-                  label="Search collections"
-                />
-              </div>
+              <>
+                <div className="w-56 min-w-[10rem]">
+                  <SearchInput
+                    value={browser.search}
+                    onValueChange={browser.setSearch}
+                    placeholder="Search collections…"
+                    label="Search collections"
+                  />
+                </div>
+                <Select value={browser.groupById} onValueChange={browser.setGroupById}>
+                  <SelectTrigger aria-label="Group collections by" className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {browser.groupByOptions.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.label === "None" ? "No grouping" : `Group by ${option.label}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             ) : undefined
           }
           results={
             collections.length > 0 ? (
               <ResultCount>
-                {filtered.length} {filtered.length === 1 ? "collection" : "collections"}
+                {collections.length} {collections.length === 1 ? "collection" : "collections"}
               </ResultCount>
             ) : undefined
           }
           actions={
             <>
+              {collections.length > 0 ? (
+                <ViewModeToggle value={browser.viewMode} onChange={browser.setViewMode} />
+              ) : null}
               <Button variant="outline" onClick={() => setImportOpen(true)}>
                 <Download aria-hidden />
                 <span>Import</span>
@@ -233,55 +307,47 @@ export function CollectionsView() {
         Collections
       </Heading>
 
-      {loading ? (
-        <StatePanel
-          kind="loading"
-          title="Loading collections…"
-          loadingLabel="Loading collections…"
-        />
-      ) : ordered.length === 0 ? (
-        <EmptyState
-          icon={<FolderGit2 aria-hidden />}
-          title="No collections yet"
-          description="The home for your tests and suites — every test lives in a collection. Create a local one to organize them, bind it to a git repo later to share and version it with a team, or import a colleague's InsightBench questions."
-          actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
-                <Download aria-hidden />
-                <span>Import InsightBench</span>
-              </Button>
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus aria-hidden />
-                <span>New collection</span>
-              </Button>
-            </div>
-          }
-        />
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={<FolderGit2 aria-hidden />}
-          title="No collections match your search"
-          description={`No collection name contains "${search}".`}
-          actions={
-            <Button variant="outline" onClick={() => setSearch("")}>
-              Clear filter
-            </Button>
-          }
-        />
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {filtered.map((collection) => (
-            <li key={collection.id}>
-              <CollectionRow
-                collection={collection}
-                status={statuses[collection.id]}
-                onOpen={() => navigate(`/testing/collections/${collection.id}`)}
-                onDelete={collection.isDefault ? undefined : () => setPendingDelete(collection)}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+      <EntityBrowser<Collection>
+        state={browser}
+        items={ordered}
+        itemKey={(collection) => collection.id}
+        searchText={(collection) =>
+          `${collection.name} ${collection.repoUrl ?? ""} ${collection.branch ?? ""}`
+        }
+        noun={["collection", "collections"]}
+        columns={columns}
+        onOpen={(collection) => navigate(`/testing/collections/${collection.id}`)}
+        rowLabel={(collection) => collection.name}
+        loading={loading}
+        renderCard={(collection, hints) => (
+          <CollectionOverviewCard
+            collection={collection}
+            status={statuses[collection.id]}
+            virtualizeHint={hints.virtualizeHint}
+            onOpen={() => navigate(`/testing/collections/${collection.id}`)}
+            onDelete={collection.isDefault ? undefined : () => setPendingDelete(collection)}
+          />
+        )}
+        empty={
+          <EmptyState
+            icon={<FolderGit2 aria-hidden />}
+            title="No collections yet"
+            description="The home for your tests and suites — every test lives in a collection. Create a local one to organize them, bind it to a git repo later to share and version it with a team, or import a colleague's InsightBench questions."
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" onClick={() => setImportOpen(true)}>
+                  <Download aria-hidden />
+                  <span>Import InsightBench</span>
+                </Button>
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus aria-hidden />
+                  <span>New collection</span>
+                </Button>
+              </div>
+            }
+          />
+        }
+      />
 
       {/* Review section (toolbar-reach WP 4.3 · finding B-6). The Review surface + its rubrics used
           to be reachable ONLY by URL (a "Review these…" button on the runs feed, and Settings →
@@ -411,96 +477,113 @@ function NewCollectionDialog({
   );
 }
 
-function CollectionRow({
+/**
+ * One collection's card on the overview (RM-32 WP 2.3). Everything the old `CollectionRow` carried is
+ * carried here — the `Local` lock badge on the reserved default, the PAT badge, the live sync chips
+ * for a bound collection (still fetched per row, since only a bound collection has a remote to ask),
+ * the composed repo/path/branch line with its `title` recovery for truncation, and Delete being
+ * ABSENT (not disabled) for the undeletable default.
+ *
+ * The explicit "Open" button is gone: the card title is a real link and the card body activates it
+ * (D-OD7), so a second control with the same meaning would be the duplicate-affordance defect
+ * `lib/table.tsx` warns about on `navCol` tables.
+ */
+function CollectionOverviewCard({
   collection,
   status,
+  virtualizeHint,
   onOpen,
   onDelete,
 }: {
   collection: Collection;
   status: StatusEntry | undefined;
+  virtualizeHint: boolean;
   onOpen: () => void;
   /** Omitted for the undeletable Local collection. */
   onDelete?: () => void;
 }) {
-  const bound = Boolean(collection.repoUrl);
+  const bound = isBound(collection);
+  const repoLine = bound
+    ? `${collection.repoUrl}${collection.repoPath ? ` · ${collection.repoPath}` : ""} · ${collection.branch} · ${lastSyncedLabel(collection)}`
+    : null;
+
   return (
-    <Card>
-      <CardContent className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Text className="min-w-0 truncate font-medium">{collection.name}</Text>
-            {collection.isDefault ? (
-              <Badge variant="secondary">
-                <Lock aria-hidden className="size-3" />
-                Local
-              </Badge>
-            ) : null}
-            {collection.hasPat ? (
-              <Badge variant="secondary">
-                <KeyRound aria-hidden className="size-3" />
-                PAT
-              </Badge>
-            ) : null}
-            {bound ? (
-              status?.loading ? (
-                <Skeleton className="h-5 w-16 rounded-full" />
-              ) : status?.error ? (
-                <Badge variant="outline">status unavailable</Badge>
-              ) : status?.state ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {syncChips(status.state).map((chip) => (
-                    <Badge key={chip.key} variant={chip.variant}>
-                      {chip.label}
-                    </Badge>
-                  ))}
-                </div>
-              ) : null
-            ) : collection.isDefault ? null : (
-              <Badge variant="outline">local only</Badge>
-            )}
-          </div>
-          {/* C-7 (monospace prose) — a real repo path/branch is a code-like identifier and stays
-              monospace; "not bound to a repository" is prose, so it renders in the body face. */}
-          {bound ? (
-            // D-IC10 (interface-craft WP 2.1) — the composed repo/path/branch line truncates at
-            // narrow widths; carry the full text as a `title` so it's recoverable on hover.
-            <Text
-              variant="meta"
-              tone="muted"
-              className="min-w-0 truncate font-mono"
-              title={`${collection.repoUrl}${collection.repoPath ? ` · ${collection.repoPath}` : ""} · ${collection.branch} · ${lastSyncedLabel(collection)}`}
-            >
-              {`${collection.repoUrl}${collection.repoPath ? ` · ${collection.repoPath}` : ""} · ${collection.branch} · ${lastSyncedLabel(collection)}`}
-            </Text>
-          ) : (
-            <Text variant="meta" tone="muted" className="min-w-0 truncate">
-              not bound to a repository
-            </Text>
-          )}
-        </div>
-        {/* C-7 (ragged action alignment) — the action cluster is a fixed footprint whether or not
-            Delete renders: an invisible `size-8` placeholder fills the delete slot for the
-            undeletable Local row, so every row's Open button lands at the same x. */}
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={onOpen}>
-            Open
-          </Button>
-          {onDelete ? (
-            <IconButton
-              variant="ghost"
-              size="icon-sm"
-              label={`Delete ${collection.name}`}
-              onClick={onDelete}
-            >
-              <Trash2 aria-hidden />
-            </IconButton>
-          ) : (
-            <span aria-hidden className="size-8" />
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <EntityCard
+      title={collection.name}
+      href={`/testing/collections/${collection.id}`}
+      onOpen={onOpen}
+      virtualizeHint={virtualizeHint}
+      badges={
+        <>
+          {collection.isDefault ? (
+            <Badge variant="secondary">
+              <Lock aria-hidden className="size-3" />
+              Local
+            </Badge>
+          ) : null}
+          {collection.hasPat ? (
+            <Badge variant="secondary">
+              <KeyRound aria-hidden className="size-3" />
+              PAT
+            </Badge>
+          ) : null}
+        </>
+      }
+      status={<SyncCell collection={collection} status={status} />}
+      meta={
+        repoLine ? (
+          // D-IC10 — the composed repo/path/branch line truncates at narrow widths; carry the full
+          // text as a `title` so it stays recoverable on hover.
+          <Text variant="meta" tone="muted" className="min-w-0 truncate font-mono" title={repoLine}>
+            {repoLine}
+          </Text>
+        ) : (
+          // C-7 (monospace prose) — "not bound to a repository" is prose, so it stays in the body face.
+          <Text variant="meta" tone="muted" className="min-w-0 truncate">
+            not bound to a repository
+          </Text>
+        )
+      }
+      {...(onDelete
+        ? {
+            actions: (
+              <IconButton
+                variant="ghost"
+                size="icon-sm"
+                label={`Delete ${collection.name}`}
+                onClick={onDelete}
+              >
+                <Trash2 aria-hidden />
+              </IconButton>
+            ),
+          }
+        : {})}
+    />
+  );
+}
+
+/** The live sync state for one collection — a bound collection's chips, or the local-only marker. */
+function SyncCell({
+  collection,
+  status,
+}: {
+  collection: Collection;
+  status: StatusEntry | undefined;
+}) {
+  if (!isBound(collection)) {
+    return collection.isDefault ? null : <Badge variant="outline">local only</Badge>;
+  }
+  if (status?.loading) return <Skeleton className="h-5 w-16 rounded-full" />;
+  if (status?.error) return <Badge variant="outline">status unavailable</Badge>;
+  if (!status?.state) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {syncChips(status.state).map((chip) => (
+        <Badge key={chip.key} variant={chip.variant}>
+          {chip.label}
+        </Badge>
+      ))}
+    </div>
   );
 }
 

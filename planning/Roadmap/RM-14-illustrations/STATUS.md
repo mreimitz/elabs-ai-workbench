@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T00:05:00Z"
+timestamp: "2026-08-21T01:10:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -75,6 +75,7 @@ and an explicit "Not verified:" tail.
 - [ ] WP 0.2 — Iso primitives (PaperStage, IsoPlatform, IsoHousing, GlyphFrame,
       ConstructionGhost, StationHeader, Connector ×6 kinds, cards, EntityRoot)
       — spec: [`wp-0.2-primitives.md`](./wp-0.2-primitives.md)
+      — **status: in progress** (agent `iso-primitives`, branch `wp/illustrations/0.2`, started 2026-08-21)
 - [ ] WP 0.3 — Pilot entities (`mcp-server`, `skill`, `agent`) + registry v0.1 + `/illustrations`
       gallery route v0 — spec: [`wp-0.3-pilot-entities.md`](./wp-0.3-pilot-entities.md)
 

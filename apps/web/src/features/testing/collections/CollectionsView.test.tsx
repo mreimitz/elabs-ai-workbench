@@ -74,36 +74,58 @@ beforeEach(() => {
   mockListCollections.mockReset();
 });
 
-describe("CollectionsView — C-7 ragged action alignment", () => {
-  test("every row's action cluster has the same footprint whether or not Delete renders", async () => {
+describe("CollectionsView — opening and deleting (RM-32 WP 2.3)", () => {
+  // The old C-7 "ragged action alignment" invariant (an invisible placeholder reserving the Delete
+  // slot so every row's Open button landed at the same x) is MOOT: the overview has no per-card
+  // "Open" button at all. The card title is a real link and the card body activates it (D-OD7), so a
+  // second control meaning "open" would be the duplicate-affordance defect. What still needs pinning
+  // is what replaced it.
+  test("each card's title is the single open affordance, linking to that collection", async () => {
     mockListCollections.mockResolvedValue([BARC, LOCAL]);
     renderView();
 
-    // `ordered` always pins the reserved default (Local) first, so index 0 is Local (undeletable)
-    // and index 1 is BARC-Benchmark (deletable) regardless of API order.
-    const openButtons = await screen.findAllByRole("button", { name: "Open" });
-    expect(openButtons).toHaveLength(2);
+    expect(await screen.findByRole("link", { name: "Local" })).toHaveAttribute(
+      "href",
+      "/testing/collections/local",
+    );
+    expect(screen.getByRole("link", { name: "BARC-Benchmark" })).toHaveAttribute(
+      "href",
+      "/testing/collections/barc",
+    );
+    expect(screen.queryByRole("button", { name: "Open" })).toBeNull();
+  });
 
-    for (const open of openButtons) {
-      const actionsCluster = open.parentElement;
-      // Open + (Delete button OR its size-matched invisible placeholder) — never just Open alone,
-      // so the cluster's total width (and therefore the Open button's x) never depends on whether
-      // this particular row is deletable.
-      expect(actionsCluster?.children).toHaveLength(2);
-    }
+  test("the reserved default has no Delete; every other collection does", async () => {
+    mockListCollections.mockResolvedValue([BARC, LOCAL]);
+    renderView();
 
-    // Local (undeletable): no Delete button — its slot is filled by an aria-hidden, size-8
-    // placeholder that reserves the identical width.
-    const [localOpen, barcOpen] = openButtons;
-    const localActions = localOpen?.parentElement;
-    expect(localActions?.querySelector("button[aria-label^='Delete']")).toBeNull();
-    const placeholder = localActions?.querySelector('span[aria-hidden="true"]');
-    expect(placeholder).not.toBeNull();
-    expect(placeholder?.className).toContain("size-8");
+    await screen.findByRole("link", { name: "Local" });
+    expect(screen.queryByRole("button", { name: "Delete Local" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Delete BARC-Benchmark" })).toBeInTheDocument();
+  });
 
-    // BARC-Benchmark (deletable): the second slot is the real Delete button.
-    const barcActions = barcOpen?.parentElement;
-    expect(barcActions?.querySelector("button[aria-label='Delete BARC-Benchmark']")).not.toBeNull();
+  test("groups by binding, and the unbound group is NOT called “Local” (the reserved collection is)", async () => {
+    mockListCollections.mockResolvedValue([
+      LOCAL,
+      makeCollection({
+        id: "bound-x",
+        name: "Bound",
+        isDefault: false,
+        repoUrl: "https://github.com/acme/tests",
+        repoPath: "",
+        branch: "main",
+      }),
+    ]);
+    renderView();
+
+    await screen.findByRole("link", { name: "Local" });
+    // The page's own "Review" section is a labelled region too — compare only the browser's groups.
+    expect(
+      screen
+        .getAllByRole("region")
+        .map((section) => section.getAttribute("aria-label"))
+        .filter((label) => label !== "Review"),
+    ).toEqual(["Unbound", "Git-bound"]);
   });
 });
 
@@ -172,24 +194,27 @@ describe("CollectionsView — C-7 empty toolbar", () => {
     mockListCollections.mockResolvedValue([BARC, LOCAL]);
     renderView();
 
-    await screen.findAllByRole("button", { name: "Open" });
+    await screen.findByRole("link", { name: "BARC-Benchmark" });
     expect(screen.getByRole("button", { name: "About this view" })).toBeInTheDocument();
     const search = screen.getByLabelText("Search collections");
     expect(search).toBeInTheDocument();
     expect(screen.getByText("2 collections")).toBeInTheDocument();
 
+    // The count is the whole registry ("2 collections"); the SEARCH narrows what is rendered.
     fireEvent.change(search, { target: { value: "barc" } });
-    await waitFor(() => expect(screen.getByText("1 collection")).toBeInTheDocument());
-    expect(screen.queryByText("Local")).not.toBeInTheDocument();
-    expect(screen.getByText("BARC-Benchmark")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole("link", { name: "Local" })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("link", { name: "BARC-Benchmark" })).toBeInTheDocument();
 
     fireEvent.change(search, { target: { value: "nonexistent-name" } });
-    expect(await screen.findByText("No collections match your search")).toBeInTheDocument();
+    expect(await screen.findByText(/No collections match/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Clear filter" }));
-    await waitFor(() => expect(screen.getByText("BARC-Benchmark")).toBeInTheDocument());
-    // "Local" now matches both the row's name and its badge label — assert it's back at all.
-    expect(screen.getAllByText("Local").length).toBeGreaterThan(0);
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "BARC-Benchmark" })).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("link", { name: "Local" })).toBeInTheDocument();
   });
 });
 
@@ -198,7 +223,7 @@ describe("CollectionsView — Review section (B-6)", () => {
     mockListCollections.mockResolvedValue([LOCAL]);
     renderWithLocation();
 
-    await screen.findByRole("button", { name: "Open" }); // the collections list has loaded
+    await screen.findByRole("link", { name: "Local" }); // the collections list has loaded
 
     const openReview = screen.getByRole("button", { name: "Open review" });
     const manageRubrics = screen.getByRole("button", { name: "Manage rubrics" });

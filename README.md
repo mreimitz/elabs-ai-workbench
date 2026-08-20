@@ -82,6 +82,13 @@ never silently compared.
 
 ![A scan of an MCP server: 60 tools, 48,614 tokens, every tool ranked by footprint with schema / description / bytes / share.](docs/screenshots/scan-footprint.png)
 
+**MCP Servers**, **Skills** and **Collections** each open as an overview of everything you have
+registered — a grid of cards grouped by type (or by source, or by whether a collection is bound to a
+git repo), switchable to a grouped table and remembered per section. Selecting one opens its
+full-width detail page, where the last breadcrumb is a searchable switcher over every other one, so
+moving between servers costs a click rather than a permanent column. (The screenshots below still
+show the previous side-list layout.)
+
 ### 2 · Server health, findings, and token advice
 
 Each server has its own home with a footprint summary, a per-tool token distribution, and

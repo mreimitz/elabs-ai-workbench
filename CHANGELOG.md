@@ -5,6 +5,31 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the list rail becomes a place
+
+Servers, Skills and Collections used to be a fixed 288-pixel list column beside a detail pane. One
+server row squeezed a name, a health dot, a health chip, a token total, a posture band, a transport,
+an auth kind and an endpoint into that column, which truncated the names to `barc…`, `qlik-…`, `m…`
+— and it charged every detail page 288 pixels for a list you look at once.
+
+**Each of those three is now an overview page.** Opening MCP Servers shows the whole fleet as a grid
+of cards grouped by server type, switchable to a grouped table and remembered per section (the mode
+also rides in the URL, so a view can be shared). Skills group by source, Collections by whether they
+are bound to a git repo. Selecting one opens its **full-width** detail page.
+
+**Switching entities moved into the breadcrumb.** The crumb now reads
+`Home › MCP Servers › [barc-benchmark ▾]`, and clicking the last part opens a searchable, grouped
+list of every server — the same grouping the overview uses. Clicking `MCP Servers` goes back to the
+overview.
+
+Three smaller corrections fell out of it: landing on `/servers` or `/skills` no longer teleports you
+to whichever entity happened to sort first (the address you typed is the page you get); deleting the
+entity you are looking at returns you to its overview instead of swapping the page's subject for an
+unrelated one; and an address naming a server or skill that does not exist now says so, rather than
+showing a "nothing selected" prompt for a state that can no longer happen.
+
+The screenshots in the README still show the previous layout.
+
 ## Unreleased — the bench takes its own medicine
 
 We pointed the new security analyzer at the workbench's **own** MCP mount and it returned **49/100,

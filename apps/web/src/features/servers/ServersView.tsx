@@ -87,6 +87,8 @@ import { ServerFindings, ServerTestsTab } from "../compatibility/CompatibilityTe
 import { IssuesPanel } from "../issues/IssuesPanel";
 import { useRatingIssues } from "../issues/use-rating-issues";
 import { ServerTypeStatusBadge } from "./ServerTypeStatusBadge";
+import { ServerBreadcrumbSwitcher } from "./ServerBreadcrumbSwitcher";
+import { useSetBreadcrumbSlot } from "../../components/breadcrumb-slot";
 import { notifyError } from "../../lib/notify";
 
 type ToolRow = { tool: ToolScan };
@@ -99,6 +101,10 @@ export function ServersView(props: {
   latestScan: ScanDetail | null;
   scanHistory: ScanSummary[];
   selectedServer: ServerConfig | null;
+  /** The whole fleet — feeds the breadcrumb-leaf server switcher (RM-32 D-OD5), nothing else. */
+  servers: ServerConfig[];
+  /** Latest scan per server — the switcher rows' health chips. */
+  latestScansByServer: Map<string, ScanSummary>;
   /** Server types (planning/Roadmap/completed/RM-21-server-types) — resolves the selected server's type for the toolbar +
    *  profile badges. Defaults to none. */
   serverTypes?: ServerType[];
@@ -259,6 +265,23 @@ export function ServersView(props: {
     }
   }
 
+  // RM-32 D-OD5 — the breadcrumb LEAF is the server switcher, replacing the deleted 288px rail.
+  // Memoized per `breadcrumb-slot.tsx`'s contract: an unmemoized node re-fires the slot effect on
+  // every render, which on a page that re-renders per streamed scan event would thrash the shell.
+  const breadcrumbSwitcher = useMemo(
+    () => (
+      <ServerBreadcrumbSwitcher
+        servers={props.servers}
+        serverTypes={props.serverTypes ?? []}
+        latestScansByServer={props.latestScansByServer}
+        activeServer={server}
+        onCreate={props.onAddServer}
+      />
+    ),
+    [props.servers, props.serverTypes, props.latestScansByServer, server, props.onAddServer],
+  );
+  useSetBreadcrumbSlot(breadcrumbSwitcher);
+
   if (!server) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -266,11 +289,22 @@ export function ServersView(props: {
           {props.initialLoading ? (
             <StatePanel kind="loading" title="Loading servers…" loadingLabel="Loading…" />
           ) : (
+            // RM-32 D-OD1: `/servers` no longer redirects to the first server, so this branch now
+            // means one specific thing — the URL names a server that isn't in the registry. Say that,
+            // and give a way back, rather than the old "nothing selected" copy (which described a
+            // state that can no longer happen).
             <StatePanel
-              kind="empty"
-              title="No MCP server selected"
-              description="Add a server, test the connection, then run a scan to see its startup token footprint."
-              actions={<Button onClick={props.onAddServer}>Add server</Button>}
+              kind="error"
+              title="Server not found"
+              description="This server isn’t in the registry — it may have been deleted, or the address may be mistyped."
+              actions={
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button variant="outline" onClick={() => navigate("/servers")}>
+                    All servers
+                  </Button>
+                  <Button onClick={props.onAddServer}>Add server</Button>
+                </div>
+              }
             />
           )}
         </div>
@@ -438,8 +472,10 @@ export function ServersView(props: {
     // shared ONE-row `ViewToolbar` in the `headerVariant="toolbar"` slot (toolbar standard 2026-07-11).
     // D-TB1: the server NAME is gone from the page — the AppShell breadcrumb leaf (App.tsx) owns page
     // identity; a body `sr-only` <h1> keeps the page a named heading for assistive tech. The 288px
-    // ServerRail is a SIBLING structure supplied to AppShell as `secondaryContent` (App.tsx,
-    // `isServersSection`) — the D-UX14 fullBleed+secondaryContent variant preserves it.
+    // RM-32 WP 2.1 — there is no longer a 288px list rail beside this pane: the fleet lives on the
+    // `/servers` overview and switching servers is the breadcrumb-leaf popover this view contributes.
+    // `width="master-detail"` is kept as the recorded ARCHETYPE (it resolves to full width, same as
+    // "full"), so the intent stays legible even though the sibling structure is gone.
     // WP 6.1 — `scroll="fill"`: the content region fills the viewport and does NOT scroll itself, so
     // the toolbar row + tab strip stay FIXED and ONLY the active tab's body scrolls. The fill mode
     // lays the content body out as a height-filling flex column, so the single flex child (the

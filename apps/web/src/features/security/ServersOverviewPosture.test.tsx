@@ -1,4 +1,5 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ScanSummary, SecurityFleetSummary, ServerConfig } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
@@ -31,12 +32,12 @@ vi.mock("./security-api", async (importOriginal) => {
   return { ...actual, getSecurityFleetSummary: () => getSecurityFleetSummary() };
 });
 
-import { ServerRail } from "../servers/ServerRail";
+import { ServersOverview } from "../servers/ServersOverview";
 
-// The servers-list posture badge (A6 / D-SP22). Two claims are worth pinning, and they are the two
-// a naive badge gets wrong: it is ONE request for the whole fleet, not one per row; and a server
-// with no usable scan renders the row's existing missing-data treatment rather than a fabricated
-// clean score.
+// The servers-OVERVIEW posture badge (A6 / D-SP22; moved off the deleted rail by RM-32 WP 2.1). Two
+// claims are worth pinning, and they are the two a naive badge gets wrong: it is ONE request for the
+// whole fleet, not one per card; and a server with no usable scan renders the card's existing
+// missing-data treatment rather than a fabricated clean score.
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -94,35 +95,43 @@ const posture = (
   counts: { error: 1, warning: 0, info: 0, total: 1 },
 });
 
-function renderRail(servers: ServerConfig[], scans: Map<string, ScanSummary>) {
+function renderOverview(servers: ServerConfig[], scans: Map<string, ScanSummary>) {
   return render(
-    <TooltipProvider>
-      <ServerRail
-        isBusy={() => false}
-        latestScansByServer={scans}
-        selectedServerId={null}
-        servers={servers}
-        serverTypes={[]}
-        onAddServer={() => {}}
-        onManageTypes={() => {}}
-        onDeleteServer={() => {}}
-        onEditServer={() => {}}
-        onRunScan={() => {}}
-        onSelectServer={() => {}}
-        onTestServer={() => {}}
-      />
-    </TooltipProvider>,
+    <MemoryRouter initialEntries={["/servers"]}>
+      <TooltipProvider>
+        <ServersOverview
+          isBusy={() => false}
+          latestScansByServer={scans}
+          servers={servers}
+          serverTypes={[]}
+          onAddServer={() => {}}
+          onManageTypes={() => {}}
+          onDeleteServer={() => {}}
+          onEditServer={() => {}}
+          onRunScan={() => {}}
+          onTestServer={() => {}}
+        />
+      </TooltipProvider>
+    </MemoryRouter>,
   );
 }
 
-describe("the servers rail's posture badge (D-SP22)", () => {
+/** The card for one server — `Card` renders no identifying attribute of its own, so `EntityCard`
+ *  stamps `data-entity-card` with the title. */
+function cardFor(name: string): HTMLElement {
+  const card = document.querySelector(`[data-entity-card="${name}"]`);
+  if (!(card instanceof HTMLElement)) throw new Error(`no card for ${name}`);
+  return card;
+}
+
+describe("the servers overview's posture badge (D-SP22)", () => {
   it("makes ONE request for the whole fleet, not one per row", async () => {
     getSecurityFleetSummary.mockResolvedValue([
       posture("a", 70, "medium"),
       posture("b", 100, "clean"),
       posture("c", 40, "high"),
     ]);
-    renderRail(
+    renderOverview(
       [server("a", "Alpha"), server("b", "Beta"), server("c", "Gamma")],
       new Map([
         ["a", successScan("a")],
@@ -134,13 +143,13 @@ describe("the servers rail's posture badge (D-SP22)", () => {
     expect(await screen.findByText("Medium risk")).toBeTruthy();
     expect(screen.getByText("Clean")).toBeTruthy();
     expect(screen.getByText("High risk")).toBeTruthy();
-    // Three rows, one request.
+    // Three cards, one request.
     expect(getSecurityFleetSummary).toHaveBeenCalledTimes(1);
   });
 
   it("carries the SCORE in the badge's accessible name, so the band is never the only cue", async () => {
     getSecurityFleetSummary.mockResolvedValue([posture("a", 70, "medium")]);
-    renderRail([server("a", "Alpha")], new Map([["a", successScan("a")]]));
+    renderOverview([server("a", "Alpha")], new Map([["a", successScan("a")]]));
 
     expect(
       await screen.findByRole("img", { name: "Security posture Medium risk, score 70 of 100" }),
@@ -148,11 +157,11 @@ describe("the servers rail's posture badge (D-SP22)", () => {
   });
 
   it("shows a server with no usable scan as not-scanned, never as a score", async () => {
-    // The endpoint OMITS a server with no `success` scan, so this row simply has no posture. The
-    // row's existing "Not scanned" chip already explains the absence — no fabricated clean badge,
+    // The endpoint OMITS a server with no `success` scan, so this card simply has no posture. The
+    // card's existing "Not scanned" chip already explains the absence — no fabricated clean badge,
     // and no second bespoke "unknown" treatment beside a chip that already said it.
     getSecurityFleetSummary.mockResolvedValue([]);
-    renderRail([server("a", "Alpha")], new Map());
+    renderOverview([server("a", "Alpha")], new Map());
 
     expect(await screen.findByText("Not scanned")).toBeTruthy();
     for (const band of ["Clean", "Low risk", "Medium risk", "High risk"]) {
@@ -160,26 +169,26 @@ describe("the servers rail's posture badge (D-SP22)", () => {
     }
   });
 
-  it("marks a scanned server the summary does not cover with the row's own missing-data em dash", async () => {
-    // A healthy row shows its token total; when the fleet answer has no posture for it (a scan that
+  it("marks a scanned server the summary does not cover with the card's own missing-data em dash", async () => {
+    // A healthy card shows its token total; when the fleet answer has no posture for it (a scan that
     // settled between the two reads, a failed summary request) the slot reads "—", exactly as the
-    // token column does when it has no number.
+    // metric does when it has no number.
     getSecurityFleetSummary.mockResolvedValue([]);
-    renderRail([server("a", "Alpha")], new Map([["a", successScan("a")]]));
+    renderOverview([server("a", "Alpha")], new Map([["a", successScan("a")]]));
 
-    const row = await screen.findByRole("listitem");
-    await waitFor(() => expect(within(row).getByText("—")).toBeTruthy());
-    expect(within(row).getByText("1,200")).toBeTruthy();
+    await screen.findByRole("link", { name: "Alpha" });
+    const card = cardFor("Alpha");
+    await waitFor(() => expect(within(card).getByText("—")).toBeTruthy());
+    expect(within(card).getByText("1,200")).toBeTruthy();
   });
 
-  it("does not crash the rail when the fleet request fails", async () => {
+  it("does not crash the overview when the fleet request fails", async () => {
     getSecurityFleetSummary.mockRejectedValue(new Error("summary unavailable"));
-    renderRail([server("a", "Alpha")], new Map([["a", successScan("a")]]));
+    renderOverview([server("a", "Alpha")], new Map([["a", successScan("a")]]));
 
-    // The rail is a navigation surface first — a posture badge that cannot load must never cost the
-    // operator the server list.
-    expect(await screen.findByText("Alpha")).toBeTruthy();
-    const row = screen.getByRole("listitem");
-    await waitFor(() => expect(within(row).getByText("—")).toBeTruthy());
+    // The overview is a navigation surface first — a posture badge that cannot load must never cost
+    // the operator the fleet.
+    expect(await screen.findByRole("link", { name: "Alpha" })).toBeTruthy();
+    await waitFor(() => expect(within(cardFor("Alpha")).getByText("—")).toBeTruthy());
   });
 });

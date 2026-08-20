@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-20T16:54:50Z"
+timestamp: "2026-08-20T19:45:25Z"
 status: "active"
 ---
 
@@ -39,6 +39,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-27-testing-ia](RM-27-testing-ia/item.md) — Testing IA consolidation — Collections as the test home · `active`
 * [RM-30-ux-overhaul](RM-30-ux-overhaul/item.md) — UX Overhaul — one shell, one grammar, every view · `active`
 * [RM-31-mvp-footprint-analyzer](RM-31-mvp-footprint-analyzer/item.md) — Startup-footprint MVP and the expanded target · `archived`
+* [RM-32-overview-detail](RM-32-overview-detail/item.md) — Overview → Detail restructure (Servers · Skills · Collections) · `planned`
 
 ## Completed Roadmap Items
 

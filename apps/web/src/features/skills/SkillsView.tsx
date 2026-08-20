@@ -1,56 +1,69 @@
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Skill } from "@mcp-token-footprint/shared";
 import { Button, StatePanel } from "@elabs-ai/components-ui";
-import { Plus, Sparkles } from "lucide-react";
 import { SkillInspector } from "./SkillInspector";
+import { SkillBreadcrumbSwitcher } from "./SkillBreadcrumbSwitcher";
+import { useSetBreadcrumbSlot } from "../../components/breadcrumb-slot";
 
 /**
- * The Skills view body (UI plan §2): the main pane beside the `SkillRail` (which App renders as the
- * shell's secondary content). It renders the WP 1.7 `SkillInspector` for the selected skill, or an
- * empty state prompting the user to register one. The rail + all CRUD/toast wiring live in `App`, so
- * this component stays a thin selector-driven renderer.
+ * The Skills DETAIL route (`/skills/:skillId`) — the WP 1.7 `SkillInspector` for one skill, at the
+ * full width of the window.
  *
- * D-UX2 (K7): the registry-wide trigger-collision report moved OUT of this detail pane to the
- * skills-LIST footer (`SkillRail`) — a fleet-level concern belongs with the whole registry, not inside
- * a single skill's detail. D-UX1 (K6): "New skill from server" is no longer a standalone detail-header
- * button — it is the 4th source tile in the Add-skill modal (the list "+" is the single create entry).
+ * RM-32 WP 2.2 changed two things here. The 288px `SkillRail` is gone: switching skills is the
+ * breadcrumb-leaf popover this component contributes (D-OD5). And with the "redirect to the first
+ * skill" effect deleted (D-OD1), an unresolved id now means exactly ONE thing — the URL names a skill
+ * that isn't in the registry — so it says that rather than the old "select a skill" prompt, which
+ * described a state this route can no longer be in. The registry itself lives on `SkillsOverview`.
  */
 export function SkillsView(props: {
   skills: Skill[];
   selectedSkillId: string | null;
   onAddSkill: () => void;
 }) {
+  const navigate = useNavigate();
   const selectedSkill = props.skills.find((skill) => skill.id === props.selectedSkillId) ?? null;
 
-  if (props.skills.length === 0) {
-    return (
-      <StatePanel
-        kind="empty"
-        icon={<Sparkles aria-hidden />}
-        title="No skills yet"
-        description="Register an Agent Skill from an uploaded archive, a GitHub repository, a blank scaffold, or a scanned server's tool surface."
-        actions={
-          <Button onClick={props.onAddSkill}>
-            <Plus aria-hidden />
-            <span>Add skill</span>
-          </Button>
-        }
+  // Memoized per `breadcrumb-slot.tsx`'s contract — an unmemoized node re-fires the slot effect on
+  // every render.
+  const breadcrumbSwitcher = useMemo(
+    () => (
+      <SkillBreadcrumbSwitcher
+        skills={props.skills}
+        activeSkill={selectedSkill}
+        onCreate={props.onAddSkill}
       />
+    ),
+    [props.skills, selectedSkill, props.onAddSkill],
+  );
+  useSetBreadcrumbSlot(breadcrumbSwitcher);
+
+  if (!selectedSkill) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="w-full max-w-md">
+          <StatePanel
+            kind="error"
+            title="Skill not found"
+            description="This skill isn’t in the registry — it may have been deleted, or the address may be mistyped."
+            actions={
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" onClick={() => navigate("/skills")}>
+                  All skills
+                </Button>
+                <Button onClick={props.onAddSkill}>Add skill</Button>
+              </div>
+            }
+          />
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {selectedSkill ? (
-        // Keyed by skill id so switching skills fully remounts the inspector (fresh version/file state).
-        <SkillInspector key={selectedSkill.id} skillId={selectedSkill.id} />
-      ) : (
-        <StatePanel
-          kind="empty"
-          icon={<Sparkles aria-hidden />}
-          title="Select a skill"
-          description="Pick a skill from the list to inspect its manifest, files, and token footprint."
-        />
-      )}
+      {/* Keyed by skill id so switching skills fully remounts the inspector (fresh version/file state). */}
+      <SkillInspector key={selectedSkill.id} skillId={selectedSkill.id} />
     </div>
   );
 }
