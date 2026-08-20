@@ -75,3 +75,4 @@ export function chartSwatchStyle(
 ): { backgroundColor: string } {
   return { backgroundColor: chartSeriesColor(index, rampLength) };
 }
+

@@ -33,7 +33,7 @@ const captured = vi.hoisted(() => ({
     label: unknown;
     rowCount: number;
   }[],
-  lines: [] as { dataKey: string; stroke?: string }[],
+  lines: [] as { dataKey: string; stroke?: string; dashArray?: string; dashFromIndex?: number }[],
   tooltips: [] as {
     rows?: (point: Record<string, unknown>) => { color: string; label: string; value: string }[];
   }[],
@@ -101,8 +101,22 @@ vi.mock("@elabs-ai/components-charts", async () => {
     );
   };
 
-  const Line = ({ dataKey, stroke }: { dataKey: string; stroke?: string }) => {
-    captured.lines.push({ dataKey, stroke });
+  const Line = ({
+    dataKey,
+    stroke,
+    dashArray,
+    dashFromIndex,
+  }: {
+    dataKey: string;
+    stroke?: string;
+    dashArray?: string;
+    dashFromIndex?: number;
+  }) => {
+    // Both dash props are recorded because upstream only honours `dashArray` for the segment AFTER
+    // `dashFromIndex`. A `dashArray` recorded without a `dashFromIndex` would be silently inert on
+    // the real component, so a stub that captured only the former could pass while the shipped
+    // chart drew solid lines.
+    captured.lines.push({ dataKey, stroke, dashArray, dashFromIndex });
     const ctx = useContext(ChartCtx);
     if (!ctx?.onDatapointClick) return null; // the library's documented opt-out: no handler, no targets
     const handler = ctx.onDatapointClick;
@@ -143,7 +157,27 @@ vi.mock("@elabs-ai/components-charts", async () => {
     return null;
   };
 
-  return { LineChart, Line, ChartTooltip, Grid: () => null, XAxis: () => null };
+  // `seriesDashArray` is a PURE function, but it cannot be pulled in with `importActual` — the
+  // reason this whole module is mocked is that the barrel resolves a broken deep `@visx/gradient`
+  // subpath under jsdom. So `DASH_RAMP` is transcribed VERBATIM from the vendored source
+  // (`@elabs-ai/components-charts/dist/index.js`, `var DASH_RAMP = [...]` + `seriesDashArray`),
+  // index 0 deliberately `undefined` = solid. If upstream changes its ramp this stub goes stale —
+  // which is exactly why the assertions below check DISTINCTNESS and the solid-0 contract rather
+  // than hard-coding "6 4" as though this test owned the values.
+  const DASH_RAMP: (string | undefined)[] = [
+    undefined,
+    "6 4",
+    "2 3",
+    "8 3 2 3",
+    "1 4",
+    "10 5",
+    "4 2 1 2",
+    "3 3",
+  ];
+  const seriesDashArray = (index: number) =>
+    DASH_RAMP[((index % DASH_RAMP.length) + DASH_RAMP.length) % DASH_RAMP.length];
+
+  return { LineChart, Line, ChartTooltip, Grid: () => null, XAxis: () => null, seriesDashArray };
 });
 
 import { HeroFootprintTile } from "./HeroFootprintTile";
@@ -479,6 +513,77 @@ describe("HeroFootprintTile — the props that actually reach the chart", () => 
     expect(captured.charts[0]?.accessibleDescription).toBe(
       "Fleet total 255,751 tokens; 1 server plotted, each held at its last successful scan",
     );
+  });
+});
+
+/** N plotted servers, so the dash ramp is exercised past its solid first slot. */
+function manySeries(n: number) {
+  return Array.from({ length: n }, (_, i) => ({
+    serverId: `srv_${i}`,
+    serverName: `Server ${i}`,
+    points: [
+      { bucketStart: BUCKET_A, value: 1_000 * (i + 1) },
+      { bucketStart: BUCKET_B, value: 1_100 * (i + 1) },
+    ],
+  }));
+}
+
+describe("HeroFootprintTile — lines are told apart by STROKE, not colour alone (WP 2.4, D-DB4)", () => {
+  /**
+   * The `--chart-1..12` ramp is not twelve distinguishable hues. Measured from the rendered gradient
+   * stops with seven servers plotted, it resolves to ~three hue families in lightness steps plus two
+   * near-neutrals: three near-identical limes (oklch hues 116.5 / 117.6 / 113.8), two near-identical
+   * blues (241.8 / 239.4) and two greys of chroma 0.009 and 0.004. Past ~4 series colour stops
+   * separating lines, and it never carried series identity accessibly at all. The stroke pattern is
+   * what actually distinguishes them.
+   */
+  test("each plotted line gets its own dash pattern, and series 0 stays SOLID", () => {
+    renderTile(ready({ standingSeries: manySeries(6) }));
+
+    const dashes = captured.lines.map((l) => l.dashArray);
+    // Index 0 is solid by upstream's own ramp — `undefined`, not a pattern.
+    expect(dashes[0]).toBeUndefined();
+    // Every other line carries a pattern, and no two share one.
+    const rest = dashes.slice(1);
+    expect(rest.every((d) => typeof d === "string" && d.length > 0)).toBe(true);
+    expect(new Set(rest).size).toBe(rest.length);
+  });
+
+  test("a dashed line ALSO carries dashFromIndex={0} — a dashArray alone is silently inert", () => {
+    renderTile(ready({ standingSeries: manySeries(4) }));
+
+    for (const line of captured.lines) {
+      if (line.dashArray === undefined) {
+        // Solid series must pass NEITHER prop: `Line`'s own `dashArray` default is "6 4", so a lone
+        // `dashFromIndex={0}` would dash the one line that is meant to be solid.
+        expect(line.dashFromIndex).toBeUndefined();
+      } else {
+        // Upstream honours `dashArray` only for the segment after `dashFromIndex`
+        // (`dashFromIndex >= 0 && dashFromIndex < data.length - 1`). 0 dashes the whole line.
+        expect(line.dashFromIndex).toBe(0);
+      }
+    }
+  });
+
+  test("colour is unchanged — every stroke is still a var(--chart-N) reference", () => {
+    renderTile(ready({ standingSeries: manySeries(5) }));
+
+    for (const line of captured.lines) {
+      expect(line.stroke).toMatch(/^var\(--chart-\d+\)$/);
+    }
+  });
+
+  test("the legend swatch draws the SAME pattern as its line, so the two cannot disagree", () => {
+    const { container } = renderTile(ready({ standingSeries: manySeries(4) }));
+
+    const swatches = Array.from(container.querySelectorAll("svg line"));
+    expect(swatches).toHaveLength(captured.lines.length);
+    swatches.forEach((swatch, i) => {
+      const line = captured.lines[i];
+      expect(swatch.getAttribute("stroke")).toBe(line?.stroke);
+      // `undefined` on a solid series renders as no attribute at all.
+      expect(swatch.getAttribute("stroke-dasharray") ?? undefined).toBe(line?.dashArray);
+    });
   });
 });
 

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { CalendarRange, Database } from "lucide-react";
-import { ChartTooltip, Grid, Line, LineChart, XAxis } from "@elabs-ai/components-charts";
+import { ChartTooltip, Grid, Line, LineChart, XAxis, seriesDashArray } from "@elabs-ai/components-charts";
 import {
   BentoGridItem,
   CardContent,
@@ -11,7 +11,7 @@ import {
   Text,
   cn,
 } from "@elabs-ai/components-ui";
-import { chartSeriesColor, chartSwatchStyle } from "../../../../lib/chart-colors";
+import { chartSeriesColor } from "../../../../lib/chart-colors";
 import { deltaTextTone } from "../../../../lib/delta";
 import { formatNumber, formatRelativeTime } from "../../../../lib/format";
 import { pivotToRows } from "../../testing/metrics-derive";
@@ -122,7 +122,9 @@ export function HeroFootprintTile({
       <CardHeader className="gap-1 p-4 pb-2">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 flex-col gap-1">
-            <CardTitle className="flex items-center gap-2 text-base">
+            {/* `text-body` is the ROLE rung. Type is a role in this design system, never a raw
+                size utility — the taxonomy guard rejects the raw form. */}
+            <CardTitle className="flex items-center gap-2 text-body">
               <Database aria-hidden className="size-4" />
               Fleet footprint
             </CardTitle>
@@ -212,9 +214,29 @@ export function HeroFootprintTile({
                 }}
               >
                 <Grid horizontal />
-                {plotted.map((s, i) => (
-                  <Line key={s.serverId} dataKey={s.serverId} stroke={chartSeriesColor(i)} />
-                ))}
+                {plotted.map((s, i) => {
+                  // D-DB4: colour alone cannot separate this many lines — the ramp is ~3 hue
+                  // families in lightness steps plus two near-neutrals, so 7 series render as 3
+                  // near-identical limes, 2 near-identical blues and 2 greys. The stroke pattern is
+                  // what actually distinguishes them (and it carries series identity without relying
+                  // on colour at all).
+                  //
+                  // `dashArray` alone is SILENTLY INERT: `Line` applies it only to the segment after
+                  // `dashFromIndex`, which exists for forecast styling. `dashFromIndex={0}` clears
+                  // upstream's `dashFromIndex >= 0 && dashFromIndex < data.length - 1` bound for any
+                  // multi-point series and so dashes the whole line. Both props are passed together,
+                  // or NEITHER is — `Line`'s own `dashArray` default is "6,4", so a lone
+                  // `dashFromIndex={0}` would dash series 0, which is meant to be solid.
+                  const dash = seriesDashArray(i);
+                  return (
+                    <Line
+                      key={s.serverId}
+                      dataKey={s.serverId}
+                      stroke={chartSeriesColor(i)}
+                      {...(dash ? { dashArray: dash, dashFromIndex: 0 } : {})}
+                    />
+                  );
+                })}
                 <XAxis />
                 <ChartTooltip
                   rows={(point) =>
@@ -237,11 +259,26 @@ export function HeroFootprintTile({
               <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2">
                 {plotted.map((s, i) => (
                   <li key={s.serverId} className="flex min-w-0 items-center gap-1.5">
-                    <span
-                      className="size-2.5 shrink-0 rounded-sm"
-                      style={chartSwatchStyle(i)}
+                    {/* The swatch draws the series' actual STROKE, dash pattern included, rather
+                        than a solid colour chip — otherwise the legend would claim a solid line for
+                        a dashed one and the two could disagree. Same index feeds both, so they are
+                        the same series by construction. */}
+                    <svg
+                      className="h-2.5 w-4 shrink-0 overflow-visible"
+                      viewBox="0 0 16 2"
                       aria-hidden
-                    />
+                    >
+                      <title>{`${s.serverName} series`}</title>
+                      <line
+                        x1="0"
+                        y1="1"
+                        x2="16"
+                        y2="1"
+                        stroke={chartSeriesColor(i)}
+                        strokeWidth="2"
+                        strokeDasharray={seriesDashArray(i)}
+                      />
+                    </svg>
                     <Text as="span" variant="meta" tone="muted" className="truncate">
                       {s.serverName}
                     </Text>

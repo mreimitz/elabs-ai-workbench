@@ -34,6 +34,11 @@ import type {
 vi.mock("@elabs-ai/components-charts", () => ({
   LineChart: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
   Line: () => null,
+  // Pure helper the hero tile calls for its per-series stroke pattern (WP 2.4). This suite asserts
+  // COMPOSITION, not chart props, so a solid-for-everything stub is honest here — the faithful
+  // dash assertions live in `HeroFootprintTile.test.tsx`. It must still be PRESENT: an absent
+  // export throws "No seriesDashArray export is defined on the mock" and fails the whole file.
+  seriesDashArray: () => undefined,
   Grid: () => null,
   XAxis: () => null,
   ChartTooltip: () => null,

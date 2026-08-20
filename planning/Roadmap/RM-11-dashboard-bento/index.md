@@ -15,3 +15,4 @@
 * [WP 2.1 — Scan inventory tiles + the two tables as bento tiles](WP-2.1-scan-tiles.md) - Owner feedback 2026-08-20, item 3: "Overview and scans can be merged from my perspective. Bring the
 * [WP 2.2 — One page-level toolbar, correct order, and Scans merged into Overview](WP-2.2-shell-restructure.md) - Owner feedback 2026-08-20, items 1–3. Depends on WP 2.1 (the four new tiles).
 * [WP 2.3 — Fleet footprint plots every server, carried from its last successful scan](WP-2.3-footprint-population.md) - "fleet footprint shows only scanned MCP servers which have been scanned during the selected time
+* [WP 2.4 — The footprint lines differentiate by stroke, not by colour alone (D-DB4)](WP-2.4-series-differentiation.md) - The --chart-1..12 ramp is not twelve distinguishable hues; seven plotted servers render as three near-identical limes, two near-identical blues and two greys.
