@@ -437,11 +437,16 @@ test("A8 — the two diff routes are GET-only, and the SKILL diff follows the op
     oauth: new OAuthRepository(db, secrets),
   });
 
+  // WP 2.1 added `GET /api/security/summary`, which rides the SAME real `ScanRepository` this
+  // skill-less app supplies — so it registers here too. Listed rather than filtered out, exactly as
+  // before: the point of this assertion is that a genuinely new route cannot hide from it.
   assert.deepEqual(routes.sort(), [
     "GET /api/scans/:scanId/security",
     "GET /api/scans/:scanId/security/diff",
+    "GET /api/security/summary",
     "HEAD /api/scans/:scanId/security",
     "HEAD /api/scans/:scanId/security/diff",
+    "HEAD /api/security/summary",
   ]);
   for (const route of routes) {
     assert.match(route, /^(GET|HEAD) /, `${route} is not read-only`);

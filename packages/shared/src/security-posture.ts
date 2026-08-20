@@ -1014,7 +1014,9 @@ export const securityRuleIdSchema = z.enum(
 
 export const securityFindingAnchorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("server") }).strict(),
-  z.object({ kind: z.literal("skill") }).strict(), // D-SP12; see the note above
+  z
+    .object({ kind: z.literal("skill") })
+    .strict(), // D-SP12; see the note above
   z.object({ kind: z.literal("tool"), toolName: z.string().min(1) }).strict(),
   z
     .object({
@@ -1134,3 +1136,46 @@ export const securityPostureDiffSchema = z
  * caller who believes they applied a severity floor, and being told so beats being quietly ignored.
  */
 export const securityDiffQuerySchema = z.object({ baseline: z.string().trim().min(1) }).strict();
+
+// ── WP 2.1 · the FLEET summary (D-SP22) ─────────────────────────────────────────────────────────
+//
+// One row per server the servers list can badge, so the list makes ONE request for the whole fleet
+// rather than one per row — which is what a naive per-row badge would do to a fleet of forty.
+//
+// It carries the score and the counts and nothing else: the badge shows the band, the score is its
+// accessible detail, and anyone who wants the findings drills into `GET /api/scans/:scanId/security`
+// with the `scanId` this row already names. Deliberately NOT a `SecurityReport` per server — a list
+// endpoint that shipped forty full finding lists to paint forty chips would be the wrong trade.
+
+/**
+ * One server's posture, as of its latest **`success`** scan.
+ *
+ * A server with no usable scan is **omitted** from the response rather than carried with a neutral
+ * score: a server nobody has scanned has no posture, and inventing a 100 for it would be the same
+ * silent-wrong-answer D-SP10 refuses for a non-`success` scan. The list renders the absence as its
+ * own already-existing "not scanned" treatment.
+ */
+export type SecurityFleetSummary = {
+  serverId: string;
+  /** The server's CURRENT display name — the same one {@link SecurityReport.subject}`.name` carries. */
+  serverName: string;
+  /** The scan this posture was computed from; the drill-in target. */
+  scanId: string;
+  /** When that scan was captured (its `scannedAt`), not when this summary was computed. */
+  scannedAt: string;
+  score: SecurityScore;
+  /** ALL findings, exactly as {@link SecurityReport.counts} — never a `findings.length`. */
+  counts: SecurityFindingCounts;
+};
+
+/** `.strict()` like every other shape here — see the section note above `securitySeveritySchema`. */
+export const securityFleetSummarySchema = z
+  .object({
+    serverId: z.string().min(1),
+    serverName: z.string().min(1),
+    scanId: z.string().min(1),
+    scannedAt: z.string().min(1),
+    score: securityScoreSchema,
+    counts: securityFindingCountsSchema,
+  })
+  .strict();
