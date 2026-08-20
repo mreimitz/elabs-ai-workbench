@@ -6,6 +6,7 @@ import type {
 } from "@mcp-token-footprint/shared";
 import {
   ILLUSTRATION_COMPONENTS,
+  type EntityViewBox,
   PaperStage,
   entityViewBox,
 } from "@mcp-token-footprint/illustrations";
@@ -32,6 +33,12 @@ export function IllustrationCanvas(props: {
   size: IllustrationSize;
   /** Frame against this footprint instead of `size`, so a row of sizes shares one scale. */
   frameSize?: IllustrationSize;
+  /**
+   * An explicit frame, overriding both. The grid uses it to give EVERY card one box computed from
+   * the tallest entity on screen — so the cards are the same height AND an agent visibly stands
+   * taller than a skill, which is true and which per-entity framing hides.
+   */
+  frame?: EntityViewBox;
   state?: IllustrationState;
   variant?: string;
   facing?: IllustrationFacing;
@@ -51,7 +58,7 @@ export function IllustrationCanvas(props: {
   if (Component === undefined) return null;
 
   const frameSize = props.frameSize ?? props.size;
-  const frame = entityViewBox(frameSize, Component.entityHeightUnits(frameSize));
+  const frame = props.frame ?? entityViewBox(frameSize, Component.entityHeightUnits(frameSize));
   const height = Math.round(props.width * (frame.height / frame.width));
 
   return (

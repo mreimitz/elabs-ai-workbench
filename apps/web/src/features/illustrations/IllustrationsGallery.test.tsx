@@ -17,9 +17,8 @@ describe("IllustrationsGallery — the catalog (RM-14 WP 0.3)", () => {
   test("renders every registry entry on a cold load, with no query params at all", () => {
     render(withTheme(<IllustrationsGallery />));
     for (const entry of ILLUSTRATION_REGISTRY) {
-      expect(
-        screen.getByRole("button", { name: new RegExp(`^Open ${escapeRegExp(entry.title)}`) }),
-      ).toBeInTheDocument();
+      // The title button is the card's single tab stop and its accessible name.
+      expect(screen.getByRole("button", { name: entry.title })).toBeInTheDocument();
     }
     expect(screen.getByText(`${ILLUSTRATION_REGISTRY.length} illustrations`)).toBeInTheDocument();
   });
@@ -42,8 +41,8 @@ describe("IllustrationsGallery — the catalog (RM-14 WP 0.3)", () => {
     const search = screen.getByLabelText("Search illustrations");
 
     fireEvent.change(search, { target: { value: "stdio" } });
-    expect(screen.getByRole("button", { name: /^Open MCP Server/ })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Open Skill/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "MCP Server" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Skill" })).not.toBeInTheDocument();
     expect(
       screen.getByText(`1 of ${ILLUSTRATION_REGISTRY.length} illustrations`),
     ).toBeInTheDocument();
@@ -51,7 +50,7 @@ describe("IllustrationsGallery — the catalog (RM-14 WP 0.3)", () => {
     fireEvent.change(search, { target: { value: "kubernetes" } });
     expect(screen.getByText("No illustrations match")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Show the whole catalog" }));
-    expect(screen.getByRole("button", { name: /^Open Skill/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Skill" })).toBeInTheDocument();
   });
 
   test("the port overlay toggle draws the declared ports, and only when it is on (D-IL7)", () => {
@@ -70,7 +69,7 @@ describe("IllustrationsGallery — the catalog (RM-14 WP 0.3)", () => {
 
   test("opening a card opens the detail with that component's states x sizes matrix", () => {
     render(withTheme(<IllustrationsGallery />));
-    fireEvent.click(screen.getByRole("button", { name: /^Open Agent \/ LLM/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Agent / LLM" }));
 
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading", { name: "Agent / LLM" })).toBeInTheDocument();
@@ -143,6 +142,22 @@ function selectTab(name: string): void {
   fireEvent.mouseDown(screen.getByRole("tab", { name }));
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+describe("IllustrationsGallery — the card activation contract", () => {
+  test("a click anywhere on the card opens the same detail the title button does", () => {
+    const { container } = render(withTheme(<IllustrationsGallery />));
+    const card = container.querySelector('[data-illustration-card="skill"]') as HTMLElement;
+    fireEvent.click(card);
+    expect(
+      within(screen.getByRole("dialog")).getByRole("heading", { name: "Skill" }),
+    ).toBeInTheDocument();
+  });
+
+  test("the drawing is NOT inside the title button — a Button clamps any svg it contains to 16px", () => {
+    render(withTheme(<IllustrationsGallery />));
+    // The regression this pins: the first cut wrapped the whole card in a `Button`, whose
+    // `[&_svg]:size-4` rendered every 232px illustration as a speck with nothing failing.
+    for (const button of screen.getAllByRole("button")) {
+      expect(button.querySelector("svg[role='img']")).toBeNull();
+    }
+  });
+});

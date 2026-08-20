@@ -1,16 +1,19 @@
-import { useMemo, useState } from "react";
+import { type MouseEvent, useMemo, useState } from "react";
 import {
   ILLUSTRATION_SIZES,
   type IllustrationRegistryEntry,
   type IllustrationSize,
 } from "@mcp-token-footprint/shared";
+import type { EntityViewBox } from "@mcp-token-footprint/illustrations";
 import {
+  ILLUSTRATION_COMPONENTS,
   ILLUSTRATION_LAYERS,
   ILLUSTRATION_REGISTRY,
   ISO_UNIT,
   PRIMITIVE_SHEET_SIZE,
   PrimitivesSheet,
   REGISTRY_VERSION,
+  entityViewBox,
   searchIllustrations,
   useFaceSeparation,
 } from "@mcp-token-footprint/illustrations";
@@ -72,6 +75,17 @@ export function IllustrationsGallery() {
   const separation = useFaceSeparation(theme);
 
   const matches = useMemo(() => searchIllustrations(search), [search]);
+
+  // ONE frame for the whole grid, sized to the tallest entity currently on screen. Two things fall
+  // out of that: every card is the same height, and the entities are drawn to a shared scale, so an
+  // agent really does stand taller than a skill instead of each drawing being scaled to fill its own
+  // tile — which is the same mistake the detail matrix avoids for sizes.
+  const gridFrame = useMemo(() => {
+    const heights = matches.map(
+      (entry) => ILLUSTRATION_COMPONENTS[entry.id]?.entityHeightUnits(size) ?? 0,
+    );
+    return entityViewBox(size, Math.max(1, ...heights));
+  }, [matches, size]);
 
   return (
     <PageShell
@@ -165,10 +179,11 @@ export function IllustrationsGallery() {
           ) : (
             <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(17rem,1fr))] gap-4 p-0">
               {matches.map((entry) => (
-                <li key={entry.id}>
+                <li key={entry.id} className="h-full">
                   <IllustrationCard
                     entry={entry}
                     size={size}
+                    frame={gridFrame}
                     showPorts={showPorts}
                     onOpen={() => setSelected(entry)}
                   />
@@ -224,56 +239,77 @@ export function IllustrationsGallery() {
 }
 
 /**
- * One catalog card. The whole card is a button, because the drawing IS the affordance here — the
- * gallery's job is "look at these, open one" and a separate "Details" link beside a picture nobody
- * can click reads as a mistake.
+ * One catalog card.
+ *
+ * The drawing is deliberately NOT inside the `Button`. `@elabs-ai/components-ui`'s Button carries
+ * `[&_svg]:size-4` — it assumes any SVG inside it is an icon glyph and clamps it to 16 px, which is
+ * exactly what it did to the illustration on the first cut of this page (a 232 px drawing rendered
+ * as a speck, with nothing failing). So the card follows `EntityCard`'s activation contract instead:
+ * the TITLE is the single tab stop and the card's accessible name, and a pointer click anywhere else
+ * on the card resolves to the same action. Unlike `EntityCard` there is no `href`, because the
+ * detail is a dialog rather than a route — see `IllustrationDetail`'s docstring for why.
  */
 function IllustrationCard(props: {
   entry: IllustrationRegistryEntry;
   size: IllustrationSize;
+  /** The shared grid frame — see `gridFrame` above. */
+  frame: EntityViewBox;
   showPorts: boolean;
   onOpen: () => void;
 }) {
   const { entry } = props;
+
+  function handleCardClick(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    // The title button owns its own click; it must not open the dialog twice.
+    if (target.closest("a, button, input, [role='button']")) return;
+    // The tail of a text-selection drag is not an activation.
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) return;
+    props.onOpen();
+  }
+
   return (
-    <Card className="h-full">
-      <CardContent className="flex h-full flex-col gap-3 p-0">
+    <Card
+      interactive
+      onClick={handleCardClick}
+      data-illustration-card={entry.id}
+      className="flex h-full min-w-0 cursor-pointer flex-col gap-3 p-4"
+    >
+      <div className="flex justify-center">
+        <IllustrationCanvas
+          entry={entry}
+          size={props.size}
+          frame={props.frame}
+          showPorts={props.showPorts}
+          width={CARD_WIDTH}
+          alt={`${entry.title}, drawn at the ${props.size.toUpperCase()} footprint`}
+        />
+      </div>
+      <div className="flex min-w-0 flex-col gap-1">
         <Button
-          variant="ghost"
+          variant="link"
           onClick={props.onOpen}
-          className="h-auto flex-col items-stretch gap-3 whitespace-normal p-4 text-left"
-          aria-label={`Open ${entry.title} — states, sizes and registry entry`}
+          className="h-auto justify-start p-0 font-medium text-foreground"
         >
-          <span className="flex justify-center">
-            <IllustrationCanvas
-              entry={entry}
-              size={props.size}
-              showPorts={props.showPorts}
-              width={CARD_WIDTH}
-              alt={`${entry.title}, drawn at the ${props.size.toUpperCase()} footprint`}
-            />
-          </span>
-          <span className="flex min-w-0 flex-col gap-1">
-            <Text variant="body" className="font-medium">
-              {entry.title}
-            </Text>
-            <Text variant="meta" tone="muted" className="line-clamp-2 text-pretty">
-              {entry.description}
-            </Text>
-          </span>
-          <span className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="outline" className="font-mono">
-              {entry.id}
-            </Badge>
-            <Badge variant="secondary">{`tier ${entry.tier}`}</Badge>
-            {entry.variants.map((variant) => (
-              <Badge key={variant} variant="secondary">
-                {variant}
-              </Badge>
-            ))}
-          </span>
+          {entry.title}
         </Button>
-      </CardContent>
+        <Text variant="caption" tone="muted" className="line-clamp-2 min-w-0 break-words">
+          {entry.description}
+        </Text>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline" className="font-mono">
+          {entry.id}
+        </Badge>
+        <Badge variant="secondary">{`tier ${entry.tier}`}</Badge>
+        {entry.variants.map((variant) => (
+          <Badge key={variant} variant="secondary">
+            {variant}
+          </Badge>
+        ))}
+      </div>
     </Card>
   );
 }

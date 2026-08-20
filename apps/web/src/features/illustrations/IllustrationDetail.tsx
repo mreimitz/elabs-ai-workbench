@@ -19,8 +19,12 @@ import {
 import { WorkbenchDialog } from "../../components/dialogs";
 import { IllustrationCanvas } from "./IllustrationCanvas";
 
-/** The width every matrix cell is drawn at. Large enough that a `s` footprint is still readable. */
-const CELL_WIDTH = 168;
+/**
+ * The width a matrix cell is drawn at. It is as large as five cells across the dialog allow, because
+ * the port overlay's labels are set in the drawing's own coordinates: a narrower cell scales them
+ * down with everything else, and at 168 px they were a smudge.
+ */
+const CELL_WIDTH = 220;
 
 /**
  * The detail view for one catalogued illustration (system design 5.1): the states x sizes matrix,
@@ -43,9 +47,11 @@ export function IllustrationDetail(props: {
   const { entry } = props;
   if (entry === null) return null;
 
-  // Every cell in the matrix is framed against the LARGEST footprint the entity claims, so `s`
-  // actually renders smaller than `l` instead of each cell scaling to fill its own frame.
-  const frameSize = (entry.sizes.includes("l") ? "l" : entry.sizes[entry.sizes.length - 1]) as
+  // The SIZES row alone is framed against the largest footprint the entity claims, so `s` really
+  // renders smaller than `l` instead of each cell scaling to fill its own frame. Every other row
+  // draws one footprint, so framing those against `l` too would only shrink them — and shrink the
+  // port overlay's labels with them.
+  const sizeFrame = (entry.sizes.includes("l") ? "l" : entry.sizes[entry.sizes.length - 1]) as
     | IllustrationSize
     | undefined;
   const variants = entry.variants.length > 0 ? entry.variants : [undefined];
@@ -79,7 +85,6 @@ export function IllustrationDetail(props: {
               <IllustrationCanvas
                 entry={entry}
                 size="m"
-                frameSize={frameSize}
                 state={state}
                 variant={entry.variants[0]}
                 showPorts={props.showPorts}
@@ -99,7 +104,7 @@ export function IllustrationDetail(props: {
               <IllustrationCanvas
                 entry={entry}
                 size={size}
-                frameSize={frameSize}
+                frameSize={sizeFrame}
                 variant={entry.variants[0]}
                 showPorts={props.showPorts}
                 width={CELL_WIDTH}
@@ -116,7 +121,6 @@ export function IllustrationDetail(props: {
                 <IllustrationCanvas
                   entry={entry}
                   size="m"
-                  frameSize={frameSize}
                   variant={variant}
                   showPorts={props.showPorts}
                   width={CELL_WIDTH}
@@ -136,7 +140,6 @@ export function IllustrationDetail(props: {
               <IllustrationCanvas
                 entry={entry}
                 size="m"
-                frameSize={frameSize}
                 facing={facing}
                 variant={variants[0]}
                 showPorts={props.showPorts}
