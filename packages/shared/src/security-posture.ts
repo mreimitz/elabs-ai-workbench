@@ -453,6 +453,61 @@ export function compareSecurityFindings(a: SecurityFinding, b: SecurityFinding):
   return compareStrings(a.message, b.message);
 }
 
+// ── Finding IDENTITY — "is this the same finding?" (roadmap/ci/ WP 3.1, D-C20) ──────────────────
+//
+// Ordering answers "which finding comes first"; identity answers "is this the SAME finding as that
+// one". They are different questions and they must not be conflated: the sort is a total order over
+// every field (so a report serializes byte-identically), whereas identity is deliberately COARSER.
+//
+// It lives here, in the contract, because more than one consumer needs one answer: CI's
+// `no-new-security-findings` gate (roadmap/ci/ WP 3.1) asks "was this finding already in the
+// baseline?", and the posture diff (WP 1.4) asks "which findings are new / resolved / unchanged?".
+// Two implementations of "the same finding" is exactly how a diff and a gate end up disagreeing in
+// front of an operator, with no way to tell which one is lying.
+
+/**
+ * The anchor half of a finding's identity: its kind plus its name components, each percent-encoded
+ * so the join is unambiguous.
+ *
+ * The encoding is not decoration. A tool name comes from an arbitrary third-party MCP server and may
+ * contain any character at all, `:` included; without escaping, a `parameter` anchor for tool
+ * `a:b` / path `c` and one for tool `a` / path `b:c` would produce the same key and be treated as
+ * the same finding. `encodeURIComponent` escapes `:` (to `%3A`) and leaves ordinary identifier
+ * characters readable, so the key stays greppable in a CI log while staying injective.
+ *
+ * Each `kind` has a fixed number of components (see {@link SecurityFindingAnchor}), so the key is
+ * total and two anchors of different kinds can never collide.
+ */
+export function securityFindingAnchorKey(anchor: SecurityFindingAnchor): string {
+  const parts = anchorNameParts(anchor).map((part) => encodeURIComponent(part));
+  return parts.length === 0 ? anchor.kind : `${anchor.kind}:${parts.join(":")}`;
+}
+
+/**
+ * **D-C20** — a finding's identity is `ruleId` + anchor, and **nothing else**.
+ *
+ * Two exclusions, both load-bearing:
+ *
+ *   • **Evidence is not part of it.** The same rule firing on the same tool with a reworded
+ *     description is the SAME finding, not a resolved one plus a new one. A gate that went red
+ *     because a vendor rephrased a sentence is a gate that gets switched off inside a week.
+ *   • **Severity is not part of it either** — it is a property of the RULE (D-SP5), so it is already
+ *     implied by `ruleId` and adding it would only make the key longer.
+ *
+ * This is sound precisely because **D-SP2 freezes rule ids**: a rule is never renamed and never
+ * re-pointed at a different check, so the same id across two releases really does mean the same
+ * question was asked. Renaming one would read as a finding resolved plus a finding appearing — the
+ * exact false alarm D-SP2 exists to prevent.
+ *
+ * The `|` separator is safe by the same freeze: a rule id is `category.kebab-slug` and can never
+ * contain one, and the anchor half is percent-encoded.
+ */
+export function securityFindingIdentity(
+  finding: Pick<SecurityFinding, "ruleId" | "anchor">,
+): string {
+  return `${finding.ruleId}|${securityFindingAnchorKey(finding.anchor)}`;
+}
+
 // ── D-SP4 · redaction ───────────────────────────────────────────────────────────────────────────
 
 /**

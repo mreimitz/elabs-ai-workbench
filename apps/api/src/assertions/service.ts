@@ -29,6 +29,22 @@
 //     not settled, are all **400s**. Reading a half-graded matrix as a mean score would report a
 //     quality regression that is really just grading latency — the same silent-wrong-answer D-C8
 //     exists to prevent, and the same spirit as WP 1.3's refusal to assert a `failed` scan.
+//
+// WP 3.1 adds ONE more rule, `no-new-security-findings`, under three more decisions — and, crucially,
+// adds **no analysis**. There is no heuristic, no regex, no rule-id literal, no severity table and no
+// score anywhere in this directory: the rule calls security-posture's analyzer through the injected
+// `security` port and compares two reports (D-MCP4 / D-SP7 — re-project, don't reimplement).
+//
+//   • **D-C20 — "new" is set membership by (ruleId, anchor), never a count.** The comparison is the
+//     shared `securityFindingIdentity`, so a release that resolved one finding and introduced a
+//     different one FAILS where a count comparison would pass — and a rule that fires on the same
+//     tool with reworded evidence is the SAME finding, so a reworded description never turns the gate
+//     red.
+//   • **D-C21 — `minSeverity` defaults to `warning`.** `NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY`
+//     in the shared contract; `info` findings are hygiene and do not gate unless asked for.
+//   • **D-C22 — an analyzer-version mismatch between the two reports is a 400.** Exactly D-C8's
+//     `deltasComparable` guard, applied to posture: a comparison that is not on the same scale is an
+//     error, never a suppressed-to-zero pass.
 
 import {
   ASSERTION_BASELINE_PREVIOUS,
@@ -48,9 +64,17 @@ import {
   DEFAULT_COMPARE_THRESHOLD,
   formatNumber,
   isSettledRatingState,
+  NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY,
   type ScanComparison,
   type ScanDetail,
   type ScanSummary,
+  SECURITY_FINDING_LIMIT,
+  SECURITY_SEVERITIES,
+  type SecurityFinding,
+  type SecurityFindingAnchor,
+  type SecurityReport,
+  type SecuritySeverity,
+  securityFindingIdentity,
   type ServerConfig,
   type Suite,
   type SuiteAggregates,
@@ -82,6 +106,15 @@ export type AssertionPorts = {
   suiteRuns: {
     getRun: (id: string) => SuiteRun;
     listRuns: (suiteId?: string) => SuiteRun[];
+  };
+  /**
+   * WP 3.1 — security-posture's analyzer, injected rather than imported (D-MCP4 / D-SP7). Every
+   * heuristic, every severity and the score live behind it, in
+   * `apps/api/src/security/{analyzer,service}.ts`; this engine only ever compares two of its reports.
+   * A function, so a test hands it two fixtures without a database or an OAuth store.
+   */
+  security: {
+    analyze: (scanId: string) => SecurityReport;
   };
   /** Injectable so a test can pin `evaluatedAt`. */
   now?: () => Date;
@@ -115,7 +148,7 @@ export function evaluateAssertions(
       ? resolveBaseline(ports, subject, requestedBaseline ?? ASSERTION_BASELINE_PREVIOUS)
       : { baseline: null, requested: undefined, skipReason: undefined };
 
-  const context = buildContext(subject, resolution);
+  const context = buildContext(ports, subject, resolution);
 
   // EVERY rule is evaluated — no short-circuit on the first failure. A CI log that lists one problem
   // at a time costs a round trip per problem.
@@ -158,7 +191,11 @@ export function evaluateAssertions(
  * scan evaluators are untouched by this WP and keep reading a `ScanDetail` + a `ScanComparison`,
  * while the two suite evaluators see a suite run's aggregates and nothing else.
  */
-function buildContext(subject: Subject, resolution: BaselineResolution): AnyEvaluationContext {
+function buildContext(
+  ports: AssertionPorts,
+  subject: Subject,
+  resolution: BaselineResolution,
+): AnyEvaluationContext {
   if (subject.kind === "scan") {
     const baseline = resolution.baseline?.kind === "scan" ? resolution.baseline.scan : null;
     return {
@@ -168,6 +205,9 @@ function buildContext(subject: Subject, resolution: BaselineResolution): AnyEval
         baseline === null
           ? null
           : buildComparison(baseline, subject.scan, DEFAULT_COMPARE_THRESHOLD),
+      // Deliberately LAZY (and memoized): a gate with no posture rule must never pay for an analysis
+      // nobody asked for, and a gate with two of them must not analyse the same scan twice.
+      analyzeSecurity: memoize(ports.security.analyze),
       skipReason: resolution.skipReason,
     };
   }
@@ -606,8 +646,26 @@ type EvaluationContext = {
   baseline: ScanDetail | null;
   /** `buildComparison(baseline, subject, …)` — **A is the baseline, B is the subject**. */
   comparison: ScanComparison | null;
+  /**
+   * WP 3.1 — `ports.security.analyze`, memoized for the life of this request. The posture rule is the
+   * only evaluator that touches it, and it is a call rather than a precomputed pair so a gate with no
+   * posture rule never runs the analyzer at all.
+   */
+  analyzeSecurity: (scanId: string) => SecurityReport;
   skipReason: string | undefined;
 };
+
+/** One-line memo over a pure, deterministic read. Per-request, so nothing outlives the evaluation. */
+function memoize<T>(load: (key: string) => T): (key: string) => T {
+  const cache = new Map<string, T>();
+  return (key) => {
+    const cached = cache.get(key);
+    if (cached !== undefined) return cached;
+    const value = load(key);
+    cache.set(key, value);
+    return value;
+  };
+}
 
 /**
  * Everything a SUITE-family evaluator may look at (WP 2.2). Deliberately narrower than the scan
@@ -875,7 +933,120 @@ const EVALUATORS: { [K in AssertionRuleKind]: RuleEvaluator<K> } = {
         : `Suite run cost $${observed.toFixed(2)} (${breakdown}) exceeds the $${rule.maxUsd.toFixed(2)} budget by $${(observed - rule.maxUsd).toFixed(2)}.`,
     };
   },
+
+  // ── WP 3.1 — the POSTURE rule (SCAN family) ───────────────────────────────────────────────────
+  // It analyses NOTHING. `context.analyzeSecurity` is security-posture's own analyzer (D-SP7 — a pure
+  // function this engine calls rather than re-implements), and everything below is set arithmetic
+  // over the two reports it returns. No heuristic, no rule id, no severity table, no score.
+
+  "no-new-security-findings": (rule, context) => {
+    const baseline = requireBaselineScan(context);
+    const subjectReport = context.analyzeSecurity(context.subject.id);
+    const baselineReport = context.analyzeSecurity(baseline.id);
+
+    // **D-C22 — an analyzer-version mismatch is an ERROR, not a pass.** Both reports come out of the
+    // same running build today, so the versions are equal by construction; the check exists for the
+    // case that stops being true (a persisted or cached report, WP 1.4's diff, a future
+    // cross-instance comparison). It is the exact shape of D-C8's `deltasComparable` guard: a
+    // comparison that is not on the same scale is a 400, never a suppressed-to-zero pass.
+    if (subjectReport.analyzerVersion !== baselineReport.analyzerVersion) {
+      throw httpError(
+        400,
+        `Cannot compare security posture: baseline scan ${baseline.id} was analysed by security analyzer version ${baselineReport.analyzerVersion}, ` +
+          `and subject scan ${context.subject.id} by version ${subjectReport.analyzerVersion}. ` +
+          "Findings produced under different analyzer versions are not on the same scale, so a rule's meaning may have changed underneath the comparison. " +
+          "Re-run the gate against reports from one workbench build, or drop the no-new-security-findings rule.",
+      );
+    }
+
+    // **Capping — a partial set is not a verdict.** `capSecurityFindings` may have shortened a
+    // report's LIST while its `counts` kept the true totals (the security-posture contract's own
+    // words). Falling back to those counts would be a COUNT comparison, which D-C20 forbids for
+    // exactly the reason this rule exists; gating on the shortened list would answer "no new
+    // findings among the first N we looked at", which is not the question anybody asked. So it is an
+    // error, and the message says which side was truncated.
+    const truncated = [
+      ...(baselineReport.truncated ? [`baseline scan ${baseline.id}`] : []),
+      ...(subjectReport.truncated ? [`subject scan ${context.subject.id}`] : []),
+    ];
+    if (truncated.length > 0) {
+      throw httpError(
+        400,
+        `Cannot compare security posture: ${truncated.join(" and ")} produced more than ${formatNumber(SECURITY_FINDING_LIMIT)} findings, ` +
+          `so the report lists only the first ${formatNumber(SECURITY_FINDING_LIMIT)} of them ` +
+          `(baseline ${formatNumber(baselineReport.counts.total)}, subject ${formatNumber(subjectReport.counts.total)} in total). ` +
+          'Comparing a truncated list would answer "no new findings among the ones we listed", which is not a verdict. ' +
+          "Fix the findings the report does list, then re-run the gate.",
+      );
+    }
+
+    const threshold = rule.minSeverity ?? NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY;
+
+    // **D-C20 — "new" is SET MEMBERSHIP by (ruleId, anchor), never a count.** A count comparison
+    // would pass a release that resolved one finding and introduced a different, worse one — the
+    // single most likely way this gate would be wrong in production. Evidence text is deliberately
+    // outside the identity (see `securityFindingIdentity`), so a reworded description that still
+    // trips the same rule on the same tool is the SAME finding and does not turn the gate red.
+    const baselineIdentities = new Set(baselineReport.findings.map(securityFindingIdentity));
+    const added = subjectReport.findings.filter(
+      (finding) => !baselineIdentities.has(securityFindingIdentity(finding)),
+    );
+    const gating = added.filter((finding) => severityAtLeast(finding.severity, threshold));
+
+    const carried = subjectReport.counts.total - added.length;
+    // A passing gate still says something useful: how much posture this scan carries, and how much
+    // of it the baseline already had. "Nothing new" over 40 known findings is a different sentence
+    // from "nothing new" over none.
+    const inventory = `This scan has ${formatNumber(subjectReport.counts.total)} finding(s), ${formatNumber(carried)} of which the baseline already had.`;
+    const ignored =
+      added.length === gating.length
+        ? ""
+        : ` ${formatNumber(added.length - gating.length)} new finding(s) below "${threshold}" did not gate.`;
+
+    return {
+      rule: rule.rule,
+      status: gating.length === 0 ? "pass" : "fail",
+      observed: gating.length,
+      limit: 0,
+      message:
+        gating.length === 0
+          ? `No new security findings at or above "${threshold}" against the baseline. ${inventory}${ignored}`
+          : `${formatNumber(gating.length)} new security finding(s) at or above "${threshold}" against the baseline. ${inventory}${ignored}`,
+      details: gating.length === 0 ? undefined : capAssertionDetails(gating.map(describeFinding)),
+    };
+  },
 };
+
+/**
+ * "At or above the floor", read straight off `SECURITY_SEVERITIES` — which the contract declares
+ * WORST-FIRST, so a lower index is a worse severity. The order is the contract's; nothing here
+ * restates or re-ranks it (D-SP1 — every consumer imports the declaration, none re-derives it).
+ */
+function severityAtLeast(severity: SecuritySeverity, floor: SecuritySeverity): boolean {
+  return SECURITY_SEVERITIES.indexOf(severity) <= SECURITY_SEVERITIES.indexOf(floor);
+}
+
+/**
+ * `<severity> · <ruleId> · tool "…" — <the finding's own sentence>`. Every component is a VALUE read
+ * off the finding; no rule id and no severity is ever written down in this directory.
+ */
+function describeFinding(finding: SecurityFinding): string {
+  return `${finding.severity} · ${finding.ruleId} · ${describeAnchor(finding.anchor)} — ${finding.message}`;
+}
+
+/** Where the finding lives, in words. Formatting only — the anchor itself comes from the analyzer. */
+function describeAnchor(anchor: SecurityFindingAnchor): string {
+  switch (anchor.kind) {
+    case "server":
+      return "the server itself";
+    case "tool":
+      return `tool "${anchor.toolName}"`;
+    case "parameter":
+      return `parameter "${anchor.parameterPath}" of tool "${anchor.toolName}"`;
+    case "file":
+      return `file "${anchor.path}"`;
+  }
+}
 
 /**
  * D-C13 makes "a suite rule against a scan subject" a VALIDATION error, so this can only be reached
@@ -906,6 +1077,18 @@ function requireComparison(context: EvaluationContext): ScanComparison {
     throw httpError(500, "A baseline-dependent rule was evaluated without a baseline comparison.");
   }
   return context.comparison;
+}
+
+/**
+ * The posture rule's equivalent (WP 3.1). It needs the baseline SCAN — it re-analyses that scan
+ * rather than reading `buildComparison`'s tool matching, because posture is a property of a scan's
+ * definitions, not of the tool-name diff between two of them. Same 500-not-400 reasoning as above.
+ */
+function requireBaselineScan(context: EvaluationContext): ScanDetail {
+  if (context.baseline === null) {
+    throw httpError(500, "A baseline-dependent rule was evaluated without a baseline scan.");
+  }
+  return context.baseline;
 }
 
 /** `+180` / `−180`, with a real minus sign, so the direction survives a copy into a CI comment. */

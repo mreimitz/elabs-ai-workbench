@@ -138,6 +138,7 @@ import { ScanRepository } from "./scans/repository.js";
 import { registerScanRoutes } from "./scans/routes.js";
 import { ScanService } from "./scans/service.js";
 import { registerSecurityRoutes } from "./security/routes.js";
+import { analyzeScan } from "./security/service.js";
 import { loadSecretKey, SecretStore } from "./secrets/secret-store.js";
 import { ServerRepository } from "./servers/repository.js";
 import { registerServerRoutes } from "./servers/routes.js";
@@ -1459,6 +1460,10 @@ await registerAssertionRoutes(server, {
   // the same reads `GET /api/suite-runs` already serves.
   suites: suiteService,
   suiteRuns: suiteRunRepository,
+  // WP 3.1 — `no-new-security-findings` calls security-posture's analyzer through this port
+  // (D-MCP4/D-SP7), bound to the SAME repositories `registerSecurityRoutes` above uses, so the gate
+  // and `GET /api/scans/:scanId/security` can never disagree about a scan's posture.
+  security: { analyze: (scanId) => analyzeScan({ scans, servers, oauth: oauthRepository }, scanId) },
 });
 // Advisor (roadmap/advisor/, WP 1.2) — `GET /api/advisor/report`: deterministic, versioned
 // recommendations derived from data the app already persists (scans + runs + environments). Read-only;

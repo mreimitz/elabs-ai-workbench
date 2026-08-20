@@ -357,6 +357,7 @@ node apps/cli/dist/index.js assert quality.assert.json     # the score and cost 
 | `no-new-tools` | No tool appeared that the baseline did not have. | yes |
 | `no-removed-tools` | No tool the baseline had has disappeared. | yes |
 | `max-scan-delta` | The change against the baseline stays within `maxTokens` and/or `maxPercent`. Both are **absolute**, so a large drop fails too. | yes |
+| `no-new-security-findings` | No **security finding** appeared that the baseline scan did not have. Optional `minSeverity` (`error` / `warning` / `info`) sets the floor; the default is `warning`. | yes |
 
 **Quality rules** — for a `suite` or `suiteRun` target:
 
@@ -367,6 +368,51 @@ node apps/cli/dist/index.js assert quality.assert.json     # the score and cost 
 
 Every rule is evaluated, every time — you get the full list of problems in one run, not one problem
 per round trip.
+
+#### The posture rule, in detail
+
+`no-new-security-findings` re-runs the workbench's own security analyser — the same one behind the
+scan's **Security** report — over the scan under test *and* over the baseline scan, and fails if the
+new scan carries a finding the old one did not.
+
+```json
+{ "rule": "no-new-security-findings" }
+{ "rule": "no-new-security-findings", "minSeverity": "info" }
+```
+
+Two things about it are worth knowing before you put it in front of a team, because both decide
+whether the gate is one you keep or one you switch off.
+
+**"New" means a finding you did not have, not a bigger number.** Two findings are *the same finding*
+when they come from the same rule and sit in the same place — the same tool, the same parameter, the
+same file, or the server itself. Nothing else is part of that comparison. So:
+
+- A release that **fixes one finding and introduces a different one** fails. The totals did not move,
+  but you did acquire a problem you did not have, and that is exactly the case a posture gate exists
+  to catch.
+- A vendor **rewording a tool description** that still trips the same rule on the same tool does
+  **not** fail. It is the same finding, said differently. A gate that went red every time somebody
+  edited a sentence would be turned off inside a week.
+
+**The default floor is `warning`.** `error` and `warning` findings gate. `info` findings — an
+undescribed parameter, an unmarked open-world tool, an unconstrained object schema — are hygiene, and
+a gate that goes red on its first run because a third-party server left three parameters undescribed
+is a gate nobody keeps. The message still tells you how many findings it declined to gate on, so
+nothing is hidden. If you want the strict posture, ask for it: `"minSeverity": "info"`.
+
+A passing result still reports the inventory — *"This scan has 4 finding(s), 4 of which the baseline
+already had"* — because "nothing new" over four known findings and "nothing new" over none are
+different sentences. A failing result lists each new finding as
+`<severity> · <rule id> · <where> — <what>`, and those lines go straight into the pull-request
+comment.
+
+Two situations are **errors** (exit 2) rather than a verdict, for the same reason an incomparable
+token delta is: the comparison would not have been on the same scale.
+
+- The two reports were produced by **different analyser versions**, so a rule may have changed
+  meaning underneath the comparison.
+- Either scan produced **so many findings that the report was truncated**. "No new findings among the
+  ones we listed" is not a verdict.
 
 #### A worked quality gate
 
