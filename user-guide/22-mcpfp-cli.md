@@ -94,6 +94,7 @@ Which permission a command needs:
 | Command | Permission |
 | --- | --- |
 | `scan` | **Run scans** (plus **Read**, if you pass a server *name* rather than an id) |
+| `suite run` | **Run suites** to start the matrix, **plus Read** to follow it (and to resolve a suite *name*) |
 | `assert` | **Run scans** — see the note under [`assert`](#assert-file--fail-the-build-when-the-footprint-moves); it only reads, but this version decides permissions by request type |
 | everything else | **Read** |
 
@@ -147,6 +148,113 @@ number is worse than not scanning.
 cannot go green against a server that could not be reached.
 
 Formats: `human` (default), `json`.
+
+### `suite run <suite>` — run a saved suite and wait for the verdict
+
+```bash
+pnpm mcpfp suite run "Nightly regression"
+```
+
+This starts a saved suite's **matrix run** — every test × every environment × every repetition — and
+then, by default, **waits for it** and prints the summary. `<suite>` is a suite id or its exact name;
+if two saved suites share a name, `mcpfp` stops and lists their ids rather than guessing.
+
+```
+Suite       Nightly regression (ste_Nightly7fQ2xLm)
+Suite run   srn_9Kd2LmT4vQ8sWx0aB
+Source      suite
+Status      completed
+Started at  2026-08-20T09:00:00.000Z
+Ended at    2026-08-20T09:07:12.000Z
+Duration    7m 12s
+Rating      rated
+
+Aggregates
+Cells           12/12
+Mean grade      0.82
+Grade std-dev   0.11
+Pass rate @0.5  91.7%
+Total tokens    184,320
+Execution cost  $1.0231
+Judge cost      $0.1194
+
+Members, worst score first (4 of 4)
+RUN      STATUS     SCORE  TOKENS     COST
+run_2bQ  completed   0.41  16,500  $0.0902
+run_7Lp  completed   0.55  15,100  $0.0851
+run_9aZ  completed   0.88  14,100  $0.0788
+run_Kx4  error          —   2,000  $0.0123
+
+Suite run srn_9Kd2LmT4vQ8sWx0aB completed: 12/12 cells, mean grade 0.82, $1.14.
+```
+
+The member rows are the **worst-scoring first**, because that is what you open a build log for; the
+ten worst are shown, and `--format json` carries every one of them. A dash is a dash: a run with no
+graded score prints `—`, never a `0` that would read as "it scored zero".
+
+#### Waiting
+
+**The run happens in the app, not here.** `mcpfp` starts it and then re-reads it every five seconds
+until it settles. That includes the post-run **rating**: the summary is not printed while member
+grades are still being computed, so what you see is the finished picture.
+
+| Flag | What it does |
+| --- | --- |
+| *(nothing)* | Wait up to **30 minutes** for the run to finish, then summarize it. |
+| `--wait <seconds>` | Use a different total budget. Running out while the matrix is still going is an error (below). |
+| `--no-wait` | Return as soon as the run has **started**, print the suite run's id, and stop. No members, exit 0. |
+
+While it waits, a progress line goes to standard error each time the number of finished cells
+actually moves — `Suite run srn_… : 6/12 cells, $0.48 so far…` — so a forty-minute matrix does not
+produce five hundred identical lines in a build log. `--quiet` turns those off.
+
+#### Exit codes
+
+| Situation | Exit |
+| --- | --- |
+| The matrix **completed**. | **0** |
+| `--no-wait`: the run started. (It says nothing about the outcome — that is what you asked for.) | **0** |
+| The run ended in **error**. | **2** |
+| The run was **capped** — the suite's aggregate cost cap soft-stopped the matrix part-way. | **2** |
+| The run was **stopped** — somebody halted it from the app. | **2** |
+| Your **wait budget ran out** while the matrix was still going. The message names the suite run id so you can go and look at it; the run itself keeps going. | **2** |
+| The request could not be made at all: unreachable app, refused token, unknown suite. | **2** |
+
+**Never 1.** That code belongs to `mcpfp assert` alone, so a pipeline can always tell "the gate said
+no" from "the run did not finish".
+
+One case is deliberately *not* a failure: if your budget runs out after the matrix reached a terminal
+status but while the **grades** were still landing, the exit code still comes from the status — and a
+warning tells you the summary's grades may be incomplete. **`--quiet` does not hide that warning.**
+
+#### In a build
+
+```bash
+pnpm build
+node apps/cli/dist/index.js suite run "Nightly regression" --format json > suite-run.json
+```
+
+Use the built entry point, never `pnpm --silent mcpfp` — pnpm collapses every non-zero exit to **1**,
+which is the one code this command must never produce (see [Running it](#running-it) above).
+
+`--format json` puts both halves of the answer in `data`, exactly as the app returned them:
+
+```json
+{
+  "outputVersion": 1,
+  "command": "suite run",
+  "generatedAt": "2026-08-20T09:07:13.402Z",
+  "apiUrl": "http://127.0.0.1:8080",
+  "data": {
+    "suiteRun": { },
+    "members": [ ]
+  }
+}
+```
+
+Formats: `human` (default), `json`. Markdown is **not** offered here — the pull-request comment
+artifact is a later work package, and a flag that silently produced a human table into a file a
+later step tried to parse would be worse than not having it.
 
 ### `assert [file]` — fail the build when the footprint moves
 
@@ -347,7 +455,7 @@ node apps/cli/dist/index.js report scan <scanId> --format json > report.json
 | --- | --- |
 | **0** | It did what you asked. For `assert`: every rule passed. A rule that could not be evaluated yet is a loud SKIP, and still a 0. |
 | **1** | **An assertion failed.** Only `mcpfp assert` returns this — no other command can. |
-| **2** | It could not do what you asked: bad options, an unreadable config or gate file, an unreachable workbench, a refused request, a scan that failed, a baseline that could not be resolved. |
+| **2** | It could not do what you asked: bad options, an unreadable config or gate file, an unreachable workbench, a refused request, a scan that failed, a suite run that did not complete, a baseline that could not be resolved. |
 
 The distinction between **1** and **2** is the one that matters in a pipeline: "the check said no" and
 "the check could not run" are different problems, and you want to be able to tell them apart. That is
@@ -371,17 +479,17 @@ them is evidence that your footprint is fine.
 
 ## What is not built yet
 
-Two planned pieces are not in it, and `mcpfp` will tell you it does not know the command rather than
+One planned piece is not in it, and `mcpfp` will tell you it does not know the command rather than
 pretending:
 
-- **`mcpfp suite run`** — trigger a suite mass-run, follow it, and summarize the result.
-  *(Work package 2.1.)*
 - **The pull-request comment artifact** — a markdown summary of what changed against a named
   baseline, ready to post on a PR. *(Work package 2.2.)*
 
 Assertions themselves are also only half the story yet: the rules cover **footprint and change**
 (tokens, tool counts, added and removed tools). Rules about a suite's *quality* — a minimum score, a
 maximum cost — and about security findings arrive with those later work packages, on the same file
-and the same exit codes.
+and the same exit codes. So today `suite run` **reports** a matrix's quality and cost; it does not
+yet let you write down a threshold and gate on it.
 
-Until then, `scan` + `assert` gates a footprint, and `report … --format json` records one.
+Until then, `scan` + `assert` gates a footprint, `suite run` reports a suite, and
+`report … --format json` records either.
