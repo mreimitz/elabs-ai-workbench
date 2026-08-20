@@ -3,7 +3,7 @@ type: "Guide Page"
 title: "20. The workbench agent playbook \u2014 let an AI read your workbench"
 description: "Everything the app measures \u2014 scans, footprints, sessions, grades, skills, suites \u2014 normally lives"
 tags: ["documentation", "DC-16"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T23:10:00Z"
 status: "current"
 ---
 # 20. The workbench agent playbook — let an AI read your workbench
@@ -182,9 +182,16 @@ Turn it back on and connected assistants can reconnect without any further setup
 
 Every MCP server a model connects to spends part of the model's context just *describing itself* —
 which is the cost this whole app exists to measure. The workbench holds itself to the same standard
-it holds your servers to: its own description is kept under a **3,000-token budget**, and a check
+it holds your servers to: its own description is kept under a **3,500-token budget**, and a check
 that runs with the test suite scans this very endpoint with the app's own scanner and fails if it
-grows past it. The current measurement is **24 tools costing 2,749 tokens**.
+grows past it. The current measurement is **24 tools costing 3,183 tokens**.
+
+That budget was 3,000 until 2026-08-20, when it was raised deliberately to pay for **describing every
+parameter**. The mount previously declared 49 parameters with no description at all — which the app's
+own security analyzer reported, correctly, 49 times: an agent could not tell whether `runs_list`'s
+`since` wanted a timestamp or a run id. The descriptions cost 434 tokens; the alternative was leaving
+them undescribed to keep a number under a line we drew ourselves, which is exactly what we would
+criticise a vendor for. The mount now scores **100/100** against its own analyzer.
 
 You can reproduce that number yourself from the project folder:
 

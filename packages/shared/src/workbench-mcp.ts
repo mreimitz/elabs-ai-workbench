@@ -192,17 +192,55 @@ export const WORKBENCH_MCP_DEFAULT_LIST_LIMIT = 50;
  * `generic_o200k` profile (`apps/api/test/workbench-mcp-server.test.ts` prints the live figure on every
  * run, so the real cost is never a guess), and **2,224 tokens** when the app's own discovery scanner
  * is pointed at the running mount — the two agree to within 1%, which is the whole point of measuring
- * ourselves the way we measure everyone else. The budget is set at **3,000**: about 35% headroom,
+ * ourselves the way we measure everyone else. The budget was set at **3,000**: about 35% headroom,
  * enough for the WP M.3 write tools and a few longer descriptions without ceremony, tight enough that
  * a careless paragraph trips the gate instead of quietly costing every host a thousand tokens a turn.
  * WP M.4 turns this same assertion into a CI job that scans the running mount with our own scanner.
+ *
+ * **Raised to 3,500 on 2026-08-20, deliberately, to pay for parameter descriptions.** The 24-tool
+ * surface measured 2,749 tokens with **no parameter described anywhere**; our own security analyzer
+ * reported that 49 times, and it was right — an agent could not tell whether `runs_list.since` wanted
+ * an ISO instant or a run id. Describing all 49 costs **+434 tokens** (about 8.9 each), taking the
+ * mount to 3,183.
+ *
+ * The raise is recorded here rather than done quietly, because raising a budget you just failed is
+ * the wrong instinct by default. Three things were checked before it:
+ *
+ *   1. **Is there fat to trim instead?** No. Schema envelopes are 1,900 of the 3,183 tokens and are
+ *      structural; the tool descriptions are already dense, and the only genuinely cuttable text — the
+ *      "needs the `x` scope" sentence on the three write tools — is worth ~33 tokens against a
+ *      183-token shortfall, and it earns its place by letting an agent avoid a call it cannot make.
+ *   2. **Could we describe fewer?** Yes — roughly half the parameters are `limit`, whose meaning is
+ *      self-evident. But leaving them undescribed to keep a number under a line we drew ourselves is
+ *      precisely what we would criticise a vendor for, and the analyzer would still report them.
+ *   3. **Is the new headroom honest?** 3,500 leaves ~10% over the measured 3,183 — the same
+ *      proportion the original 3,000 left over its own 2,749, so the gate stays as tight as it was.
  */
-export const WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET = 3000;
+export const WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET = 3500;
 
 // ── Tool argument shapes (ZodRawShape — see the banner) ───────────────────────────────────────────
 
 const idField = z.string().min(1);
 const limitField = z.number().int().positive().max(WORKBENCH_MCP_MAX_LIST_LIMIT).optional();
+
+/**
+ * **Every parameter below carries a description, and these two helpers are why it costs so little.**
+ *
+ * The mount used to declare 49 parameters with no description at all, which our own security analyzer
+ * reported 49 times (`schema.undescribed-parameter`) — and it was right: its rationale is that an
+ * undescribed parameter is *"a correctness problem before it is a cost problem: guessed arguments mean
+ * failed calls and retries"*. An agent reading `runs_list` could not tell whether `since` wanted an
+ * ISO instant or a run id.
+ *
+ * They are deliberately TERSE — three to eight words, no sentences of ceremony — because this text is
+ * paid for on every single turn by every host that loads the mount, and
+ * {@link WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET} is a gate we hold ourselves to (D-MCP5). Where a
+ * parameter takes an id, the description names the tool that produces it, which is the one thing a
+ * caller cannot infer from the type.
+ */
+const id = (says: string) => idField.describe(says);
+const optionalId = (says: string) => z.string().optional().describe(says);
+const limit = (says: string) => limitField.describe(says);
 
 /**
  * The argument shape of every tool, keyed by tool name. Each value is a **ZodRawShape** (a plain
@@ -217,53 +255,82 @@ const limitField = z.number().int().positive().max(WORKBENCH_MCP_MAX_LIST_LIMIT)
  */
 export const WORKBENCH_MCP_TOOL_SCHEMAS = {
   // ── Servers & scans ─────────────────────────────────────────────────────────────────────────
-  servers_list: { limit: limitField },
-  scans_list: { serverId: z.string().optional(), limit: limitField },
-  scans_get: { scanId: idField },
-  scans_latest: { serverId: idField },
+  servers_list: { limit: limit("Max servers to return.") },
+  scans_list: {
+    serverId: optionalId("Only scans of this server."),
+    limit: limit("Max scans to return."),
+  },
+  scans_get: { scanId: id("Scan id, from scans_list.") },
+  scans_latest: { serverId: id("Server id, from servers_list.") },
   scans_tools: {
-    scanId: idField,
-    limit: limitField,
-    offset: z.number().int().nonnegative().optional(),
+    scanId: id("Scan id, from scans_list."),
+    limit: limit("Max tools to return."),
+    offset: z.number().int().nonnegative().optional().describe("Tools to skip, for paging."),
   },
   compatibility_heatmap: {
-    scanId: idField,
-    models: z.array(z.string()).max(20).optional(),
-    view: z.enum(["server", "tool"]).optional(),
-    rollup: z.enum(["worst-tool", "average-tool"]).optional(),
+    scanId: id("Scan id, from scans_list."),
+    models: z
+      .array(z.string())
+      .max(20)
+      .optional()
+      .describe("Model ids; default every known model."),
+    view: z.enum(["server", "tool"]).optional().describe("Rows are servers, or tools."),
+    rollup: z
+      .enum(["worst-tool", "average-tool"])
+      .optional()
+      .describe("How tool rows collapse to one verdict."),
   },
-  compatibility_findings: { scanId: idField, models: z.array(z.string()).max(20).optional() },
+  compatibility_findings: {
+    scanId: id("Scan id, from scans_list."),
+    models: z
+      .array(z.string())
+      .max(20)
+      .optional()
+      .describe("Model ids; default every known model."),
+  },
 
   // ── Runs & reports ──────────────────────────────────────────────────────────────────────────
   runs_list: {
-    testId: z.string().optional(),
-    scenarioId: z.string().optional(),
-    status: z.enum(RUN_STATUSES).optional(),
-    since: z.string().optional(),
-    until: z.string().optional(),
-    limit: limitField,
+    testId: optionalId("Only runs of this test."),
+    scenarioId: optionalId("Only runs in this environment."),
+    status: z.enum(RUN_STATUSES).optional().describe("Only runs in this state."),
+    since: z.string().optional().describe("ISO 8601 instant; runs started at or after it."),
+    until: z.string().optional().describe("ISO 8601 instant; runs started before it."),
+    limit: limit("Max runs to return."),
   },
-  runs_get: { runId: idField, stepLimit: limitField },
-  runs_grades: { runId: idField },
-  run_report: { runId: idField, format: z.enum(["markdown", "json"]).optional() },
+  runs_get: {
+    runId: id("Run id, from runs_list."),
+    stepLimit: limit("Max steps to return."),
+  },
+  runs_grades: { runId: id("Run id, from runs_list.") },
+  run_report: {
+    runId: id("Run id, from runs_list."),
+    format: z.enum(["markdown", "json"]).optional().describe("Rendering; default markdown."),
+  },
 
   // ── Skills ──────────────────────────────────────────────────────────────────────────────────
-  skills_list: { limit: limitField },
-  skills_get: { skillId: idField },
-  skills_versions: { skillId: idField },
-  skills_files: { versionId: idField },
-  skills_file_content: { versionId: idField, path: idField },
-  skills_security: { versionId: idField },
+  skills_list: { limit: limit("Max skills to return.") },
+  skills_get: { skillId: id("Skill id, from skills_list.") },
+  skills_versions: { skillId: id("Skill id, from skills_list.") },
+  skills_files: { versionId: id("Version id, from skills_versions.") },
+  skills_file_content: {
+    versionId: id("Version id, from skills_versions."),
+    path: id("Path inside the skill, from skills_files."),
+  },
+  skills_security: { versionId: id("Version id, from skills_versions.") },
 
   // ── Suites, collections ─────────────────────────────────────────────────────────────────────
-  suites_list: { limit: limitField },
+  suites_list: { limit: limit("Max suites to return.") },
   suite_runs_list: {
-    suiteId: z.string().optional(),
-    status: z.enum(SUITE_RUN_STATUSES).optional(),
-    limit: limitField,
+    suiteId: optionalId("Only runs of this suite."),
+    status: z.enum(SUITE_RUN_STATUSES).optional().describe("Only suite runs in this state."),
+    limit: limit("Max suite runs to return."),
   },
-  suite_runs_get: { suiteRunId: idField, memberLimit: limitField },
-  collections_list: { limit: limitField },
+  suite_runs_get: {
+    suiteRunId: id("Suite run id, from suite_runs_list."),
+    memberLimit: limit("Max member runs to return."),
+  },
+  collections_list: { limit: limit("Max collections to return.") },
 
   // ── Actions (write — WP M.3) ────────────────────────────────────────────────────────────────
   // `run_plan_start`'s shape is FLAT and permissive here, strict at the handler: `registerTool`'s
@@ -281,16 +348,45 @@ export const WORKBENCH_MCP_TOOL_SCHEMAS = {
   // reference provider credentials and skill versions, a headless agent has no business tuning them,
   // and leaving them off keeps the definition footprint down (D-MCP5). An agent that needs them saves
   // a suite and calls `suite_run_start`.
-  scan_run: { serverId: idField, tokenProfile: z.enum(TOKEN_PROFILES).optional() },
-  suite_run_start: { suiteId: idField },
+  scan_run: {
+    serverId: id("Server id, from servers_list."),
+    tokenProfile: z.enum(TOKEN_PROFILES).optional().describe("Tokenizer; default the app's."),
+  },
+  suite_run_start: { suiteId: id("Suite id, from suites_list.") },
   run_plan_start: {
-    source: z.enum(["collection", "adhoc"]),
-    collectionId: z.string().optional(),
-    testIds: z.array(z.string()).max(WORKBENCH_MCP_MAX_LIST_LIMIT).optional(),
-    scenarioIds: z.array(z.string()).max(WORKBENCH_MCP_MAX_LIST_LIMIT).optional(),
-    repetitions: z.number().int().min(1).max(SUITE_MAX_REPETITIONS).optional(),
-    maxConcurrency: z.number().int().min(1).max(SUITE_MAX_CONCURRENCY).optional(),
-    aggregateCostCapUsd: z.number().positive().optional(),
+    source: z
+      .enum(["collection", "adhoc"])
+      .describe("collection: every test in one. adhoc: these."),
+    collectionId: optionalId("Required when source is collection."),
+    testIds: z
+      .array(z.string())
+      .max(WORKBENCH_MCP_MAX_LIST_LIMIT)
+      .optional()
+      .describe("Required when source is adhoc."),
+    scenarioIds: z
+      .array(z.string())
+      .max(WORKBENCH_MCP_MAX_LIST_LIMIT)
+      .optional()
+      .describe("Environments to run against."),
+    repetitions: z
+      .number()
+      .int()
+      .min(1)
+      .max(SUITE_MAX_REPETITIONS)
+      .optional()
+      .describe("Times to repeat each pair."),
+    maxConcurrency: z
+      .number()
+      .int()
+      .min(1)
+      .max(SUITE_MAX_CONCURRENCY)
+      .optional()
+      .describe("Member runs in parallel."),
+    aggregateCostCapUsd: z
+      .number()
+      .positive()
+      .optional()
+      .describe("Soft USD ceiling for the plan."),
   },
 } satisfies Record<WorkbenchMcpToolName, z.ZodRawShape>;
 

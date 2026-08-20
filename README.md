@@ -167,7 +167,7 @@ delete anything. It returns no secret values and lives behind a Settings › Fea
 Point a host at `http://127.0.0.1:8080/api/mcp`, or read the usage page it generates for itself at
 [`/api/mcp/llms.txt`](http://127.0.0.1:8080/api/mcp/llms.txt). We hold it to our own standard:
 `pnpm mcp:self-scan` points the app's discovery scanner at its own mount and fails if the tool
-definitions exceed their budget (currently **24 tools · 2,749 tokens** against a 3,000 budget).
+definitions exceed their budget (currently **24 tools · 3,183 tokens** against a 3,500 budget).
 
 **This is one of three ways to drive the bench without opening it — see
 [Drive it without a browser](#drive-it-without-a-browser) below.**

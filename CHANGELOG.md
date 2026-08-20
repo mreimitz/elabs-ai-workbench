@@ -5,6 +5,37 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the bench takes its own medicine
+
+We pointed the new security analyzer at the workbench's **own** MCP mount and it returned **49/100,
+band `high`**. Reading the findings changed three things — two in the analyzer, one in the mount.
+
+**The analyzer was wrong twice, and is now tighter.** `annotation.open-world-unmarked` matched its
+whole term list in a tool's *description* as well as its name, and a description names what a tool
+**returns** as often as what it does — so it flagged `servers_list` for the word "url" in *"transport,
+command/url, auth kind"* and `skills_list` for "upload" in *"source (upload/GitHub)"*. Neither tool
+reaches anything; both read the local database. The term list is now split: a tool's **name** keeps
+every term, while its **description** accepts only unambiguous action inflections (`fetches`,
+`downloads`, …). Both real false positives are regression fixtures now, verbatim.
+
+**The score was measuring surface size, not risk.** The deduction was an unbounded sum, so 49 hygiene
+nudges — zero errors, zero warnings — dragged the mount into the same band as a server carrying three
+genuine tool-poisoning errors. Each severity now deducts at most a documented cap: `info` stops
+counting after 10 findings, `warning` after 5, and `error` is **uncapped** on purpose. Hygiene is a
+bounded concern; there is no honest ceiling on the number of separate ways a server can be trying to
+steer a model. An `info`-only report now floors at 90/`low`.
+
+**And the mount really did deserve 49 findings.** It declared 49 parameters with **no description at
+all** — an agent could not tell whether `runs_list`'s `since` wanted a timestamp or a run id. All 49
+are described now, tersely. That costs 434 tokens, which took the definition footprint past its own
+3,000-token budget, so the budget was raised to **3,500** — deliberately, with the reasoning written
+into the constant: there was no fat left to trim, and leaving parameters undescribed to keep a number
+under a line we drew ourselves is exactly what we would criticise a vendor for.
+
+The mount now measures **24 tools · 3,183 tokens** and scores **100/100, `clean`** against its own
+analyzer. `SECURITY_ANALYZER_VERSION` moved 1 → 3, so reports from different builds are refused for
+comparison rather than silently diffed.
+
 ## Unreleased — security posture, on the page
 
 The deterministic security analyzer built over the previous four work packages is now **visible**.
