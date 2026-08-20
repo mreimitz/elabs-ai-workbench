@@ -1,8 +1,16 @@
-import type { ScanDetail, ScanSummary, ToolScan } from "@mcp-token-footprint/shared";
+import {
+  SECURITY_ANALYZER_VERSION,
+  SECURITY_FINDING_LIMIT,
+  type ScanDetail,
+  type ScanSummary,
+  type SecurityFinding,
+  type SecurityReport,
+  type ToolScan,
+} from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 // WP 4.2 (D-1) — ScansView is a LIST-FIRST surface: `/scans` shows the history FULL-WIDTH, and only
 // `/scans/:scanId` transitions to master-detail. These tests lock that mode split, the deep-link /
@@ -23,6 +31,19 @@ vi.mock("@elabs-ai/components-editor", () => ({
 vi.mock("../servers/McpAuthProvider", () => ({
   useMcpAuth: () => ({ requestReauth: vi.fn() }),
 }));
+
+// WP 2.1 — the view loads the selected scan's posture report at PAGE level so the tab strip can
+// badge it before the Security tab is ever opened. Only the FETCH is stubbed; `useSecurityReport`
+// and the strip itself stay real, because they are exactly what the badge test below is about.
+// Pending by default, so the tests that predate WP 2.1 see no posture badge and no state update
+// landing after their synchronous assertions.
+const getScanSecurityReport = vi.fn<() => Promise<SecurityReport>>(
+  () => new Promise<never>(() => {}),
+);
+vi.mock("../security/security-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../security/security-api")>();
+  return { ...actual, getScanSecurityReport: () => getScanSecurityReport() };
+});
 
 // jsdom omits matchMedia — `AdaptivePanelGroup`'s `useIsMobile` (detail mode) reads it (mirrors
 // RunsView.test / EnvironmentEditor.test).
@@ -179,7 +200,12 @@ describe("ScansView — list-first IA (WP 4.2 / D-1)", () => {
   // T7 — a FAILED scan must not render four zero KPIs + a tab strip over a one-word diagnostic with
   // no button. The KPI grid and tabs are suppressed; the real error is hoisted with a way forward.
   it("failed scan: suppresses the zero KPIs + tab strip and hoists the alert with real actions", () => {
-    const failed = { id: "scan-x", serverId: "srv-a", status: "failed" as const, errorMessage: "Unauthorized" };
+    const failed = {
+      id: "scan-x",
+      serverId: "srv-a",
+      status: "failed" as const,
+      errorMessage: "Unauthorized",
+    };
     renderAt("/scans/scan-x", {
       scans: [scan(failed)],
       selectedScan: detail(failed),
@@ -257,5 +283,79 @@ describe("ScansView — ?tool= deep link (advisor evidence drill-through)", () =
     });
 
     expect(screen.queryByText("Tool detail")).toBeNull();
+  });
+});
+
+// WP 2.1 (D-SP3/D-SP6, A1) — the Security tab's count badge.
+//
+// `counts` describes EVERY finding the analyzer produced; `findings` is a LIST that
+// `capSecurityFindings` may have shortened for display. A gate reading `counts.error` cannot be
+// fooled by that truncation, and neither may an operator — a strip that badged `findings.length`
+// would say "200" beside a report whose own tally says 240, which is precisely the "the table is
+// quietly shorter than the tally beside it" failure the panel refuses to commit.
+//
+// The Security tab is deliberately NOT opened here: the badge is fed by the page-level fetch, so it
+// must be right before the tab has ever been rendered (Radix unmounts inactive tab content). That
+// also keeps the 200-row list out of jsdom entirely — it is constructed and never painted.
+describe("ScansView — the Security tab badge counts ALL findings, not the listed ones", () => {
+  afterEach(() => {
+    getScanSecurityReport.mockReset();
+    getScanSecurityReport.mockImplementation(() => new Promise<never>(() => {}));
+  });
+
+  /** A report the display cap really did shorten: 240 produced, the first 200 listed. */
+  function truncatedReport(): SecurityReport {
+    const findings: SecurityFinding[] = Array.from(
+      { length: SECURITY_FINDING_LIMIT },
+      (_unused, index) => ({
+        ruleId: "schema.undescribed-parameter",
+        severity: "info",
+        anchor: { kind: "parameter", toolName: "search", parameterPath: `field_${index}` },
+        message: `Parameter "field_${index}" on "search" has no description.`,
+      }),
+    );
+    return {
+      analyzerVersion: SECURITY_ANALYZER_VERSION,
+      generatedAt: "2026-01-02T12:00:00.000Z",
+      subject: {
+        kind: "server",
+        id: "scan-1",
+        ownerId: "srv-a",
+        name: "Server srv-a",
+        capturedAt: "2026-01-02T00:00:00Z",
+      },
+      findings,
+      counts: { error: 0, warning: 0, info: 240, total: 240 },
+      score: { value: 0, band: "high", analyzerVersion: SECURITY_ANALYZER_VERSION },
+      truncated: true,
+    };
+  }
+
+  it("badges the report's own total, never the length of the (capped) findings list", async () => {
+    getScanSecurityReport.mockResolvedValue(truncatedReport());
+    renderAt("/scans/scan-1", {
+      scans: SCANS,
+      selectedScan: detail({ id: "scan-1", serverId: "srv-a" }),
+    });
+
+    const tab = await screen.findByRole("tab", { name: /^Security/ });
+    // 240 produced, 200 listed. The badge is the tally. Awaited, not read synchronously: the strip
+    // exists before the page-level report settles, so a sync read here races the re-render.
+    expect(await within(tab).findByText("240")).toBeTruthy();
+    expect(within(tab).queryByText(String(SECURITY_FINDING_LIMIT))).toBeNull();
+    // And it is there without the tab ever having been opened.
+    expect(tab.getAttribute("data-state")).toBe("inactive");
+  });
+
+  it("shows no count at all until the report settles — never a flashed 0", async () => {
+    // Pending by default (see the mock above): a strip that rendered `0` while the request was in
+    // flight would tell the operator this scan is clean, then change its mind.
+    renderAt("/scans/scan-1", {
+      scans: SCANS,
+      selectedScan: detail({ id: "scan-1", serverId: "srv-a" }),
+    });
+
+    const tab = await screen.findByRole("tab", { name: /^Security/ });
+    expect(tab.textContent).toBe("Security");
   });
 });
