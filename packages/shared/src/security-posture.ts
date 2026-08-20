@@ -305,6 +305,30 @@ export const SECURITY_FINDING_LIMIT = 200;
 export const SECURITY_REDACTION_MARKER = "«redacted»";
 
 /**
+ * WP 1.2 · rule 4 (`poisoning.oversized-description`) — how long a tool description may be before it
+ * is reported. 2,000 characters is deliberately generous: it is long enough that no honest tool
+ * description reaches it (the largest in the servers this app has scanned sit in the low hundreds),
+ * and short enough that a second instruction set embedded under a plausible first paragraph does.
+ *
+ * It lives in the contract rather than in `apps/api` for the same reason the score does: the Security
+ * tab (WP 2.1) has to tell an operator what the threshold WAS, and a UI that re-types the number is a
+ * UI that eventually disagrees with the analyzer.
+ */
+export const SECURITY_MAX_DESCRIPTION_CHARS = 2000;
+
+/**
+ * WP 1.2 — how many findings ONE rule may emit for ONE tool before it stops and says how many more it
+ * saw. It bounds the per-parameter rules (`schema.undescribed-parameter` above all), so a single
+ * sixty-parameter tool cannot drown every other finding in the report.
+ *
+ * This is a RULE-level bound and is not {@link SECURITY_FINDING_LIMIT}, which bounds the finished
+ * report's list. The difference matters for {@link SecurityReport.counts}: findings this bound
+ * suppresses were never produced, so the counts do not include them (and the message says so),
+ * whereas findings {@link capSecurityFindings} drops WERE produced and the counts still do.
+ */
+export const SECURITY_MAX_FINDINGS_PER_TOOL = 10;
+
+/**
  * D-SP3 — the documented weights, deducted from 100. They live beside
  * {@link computeSecurityScore}, which is the only function permitted to apply them.
  */
