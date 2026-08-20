@@ -429,7 +429,11 @@ test("M.2/A4 — an UNMAPPED POST still needs an execute scope (the table only r
     h.reached.length = 0;
     const response = await remote(h, path, { method: "POST", headers });
     assert.equal(response.statusCode, 403, path);
-    assert.equal(response.json<{ code?: string }>().code, API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE, path);
+    assert.equal(
+      response.json<{ code?: string }>().code,
+      API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE,
+      path,
+    );
     assert.deepEqual(h.reached, [], `${path} reached a handler on a read-only token`);
   }
 
@@ -483,7 +487,11 @@ const RELAX_SHAPES: RelaxShape[] = [
     status: 403,
     why: "THE ambiguous form — the router reaches the mount, but a RELAXING rule must not fire",
   },
-  { path: "/api/%6dcp", status: 403, why: "an encoded byte in the last segment is equally ambiguous" },
+  {
+    path: "/api/%6dcp",
+    status: 403,
+    why: "an encoded byte in the last segment is equally ambiguous",
+  },
   { path: "/%61pi/%6dcp", status: 403, why: "encoded bytes in both segments" },
   {
     path: "/api/assertions/%65valuate",
@@ -538,7 +546,10 @@ test("M.2/A5 — the two matchers are opposite by construction, and neither may 
     requestPathEquals(ambiguous, "/api/mcp"),
     requestPathEqualsStrict(ambiguous, "/api/mcp"),
   );
-  assert.notEqual(requestPathIsUnder(ambiguous, "/api"), requestPathIsUnderStrict(ambiguous, "/api"));
+  assert.notEqual(
+    requestPathIsUnder(ambiguous, "/api"),
+    requestPathIsUnderStrict(ambiguous, "/api"),
+  );
 });
 
 // ── A9 — no header-forged bypass ──────────────────────────────────────────────────────────────────

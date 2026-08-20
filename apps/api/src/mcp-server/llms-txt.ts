@@ -84,7 +84,9 @@ function toolScopeLines(tools: readonly WorkbenchLlmsTxtTool[]): string[] {
   const distinct = [...new Set(scoped.map((entry) => entry.scope))];
   const only = distinct[0];
   if (distinct.length === 1 && only !== undefined) {
-    return [`- Every tool on this server needs the \`${only}\` scope — nothing here asks for more.`];
+    return [
+      `- Every tool on this server needs the \`${only}\` scope — nothing here asks for more.`,
+    ];
   }
   return [
     "- Individual tools ask for more than that:",

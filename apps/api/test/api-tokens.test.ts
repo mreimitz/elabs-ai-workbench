@@ -172,7 +172,9 @@ test("A1 — requiredScopesForRoute consults the table, then falls back to the c
 
   assert.deepEqual(requiredScopesForRoute("POST", matcherFor("/api/mcp")), ["read"]);
   assert.deepEqual(requiredScopesForRoute("post", matcherFor("/api/mcp")), ["read"], "verb case");
-  assert.deepEqual(requiredScopesForRoute("POST", matcherFor("/api/assertions/evaluate")), ["read"]);
+  assert.deepEqual(requiredScopesForRoute("POST", matcherFor("/api/assertions/evaluate")), [
+    "read",
+  ]);
 
   // Unmapped POSTs keep the coarse rule…
   assert.deepEqual(
