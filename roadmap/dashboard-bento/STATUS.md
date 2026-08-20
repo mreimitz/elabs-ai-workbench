@@ -136,3 +136,30 @@ at 375 / 768 / 1400 px**.
   "trailing 24 h / 7 d / 30 d as of when you open it"; freezing the instants would make a shared link
   silently age. (The Testing tab makes the opposite choice deliberately — it offers a custom calendar
   range, so its window must be pinned.)
+
+## Phase 2 — Owner feedback 2026-08-20
+
+Raised after walking the live Overview: (1) the toolbar/tab **order is flipped** versus the app's
+written standard, and a timeline filter must serve Testing and Issues too; (2) the bento's
+cursor **spotlight** (brand-lime `color-mix`) is unwanted — elevation yes, coloured glow no;
+(3) **Overview and Scans should merge** — bring the measure tiles with their graphs across, make them
+look better, and put the two tables full-width at the bottom of the bento.
+
+- [ ] WP 2.1 — scan inventory tiles + both tables as bento tiles — spec [`WP-2.1-scan-tiles.md`](./WP-2.1-scan-tiles.md)
+- [ ] WP 2.2 — one page-level toolbar (correct order, shared timeline), Scans merged in, spotlight removed — spec [`WP-2.2-shell-restructure.md`](./WP-2.2-shell-restructure.md) · **depends on 2.1**
+
+### Decision log additions
+
+- **2026-08-20 · the Dashboard broke the toolbar standard and nobody caught it until the owner
+  looked.** `toolbar-standard-2026-07-11.md` fixes the order as **breadcrumb → ONE toolbar row →
+  content**, and every other view obeys it. The Dashboard instead puts the tab strip at page level
+  with a toolbar band *inside* each tab — a shape introduced by the pre-existing `TestingTab` and
+  then copied by the new `OverviewTab` rather than questioned. WP 2.2 hoists one toolbar above the
+  strip and deletes the per-tab bands.
+- **2026-08-20 · the scan tiles that duplicate Overview tiles are dropped, not moved.** Merging
+  Scans in wholesale would render "Total startup tokens" twice (already `StartupCostTile`) and
+  "Unscanned"/"Failed" twice (already `AttentionTile`, with actions). Servers/Resources/Prompts/Tools
+  collapse into one `InventoryTile`; "Largest single tool" keeps its own tile.
+- **2026-08-20 · the spotlight is removed, not made subtler.** It is upstream's opt-in
+  `BentoGrid spotlight` overlay tinted from `--primary`; the owner wants hover elevation without the
+  colour. Dropping the prop leaves `BentoGridItem`'s native hover lift intact.

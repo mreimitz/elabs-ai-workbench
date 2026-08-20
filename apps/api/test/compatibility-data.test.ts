@@ -47,11 +47,11 @@ test("cross-cutting-limits.json + test-catalog.json copies match the research so
   );
 });
 
-test("builder validates + merges the full roster (11 providers, 33 models, unique ids)", () => {
+test("builder validates + merges the full roster (11 providers, 55 models, unique ids)", () => {
   const all = buildAllModels(readProviderFiles());
   assert.equal(all.provider_count, 11);
-  assert.equal(all.model_count, 33);
-  assert.equal(new Set(all.models.map((m) => m.model_id)).size, 33);
+  assert.equal(all.model_count, 55);
+  assert.equal(new Set(all.models.map((m) => m.model_id)).size, 55);
 });
 
 // --- Loader ------------------------------------------------------------------------------------
@@ -75,8 +75,8 @@ test("model-id alias crosswalk resolves snapshot ids to the dataset id", () => {
 });
 
 test("dataset exposes the full roster + cross-cutting client limits", () => {
-  assert.equal(listModelIds().length, 33);
-  assert.equal(getAllModels().models.length, 33);
+  assert.equal(listModelIds().length, 55);
+  assert.equal(getAllModels().models.length, 55);
   const cross = getCrossCutting() as { clients?: { cursor?: { max_tools?: number } } };
   assert.equal(cross.clients?.cursor?.max_tools, 40);
 });

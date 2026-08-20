@@ -36,10 +36,8 @@ describe("parseControlsFromSearchParams", () => {
     expect(parseControlsFromSearchParams(params, NOW)).toEqual(defaultControls(NOW));
   });
 
-  test("reads every field when present", () => {
+  test("reads every facet when present", () => {
     const params = new URLSearchParams({
-      tFrom: "2026-07-01",
-      tTo: "2026-07-10",
       tGroupBy: "server",
       tProvider: "anthropic,openai",
       tServer: "srv-1,srv-2",
@@ -49,8 +47,10 @@ describe("parseControlsFromSearchParams", () => {
     });
     const controls = parseControlsFromSearchParams(params, NOW);
     expect(controls).toEqual({
-      from: "2026-07-01",
-      to: "2026-07-10",
+      // The window is NOT a URL facet any more (dashboard-bento WP 2.2) — it comes from the page
+      // range, and falls back to the trailing 7 days when the caller supplies none.
+      from: defaultControls(NOW).from,
+      to: defaultControls(NOW).to,
       groupBy: "server",
       providerKind: ["anthropic", "openai"],
       serverId: ["srv-1", "srv-2"],
@@ -60,11 +60,24 @@ describe("parseControlsFromSearchParams", () => {
     });
   });
 
-  test("a malformed date or an unknown groupBy falls back to the default field, not a throw", () => {
-    const params = new URLSearchParams({ tFrom: "not-a-date", tGroupBy: "bogus" });
-    const controls = parseControlsFromSearchParams(params, NOW);
-    expect(controls.from).toBe(defaultControls(NOW).from);
-    expect(controls.groupBy).toBe(DEFAULT_TESTING_GROUP_BY);
+  test("an unknown groupBy falls back to the default field, not a throw", () => {
+    const params = new URLSearchParams({ tGroupBy: "bogus" });
+    expect(parseControlsFromSearchParams(params, NOW).groupBy).toBe(DEFAULT_TESTING_GROUP_BY);
+  });
+
+  test("the page range (WP 2.2) is copied onto the controls verbatim — instants, not day bounds", () => {
+    const controls = parseControlsFromSearchParams(new URLSearchParams(), NOW, {
+      from: "2026-07-16T12:00:00.000Z",
+      to: "2026-07-17T12:00:00.000Z",
+    });
+    expect(controls.from).toBe("2026-07-16T12:00:00.000Z");
+    expect(controls.to).toBe("2026-07-17T12:00:00.000Z");
+    // …and a trailing-24h window still buckets hourly, exactly as the day-granular one used to.
+    expect(resolveBucket(controls)).toBe("hour");
+    expect(metricsWindow(controls)).toEqual({
+      from: "2026-07-16T12:00:00.000Z",
+      to: "2026-07-17T12:00:00.000Z",
+    });
   });
 
   test("de-duplicates and trims comma-joined list values", () => {
@@ -75,7 +88,7 @@ describe("parseControlsFromSearchParams", () => {
 });
 
 describe("writeControlsToSearchParams / parseControlsFromSearchParams — round trip", () => {
-  test("write → parse restores the exact control set (non-default groupBy + every filter dimension)", () => {
+  test("write → parse restores the exact facet set (non-default groupBy + every filter dimension)", () => {
     const controls: TestingDashboardControls = {
       from: "2026-07-01",
       to: "2026-07-10",
@@ -87,7 +100,11 @@ describe("writeControlsToSearchParams / parseControlsFromSearchParams — round 
       model: ["claude-sonnet-4"],
     };
     const written = writeControlsToSearchParams(new URLSearchParams(), controls);
-    const restored = parseControlsFromSearchParams(written, NOW);
+    // The window is supplied by the page range, not the URL — hand it back in to round-trip.
+    const restored = parseControlsFromSearchParams(written, NOW, {
+      from: controls.from,
+      to: controls.to,
+    });
     expect(restored).toEqual(controls);
   });
 
@@ -96,12 +113,18 @@ describe("writeControlsToSearchParams / parseControlsFromSearchParams — round 
     expect(written.has("tGroupBy")).toBe(false);
   });
 
-  test("does not mutate the input URLSearchParams", () => {
+  test("does not mutate the input URLSearchParams, and never writes the date window", () => {
     const original = new URLSearchParams({ tab: "testing" });
-    const written = writeControlsToSearchParams(original, defaultControls(NOW));
-    expect(original.has("tFrom")).toBe(false);
+    const written = writeControlsToSearchParams(original, {
+      ...defaultControls(NOW),
+      groupBy: "server",
+    });
+    expect(original.has("tGroupBy")).toBe(false);
     expect(written.get("tab")).toBe("testing"); // unrelated keys survive
-    expect(written.has("tFrom")).toBe(true);
+    expect(written.get("tGroupBy")).toBe("server");
+    // The window belongs to the page-level `?range=` param (dashboard-bento WP 2.2).
+    expect(written.has("tFrom")).toBe(false);
+    expect(written.has("tTo")).toBe(false);
   });
 });
 

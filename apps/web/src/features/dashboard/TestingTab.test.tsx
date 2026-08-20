@@ -14,6 +14,7 @@ import type {
   Test,
 } from "@mcp-token-footprint/shared";
 import { parseRunFilter } from "@mcp-token-footprint/shared";
+import { resolveDashboardRange } from "./dashboard-range";
 
 // Same class of jsdom/Vitest issue `ScansTab.test.tsx`/`RunConsole.test.tsx` already document: the
 // `@elabs-ai/components-charts` barrel pulls in a broken deep `@visx/gradient` subpath (via its Gantt chart) that
@@ -284,7 +285,14 @@ function LocationProbe() {
   );
 }
 
-function renderTab(initialEntries: string[] = ["/dashboard?tab=testing"]) {
+/** The page range the Dashboard host now supplies (dashboard-bento WP 2.2) — pinned so the fetch
+ *  window these tests assert against never drifts with the clock. */
+const RANGE = resolveDashboardRange(
+  { kind: "custom", from: "2026-07-11", to: "2026-07-17" },
+  new Date("2026-07-17T12:00:00.000Z"),
+);
+
+function renderTab(initialEntries: string[] = ["/dashboard?tab=testing"], range = RANGE) {
   // The panels' drill-down rows render `IconButton`s (D-TB5), which wrap every control in a Radix
   // `Tooltip` — that throws without an ancestor `TooltipProvider` (the app root mounts one; this
   // file's render doesn't get it automatically).
@@ -297,7 +305,7 @@ function renderTab(initialEntries: string[] = ["/dashboard?tab=testing"]) {
             element={
               <>
                 <LocationProbe />
-                <TestingTab />
+                <TestingTab range={range} />
               </>
             }
           />

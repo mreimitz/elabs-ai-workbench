@@ -11,8 +11,12 @@ import type { FootprintData, SectionEnvelope } from "../overview-contract";
  * here instead of passing silently. The negative control at the bottom mounts the stub directly to
  * prove it reflects props rather than ignoring them.
  *
- * `MetricCard` is the REAL `@elabs-ai/components-ui` component, so the delta polarity assertions run
- * against the component that actually paints the colour (`data-polarity="good" | "bad"`).
+ * `MetricCard` is the REAL `@elabs-ai/components-ui` component. Since WP 2.2 (Defect 5) the tile no
+ * longer hands it `delta`/`deltaDirection`/`positiveIsGood` — those paint an unfavourable delta RED,
+ * while this app reserves red for structural removal and colours a worsening magnitude AMBER
+ * (D-IC3, `lib/delta.ts`). The delta now renders through the shared `MetricDelta`, which reproduces
+ * `MetricCard`'s `data-polarity` + accessible-label contract verbatim — so every assertion below is
+ * unchanged, and the tone assertions are new.
  */
 
 vi.mock("@elabs-ai/components-charts", () => ({
@@ -121,6 +125,26 @@ describe("StartupCostTile — the figure and its delta", () => {
   test("a genuine zero says 'No change' rather than floating a bare 0", () => {
     renderTile(ready({ deltaTokens: 0 }));
     expect(screen.getByText("No change")).toBeInTheDocument();
+  });
+
+  // ── WP 2.2, Defect 5 — ONE delta tone on the merged bento ──────────────────────────────────────
+  test("a GROWING footprint is amber (the app's rule), never the destructive red", () => {
+    const { container } = renderTile(ready({ deltaTokens: 10_000 }));
+    const delta = container.querySelector("[data-polarity]");
+    expect(delta?.className).toContain("text-warning-text");
+    expect(delta?.className).not.toContain("text-destructive-text");
+  });
+
+  test("a SHRINKING footprint is the success tone", () => {
+    const { container } = renderTile(ready({ deltaTokens: -4_000 }));
+    expect(container.querySelector("[data-polarity]")?.className).toContain("text-success-text");
+  });
+
+  test("keeps MetricCard's accessible-label form so screen readers hear the same sentence", () => {
+    const { container } = renderTile(ready({ deltaTokens: 10_000 }));
+    expect(container.querySelector("[data-polarity]")?.getAttribute("aria-label")).toBe(
+      "up +10,000, unfavorable",
+    );
   });
 
   test("discloses first-time measurements as evidence under the figure", () => {

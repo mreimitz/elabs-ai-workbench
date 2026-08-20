@@ -5,6 +5,7 @@ import { ScrollArea, Skeleton } from "@elabs-ai/components-ui";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../components/InlineError";
 import { TabEmptyState } from "../../components/TabEmptyState";
+import type { DashboardRange } from "./dashboard-range";
 import { CostPanel } from "./testing/CostPanel";
 import { CustomChartsSection } from "./testing/CustomChartsSection";
 import {
@@ -36,22 +37,38 @@ import { useTestingCatalog, useTestingMetrics } from "./testing/use-testing-dash
 import { WaitingForYouCard } from "./testing/WaitingForYouCard";
 
 /**
- * TestingTab — the Dashboard's Testing tab (WP 2.2, fills the WP 2.1 shell). Prebuilt panels over
- * `/api/metrics/runs` (+ a scans strip from `/api/metrics/scans`), a global date-range/filter/
- * group-by control row (URL-persisted), and drill-down from every chart/legend/leaderboard row into
- * the runs feed with the equivalent `RunFilter` (`packages/shared/src/run-filter.ts`'s
- * `serializeRunFilter`).
+ * TestingTab — the Dashboard's Testing tab (observability WP 2.2, fills the WP 2.1 shell). Prebuilt
+ * panels over `/api/metrics/runs` (+ a scans strip from `/api/metrics/scans`), a facet/group-by
+ * control row (URL-persisted), and drill-down from every chart/legend/leaderboard row into the runs
+ * feed with the equivalent `RunFilter` (`packages/shared/src/run-filter.ts`'s `serializeRunFilter`).
  *
- * DATA FLOW: `useTestingCatalog` fetches servers/environments/suites/tests ONCE (filter-bar options
- * + leaderboard/expensive-run labels); `useTestingMetrics` re-fetches the whole metrics batch
- * whenever `controls` changes. Both hooks + all derivation live in `./testing/*` (React-free
- * derivation in `metrics-derive.ts`/`dashboard-url-state.ts`, presentational panels here).
+ * ── THE WINDOW COMES FROM THE PAGE (dashboard-bento WP 2.2) ──────────────────────────────────────
+ * This tab used to own its own date range — a `DateRangePicker` inside its own `bg-card` toolbar
+ * band, persisted as `?tFrom=`/`?tTo=`. Owner, 2026-08-20: *"If we introduce a new toolbar with
+ * filter on timeline this need to work for Testing and issues as well."* So the range now arrives as
+ * the `range` prop from `DashboardView`'s single page-level toolbar and is shared with the Overview
+ * and Issues tabs; the ISO instants are copied onto `controls` verbatim, which is why every panel,
+ * every drill-down href and the custom-chart composer keep working untouched.
+ *
+ * The band is gone with it. What remains is the FACET row — provider / server / environment / model
+ * / suite / group-by, genuinely this tab's own — rendered frame-light (no `bg-card`, no border, no
+ * gutter bleed) so it reads as this tab's content rather than a second chrome band under the page's
+ * one toolbar (`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB2).
+ *
+ * DATA FLOW: `useTestingCatalog` fetches servers/environments/suites/tests ONCE (facet options +
+ * leaderboard/expensive-run labels); `useTestingMetrics` re-fetches the whole metrics batch whenever
+ * `controls` changes — including when the page range changes. Both hooks + all derivation live in
+ * `./testing/*` (React-free derivation in `metrics-derive.ts`/`dashboard-url-state.ts`,
+ * presentational panels here).
  */
-export function TestingTab() {
+export function TestingTab({ range }: { range: DashboardRange }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const controls = useMemo(() => parseControlsFromSearchParams(searchParams), [searchParams]);
+  const controls = useMemo(
+    () => parseControlsFromSearchParams(searchParams, undefined, { from: range.from, to: range.to }),
+    [searchParams, range.from, range.to],
+  );
   const setControls = (next: TestingDashboardControls) => {
     setSearchParams((prev) => writeControlsToSearchParams(prev, next), { replace: true });
   };
@@ -125,13 +142,11 @@ export function TestingTab() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      {/* WP 2.1 (C-1) — the self-framed toolbar band `FilterControls`' own `ViewToolbar` renders
-          into. Dashboard tabs have no per-tab `PageShell headerVariant="toolbar"` (that slot is
-          owned by the page host, `DashboardView`, out of this WP's domain), so this band mirrors
-          PageShell's toolbar header treatment directly: `bg-card` + `border-b` + a full bleed back
-          to the page's own gutter (negate then reapply the SAME `px-4 min-[1200px]:px-8` PageShell
-          uses) so the row reads as the same lifted command-bar surface every other top row gets. */}
-      <div className="-mx-4 shrink-0 border-b border-border bg-card px-4 py-2 min-[1200px]:-mx-8 min-[1200px]:px-8">
+      {/* dashboard-bento WP 2.2 — the FACET row, frame-light. The `bg-card` + `border-b` +
+          gutter-bleed band this used to sit in was a second toolbar under the page's one toolbar,
+          which is the D-TB2 violation the owner reported; the page host (`DashboardView`) owns the
+          only command-bar surface now, and these controls are simply this tab's own content. */}
+      <div className="shrink-0">
         <FilterControls
           controls={controls}
           onChange={setControls}

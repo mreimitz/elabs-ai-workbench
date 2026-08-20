@@ -48,6 +48,7 @@ vi.mock("../../lib/api", async (importOriginal) => {
 });
 
 import { AssistantProvider } from "../assistant/assistant-context";
+import { resolveDashboardRange } from "../dashboard/dashboard-range";
 import { ALL_FLEET_FIXTURES, OPEN_FLEET_ISSUE, REGRESSED_FLEET_ISSUE, SPARSE_RESOLVED_FLEET_ISSUE } from "./issue-fixtures";
 import { IssuesFleetTab } from "./IssuesFleetTab";
 import type { Loadable } from "../../lib/loadable";
@@ -69,9 +70,20 @@ function LocationProbe() {
   return <div data-testid="location">{location.search}</div>;
 }
 
+/**
+ * The Dashboard's shared page range (dashboard-bento WP 2.2) — the Issues list is scoped by it now.
+ * The fixtures' `fleet.lastSeenAt` values all land in July 2026, so the default range for these
+ * tests is a pinned custom window wide enough to hold every one of them; the narrowing behaviour
+ * itself gets its own test below rather than silently colouring every other assertion.
+ */
+const WIDE_RANGE = resolveDashboardRange({ kind: "custom", from: "2026-06-01", to: "2026-07-31" });
+
 function renderTab(
   state: Loadable<FleetIssue[]> = { status: "data", data: ALL_FLEET_FIXTURES },
-  { initialEntries = ["/dashboard"] }: { initialEntries?: string[] } = {},
+  {
+    initialEntries = ["/dashboard"],
+    range = WIDE_RANGE,
+  }: { initialEntries?: string[]; range?: typeof WIDE_RANGE } = {},
 ) {
   const reloadIssues = vi.fn();
   render(
@@ -84,7 +96,7 @@ function renderTab(
               element={
                 <>
                   <LocationProbe />
-                  <IssuesFleetTab issuesState={state} reloadIssues={reloadIssues} />
+                  <IssuesFleetTab range={range} issuesState={state} reloadIssues={reloadIssues} />
                 </>
               }
             />

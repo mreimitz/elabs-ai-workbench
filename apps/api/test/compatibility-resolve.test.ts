@@ -23,14 +23,20 @@ const FIXTURES: Record<string, Record<string, Expect>> = {
       rationale: "Google Gemini's per-request cap is 512 tools;",
       evField: "tools_mcp.max_tools_hard",
       evValue: 512,
-      evConf: "high",
+      // 2026-08-19 dataset refresh: 512 is an OBSERVED API rejection (gemini-cli #19083), not
+      // published spec — re-graded tier 2 → 4, so the evidence confidence dropped to medium.
+      evConf: "medium",
     },
+    // 2026-08-19 dataset refresh: the 128 came from the Assistants API deep-dive — a per-Assistant
+    // cap on a surface retiring 2026-08-26, and the wrong surface for gpt-5.x. No current OpenAI
+    // page states a tools-array cap, so max_tools_hard is null and this test no longer fires;
+    // SERVER_TOOL_COUNT_PRACTICAL (~20-tool cliff) is what binds OpenAI now.
     "gpt-5.5": {
-      severity: "blocker",
-      rationale: "OpenAI (GPT)'s per-request cap is 128 tools;",
+      severity: "na",
+      rationale: "OpenAI (GPT) has no fixed per-request tool-count cap,",
       evField: "tools_mcp.max_tools_hard",
-      evValue: 128,
-      evConf: "high",
+      evValue: null,
+      evConf: "low",
     },
     "claude-opus-4-8": {
       severity: "na",
@@ -144,12 +150,12 @@ test("resolver reproduces the Python reference demo (severity + rationale + evid
 
 // --- Catalog QA: full catalog × full roster resolves without crashing -----------------------------
 
-test("every test resolves a valid severity for every model (39 × 33, no crash)", () => {
+test("every test resolves a valid severity for every model (39 × 55, no crash)", () => {
   const catalog = getCatalog();
   const models = listModelIds();
   const allowed = new Set<CompatibilitySeverity | "na">(["blocker", "high", "medium", "low", "na"]);
   assert.equal(catalog.tests.length, 39);
-  assert.equal(models.length, 33);
+  assert.equal(models.length, 55);
   let resolved = 0;
   for (const t of catalog.tests) {
     for (const modelId of models) {
@@ -160,7 +166,7 @@ test("every test resolves a valid severity for every model (39 × 33, no crash)"
       resolved++;
     }
   }
-  assert.equal(resolved, 39 * 33);
+  assert.equal(resolved, 39 * 55);
 });
 
 test("models with no documented context window resolve window tests to na (is_scorable gate)", () => {

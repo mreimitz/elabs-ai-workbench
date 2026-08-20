@@ -8,7 +8,16 @@ import { serializeRunFilter } from "@mcp-token-footprint/shared";
  * call and reads/writes through these helpers.
  *
  * Keys are namespaced (`t*`) so they coexist with the Dashboard host's own `?tab=` param
- * (`DashboardView.tsx`) and any future Scans-tab URL state without collision.
+ * (`DashboardView.tsx`) and the shared `?range=` without collision.
+ *
+ * ── THE DATE WINDOW IS NO LONGER THIS MODULE'S (dashboard-bento WP 2.2) ──────────────────────────
+ * `from`/`to` used to be persisted here as `?tFrom=`/`?tTo=`, driven by a `DateRangePicker` inside
+ * the Testing tab's own toolbar band. The Dashboard now has ONE page-level range shared by Overview,
+ * Testing and Issues (`features/dashboard/dashboard-range.ts`), so those two keys are gone from this
+ * module: the window arrives as an argument and is copied onto the controls, and only the FACETS
+ * (provider / server / environment / suite / model / group-by) round-trip through the URL here.
+ * Legacy `?tFrom=`/`?tTo=` links still resolve — `dashboard-range.ts` reads them as a pinned custom
+ * range, which is exactly what they always meant.
  */
 
 /** The WP 2.2 spec's group-by control — a narrow, UI-facing subset of the full
@@ -28,8 +37,13 @@ export const DEFAULT_TESTING_GROUP_BY: TestingGroupBy = "model";
 const DEFAULT_WINDOW_DAYS = 7;
 
 export type TestingDashboardControls = {
-  /** Inclusive ISO date-only (`YYYY-MM-DD`) lower/upper bound — always resolved (never unbounded);
-   *  the default window is the trailing {@link DEFAULT_WINDOW_DAYS} days ending today. */
+  /**
+   * The page's shared window, inclusive. Supplied by the caller (`TestingTab`, from
+   * `dashboard-range.ts`) as ISO-8601 **instants** — never parsed out of the URL here any more.
+   *
+   * A legacy date-only `YYYY-MM-DD` value is still accepted and expands to inclusive UTC day bounds
+   * (see {@link metricsWindow}), which is what every panel test and every pre-WP-2.2 caller passes.
+   */
   from: string;
   to: string;
   groupBy: TestingGroupBy;
@@ -67,8 +81,6 @@ export function defaultControls(now: Date = new Date()): TestingDashboardControl
 }
 
 const KEYS = {
-  from: "tFrom",
-  to: "tTo",
   groupBy: "tGroupBy",
   providerKind: "tProvider",
   serverId: "tServer",
@@ -93,20 +105,25 @@ function isTestingGroupBy(value: string): value is TestingGroupBy {
   return (TESTING_GROUP_BY_OPTIONS as readonly string[]).includes(value);
 }
 
-/** Parse the dashboard's URL-persisted controls, falling back to {@link defaultControls} field by
- *  field (an absent/malformed value never throws — it just falls back). */
+/**
+ * Parse the dashboard's URL-persisted FACETS, falling back to {@link defaultControls} field by field
+ * (an absent/malformed value never throws — it just falls back).
+ *
+ * `range` is the page's shared window (WP 2.2). It is not read from `params` because it does not
+ * live in this module's keys any more; omit it and the controls fall back to the trailing
+ * {@link DEFAULT_WINDOW_DAYS}-day default, which is what the pure unit tests exercise.
+ */
 export function parseControlsFromSearchParams(
   params: URLSearchParams,
   now: Date = new Date(),
+  range?: { from: string; to: string },
 ): TestingDashboardControls {
   const fallback = defaultControls(now);
-  const from = params.get(KEYS.from);
-  const to = params.get(KEYS.to);
   const groupByRaw = params.get(KEYS.groupBy);
   const suiteId = params.get(KEYS.suiteId);
   return {
-    from: from && isValidIsoDateOnly(from) ? from : fallback.from,
-    to: to && isValidIsoDateOnly(to) ? to : fallback.to,
+    from: range?.from ?? fallback.from,
+    to: range?.to ?? fallback.to,
     groupBy: groupByRaw && isTestingGroupBy(groupByRaw) ? groupByRaw : fallback.groupBy,
     providerKind: parseList(params.get(KEYS.providerKind)) as ProviderKind[],
     serverId: parseList(params.get(KEYS.serverId)),
@@ -123,16 +140,15 @@ function setOrDelete(params: URLSearchParams, key: string, value: string | undef
 
 /**
  * Write `controls` onto `params` (a COPY — the input is never mutated), omitting a field that's
- * empty/default so the common case stays a clean URL. `from`/`to` are always written once resolved
- * (they "lock in" the window into a shareable link rather than silently drifting with "today").
+ * empty/default so the common case stays a clean URL. The date window is deliberately NOT written:
+ * it belongs to the page-level `?range=` param (`dashboard-range.ts`), which is the single place the
+ * Dashboard's window is persisted.
  */
 export function writeControlsToSearchParams(
   params: URLSearchParams,
   controls: TestingDashboardControls,
 ): URLSearchParams {
   const next = new URLSearchParams(params);
-  setOrDelete(next, KEYS.from, controls.from);
-  setOrDelete(next, KEYS.to, controls.to);
   setOrDelete(
     next,
     KEYS.groupBy,
@@ -167,18 +183,35 @@ export function baseRunFilter(controls: TestingDashboardControls): RunFilter {
   return filter;
 }
 
-/** The metrics window as inclusive ISO-8601 instants (`from` = start of day, `to` = end of day). */
+/**
+ * The metrics window as inclusive ISO-8601 instants.
+ *
+ * An instant passes straight through — that is what the shared page range supplies, and re-deriving
+ * day bounds from it would widen a "last 24 hours" window to two whole days, so the Overview's pass
+ * rate and this tab's KPI row would be measuring different spans under one label.
+ *
+ * A legacy date-only `YYYY-MM-DD` bound (a pre-WP-2.2 caller, or a unit test) expands to inclusive
+ * UTC day bounds, exactly as this function always did.
+ */
 export function metricsWindow(controls: TestingDashboardControls): { from: string; to: string } {
   return {
-    from: `${controls.from}T00:00:00.000Z`,
-    to: `${controls.to}T23:59:59.999Z`,
+    from: isValidIsoDateOnly(controls.from) ? `${controls.from}T00:00:00.000Z` : controls.from,
+    to: isValidIsoDateOnly(controls.to) ? `${controls.to}T23:59:59.999Z` : controls.to,
   };
 }
 
-/** Whole days spanned by the window (inclusive of both ends — a same-day window is 1 day). */
+/**
+ * Whole days spanned by the window (inclusive of both ends — a same-day window is 1 day).
+ *
+ * Measured off {@link metricsWindow}'s resolved instants so it means the same thing for a shared
+ * range and for a legacy date-only pair: a `2026-07-17`..`2026-07-17` day spans 86,399,999 ms, which
+ * rounds to 1, and a trailing-24h instant window spans exactly 86,400,000 ms, which also rounds to 1.
+ */
 function windowDays(controls: TestingDashboardControls): number {
-  const ms = Date.parse(`${controls.to}T00:00:00.000Z`) - Date.parse(`${controls.from}T00:00:00.000Z`);
-  return Math.max(1, Math.round(ms / 86_400_000) + 1);
+  const bounds = metricsWindow(controls);
+  const ms = Date.parse(bounds.to) - Date.parse(bounds.from);
+  if (!Number.isFinite(ms)) return 1;
+  return Math.max(1, Math.round(ms / 86_400_000));
 }
 
 /** Pick a sensible bucket granularity for the window span: hourly for a ≤2-day window (the "24h"

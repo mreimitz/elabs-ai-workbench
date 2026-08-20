@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Database } from "lucide-react";
 import { Sparkline } from "@elabs-ai/components-charts";
 import { BentoGridItem, MetricCard, StatePanel } from "@elabs-ai/components-ui";
+import { MetricDelta } from "../../../../components/MetricDelta";
 import { formatNumber, formatRelativeTime } from "../../../../lib/format";
 import type { FootprintData, SectionEnvelope } from "../overview-contract";
 import { isEmptySection } from "../overview-contract";
@@ -18,8 +19,13 @@ import { isEmptySection } from "../overview-contract";
  *
  * Three things this tile is deliberate about:
  *
- * 1. **Growth is the regression.** Startup tokens are context every request pays for, so
- *    `positiveIsGood={false}` — a bigger footprint must never render in the success colour.
+ * 1. **Growth is the regression.** Startup tokens are context every request pays for, so the delta
+ *    is rendered with `higherIsBetter={false}` — a bigger footprint must never read as a win.
+ *    WP 2.2 (Defect 5): it goes through `MetricDelta`/`lib/delta.ts`, NOT `MetricCard`'s own
+ *    `delta`/`positiveIsGood` props, because those paint an unfavourable delta **red** while this
+ *    app reserves red for structural removal and colours a worsening magnitude **amber** (D-IC3).
+ *    `InventoryTile` (WP 2.1) already obeys that rule and now sits on the same bento, so both had to
+ *    land on one tone vocabulary; the app's own rule wins.
  * 2. **A missing figure is not a zero.** `deltaTokens === null` means nothing was comparable, so the
  *    tile renders NO delta rather than a "+0" that reads as "nothing moved".
  * 3. **The sparkline is normalised; the LABEL keeps the real figures.** `Sparkline` is
@@ -116,17 +122,20 @@ export function StartupCostTile({ section }: { section: SectionEnvelope<Footprin
         loading={section.state === "loading"}
         icon={<Database aria-hidden />}
         label="Startup tokens"
-        value={data ? formatNumber(data.totalTokens) : "n/a"}
+        // The delta rides INSIDE `value` so it keeps `MetricCard`'s own baseline-aligned position
+        // beside the figure while this tile owns its colour (see the module doc). `text-meta` on the
+        // delta resets the size/weight the KPI type rung sets on this wrapper.
+        value={
+          <span className="flex items-baseline gap-2">
+            <span>{data ? formatNumber(data.totalTokens) : "n/a"}</span>
+            <MetricDelta
+              delta={delta}
+              higherIsBetter={false}
+              format={(value) => `${value > 0 ? "+" : ""}${formatNumber(value)}`}
+            />
+          </span>
+        }
         description="Tools + resources + prompts, latest scans"
-        {...(delta !== null
-          ? {
-              delta: delta === 0 ? "No change" : `${delta > 0 ? "+" : ""}${formatNumber(delta)}`,
-              deltaDirection:
-                delta > 0 ? ("up" as const) : delta < 0 ? ("down" as const) : ("neutral" as const),
-              // Growth in startup context is a REGRESSION, never a win.
-              positiveIsGood: false,
-            }
-          : {})}
         {...(notes.length > 0
           ? {
               evidence: notes.map((note) => (

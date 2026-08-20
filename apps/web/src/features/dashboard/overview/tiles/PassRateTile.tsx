@@ -1,6 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { Sparkline } from "@elabs-ai/components-charts";
 import { BentoGridItem, MetricCard, StatePanel } from "@elabs-ai/components-ui";
+import { MetricDelta } from "../../../../components/MetricDelta";
 import { formatNumber, formatPercent } from "../../../../lib/format";
 import type { RunHealthData, SectionEnvelope } from "../overview-contract";
 import { isEmptySection } from "../overview-contract";
@@ -10,9 +11,15 @@ import { isEmptySection } from "../overview-contract";
  * percentage POINTS, and the run cadence behind it.
  *
  * **The polarity is the opposite of every other tile on this bento.** For tokens and spend, growth
- * is the regression; for a pass rate a RISE is the win, so this tile passes
- * `positiveIsGood` **true**. Getting that backwards paints an improving fleet in the failure colour,
+ * is the regression; for a pass rate a RISE is the win, so this tile's delta is rendered with
+ * `higherIsBetter` **true**. Getting that backwards paints an improving fleet in the failure colour,
  * which is why it is asserted directly in the tests.
+ *
+ * WP 2.2 (Defect 5): the delta goes through `MetricDelta`/`lib/delta.ts`, not `MetricCard`'s own
+ * `delta`/`positiveIsGood` props — those paint an unfavourable delta **red**, while this app reserves
+ * red for structural removal and colours a worsening magnitude **amber** (D-IC3). `InventoryTile`
+ * (WP 2.1) already obeys that rule and now shares this bento, so the page lands on one tone
+ * vocabulary: amber = worse, green = better, muted = neutral.
  *
  * Two honesty constraints:
  *
@@ -58,7 +65,20 @@ export function PassRateTile({ section }: { section: SectionEnvelope<RunHealthDa
         loading={section.state === "loading"}
         icon={<CheckCircle2 aria-hidden />}
         label="Pass rate"
-        value={rate !== null ? formatPercent(rate) : "n/a"}
+        // The delta rides INSIDE `value` so it keeps `MetricCard`'s own baseline-aligned position
+        // beside the figure while this tile owns its colour (see the module doc).
+        value={
+          <span className="flex items-baseline gap-2">
+            <span>{rate !== null ? formatPercent(rate) : "n/a"}</span>
+            <MetricDelta
+              delta={deltaPoints}
+              higherIsBetter
+              // Percentage POINTS (the contract's own unit), labelled so it can never be misread as
+              // a relative percentage change.
+              format={(value) => `${value > 0 ? "+" : "-"}${Math.abs(value).toFixed(1)} pts`}
+            />
+          </span>
+        }
         description={
           data
             ? rate !== null
@@ -66,22 +86,6 @@ export function PassRateTile({ section }: { section: SectionEnvelope<RunHealthDa
               : `${formatNumber(data.runCount)} runs, none terminal yet`
             : "No runs in this window"
         }
-        {...(deltaPoints !== null
-          ? {
-              delta:
-                deltaPoints === 0
-                  ? "No change"
-                  : `${deltaPoints > 0 ? "+" : "-"}${Math.abs(deltaPoints).toFixed(1)} pts`,
-              deltaDirection:
-                deltaPoints > 0
-                  ? ("up" as const)
-                  : deltaPoints < 0
-                    ? ("down" as const)
-                    : ("neutral" as const),
-              // A RISING pass rate is the win — the one tile on this bento where up is good.
-              positiveIsGood: true,
-            }
-          : {})}
         {...(series.length >= 2
           ? {
               visual: (

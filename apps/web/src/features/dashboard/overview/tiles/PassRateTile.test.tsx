@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { RunHealthData, SectionEnvelope } from "../overview-contract";
 
@@ -6,12 +6,16 @@ import type { RunHealthData, SectionEnvelope } from "../overview-contract";
  * dashboard-bento WP 1.2 — `PassRateTile`.
  *
  * Same faithful `Sparkline` stub as `StartupCostTile.test.tsx` (the charts barrel is jsdom-hostile,
- * and an inert mock would let a wrong series pass), with `MetricCard` left REAL so the polarity
- * assertions run against the component that paints the colour.
+ * and an inert mock would let a wrong series pass), with `MetricCard` left REAL.
  *
  * The headline assertion of this file is the POLARITY: this is the one tile on the bento where a
- * rising number is the win. `positiveIsGood` backwards here would paint an improving fleet in the
- * failure colour, which is precisely the class of defect the plan calls out.
+ * rising number is the win. Backwards here would paint an improving fleet in the failure colour,
+ * which is precisely the class of defect the plan calls out.
+ *
+ * Since WP 2.2 (Defect 5) the delta renders through the shared `MetricDelta`/`lib/delta.ts` rather
+ * than `MetricCard`'s own `delta`/`positiveIsGood` props, so the merged bento carries ONE tone
+ * vocabulary (amber = worse, never the destructive red). `MetricDelta` reproduces `MetricCard`'s
+ * `data-polarity` + accessible-label contract verbatim, so every pre-existing assertion still holds.
  */
 
 vi.mock("@elabs-ai/components-charts", () => ({
@@ -98,6 +102,27 @@ describe("PassRateTile — polarity (the opposite of every other tile here)", ()
   test("the Δ is stated in percentage POINTS, so it cannot be misread as a relative change", () => {
     renderTile(ready({ passRateDeltaPoints: 3.2 }));
     expect(screen.getByText(/pts/)).toBeInTheDocument();
+  });
+
+  test("a RISING pass rate is the success tone; a FALLING one is amber, never destructive red", () => {
+    // WP 2.2, Defect 5 — the tile renders its delta through `MetricDelta`/`lib/delta.ts` (D-IC3),
+    // not `MetricCard`'s own `positiveIsGood` colouring, so the whole merged bento shares one tone
+    // vocabulary: amber = worse, green = better, muted = neutral.
+    const rising = renderTile(ready({ passRateDeltaPoints: 3.2 })).container;
+    expect(rising.querySelector("[data-polarity]")?.className).toContain("text-success-text");
+    cleanup();
+    const falling = renderTile(ready({ passRateDeltaPoints: -1.4 })).container;
+    expect(falling.querySelector("[data-polarity]")?.className).toContain("text-warning-text");
+    expect(falling.querySelector("[data-polarity]")?.className).not.toContain(
+      "text-destructive-text",
+    );
+  });
+
+  test("keeps MetricCard's accessible-label form so screen readers hear the same sentence", () => {
+    const { container } = renderTile(ready({ passRateDeltaPoints: 3.2 }));
+    expect(container.querySelector("[data-polarity]")?.getAttribute("aria-label")).toBe(
+      "up +3.2 pts, favorable",
+    );
   });
 
   test("a NULL delta renders no delta node", () => {

@@ -1,5 +1,3 @@
-import type { DateRange, DateRangePreset } from "@elabs-ai/components-ui";
-import { DateRangePicker } from "@elabs-ai/components-ui";
 import { FacetFilter, type FacetOption } from "@elabs-ai/components-data";
 import type { RatingIssueLifecycle } from "@mcp-token-footprint/shared";
 import { RATING_ISSUE_LIFECYCLES } from "@mcp-token-footprint/shared";
@@ -10,35 +8,20 @@ const LIFECYCLE_OPTIONS: FacetOption[] = RATING_ISSUE_LIFECYCLES.map((l) => ({
   label: l.charAt(0).toUpperCase() + l.slice(1),
 }));
 
-const DATE_PRESETS: DateRangePreset[] = [
-  { label: "Last 7 days", getRange: () => ({ from: daysAgo(6), to: new Date() }) },
-  { label: "Last 30 days", getRange: () => ({ from: daysAgo(29), to: new Date() }) },
-  { label: "Last 90 days", getRange: () => ({ from: daysAgo(89), to: new Date() }) },
-];
-
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - n);
-  return d;
-}
-
-function isoDateOnlyLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 /**
- * The triage list's filter row (WP5.3 spec §Design: "Filters: lifecycle, entity, date") — the SAME
- * control vocabulary as the Testing dashboard's `FilterControls` recipe (`FacetFilter` per
- * dimension + a `DateRangePicker`, all label-in-control — D-4), at a much smaller scale (three
- * controls, not the Testing tab's full control bar). This component renders only the controls; the
- * caller (`IssuesFleetTab`) is the one that wraps them in the shared one-row `ViewToolbar` band
- * (WP 2.1 — previously that wrap didn't exist, so despite matching vocabulary the two tabs read as
- * different row shapes: Issues split chips + search across two `p-4` rows). A pure controlled view:
- * `filters`/`onChange` round-trip through the caller, same as `FilterControls`.
+ * The triage list's facet row (WP5.3 spec §Design: "Filters: lifecycle, entity, date") — the SAME
+ * control vocabulary as the Testing tab's `FilterControls` recipe (`FacetFilter` per dimension, all
+ * label-in-control — D-4), at a much smaller scale. This component renders only the controls; the
+ * caller (`IssuesFleetTab`) lays them out in the shared one-row `ViewToolbar`. A pure controlled
+ * view: `filters`/`onChange` round-trip through the caller, same as `FilterControls`.
+ *
+ * ── THE DATE FILTER MOVED OUT (dashboard-bento WP 2.2, Defect 2) ─────────────────────────────────
+ * "date" used to be a third control here — a `DateRangePicker` writing `lastSeenFrom`/`lastSeenTo`,
+ * unpersisted and independent of every other window on the page. Owner, 2026-08-20: *"If we
+ * introduce a new toolbar with filter on timeline this need to work for Testing and issues as
+ * well."* Those two bounds are now supplied by the Dashboard's ONE page-level range
+ * (`features/dashboard/dashboard-range.ts`), which `IssuesFleetTab` folds into the filter it
+ * evaluates — so this row keeps only the facets that are genuinely the issue list's own.
  */
 export function IssueFilters({
   filters,
@@ -49,14 +32,6 @@ export function IssueFilters({
   onChange: (next: IssueTriageFilters) => void;
   entityOptions: FacetOption[];
 }) {
-  const dateValue: DateRange | undefined =
-    filters.lastSeenFrom || filters.lastSeenTo
-      ? {
-          from: filters.lastSeenFrom ? new Date(filters.lastSeenFrom) : undefined,
-          to: filters.lastSeenTo ? new Date(filters.lastSeenTo) : undefined,
-        }
-      : undefined;
-
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       <FacetFilter
@@ -72,18 +47,6 @@ export function IssueFilters({
         options={entityOptions}
         selected={filters.entity}
         onSelectedChange={(values) => onChange({ ...filters, entity: values })}
-      />
-      <DateRangePicker
-        value={dateValue}
-        onValueChange={(range) =>
-          onChange({
-            ...filters,
-            lastSeenFrom: range?.from ? isoDateOnlyLocal(range.from) : undefined,
-            lastSeenTo: range?.to ? isoDateOnlyLocal(range.to) : range?.from ? isoDateOnlyLocal(range.from) : undefined,
-          })
-        }
-        presets={DATE_PRESETS}
-        placeholder="Last seen"
       />
     </div>
   );

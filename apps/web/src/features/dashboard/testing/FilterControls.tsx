@@ -1,6 +1,4 @@
-import type { DateRange, DateRangePreset } from "@elabs-ai/components-ui";
 import {
-  DateRangePicker,
   Select,
   SelectContent,
   SelectItem,
@@ -36,52 +34,24 @@ const GROUP_BY_SELECT_OPTIONS = TESTING_GROUP_BY_OPTIONS.map((g) => ({
   label: GROUP_BY_LABELS[g],
 }));
 
-const DATE_PRESETS: DateRangePreset[] = [
-  { label: "Last 24 hours", getRange: () => ({ from: hoursAgo(24), to: new Date() }) },
-  { label: "Last 7 days", getRange: () => ({ from: daysAgo(6), to: new Date() }) },
-  { label: "Last 30 days", getRange: () => ({ from: daysAgo(29), to: new Date() }) },
-];
-
-function daysAgo(n: number): Date {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - n);
-  return d;
-}
-
-function hoursAgo(n: number): Date {
-  const d = new Date();
-  d.setHours(d.getHours() - n, 0, 0, 0);
-  return d;
-}
-
-/**
- * LOCAL calendar-date (not UTC) `YYYY-MM-DD` — the picker operates on the days the user actually
- * clicks in their own timezone, so parsing/serializing here stays self-consistent (what you click is
- * what you get back). The backend's bucket FLOORS are UTC (D-OB14, deterministic day/week
- * boundaries) — a control's day boundary being locale-local rather than UTC-aligned is a known,
- * minor, and acceptable friction for a single-timezone local dev tool (never a correctness issue for
- * the figures themselves, only which exact hour the window starts/ends at a boundary day).
- */
-function isoDateOnlyLocal(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
 export type CatalogOption = { id: string; name: string };
 
 /**
- * FilterControls — the Testing dashboard's global controls row (WP 2.2 spec §Design; WP 2.1
- * toolbar-reach fix for C-1/C-5/D-4): a date-range preset picker (24h/7d/30d/custom —
- * `DateRangePicker`'s own calendar covers "custom", no separate mode toggle needed), a RunFilter
- * subset bar (`FacetFilter` per dimension, the same multi-select component `RunsView.tsx`'s toolbar
- * already uses), a suite single-select, and the group-by select — all rendered through the shared
- * `ViewToolbar` (D-TB6/D-TB7), which owns the row's height/gap/wrap so this stays the SAME control
- * vocabulary + row shape the Issues tab's `IssueFilters` uses (D-4). Every change round-trips
- * through `controls`/`onChange` — the URL persistence lives in the caller (`TestingTab`), not here
- * (this component is a pure controlled view).
+ * FilterControls — the Testing tab's FACET row: a `RunFilter` subset bar (`FacetFilter` per
+ * dimension, the same multi-select component `RunsView.tsx`'s toolbar already uses), a suite
+ * single-select and the group-by select, rendered through the shared `ViewToolbar` (D-TB6/D-TB7),
+ * which owns the row's height/gap/wrap so this keeps the SAME control vocabulary + row shape the
+ * Issues tab's `IssueFilters` uses (D-4). Every change round-trips through `controls`/`onChange` —
+ * the URL persistence lives in the caller (`TestingTab`), not here (a pure controlled view).
+ *
+ * ── THE DATE RANGE MOVED OUT (dashboard-bento WP 2.2, Defect 2) ──────────────────────────────────
+ * This row used to lead with its own `DateRangePicker`, inside a `bg-card` band pinned below the tab
+ * strip. The Dashboard now carries ONE range control in ONE page-level toolbar ABOVE the strip
+ * (`DashboardView` → `DashboardRangeControl`), scoping Overview, Testing and Issues alike — the
+ * owner's 2026-08-20 note that a timeline filter "need to work for Testing and issues as well".
+ * That picker (presets + calendar) is the one that survived; this row keeps only the facets that are
+ * genuinely Testing's own, and the caller renders it frame-light so it reads as tab content rather
+ * than a second chrome band.
  *
  * C-1 fix: `Suite`/`Group by` used to be `SelectField` (a label-ABOVE stack) — dropped into an
  * `items-center` row that floated their triggers ~9px below every sibling control (three heights,
@@ -113,26 +83,10 @@ export function FilterControls({
   const envOptions: FacetOption[] = environments.map((s) => ({ value: s.id, label: s.name }));
   const modelOptions: FacetOption[] = models.map((m) => ({ value: m, label: m }));
 
-  const dateValue: DateRange = { from: new Date(`${controls.from}T00:00:00`), to: new Date(`${controls.to}T00:00:00`) };
-
   return (
     <ViewToolbar
       left={
         <>
-          <DateRangePicker
-            value={dateValue}
-            onValueChange={(range) => {
-              if (!range?.from) return;
-              onChange({
-                ...controls,
-                from: isoDateOnlyLocal(range.from),
-                to: isoDateOnlyLocal(range.to ?? range.from),
-              });
-            }}
-            presets={DATE_PRESETS}
-            numberOfMonths={2}
-            placeholder="Date range"
-          />
           <FacetFilter
             title="Provider"
             options={PROVIDER_OPTIONS}

@@ -128,8 +128,17 @@ export type OverviewData = {
   advisor: SectionEnvelope<AdvisorTeaserData>;
 };
 
-/** The window the whole tab is scoped to. Mirrors the Testing tab's control vocabulary. */
-export type OverviewRange = { from: string; to: string; preset: "24h" | "7d" | "30d" };
+/**
+ * The window the whole tab is scoped to.
+ *
+ * As of dashboard-bento WP 2.2 this is no longer the Overview's own window: it is the PAGE range
+ * (`features/dashboard/dashboard-range.ts`), shared with the Testing and Issues tabs, and handed
+ * down by `DashboardView`. `preset` therefore also admits `"custom"` — the shared control offers a
+ * pinned calendar range alongside the three trailing presets. Only `resolveOverviewBucket` reads
+ * `preset` at all (a `24h` preset must bucket hourly even though its span rounds to one day); a
+ * `"custom"` range simply falls through to the span-based rule, which is the right answer for it.
+ */
+export type OverviewRange = { from: string; to: string; preset: "24h" | "7d" | "30d" | "custom" };
 
 /** A section that has settled with nothing to show — the tile must self-hide, not render an empty box. */
 export function isEmptySection<T>(section: SectionEnvelope<T>): boolean {

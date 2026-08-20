@@ -17,6 +17,7 @@ import { TabEmptyState } from "../../components/TabEmptyState";
 import { ViewToolbar } from "../../components/ViewToolbar";
 import { listServers, listSkills } from "../../lib/api";
 import { type Loadable, loadableData, useLoadable } from "../../lib/loadable";
+import type { DashboardRange } from "../dashboard/dashboard-range";
 import { IssueDetail } from "./IssueDetail";
 import { IssueFilters } from "./IssueFilters";
 import { IssueTriageTable } from "./IssueTriageTable";
@@ -56,15 +57,36 @@ const ISSUE_PARAM = "issue";
  * opened (mirrors `ServersView`'s `useRatingIssues` page-level fetch). This component owns its own
  * catalog fetch (servers/skills, for the "Affected" chip labels) and the selection/filter UI state.
  *
- * D-4 (WP 2.1 toolbar-reach): the filter row is now ONE `ViewToolbar` band — `IssueFilters` +
- * search in `left`, the row count in `results` — self-framed with the same `bg-card`/`border-b`/
- * gutter-bleed treatment `TestingTab.tsx` wraps `FilterControls` in, so the Testing and Issues tabs
- * share one filter-row shape (previously this split chips + search across two `p-4` rows).
+ * D-4 (WP 2.1 toolbar-reach): the filter row is ONE `ViewToolbar` — `IssueFilters` + search in
+ * `left`, the row count in `results` — so the Testing and Issues tabs share one filter-row shape.
+ *
+ * ── THE PAGE RANGE SCOPES THIS LIST (dashboard-bento WP 2.2, Defect 2) ───────────────────────────
+ * Owner, 2026-08-20: *"If we introduce a new toolbar with filter on timeline this need to work for
+ * Testing and issues as well."* So `range` — the Dashboard's ONE window, shared with the Overview
+ * and Testing tabs — is folded into the filter as `lastSeenFrom`/`lastSeenTo`, the two bounds this
+ * list already understood (they used to come from a `DateRangePicker` inside `IssueFilters`, private
+ * to this tab and persisted nowhere).
+ *
+ * Two consequences, both deliberate:
+ *   • The default view is now the trailing 7 days rather than all history. The `ResultCount` states
+ *     "N of M issues" whenever the window (or a facet) is narrowing the list, so a shrunken list can
+ *     never look like the whole fleet — and widening it is one control away, in the page toolbar.
+ *   • The bounds are ISO-8601 INSTANTS, not `YYYY-MM-DD`. `filterFleetIssues` compares them
+ *     lexically against `fleet.lastSeenAt` (itself an ISO instant), so a date-only upper bound
+ *     silently excluded the whole of its own final day — every `2026-07-10T…` sorts after
+ *     `"2026-07-10"`. Instants make the inclusive bound actually inclusive.
+ *
+ * The `bg-card`/`border-b`/gutter-bleed band this row used to sit in is gone with the same change:
+ * the page host (`DashboardView`) owns the one command-bar surface now, and these controls are this
+ * tab's own content (`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`, D-TB2).
  */
 export function IssuesFleetTab({
+  range,
   issuesState,
   reloadIssues,
 }: {
+  /** The Dashboard's shared window — scopes the list by `fleet.lastSeenAt`. */
+  range: DashboardRange;
   issuesState: Loadable<FleetIssue[]>;
   reloadIssues: () => void;
 }) {
@@ -108,12 +130,19 @@ export function IssuesFleetTab({
     [issues, entityNames],
   );
 
+  // The page range is ANDed onto the tab's own facets — one filter object, so the count badge, the
+  // table and the (unfiltered) deep-link resolution below can never disagree about what is in scope.
+  const scopedFilters = useMemo(
+    () => ({ ...filters, lastSeenFrom: range.from, lastSeenTo: range.to }),
+    [filters, range.from, range.to],
+  );
+
   const visible = useMemo(
     () =>
       sortFleetIssues(
-        filterFleetIssues(issues, filters).filter((issue) => matchesIssueQuery(issue, search)),
+        filterFleetIssues(issues, scopedFilters).filter((issue) => matchesIssueQuery(issue, search)),
       ),
-    [issues, filters, search],
+    [issues, scopedFilters, search],
   );
 
   const selected = issues.find((issue) => issue.id === selectedId) ?? null;
@@ -151,11 +180,10 @@ export function IssuesFleetTab({
 
   return (
     <div className="flex flex-col">
-      {/* WP 2.1 (D-4) — ONE filter-row band, self-framed exactly like `TestingTab.tsx` wraps
-          `FilterControls`: `bg-card` + `border-b` + a full bleed back to the page's own gutter
-          (negate then reapply the SAME `px-4 min-[1200px]:px-8` PageShell uses), so the Testing and
-          Issues tabs measure as the same row shape. */}
-      <div className="-mx-4 shrink-0 border-b border-border bg-card px-4 py-2 min-[1200px]:-mx-8 min-[1200px]:px-8">
+      {/* dashboard-bento WP 2.2 — the FACET row, frame-light (the `bg-card` + `border-b` +
+          gutter-bleed band it used to sit in was a second toolbar under the page's one toolbar).
+          Same shape as the Testing tab's own facet row. */}
+      <div className="shrink-0 px-4 pt-4">
         <ViewToolbar
           left={
             <>
@@ -175,7 +203,7 @@ export function IssuesFleetTab({
         />
       </div>
 
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3 px-4 pb-4">
         <IssueTriageTable
           issues={visible}
           selectedId={selectedId}

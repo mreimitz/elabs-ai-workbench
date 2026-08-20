@@ -1,16 +1,30 @@
 import type { ReactNode } from "react";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 import type { ScanSummary, ServerConfig } from "@mcp-token-footprint/shared";
 
-// The Scans tab renders `MetricGrid` (`@elabs-ai/components-charts`), and the Testing tab (WP 2.2) renders the
-// rest of the package's chart surface — importing ANY named export from that package's barrel under
-// Vitest/jsdom resolves a broken deep `@visx/gradient` subpath used by its (unrelated, unused here)
-// Gantt chart, a pre-existing environment-only issue confirmed for every export, not just
-// `MetricGrid` (see `ScansTab.test.tsx`'s longer note; `RunConsole.test.tsx`/`TestingTab.test.tsx`
-// mock around the same class of issue). A thin pass-through per export mounts both real tab bodies.
+// jsdom omits matchMedia — the page toolbar's `DateRangePicker` opens a Radix Popover, which reads
+// it (mirrors `FilterControls.test.tsx`/`IssuesFleetTab.test.tsx`'s identical polyfill).
+if (typeof window.matchMedia !== "function") {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
+// Importing ANY named export from the `@elabs-ai/components-charts` barrel under Vitest/jsdom
+// resolves a broken deep `@visx/gradient` subpath used by its (unrelated, unused here) Gantt chart —
+// a pre-existing environment-only issue confirmed for every export, not just `MetricGrid`
+// (`RunConsole.test.tsx`/`TestingTab.test.tsx` mock around the same class of issue). A thin
+// pass-through per export mounts every real tab body.
 vi.mock("@elabs-ai/components-charts", () => ({
   MetricGrid: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   MetricCard: ({ label, value }: { label: string; value: string }) => (
@@ -31,7 +45,7 @@ vi.mock("@elabs-ai/components-charts", () => ({
   YAxis: () => null,
   ChartTooltip: () => null,
   Sparkline: () => null,
-  // dashboard-bento WP 1.4 — the Overview tab (now the DEFAULT tab) mounts on every render of this
+  // dashboard-bento WP 1.4 — the Overview tab (the DEFAULT tab) mounts on every render of this
   // suite, so its tiles' chart imports have to resolve here too.
   RingChart: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
   Ring: () => null,
@@ -90,9 +104,11 @@ vi.mock("../../lib/api", async (importOriginal) => {
 
 import { DashboardView } from "./DashboardView";
 
-// WP 2.1 — Dashboard becomes the tab HOST (Scans | Testing). These lock the tab-shell contract:
-// default tab, deep-link via `?tab=`, restore-on-reload, URL updates on switch, and Radix's
-// keyboard tab-strip behavior (arrow-key roving focus + automatic activation).
+// The Dashboard is the tab HOST (Overview | Testing | Issues) and — since dashboard-bento WP 2.2 —
+// the owner of the page's ONE toolbar row. These lock both contracts: the tab shell (default tab,
+// `?tab=` deep links, the retired `?tab=scans` redirect, URL updates on switch, Radix's keyboard
+// roving focus) and the shared range (one toolbar ABOVE the tab strip, one `?range=` param, presets
+// stay relative, custom ranges stay pinned, legacy `?oRange=`/`?tFrom=`+`?tTo=` links still resolve).
 
 const SERVER: ServerConfig = {
   id: "srv-a",
@@ -175,47 +191,111 @@ function activateTab(name: RegExp | string) {
   fireEvent.mouseDown(screen.getByRole("tab", { name }), { button: 0 });
 }
 
+/** The page toolbar's range control (WP 2.2) — named by the group it renders into. */
+function rangeControl() {
+  return screen.getByRole("group", { name: "Dashboard date range" });
+}
+
+/** Open the range picker's popover and click one of its preset rows. */
+function pickPreset(label: string) {
+  fireEvent.click(within(rangeControl()).getByRole("button"));
+  fireEvent.click(screen.getByRole("button", { name: label }));
+}
+
+const location = () => screen.getByTestId("location");
+
 beforeEach(() => {
   window.localStorage.clear();
 });
 
 describe("DashboardView — loading gate", () => {
-  test("initialLoading renders a loading panel, no tab strip", () => {
+  test("initialLoading renders a loading panel, no tab strip", async () => {
     renderDashboard({ initialLoading: true });
     expect(screen.getByText("Loading dashboard…")).toBeInTheDocument();
-    expect(screen.queryByRole("tab", { name: "Scans" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Overview" })).not.toBeInTheDocument();
+    // The page-level fleet-issues fetch fires regardless of the gate (it badges the strip); let it
+    // settle inside `act()` so its state update doesn't escape the test.
+    await waitFor(() => expect(screen.getByText("Loading dashboard…")).toBeInTheDocument());
   });
 });
 
+// ── Defect 1: ONE toolbar, ABOVE the tab strip ───────────────────────────────────────────────────
+
+describe("DashboardView — the page toolbar (WP 2.2, Defect 1)", () => {
+  test("renders exactly ONE range control, and it sits ABOVE the tab strip", async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+
+    expect(screen.getAllByRole("group", { name: "Dashboard date range" })).toHaveLength(1);
+
+    // The written layout order is breadcrumb → ONE toolbar row → content
+    // (`roadmap/ux-overhaul/toolbar-standard-2026-07-11.md`); the Dashboard used to invert it.
+    const strip = screen.getByRole("tablist");
+    const order = rangeControl().compareDocumentPosition(strip);
+    expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  test("the toolbar is OUTSIDE the tab panel — it survives every tab switch, unchanged", async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+    const control = rangeControl();
+
+    activateTab("Testing");
+    await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
+    expect(rangeControl()).toBe(control);
+
+    activateTab("Issues");
+    await waitFor(() => expect(screen.getByText("No fleet issues recorded")).toBeInTheDocument());
+    expect(rangeControl()).toBe(control);
+  });
+
+  test("the toolbar states what the window currently means, in words", async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText(/Showing the last 7 days/)).toBeInTheDocument());
+  });
+});
+
+// ── Defect 3: three tabs, and `?tab=scans` does not dead-end ─────────────────────────────────────
+
 describe("DashboardView — default tab + deep link", () => {
-  // dashboard-bento WP 1.4 moved the default from `scans` to `overview`. The contract that did NOT
-  // change is the important half: the default stays out of the URL, and every previously-shipped
-  // `?tab=` deep link still resolves to exactly the tab it always did.
+  test("the strip is Overview · Testing · Issues — the Scans tab is retired", async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Overview",
+      "Testing",
+      "Issues",
+    ]);
+  });
+
   test("defaults to the Overview tab with a clean URL (no ?tab= for the default)", async () => {
     renderDashboard();
     expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
-    // The real Overview tab (WP 1.4): every mocked source settles empty, so the bento renders its
-    // honest "nothing in this window" state — proof the real tab mounted, not a placeholder.
+    // The real Overview tab: every mocked source settles empty, so the bento renders its honest
+    // quiet-window notice — proof the real tab mounted, not a placeholder.
     await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
-    expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
-    expect(screen.getByTestId("location")).not.toHaveTextContent("?tab=");
-    expect(screen.queryByText("Since your last visit")).not.toBeInTheDocument();
+    expect(location()).toHaveTextContent("/dashboard");
+    expect(location()).not.toHaveTextContent("?tab=");
   });
 
-  test("`?tab=scans` still deep-links into the Scans tab (unchanged by the new default)", async () => {
+  test("`?tab=scans` redirects to Overview and drops the retired param — never a dead end", async () => {
     renderDashboard({}, { initialEntries: ["/dashboard?tab=scans"] });
-    expect(screen.getByRole("tab", { name: "Scans" })).toHaveAttribute("data-state", "active");
-    expect(screen.getByText("Since your last visit")).toBeInTheDocument(); // ScansTab content
-    await waitFor(() => expect(screen.getByRole("tab", { name: "Issues" })).toBeInTheDocument());
+    expect(screen.getByRole("tab", { name: "Overview" })).toHaveAttribute("data-state", "active");
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+    await waitFor(() => expect(location()).not.toHaveTextContent("tab=scans"));
+    expect(screen.queryByRole("tab", { name: "Scans" })).not.toBeInTheDocument();
+  });
+
+  test("`?tab=scans` keeps every unrelated param while it redirects", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?tab=scans&range=30d"] });
+    await waitFor(() => expect(location()).not.toHaveTextContent("tab=scans"));
+    expect(location()).toHaveTextContent("range=30d");
   });
 
   test("`?tab=testing` deep-links directly into the Testing tab on mount", async () => {
     renderDashboard({}, { initialEntries: ["/dashboard?tab=testing"] });
     expect(screen.getByRole("tab", { name: "Testing" })).toHaveAttribute("data-state", "active");
-    // The Testing tab's real content (WP 2.2) — an empty-but-valid metrics fetch settles into its
-    // own honest empty state, proving this is the real tab, not the retired "coming soon" shell.
     await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
-    expect(screen.queryByText("Since your last visit")).not.toBeInTheDocument();
   });
 
   test("an unrecognized ?tab= value falls back to the default (Overview)", async () => {
@@ -232,24 +312,23 @@ describe("DashboardView — tab switch updates the URL (restore-on-reload)", () 
 
     activateTab("Testing");
     await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
-    expect(screen.getByTestId("location")).toHaveTextContent("/dashboard?tab=testing");
+    expect(location()).toHaveTextContent("/dashboard?tab=testing");
 
-    // Scans is no longer the default, so it now names itself in the URL like any other tab.
-    activateTab("Scans");
-    expect(screen.getByText("Since your last visit")).toBeInTheDocument();
-    expect(screen.getByTestId("location")).toHaveTextContent("/dashboard?tab=scans");
+    activateTab("Issues");
+    await waitFor(() => expect(screen.getByText("No fleet issues recorded")).toBeInTheDocument());
+    expect(location()).toHaveTextContent("/dashboard?tab=issues");
 
     activateTab("Overview");
     await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
-    expect(screen.getByTestId("location")).toHaveTextContent("/dashboard");
-    expect(screen.getByTestId("location")).not.toHaveTextContent("?tab=");
+    expect(location()).toHaveTextContent("/dashboard");
+    expect(location()).not.toHaveTextContent("?tab=");
   });
 
-  test("the Testing tab body unmounts the Scans tab body and vice versa (Radix single active panel)", async () => {
-    renderDashboard({}, { initialEntries: ["/dashboard?tab=scans"] });
-    expect(screen.getByText("Since your last visit")).toBeInTheDocument();
+  test("the Testing tab body unmounts the Overview tab body and vice versa (Radix single active panel)", async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
     activateTab("Testing");
-    expect(screen.queryByText("Since your last visit")).not.toBeInTheDocument();
+    expect(screen.queryByText("Latest server footprint")).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
   });
 });
@@ -259,16 +338,90 @@ describe("DashboardView — keyboard tab-strip behavior", () => {
     renderDashboard();
     await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
     const overviewTab = screen.getByRole("tab", { name: "Overview" });
-    const scansTab = screen.getByRole("tab", { name: "Scans" });
+    const testingTab = screen.getByRole("tab", { name: "Testing" });
     overviewTab.focus();
     expect(document.activeElement).toBe(overviewTab);
     fireEvent.keyDown(overviewTab, { key: "ArrowRight" });
     // Radix's roving-focus-group moves focus, then activates the panel on a LATER tick (focus and
-    // selection land in separate updates past the synchronous keydown handler) — wait for both
-    // rather than asserting immediately.
-    await waitFor(() => expect(document.activeElement).toBe(scansTab));
-    await waitFor(() => expect(scansTab).toHaveAttribute("data-state", "active"));
-    expect(screen.getByText("Since your last visit")).toBeInTheDocument();
+    // selection land in separate updates past the synchronous keydown handler) — wait for both.
+    await waitFor(() => expect(document.activeElement).toBe(testingTab));
+    await waitFor(() => expect(testingTab).toHaveAttribute("data-state", "active"));
+    await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
+  });
+});
+
+// ── Defect 2: one shared range, one URL param ────────────────────────────────────────────────────
+
+describe("DashboardView — the shared range (WP 2.2, Defect 2)", () => {
+  test("the default window is kept OUT of the URL", async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+    expect(location()).not.toHaveTextContent("range=");
+  });
+
+  test("picking a preset writes ONE param carrying the preset TOKEN — never two frozen instants", async () => {
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText("Nothing in this window")).toBeInTheDocument());
+
+    pickPreset("Last 30 days");
+    await waitFor(() => expect(location()).toHaveTextContent("range=30d"));
+    // The whole point of storing the token: a shared link keeps meaning "the last 30 days".
+    expect(location()).not.toHaveTextContent("T00%3A00");
+    expect(location()).not.toHaveTextContent("oRange");
+    expect(location()).not.toHaveTextContent("tFrom");
+    await waitFor(() => expect(screen.getByText(/Showing the last 30 days/)).toBeInTheDocument());
+  });
+
+  test("returning to the default preset clears the param again", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?range=24h"] });
+    await waitFor(() => expect(screen.getByText(/Showing the last 24 hours/)).toBeInTheDocument());
+    pickPreset("Last 7 days");
+    await waitFor(() => expect(location()).not.toHaveTextContent("range="));
+  });
+
+  test("the range param survives a tab switch, and the tab param survives a range change", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?range=30d"] });
+    await waitFor(() => expect(screen.getByText(/Showing the last 30 days/)).toBeInTheDocument());
+
+    activateTab("Testing");
+    await waitFor(() => expect(location()).toHaveTextContent("tab=testing"));
+    expect(location()).toHaveTextContent("range=30d");
+
+    pickPreset("Last 24 hours");
+    await waitFor(() => expect(location()).toHaveTextContent("range=24h"));
+    expect(location()).toHaveTextContent("tab=testing");
+  });
+
+  test("a PINNED custom range deep-links and describes itself by its two dates", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?range=2026-07-01..2026-07-10"] });
+    await waitFor(() =>
+      expect(screen.getByText(/Showing Jul 1, 2026 . Jul 10, 2026/)).toBeInTheDocument(),
+    );
+  });
+});
+
+describe("DashboardView — legacy range deep links still resolve (WP 2.2)", () => {
+  test("the Overview's old `?oRange=` preset resolves as that preset", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?oRange=24h"] });
+    await waitFor(() => expect(screen.getByText(/Showing the last 24 hours/)).toBeInTheDocument());
+  });
+
+  test("the Testing tab's old `?tFrom=`/`?tTo=` pair resolves as a pinned custom range", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?tab=testing&tFrom=2026-07-01&tTo=2026-07-10"] });
+    expect(screen.getByRole("tab", { name: "Testing" })).toHaveAttribute("data-state", "active");
+    await waitFor(() =>
+      expect(screen.getByText(/Showing Jul 1, 2026 . Jul 10, 2026/)).toBeInTheDocument(),
+    );
+  });
+
+  test("touching the control converges the URL on the single `?range=` key", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?tab=testing&tFrom=2026-07-01&tTo=2026-07-10"] });
+    await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
+    pickPreset("Last 30 days");
+    await waitFor(() => expect(location()).toHaveTextContent("range=30d"));
+    expect(location()).not.toHaveTextContent("tFrom");
+    expect(location()).not.toHaveTextContent("tTo");
+    expect(location()).toHaveTextContent("tab=testing");
   });
 });
 
@@ -277,9 +430,8 @@ describe("DashboardView — Issues tab (WP 5.3 mount)", () => {
     renderDashboard({}, { initialEntries: ["/dashboard?tab=issues"] });
     expect(screen.getByRole("tab", { name: "Issues" })).toHaveAttribute("data-state", "active");
     // `listIssues` resolves `[]` — the tab settles into its own honest empty state, proving the real
-    // `IssuesFleetTab` (not a placeholder) mounted at the WP 2.1 commented mount point.
+    // `IssuesFleetTab` (not a placeholder) mounted.
     await waitFor(() => expect(screen.getByText("No fleet issues recorded")).toBeInTheDocument());
-    expect(screen.queryByText("Since your last visit")).not.toBeInTheDocument();
   });
 
   test("the Issues tab strip carries no count badge when there are no open/regressed issues", async () => {
