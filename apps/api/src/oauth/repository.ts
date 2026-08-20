@@ -42,6 +42,34 @@ export class OAuthRepository {
     };
   }
 
+  /**
+   * The granted OAuth scope NAMES for a server, or `null` when none are stored.
+   *
+   * **D-SP9 (roadmap/security-posture/ WP 1.2).** This is the ONLY projection of the encrypted
+   * credential blob that leaves this module for the security analyzer, and it deliberately cannot
+   * carry anything else: it reads `tokens.scope` (falling back to the registered
+   * `clientInformation.scope`, which is what a server asked for when no grant has been stored yet),
+   * splits it on whitespace, and returns strings. **No access token, no refresh token, no client
+   * secret, no expiry, no id** — there is no code path here that can reach one, and
+   * `apps/api/test/security-analyzer.test.ts` pins that a stored access token appears nowhere in a
+   * serialized report.
+   *
+   * Scope names are the "stored (non-secret) auth metadata" the plan's README already sanctions
+   * publishing. `null` means "we could not tell" and the `oauth.broad-scope` rule reports nothing for
+   * it — it never guesses.
+   */
+  listGrantedScopes(serverId: string): string[] | null {
+    const credentials = this.getCredentials(serverId);
+    // `OAuthClientInformationMixed` narrows to a variant without `scope`, so read that half through a
+    // one-property view. The view widens nothing: `scope` is the only key it can see.
+    const registered = credentials.clientInformation as { scope?: unknown } | undefined;
+    const scope: unknown = credentials.tokens?.scope ?? registered?.scope;
+    if (typeof scope !== "string") return null;
+    // The OAuth wire format is a space-delimited list; be liberal about the whitespace anyway.
+    const scopes = scope.split(/\s+/).filter((entry) => entry.length > 0);
+    return scopes.length > 0 ? scopes : null;
+  }
+
   hasTokens(serverId: string): boolean {
     return Boolean(this.getCredentials(serverId).tokens?.access_token);
   }
