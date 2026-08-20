@@ -43,3 +43,7 @@ apps/*/vitest.config.ts.timestamp-*.mjs
 # (`pnpm mcp:self-scan` → .artifacts/mcp-self-scan/footprint.{json,md}). Regenerated on demand and
 # uploaded by CI; never committed, so a measurement can never go stale in git.
 .artifacts/
+
+# OKF planning bundle tooling
+planning/**/__pycache__/
+planning/tools/.venv/

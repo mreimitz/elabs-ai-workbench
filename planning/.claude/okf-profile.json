@@ -1,0 +1,55 @@
+{
+  "profile_name": "Research Scaffold OKF Profile",
+  "profile_version": "1.1.0",
+  "okf_version": "0.1",
+  "okf_spec": "https://github.com/GoogleCloudPlatform/knowledge-catalog/blob/main/okf/SPEC.md",
+  "okf_spec_revision": "ee67a5ca27044ebe7c38385f5b6cffc2305a9c1a",
+  "upstream_repository_revision": "d44368c15e38e7c92481c5992e4f9b5b421a801d",
+  "spec_status": "draft",
+  "spec_inspected": "2026-07-24",
+  "non_okf_markdown_forbidden": ["tools"],
+  "required_fields": [
+    "type",
+    "title",
+    "description",
+    "tags",
+    "timestamp",
+    "status"
+  ],
+  "types": {
+    "Project": ["planned", "active", "blocked", "done", "archived"],
+    "Research Topic": ["planned", "active", "blocked", "done", "archived"],
+    "Research Note": ["draft", "review", "final", "archived"],
+    "Research Output": ["draft", "review", "final", "archived"],
+    "Source Reference": ["captured", "verified", "superseded", "archived"],
+    "Roadmap": ["planned", "active", "blocked", "done", "archived"],
+    "Roadmap Item": ["planned", "active", "blocked", "done", "archived"],
+    "Documentation": ["draft", "review", "current", "superseded", "archived"],
+    "Guide Page": ["draft", "review", "current", "superseded", "archived"],
+    "Work Package Spec": ["draft", "review", "final", "superseded", "archived"],
+    "Status Ledger": ["active", "archived"],
+    "Decision": ["proposed", "accepted", "superseded", "reversed"],
+    "Agent Instruction": ["active", "deprecated"],
+    "Agent Skill": ["active", "deprecated"],
+    "Agent Command": ["active", "deprecated"],
+    "Standard Profile": ["active", "deprecated"]
+  },
+  "citation_required_types": [
+    "Research Note",
+    "Research Output",
+    "Decision"
+  ],
+  "required_static_paths": [
+    "index.md",
+    "log.md",
+    "project.md",
+    "okf-profile.md",
+    "CLAUDE.md",
+    ".claude/index.md",
+    "Research/index.md",
+    "Roadmap/index.md",
+    "Roadmap/roadmap.md",
+    "Roadmap/completed/index.md",
+    "user-guide/index.md"
+  ]
+}

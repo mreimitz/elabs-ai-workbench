@@ -1,0 +1,1 @@
+markitdown[audio-transcription,docx,outlook,pdf,pptx,xls,xlsx]==0.1.6
