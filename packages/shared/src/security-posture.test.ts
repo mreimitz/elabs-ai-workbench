@@ -34,6 +34,7 @@ import {
   securityFindingSchema,
   securityFleetSummarySchema,
   securityPostureDiffSchema,
+  securityPostureSectionSchema,
   securityReportSchema,
   securityScoreSchema,
 } from "./security-posture.js";
@@ -1087,5 +1088,48 @@ describe("securityFleetSummarySchema (WP 2.1, D-SP22)", () => {
   it("refuses a blank id or a blank name — a row nobody can drill into is not a row", () => {
     assert.equal(securityFleetSummarySchema.safeParse({ ...row, scanId: "" }).success, false);
     assert.equal(securityFleetSummarySchema.safeParse({ ...row, serverName: "" }).success, false);
+  });
+});
+
+describe("securityPostureSectionSchema (WP 2.2, D-SP24)", () => {
+  const report = reportOf([toolFinding(DIFF_WARNING_RULE, "delete_all")]);
+
+  it("round-trips the analysed variant with the report VERBATIM", () => {
+    const section = { status: "analyzed", report } as const;
+    assert.deepEqual(securityPostureSectionSchema.parse(section), section);
+    // It reuses the report's OWN schema, so a section can never carry a shape the report cannot.
+    assert.equal(
+      securityPostureSectionSchema.safeParse({
+        status: "analyzed",
+        report: { ...report, note: "extra" },
+      }).success,
+      false,
+    );
+  });
+
+  it("round-trips the unavailable variant, and refuses an EMPTY reason", () => {
+    const section = { status: "unavailable", reason: 'Scan scan_1 has status "failed".' } as const;
+    assert.deepEqual(securityPostureSectionSchema.parse(section), section);
+    // A reasonless `unavailable` is the silent omission D-SP24 exists to prevent, wearing a status
+    // field as a disguise — so it is a rejection, not a value.
+    assert.equal(
+      securityPostureSectionSchema.safeParse({ status: "unavailable", reason: "" }).success,
+      false,
+    );
+    assert.equal(securityPostureSectionSchema.safeParse({ status: "unavailable" }).success, false);
+  });
+
+  it("refuses a section that is BOTH, or neither — the two states are exclusive", () => {
+    assert.equal(
+      securityPostureSectionSchema.safeParse({ status: "analyzed", report, reason: "also this" })
+        .success,
+      false,
+    );
+    assert.equal(
+      securityPostureSectionSchema.safeParse({ status: "unavailable", reason: "no", report })
+        .success,
+      false,
+    );
+    assert.equal(securityPostureSectionSchema.safeParse({ status: "clean" }).success, false);
   });
 });

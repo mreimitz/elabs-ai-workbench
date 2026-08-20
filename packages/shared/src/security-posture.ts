@@ -1179,3 +1179,43 @@ export const securityFleetSummarySchema = z
     counts: securityFindingCountsSchema,
   })
   .strict();
+
+// ── WP 2.2 · the EXPORT section (D-SP24) ────────────────────────────────────────────────────────
+//
+// What an EXPORTED document — the scan report, the server report — carries about posture. It is a
+// section rather than a bare {@link SecurityReport} for exactly one reason, and that reason is
+// D-SP24: a subject that cannot be scored must still export, saying honestly why it was not scored.
+//
+// A non-`success` scan is a 400 from `analyzeScan` (D-SP10) and an unreadable SKILL.md is a 400 from
+// `analyzeSkillVersion` (D-SP16). Letting either refusal escape an export would make the TOKEN
+// FOOTPRINT unobtainable for exactly the broken servers an operator most wants to document; silently
+// dropping the section instead would make a broken subject read as "nothing found". So the refusal
+// becomes a value: `unavailable`, carrying the refusal's own sentence.
+//
+// The section is OPTIONAL wherever it appears (`security?:`), which keeps every export additive — an
+// existing consumer of `GET /api/reports/scan/:id/json` keeps working unchanged — and lets a caller
+// that never asked for posture (the workbench's own MCP report resources) go on producing byte for
+// byte the document it produced before.
+
+/**
+ * The posture section of an exported report: the analyzer's own report, or an honest reason one
+ * could not be produced.
+ *
+ * The `analyzed` variant embeds the {@link SecurityReport} **verbatim** — the score, the band, the
+ * analyzer version, the counts and the findings in the analyzer's own order. Nothing is re-scored,
+ * re-sorted, re-banded or re-tallied on its way into a document (D-SP3/D-SP6), and `counts` still
+ * describes ALL findings even when `truncated` is true.
+ */
+export type SecurityPostureSection =
+  | { status: "analyzed"; report: SecurityReport }
+  | { status: "unavailable"; reason: string };
+
+/**
+ * `.strict()` on both variants, like every other shape here. `reason` is `min(1)`: an `unavailable`
+ * section with an empty reason is the silent omission D-SP24 exists to prevent, wearing a status
+ * field as a disguise.
+ */
+export const securityPostureSectionSchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("analyzed"), report: securityReportSchema }).strict(),
+  z.object({ status: z.literal("unavailable"), reason: z.string().min(1) }).strict(),
+]);

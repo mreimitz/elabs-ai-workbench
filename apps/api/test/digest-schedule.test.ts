@@ -24,6 +24,10 @@ import { RunReportService } from "../src/grading/run-report.js";
 import { DigestReportRepository, DigestScheduleService } from "../src/reports/digest.js";
 import { registerReportRoutes } from "../src/reports/routes.js";
 import { ScanRepository } from "../src/scans/repository.js";
+// RM-20 WP 2.2 — `registerReportRoutes` now takes the security analyzer as its last argument, so the
+// scan/server exports can carry a posture section. The digest routes under test here use neither;
+// the real analyzer is wired anyway so the harness matches what the app registers.
+import { analyzeScan } from "../src/security/service.js";
 import { ServerRepository } from "../src/servers/repository.js";
 import { SecretStore } from "../src/secrets/secret-store.js";
 import { SuiteRepository } from "../src/suites/repository.js";
@@ -279,6 +283,10 @@ async function makeReportApp(db: AppDatabase, clock: { ms: number }): Promise<{
     // Advisor WP 2.2 — the fleet report's advisor read ports (unused by the digest routes under test
     // here, but `registerReportRoutes` now wires `GET /api/reports/fleet/*` from them).
     { servers, scans, scenarios: scenarioRepository, runs: runRepository },
+    {
+      analyze: (scanId) =>
+        analyzeScan({ scans, servers, oauth: { listGrantedScopes: () => null } }, scanId),
+    },
   );
   await app.listen({ port: 0, host: "127.0.0.1" });
   apps.push(app);

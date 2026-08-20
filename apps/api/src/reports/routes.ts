@@ -28,6 +28,8 @@ import {
 } from "./run-report-assembly.js";
 import { createServerReport } from "./server-report.js";
 import { createServerMarkdownReport } from "./server-report-markdown.js";
+// RM-20 WP 2.2 — the posture section every export carries, derived in exactly one place.
+import { type ReportSecurityPorts, securitySectionForScan } from "./security-section.js";
 import {
   collectSuiteRunReportData,
   createSuiteRunJsonReport,
@@ -63,6 +65,11 @@ export async function registerReportRoutes(
   // The suite-grade side reuses `suiteService` / `suiteRunRepository` already passed above.
   // Appended, so every existing call site and every route above is untouched.
   advisor: AdvisorRepositories,
+  // RM-20 WP 2.2 — the security analyzer, INJECTED exactly as the CI assertions engine takes it
+  // (D-MCP4/D-SP7: re-project, don't reimplement). It is **required**, not optional, on purpose: an
+  // export that quietly lost its posture section would read as "nothing found", which is the one
+  // outcome D-SP24 exists to prevent — so a caller must decide, and the compiler asks.
+  security: ReportSecurityPorts,
 ) {
   // The suite-run report reads only DERIVED state (child runs + grades + test/scenario/suite names) PLUS
   // (Auto-Rating WP 4.3) the persisted cross-run `SuiteReport`, if one has landed — additive, absent when
@@ -76,9 +83,15 @@ export async function registerReportRoutes(
     suites: suiteService,
     suiteReports,
   };
+  // RM-20 WP 2.2 — every export below composes its posture section through this ONE call, which
+  // never throws: the analyzer's refusals (D-SP10's non-`success` scan, D-SP16's unreadable
+  // SKILL.md) become an `unavailable` section naming why, so the token footprint of a broken server
+  // stays exportable and the document is never silently clean (D-SP24).
+  const postureFor = (scanId: string) => securitySectionForScan(security, scanId);
+
   app.get("/api/reports/scan/:id/json", async (request) => {
     const { id } = request.params as { id: string };
-    return createJsonReport(scans.getDetail(id));
+    return createJsonReport(scans.getDetail(id), postureFor(id));
   });
 
   app.get("/api/reports/scan/:id/markdown", async (request, reply) => {
@@ -86,7 +99,7 @@ export async function registerReportRoutes(
     const scan = scans.getDetail(id);
     reply.header("content-type", "text/markdown; charset=utf-8");
     reply.header("content-disposition", `attachment; filename="mcp-token-footprint-${scan.id}.md"`);
-    return createMarkdownReport(scan);
+    return createMarkdownReport(scan, postureFor(scan.id));
   });
 
   // ── Server-level Export Report (HTML → print-to-PDF). One typed payload the web report view
@@ -98,7 +111,13 @@ export async function registerReportRoutes(
     const { models, client } = serverReportQuerySchema.parse(request.query);
     const scan = scans.getDetail(scanId);
     const server = servers.getPublic(scan.serverId);
-    return createServerReport(scan, server, models ?? DEFAULT_HEATMAP_MODELS, client);
+    return createServerReport(
+      scan,
+      server,
+      models ?? DEFAULT_HEATMAP_MODELS,
+      client,
+      postureFor(scan.id),
+    );
   });
 
   // ── Server report as a single Markdown document (the second export format). Same payload as the
@@ -111,7 +130,13 @@ export async function registerReportRoutes(
     const { models, client, detail } = serverReportQuerySchema.parse(request.query);
     const scan = scans.getDetail(scanId);
     const server = servers.getPublic(scan.serverId);
-    const report = createServerReport(scan, server, models ?? DEFAULT_HEATMAP_MODELS, client);
+    const report = createServerReport(
+      scan,
+      server,
+      models ?? DEFAULT_HEATMAP_MODELS,
+      client,
+      postureFor(scan.id),
+    );
     reply.header("content-type", "text/markdown; charset=utf-8");
     reply.header(
       "content-disposition",

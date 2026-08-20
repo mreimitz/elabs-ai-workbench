@@ -10,6 +10,7 @@ import type {
   CompatibilitySeverity,
   CompatibilityTestReport,
   ScanDetail,
+  SecurityPostureSection,
   ServerConfig,
   ServerReport,
   ToolSeveritySummary,
@@ -36,11 +37,18 @@ function severityScore(summary: ToolSeveritySummary): number {
   return score;
 }
 
+/**
+ * RM-20 WP 2.2 — `security` is the posture section, and it is the LAST parameter and **optional**
+ * (D-SP24) so every pre-existing call site is untouched. It is composed here rather than in each
+ * renderer so the HTML/JSON payload and its Markdown twin report the same posture: both formats
+ * render this ONE document, exactly as they already do for every other section.
+ */
 export function createServerReport(
   scan: ScanDetail,
   server: ServerConfig,
   modelIds: string[],
   client?: string,
+  security?: SecurityPostureSection,
 ): ServerReport {
   const serverTests = buildServerTestReport(scan, modelIds, client);
   const toolFindings = buildToolFindings(scan, modelIds, client);
@@ -66,5 +74,6 @@ export function createServerReport(
     serverTests,
     toolFindings,
     flaggedToolTests,
+    ...(security === undefined ? {} : { security }),
   };
 }

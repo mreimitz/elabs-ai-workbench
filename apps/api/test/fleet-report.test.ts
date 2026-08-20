@@ -29,6 +29,11 @@ import { AppSettingsRepository } from "../src/grading/app-settings-repository.js
 import { RatingIssueRepository } from "../src/grading/issue-repository.js";
 import { registerReportRoutes } from "../src/reports/routes.js";
 import { ScanRepository } from "../src/scans/repository.js";
+// RM-20 WP 2.2 — `registerReportRoutes` now takes the security analyzer as its last argument, so the
+// scan/server exports can carry a posture section. This file exercises neither of those routes; the
+// real analyzer is wired anyway (rather than a stub) so the harness stays honest about what the app
+// actually registers.
+import { analyzeScan } from "../src/security/service.js";
 import { SkillRepository } from "../src/skills/repository.js";
 import { SecretStore } from "../src/secrets/secret-store.js";
 import { ServerRepository } from "../src/servers/repository.js";
@@ -724,6 +729,13 @@ async function makeApp(h: Harness): Promise<string> {
     digestRepository,
     digestSchedule,
     advisorDeps,
+    {
+      analyze: (scanId) =>
+        analyzeScan(
+          { scans: h.scans, servers: h.servers, oauth: { listGrantedScopes: () => null } },
+          scanId,
+        ),
+    },
   );
   await app.listen({ port: 0, host: "127.0.0.1" });
   apps.push(app);
