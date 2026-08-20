@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Dashboard bento \u2014 work-package status ledger \u00b7 PRIORITY: MEDIUM"
 description: "Living state for the dashboard-bento plan, read and updated by /next-wp dashboard-bento. A"
 tags: ["roadmap", "RM-11"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-20T18:30:00Z"
 status: "active"
 ---
 # Dashboard bento — work-package status ledger · **PRIORITY: MEDIUM**
