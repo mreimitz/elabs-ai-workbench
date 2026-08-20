@@ -196,10 +196,58 @@ wp/ci/<id>`.
 
 ## Phase MCP — workbench MCP server (see [`mcp-server.md`](./mcp-server.md))
 - [x] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — done 2026-08-19 · `wp/ci/M.1`. 21 read tools + 4 report resource templates at `/api/mcp` (stateless streamable HTTP, GET/DELETE→405); new `mcp_server` Settings › Features flag (off ⇒ 403 `feature_disabled`); no new dependency, **no migration** (`user_version` 57 unchanged), additive-only wire. Gate green (shared 89 · api 3254 · web 3178+5 skipped · build · lint). **Live-verified against the built API on a copy of a real 91 MB dev DB**: MCP Inspector `initialize`/`tools/list`/7 tool calls, `resources/read` of a real run report, error + validation paths, flag off→403→on, off-state survives restart, fresh-DB boot. **Self-proof (D-MCP5 seed): the workbench scanned its own mount — 21 tools · 2,224 tokens · 200 resources (`generic_o200k`, countingVersion 2)**; the in-test `tools/list` measurement is 2,206 against a budget of 3,000 (`WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET`). Owner-acceptance pending: the both-theme + keyboard walk of the new Settings › Features row.
-- [ ] WP M.2 — service-token scopes on the mount (localhost bypass per D-MCP2) — depends: 1.1, M.1
-      Mapping work this WP inherits: **`POST /api/assertions/evaluate` → `read`** (D-C10, WP 1.3).
-      It is a read-only endpoint that only takes a POST because it carries a document body; under the
-      current coarse method→scope rule a remote assert-only token must hold an *execute* scope.
+- [x] WP M.2 — service-token scopes on the mount (localhost bypass per D-MCP2) — done 2026-08-20 ·
+      `wp/ci/M.2` · spec: [`wp-m.2-mount-scopes.md`](./wp-m.2-mount-scopes.md).
+      Two mechanisms, both contract-first. **(a) Per-route scope overrides** —
+      `API_TOKEN_ROUTE_SCOPES` + `requiredScopesForRoute` in `packages/shared/src/api-tokens.ts`,
+      consulted by the guard **before** the coarse method rule, which stays exactly as it was behind
+      it. Two entries, and a test asserts there are only two: **`POST /api/mcp → read`** (D-MCP8) and
+      **`POST /api/assertions/evaluate → read`** (closing D-C10, WP 1.3's inherited item). **(b)
+      Per-tool scopes on the mount** — `WORKBENCH_MCP_TOOL_SCOPES` (all 21 read tools at `read`),
+      enforced at dispatch in `mcp-server/server.ts` as an **`isError` result naming the missing
+      scope** (what an MCP host actually shows the model), with a tool ABSENT from the map refused to
+      every token; plus one audit line per tool call carrying the token's **display prefix**, never
+      the secret. Decisions **D-MCP7 / D-MCP8 / D-MCP9** recorded in the decision log below.
+      **The security boundary held, and was checked rather than assumed:**
+      `packages/shared/src/api-tokens.ts` has a **zero-deletion** diff (the frozen D-C4 vocabulary and
+      `requiredScopesForMethod` are byte-identical, their tests passing untouched); the route-rule
+      type has **no `DELETE` member**, so a delete rule is a compile error, and `requiredScopesForRoute`
+      short-circuits `DELETE` before the table is read; no rule may target `/api/tokens*` (asserted),
+      and the guard's token-CRUD refusal still runs first; loopback is still decided from the socket;
+      a presented token is still always verified. **No migration, no new dependency, no new
+      environment variable** (D-MCP7 — `API_AUTH_REQUIRED` stays the only switch), no `<Route>`, no
+      web change, **no write tool** (A8's write-scoped tool is fabricated inside the test file).
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`typecheck` **0** · shared **97** · cli **63** · api **3349 passed / 2 failed** — the two
+      pre-existing dataset failures — · `build` **0** · `lint` **1**, the pre-existing 1.8 MiB
+      research JSON and nothing else); the zero-diff list; and **two independent teeth checks**:
+      swapping the strict (raw-AND-decoded) matcher for the inclusive one in the guard turns
+      `M.2/A5 (D-MCP9) — an ambiguous path does NOT inherit a relaxed rule` **red** (33/34), and
+      deleting one entry from `WORKBENCH_MCP_TOOL_SCOPES` turns the A7 key-set test **and** the A11
+      generated-`llms.txt` test **red** — both restored afterwards.
+      **Not independently re-run by the orchestrator:** the implementing agent's live walk against a
+      built API on a throwaway DB (a `read` token completing a real `tools/call`; a `scan:run`-only
+      token refused at the door with "one of: read"; `POST /%61pi/mcp --path-as-is` refused quoting
+      the *execute* scopes, i.e. the relaxation correctly not applying on the wire; one audit line
+      with the display prefix and no plaintext anywhere in the log).
+      **Three deviations from the spec, all reported rather than taken silently:** (1)
+      `AuthenticatedApiToken` gained a `tokenPrefix`, read from the **existing** `api_tokens.token_prefix`
+      column — the alternative was re-deriving it from the `Authorization` header, which would put a
+      plaintext credential into the MCP layer; additive, no migration. (2) A documented **test seam**
+      (`WorkbenchMcpServerOverrides`) on `createWorkbenchMcpServer`/`registerWorkbenchMcpRoutes`, because
+      A8 demands a write-scoped tool and none exists until WP M.3; production passes nothing, and
+      nothing request-derived is ever forwarded into it. (3) An `UNDECLARED_TOOL_SCOPE` marker so an
+      undeclared tool's refusal says *the server is broken* instead of naming a permission that does
+      not exist.
+      **Orchestrator note (latent, not a defect today):** `createWorkbenchMcpServer`'s `caller`
+      parameter **defaults to `TRUSTED_LOCAL_CALLER`** (allow-everything). The only call site passes a
+      real caller explicitly (verified by grep — `routes.ts:94` is the sole one), so nothing is open
+      today, but a default-open parameter in an authorization path is worth making required if WP M.3
+      adds a second embedding.
+      **Follow-up this WP could not make (it was told not to touch `apps/cli`):**
+      `apps/cli/src/help.ts:142-143` still says a remote `mcpfp assert` caller needs an execute scope.
+      That sentence is now false — `POST /api/assertions/evaluate` needs only `read`. One comment-sized
+      edit, for WP 2.x or a follow-up.
 - [ ] WP M.3 — scoped write tools: `scan:run` · `runs:launch` · `suites:run` — depends: M.2
 - [x] WP M.4 — agent onboarding docs + self-scan CI gate — done 2026-08-19 · `wp/ci/M.4`. Three
       deliverables, all additive: **(a)** `GET /api/mcp/llms.txt` — an `llms.txt`-style usage doc
@@ -230,6 +278,51 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-20 · D-MCP7 / D-MCP8 / D-MCP9 locked at the WP M.2 kickoff** (owner). Full text + the
+  design they bind: [`wp-m.2-mount-scopes.md`](./wp-m.2-mount-scopes.md). Declared in
+  `packages/shared/src/{api-tokens,workbench-mcp}.ts` and pinned by
+  `apps/api/test/{mcp-server-scopes,api-tokens,api-tokens-guard}.test.ts` +
+  `packages/shared/src/workbench-mcp.test.ts`.
+  - **D-MCP7 — a tokenless loopback caller keeps FULL access to the mount**, including the write
+    tools WP M.3 will add. This is the posture the rest of the API already has (a loopback caller can
+    `POST /api/runs` from `curl` today with no credential), and the mount does not get a stricter
+    rule than the API it is mounted on. **Scope enforcement therefore applies only to a request that
+    authenticated with a token** — `grantedScopes: null` means "no credential was involved", never "a
+    token with no scopes" (a token cannot have zero scopes; `apiTokenCreateSchema` requires one). The
+    switch that changes this is the existing **`API_AUTH_REQUIRED=true`**, which forces token auth on
+    loopback for the whole API, mount included — **no new environment variable** (an off-switch
+    beside an auth check is the foot-gun WP 1.1 called out; two overlapping auth knobs is that
+    foot-gun twice).
+  - **D-MCP8 — `read` is the price of admission to the mount.** `API_TOKEN_ROUTE_SCOPES` maps
+    `POST /api/mcp → read`, because `initialize` / `tools/list` / `resources/read` are reads and a
+    client cannot speak MCP without them. A write-capable agent therefore holds `read` **plus** its
+    write scope; a `scan:run`-only token cannot open the mount at all. The rule is **exact**, not a
+    prefix — `/api/mcp/llms.txt` is a GET that already needs only `read`, and a prefix would silently
+    relax any future `POST /api/mcp/*`. Per-TOOL scopes then live in `WORKBENCH_MCP_TOOL_SCOPES` (all
+    21 at `read` today), enforced at dispatch as an `isError` result naming the missing scope; a tool
+    ABSENT from that map is refused to every token (fail closed) with a message that says the server
+    is broken rather than inventing a permission to grant. Resources need no per-resource scope:
+    every token-authenticated caller that reached the mount already holds `read`, and every resource
+    is a read. Stated in `user-guide/20-…`, `user-guide/21-…` and the **generated** `llms.txt`.
+  - **D-MCP9 — per-route scope mapping RELAXES conservatively, and the path match proves it.**
+    WP 1.1 matches a governed path on the **union** of the raw and percent-decoded forms, because for
+    *deciding what is governed* the inclusive answer is the safe one. A route→scope entry does the
+    opposite job — it *lowers* what a request needs — so it matches on the **intersection**: a rule
+    applies only when the raw form and the decoded form **both** match it, and an undecodable path
+    matches nothing. An ambiguous path (`/%61pi/mcp`) therefore falls back to the coarse method rule
+    rather than inheriting the relaxed one. Same helper module, opposite direction, on purpose
+    (`requestPathEqualsStrict`/`requestPathIsUnderStrict` beside the untouched
+    `requestPathEquals`/`requestPathIsUnder`), pinned by a table the **orchestrator** confirmed goes
+    red when the strict matcher is swapped for the union one.
+  - **Also inherited and now closed: D-C10.** `POST /api/assertions/evaluate → read`. WP 1.3's
+    endpoint reads a persisted scan and is a POST only because it carries a gate document; a remote
+    assert-only token now needs nothing but `read`.
+
+  _Rationale:_ the coarse method rule cannot tell a read that travels in a POST body from a write, so
+  it made both the MCP mount and the assertions endpoint demand an execute scope — a lie about what
+  they do, and one that pushes an operator toward over-granting. The fix is a table that can only
+  ever relax a named route, cannot express a delete, and does not fire on an ambiguous path.
 
 - **2026-08-19 · D-C3 locked at the WP 1.3 kickoff** (owner). **Baseline semantics: symbolic in,
   concrete out.** A baseline is named either symbolically (`"previous"` — the newest earlier
@@ -396,6 +489,11 @@ MCP) here._
       exit **2**; a server's **first** scan reports the baseline rules as skipped, warns, and still
       exits **0**; and a **remote** (non-loopback) `assert` is refused without a token and succeeds
       with an **execute**-scoped one (D-C10) — accepted: ____
+- [ ] **WP M.2** — from a second machine: an MCP host (Claude Code / Cursor) pointed at
+      `http://<lan-ip>:8080/api/mcp` with a **`read`** token connects and answers a real question;
+      the same host with **no** token is refused; a token holding only `scan:run` is refused at the
+      door naming `read`; and the API log shows one audit line per tool call carrying
+      `mcpfp_xxxxxxxx` and no secret — accepted: ____
 - [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
       assertions → PR comment with deltas; a deliberate budget breach fails the check —
       accepted: ____
