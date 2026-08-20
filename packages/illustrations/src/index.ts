@@ -2,15 +2,17 @@
 // @mcp-token-footprint/illustrations — the isometric "3D blueprint" illustration system
 // (planning/Roadmap/RM-14-illustrations/, D-IL4)
 // ==================================================================================================
-// **This package does not draw anything yet, and WP 0.1 is why.** Phase 0 lands the foundation in
-// three pieces so that nothing is drawn before the language it is drawn in exists:
+// Phase 0 lands the foundation in three pieces so that nothing is drawn before the language it is
+// drawn in exists:
 //
-//   WP 0.1 (this)  the package, the `--illus-*` token layer (`tokens.css` + `tokens.ts`), and the
-//                  SceneSpec / RegistryEntry contract — which lives in `@mcp-token-footprint/shared`,
-//                  not here, because the API validates authored scenes without importing React
-//                  (D-IL10).
-//   WP 0.2         `iso-math.ts` and the primitives (stage, platform, housing, connectors, ...).
-//   WP 0.3         the first three entities, `registry.ts`, and the `/illustrations` gallery.
+//   WP 0.1  the package, the `--illus-*` token layer (`tokens.css` + `tokens.ts`), and the
+//           SceneSpec / RegistryEntry contract — which lives in `@mcp-token-footprint/shared`, not
+//           here, because the API validates authored scenes without importing React (D-IL10).
+//   WP 0.2  (this) `iso-math.ts`, the layer order, and the primitives: stage, platform, housing,
+//           glyph frame, ghost, calibration cube, station header, connectors, annotation cards and
+//           the `EntityRoot` wrapper. It ships NO entity and NO registry entry: the test of success
+//           is that WP 0.3 can build three entities without writing a single new `<path>`.
+//   WP 0.3  the first three entities, `registry.ts`, and the `/illustrations` gallery route.
 //
 // The runtime rules that hold across all of it (D-IL3): React 19 + inline SVG, `react` as a PEER
 // dependency, `@mcp-token-footprint/shared` as the only workspace dependency, and ZERO new runtime
@@ -22,3 +24,24 @@
 // buttons, toolbars — is `@elabs-ai/components-*`.
 
 export * from "./tokens.js";
+export * from "./iso-math.js";
+export * from "./line-system.js";
+export * from "./layers.js";
+export * from "./primitives/index.js";
+export {
+  FACE_ADJACENCIES,
+  assertFaceSeparation,
+  createProbeResolver,
+  measureFaceSeparation,
+  parseLightness,
+  relativeSeparation,
+  srgbLightness,
+} from "./dev/face-separation.js";
+export type {
+  FaceSeparationOptions,
+  FaceSeparationPair,
+  FaceSeparationReport,
+} from "./dev/face-separation.js";
+export { useFaceSeparation } from "./dev/use-face-separation.js";
+export { PRIMITIVE_SHEET_SIZE, PrimitivesSheet } from "./preview/PrimitivesSheet.js";
+export type { PrimitivesSheetProps } from "./preview/PrimitivesSheet.js";
