@@ -40,8 +40,18 @@ export const SKILL_SCRIPT_LANG_LABELS: Record<string, string> = {
 /**
  * Rough URL/network-reference detector. Light on purpose: it flags absolute http(s) URLs so an
  * operator can spot an external call in the prose, and never claims more than that.
+ *
+ * What it deliberately does NOT match: a relative Markdown link (`[guide](./docs/guide.md)`), a bare
+ * domain with no scheme (`example.com`), a `mailto:`/`file:` URI, or a package name that merely
+ * contains a slash. The scheme is the whole signal — anything looser would fire on ordinary prose and
+ * make the `info` finding it feeds worthless. It is a lexical scan, NOT a taint analysis: it says
+ * "there is a URL in here to go and read", never "this skill makes a network call".
+ *
+ * Exported (WP 1.3) so `skill-surface.network-reference` can report WHERE it matched, with an offset,
+ * instead of only that it did. {@link deriveSkillSecuritySurface} keeps using the same constant, so
+ * the boolean the Skills inspector shows and the finding the analyzer emits can never disagree.
  */
-const NETWORK_REF = /\bhttps?:\/\/[^\s"'<>)]+/i;
+export const SKILL_NETWORK_REF_PATTERN = /\bhttps?:\/\/[^\s"'<>)]+/i;
 
 /**
  * Derive the security surface from a version's file list plus a light scan of its SKILL.md body.
@@ -66,7 +76,7 @@ export function deriveSkillSecuritySurface(
   return {
     scriptCount: scripts.length,
     scriptLangs,
-    networkRefs: NETWORK_REF.test(skillMdBody),
+    networkRefs: SKILL_NETWORK_REF_PATTERN.test(skillMdBody),
     fileCount: files.length,
     totalBytes: files.reduce((sum, file) => sum + file.size, 0),
   };
