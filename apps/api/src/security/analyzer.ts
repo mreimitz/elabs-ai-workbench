@@ -26,6 +26,16 @@
 // **Read `toolName`, `description`, `inputSchema` and `annotations` — never `rawTool`.** `rawTool` is
 // the untouched provider payload and may hold anything at all; the four normalized fields are the
 // surface a model actually reads, which is the surface these rules are about.
+//
+// **D-SP14 (WP 1.3) — rules 1, 2 and 3 are now thin callers of `./text-scan.ts`.** Their three
+// heuristics — the injection phrase list, the hidden-instruction patterns, the invisible-codepoint
+// ranges — ask exactly the same question of a SKILL.md body that they ask of a tool description, so
+// they were moved to one file rather than copied into a second analyzer. Everything this module
+// exported before the move it still exports, re-exported below, and
+// `apps/api/test/security-analyzer.test.ts` is byte-identical and green: that is the proof the
+// extraction changed no behaviour. The rules THEMSELVES — which anchor they use, how many findings
+// they emit per tool, what their messages say — stay here, because those are per-subject decisions
+// and the skill rules make different ones.
 
 import {
   createSecurityFinding,
@@ -36,6 +46,30 @@ import {
   type SecurityRuleId,
   type ToolScan,
 } from "@mcp-token-footprint/shared";
+import {
+  describeCodePoint,
+  escapeRegExp,
+  evidenceAround,
+  findHiddenInstructionBlocks,
+  findInjectionPhrases,
+  findInvisible,
+  readText,
+} from "./text-scan.js";
+
+// D-SP14 — everything this module exported before the heuristics moved, it still exports. A consumer
+// that imported `INJECTION_PHRASES` or `HIDDEN_PSEUDO_TAG_PATTERN` from here keeps compiling, and the
+// WP 1.2 test file's import list did not have to change (which is what made it possible to leave that
+// file byte-identical).
+export {
+  EVIDENCE_CONTEXT_CHARS,
+  HIDDEN_HTML_COMMENT_PATTERN,
+  HIDDEN_MODEL_ADDRESS_PATTERN,
+  HIDDEN_PSEUDO_TAG_PATTERN,
+  INJECTION_INSTRUCTION_OBJECTS,
+  INJECTION_PHRASES,
+  INVISIBLE_CODE_POINT_RANGES,
+  type InjectionPhrase,
+} from "./text-scan.js";
 
 // ── Input ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -60,45 +94,18 @@ export type AnalyzerInput = {
   onRuleError?: (ruleId: SecurityRuleId, error: unknown) => void;
 };
 
-// ── Shared text helpers ─────────────────────────────────────────────────────────────────────────
-
-/** How much text either side of a match an excerpt carries. Enough to read, short enough to scan. */
-export const EVIDENCE_CONTEXT_CHARS = 40;
+// ── Tool-shaped helpers ─────────────────────────────────────────────────────────────────────────
+//
+// `readText`, `evidenceAround`, `escapeRegExp` and `EVIDENCE_CONTEXT_CHARS` moved to `./text-scan.ts`
+// with the heuristics that use them (D-SP14) and are imported above; only the tool-specific naming
+// helper is left here, because a skill has no `toolName` to fall back for.
 
 /** A tool whose name came back empty still has to produce a VALID anchor (`toolName` is `min(1)`). */
 const UNNAMED_TOOL = "(unnamed tool)";
 
-/** Defensive: `ToolScan` types these as strings, but the rows come from arbitrary MCP servers. */
-function readText(value: unknown): string {
-  return typeof value === "string" ? value : "";
-}
-
 function toolNameOf(tool: ToolScan): string {
   const name = readText(tool.toolName).trim();
   return name.length > 0 ? name : UNNAMED_TOOL;
-}
-
-/**
- * The `{ raw, offset }` pair `createSecurityFinding` wants: the match plus
- * {@link EVIDENCE_CONTEXT_CHARS} either side, and the match's offset in the SOURCE text (not in the
- * excerpt) so a reader can find it again. The excerpt is redacted downstream, never here.
- */
-function evidenceAround(
-  text: string,
-  index: number,
-  length: number,
-): { raw: string; offset: number } {
-  const start = Math.max(0, index - EVIDENCE_CONTEXT_CHARS);
-  const end = Math.min(text.length, index + length + EVIDENCE_CONTEXT_CHARS);
-  return { raw: text.slice(start, end), offset: index };
-}
-
-/**
- * Escape a literal for embedding in a `RegExp`. The phrase/verb lists below are hand-written
- * constants, but building the pattern from them is what keeps the LIST the single declaration.
- */
-function escapeRegExp(literal: string): string {
-  return literal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -221,120 +228,18 @@ export function collectSchemaParameters(inputSchema: unknown): SchemaParameter[]
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
 /**
- * Words that make "ignore previous …" an instruction override rather than ordinary English.
- *
- * A tool description that says "this endpoint will ignore previous **drafts**" is describing its own
- * behaviour; one that says "ignore previous **instructions**" is addressing the model. The object
- * noun is the only thing that separates them, so the three "previous"/"above" phrases below require
- * one and the literal phrases do not.
- */
-export const INJECTION_INSTRUCTION_OBJECTS = [
-  "instruction",
-  "instructions",
-  "prompt",
-  "prompts",
-  "message",
-  "messages",
-  "direction",
-  "directions",
-  "rule",
-  "rules",
-  "guidance",
-  "context",
-  "command",
-  "commands",
-  "order",
-  "orders",
-  "turn",
-  "turns",
-] as const;
-
-/** Filler allowed between the phrase and its object, so "ignore previous system prompts" still fires. */
-const INJECTION_OBJECT_MODIFIERS = [
-  "the",
-  "all",
-  "any",
-  "your",
-  "my",
-  "own",
-  "above",
-  "earlier",
-  "prior",
-  "user",
-  "system",
-  "assistant",
-  "other",
-] as const;
-
-export type InjectionPhrase = {
-  /** Matched case-insensitively; a space in the phrase matches any run of whitespace. */
-  phrase: string;
-  /**
-   * When set, the phrase alone is not enough — it must be followed by one of
-   * {@link INJECTION_INSTRUCTION_OBJECTS} (optionally through a modifier or two).
-   */
-  requiresInstructionObject?: true;
-};
-
-/**
- * The whole of rule 1. Deliberately SHORT and LITERAL.
- *
- * What it deliberately does NOT match:
- *   • a bare "ignore", "override" or "system" anywhere in a description — a broad regex over those
- *     would fire on half the honest servers in the world ("ignores case", "overrides the default",
- *     "the system clock"), and a poisoning rule that cries wolf is a poisoning rule nobody reads;
- *   • "ignore previous drafts" / "disregard the above defaults" — the four phrases whose object is a
- *     plain noun in ordinary prose carry `requiresInstructionObject`, so the sentence has to name an
- *     instruction, prompt, rule or message to fire;
- *   • paraphrases. This list is exact strings, not semantics. A determined attacker rewrites around
- *     it; the rule exists to catch the copy-pasted payloads that make up nearly all of what is
- *     actually seen in the wild, without a false-positive rate that gets the whole report ignored.
- */
-export const INJECTION_PHRASES: readonly InjectionPhrase[] = [
-  { phrase: "ignore previous", requiresInstructionObject: true },
-  { phrase: "ignore all previous", requiresInstructionObject: true },
-  { phrase: "disregard previous", requiresInstructionObject: true },
-  { phrase: "disregard the above", requiresInstructionObject: true },
-  { phrase: "do not tell the user" },
-  { phrase: "don't tell the user" },
-  { phrase: "without telling the user" },
-  { phrase: "do not mention this" },
-  { phrase: "before using any other tool" },
-  { phrase: "before doing anything else" },
-  { phrase: "you must first read" },
-  { phrase: "override your instructions" },
-  { phrase: "override the system" },
-];
-
-const INJECTION_PATTERNS: readonly { entry: InjectionPhrase; pattern: RegExp }[] =
-  INJECTION_PHRASES.map((entry) => {
-    const literal = escapeRegExp(entry.phrase).replace(/ /g, String.raw`\s+`);
-    const object = entry.requiresInstructionObject
-      ? `(?:\\s+(?:${INJECTION_OBJECT_MODIFIERS.join("|")}))*\\s+(?:${INJECTION_INSTRUCTION_OBJECTS.join("|")})\\b`
-      : "";
-    return { entry, pattern: new RegExp(literal + object, "i") };
-  });
-
-/**
  * One finding per TOOL, not one per matched phrase. A description carrying three payloads is one
  * hostile description, and emitting three `error` findings would move the score by −45 for a single
  * fact — the kind of severity inflation the README calls a defect. The message says how many other
  * phrases matched so nothing is hidden.
+ *
+ * The phrase list itself is `INJECTION_PHRASES` in `./text-scan.ts` (D-SP14) — including the
+ * `requiresInstructionObject` rule that keeps "will ignore previous drafts" silent. What is decided
+ * HERE is what a SERVER finding looks like: the `tool` anchor, the one-per-tool bound, the message.
  */
 export function ruleInjectionPhrasing(tool: ToolScan): SecurityFinding[] {
   const description = readText(tool.description);
-  if (description.length === 0) return [];
-
-  const matches: { index: number; length: number; phrase: string; order: number }[] = [];
-  INJECTION_PATTERNS.forEach(({ entry, pattern }, order) => {
-    const match = pattern.exec(description);
-    if (match)
-      matches.push({ index: match.index, length: match[0].length, phrase: entry.phrase, order });
-  });
-  if (matches.length === 0) return [];
-
-  // Earliest match wins, phrase-list order breaks a tie — a total order, so the report is stable.
-  matches.sort((a, b) => a.index - b.index || a.order - b.order);
+  const matches = findInjectionPhrases(description);
   const first = matches[0];
   if (first === undefined) return [];
 
@@ -345,8 +250,8 @@ export function ruleInjectionPhrasing(tool: ToolScan): SecurityFinding[] {
     createSecurityFinding({
       ruleId: "poisoning.injection-phrasing",
       anchor: { kind: "tool", toolName: toolNameOf(tool) },
-      message: `The description of "${toolNameOf(tool)}" contains injection phrasing ("${first.phrase}") at character ${first.index}${suffix}.`,
-      evidence: evidenceAround(description, first.index, first.length),
+      message: `The description of "${toolNameOf(tool)}" contains injection phrasing ("${first.phrase}") at character ${first.offset}${suffix}.`,
+      evidence: evidenceAround(description, first.offset, first.match.length),
     }),
   ];
 }
@@ -356,62 +261,24 @@ export function ruleInjectionPhrasing(tool: ToolScan): SecurityFinding[] {
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
 /**
- * An HTML comment. Renders as nothing in every UI that shows a description as markup, and is read
- * verbatim by the model — the definition of a channel you did not approve.
+ * One finding per tool, for the same reason rule 1 emits one — see its comment.
  *
- * Does NOT match a lone `-->` or a lone `<!--`: an unterminated comment is a typo, not a payload.
+ * All three shapes fire here, the bare HTML comment included: a tool description is a WIRE string a
+ * server serialized into a JSON payload, and it has no editorial reason to carry a comment at all.
+ * (The skill rule deliberately diverges — see `skill-analyzer.ts` — because a SKILL.md is authored
+ * Markdown where `<!-- prettier-ignore -->` is ordinary furniture.)
  */
-export const HIDDEN_HTML_COMMENT_PATTERN = /<!--[\s\S]*?-->/;
-
-/**
- * An UPPERCASE pseudo-tag — `<IMPORTANT>`, `</SYSTEM>`, `<INSTRUCTIONS priority="1">`. Case-SENSITIVE
- * on purpose (note the missing `i` flag): the shouted form is the prompt-injection idiom, and the
- * lower-case forms are ordinary words that appear inside real markup.
- *
- * Does NOT match `<b>`, `<code>`, `<important>`, or any tag outside the six names — a description
- * containing HTML is common and is not by itself a finding.
- */
-export const HIDDEN_PSEUDO_TAG_PATTERN =
-  /<\/?(IMPORTANT|SYSTEM|INSTRUCTION|INSTRUCTIONS|SECRET|ADMIN)\b[^>]*>/;
-
-/**
- * Prose addressed to the model rather than to the reader: "Note to the assistant: …",
- * "AI instructions:".
- *
- * Does NOT match "note to self", "note to the caller", or a description that merely contains the word
- * "assistant" — the address form is what makes it an out-of-band instruction.
- */
-export const HIDDEN_MODEL_ADDRESS_PATTERN =
-  /note to (?:the )?(?:assistant|model|ai)\b|ai instructions?:/i;
-
-const HIDDEN_INSTRUCTION_PATTERNS: readonly { label: string; pattern: RegExp }[] = [
-  { label: "an HTML comment", pattern: HIDDEN_HTML_COMMENT_PATTERN },
-  { label: "an uppercase pseudo-tag", pattern: HIDDEN_PSEUDO_TAG_PATTERN },
-  { label: "an instruction addressed to the model", pattern: HIDDEN_MODEL_ADDRESS_PATTERN },
-];
-
-/** One finding per tool, for the same reason rule 1 emits one — see its comment. */
 export function ruleHiddenInstructions(tool: ToolScan): SecurityFinding[] {
   const description = readText(tool.description);
-  if (description.length === 0) return [];
-
-  const matches: { index: number; length: number; label: string; order: number }[] = [];
-  HIDDEN_INSTRUCTION_PATTERNS.forEach(({ label, pattern }, order) => {
-    const match = pattern.exec(description);
-    if (match) matches.push({ index: match.index, length: match[0].length, label, order });
-  });
-  if (matches.length === 0) return [];
-
-  matches.sort((a, b) => a.index - b.index || a.order - b.order);
-  const first = matches[0];
+  const first = findHiddenInstructionBlocks(description)[0];
   if (first === undefined) return [];
 
   return [
     createSecurityFinding({
       ruleId: "poisoning.hidden-instructions",
       anchor: { kind: "tool", toolName: toolNameOf(tool) },
-      message: `The description of "${toolNameOf(tool)}" carries ${first.label} at character ${first.index}, which you do not see in a tool list but the model does.`,
-      evidence: evidenceAround(description, first.index, first.length),
+      message: `The description of "${toolNameOf(tool)}" carries ${first.label} at character ${first.offset}, which you do not see in a tool list but the model does.`,
+      evidence: evidenceAround(description, first.offset, first.match.length),
     }),
   ];
 }
@@ -421,51 +288,9 @@ export function ruleHiddenInstructions(tool: ToolScan): SecurityFinding[] {
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
 /**
- * Code-point ranges a tool definition has no legitimate reason to carry.
- *
- * What it deliberately does NOT match: ordinary punctuation and accented letters. An em-dash
- * (U+2014), a curly quote (U+2019), `é` (U+00E9) and every emoji are all outside these ranges, so a
- * description written by a human with a decent keyboard never fires this rule. Nor does a plain
- * newline or tab: those are legitimate inside a long description, and they are visible in the
- * evidence excerpt anyway because {@link redactSecurityEvidence} escapes them there.
- *
- * What it DOES match is text that is invisible to you and meaningful to the model: zero-width
- * spaces/joiners, the bidi overrides that let a name render backwards, the invisible math operators,
- * the BOM, the Unicode TAG block (the "smuggled ASCII" carrier), and the private-use area.
- */
-export const INVISIBLE_CODE_POINT_RANGES: readonly (readonly [number, number])[] = [
-  [0x200b, 0x200f], // zero-width space/non-joiner/joiner, LRM, RLM
-  [0x202a, 0x202e], // bidi embeddings and RIGHT-TO-LEFT OVERRIDE
-  [0x2060, 0x2064], // word joiner and the invisible operators
-  [0xfeff, 0xfeff], // BOM / zero-width no-break space
-  [0xe000, 0xf8ff], // private use area — renders as a box or as nothing, means whatever a font says
-  [0xe0000, 0xe007f], // TAG block: ASCII smuggled as invisible code points
-];
-
-function isInvisibleCodePoint(code: number): boolean {
-  return INVISIBLE_CODE_POINT_RANGES.some(([low, high]) => code >= low && code <= high);
-}
-
-/** The UTF-16 index and code point of the first invisible character, or `null`. */
-function findInvisible(text: string): { index: number; length: number; code: number } | null {
-  for (let index = 0; index < text.length; ) {
-    const code = text.codePointAt(index);
-    if (code === undefined) break;
-    const length = code > 0xffff ? 2 : 1;
-    if (isInvisibleCodePoint(code)) return { index, length, code };
-    index += length;
-  }
-  return null;
-}
-
-function describeCodePoint(code: number): string {
-  return `U+${code.toString(16).toUpperCase().padStart(4, "0")}`;
-}
-
-/**
  * One tool-anchored finding for the name/description, plus one parameter-anchored finding per
  * offending parameter (bounded per tool like rule 9, so a pathological schema cannot drown the
- * report).
+ * report). The ranges themselves are `INVISIBLE_CODE_POINT_RANGES` in `./text-scan.ts` (D-SP14).
  */
 export function ruleInvisibleUnicode(tool: ToolScan): SecurityFinding[] {
   const findings: SecurityFinding[] = [];

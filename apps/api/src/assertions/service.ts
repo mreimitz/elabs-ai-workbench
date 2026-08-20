@@ -1039,6 +1039,13 @@ function describeAnchor(anchor: SecurityFindingAnchor): string {
   switch (anchor.kind) {
     case "server":
       return "the server itself";
+    // security-posture WP 1.3 (D-SP12) added `skill` to the anchor union, and this switch is
+    // exhaustive, so the compiler required an arm. It changes NO gate behaviour:
+    // `no-new-security-findings` reads scan posture only, so a skill anchor cannot reach this gate
+    // today. Wiring skill posture into a CI assertion is a later, owner-gated decision — the arm is
+    // here because a `default:` would have silently turned the next union member into a bug.
+    case "skill":
+      return "the skill version itself";
     case "tool":
       return `tool "${anchor.toolName}"`;
     case "parameter":

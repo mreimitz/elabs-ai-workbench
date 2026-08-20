@@ -58,13 +58,13 @@ export const SECURITY_ANALYZER_VERSION = 1;
 export const SECURITY_SEVERITIES = ["error", "warning", "info"] as const;
 export type SecuritySeverity = (typeof SECURITY_SEVERITIES)[number];
 
-/** What a report is ABOUT. `skill` has no rules yet — WP 1.3 adds them without reshaping this. */
+/** What a report is ABOUT. WP 1.3 added the `skill` rules without reshaping this vocabulary. */
 export const SECURITY_SUBJECT_KINDS = ["server", "skill"] as const;
 export type SecuritySubjectKind = (typeof SECURITY_SUBJECT_KINDS)[number];
 
 /**
- * The `category` half of every rule id (D-SP2). `skill-surface` is declared but unused until WP 1.3
- * rolls the existing skill security surface into this same shape.
+ * The `category` half of every rule id (D-SP2). `skill-surface` carries WP 1.3's seven skill rules,
+ * which roll the existing skill security surface into this same shape.
  */
 export const SECURITY_RULE_CATEGORIES = [
   "poisoning",
@@ -100,15 +100,18 @@ export type SecurityRule = {
 };
 
 /**
- * The eleven server rules WP 1.2 implements. **This WP only declares them** — there is no check
- * behind any of these ids yet, and writing one here would be a scope violation.
+ * The eighteen rules: **eleven** `subject: "server"` (implemented in `apps/api/src/security/
+ * analyzer.ts`, WP 1.2) followed by **seven** `subject: "skill"` (implemented in
+ * `apps/api/src/security/skill-analyzer.ts`, WP 1.3). Nothing here analyses anything — this is the
+ * declaration both analyzers are held to, and a rule id that no analyzer can emit is a red test.
  *
- * The severities were chosen against the plan's "severity inflation is a defect" line: only the three
- * checks where a finding means *this server is actively trying to steer a model* are `error`; hygiene
- * a reasonable server may legitimately fail is `info`.
+ * The severities were chosen against the plan's "severity inflation is a defect" line: only the
+ * checks where a finding means *this thing is actively trying to steer a model* are `error`; hygiene
+ * a reasonable server or an honest skill may legitimately fail is `info`.
  *
- * No skill rule id is declared. WP 1.3 owns those, and declaring ids nothing implements would leave
- * the registry-integrity test unable to pin them to anything.
+ * Every id is frozen the moment it ships (D-SP2). The seven skill ids were ADDED here; not one of the
+ * eleven above was renamed, re-pointed or re-severitied, which is why `SECURITY_ANALYZER_VERSION`
+ * stays 1.
  */
 export const SECURITY_RULES = {
   "poisoning.injection-phrasing": {
@@ -210,6 +213,80 @@ export const SECURITY_RULES = {
     rationale:
       "The stored OAuth grant asks for a wildcard or whole-account scope on a server used for one job. If that server is compromised the blast radius is everything the scope reaches — request the narrowest scope that still works.",
   },
+
+  // ── The seven skill rules (WP 1.3) ──────────────────────────────────────────────────────────
+  //
+  // Added, never re-pointed: every id above keeps its exact meaning, so `SECURITY_ANALYZER_VERSION`
+  // stays 1 and no report that exists today changes (D-SP2).
+  //
+  // The severities are chosen against the same "severity inflation is a defect" line the server rules
+  // were: only the three checks that mean *this skill is steering the model behind your back* are
+  // `error`. Shipping scripts and linking out are `info`, because honest skills do both all day —
+  // a skill registry whose loudest signal fires on every normal skill is a registry nobody reads.
+
+  "skill-surface.injection-phrasing": {
+    id: "skill-surface.injection-phrasing",
+    category: "skill-surface",
+    subject: "skill",
+    severity: "error",
+    title: "Injection phrasing in SKILL.md",
+    rationale:
+      "The skill body tells the model to override its own instructions or to keep something from you. SKILL.md is loaded verbatim into context every time this skill is attached, so this steers every run that uses it — treat it as hostile until the author explains it.",
+  },
+  "skill-surface.hidden-instructions": {
+    id: "skill-surface.hidden-instructions",
+    category: "skill-surface",
+    subject: "skill",
+    severity: "error",
+    title: "Hidden instruction block in SKILL.md",
+    rationale:
+      "The skill body carries a block addressed to the model rather than to you — a pseudo-tag, or a comment that renders as nothing while the model still reads it. Anything you do not see in the rendered skill but the model does is a channel for instructions you never approved.",
+  },
+  "skill-surface.invisible-unicode": {
+    id: "skill-surface.invisible-unicode",
+    category: "skill-surface",
+    subject: "skill",
+    severity: "error",
+    title: "Invisible characters in the skill",
+    rationale:
+      "Zero-width, bidi-control or private-use characters sit in the skill body, its frontmatter or a file path, where they are invisible to you and meaningful to the model. Skill text that a human wrote has no legitimate reason to carry them.",
+  },
+  "skill-surface.credential-in-body": {
+    id: "skill-surface.credential-in-body",
+    category: "skill-surface",
+    subject: "skill",
+    severity: "warning",
+    title: "Credential-shaped value in SKILL.md",
+    rationale:
+      "The skill body contains a run of text shaped like a real API key or token. Skill content is stored, versioned, exported and read into model context, so a secret pasted into it has already travelled further than you meant — rotate it and read the value from configuration instead.",
+  },
+  "skill-surface.broad-allowed-tools": {
+    id: "skill-surface.broad-allowed-tools",
+    category: "skill-surface",
+    subject: "skill",
+    severity: "warning",
+    title: "Broad allowed-tools grant",
+    rationale:
+      "The frontmatter grants this skill a wildcard or an unrestricted command executor, so attaching it hands the model every tool rather than the few the skill needs. Narrow the grant to the specific tools and command prefixes the instructions actually use.",
+  },
+  "skill-surface.executable-scripts": {
+    id: "skill-surface.executable-scripts",
+    category: "skill-surface",
+    subject: "skill",
+    severity: "info",
+    title: "Skill ships executable scripts",
+    rationale:
+      "The version contains script files. This app never runs them — it stores and meters skill content — but an agent host that does will execute whatever they contain, so read them before you attach this skill anywhere that can.",
+  },
+  "skill-surface.network-reference": {
+    id: "skill-surface.network-reference",
+    category: "skill-surface",
+    subject: "skill",
+    severity: "info",
+    title: "SKILL.md references the network",
+    rationale:
+      "The skill body contains an absolute http(s) URL, which is a hint that following the instructions reaches outside your control. This is a lexical scan of the prose and not a taint analysis, so treat it as a place to look rather than as proof of a network call.",
+  },
 } as const satisfies Record<string, SecurityRule>;
 
 export type SecurityRuleId = keyof typeof SECURITY_RULES;
@@ -229,6 +306,13 @@ export const SECURITY_RULE_IDS = Object.keys(SECURITY_RULES) as SecurityRuleId[]
  */
 export type SecurityFindingAnchor =
   | { kind: "server" }
+  /**
+   * D-SP12 — the SKILL VERSION as a whole, for a finding that is about the version rather than about
+   * one file in it: it ships scripts, its frontmatter grants broad tool access. It gets its own kind
+   * instead of borrowing `server` because reusing that one would print the word *server* on a skill
+   * finding in every UI, every export and every CI comment, for the sake of not adding four lines.
+   */
+  | { kind: "skill" }
   | { kind: "tool"; toolName: string }
   | { kind: "parameter"; toolName: string; parameterPath: string }
   | { kind: "file"; path: string };
@@ -374,12 +458,21 @@ export function computeSecurityScore(findings: readonly SecurityFinding[]): Secu
 /** Worst first. Deliberately the same order as {@link SECURITY_SEVERITIES}. */
 const SEVERITY_RANK: Record<SecuritySeverity, number> = { error: 0, warning: 1, info: 2 };
 
-/** Broadest anchor first, so a server-wide finding sorts above the tools it is about. */
+/**
+ * Broadest anchor first, so a server-wide finding sorts above the tools it is about.
+ *
+ * D-SP12 — `skill` ranks **last** rather than beside `server`, which it resembles. That is deliberate:
+ * appending a rank leaves every existing pair's relative order byte-identical, whereas inserting one
+ * at rank 1 would renumber `tool`/`parameter`/`file` and silently reorder every report that already
+ * exists. A subject-level skill finding still sorts above nothing it needs to outrank, because a skill
+ * report's other anchors are all `file` and severity + `ruleId` are compared long before the kind is.
+ */
 const ANCHOR_KIND_RANK: Record<SecurityFindingAnchor["kind"], number> = {
   server: 0,
   tool: 1,
   parameter: 2,
   file: 3,
+  skill: 4,
 };
 
 /**
@@ -397,6 +490,9 @@ function compareStrings(a: string, b: string): number {
 function anchorNameParts(anchor: SecurityFindingAnchor): readonly string[] {
   switch (anchor.kind) {
     case "server":
+      return [];
+    // D-SP12 — like `server`, the subject itself: it names no component, so its key is its kind alone.
+    case "skill":
       return [];
     case "tool":
       return [anchor.toolName];
@@ -562,17 +658,68 @@ const BASE64URL_CHARACTER = String.raw`(?:[A-Za-z0-9_-]|\\u[0-9A-F]{4})`;
 const ALPHANUMERIC_CHARACTER = String.raw`(?:[A-Za-z0-9]|\\u[0-9A-F]{4})`;
 
 /**
- * Credential shapes, most specific first. The final entry is the catch-all: a bare base64url run
- * long enough that no prose produces it by accident. It over-masks the occasional long opaque id,
- * which is the correct trade — an over-masked identifier costs an operator one question, a leaked
- * token costs them a rotation.
+ * **D-SP13 — the credential shapes precise enough to REPORT.** Each one is anchored on a vendor
+ * prefix nothing else produces, so a match is a credential and not a coincidence.
+ *
+ * What this list deliberately does NOT contain is the catch-all
+ * {@link CREDENTIAL_PATTERNS} also masks with — a bare base64url run of 32 or more. That absence is
+ * the whole point of the split. A SKILL.md routinely carries a 40-character commit sha, a long slug
+ * or a long snake_case tool name, and a RULE that fired on those would be the false-positive machine
+ * the plan's README forbids. Over-masking is the right error for redaction and the wrong one for a
+ * finding: an over-masked identifier costs an operator one question, a finding that cries wolf costs
+ * them the whole report.
+ *
+ * The escaped-invisible alternative inside {@link BASE64URL_CHARACTER} is inert on the raw text
+ * {@link findPrefixedCredential} reads (nothing has been escaped yet) and load-bearing on the escaped
+ * text {@link redactSecurityEvidence} reads. One list, two readers, no second definition.
  */
-const CREDENTIAL_PATTERNS: readonly RegExp[] = [
+export const SECURITY_CREDENTIAL_PREFIX_PATTERNS: readonly RegExp[] = [
   new RegExp(`mcpfp_${BASE64URL_CHARACTER}{20,}`, "g"),
   new RegExp(`sk-${BASE64URL_CHARACTER}{16,}`, "g"),
   new RegExp(`gh[pousr]_${ALPHANUMERIC_CHARACTER}{20,}`, "g"),
+];
+
+/**
+ * Credential shapes, most specific first: the prefixed shapes above, then the catch-all — a bare
+ * base64url run long enough that no prose produces it by accident. It over-masks the occasional long
+ * opaque id, which is the correct trade — an over-masked identifier costs an operator one question,
+ * a leaked token costs them a rotation.
+ *
+ * Built FROM {@link SECURITY_CREDENTIAL_PREFIX_PATTERNS} rather than re-typed beside it, so each
+ * prefix shape has exactly one definition (D-SP13). Same shapes, same order, same behaviour as before
+ * the split: {@link redactSecurityEvidence}'s output is unchanged for every input.
+ */
+const CREDENTIAL_PATTERNS: readonly RegExp[] = [
+  ...SECURITY_CREDENTIAL_PREFIX_PATTERNS,
   new RegExp(`${BASE64URL_CHARACTER}{32,}`, "g"),
 ];
+
+/**
+ * The first prefixed credential-shaped run in `text`, or `null` — the REPORTING half of D-SP13.
+ *
+ * "First" is by position, with the declaration order of {@link SECURITY_CREDENTIAL_PREFIX_PATTERNS}
+ * breaking a tie, so the answer is total and a report stays byte-stable (D-SP6).
+ *
+ * The returned `match` is the credential IN CLEAR. A caller never prints it: it goes to
+ * {@link createSecurityFinding} as `{ raw }`, which forces it through {@link redactSecurityEvidence}
+ * and it comes out as {@link SECURITY_REDACTION_MARKER}. The finding then proves a credential is
+ * there without republishing it.
+ */
+export function findPrefixedCredential(text: string): { match: string; offset: number } | null {
+  let best: { match: string; offset: number } | null = null;
+  for (const pattern of SECURITY_CREDENTIAL_PREFIX_PATTERNS) {
+    // A fresh, NON-global copy per call. `exec` on a `g`-flagged regex advances the regex's own
+    // `lastIndex`, and these constants are shared with `redactSecurityEvidence` — a matcher that
+    // carries state between calls is a matcher whose answer depends on what ran before it, which is
+    // exactly what D-SP6 forbids.
+    const match = new RegExp(pattern.source).exec(text);
+    if (match === null) continue;
+    if (best === null || match.index < best.offset) {
+      best = { match: match[0], offset: match.index };
+    }
+  }
+  return best;
+}
 
 /**
  * D-SP4 — turn a raw matched span into the only evidence shape a finding may carry: invisibles
@@ -669,6 +816,9 @@ export const securityRuleIdSchema = z.enum(
 
 export const securityFindingAnchorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("server") }).strict(),
+  // D-SP12 — appended, never inserted: every variant above and below it is byte-identical to what
+  // WP 1.1 shipped, so no report that validates today stops validating.
+  z.object({ kind: z.literal("skill") }).strict(),
   z.object({ kind: z.literal("tool"), toolName: z.string().min(1) }).strict(),
   z
     .object({
