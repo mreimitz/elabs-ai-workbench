@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Security posture \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the security-posture plan, read and updated by /next-wp security-posture."
 tags: ["roadmap", "RM-20"]
-timestamp: "2026-08-20T19:30:00Z"
+timestamp: "2026-08-20T19:55:00Z"
 status: "active"
 ---
 # Security posture — work-package status ledger · **PRIORITY: HIGH**
@@ -325,8 +325,8 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       risk** against its own analyzer — 51 `info` findings, all undescribed parameters and
       unconstrained object schemas. That is the analyzer telling the truth about the bench's own tool
       surface, and it is an owner decision, not a bug in this WP.
-- [ ] WP 2.2 — report export integration — depends: 1.4 — status: open (unblocked — WP 2.1 merged
-      without touching `apps/api/src/index.ts`, so the file it was queued behind is free) ·
+- [ ] WP 2.2 — report export integration — depends: 1.4 — **status: in progress**
+      (`wp/security-posture/2.2`; the last open box in this ledger) ·
       spec: [`wp-2.2-report-export.md`](./wp-2.2-report-export.md)
 
 ## Decision log
