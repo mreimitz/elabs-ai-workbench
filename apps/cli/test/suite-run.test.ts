@@ -502,7 +502,13 @@ test("A10 — the command list names `suite run`, both help keys resolve, and it
     !/suite run \(WP 2\.1\)/.test(usage.stdout),
     "`suite run` must be gone from the 'Not built yet' list — it is built",
   );
-  assert.match(usage.stdout, /Not built yet\n {2}The baseline-delta PR-comment artifact \(WP 2\.2\)\./);
+  // WP 2.2 built the artifact, so the 'Not built yet' list no longer claims it is missing — only
+  // WP 2.3's workflow, which POSTS it, is still outstanding.
+  assert.ok(
+    !/The baseline-delta PR-comment artifact \(WP 2\.2\)/.test(usage.stdout),
+    "the PR-comment artifact must be gone from the 'Not built yet' list — it is built",
+  );
+  assert.match(usage.stdout, /Not built yet\n {2}Nothing this text describes\./);
 
   for (const topic of [["help", "suite"], ["help", "suite run"]]) {
     const result = await runCliCapture(topic, { cwd });

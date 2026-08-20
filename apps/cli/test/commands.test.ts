@@ -493,9 +493,9 @@ test("A13 — --format markdown on a command without one exits 2 naming the supp
       ["scans"],
       ["config", "show"],
       ["scan", "srv_everything"],
-      // WP 2.1: `suite run` withholds markdown for the same reason `assert` does — the PR-comment
-      // artifact is WP 2.2's, and a human table written into a file a later step parses as the
-      // artifact is exactly the failure the guard exists to prevent.
+      // `suite run` withholds markdown: the PR-comment artifact belongs to the GATE, and WP 2.2 put
+      // it on `mcpfp assert --format markdown`. A human table written into a file a later step
+      // parses as the artifact is exactly the failure this guard exists to prevent.
       ["suite", "run", "ste_nightly"],
     ]) {
       const result = await run([...command, "--format", "markdown"]);

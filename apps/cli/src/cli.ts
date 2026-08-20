@@ -52,10 +52,14 @@ const SUPPORTED_FORMATS: Record<string, readonly OutputFormat[]> = {
   servers: ["human", "json"],
   scans: ["human", "json"],
   "config show": ["human", "json"],
-  // `markdown` is deliberately absent from both of these: the PR-comment artifact is WP 2.2's, and
-  // offering the flag before it exists would mean writing a human table into a file a later step
-  // tried to parse as the artifact.
-  assert: ["human", "json"],
+  // WP 2.2 — `assert` gained `markdown`: the baseline-delta PR-comment body (D-C15), rendered from
+  // the report by `renderAssertionMarkdown` in `packages/shared`. It is a third RENDERING of the
+  // same report, never a different verdict — the exit code comes from `report.passed` whichever
+  // format was asked for.
+  assert: ["human", "json", "markdown"],
+  // `suite run` still withholds `markdown`: there is no PR-comment artifact for a suite RUN (the
+  // artifact is the GATE's, and it is `mcpfp assert`'s), so offering the flag would mean writing a
+  // human table into a file a later step tried to parse as the artifact.
   "suite run": ["human", "json"],
 };
 
