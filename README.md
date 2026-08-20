@@ -193,6 +193,11 @@ a skill, two different analyzer versions, or a truncated report each get an expl
 misleading answer. The same comparison backs the `no-new-security-findings` CI gate, so the page and
 the pull request can never tell you different stories.
 
+Exported **scan and server reports** carry the same posture — score, band, analyzer version, counts,
+findings and evidence — in both JSON and Markdown, in a fixed shape you can grep. A server whose scan
+failed still exports: its posture section says `Not analysed: … — unmeasured, not clean` rather than
+failing the download or quietly reading as a clean bill of health.
+
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](planning/user-guide/DC-01-getting-started/00-guide-map.md) for the full picture.
 

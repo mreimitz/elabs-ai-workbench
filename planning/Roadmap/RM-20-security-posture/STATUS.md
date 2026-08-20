@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Security posture \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the security-posture plan, read and updated by /next-wp security-posture."
 tags: ["roadmap", "RM-20"]
-timestamp: "2026-08-20T19:55:00Z"
+timestamp: "2026-08-20T21:10:00Z"
 status: "active"
 ---
 # Security posture — work-package status ledger · **PRIORITY: HIGH**
@@ -325,9 +325,72 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       risk** against its own analyzer — 51 `info` findings, all undescribed parameters and
       unconstrained object schemas. That is the analyzer telling the truth about the bench's own tool
       surface, and it is an owner decision, not a bug in this WP.
-- [ ] WP 2.2 — report export integration — depends: 1.4 — **status: in progress**
-      (`wp/security-posture/2.2`; the last open box in this ledger) ·
-      spec: [`wp-2.2-report-export.md`](./wp-2.2-report-export.md)
+- [x] WP 2.2 — report export integration — done 2026-08-20 · `wp/security-posture/2.2` ·
+      spec: [`wp-2.2-report-export.md`](./wp-2.2-report-export.md).
+      **The exported documents now carry the posture.** The scan and server exports, JSON and
+      Markdown alike, gain a `## Security posture` section: score + band, analyzer version,
+      per-severity counts read off the report's own `counts`, the findings in the analyzer's order,
+      and each finding's redacted evidence in a fenced block. Built in **exactly one file**
+      (`apps/api/src/reports/security-section.ts`), pinned by a test that walks `apps/api/src` and
+      goes red if a second file re-declares the table header, the `Not analysed:` token or the
+      `unavailable` status. Decisions **D-SP24–D-SP26** in the log below. 12 files; no migration, no
+      dependency, no environment variable, no feature flag, no UI (`apps/web` zero-diff).
+      **Gate fully green:** `typecheck` 0 · shared **185/185** [182 before] · cli **87/87** · api
+      **3562/3562, zero failures** [3547 before, a **+15** delta all passing] · web **337 files, 3611
+      passed / 5 skipped**, unchanged · `build` 0 · `lint` **0 errors** · `pnpm okf:validate` PASS.
+      The agent measured its own baseline first and it was green too, so nothing here is inherited.
+      **Verified by the orchestrator, not taken on report:** the 12-file diff against the true merge
+      base (`1ee3016`, from `git merge-base`); every zero-line-diff path, including `apps/web/**`,
+      `apps/api/src/security/**`, `apps/api/src/assertions/**`, `packages/shared/src/ci-assertions.ts`,
+      `apps/api/src/db/**`, `apps/api/test/{ci-assertions,server-report,server-report-markdown}.test.ts`
+      and `planning/**`; **zero removed lines** in WP 1.1's contract; and **four independent teeth
+      checks**, each applied then reverted — rendering an unscorable subject as "No findings" turned
+      both D-SP24 tests red; deriving the count line from `findings.length` turned the truncated-report
+      test red; un-escaping the evidence on its way into the document turned the D-SP4 test red; and
+      declaring the table header in a second file turned the one-renderer test red. `git status` clean
+      afterwards.
+      **D-SP26 answered "no", and the skill half was therefore NOT built.** `apps/api/src/reports/
+      routes.ts` registers 14 report endpoints — scan ×2, server ×2, run ×2, suite-run ×2, digest ×5,
+      fleet ×2 — and **none is a skill report**. The only skill "export" is
+      `GET /api/skills/:id/versions/:vid/export`, which returns a **zip of the version's files**: a
+      download, not a document with a JSON/Markdown rendering to add a section to. Per D-SP26 the
+      agent did not invent one. The renderer is subject-agnostic and already handles a skill report
+      (`{kind:"skill"}` anchors render as "this skill version", D-SP12), so a future skill report
+      endpoint plugs in without touching it. **This is a real, declared gap against the item's Phase 2
+      wording ("scan/server/skill reports gain a posture section") and an owner decision, recorded
+      below.**
+      **Nine deviations, all declared.** The two that matter: `packages/shared/src/types.ts` was
+      modified (one optional `security?:` field on `ServerReport` — that type lives in `types.ts`, not
+      in `security-posture.ts`, and `types.ts` was not on the zero-diff list); and the `security` port
+      on `registerReportRoutes` is **required, not optional**, so two existing harnesses
+      (`fleet-report.test.ts`, `digest-schedule.test.ts`) each gained the argument — both wired to the
+      **real** analyzer rather than a stub, with no assertion touched. An optional port would let an
+      export silently lose its posture section, which is the exact failure D-SP24 exists to prevent.
+      The rest: `renderSecuritySection(undefined)` renders **nothing** (so the workbench MCP report
+      resources and `pnpm mcp:self-scan`, which call the same builders with no analyzer, keep
+      producing byte-identical documents — those files are a zero-diff path here); a truncation line
+      the spec did not list but D-SP3/D-SP6 require; the clean branch keyed off `counts.total === 0`
+      rather than `findings.length === 0`; two local Markdown helpers instead of importing from
+      `reports.ts` (which imports the renderer — the reverse import would be a value-level cycle); an
+      unexpected analyzer error's message deliberately **not** quoted into the document (a 4xx refusal
+      the analyzer authored is); and a new test file rather than extending the existing report tests,
+      which is what keeps them provably zero-diff.
+      **One inaccuracy in the agent's own report, corrected here:** its deviation 4 says the heading,
+      score line and count line "are always there". They are not, and should not be — the code returns
+      after the `Not analysed:` line, because a score you do not have cannot be printed. The code is
+      right; the sentence describing it was wrong.
+      **Not verified:** nothing was run against the built container or a browser — this WP adds no UI.
+      The four export routes were exercised end-to-end through the **real** `registerReportRoutes` on
+      a real Fastify listener over a real SQLite database, with fixtures seeded through the real
+      `ScanRepository`; no real third-party MCP server was scanned. A skill posture section **has
+      never been rendered by any endpoint**, because none exists — the renderer's `skill` branch is
+      covered only by its type-level exhaustiveness check. The agent read the rendered Markdown in all
+      three states by eye and judged it correct; that is its judgement, not a test.
+      **One follow-up it surfaced, not a defect:** the `## Security posture` heading is now used by two
+      documents — this section and the Advisor **fleet** report's own posture roll-up
+      (`apps/api/src/reports/fleet-report-markdown.ts`), which today always prints its "no analyzer has
+      produced a summary" gap line. That seam could now be fed by this analyzer; wiring it was outside
+      this WP's file list.
 
 ## Decision log
 _Entries: date · decision · rationale._
@@ -571,7 +634,48 @@ _Entries: date · decision · rationale._
   the UI half of the honesty the refusals give the API: this workstream's whole value is that you can
   believe it when it says there is nothing wrong.
 
+- **2026-08-20 · D-SP24–D-SP26 locked at the WP 2.2 kickoff.** Full text + the design they bind:
+  [`wp-2.2-report-export.md`](./wp-2.2-report-export.md). Implemented in
+  `apps/api/src/reports/security-section.ts` and pinned by
+  `apps/api/test/security-report-export.test.ts`.
+  - **D-SP24 — a report that cannot be scored says so IN the document; it never fails the export and
+    it never renders as clean.** The JSON section is a discriminated union
+    (`{status:"analyzed", report}` | `{status:"unavailable", reason}`); the Markdown prints one
+    `Not analysed: … — unmeasured, not clean` line. Both failure modes it forecloses are real: an
+    export that 500s would make the **token footprint** unobtainable for exactly the broken servers an
+    operator most wants to document, and an export that silently omitted the section would read as
+    "nothing found". A subject with genuinely no findings gets D-SP23's real answer instead.
+  - **D-SP25 — the Markdown section is a fixed, greppable shape.** One `## Security posture` heading,
+    then one of **three** states, each opening with its own token — `Score: ` (analysed; then the count
+    line, the findings table and fenced evidence), `No findings` (analysed and clean), or
+    `Not analysed: ` (could not be scored). These documents get diffed and grepped by people and by CI;
+    a section whose shape moves with its content is a section nobody can automate against.
+    `renderAssertionMarkdown` in the CI workstream is the precedent for one renderer with a fixed
+    shape, and a test writes every literal out a second time **by hand** — the same discipline D-SP2's
+    registry test uses.
+  - **D-SP26 — there is NO skill report endpoint, so the skill half was not built.** The check was
+    made first, as the decision required: 14 report endpoints exist and none is a skill report; the
+    only skill export returns a **zip of files**, not a document. Inventing a whole new export surface
+    is an owner decision, not a side-effect of adding a section — so the WP covers the scan and server
+    exports, and says so. The renderer is subject-agnostic, so a future endpoint plugs in unchanged.
+
+  _Rationale:_ D-SP24 and D-SP25 are the export-side of the same honesty the API refusals give: this
+  workstream's value is that you can believe the document when it says nothing is wrong, and that you
+  can tell "clean" from "not measured" at a glance. D-SP26 is the discipline of not letting a small
+  work package quietly grow a new public surface.
+
 ## Owner acceptance (owner-only)
+- [ ] **D-SP26 — no skill report endpoint exists, so exported skill posture does not either.** The
+      item's Phase 2 wording says "scan/server/skill reports gain a posture section". Two of three
+      shipped. The only skill export today is a **zip of the version's files**; there is no skill
+      report document to add a section to, and WP 2.2 refused to invent one. Decide whether a skill
+      report endpoint (JSON + Markdown, like the scan and server ones) is worth its own work package —
+      the posture renderer already handles a skill report unchanged — accepted: ____
+- [ ] **WP 2.2 — read one exported document yourself.** Download a scan report as Markdown for a
+      server with findings, and one for a server whose scan failed. The first should carry the score,
+      the counts and the evidence; the second should say `Not analysed: … — unmeasured, not clean` and
+      still carry its token footprint. The agent read all three states by eye and judged them correct;
+      nobody else has — accepted: ____
 - [ ] **WP 2.1 — the two-theme, keyboard walk, in YOUR browser.** The implementing agent walked
       `light` and `dark` with screenshots and measured contrast (worst 4.59:1, all AA); **the
       orchestrator did not look at the app at all**. Open a scan's Security tab and a skill's, pick a

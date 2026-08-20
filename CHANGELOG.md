@@ -34,6 +34,14 @@ The CI gate's `no-new-security-findings` rule was re-pointed at the same compari
 the page and the pull request cannot disagree about which findings are new. Its own test file was
 left byte-identical through that change, which is the proof no gate behaviour moved.
 
+Exported **scan and server reports** now carry the posture too, in JSON and Markdown alike: score,
+band, analyzer version, per-severity counts, the findings and their redacted evidence, in a fixed
+greppable shape built in exactly one file. A subject that cannot be scored — a scan that failed, a
+skill whose `SKILL.md` is not readable text — exports successfully with one honest line saying so;
+it never fails the download, and it never renders as clean. (There is no skill *report* endpoint
+today, only a zip download of a version's files, so the skill half of that integration is not built
+rather than invented.)
+
 No migration, no new dependency, no feature flag.
 
 ## Unreleased — one governed home for research, planning and the guide
