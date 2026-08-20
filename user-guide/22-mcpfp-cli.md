@@ -95,7 +95,7 @@ Which permission a command needs:
 | --- | --- |
 | `scan` | **Run scans** (plus **Read**, if you pass a server *name* rather than an id) |
 | `suite run` | **Run suites** to start the matrix, **plus Read** to follow it (and to resolve a suite *name*) |
-| `assert` | **Run scans** — see the note under [`assert`](#assert-file--fail-the-build-when-the-footprint-moves); it only reads, but this version decides permissions by request type |
+| `assert` | **Read** — it only reads something the app already measured |
 | everything else | **Read** |
 
 Three things `mcpfp` does with your token, deliberately:
@@ -253,23 +253,32 @@ which is the one code this command must never produce (see [Running it](#running
 ```
 
 Formats: `human` (default), `json`. Markdown is **not** offered here — the pull-request comment
-artifact is a later work package, and a flag that silently produced a human table into a file a
-later step tried to parse would be worse than not having it.
+belongs to the *gate*, and lives on [`assert --format markdown`](#assert-file--fail-the-build-when-a-budget-is-broken).
+A flag that silently produced a human table into a file a later step tried to parse as that comment
+would be worse than not having it.
 
-### `assert [file]` — fail the build when the footprint moves
+### `assert [file]` — fail the build when a budget is broken
 
 This is the one that turns a measurement into a **gate**. You write down what you consider
-acceptable, `mcpfp assert` asks the app whether the latest scan still meets it, and the exit code
-tells your pipeline what to do.
+acceptable, `mcpfp assert` asks the app whether the latest measurement still meets it, and the exit
+code tells your pipeline what to do.
+
+There are two kinds of gate, and they work identically:
+
+- a **footprint gate** over a *scan* — "this server's tools may not cost more than 3,000 tokens";
+- a **quality gate** over a *suite run* — "the nightly suite must still average 0.8, for under $2.50".
 
 ```bash
 node apps/cli/dist/index.js scan   "Everything (demo)"   # measure it now
 node apps/cli/dist/index.js assert                       # then check it against your rules
+
+node apps/cli/dist/index.js suite run "Nightly"          # run the matrix and wait for it
+node apps/cli/dist/index.js assert quality.assert.json   # then check the scores
 ```
 
-Those two are deliberately separate commands. **`assert` never runs a scan** — it judges a
-measurement the app already holds. That is what keeps the exit codes honest: a server that could not
-be reached fails the *scan* step with code 2, rather than quietly turning into "the gate says no".
+Those are deliberately separate commands. **`assert` never runs anything** — it judges a measurement
+the app already holds. That is what keeps the exit codes honest: a server that could not be reached
+fails the *scan* step with code 2, rather than quietly turning into "the gate says no".
 
 #### The file
 
@@ -300,17 +309,45 @@ A worked example, also in the repository as
 
 - **`version`** must be `1`. A file written for a newer version is refused with a sentence naming
   both, rather than half-read.
-- **`target`** is either `{ "server": … }` (a server id or its exact name — the newest completed scan
-  is used) or `{ "scan": "<scanId>" }`. Not both.
-- **`baseline`** is optional and only consulted by the rules that need one: `"previous"` means "the
-  scan before this one, of the same server", or you can name an exact scan id.
+- **`target`** is exactly one of four shapes:
+
+  | Target | What is asserted |
+  | --- | --- |
+  | `{ "server": "<id or exact name>" }` | that server's newest completed scan |
+  | `{ "scan": "<scanId>" }` | that exact scan |
+  | `{ "suite": "<id or exact name>" }` | that suite's newest finished, fully-rated run |
+  | `{ "suiteRun": "<suiteRunId>" }` | that exact suite run |
+
+  Naming two of them is an error, not a precedence rule nobody remembers. An ambiguous *name* (two
+  servers or two suites share it) lists both ids rather than picking one.
+- **`baseline`** is optional: `"previous"` means "the one before this, of the same server / the same
+  suite", or you can name an exact id. A baseline you **name** is always resolved and echoed back,
+  even when none of your rules needs it — that is what puts the before-and-after line in the
+  pull-request comment.
 - **Every key is checked.** A misspelled key is an error naming the field — never a rule that
   silently disappears from a gate you believe is protecting you.
 
 Unlike `mcpfp.config.json`, this file carries **no credential** — commit it. It is the record of what
-your team agreed the footprint may cost, and it belongs next to the code it protects.
+your team agreed the footprint (or the quality) may cost, and it belongs next to the code it
+protects.
+
+#### One file, one family
+
+A gate file asserts **one kind of thing**. A footprint target (`server` / `scan`) takes only the
+footprint rules; a quality target (`suite` / `suiteRun`) takes only the suite rules. Mixing them is a
+validation error that names the offending rule's position in your `rules` array.
+
+That is deliberate. If you want both gates, keep two files and run `mcpfp assert` twice — which is
+also what makes the result readable in a build log, because you can see *which* gate said no.
+
+```bash
+node apps/cli/dist/index.js assert footprint.assert.json   # the token budget
+node apps/cli/dist/index.js assert quality.assert.json     # the score and cost budget
+```
 
 #### The rules
+
+**Footprint rules** — for a `server` or `scan` target:
 
 | Rule | What it checks | Needs a baseline |
 | --- | --- | --- |
@@ -321,8 +358,38 @@ your team agreed the footprint may cost, and it belongs next to the code it prot
 | `no-removed-tools` | No tool the baseline had has disappeared. | yes |
 | `max-scan-delta` | The change against the baseline stays within `maxTokens` and/or `maxPercent`. Both are **absolute**, so a large drop fails too. | yes |
 
+**Quality rules** — for a `suite` or `suiteRun` target:
+
+| Rule | What it checks | Needs a baseline |
+| --- | --- | --- |
+| `min-suite-score` | The suite run's **mean grade** is at least `min` (a number from 0 to 1). A finished run that produced **no** graded score at all **fails** — a gate that asked for a score and got none has not been satisfied. | no |
+| `max-suite-cost` | The suite run's **execution + judge cost** is at most `maxUsd`. The message names both halves, because "the judge blew the budget" and "the matrix blew the budget" are different problems. | no |
+
 Every rule is evaluated, every time — you get the full list of problems in one run, not one problem
 per round trip.
+
+#### A worked quality gate
+
+Also in the repository as
+[`mcpfp.assert.suite.example.json`](../mcpfp.assert.suite.example.json):
+
+```json
+{
+  "version": 1,
+  "target": { "suite": "Nightly" },
+  "baseline": "previous",
+  "rules": [
+    { "rule": "min-suite-score", "min": 0.8 },
+    { "rule": "max-suite-cost", "maxUsd": 2.5 }
+  ]
+}
+```
+
+`"target": { "suite": "Nightly" }` uses the suite's newest run that has **finished and been fully
+rated**. A run that is still going, one the cost cap soft-stopped, one an operator halted, one that
+errored, and one that has finished but is still being reviewed are all **refused** with code 2 — never
+scored. Reading a half-graded matrix as a mean grade would report a quality regression that is really
+just the review still running.
 
 #### What it prints
 
@@ -346,8 +413,60 @@ Note the **Baseline** line. You asked for `"previous"`; the app tells you the on
 actually compared against, with its timestamp. That is what makes a stored result reproducible — you
 can re-run the same comparison later by naming that id.
 
-Formats: `human` (default), `json`. The JSON form is the same envelope every other command uses, with
-the full report in `data` — including each rule's `observed`, `limit` and itemized `details`.
+A quality gate prints the same shape, with the suite in place of the server:
+
+```
+Suite      Nightly (Fp2xQ8vLmT4wS0aBcDeRt)
+Suite run  sr7YkP1nQwEr — 2026-08-20T09:00:00.000Z
+Baseline   sr2MvB8xTzQa — 2026-08-19T09:00:00.000Z (asked for "previous")
+
+FAIL  min-suite-score  Mean grade 0.79 is below the required 0.80.
+PASS  max-suite-cost   Suite run cost $1.31 (execution $1.20 + judge $0.11) is within the $2.00 budget.
+
+1 passed · 1 failed · 0 skipped
+```
+
+Formats: `human` (default), `json`, `markdown`.
+
+- **`json`** is the same envelope every other command uses, with the full report in `data` —
+  including each rule's `observed`, `limit` and itemized `details`.
+- **`markdown`** is the **pull-request comment**: a pass/fail heading, what was asserted, the
+  before-and-after against the baseline, a table of every rule, and a collapsed block for each
+  failure. Write it to a file and post it from your pipeline:
+
+  ```bash
+  node apps/cli/dist/index.js assert --format markdown --output comment.md
+  ```
+
+  ```markdown
+  ## ❌ mcpfp gate failed
+
+  **Everything (demo) (JS8YDxdw9pvo3B1hS-keH)** · scan `r-3ZMS8fNiNfoBu6O0Qfs` · captured 2026-08-19T20:25:56.402Z
+
+  Tokens 1,717 → 1,729 (+12, +0.7%) against scan `qN1p2LmT4vQ8sWx0aBcDe` (2026-08-18T09:12:41.008Z, asked for `previous`).
+
+  | Rule | Status | Observed | Limit |
+  | --- | --- | --- | --- |
+  | `max-server-tokens` | ✅ pass | 1,729 | 3,000 |
+  | `max-tool-tokens` | ❌ fail | 249 | 200 |
+
+  <details>
+  <summary>❌ max-tool-tokens — 1 of 13 tools exceed the 200-token budget.</summary>
+
+  - gzip-file-as-resource — 249 > 200
+
+  </details>
+
+  <sub>mcpfp assertions v1 · evaluated 2026-08-19T20:26:03.117Z</sub>
+  ```
+
+  The same body renders identically every time it is asked for, and it carries **no credential and no
+  path from your machine** — it is safe to post publicly. Posting it is your pipeline's job for now; a
+  packaged GitHub Actions workflow that does it for you is planned.
+
+**The format changes only how the result is written, never what it is.** A failing gate exits `1`
+whether you asked for `human`, `json` or `markdown`, and a gate that could not run exits `2` in all
+three.
 
 #### When a rule cannot be evaluated
 
@@ -356,9 +475,10 @@ actually check anything:
 
 | Situation | What happens | Exit |
 | --- | --- | --- |
-| This is the server's **first** scan, so there is nothing earlier to compare against. | The baseline rules report **SKIP** with a reason, and a warning naming each one goes to standard error. | **0** — a first run does not fail a build for having no history. |
-| You **named** a baseline that does not resolve: an unknown id, a scan of a different server, a failed scan. | An error naming the problem. | **2** — a typo must never quietly degrade into the case above. |
+| This is the server's **first** scan (or the suite's first run), so there is nothing earlier to compare against. | The baseline rules report **SKIP** with a reason, and a warning naming each one goes to standard error. The pull-request comment says there is no baseline, and why. | **0** — a first run does not fail a build for having no history. |
+| You **named** a baseline that does not resolve: an unknown id, a scan of a different server, a run of a different suite, a failed scan, a run that has not finished being rated. | An error naming the problem. | **2** — a typo must never quietly degrade into the case above. |
 | The two scans are **not on the same scale** — a different token profile or counting method, where every difference would read as zero. | An error naming both profiles and both counting versions. | **2** — a `max-scan-delta` measured against a fake zero would pass every single time. |
+| The suite run you named has **not finished**, or has finished but is **still being reviewed**. | An error naming the state it is in. | **2** — a half-graded matrix read as a mean grade reports a regression that is really just the review still running. |
 
 The `--quiet` flag does **not** hide the skip warnings. "Be less chatty" must not be able to hide
 "this rule did not actually run".
@@ -368,19 +488,19 @@ The `--quiet` flag does **not** hide the skip warnings. "Be less chatty" must no
 ```bash
 mcpfp assert --scan <scanId>            # assert this exact scan, not the newest
 mcpfp assert --server "Other server"    # assert a different server's newest scan
-mcpfp assert --baseline <scanId>        # compare against this exact scan
+mcpfp assert --baseline <id>            # compare against this exact scan or suite run
 mcpfp assert --file gates/strict.json   # same as passing the path as an argument
 ```
 
-`--server` and `--scan` together is an error — they name two different targets.
+`--server` and `--scan` together is an error — they name two different targets. There is no
+`--suite` flag: a quality gate names its suite in the file, and `--baseline` works for both kinds.
 
 #### Permissions
 
 Against a workbench on the same machine you need no token at all. A **remote** workbench needs a
-token with an **execute** permission (**Run scans** is the natural one — a footprint pipeline already
-holds it to run the scan this checks). This is because the check is submitted as a POST, and this
-version of the workbench decides permissions by request type rather than per endpoint; a finer
-mapping is planned.
+token with the **Read** permission, and nothing more: the check only reads a scan (or a suite run)
+the app already holds. It travels as a POST because it carries your gate file, but the workbench maps
+this endpoint to **Read** by name rather than guessing from the request type.
 
 ### `report <what>` — pull a report the app already composes
 
@@ -441,9 +561,10 @@ node apps/cli/dist/index.js report scan <scanId> --format json > report.json
 
   `data` is exactly what the workbench returned. The envelope never carries a token.
 
-- `--format markdown` is available on the `report` commands only. Asking for it anywhere else is an
-  error naming the formats that command *does* support — never a silent fall back to a human table
-  that a later step would fail to parse.
+- `--format markdown` is available on the `report` commands (the app's own report documents) and on
+  `assert` (the pull-request comment). Asking for it anywhere else is an error naming the formats
+  that command *does* support — never a silent fall back to a human table that a later step would
+  fail to parse.
 - `--output <file>` writes the answer to a file instead of standard output, creating folders as
   needed, and confirms on standard error.
 - `--quiet` turns off the progress lines. It does not hide errors, and it does not hide the warning
@@ -479,17 +600,15 @@ them is evidence that your footprint is fine.
 
 ## What is not built yet
 
-One planned piece is not in it, and `mcpfp` will tell you it does not know the command rather than
-pretending:
+One planned piece is not in it:
 
-- **The pull-request comment artifact** — a markdown summary of what changed against a named
-  baseline, ready to post on a PR. *(Work package 2.2.)*
+- **Posting the pull-request comment for you** — a packaged GitHub Actions workflow that runs the
+  gate and puts `--format markdown`'s output on the PR. *(Work package 2.3.)* The comment **body**
+  is built today: `mcpfp assert --format markdown` writes it, and any pipeline can post it.
 
-Assertions themselves are also only half the story yet: the rules cover **footprint and change**
-(tokens, tool counts, added and removed tools). Rules about a suite's *quality* — a minimum score, a
-maximum cost — and about security findings arrive with those later work packages, on the same file
-and the same exit codes. So today `suite run` **reports** a matrix's quality and cost; it does not
-yet let you write down a threshold and gate on it.
+Assertions cover **footprint and change** (tokens, tool counts, added and removed tools) and **suite
+quality** (a minimum mean score, a maximum cost). Rules about *security findings* arrive with a later
+work package, on the same file and the same exit codes.
 
-Until then, `scan` + `assert` gates a footprint, `suite run` reports a suite, and
-`report … --format json` records either.
+So today: `scan` + `assert` gates a footprint, `suite run` + `assert` gates a suite's quality and
+cost, `assert --format markdown` writes the comment, and `report … --format json` records any of it.

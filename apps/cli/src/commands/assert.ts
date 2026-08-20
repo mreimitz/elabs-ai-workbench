@@ -5,9 +5,14 @@ import {
   assertionDocumentSchema,
   type AssertionReport,
   type AssertionRuleResult,
+  type AssertionSubjectRef,
+  assertionSubjectId,
+  assertionSubjectInstant,
+  assertionSubjectLabel,
   MCPFP_ASSERT_FILE_NAME,
   MCPFP_EXIT,
   type McpfpExitCode,
+  renderAssertionMarkdown,
 } from "@mcp-token-footprint/shared";
 import { findFileUpwards } from "../config.js";
 import { CliError } from "../errors.js";
@@ -36,6 +41,11 @@ import { type CommandContext, emitJson } from "./context.js";
  *
  * **It never runs a scan** (D-C9). Scanning is `mcpfp scan`; a CI job chains the two, which is what
  * keeps the exit codes honest — a scan that could not run is *that* command's `2`.
+ *
+ * **The `--format` does not touch the exit code** (WP 2.2). `human`, `json` and `markdown` are three
+ * renderings of the SAME `report.passed` / `report.counts`; a gate that failed exits `1` whichever
+ * one you asked for. A format that could turn a red gate green would be a very quiet way to disarm
+ * a pipeline, so a test pins it.
  */
 export type AssertOptions = {
   /** The directory the file search starts from (the process cwd in a real run). */
@@ -76,14 +86,20 @@ export async function runAssertCommand(
       ...(options.baseline !== undefined ? { baseline: options.baseline } : {}),
     },
     accept: "json",
-    // The endpoint only reads, but it is a POST — and WP 1.1's guard maps scopes coarsely by method
-    // (D-C10), so a REMOTE token needs an execute scope. `scan:run` is the one a footprint pipeline
-    // already holds; naming it here is what turns a 403 into an actionable sentence.
-    scope: "scan:run",
+    // The endpoint only reads a scan (or a suite run) this workbench already holds. It is a POST
+    // only because it carries the gate document, and since WP M.2 the per-route table says so:
+    // `API_TOKEN_ROUTE_SCOPES` maps `POST /api/assertions/evaluate → read` (D-C10, closed). Naming
+    // the RIGHT scope here is what turns a 403 into an actionable sentence.
+    scope: "read",
   });
 
   if (context.format === "json") {
     await emitJson(context, report);
+  } else if (context.format === "markdown") {
+    // **D-C15** — the PR-comment body is ONE pure function in `packages/shared`, rendered from the
+    // report alone. The CLI does not build it: WP 2.3's workflow posts the same bytes, and a second
+    // renderer here is how the comment and the artifact would start to disagree.
+    await context.emitter.payload(renderAssertionMarkdown(report));
   } else {
     await context.emitter.payload(renderReport(report));
   }
@@ -175,15 +191,33 @@ const STATUS_LABEL: Record<AssertionRuleResult["status"], string> = {
   skipped: "SKIP",
 };
 
+/**
+ * The two identity rows, per subject kind. **D-C14** made `report.subject` a discriminated union
+ * precisely so the compiler asks this question here rather than letting a suite run render as a
+ * scan with four `undefined`s.
+ */
+function identityFields(subject: AssertionSubjectRef): [string, string][] {
+  const label = assertionSubjectLabel(subject);
+  const identity = `${assertionSubjectId(subject)} — ${assertionSubjectInstant(subject)}`;
+  return subject.kind === "scan"
+    ? [
+        ["Server", label],
+        ["Scan", identity],
+      ]
+    : [
+        ["Suite", label],
+        ["Suite run", identity],
+      ];
+}
+
 function renderReport(report: AssertionReport): string {
   const header = renderFields([
-    ["Server", `${report.subject.serverName} (${report.subject.serverId})`],
-    ["Scan", `${report.subject.scanId} — ${report.subject.scannedAt}`],
+    ...identityFields(report.subject),
     [
       "Baseline",
       report.baseline
-        ? `${report.baseline.scan.scanId} — ${report.baseline.scan.scannedAt} (asked for "${report.baseline.requested}")`
-        : "none",
+        ? `${assertionSubjectId(report.baseline.scan)} — ${assertionSubjectInstant(report.baseline.scan)} (asked for "${report.baseline.requested}")`
+        : report.baselineSkipReason ?? "none",
     ],
   ]);
 

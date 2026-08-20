@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "target": { "suite": "Nightly" },
+  "baseline": "previous",
+  "rules": [
+    { "rule": "min-suite-score", "min": 0.8 },
+    { "rule": "max-suite-cost", "maxUsd": 2.5 }
+  ]
+}

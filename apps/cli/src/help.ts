@@ -15,8 +15,8 @@ import {
  * Usage text. Plain, wrapped by hand, no dependency and no colour — a CI log is not a terminal.
  *
  * It documents what is actually shipped and, at the end, what deliberately is not, naming the work
- * package that will: the baseline-delta PR comment (WP 2.2). A CLI that silently lacks the command
- * someone read about is worse than one that says "not built yet".
+ * package that will: posting the PR comment is WP 2.3's workflow (this CLI renders its body). A CLI
+ * that silently lacks the command someone read about is worse than one that says "not built yet".
  *
  * The `assert` topic's rule table is GENERATED from {@link ASSERTION_RULE_META} rather than typed
  * out here, so the prose an operator reads cannot drift from the schema that validates their file.
@@ -47,7 +47,7 @@ Global options
   --config <path>      Use this ${MCPFP_CONFIG_FILE_NAME} instead of searching for one.
   --file <path>        assert: use this gate file instead of searching for one (same as [file]).
   --scan <scanId>      assert: assert against this exact scan, overriding the document's target.
-  --baseline <ref>     assert: "previous" or a scan id, overriding the document's baseline.
+  --baseline <ref>     assert: "previous" or an explicit id, overriding the document's baseline.
   --wait <seconds>     suite run: the total wait budget. default ${Math.round(MCPFP_SUITE_RUN_DEFAULT_WAIT_MS / 1000)}
   --no-wait            suite run: return as soon as the run has started, without waiting for it.
   --format <fmt>       human (default) | json | markdown. Not every command supports every format.
@@ -80,7 +80,8 @@ Exit codes
   2  execution, config or transport error (bad flags, unreachable API, non-2xx response, failed scan)
 
 Not built yet
-  The baseline-delta PR-comment artifact (WP 2.2).`;
+  Nothing this text describes. The packaged GitHub Actions workflow that POSTS \`mcpfp assert
+  --format markdown\`'s output as a pull-request comment is WP 2.3; this CLI produces the body.`;
 }
 
 /** Per-command detail for `mcpfp help <command>`. Falls back to the full usage text. */
@@ -91,8 +92,8 @@ export function renderCommandUsage(command: string): string {
 
 /**
  * The rule table, GENERATED from the shared `ASSERTION_RULE_META` so `mcpfp help assert` lists
- * exactly the kinds the schema accepts — a rule added in WP 2.2 or 3.1 appears here with no edit,
- * and a rule described here that does not exist is impossible.
+ * exactly the kinds the schema accepts — WP 2.2's two suite rules appeared here with no edit, WP
+ * 3.1's will too, and a rule described here that does not exist is impossible.
  */
 function renderRuleTable(): string {
   const width = Math.max(...ASSERTION_RULE_KINDS.map((kind) => kind.length));
@@ -139,13 +140,15 @@ resolve <suite> when it is a name).`;
 
 const COMMAND_HELP: Record<string, string> = {
   assert: `mcpfp assert [file] [--file <path>] [--server <id|name>] [--scan <scanId>]
-             [--baseline previous|<scanId>] [--format human|json] [--output <path>]
+             [--baseline previous|<id>] [--format human|json|markdown] [--output <path>]
 
-Evaluates a versioned gate file against a scan this workbench has ALREADY measured. The rules are
-evaluated by the app, not here — the CLI posts the document and renders the itemized report, so the
-same gate gives the same verdict from a terminal, from CI, or from anywhere else.
+Evaluates a versioned gate file against something this workbench has ALREADY measured — a scan, or a
+suite run. The rules are evaluated by the app, not here: the CLI posts the document and renders the
+itemized report, so the same gate gives the same verdict from a terminal, from CI, or from anywhere
+else.
 
-It never runs a scan. Chain the two in CI: \`mcpfp scan <server>\` then \`mcpfp assert\`.
+It never runs anything. Chain the commands in CI: \`mcpfp scan <server>\` then \`mcpfp assert\`, or
+\`mcpfp suite run <suite>\` then \`mcpfp assert quality.assert.json\`.
 
 The file
   Named as a positional or with --file, otherwise ${MCPFP_ASSERT_FILE_NAME} is looked for by walking UP
@@ -154,8 +157,8 @@ The file
 
   {
     "version": ${ASSERTIONS_VERSION},
-    "target": { "server": "github" },        // or { "scan": "<scanId>" }
-    "baseline": "previous",                  // optional: "previous" or a scan id
+    "target": { "server": "github" },        // or { "scan": … } { "suite": … } { "suiteRun": … }
+    "baseline": "previous",                  // optional: "previous" or an id of the target's kind
     "rules": [
       { "rule": "max-server-tokens", "max": 3000 },
       { "rule": "max-tool-tokens", "max": 400 },
@@ -164,24 +167,41 @@ The file
     ]
   }
 
+  ONE FILE, ONE FAMILY. A footprint target ({ "server" } / { "scan" }) takes only the scan rules, and
+  a quality target ({ "suite" } / { "suiteRun" }) takes only the suite rules; mixing them is a
+  validation error naming the offending rule's index. Keep two files and run \`mcpfp assert\` twice —
+  which is also what keeps the two exit codes readable in a build log.
+
 Rules
 ${renderRuleTable()}
 
 Baselines
-  "previous" resolves to the newest earlier completed scan OF THE SAME SERVER; a scan id is used as
-  given. Either way the report echoes the concrete scan it compared against, so the artifact records
-  what actually happened and the same comparison can be re-run later.
+  "previous" resolves to the newest earlier completed scan OF THE SAME SERVER (or the newest earlier
+  completed, fully-rated run OF THE SAME SUITE); an explicit id is used as given. Either way the
+  report echoes the concrete subject it compared against, so the artifact records what actually
+  happened and the same comparison can be re-run later. A baseline you NAME is always resolved and
+  echoed, even when no rule needs one — that is what puts the delta sentence in the PR comment.
 
-  If there is no earlier scan yet, the baseline rules report SKIP with a reason, a warning goes to
-  standard error, and the exit code is 0 — a first-ever scan does not fail a pipeline. But a baseline
+  If there is nothing earlier yet, the baseline rules report SKIP with a reason, a warning goes to
+  standard error, and the exit code is 0 — a first-ever run does not fail a pipeline. But a baseline
   you NAMED that does not resolve, and two scans that are not on the same scale (different token
   profile or counting version, where every delta would read as zero), are both errors: exit 2.
+
+  A suite run that is not "completed", or whose review has not settled, is refused outright: reading
+  a half-graded matrix as a mean score would report a regression that is really grading latency.
+
+Formats
+  human (default)  the aligned per-rule table above
+  json             the machine envelope, with the report verbatim in "data"
+  markdown         the pull-request comment body: verdict, identity, the delta against the baseline,
+                   the rules table, and a collapsed block per failing rule
+  The format changes only the rendering. The exit code comes from the report either way.
 
 Exit codes
   0  every rule passed (skips allowed)   1  at least one rule failed   2  the gate could not run
 
 Needs no token on a loopback instance. A remote caller needs a token with the \`read\` scope: the
-endpoint only reads an already-persisted scan, and \`POST /api/assertions/evaluate\` is mapped to
+endpoint only reads something already persisted, and \`POST /api/assertions/evaluate\` is mapped to
 \`read\` per-route (D-C10, closed by WP M.2) rather than by HTTP method.`,
   scan: `mcpfp scan <server> [--format human|json]
 

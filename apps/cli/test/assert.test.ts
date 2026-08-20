@@ -4,11 +4,14 @@ import os from "node:os";
 import path from "node:path";
 import { after, test } from "node:test";
 import {
+  ASSERTION_RULE_KINDS,
+  ASSERTION_RULE_META,
   ASSERTIONS_VERSION,
   type AssertionReport,
   MCPFP_ASSERT_FILE_NAME,
   MCPFP_EXIT,
   MCPFP_OUTPUT_VERSION,
+  renderAssertionMarkdown,
 } from "@mcp-token-footprint/shared";
 import { runCliCapture, startStub, type StubRoutes, VALID_TOKEN } from "./harness.js";
 
@@ -45,6 +48,8 @@ function writeDocument(cwd: string, document: unknown = DOCUMENT, name = MCPFP_A
 }
 
 const SUBJECT = {
+  // WP 2.2 (D-C14): the report's identity fields are a DISCRIMINATED union now.
+  kind: "scan" as const,
   scanId: "scn_new",
   serverId: "srv_1",
   serverName: "Everything",
@@ -491,9 +496,205 @@ test("A11 — `mcpfp help assert` lists every rule kind, generated from the shar
   assert.ok(!/assert \(WP 1\.3\)/.test(usage.stdout));
 });
 
-test("A11 — assert refuses --format markdown, naming what it does support", async () => {
-  const result = await runCliCapture(["assert", "--format", "markdown"], { cwd: makeCwd() });
-  assert.equal(result.exitCode, MCPFP_EXIT.error);
-  assert.match(result.stderr, /does not support --format markdown/);
-  assert.match(result.stderr, /human, json/);
+test("A11 — `mcpfp help assert` documents the suite targets, the family rule and the markdown format", async () => {
+  const result = await runCliCapture(["help", "assert"], { cwd: makeCwd() });
+  assert.equal(result.exitCode, MCPFP_EXIT.success);
+  // The suite family, from the SAME generated table — the summaries an operator reads are the
+  // shared `ASSERTION_RULE_META` strings verbatim, so the help cannot describe a rule the schema
+  // does not accept (or describe one it does differently).
+  for (const kind of ASSERTION_RULE_KINDS) {
+    assert.match(result.stdout, new RegExp(kind), kind);
+    // The help wraps nothing, so each summary appears in full on its own line.
+    assert.ok(result.stdout.includes(ASSERTION_RULE_META[kind].summary), kind);
+  }
+  assert.match(result.stdout, /min-suite-score/);
+  assert.match(result.stdout, /max-suite-cost/);
+  assert.match(result.stdout, /\{ "suite": … \} \{ "suiteRun": … \}/);
+  assert.match(result.stdout, /ONE FILE, ONE FAMILY/);
+  assert.match(result.stdout, /markdown {9}the pull-request comment body/);
+  assert.match(result.stdout, /The format changes only the rendering\. The exit code comes from the report either way\./);
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// WP 2.2 (A8) — `--format markdown`, and the exit code the format may NOT change
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+
+/** A report the API might return for a FAILING gate. */
+function failingReport(): AssertionReport {
+  return report({
+    results: [
+      {
+        rule: "max-server-tokens",
+        status: "fail",
+        message: "Server tokens 2,224 exceed budget 1,000 by 1,224.",
+        observed: 2224,
+        limit: 1000,
+        details: ["+2,224 tokens (+8.4%) vs baseline"],
+      },
+    ],
+  });
+}
+
+test("A8 — --format markdown writes the PR-comment body to stdout, and nothing else", async () => {
+  await withStub(routesFor(report()), async (stub) => {
+    const cwd = writeDocument(makeCwd());
+    const result = await runCliCapture(["assert", "--url", stub.url, "--format", "markdown"], {
+      cwd,
+    });
+    assert.equal(result.exitCode, MCPFP_EXIT.success);
+
+    // Byte-for-byte the shared renderer's output — the CLI builds no comment of its own (D-C15).
+    // The renderer already ends in exactly one newline, so the emitter adds none.
+    assert.equal(result.stdout, renderAssertionMarkdown(report()));
+    assert.match(result.stdout, /^## ✅ mcpfp gate passed\n/);
+    assert.match(result.stdout, /<sub>mcpfp assertions v1 · evaluated /);
+
+    // The narration is still on the OTHER stream, so `--format markdown > comment.md` is clean.
+    assert.match(result.stderr, /Evaluating .* against http/);
+    const quiet = await runCliCapture(
+      ["assert", "--url", stub.url, "--format", "markdown", "--quiet"],
+      { cwd },
+    );
+    assert.equal(quiet.stderr, "");
+    assert.equal(quiet.stdout, result.stdout);
+  });
+});
+
+test("A8 — --output writes the markdown body to a file and leaves stdout empty", async () => {
+  await withStub(routesFor(report()), async (stub) => {
+    const cwd = writeDocument(makeCwd());
+    const target = path.join(makeCwd(), "nested", "comment.md");
+    const written = await runCliCapture(
+      ["assert", "--url", stub.url, "--format", "markdown", "--output", target],
+      { cwd },
+    );
+    assert.equal(written.exitCode, MCPFP_EXIT.success);
+    assert.equal(written.stdout, "", "--output means stdout carries nothing");
+    assert.equal(fs.readFileSync(target, "utf8"), renderAssertionMarkdown(report()));
+    assert.match(written.stderr, /Wrote \d+ bytes to/);
+  });
+});
+
+test("A8 — THE FORMAT DOES NOT CHANGE THE EXIT CODE: a failing gate is 1 in all three", async () => {
+  // The whole point of D-C7's split is that a pipeline can tell "the gate said no" from "the gate
+  // could not run". A rendering choice that could turn a red gate green would be a very quiet way to
+  // disarm a pipeline — so every format must agree with `report.passed`.
+  await withStub(routesFor(failingReport()), async (stub) => {
+    const cwd = writeDocument(makeCwd());
+    for (const format of ["human", "json", "markdown"]) {
+      const result = await runCliCapture(["assert", "--url", stub.url, "--format", format], { cwd });
+      assert.equal(result.exitCode, MCPFP_EXIT.assertionFailure, `--format ${format}`);
+      assert.match(result.stderr, /Assertions failed: 1 of 1\./, `--format ${format}`);
+      assert.notEqual(result.stdout, "", `--format ${format} still writes its payload`);
+    }
+  });
+
+  // …and a passing gate is 0 in all three.
+  await withStub(routesFor(report()), async (stub) => {
+    const cwd = writeDocument(makeCwd());
+    for (const format of ["human", "json", "markdown"]) {
+      const result = await runCliCapture(["assert", "--url", stub.url, "--format", format], { cwd });
+      assert.equal(result.exitCode, MCPFP_EXIT.success, `--format ${format}`);
+    }
+  });
+});
+
+test("A8 — a gate that could NOT RUN is still 2 under --format markdown, and writes no payload", async () => {
+  await withStub(routesFor({ error: "Baseline scan scn_typo does not exist." }, 400), async (stub) => {
+    const cwd = writeDocument(makeCwd());
+    const result = await runCliCapture(["assert", "--url", stub.url, "--format", "markdown"], {
+      cwd,
+    });
+    assert.equal(result.exitCode, MCPFP_EXIT.error, "2 — not the 1 that means the gate said no");
+    assert.equal(result.stdout, "", "a half-rendered comment is worse than none");
+    assert.match(result.stderr, /does not exist/);
+  });
+
+  // A malformed gate file never even reaches the API, whichever format was asked for.
+  const typo = writeDocument(makeCwd(), { ...DOCUMENT, baselines: "previous" });
+  const stub = await startStub(routesFor(report()));
+  try {
+    const result = await runCliCapture(["assert", "--url", stub.url, "--format", "markdown"], {
+      cwd: typo,
+    });
+    assert.equal(result.exitCode, MCPFP_EXIT.error);
+    assert.deepEqual(stub.requests, []);
+  } finally {
+    await stub.close();
+  }
+});
+
+test("A8 — the token never reaches the markdown body or the file it is written to", async () => {
+  await withStub(routesFor(report()), async (stub) => {
+    const cwd = writeDocument(makeCwd());
+    const target = path.join(makeCwd(), "comment.md");
+    const result = await runCliCapture(
+      ["assert", "--url", stub.url, "--token", VALID_TOKEN, "--format", "markdown", "--output", target],
+      { cwd },
+    );
+    assert.equal(result.exitCode, MCPFP_EXIT.success);
+    const file = fs.readFileSync(target, "utf8");
+    assert.ok(!file.includes(VALID_TOKEN), "a PR comment is the most public thing this CLI writes");
+    assert.ok(!result.stderr.includes(VALID_TOKEN));
+    assert.equal(stub.requests[0]?.authorization, `Bearer ${VALID_TOKEN}`);
+  });
+});
+
+// ── WP 2.2 — a SUITE subject renders as a suite, not as a scan with four `undefined`s ────────────
+
+test("A8 — a suite-run report renders in every format without inventing scan fields", async () => {
+  const suiteReport: AssertionReport = {
+    ...report(),
+    subject: {
+      kind: "suite_run",
+      suiteRunId: "sr_new",
+      suiteId: "ste_1",
+      suiteName: "Nightly",
+      source: "suite",
+      startedAt: "2026-08-20T09:00:00.000Z",
+      endedAt: "2026-08-20T09:30:00.000Z",
+      status: "completed",
+      cellsTotal: 6,
+      cellsCompleted: 6,
+      meanGrade: 0.79,
+      execCostUsd: 1.2,
+      judgeCostUsd: 0.11,
+    },
+    baseline: null,
+    baselineSkipReason: 'No earlier completed suite run of "Nightly" — sr_new is the first one.',
+    results: [
+      {
+        rule: "min-suite-score",
+        status: "pass",
+        message: "Mean grade 0.79 is at least the required 0.50.",
+        observed: 0.79,
+        limit: 0.5,
+      },
+    ],
+    counts: { total: 1, passed: 1, failed: 0, skipped: 0 },
+    passed: true,
+  };
+
+  await withStub(routesFor(suiteReport), async (stub) => {
+    const cwd = writeDocument(makeCwd(), {
+      version: ASSERTIONS_VERSION,
+      target: { suite: "Nightly" },
+      rules: [{ rule: "min-suite-score", min: 0.5 }],
+    });
+
+    const human = await runCliCapture(["assert", "--url", stub.url], { cwd });
+    assert.equal(human.exitCode, MCPFP_EXIT.success);
+    assert.match(human.stdout, /^Suite {6}Nightly \(ste_1\)$/m);
+    assert.match(human.stdout, /^Suite run {2}sr_new — 2026-08-20T09:00:00\.000Z$/m);
+    // The honest reason rides where the resolved baseline would have gone.
+    assert.match(human.stdout, /^Baseline {3}No earlier completed suite run of "Nightly"/m);
+    assert.ok(!human.stdout.includes("undefined"), "no scan field is invented for a suite subject");
+
+    const markdown = await runCliCapture(["assert", "--url", stub.url, "--format", "markdown"], {
+      cwd,
+    });
+    assert.match(markdown.stdout, /\*\*Nightly \(ste_1\)\*\* · suite run `sr_new`/);
+    assert.match(markdown.stdout, /No baseline was compared — No earlier completed suite run/);
+    assert.ok(!markdown.stdout.includes("undefined"));
+  });
 });

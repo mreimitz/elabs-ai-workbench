@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import { afterEach, test } from "node:test";
 import Database from "better-sqlite3";
 import Fastify, { type FastifyInstance } from "fastify";
@@ -11,10 +13,17 @@ import {
   type AssertionEvaluateRequest,
   assertionDocumentSchema,
   assertionEvaluateSchema,
+  assertionRuleFamily,
+  assertionTargetFamily,
   MCPFP_ASSERT_FILE_NAME,
+  type RatingState,
   type ScanDetail,
   type ScanSummary,
   type ServerConfig,
+  type Suite,
+  type SuiteAggregates,
+  type SuiteRun,
+  type SuiteRunStatus,
   type ToolScan,
 } from "@mcp-token-footprint/shared";
 import { registerAssertionRoutes } from "../src/assertions/routes.js";
@@ -30,6 +39,12 @@ import { ServerRepository } from "../src/servers/repository.js";
 // including every D-C8 unevaluable case, is exercised in-process.
 
 // ── fixtures ────────────────────────────────────────────────────────────────────────────────────
+
+/** The two families, derived from the shared meta rather than re-listed — D-C13's own answer. */
+const SCAN_RULE_KINDS = ASSERTION_RULE_KINDS.filter((kind) => assertionRuleFamily(kind) === "scan");
+const SUITE_RULE_KINDS = ASSERTION_RULE_KINDS.filter(
+  (kind) => assertionRuleFamily(kind) === "suite",
+);
 
 function tool(toolName: string, totalTokens: number): ToolScan {
   return {
@@ -119,8 +134,75 @@ const SERVERS: ServerConfig[] = [
   },
 ];
 
+// ── WP 2.2 — the SUITE family's fixtures ────────────────────────────────────────────────────────
+
+function aggregates(overrides: Partial<SuiteAggregates> = {}): SuiteAggregates {
+  return {
+    cellsTotal: 6,
+    cellsCompleted: 6,
+    meanGrade: 0.84,
+    gradeStdDev: 0.05,
+    passRateAt05: 1,
+    totalTokens: 12_000,
+    execCostUsd: 0.9,
+    judgeCostUsd: 0.12,
+    ...overrides,
+  };
+}
+
+function suiteRun(
+  overrides: Partial<SuiteRun> & { id: string } & { aggregates?: SuiteAggregates },
+): SuiteRun {
+  return {
+    suiteId: "ste_1",
+    status: "completed" as SuiteRunStatus,
+    configSnapshot: { repetitions: 1, maxConcurrency: 3 },
+    startedAt: "2026-08-19T09:00:00.000Z",
+    endedAt: "2026-08-19T09:30:00.000Z",
+    source: "suite",
+    ratingState: "rated" as RatingState,
+    aggregates: aggregates(),
+    ...overrides,
+  };
+}
+
+const SUITES: Suite[] = [
+  {
+    id: "ste_1",
+    name: "Nightly",
+    config: { repetitions: 1, maxConcurrency: 3 },
+    testIds: [],
+    scenarioIds: [],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+  },
+  {
+    id: "ste_2",
+    name: "Twin suite",
+    config: { repetitions: 1, maxConcurrency: 3 },
+    testIds: [],
+    scenarioIds: [],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+  },
+  {
+    id: "ste_3",
+    name: "Twin suite",
+    config: { repetitions: 1, maxConcurrency: 3 },
+    testIds: [],
+    scenarioIds: [],
+    createdAt: "2026-08-01T00:00:00.000Z",
+    updatedAt: "2026-08-01T00:00:00.000Z",
+  },
+];
+
 /** A port set over an in-memory list of scans. `getDetail` throws the repository's 404 shape. */
-function portsFor(scans: ScanDetail[], servers: ServerConfig[] = SERVERS): AssertionPorts {
+function portsFor(
+  scans: ScanDetail[],
+  servers: ServerConfig[] = SERVERS,
+  runs: SuiteRun[] = [],
+  suites: Suite[] = SUITES,
+): AssertionPorts {
   return {
     scans: {
       getDetail: (scanId) => {
@@ -140,8 +222,30 @@ function portsFor(scans: ScanDetail[], servers: ServerConfig[] = SERVERS): Asser
           .map(summaryOf),
     },
     servers: { list: () => servers },
+    suites: { list: () => suites },
+    suiteRuns: {
+      getRun: (id) => {
+        const found = runs.find((entry) => entry.id === id);
+        if (!found) {
+          const error = new Error("Suite run not found") as Error & { statusCode: number };
+          error.statusCode = 404;
+          throw error;
+        }
+        return found;
+      },
+      // Newest first, exactly like `SuiteRunRepository.listRuns`'s ORDER BY.
+      listRuns: (suiteId) =>
+        runs
+          .filter((entry) => suiteId === undefined || entry.suiteId === suiteId)
+          .sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
+    },
     now: () => new Date("2026-08-19T12:00:00.000Z"),
   };
+}
+
+/** A port set for a suite-family gate: no scans needed, only suite runs. */
+function suitePortsFor(runs: SuiteRun[], suites: Suite[] = SUITES): AssertionPorts {
+  return portsFor([], SERVERS, runs, suites);
 }
 
 function request(document: unknown, overrides: Record<string, unknown> = {}) {
@@ -173,6 +277,8 @@ const NEWER = scan({
 test("A1 — the contract is declared once in shared, strict, and covers every rule kind", () => {
   assert.equal(ASSERTIONS_VERSION, 1);
   assert.equal(MCPFP_ASSERT_FILE_NAME, "mcpfp.assert.json");
+  // WP 2.2 APPENDED exactly two kinds (D-C13's suite family) and reordered nothing. The tuple's
+  // order is the `mcpfp help assert` table's order.
   assert.deepEqual(
     [...ASSERTION_RULE_KINDS],
     [
@@ -182,13 +288,26 @@ test("A1 — the contract is declared once in shared, strict, and covers every r
       "no-new-tools",
       "no-removed-tools",
       "max-scan-delta",
+      "min-suite-score",
+      "max-suite-cost",
     ],
   );
   // Every kind carries prose, so `mcpfp help assert` and the user guide cannot describe a rule the
-  // schema does not accept (or miss one it does).
+  // schema does not accept (or miss one it does) — and a family, so D-C13 can be enforced.
   for (const kind of ASSERTION_RULE_KINDS) {
     assert.ok(ASSERTION_RULE_META[kind].summary.length > 0, kind);
+    assert.ok(["scan", "suite"].includes(ASSERTION_RULE_META[kind].family), kind);
+    assert.equal(assertionRuleFamily(kind), ASSERTION_RULE_META[kind].family, kind);
   }
+  assert.deepEqual(SCAN_RULE_KINDS, [
+    "max-server-tokens",
+    "max-tool-tokens",
+    "max-tool-count",
+    "no-new-tools",
+    "no-removed-tools",
+    "max-scan-delta",
+  ]);
+  assert.deepEqual(SUITE_RULE_KINDS, ["min-suite-score", "max-suite-cost"]);
 
   const valid = {
     version: 1,
@@ -802,9 +921,11 @@ test("A2 — POST /api/assertions/evaluate returns an itemized report over the r
   assert.equal(at(body, "baseline.scan.scanId"), first, "D-C3: the resolved scan is echoed");
 
   const results = body.results as { rule: string; status: string }[];
+  // The SCAN family — a gate document is single-family (D-C13), so a scan target's document lists
+  // exactly these six and never the two suite rules.
   assert.deepEqual(
     results.map((result) => result.rule),
-    [...ASSERTION_RULE_KINDS],
+    SCAN_RULE_KINDS,
   );
   assert.deepEqual(body.counts, { total: 6, passed: 3, failed: 3, skipped: 0 });
   assert.equal(body.passed, false);
@@ -849,5 +970,562 @@ test("A2 — an unresolvable target leaves the route as a 400 with an operator s
   assert.match(
     String(response.body.error),
     /No registered server with the id or exact name "nope"/,
+  );
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// WP 2.2 — the SUITE family (A1..A6) + D-C13 / D-C14 / D-C16
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+
+const SUITE_RUN = suiteRun({ id: "sr_new", startedAt: "2026-08-19T09:00:00.000Z" });
+const SUITE_RUN_OLDER = suiteRun({
+  id: "sr_old",
+  startedAt: "2026-08-18T09:00:00.000Z",
+  aggregates: aggregates({ meanGrade: 0.79, execCostUsd: 1.2, judgeCostUsd: 0.11 }),
+});
+
+/** A one-rule suite gate against `sr_new`, so each test names only what it is about. */
+function suiteGate(rules: unknown[], overrides: Record<string, unknown> = {}) {
+  return request({ version: 1, target: { suiteRun: "sr_new" }, rules, ...overrides });
+}
+
+// ── A1 — the two new rules, and ONLY those two ──────────────────────────────────────────────────
+
+test("A1 (WP 2.2) — exactly two rules were added, both suite-family, both absolute", () => {
+  assert.equal(SUITE_RULE_KINDS.length, 2);
+  for (const kind of SUITE_RULE_KINDS) {
+    assert.equal(ASSERTION_RULE_META[kind].family, "suite", kind);
+    assert.equal(ASSERTION_RULE_META[kind].needsBaseline, false, kind);
+  }
+  // WP 3.1's `no-new-security-findings` is NOT front-run, and no `family: "security"` placeholder
+  // was left behind for it.
+  assert.ok(!ASSERTION_RULE_KINDS.includes("no-new-security-findings" as never));
+  const families = new Set(ASSERTION_RULE_KINDS.map((kind) => ASSERTION_RULE_META[kind].family));
+  assert.deepEqual([...families].sort(), ["scan", "suite"]);
+});
+
+test("A1 (WP 2.2) — the two rules and the two targets validate STRICTLY", () => {
+  const base = { version: 1, target: { suite: "Nightly" } };
+  const ok = (rules: unknown[], target: unknown = base.target) =>
+    assertionDocumentSchema.safeParse({ ...base, target, rules }).success;
+
+  assert.ok(ok([{ rule: "min-suite-score", min: 0.8 }]));
+  assert.ok(ok([{ rule: "min-suite-score", min: 0 }]), "0 is a legal floor");
+  assert.ok(ok([{ rule: "min-suite-score", min: 1 }]), "1 is a legal floor");
+  assert.ok(ok([{ rule: "max-suite-cost", maxUsd: 2.5 }]));
+  assert.ok(ok([{ rule: "min-suite-score", min: 0.8 }], { suiteRun: "sr_new" }));
+
+  // A grade is a 0–1 fraction, and a budget of zero is not a budget.
+  assert.ok(!ok([{ rule: "min-suite-score", min: 1.5 }]));
+  assert.ok(!ok([{ rule: "min-suite-score", min: -0.1 }]));
+  assert.ok(!ok([{ rule: "max-suite-cost", maxUsd: 0 }]));
+  assert.ok(!ok([{ rule: "max-suite-cost", maxUsd: -1 }]));
+  // `.strict()` at every level — a typo'd key is a named error, never a dropped rule.
+  assert.ok(!ok([{ rule: "min-suite-score", min: 0.8, tool: "x" }]));
+  assert.ok(!ok([{ rule: "max-suite-cost", max: 2 }]));
+  // Two target keys at once is a validation error, exactly as `{server}` + `{scan}` is.
+  assert.ok(!ok([{ rule: "max-suite-cost", maxUsd: 2 }], { suite: "a", suiteRun: "b" }));
+
+  assert.equal(assertionTargetFamily({ suite: "a" }), "suite");
+  assert.equal(assertionTargetFamily({ suiteRun: "a" }), "suite");
+  assert.equal(assertionTargetFamily({ server: "a" }), "scan");
+  assert.equal(assertionTargetFamily({ scan: "a" }), "scan");
+});
+
+// ── A2 — the arithmetic, including the boundaries and the null grade ────────────────────────────
+
+test("A2 (WP 2.2) — min-suite-score passes, fails, and treats `=== min` as a pass", () => {
+  const ports = suitePortsFor([SUITE_RUN]);
+  const scoreOf = (min: number) =>
+    evaluateAssertions(ports, suiteGate([{ rule: "min-suite-score", min }])).results[0];
+
+  assert.equal(scoreOf(0.8)?.status, "pass");
+  assert.equal(scoreOf(0.84)?.status, "pass", "the boundary is inclusive");
+  assert.equal(scoreOf(0.85)?.status, "fail");
+  assert.equal(scoreOf(0.9)?.observed, 0.84, "the OBSERVED value is the mean grade itself");
+  assert.equal(scoreOf(0.9)?.limit, 0.9);
+  assert.match(scoreOf(0.9)?.message ?? "", /Mean grade 0\.84 is below the required 0\.90\./);
+  assert.match(scoreOf(0.8)?.message ?? "", /Mean grade 0\.84 is at least the required 0\.80\./);
+});
+
+test("A2 (WP 2.2) — a completed suite run whose meanGrade is null FAILS, and says why", () => {
+  // NOT a skip: the run is settled (D-C16), so "no score" is the final answer. A gate that demanded
+  // a score and got none has not been satisfied.
+  const ungraded = suiteRun({ id: "sr_new", aggregates: aggregates({ meanGrade: null }) });
+  const report = evaluateAssertions(
+    suitePortsFor([ungraded]),
+    suiteGate([{ rule: "min-suite-score", min: 0.5 }]),
+  );
+  assert.equal(report.results[0]?.status, "fail");
+  assert.equal(report.passed, false);
+  assert.equal(report.counts.skipped, 0, "a null grade is a FAILURE, never a skip");
+  assert.equal(report.results[0]?.observed, undefined);
+  assert.equal(report.results[0]?.limit, 0.5);
+  assert.match(report.results[0]?.message ?? "", /No member run .* produced a graded score/);
+});
+
+test("A2 (WP 2.2) — max-suite-cost sums both halves, names both, and `=== maxUsd` passes", () => {
+  // exec 0.90 + judge 0.12 = 1.02 exactly.
+  const ports = suitePortsFor([SUITE_RUN]);
+  const costOf = (maxUsd: number) =>
+    evaluateAssertions(ports, suiteGate([{ rule: "max-suite-cost", maxUsd }])).results[0];
+
+  assert.equal(costOf(2)?.status, "pass");
+  assert.equal(costOf(1.02)?.status, "pass", "the boundary is inclusive");
+  assert.equal(costOf(1)?.status, "fail");
+  assert.equal(costOf(1)?.observed, 1.02);
+  assert.equal(costOf(1)?.limit, 1);
+  // Both halves are named: "the judge blew the budget" and "the matrix blew the budget" are
+  // different problems.
+  assert.match(costOf(1)?.message ?? "", /execution \$0\.90 \+ judge \$0\.12/);
+  assert.match(costOf(1)?.message ?? "", /exceeds the \$1\.00 budget by \$0\.02\./);
+  assert.match(costOf(2)?.message ?? "", /execution \$0\.90 \+ judge \$0\.12/);
+});
+
+test("A2 (WP 2.2) — both rules are evaluated, and the subject ref carries the suite identity", () => {
+  const report = evaluateAssertions(
+    suitePortsFor([SUITE_RUN]),
+    suiteGate([
+      { rule: "min-suite-score", min: 0.9 },
+      { rule: "max-suite-cost", maxUsd: 5 },
+    ]),
+  );
+  assert.deepEqual(
+    report.results.map((result) => result.status),
+    ["fail", "pass"],
+    "no short-circuit on the first failure",
+  );
+  assert.deepEqual(report.counts, { total: 2, passed: 1, failed: 1, skipped: 0 });
+  assert.deepEqual(report.subject, {
+    kind: "suite_run",
+    suiteRunId: "sr_new",
+    suiteName: "Nightly",
+    startedAt: "2026-08-19T09:00:00.000Z",
+    status: "completed",
+    cellsTotal: 6,
+    cellsCompleted: 6,
+    meanGrade: 0.84,
+    execCostUsd: 0.9,
+    judgeCostUsd: 0.12,
+    suiteId: "ste_1",
+    source: "suite",
+    endedAt: "2026-08-19T09:30:00.000Z",
+  });
+});
+
+// ── A3 (D-C13) — one target, one family of rules ────────────────────────────────────────────────
+
+test("A3 (D-C13) — a MIXED document is refused, with the issue path at the offending rule index", () => {
+  const suiteRuleInScanGate = assertionDocumentSchema.safeParse({
+    version: 1,
+    target: { server: "Everything" },
+    rules: [
+      { rule: "max-server-tokens", max: 3000 },
+      { rule: "min-suite-score", min: 0.8 },
+    ],
+  });
+  assert.ok(!suiteRuleInScanGate.success);
+  assert.deepEqual(suiteRuleInScanGate.error?.issues[0]?.path, ["rules", 1]);
+  assert.match(
+    suiteRuleInScanGate.error?.issues[0]?.message ?? "",
+    /"min-suite-score" is a suite rule, but this document's target is a scan target/,
+  );
+
+  const scanRuleInSuiteGate = assertionDocumentSchema.safeParse({
+    version: 1,
+    target: { suiteRun: "sr_new" },
+    rules: [
+      { rule: "min-suite-score", min: 0.8 },
+      { rule: "max-suite-cost", maxUsd: 2 },
+      { rule: "max-tool-count", max: 30 },
+    ],
+  });
+  assert.ok(!scanRuleInSuiteGate.success);
+  assert.deepEqual(scanRuleInSuiteGate.error?.issues[0]?.path, ["rules", 2]);
+
+  // Every offending rule is named, not just the first — a CI log that lists one problem at a time
+  // costs a round trip per problem.
+  const two = assertionDocumentSchema.safeParse({
+    version: 1,
+    target: { suite: "Nightly" },
+    rules: [
+      { rule: "max-tool-count", max: 30 },
+      { rule: "min-suite-score", min: 0.8 },
+      { rule: "no-new-tools" },
+    ],
+  });
+  assert.ok(!two.success);
+  assert.deepEqual(
+    two.error?.issues.map((issue) => issue.path),
+    [
+      ["rules", 0],
+      ["rules", 2],
+    ],
+  );
+});
+
+test("A3 (D-C13) — a single-family document of EITHER family validates, and v1 is unchanged", () => {
+  assert.equal(ASSERTIONS_VERSION, 1, "every WP 2.2 change is additive");
+  assert.ok(
+    assertionDocumentSchema.safeParse({
+      version: 1,
+      target: { suite: "Nightly" },
+      rules: [
+        { rule: "min-suite-score", min: 0.8 },
+        { rule: "max-suite-cost", maxUsd: 2 },
+      ],
+    }).success,
+  );
+
+  // The repo's own worked example — the v1 gate file shipped by WP 1.3 — still validates unchanged.
+  const example = JSON.parse(
+    fs.readFileSync(
+      path.join(import.meta.dirname, "..", "..", "..", "mcpfp.assert.example.json"),
+      "utf8",
+    ),
+  );
+  const parsed = assertionDocumentSchema.safeParse(example);
+  assert.ok(parsed.success, JSON.stringify(parsed.error?.issues));
+  assert.equal(example.version, ASSERTIONS_VERSION);
+});
+
+// ── A4 (D-C14) — a NAMED baseline is always resolved and always echoed ──────────────────────────
+
+test("A4 (D-C14) — a named baseline is resolved and echoed even when NO rule needs one", () => {
+  const report = evaluateAssertions(
+    suitePortsFor([SUITE_RUN, SUITE_RUN_OLDER]),
+    suiteGate([{ rule: "min-suite-score", min: 0.5 }], { baseline: "previous" }),
+  );
+  // Both suite rules are absolute, so without D-C14 this report would carry `baseline: null` and the
+  // PR comment would have nothing to compare.
+  assert.equal(report.baseline?.requested, "previous");
+  assert.equal(report.baseline?.scan.kind, "suite_run");
+  assert.equal(
+    report.baseline?.scan.kind === "suite_run" ? report.baseline.scan.suiteRunId : undefined,
+    "sr_old",
+  );
+  assert.equal(report.counts.skipped, 0, "resolving a baseline nobody needed skips nothing");
+
+  // The same holds for a SCAN subject with only absolute rules.
+  const scanReport = evaluateAssertions(
+    portsFor([OLDER, NEWER]),
+    request({
+      version: 1,
+      target: { scan: "scn_new" },
+      baseline: "previous",
+      rules: [{ rule: "max-server-tokens", max: 5000 }],
+    }),
+  );
+  assert.equal(scanReport.baseline?.scan.kind, "scan");
+  assert.equal(
+    scanReport.baseline?.scan.kind === "scan" ? scanReport.baseline.scan.scanId : undefined,
+    "scn_old",
+  );
+});
+
+test("A4 (D-C14) — an UNNAMED baseline with only absolute rules still resolves nothing", () => {
+  const scanReport = evaluateAssertions(
+    portsFor([OLDER, NEWER]),
+    request({
+      version: 1,
+      target: { scan: "scn_new" },
+      rules: [{ rule: "max-server-tokens", max: 5000 }],
+    }),
+  );
+  assert.equal(scanReport.baseline, null);
+  assert.equal(scanReport.baselineSkipReason, undefined, "nothing was asked for, so nothing is said");
+
+  const suiteReport = evaluateAssertions(
+    suitePortsFor([SUITE_RUN, SUITE_RUN_OLDER]),
+    suiteGate([{ rule: "max-suite-cost", maxUsd: 5 }]),
+  );
+  assert.equal(suiteReport.baseline, null);
+  assert.equal(suiteReport.baselineSkipReason, undefined);
+});
+
+test("A4 (D-C14/D-C8) — a suite baseline honours all three D-C8 outcomes", () => {
+  // Case 1 — nothing earlier yet: `baseline: null`, a reason, and still a pass.
+  const first = evaluateAssertions(
+    suitePortsFor([SUITE_RUN]),
+    suiteGate([{ rule: "min-suite-score", min: 0.5 }], { baseline: "previous" }),
+  );
+  assert.equal(first.baseline, null);
+  assert.equal(first.passed, true);
+  assert.match(first.baselineSkipReason ?? "", /is the first one/);
+
+  // Case 2 — a NAMED baseline that does not resolve is a 400, never a quiet skip.
+  const foreign = suiteRun({ id: "sr_foreign", suiteId: "ste_2" });
+  const unsettled = suiteRun({ id: "sr_unsettled", ratingState: "rating" });
+  const ports = suitePortsFor([SUITE_RUN, SUITE_RUN_OLDER, foreign, unsettled]);
+  for (const [baseline, pattern] of [
+    ["sr_typo", /does not exist on this workbench/],
+    ["sr_foreign", /belongs to suite "ste_2"/],
+    ["sr_unsettled", /its review has not settled/],
+  ] as const) {
+    assert.throws(
+      () => evaluateAssertions(ports, suiteGate([{ rule: "min-suite-score", min: 0.5 }], { baseline })),
+      (error: Error & { statusCode?: number }) =>
+        error.statusCode === 400 && pattern.test(error.message),
+      baseline,
+    );
+  }
+
+  // An explicit id and the `"previous"` that resolves to it produce the same comparison.
+  const symbolic = evaluateAssertions(
+    suitePortsFor([SUITE_RUN, SUITE_RUN_OLDER]),
+    suiteGate([{ rule: "min-suite-score", min: 0.5 }], { baseline: "previous" }),
+  );
+  const explicit = evaluateAssertions(
+    suitePortsFor([SUITE_RUN, SUITE_RUN_OLDER]),
+    suiteGate([{ rule: "min-suite-score", min: 0.5 }], { baseline: "sr_old" }),
+  );
+  assert.deepEqual(symbolic.baseline?.scan, explicit.baseline?.scan);
+  assert.equal(explicit.baseline?.requested, "sr_old");
+});
+
+test("A4 — a `previous` baseline for a run that belongs to NO saved suite is a loud skip, not a pick", () => {
+  // A collection/adhoc plan runs as a suite run but owns no Suite row, so "the previous run of this
+  // suite" names nothing. Picking some other plan's run would be the silent wrong answer.
+  const { suiteId: _suiteId, ...adhoc } = suiteRun({ id: "sr_new", source: "adhoc" });
+  const other = suiteRun({ id: "sr_other", startedAt: "2026-08-18T09:00:00.000Z" });
+  const report = evaluateAssertions(
+    suitePortsFor([adhoc, other]),
+    suiteGate([{ rule: "max-suite-cost", maxUsd: 5 }], { baseline: "previous" }),
+  );
+  assert.equal(report.baseline, null);
+  assert.match(report.baselineSkipReason ?? "", /belongs to no saved suite/);
+  assert.equal(
+    report.subject.kind === "suite_run" ? report.subject.suiteName : undefined,
+    "(no saved suite — adhoc plan)",
+  );
+});
+
+// ── A5 (D-C14 shape) — the discriminated subject ref ────────────────────────────────────────────
+
+test("A5 (D-C14) — a scan report's JSON gains `kind` and NOTHING else", () => {
+  const report = evaluateAssertions(
+    portsFor([OLDER, NEWER]),
+    request({
+      version: 1,
+      target: { scan: "scn_new" },
+      baseline: "scn_old",
+      rules: [{ rule: "no-new-tools" }],
+    }),
+  );
+  // WP 1.3's exact members, plus `kind`.
+  assert.deepEqual(Object.keys(report.subject).sort(), [
+    "countingVersion",
+    "kind",
+    "scanId",
+    "scannedAt",
+    "serverId",
+    "serverName",
+    "tokenProfile",
+    "totalTokens",
+    "totalTools",
+  ]);
+  assert.equal(report.subject.kind, "scan");
+  assert.deepEqual(Object.keys(report.subject).sort(), Object.keys(report.baseline?.scan ?? {}).sort());
+  // The report itself gains no field when a baseline resolved.
+  assert.deepEqual(Object.keys(report).sort(), [
+    "assertionsVersion",
+    "baseline",
+    "counts",
+    "evaluatedAt",
+    "passed",
+    "results",
+    "subject",
+  ]);
+  // …nor when no baseline was asked for.
+  const noBaseline = evaluateAssertions(
+    portsFor([NEWER]),
+    request({
+      version: 1,
+      target: { scan: "scn_new" },
+      rules: [{ rule: "max-tool-count", max: 99 }],
+    }),
+  );
+  assert.deepEqual(Object.keys(noBaseline).sort(), [
+    "assertionsVersion",
+    "baseline",
+    "counts",
+    "evaluatedAt",
+    "passed",
+    "results",
+    "subject",
+  ]);
+});
+
+// ── A6 (D-C16) — an unsettled suite run is a 400, never a score ─────────────────────────────────
+
+test("A6 (D-C16) — every non-completed status named as the SUBJECT is a 400", () => {
+  for (const status of ["running", "pending", "capped", "stopped", "error"] as SuiteRunStatus[]) {
+    const run = suiteRun({ id: "sr_new", status });
+    assert.throws(
+      () =>
+        evaluateAssertions(
+          suitePortsFor([run]),
+          // A floor of 0 would be met by ANY score — so an implementation that let this through
+          // would report a green gate off a half-finished matrix.
+          suiteGate([{ rule: "min-suite-score", min: 0 }]),
+        ),
+      (error: Error & { statusCode?: number }) =>
+        error.statusCode === 400 &&
+        new RegExp(`has status "${status}"`).test(error.message) &&
+        /cannot be asserted against/.test(error.message),
+      status,
+    );
+  }
+});
+
+test("A6 (D-C16) — a `completed` run whose rating has not settled is equally a 400", () => {
+  for (const ratingState of ["pending", "rating"] as RatingState[]) {
+    const run = suiteRun({ id: "sr_new", ratingState });
+    assert.throws(
+      () =>
+        evaluateAssertions(suitePortsFor([run]), suiteGate([{ rule: "min-suite-score", min: 0 }])),
+      (error: Error & { statusCode?: number }) =>
+        error.statusCode === 400 &&
+        /its review has not settled/.test(error.message) &&
+        new RegExp(`rating state "${ratingState}"`).test(error.message),
+      ratingState,
+    );
+  }
+
+  // An ABSENT rating state fails closed for the same reason: the column is NOT NULL, so a run
+  // without one is not a run whose review is over.
+  const { ratingState: _ratingState, ...legacy } = suiteRun({ id: "sr_new" });
+  assert.throws(
+    () => evaluateAssertions(suitePortsFor([legacy]), suiteGate([{ rule: "max-suite-cost", maxUsd: 9 }])),
+    (error: Error & { statusCode?: number }) => error.statusCode === 400,
+  );
+
+  // Every SETTLED state is accepted — `failed`/`skipped` mean the review is over, not pending.
+  for (const ratingState of ["rated", "failed", "skipped"] as RatingState[]) {
+    const run = suiteRun({ id: "sr_new", ratingState });
+    const report = evaluateAssertions(
+      suitePortsFor([run]),
+      suiteGate([{ rule: "max-suite-cost", maxUsd: 9 }]),
+    );
+    assert.equal(report.results[0]?.status, "pass", ratingState);
+  }
+});
+
+test("A6 (D-C16) — the filter applies to a `{suite}` target's CANDIDATES, not just the named run", () => {
+  // The newest run of the suite is still running; the gate must fall back to the newest COMPLETED +
+  // settled one rather than measuring the live matrix.
+  const live = suiteRun({ id: "sr_live", startedAt: "2026-08-20T09:00:00.000Z", status: "running" });
+  const report = evaluateAssertions(
+    suitePortsFor([live, SUITE_RUN, SUITE_RUN_OLDER]),
+    request({
+      version: 1,
+      target: { suite: "Nightly" },
+      rules: [{ rule: "min-suite-score", min: 0.5 }],
+    }),
+  );
+  assert.equal(
+    report.subject.kind === "suite_run" ? report.subject.suiteRunId : undefined,
+    "sr_new",
+  );
+
+  // …and a suite with NO usable run at all is a 400 telling you to run it, never a zero-score pass.
+  assert.throws(
+    () =>
+      evaluateAssertions(
+        suitePortsFor([live]),
+        request({
+          version: 1,
+          target: { suite: "ste_1" },
+          rules: [{ rule: "min-suite-score", min: 0.5 }],
+        }),
+      ),
+    (error: Error & { statusCode?: number }) =>
+      error.statusCode === 400 && /run `mcpfp suite run ste_1` first/.test(error.message),
+  );
+});
+
+test("A6 — a `{suite}` target resolves by id or exact name, and an ambiguous name names both ids", () => {
+  const ports = suitePortsFor([SUITE_RUN, SUITE_RUN_OLDER]);
+  for (const suite of ["ste_1", "Nightly"]) {
+    const report = evaluateAssertions(
+      ports,
+      request({ version: 1, target: { suite }, rules: [{ rule: "min-suite-score", min: 0.5 }] }),
+    );
+    assert.equal(
+      report.subject.kind === "suite_run" ? report.subject.suiteRunId : undefined,
+      "sr_new",
+      suite,
+    );
+  }
+
+  assert.throws(
+    () =>
+      evaluateAssertions(
+        ports,
+        request({
+          version: 1,
+          target: { suite: "Twin suite" },
+          rules: [{ rule: "min-suite-score", min: 0.5 }],
+        }),
+      ),
+    (error: Error & { statusCode?: number }) =>
+      error.statusCode === 400 && /ste_2, ste_3/.test(error.message),
+  );
+
+  assert.throws(
+    () =>
+      evaluateAssertions(
+        ports,
+        request({
+          version: 1,
+          target: { suite: "nope" },
+          rules: [{ rule: "min-suite-score", min: 0.5 }],
+        }),
+      ),
+    (error: Error & { statusCode?: number }) =>
+      error.statusCode === 400 && /No saved suite with the id or exact name "nope"/.test(error.message),
+  );
+});
+
+test("A6 — the suite subject uses the SAME total-order tie-break as the scan subject", () => {
+  // Two runs started in the same millisecond: the id tie-break (descending) decides, deterministically.
+  const twinA = suiteRun({ id: "sr_aaa", startedAt: "2026-08-19T09:00:00.000Z" });
+  const twinB = suiteRun({ id: "sr_bbb", startedAt: "2026-08-19T09:00:00.000Z" });
+  for (const order of [
+    [twinA, twinB],
+    [twinB, twinA],
+  ]) {
+    const report = evaluateAssertions(
+      suitePortsFor(order),
+      request({
+        version: 1,
+        target: { suite: "ste_1" },
+        rules: [{ rule: "min-suite-score", min: 0.5 }],
+      }),
+    );
+    assert.equal(
+      report.subject.kind === "suite_run" ? report.subject.suiteRunId : undefined,
+      "sr_bbb",
+      "the id tie-break makes the choice independent of row order",
+    );
+  }
+});
+
+test("A2 (WP 2.2) — a suite rule reaching a SCAN subject throws rather than passing silently", () => {
+  // D-C13 makes this a VALIDATION error, so it is unreachable through the schema — which is exactly
+  // why the evaluator still has to refuse it. "Unreachable" is a claim about today's schema, and a
+  // rule that quietly passes because its subject was the wrong shape is the failure this whole
+  // workstream exists to prevent. The cast is the only way to build the request at all.
+  const smuggled = {
+    document: {
+      version: 1,
+      target: { scan: "scn_new" },
+      rules: [{ rule: "min-suite-score", min: 0.9 }],
+    },
+  } as unknown as AssertionEvaluateRequest;
+  assert.throws(
+    () => evaluateAssertions(portsFor([NEWER]), smuggled),
+    (error: Error & { statusCode?: number }) =>
+      error.statusCode === 500 && /not a suite run/.test(error.message),
   );
 });
