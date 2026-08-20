@@ -224,8 +224,8 @@ the calibration cube.
 
 This is the foundation, not the finished system. There is **no scene composition yet** — the
 declarative scene spec, the step-by-step explainers, and describing a workflow to the assistant and
-getting a diagram back are all still planned. Route only, no nav item: type the address, or reach it
-from the breadcrumb's Home.
+getting a diagram back are all still planned. Route only, no nav item: reach it by typing the address
+(the breadcrumb's Home is the way back out).
 
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](planning/user-guide/DC-01-getting-started/00-guide-map.md) for the full picture.
