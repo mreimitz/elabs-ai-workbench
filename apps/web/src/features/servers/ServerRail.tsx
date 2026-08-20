@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type {
   ScanSummary,
+  SecurityFleetSummary,
   ServerAuthType,
   ServerConfig,
   ServerType,
@@ -27,6 +28,9 @@ import { IconButton } from "../../components/IconButton";
 import { StatusBadge } from "../../components/StatusBadge";
 import type { StatusView } from "../../lib/status";
 import { formatNumber } from "../../lib/format";
+import { loadableData, useLoadable } from "../../lib/loadable";
+import { PostureScore } from "../security/PostureScore";
+import { getSecurityFleetSummary } from "../security/security-api";
 import { ServerTypeStatusBadge } from "./ServerTypeStatusBadge";
 
 // ── Server health (T7 / audit: failure was colour-only, and a never-scanned server looked identical
@@ -115,6 +119,25 @@ export function ServerRail(props: {
   const [search, setSearch] = useState("");
   // Type filter: "all" (default), "untyped", or a concrete type id. Local UI state only.
   const [typeFilter, setTypeFilter] = useState<string>(FILTER_ALL);
+
+  // Security posture for the WHOLE fleet in ONE request (D-SP22). Not one request per row: forty
+  // servers would mean forty requests every time the rail paints. Re-fetched when the latest-scan
+  // set changes, so finishing a scan refreshes its badge without a page reload.
+  const scanSignature = [...props.latestScansByServer]
+    .map(([serverId, scan]) => `${serverId}:${scan.id}:${scan.status}`)
+    .sort()
+    .join("|");
+  const { state: postureState } = useLoadable(() => getSecurityFleetSummary(), [scanSignature]);
+  // A server with no `success` scan is ABSENT from the answer (never a zero-scored row), so this is
+  // a lookup that can legitimately miss — see `PostureCell`.
+  const postureByServer = useMemo(() => {
+    const rows = loadableData(postureState) ?? [];
+    return new Map(rows.map((row) => [row.serverId, row] as const));
+  }, [postureState]);
+  // While the first request is in flight nothing is rendered in the posture slot — a rail row is too
+  // dense for a skeleton, and a placeholder "—" that turned into a chip a moment later would read as
+  // a state change rather than as loading.
+  const postureSettled = postureState.status !== "loading";
 
   const typesById = useMemo(
     () => new Map(props.serverTypes.map((type) => [type.id, type] as const)),
@@ -307,6 +330,8 @@ export function ServerRail(props: {
                 servers={group.servers}
                 isBusy={props.isBusy}
                 latestScansByServer={props.latestScansByServer}
+                postureByServer={postureByServer}
+                postureSettled={postureSettled}
                 selectedServerId={props.selectedServerId}
                 onDeleteServer={props.onDeleteServer}
                 onEditServer={props.onEditServer}
@@ -322,6 +347,8 @@ export function ServerRail(props: {
           servers={visible}
           isBusy={props.isBusy}
           latestScansByServer={props.latestScansByServer}
+          postureByServer={postureByServer}
+          postureSettled={postureSettled}
           selectedServerId={props.selectedServerId}
           onDeleteServer={props.onDeleteServer}
           onEditServer={props.onEditServer}
@@ -339,6 +366,10 @@ function ServerList(props: {
   servers: ServerConfig[];
   isBusy: (key: string) => boolean;
   latestScansByServer: Map<string, ScanSummary>;
+  /** Keyed by server id; a server with no `success` scan is deliberately ABSENT (D-SP22). */
+  postureByServer: Map<string, SecurityFleetSummary>;
+  /** False only while the fleet request is still in flight. */
+  postureSettled: boolean;
   selectedServerId: string | null;
   onDeleteServer: (server: ServerConfig) => void;
   onEditServer: (server: ServerConfig) => void;
@@ -390,13 +421,20 @@ function ServerList(props: {
                     {server.name}
                   </Text>
                 </span>
-                {health.showChip ? (
-                  <StatusBadge view={health.view} className="shrink-0" />
-                ) : (
-                  <Text variant="caption" tone="muted" className="shrink-0 tabular-nums">
-                    {tokenLabel}
-                  </Text>
-                )}
+                <span className="flex shrink-0 items-center gap-1.5">
+                  {health.showChip ? (
+                    <StatusBadge view={health.view} className="shrink-0" />
+                  ) : (
+                    <Text variant="caption" tone="muted" className="shrink-0 tabular-nums">
+                      {tokenLabel}
+                    </Text>
+                  )}
+                  <PostureCell
+                    posture={props.postureByServer.get(server.id)}
+                    settled={props.postureSettled}
+                    healthChipShown={health.showChip}
+                  />
+                </span>
               </span>
               <span className="flex min-w-0 items-center gap-1.5">
                 <Text variant="meta" tone="muted" className="shrink-0">
@@ -466,5 +504,30 @@ function ServerList(props: {
         );
       })}
     </ul>
+  );
+}
+
+/**
+ * One row's security-posture badge (D-SP22) — the BAND, with the score as its accessible detail.
+ *
+ * Three states, and the third is the one worth being careful about:
+ *   • a posture → the band chip, rendered by the same `PostureScore` the Security tab uses, so a
+ *     server can never read "Medium risk" in the rail and something else one click later;
+ *   • no posture, on a row that already carries a health chip ("Not scanned", "Scan failed") →
+ *     nothing, because that chip has already said why there is no posture;
+ *   • no posture, on a row showing its token total → the muted em dash this row ALREADY uses for a
+ *     missing token total, rather than a third bespoke "unknown" treatment.
+ */
+function PostureCell(props: {
+  posture: SecurityFleetSummary | undefined;
+  settled: boolean;
+  healthChipShown: boolean;
+}) {
+  if (props.posture) return <PostureScore score={props.posture.score} variant="chip" />;
+  if (!props.settled || props.healthChipShown) return null;
+  return (
+    <Text variant="caption" tone="muted" className="shrink-0">
+      —
+    </Text>
   );
 }

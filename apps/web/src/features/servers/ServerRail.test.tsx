@@ -1,7 +1,18 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import type { ScanSummary, ServerConfig, ServerType } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
+
+// WP 2.1 — the rail now makes ONE `GET /api/security/summary` request for the whole fleet (D-SP22).
+// These tests are about grouping/filtering/health, so the fetch is stubbed as a promise that never
+// settles: an unmocked one would reach jsdom's network layer, and even a resolved stub would land a
+// state update after these synchronous tests have finished (an `act` warning about a thing they do
+// not test). Left pending, the rail simply renders no posture slot. The badge itself is tested in
+// `src/features/security/ServerRailPosture.test.tsx`.
+vi.mock("../security/security-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../security/security-api")>();
+  return { ...actual, getSecurityFleetSummary: () => new Promise<never>(() => {}) };
+});
 
 // jsdom omits matchMedia/ResizeObserver — Radix (Select/DropdownMenu) reads them.
 if (typeof window.matchMedia !== "function") {
@@ -13,7 +24,7 @@ if (typeof window.matchMedia !== "function") {
     removeListener: () => {},
     addEventListener: () => {},
     removeEventListener: () => {},
-    dispatchEvent: () => false
+    dispatchEvent: () => false,
   })) as unknown as typeof window.matchMedia;
 }
 if (typeof window.ResizeObserver !== "function") {
@@ -37,7 +48,7 @@ function server(id: string, name: string, typeId: string | null): ServerConfig {
     hasEnvSecrets: false,
     hasHeaderSecrets: false,
     authType: "none",
-    typeId
+    typeId,
   };
 }
 
@@ -48,7 +59,7 @@ const TYPES: ServerType[] = [
     status: "production",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
-    memberCount: 1
+    memberCount: 1,
   },
   {
     id: "t-stage",
@@ -56,8 +67,8 @@ const TYPES: ServerType[] = [
     status: "beta",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
-    memberCount: 1
-  }
+    memberCount: 1,
+  },
 ];
 
 function renderRail(servers: ServerConfig[], serverTypes: ServerType[]) {
@@ -77,7 +88,7 @@ function renderRail(servers: ServerConfig[], serverTypes: ServerType[]) {
         onSelectServer={() => {}}
         onTestServer={() => {}}
       />
-    </TooltipProvider>
+    </TooltipProvider>,
   );
 }
 
@@ -87,9 +98,9 @@ describe("ServerRail — server-type grouping (WP 2.1)", () => {
       [
         server("s1", "Prod alpha", "t-saas"),
         server("s2", "Stage beta", "t-stage"),
-        server("s3", "Loose box", null)
+        server("s3", "Loose box", null),
       ],
-      TYPES
+      TYPES,
     );
 
     // Type headers.
@@ -152,7 +163,7 @@ describe("ServerRail — server health (T7)", () => {
       largestResourceTokens: 0,
       largestPromptTokens: 0,
       countingVersion: 2,
-      ...overrides
+      ...overrides,
     };
   }
 
@@ -160,7 +171,7 @@ describe("ServerRail — server health (T7)", () => {
     const scans = new Map<string, ScanSummary>([
       ["s-ok", scanSummary("s-ok", { status: "success", totalTokens: 1234 })],
       ["s-fail", scanSummary("s-fail", { status: "failed" })],
-      ["s-auth", scanSummary("s-auth", { status: "failed", authRequired: true })]
+      ["s-auth", scanSummary("s-auth", { status: "failed", authRequired: true })],
     ]);
     render(
       <TooltipProvider>
@@ -172,7 +183,7 @@ describe("ServerRail — server health (T7)", () => {
             server("s-new", "Never", null),
             server("s-ok", "Healthy", null),
             server("s-fail", "Broken", null),
-            server("s-auth", "Expired", null)
+            server("s-auth", "Expired", null),
           ]}
           serverTypes={[]}
           onAddServer={() => {}}
@@ -183,7 +194,7 @@ describe("ServerRail — server health (T7)", () => {
           onSelectServer={() => {}}
           onTestServer={() => {}}
         />
-      </TooltipProvider>
+      </TooltipProvider>,
     );
 
     // Attention states carry a labelled chip — never colour alone.

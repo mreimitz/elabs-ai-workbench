@@ -967,21 +967,23 @@ test("A12 — GET /api/skills/:id/versions/:vid/security returns the report over
   assert.ok(report.findings.some((f) => f.ruleId === "skill-surface.executable-scripts"));
 });
 
-test("A12 — exactly FOUR security routes were registered, and no WRITE verb at all", async () => {
+test("A12 — exactly FIVE security routes were registered, and no WRITE verb at all", async () => {
   // No feature flag, no extra route, no write verb. The whole surface this workstream adds: WP 1.2's
-  // scan report, WP 1.3's skill-version report, and WP 1.4's two posture diffs (each a sub-path of
-  // the report it diffs, with the baseline as a `?baseline=` argument rather than a second subject).
-  // Fastify pairs a `HEAD` with every `GET` by itself, so the four HEADs below are the framework's
-  // doing and not four more routes — but the assertion still lists them rather than filtering them
-  // out, so a genuinely new route cannot hide behind a filter.
+  // scan report, WP 1.3's skill-version report, WP 1.4's two posture diffs (each a sub-path of the
+  // report it diffs, with the baseline as a `?baseline=` argument rather than a second subject), and
+  // WP 2.1's fleet summary. Fastify pairs a `HEAD` with every `GET` by itself, so the five HEADs
+  // below are the framework's doing and not five more routes — but the assertion still lists them
+  // rather than filtering them out, so a genuinely new route cannot hide behind a filter.
   const h = await makeApp();
   assert.deepEqual(h.routes.sort(), [
     "GET /api/scans/:scanId/security",
     "GET /api/scans/:scanId/security/diff",
+    "GET /api/security/summary",
     "GET /api/skills/:id/versions/:vid/security",
     "GET /api/skills/:id/versions/:vid/security/diff",
     "HEAD /api/scans/:scanId/security",
     "HEAD /api/scans/:scanId/security/diff",
+    "HEAD /api/security/summary",
     "HEAD /api/skills/:id/versions/:vid/security",
     "HEAD /api/skills/:id/versions/:vid/security/diff",
   ]);

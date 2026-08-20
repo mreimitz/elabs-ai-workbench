@@ -32,8 +32,10 @@ import {
   securityFindingCountsSchema,
   securityFindingIdentity,
   securityFindingSchema,
+  securityFleetSummarySchema,
   securityPostureDiffSchema,
   securityReportSchema,
+  securityScoreSchema,
 } from "./security-posture.js";
 
 // The contract is WP 1.1's only deliverable, so these tests are the contract's teeth: they pin the
@@ -1055,5 +1057,35 @@ describe("securityPostureDiffSchema + securityDiffQuerySchema (WP 1.4)", () => {
       securityDiffQuerySchema.safeParse({ baseline: "scan_old", minSeverity: "error" }).success,
       false,
     );
+  });
+});
+
+describe("securityFleetSummarySchema (WP 2.1, D-SP22)", () => {
+  const row = {
+    serverId: "srv_1",
+    serverName: "GitHub",
+    scanId: "scan_new",
+    scannedAt: "2026-08-20T10:00:00.000Z",
+    score: computeSecurityScore([toolFinding(DIFF_ERROR_RULE, "delete_repo")]),
+    counts: { error: 1, warning: 0, info: 0, total: 1 },
+  };
+
+  it("round-trips one server's posture and rejects an unknown key", () => {
+    assert.deepEqual(securityFleetSummarySchema.parse(row), row);
+    assert.equal(securityFleetSummarySchema.safeParse({ ...row, findings: [] }).success, false);
+  });
+
+  it("reuses the report's OWN score and counts schemas, so a badge can never drift from a tab", () => {
+    // The badge renders the band off `score` and the counts off `counts` — both are the shapes the
+    // report already ships, not a second flattened pair this endpoint invented for a list.
+    assert.deepEqual(securityScoreSchema.parse(row.score), row.score);
+    assert.deepEqual(securityFindingCountsSchema.parse(row.counts), row.counts);
+    assert.equal(securityFleetSummarySchema.safeParse({ ...row, score: 74 }).success, false);
+    assert.equal(securityFleetSummarySchema.safeParse({ ...row, counts: 1 }).success, false);
+  });
+
+  it("refuses a blank id or a blank name — a row nobody can drill into is not a row", () => {
+    assert.equal(securityFleetSummarySchema.safeParse({ ...row, scanId: "" }).success, false);
+    assert.equal(securityFleetSummarySchema.safeParse({ ...row, serverName: "" }).success, false);
   });
 });

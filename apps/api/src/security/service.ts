@@ -28,7 +28,9 @@ import {
   SECURITY_ANALYZER_VERSION,
   SECURITY_FINDING_LIMIT,
   type ScanDetail,
+  type ScanSummary,
   type SecurityFinding,
+  type SecurityFleetSummary,
   type SecurityPostureDiff,
   type SecurityReport,
   type SecurityRuleId,
@@ -380,4 +382,71 @@ function requireDiffable(baseline: SecurityReport, subject: SecurityReport): voi
         "Fix the findings the reports do list, then diff again.",
     );
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// WP 2.1 — the FLEET summary (D-SP22)
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+//
+// The servers list wants one posture chip per row. The naive way to get it is one
+// `GET /api/scans/:scanId/security` per row, which turns a fleet of forty servers into forty
+// requests every time the rail paints. So there is ONE endpoint for the whole list, and it answers
+// with the band + score + counts each row needs — never the findings, which are a drill-in.
+//
+// It re-projects {@link analyzeScan} rather than reading the scan rows a second way (D-MCP4), so the
+// chip in the list and the tab it drills into can never disagree about one server's posture. And it
+// persists nothing, exactly like every other posture answer (D-SP8).
+
+/**
+ * {@link SecurityAnalyzerPorts} plus the ONE extra read the fleet summary needs: a server's scan
+ * history, so it can find the latest **`success`** scan rather than assuming the newest scan is one.
+ *
+ * It is a separate type rather than a widened `SecurityAnalyzerPorts` on purpose. WP 1.2's
+ * `apps/api/test/security-analyzer.test.ts` builds its ports as a hand-written `{ scans, servers,
+ * oauth }` and is D-SP14's proof that WP 1.3's extraction preserved WP 1.2's behaviour — it has to
+ * stay byte-identical, so a required member could not be added to the type it constructs.
+ *
+ * `listSummariesByServer` is an EXISTING `ScanRepository` method (`GET /api/servers/:id` already
+ * serves it); this WP adds no repository, no query and no migration.
+ */
+export type SecurityFleetPorts = SecurityAnalyzerPorts & {
+  scans: SecurityAnalyzerPorts["scans"] & {
+    /** Newest `scannedAt` first — the repository's own order, which is what "latest" here means. */
+    listSummariesByServer: (serverId: string) => ScanSummary[];
+  };
+};
+
+/**
+ * Every server that HAS a posture, with the posture of its latest `success` scan.
+ *
+ * A server whose scan history holds no `success` scan — never scanned, only ever failed, currently
+ * running its first — is **omitted**, not zero-scored and not carried as a neutral 100. It has no
+ * posture, and inventing one would be the same confidently-wrong answer D-SP10 refuses for a
+ * non-`success` scan; the list renders the absence with the "not scanned" treatment it already has
+ * for a server with no token total.
+ *
+ * The order is `servers.list()`'s own, and the whole answer is a pure function of immutable rows, so
+ * two calls a millisecond apart return byte-identical JSON (D-SP6).
+ */
+export function summarizeFleetPosture(ports: SecurityFleetPorts): SecurityFleetSummary[] {
+  const summaries: SecurityFleetSummary[] = [];
+  for (const server of ports.servers.list()) {
+    const latestSuccess = ports.scans
+      .listSummariesByServer(server.id)
+      .find((scan) => scan.status === USABLE_STATUS);
+    if (latestSuccess === undefined) continue;
+
+    // Straight through the report, so the name, the captured instant, the score and the counts are
+    // the report's own values rather than a second derivation off the summary row.
+    const report = analyzeScan(ports, latestSuccess.id);
+    summaries.push({
+      serverId: server.id,
+      serverName: report.subject.name,
+      scanId: report.subject.id,
+      scannedAt: report.subject.capturedAt,
+      score: report.score,
+      counts: report.counts,
+    });
+  }
+  return summaries;
 }

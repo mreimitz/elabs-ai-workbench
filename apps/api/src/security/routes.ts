@@ -5,6 +5,7 @@
 //   GET /api/scans/:scanId/security/diff?baseline=        → `SecurityPostureDiff` (WP 1.4)
 //   GET /api/skills/:id/versions/:vid/security/diff?baseline=
 //                                                         → `SecurityPostureDiff` (WP 1.4)
+//   GET /api/security/summary                             → `SecurityFleetSummary[]` (WP 2.1)
 //
 // Thin, per the API convention: read the params, delegate, let the central error handler format
 // anything thrown (a repository's 404 for an unknown id, the service's D-SP10 400 for a non-`success`
@@ -32,11 +33,13 @@ import type { FastifyInstance } from "fastify";
 import { securityDiffQuerySchema } from "@mcp-token-footprint/shared";
 import {
   type SecurityAnalyzerPorts,
+  type SecurityFleetPorts,
   type SecuritySkillPorts,
   analyzeScan,
   analyzeSkillVersion,
   diffScanPosture,
   diffSkillPosture,
+  summarizeFleetPosture,
 } from "./service.js";
 
 /**
@@ -49,7 +52,24 @@ import {
  * simply does not get the skill route, which is the honest outcome rather than a route that 500s.
  */
 export type SecurityRoutePorts = SecurityAnalyzerPorts &
-  Partial<Pick<SecuritySkillPorts, "skills">>;
+  Partial<Pick<SecuritySkillPorts, "skills">> & {
+    /**
+     * WP 2.1 — the fleet summary's one extra read, **optional for the same reason `skills` is**.
+     * `apps/api/test/security-analyzer.test.ts` hands this function a hand-built `scans` stub with
+     * only `getDetail` on it and has to stay byte-identical (D-SP14's proof), so the port could only
+     * be added additively. A caller that does not supply it simply does not get the summary route,
+     * which beats a route that 500s on its first request.
+     */
+    scans: SecurityAnalyzerPorts["scans"] &
+      Partial<Pick<SecurityFleetPorts["scans"], "listSummariesByServer">>;
+  };
+
+/** Narrow to {@link SecurityFleetPorts} without rebuilding the ports object — a spread would copy a
+ *  repository's own fields and drop its prototype methods, which is a runtime failure the types
+ *  would not catch. */
+function hasFleetPort(ports: SecurityRoutePorts): ports is SecurityRoutePorts & SecurityFleetPorts {
+  return typeof ports.scans.listSummariesByServer === "function";
+}
 
 export async function registerSecurityRoutes(app: FastifyInstance, ports: SecurityRoutePorts) {
   app.get("/api/scans/:scanId/security", async (request) => {
@@ -89,6 +109,24 @@ export async function registerSecurityRoutes(app: FastifyInstance, ports: Securi
       baseline,
     );
   });
+
+  // WP 2.1 (D-SP22) — ONE request for the whole servers list. Not `/api/servers/:id/security`
+  // repeated per row: a fleet of forty servers would be forty requests every time the rail paints.
+  // The path is a sibling of the per-scan report rather than a sub-path of it, because its subject
+  // is the fleet, not any one scan.
+  if (hasFleetPort(ports)) {
+    app.get("/api/security/summary", async (request) =>
+      summarizeFleetPosture({
+        ...ports,
+        onRuleError: (ruleId, error) => {
+          request.log.warn(
+            { ruleId, err: error },
+            "security rule threw on a malformed tool definition; it contributed no finding",
+          );
+        },
+      }),
+    );
+  }
 
   const skills = ports.skills;
   if (skills === undefined) return;

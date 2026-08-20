@@ -1,0 +1,185 @@
+import { render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { ScanSummary, SecurityFleetSummary, ServerConfig } from "@mcp-token-footprint/shared";
+import { TooltipProvider } from "@elabs-ai/components-ui";
+
+// jsdom omits matchMedia/ResizeObserver — Radix (Select/DropdownMenu) reads them.
+if (typeof window.matchMedia !== "function") {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+if (typeof window.ResizeObserver !== "function") {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof window.ResizeObserver;
+}
+
+const getSecurityFleetSummary = vi.fn();
+
+vi.mock("./security-api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./security-api")>();
+  return { ...actual, getSecurityFleetSummary: () => getSecurityFleetSummary() };
+});
+
+import { ServerRail } from "../servers/ServerRail";
+
+// The servers-list posture badge (A6 / D-SP22). Two claims are worth pinning, and they are the two
+// a naive badge gets wrong: it is ONE request for the whole fleet, not one per row; and a server
+// with no usable scan renders the row's existing missing-data treatment rather than a fabricated
+// clean score.
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
+
+function server(id: string, name: string): ServerConfig {
+  return {
+    id,
+    name,
+    transport: "streamable_http",
+    url: `https://${id}.example.com/mcp`,
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+    hasEnvSecrets: false,
+    hasHeaderSecrets: false,
+    authType: "none",
+    typeId: null,
+  };
+}
+
+function successScan(serverId: string): ScanSummary {
+  return {
+    id: `scan_${serverId}`,
+    serverId,
+    serverName: serverId,
+    tokenProfile: "generic_o200k",
+    scannedAt: "2026-08-20T10:00:00.000Z",
+    status: "success",
+    totalTools: 3,
+    totalTokens: 1200,
+    totalRawBytes: 4000,
+    averageTokensPerTool: 400,
+    largestToolTokens: 600,
+    totalResources: 0,
+    totalResourceTemplates: 0,
+    totalPrompts: 0,
+    totalResourceTokens: 0,
+    totalPromptTokens: 0,
+    largestResourceTokens: 0,
+    largestPromptTokens: 0,
+    countingVersion: 2,
+  };
+}
+
+const posture = (
+  serverId: string,
+  value: number,
+  band: SecurityFleetSummary["score"]["band"],
+): SecurityFleetSummary => ({
+  serverId,
+  serverName: serverId,
+  scanId: `scan_${serverId}`,
+  scannedAt: "2026-08-20T10:00:00.000Z",
+  score: { value, band, analyzerVersion: 1 },
+  counts: { error: 1, warning: 0, info: 0, total: 1 },
+});
+
+function renderRail(servers: ServerConfig[], scans: Map<string, ScanSummary>) {
+  return render(
+    <TooltipProvider>
+      <ServerRail
+        isBusy={() => false}
+        latestScansByServer={scans}
+        selectedServerId={null}
+        servers={servers}
+        serverTypes={[]}
+        onAddServer={() => {}}
+        onManageTypes={() => {}}
+        onDeleteServer={() => {}}
+        onEditServer={() => {}}
+        onRunScan={() => {}}
+        onSelectServer={() => {}}
+        onTestServer={() => {}}
+      />
+    </TooltipProvider>,
+  );
+}
+
+describe("the servers rail's posture badge (D-SP22)", () => {
+  it("makes ONE request for the whole fleet, not one per row", async () => {
+    getSecurityFleetSummary.mockResolvedValue([
+      posture("a", 70, "medium"),
+      posture("b", 100, "clean"),
+      posture("c", 40, "high"),
+    ]);
+    renderRail(
+      [server("a", "Alpha"), server("b", "Beta"), server("c", "Gamma")],
+      new Map([
+        ["a", successScan("a")],
+        ["b", successScan("b")],
+        ["c", successScan("c")],
+      ]),
+    );
+
+    expect(await screen.findByText("Medium risk")).toBeTruthy();
+    expect(screen.getByText("Clean")).toBeTruthy();
+    expect(screen.getByText("High risk")).toBeTruthy();
+    // Three rows, one request.
+    expect(getSecurityFleetSummary).toHaveBeenCalledTimes(1);
+  });
+
+  it("carries the SCORE in the badge's accessible name, so the band is never the only cue", async () => {
+    getSecurityFleetSummary.mockResolvedValue([posture("a", 70, "medium")]);
+    renderRail([server("a", "Alpha")], new Map([["a", successScan("a")]]));
+
+    expect(
+      await screen.findByRole("img", { name: "Security posture Medium risk, score 70 of 100" }),
+    ).toBeTruthy();
+  });
+
+  it("shows a server with no usable scan as not-scanned, never as a score", async () => {
+    // The endpoint OMITS a server with no `success` scan, so this row simply has no posture. The
+    // row's existing "Not scanned" chip already explains the absence — no fabricated clean badge,
+    // and no second bespoke "unknown" treatment beside a chip that already said it.
+    getSecurityFleetSummary.mockResolvedValue([]);
+    renderRail([server("a", "Alpha")], new Map());
+
+    expect(await screen.findByText("Not scanned")).toBeTruthy();
+    for (const band of ["Clean", "Low risk", "Medium risk", "High risk"]) {
+      expect(screen.queryByText(band)).toBeNull();
+    }
+  });
+
+  it("marks a scanned server the summary does not cover with the row's own missing-data em dash", async () => {
+    // A healthy row shows its token total; when the fleet answer has no posture for it (a scan that
+    // settled between the two reads, a failed summary request) the slot reads "—", exactly as the
+    // token column does when it has no number.
+    getSecurityFleetSummary.mockResolvedValue([]);
+    renderRail([server("a", "Alpha")], new Map([["a", successScan("a")]]));
+
+    const row = await screen.findByRole("listitem");
+    await waitFor(() => expect(within(row).getByText("—")).toBeTruthy());
+    expect(within(row).getByText("1,200")).toBeTruthy();
+  });
+
+  it("does not crash the rail when the fleet request fails", async () => {
+    getSecurityFleetSummary.mockRejectedValue(new Error("summary unavailable"));
+    renderRail([server("a", "Alpha")], new Map([["a", successScan("a")]]));
+
+    // The rail is a navigation surface first — a posture badge that cannot load must never cost the
+    // operator the server list.
+    expect(await screen.findByText("Alpha")).toBeTruthy();
+    const row = screen.getByRole("listitem");
+    await waitFor(() => expect(within(row).getByText("—")).toBeTruthy());
+  });
+});

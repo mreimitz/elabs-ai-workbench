@@ -31,6 +31,9 @@ import {
   Upload,
 } from "lucide-react";
 import { pullSkill } from "../../lib/api";
+import { SecurityPanel, useSecurityReport } from "../security/SecurityPanel";
+import { formatDateTime } from "../../lib/format";
+import { loadableData } from "../../lib/loadable";
 import { getErrorMessage } from "../../lib/errors";
 import { DiscardChangesDialog } from "../../components/UnsavedChangesGuard";
 import { IconButton } from "../../components/IconButton";
@@ -127,7 +130,28 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
   } = useRatingIssues("skill", skillId);
 
   // Active inspector tab (controlled so "Compare"/"Pull latest" can deep-link into Diff).
-  const [tab, setTab] = useState("overview");
+  //
+  // WP 2.1 (D-SP21) — held in the URL (`?tab=`) rather than in component state, so a Security tab
+  // deep link (`/skills/:id?tab=security&baseline=…`) survives a reload and can be shared. No
+  // `<Route>` is added: `/skills/:skillId` already exists and the tab is a parameter on it, which is
+  // what keeps `ASSISTANT_ROUTE_MANIFEST` and its gate untouched.
+  const tab = searchParams.get("tab") ?? "overview";
+  const setTab = useCallback(
+    (next: string) => {
+      setSearchParams(
+        (previous) => {
+          const params = new URLSearchParams(previous);
+          params.set("tab", next);
+          // A baseline belongs to the Security tab; leaving it on the URL after switching away would
+          // silently re-arm the diff on the way back.
+          if (next !== "security") params.delete("baseline");
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   // Versions-tab compare selection (up to two version ids, oldest drops off when a third is added).
   const [compareSelection, setCompareSelection] = useState<string[]>([]);
   // Diff-tab A/B selection (from → to). Undefined until seeded (prev → current) or set explicitly.
@@ -171,7 +195,6 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
     setVersions([]);
     setError(null);
     setSelection(LATEST);
-    setTab("overview");
     setCompareSelection([]);
     setDiffFromId(undefined);
     setDiffToId(undefined);
@@ -189,6 +212,16 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
       cancelled = true;
     };
   }, [skillId]);
+
+  // The tab reset that used to live in the load effect above. It has to skip the FIRST run, or it
+  // would wipe a `?tab=security` deep link the moment the page mounted; comparing against a ref
+  // makes it fire on a real skill CHANGE and only then.
+  const lastSkillIdRef = useRef(skillId);
+  useEffect(() => {
+    if (lastSkillIdRef.current === skillId) return;
+    lastSkillIdRef.current = skillId;
+    setTab("overview");
+  }, [skillId, setTab]);
 
   // Defensive upstream check (WP 1.4 route may not exist yet → null → badge hidden). GitHub-only.
   useEffect(() => {
@@ -219,6 +252,28 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
   // latest version only (a bind/unbind saves a NEW version FROM it), so they render read-only when a
   // pinned older version is being viewed.
   const isHeadVersion = activeVersionId != null && activeVersionId === latestVersionId;
+
+  // WP 2.1 — the posture report for the ACTIVE version, loaded here rather than inside the tab so the
+  // strip can badge `counts.total` before the tab is ever opened (Radix unmounts inactive tab
+  // content) — the same reason `useRatingIssues` above sits at page level for the Issues count.
+  const securityReport = useSecurityReport(
+    { kind: "skill", skillId, versionId: activeVersionId ?? "" },
+    { enabled: activeVersionId != null },
+  );
+  const securityCount = loadableData(securityReport.state)?.counts.total;
+
+  // The baselines a posture diff may name: this skill's OTHER versions, newest first. `versions` is
+  // already sorted by descending `seq` where it is set.
+  const securityBaselines = useMemo(
+    () =>
+      versions
+        .filter((version) => version.id !== activeVersionId)
+        .map((version) => ({
+          id: version.id,
+          label: `v${version.seq} · ${formatDateTime(version.createdAt)}`,
+        })),
+    [versions, activeVersionId],
+  );
 
   // Load the active version detail + its files.
   useEffect(() => {
@@ -485,7 +540,8 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
           openDiff(prevVersion.id, newVersion.id);
         }
         toast.success(`Restored as v${newVersion?.seq}`, {
-          description: "The chosen version is now the latest. Showing the diff vs the previous latest.",
+          description:
+            "The chosen version is now the latest. Showing the diff vs the previous latest.",
         });
       } catch (err) {
         notifyError("Couldn’t set that version as the latest", {
@@ -699,6 +755,14 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
               <span className="ml-1.5 tabular-nums text-muted-foreground">{openIssuesCount}</span>
             ) : null}
           </TabsTrigger>
+          <TabsTrigger value="security">
+            Security
+            {/* WP 2.1 — the REPORT's `counts.total`, never the rendered row count; suffix only when
+                > 0, mirroring how Issues renders its own count above. */}
+            {securityCount && securityCount > 0 ? (
+              <span className="ml-1.5 tabular-nums text-muted-foreground">{securityCount}</span>
+            ) : null}
+          </TabsTrigger>
           <TabsTrigger value="versions">Versions</TabsTrigger>
           <TabsTrigger value="diff">Diff</TabsTrigger>
         </TabsList>
@@ -750,6 +814,23 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
                 : undefined
             }
           />
+        </TabsContent>
+
+        {/* ── SECURITY — this VERSION's posture: score, band, per-severity counts, the findings
+            worst-first with their redacted evidence, and an optional diff against another version of
+            the same skill. A skill finding never prints the word "server" (D-SP12): its anchors are
+            "This skill version" and relative file paths. ── */}
+        <TabsContent value="security" className="min-h-0 flex-1 overflow-y-auto pt-4">
+          {activeVersionId ? (
+            <SecurityPanel
+              target={{ kind: "skill", skillId, versionId: activeVersionId }}
+              baselines={securityBaselines}
+              state={securityReport.state}
+              onRetry={securityReport.reload}
+            />
+          ) : (
+            <StatePanel kind="loading" title="Loading version…" loadingLabel="Loading version…" />
+          )}
         </TabsContent>
 
         <TabsContent value="design" className="flex min-h-0 flex-1 flex-col pt-4">
