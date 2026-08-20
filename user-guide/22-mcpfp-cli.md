@@ -561,9 +561,10 @@ node apps/cli/dist/index.js report scan <scanId> --format json > report.json
 
   `data` is exactly what the workbench returned. The envelope never carries a token.
 
-- `--format markdown` is available on the `report` commands only. Asking for it anywhere else is an
-  error naming the formats that command *does* support — never a silent fall back to a human table
-  that a later step would fail to parse.
+- `--format markdown` is available on the `report` commands (the app's own report documents) and on
+  `assert` (the pull-request comment). Asking for it anywhere else is an error naming the formats
+  that command *does* support — never a silent fall back to a human table that a later step would
+  fail to parse.
 - `--output <file>` writes the answer to a file instead of standard output, creating folders as
   needed, and confirms on standard error.
 - `--quiet` turns off the progress lines. It does not hide errors, and it does not hide the warning
