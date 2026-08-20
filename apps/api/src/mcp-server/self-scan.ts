@@ -8,9 +8,9 @@ import {
   type TokenProfileId,
   WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
   WORKBENCH_MCP_MOUNT_PATH,
-  WORKBENCH_MCP_READ_TOOL_NAMES,
   WORKBENCH_MCP_SERVER_NAME,
   WORKBENCH_MCP_SERVER_VERSION,
+  WORKBENCH_MCP_TOOL_NAMES,
 } from "@mcp-token-footprint/shared";
 import Database from "better-sqlite3";
 import Fastify from "fastify";
@@ -38,6 +38,7 @@ import { ScenarioService } from "../testing/scenario-service.js";
 import { TestRepository } from "../testing/test-repository.js";
 import { TestService } from "../testing/test-service.js";
 import { registerWorkbenchMcpRoutes } from "./routes.js";
+import type { WorkbenchMcpDeps } from "./tools.js";
 
 // ==================================================================================================
 // The self-scan gate (D-MCP5) — the workbench measures its OWN MCP mount, with its own scanner
@@ -110,6 +111,50 @@ function createScratchDatabase(dir: string): AppDatabase {
 }
 
 /**
+ * The write tools' dependencies, wired so this harness CANNOT launch anything (WP M.3).
+ *
+ * The self-scan is a MEASUREMENT harness: the discovery scan it runs speaks `initialize`,
+ * `tools/list`, `resources/list` and `prompts/list`, and never `tools/call`. So no handler here ever
+ * runs — and rather than rely on that, the four write-side dependencies are narrow stubs that THROW.
+ * That way "the dogfood gate cannot start a scan, a suite run or a run plan" is a property of the
+ * wiring a reader can check in one place, not an inference from what the scanner happens to call
+ * today. `tools/list` reads each definition's name, description and input schema; none of those
+ * touches these objects.
+ *
+ * The casts are the honest way to say "this is deliberately not a real service": the fields are typed
+ * as the production classes because {@link WorkbenchMcpDeps} is the production contract, and widening
+ * that contract to accommodate a test harness would be the wrong trade.
+ */
+function refusingWriteDeps(): Pick<
+  WorkbenchMcpDeps,
+  "scanService" | "suiteOrchestrator" | "runPlans" | "estimate"
+> {
+  const refuse = (): never => {
+    throw new Error(
+      "the workbench self-scan measures tools/list only — it never invokes a tool, and its write " +
+        "dependencies are deliberately inert",
+    );
+  };
+  return {
+    scanService: { runScan: refuse } as unknown as WorkbenchMcpDeps["scanService"],
+    suiteOrchestrator: {
+      startSuiteRun: refuse,
+      startPlanRun: refuse,
+    } as unknown as WorkbenchMcpDeps["suiteOrchestrator"],
+    runPlans: {
+      suites: { get: refuse },
+      collections: { get: refuse },
+      tests: { listIdsByCollection: refuse, list: refuse },
+    } as unknown as WorkbenchMcpDeps["runPlans"],
+    estimate: {
+      scenarios: { list: refuse },
+      tests: { list: refuse },
+      scans: { getLatestForServer: refuse },
+    } as unknown as WorkbenchMcpDeps["estimate"],
+  };
+}
+
+/**
  * Serve the real mount, scan it with the real scanner, and return the measurement.
  *
  * Throws when the mount cannot be served or the scan does not complete — the caller turns that into
@@ -159,6 +204,7 @@ export async function runWorkbenchSelfScan(
       scenarios: new ScenarioService(scenarioRepository, scans, skills),
       runReports: new RunReportService(grades, runs),
     },
+    ...refusingWriteDeps(),
   });
 
   try {
@@ -192,7 +238,7 @@ export async function runWorkbenchSelfScan(
       measuredTokens: scan.totalTokens,
       overBudget: scan.totalTokens > WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
       toolCount: scan.totalTools,
-      declaredToolCount: WORKBENCH_MCP_READ_TOOL_NAMES.length,
+      declaredToolCount: WORKBENCH_MCP_TOOL_NAMES.length,
       resourceCount: scan.totalResources,
       resourceTemplateCount: scan.totalResourceTemplates,
       promptCount: scan.totalPrompts,

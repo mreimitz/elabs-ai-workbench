@@ -23,7 +23,9 @@ like **Claude Code** or **Cursor** at it and that assistant can read your measur
 - **No copy-paste, no export step.** The assistant reads the live database through the app, so the
   answer reflects what the app knows right now.
 
-It reads. It does not act: see [The read-only guarantee](#the-read-only-guarantee).
+Mostly it reads. Three things it can also **do** — run a scan, start a suite, launch a run plan —
+are locked behind permissions you hand out yourself: see
+[What an assistant can actually do](#what-an-assistant-can-actually-do).
 
 ## Point an assistant at it
 
@@ -84,10 +86,21 @@ claude mcp add --transport http workbench http://192.168.1.20:8081/api/mcp \
   --header "Authorization: Bearer mcpfp_your_token_here"
 ```
 
-Nothing else on the token matters yet, because **every tool here is a read** — there is nothing on
-this door a "Run scans" or "Launch runs" permission would unlock. When action tools do arrive, a
-token will need Read *plus* the matching permission, and an assistant that is refused will be told
-exactly which one it is missing so it can ask you for it.
+**Read is not the whole story any more.** Three tools on this door *act* rather than read, and each
+one needs its own extra permission **on top of** Read — never instead of it:
+
+| If you want the assistant to… | Tick |
+| --- | --- |
+| Read your measurements (and connect at all) | **Read** |
+| Start a discovery scan of a registered server | **Read** + **Run scans** |
+| Start a saved benchmark suite | **Read** + **Run suites** |
+| Launch a collection or ad-hoc run plan | **Read** + **Launch runs** |
+
+Tick nothing but Read and the assistant is a reader — it will be refused, politely and in words, the
+moment it tries to start anything, and the refusal names the exact permission it is missing so it can
+ask you for it. That is the point: **the permission you tick is the consent you give.** An assistant
+working unattended has nobody to ask before it spends money, so the only approval it gets is the one
+you gave when you created its token.
 
 If you would rather the local machine needed a token too, that is the `API_AUTH_REQUIRED` setting
 described on the [service tokens](./21-service-tokens.md#locking-down-the-local-machine-too) page.
@@ -114,22 +127,37 @@ Two habits make the answers better: name a real thing ("the Filesystem server", 
 skill") so the assistant can find it, and ask it to **cite the numbers** it used, so you can check
 them on the matching screen.
 
-## The read-only guarantee
+## What an assistant can actually do
 
-This door only reads. Connected assistants **cannot**:
+Most of this door reads. **Three** tools act, and only if you gave the token the matching permission:
 
-- start a scan, launch a test run, or kick off a suite;
-- change any setting, server, skill, or collection;
-- delete anything;
+| Tool | What it does | What it costs you | Needs |
+| --- | --- | --- | --- |
+| **Run a scan** | Connects to one of your registered MCP servers and re-measures its tool surface | Time — a real connection to that server, taking as long as that server takes | Read + **Run scans** |
+| **Start a suite** | Runs a saved benchmark suite's whole matrix (its tests × environments × repetitions) | **Money** — real provider tokens, against whatever cost caps that suite sets | Read + **Run suites** |
+| **Launch a run plan** | Runs a collection's tests, or an explicit list of tests, against chosen environments | **Money** — same as above | Read + **Launch runs** |
+
+Two habits of these three tools are worth knowing, because they change how a conversation goes:
+
+- **They hand back a receipt, not a result.** Starting a suite returns its id straight away and the
+  assistant polls for progress; it does not sit there holding the conversation open for twenty
+  minutes. A scan is the exception — scans are quick, so that one does wait, and tells you whether it
+  succeeded or failed rather than quietly reporting zero tools.
+- **They tell the assistant what it is about to spend.** Every launch comes back with the same
+  advisory cost estimate the app's own launcher shows you on screen, so an assistant can say "this
+  will be roughly N runs and about $X" before you say go. It is advice, not a brake: it never blocks
+  a launch, and a model with no price on file is reported as *unpriced* rather than as free.
+
+Whatever permissions you hand out, connected assistants **cannot**:
+
+- **delete anything** — no scan, run, server, skill, or collection, at any permission level. There is
+  no delete on this door and there never will be;
+- change any setting, edit a server, a skill or a collection, or create or revoke a token;
 - see a secret. Server credentials, request headers, and GitHub tokens are never returned — an
   assistant can see *that* a server has a secret configured, never what it is.
 
-That is deliberate, not an oversight. An agent operating unattended has nobody to ask before it
-spends money or removes data, so the first version of this door reads only. Writing is a separate,
-explicitly permissioned step that is **not built yet** (see [What is not here yet](#what-is-not-here-yet)).
-
-If you want an assistant that *can* act on your behalf inside the app, that is the built-in
-[App assistant](./12-assistant.md), which asks you for approval before it changes anything.
+If you want an assistant that can *edit* things on your behalf inside the app, that is the built-in
+[App assistant](./12-assistant.md), which asks you for approval each time rather than up front.
 
 ## Turning it on and off
 
@@ -148,7 +176,7 @@ Every MCP server a model connects to spends part of the model's context just *de
 which is the cost this whole app exists to measure. The workbench holds itself to the same standard
 it holds your servers to: its own description is kept under a **3,000-token budget**, and a check
 that runs with the test suite scans this very endpoint with the app's own scanner and fails if it
-grows past it. The current measurement is **21 tools costing 2,224 tokens**.
+grows past it. The current measurement is **24 tools costing 2,749 tokens**.
 
 You can reproduce that number yourself from the project folder:
 
@@ -163,9 +191,12 @@ measured total.
 
 Being honest about the edges:
 
-- **No actions.** Starting scans, launching runs, and running suites over this door are planned and
-  not built. Use the app, or the [App assistant](./12-assistant.md), for anything that changes
-  something. The permission machinery for them is in place — the tools themselves are not.
+- **Actions are the three above, and no more.** Editing a server, a skill, a scenario or a setting
+  over this door is not built, and deleting never will be. Use the app, or the
+  [App assistant](./12-assistant.md), for anything else that changes something.
+- **No "wait for it" mode.** An assistant that starts a suite has to poll for the result. There is no
+  tool that blocks until a matrix finishes, deliberately — a stuck conversation is worse than a
+  receipt.
 - **One token, not one per assistant.** A [service token](./21-service-tokens.md) identifies a
   *caller*, not a person. Two assistants sharing a token look identical in the log; give each its own
   if you want to tell them apart.

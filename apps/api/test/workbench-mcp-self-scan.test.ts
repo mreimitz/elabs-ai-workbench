@@ -6,6 +6,8 @@ import {
   WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
   WORKBENCH_MCP_READ_TOOL_NAMES,
   WORKBENCH_MCP_RESOURCE_TEMPLATES,
+  WORKBENCH_MCP_TOOL_NAMES,
+  WORKBENCH_MCP_WRITE_TOOL_NAMES,
 } from "@mcp-token-footprint/shared";
 import {
   formatSelfScanHeadline,
@@ -55,11 +57,18 @@ test("the app can scan its OWN MCP mount with its own discovery scanner", async 
 test("the self-scan sees exactly the tool surface the shared contract declares", async () => {
   const result = await selfScan();
 
-  assert.equal(result.declaredToolCount, WORKBENCH_MCP_READ_TOOL_NAMES.length);
-  assert.equal(result.toolCount, WORKBENCH_MCP_READ_TOOL_NAMES.length);
+  // WP M.3 — the whole surface, reads AND writes. The self-scan measures what a host would actually
+  // be charged for, so the three write tools' definitions are part of the budgeted number too.
+  assert.equal(result.declaredToolCount, WORKBENCH_MCP_TOOL_NAMES.length);
+  assert.equal(result.toolCount, WORKBENCH_MCP_TOOL_NAMES.length);
   assert.deepEqual(
     result.tools.map((tool) => tool.name).sort(),
-    [...WORKBENCH_MCP_READ_TOOL_NAMES].sort(),
+    [...WORKBENCH_MCP_TOOL_NAMES].sort(),
+  );
+  assert.equal(
+    result.toolCount,
+    WORKBENCH_MCP_READ_TOOL_NAMES.length + WORKBENCH_MCP_WRITE_TOOL_NAMES.length,
+    "the scanned surface must be the 21 reads plus the 3 writes, not one or the other",
   );
   // Every tool cost something and the shares add up — a zeroed count would make the budget vacuous.
   assert.ok(result.tools.every((tool) => tool.totalTokens > 0));

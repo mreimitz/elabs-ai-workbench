@@ -1510,9 +1510,13 @@ await registerReportRoutes(
     skills,
   },
 );
-// Workbench MCP server (Phase MCP, WP M.1) — read-only tools + report resources over the SAME
-// repositories every route above uses. `runReports` is the run-report assembly the export routes were
-// just given, so a report read over MCP and one downloaded over HTTP are the same document (D-MCP4).
+// Workbench MCP server (Phase MCP, WP M.1 reads + WP M.3 writes) — tools + report resources over the
+// SAME repositories and services every route above uses. `runReports` is the run-report assembly the
+// export routes were just given, so a report read over MCP and one downloaded over HTTP are the same
+// document; `scanService`, `suiteOrchestrator`, `runPlans` and `estimate` are literally the instances
+// `POST /api/servers/:id/scan`, `POST /api/suites/:id/run`, `POST /api/run-plans` and
+// `GET /api/estimate/run-plan` are wired with, so the mount re-projects those routes rather than
+// owning a second copy of what they do (D-MCP4). The mount never constructs its own service.
 registerWorkbenchMcpRoutes(server, {
   servers,
   scans,
@@ -1527,6 +1531,18 @@ registerWorkbenchMcpRoutes(server, {
     tests: testService,
     scenarios: scenarioService,
     runReports: runReportService,
+  },
+  scanService,
+  suiteOrchestrator,
+  runPlans: {
+    suites: suiteService,
+    collections: collectionService,
+    tests: testService,
+  },
+  estimate: {
+    scenarios: scenarioService,
+    tests: testService,
+    scans,
   },
 });
 await registerOAuthRoutes(server, oauthService);

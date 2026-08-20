@@ -1,6 +1,12 @@
 import { z } from "zod";
 import type { ApiTokenScope } from "./api-tokens.js";
-import { RUN_STATUSES, SUITE_RUN_STATUSES } from "./constants.js";
+import {
+  RUN_STATUSES,
+  SUITE_MAX_CONCURRENCY,
+  SUITE_MAX_REPETITIONS,
+  SUITE_RUN_STATUSES,
+  TOKEN_PROFILES,
+} from "./constants.js";
 
 // ==================================================================================================
 // Workbench MCP server — the shared contract for the app's OWN MCP surface (roadmap/ci/mcp-server.md)
@@ -19,10 +25,12 @@ import { RUN_STATUSES, SUITE_RUN_STATUSES } from "./constants.js";
 //   • **D-MCP5 (dogfood gate)** — the token budget the serialized `tools/list` payload must stay under,
 //     measured with the app's own counter.
 //
-// **D-MCP3 — this surface is READ-ONLY.** Nothing here starts a scan, launches a run, mutates config,
-// or deletes anything. Write tools arrive in WP M.3, behind explicit service-token scopes, and deletes
-// never do. A tool name added to `WORKBENCH_MCP_READ_TOOL_NAMES` that the server does not register
-// (or vice versa) fails `pnpm test` — the list is a gate, not documentation.
+// **D-MCP3 — read-first, and deletes never arrive.** WP M.1 shipped 21 read tools; WP M.3 adds exactly
+// three WRITE tools (`scan_run`, `suite_run_start`, `run_plan_start`), one per execute scope in the
+// frozen D-C4 vocabulary, each reachable by a token only when that token was granted the scope. Nothing
+// on this surface deletes, prunes, revokes, or edits configuration, at any scope, at any phase. A tool
+// name added to `WORKBENCH_MCP_TOOL_NAMES` that the server does not register (or vice versa) fails
+// `pnpm test` — the list is a gate, not documentation.
 
 /** The path the streamable-HTTP MCP mount is served on (D-MCP1: same process, no sidecar). */
 export const WORKBENCH_MCP_MOUNT_PATH = "/api/mcp";
@@ -77,6 +85,38 @@ export const WORKBENCH_MCP_READ_TOOL_NAME_SET: ReadonlySet<string> = new Set(
 );
 
 /**
+ * The WRITE tools (WP M.3). Three, one per execute scope in the frozen D-C4 vocabulary — and that is
+ * not a coincidence: a scope with no tool is decorative, and a tool with no scope of its own is a
+ * privilege the operator cannot decline. Nothing here deletes (D-MCP3, at every phase).
+ *
+ * Each one is a re-projection of a service the HTTP API already exposes (D-MCP4), and each answers
+ * with a TICKET rather than an outcome (D-MCP11): `scan_run` returns a compact scan summary because
+ * `ScanService.runScan` is synchronous, and the two launch tools return the `running` suite-run id
+ * because the orchestrator is asynchronous by construction. Polling is `scans_get` / `suite_runs_get`,
+ * which already exist and are already `read` — no write tool blocks, and none invents a `wait` mode.
+ */
+export const WORKBENCH_MCP_WRITE_TOOL_NAMES = [
+  "scan_run",
+  "suite_run_start",
+  "run_plan_start",
+] as const;
+
+export type WorkbenchMcpWriteToolName = (typeof WORKBENCH_MCP_WRITE_TOOL_NAMES)[number];
+
+/** Every tool the mount registers — reads and writes, in registration order. */
+export const WORKBENCH_MCP_TOOL_NAMES = [
+  ...WORKBENCH_MCP_READ_TOOL_NAMES,
+  ...WORKBENCH_MCP_WRITE_TOOL_NAMES,
+] as const;
+
+export type WorkbenchMcpToolName = WorkbenchMcpReadToolName | WorkbenchMcpWriteToolName;
+
+/** O(1) membership set over {@link WORKBENCH_MCP_WRITE_TOOL_NAMES}. */
+export const WORKBENCH_MCP_WRITE_TOOL_NAME_SET: ReadonlySet<string> = new Set(
+  WORKBENCH_MCP_WRITE_TOOL_NAMES,
+);
+
+/**
  * The scope each registered tool needs from a **token-authenticated** caller (WP M.2).
  *
  * Every tool in WP M.1's read surface is `read`; WP M.3's write tools name their execute scope here
@@ -126,6 +166,15 @@ export const WORKBENCH_MCP_TOOL_SCOPES: Record<string, ApiTokenScope> = {
   suite_runs_list: "read",
   suite_runs_get: "read",
   collections_list: "read",
+
+  // ── Actions (write — WP M.3) ────────────────────────────────────────────────────────────────
+  // One tool per execute scope, and the scope decides the tool (D-MCP10). `run_plan_start` refuses a
+  // `suite` source and names `suite_run_start` instead, so a `runs:launch` token can never run a saved
+  // suite through the generic plan endpoint — without that refusal `suites:run` would be decorative.
+  // Each of these needs `read` TOO, because `read` is the price of admission to the mount (D-MCP8).
+  scan_run: "scan:run",
+  suite_run_start: "suites:run",
+  run_plan_start: "runs:launch",
 };
 
 /** Hard ceiling on any `limit` argument — a host asking for more gets a validation error, not a dump. */
@@ -215,7 +264,35 @@ export const WORKBENCH_MCP_TOOL_SCHEMAS = {
   },
   suite_runs_get: { suiteRunId: idField, memberLimit: limitField },
   collections_list: { limit: limitField },
-} satisfies Record<WorkbenchMcpReadToolName, z.ZodRawShape>;
+
+  // ── Actions (write — WP M.3) ────────────────────────────────────────────────────────────────
+  // `run_plan_start`'s shape is FLAT and permissive here, strict at the handler: `registerTool`'s
+  // `inputSchema` is a ZodRawShape and cannot express the discriminated union `RunPlanInput` really
+  // is. The handler rebuilds the union member and hands it to the EXISTING `runPlanInputSchema` — the
+  // same parser `POST /api/run-plans` uses (D-MCP4: never a hand-written second check) — so a
+  // `collection` with no `collectionId`, or an `adhoc` with no `testIds`, fails there and surfaces as
+  // a readable `isError` result.
+  //
+  // `source` deliberately has NO `"suite"` member (D-MCP10): the enum refuses it inside the SDK before
+  // the handler runs, and the handler refuses the string again with a sentence naming `suite_run_start`
+  // so an agent that guesses is told what to use instead of being handed a schema dump.
+  //
+  // `judgeOverride` and `variants` are deliberately NOT exposed: they are the two plan knobs that
+  // reference provider credentials and skill versions, a headless agent has no business tuning them,
+  // and leaving them off keeps the definition footprint down (D-MCP5). An agent that needs them saves
+  // a suite and calls `suite_run_start`.
+  scan_run: { serverId: idField, tokenProfile: z.enum(TOKEN_PROFILES).optional() },
+  suite_run_start: { suiteId: idField },
+  run_plan_start: {
+    source: z.enum(["collection", "adhoc"]),
+    collectionId: z.string().optional(),
+    testIds: z.array(z.string()).max(WORKBENCH_MCP_MAX_LIST_LIMIT).optional(),
+    scenarioIds: z.array(z.string()).max(WORKBENCH_MCP_MAX_LIST_LIMIT).optional(),
+    repetitions: z.number().int().min(1).max(SUITE_MAX_REPETITIONS).optional(),
+    maxConcurrency: z.number().int().min(1).max(SUITE_MAX_CONCURRENCY).optional(),
+    aggregateCostCapUsd: z.number().positive().optional(),
+  },
+} satisfies Record<WorkbenchMcpToolName, z.ZodRawShape>;
 
 /** Build the report resource URI for one run. */
 export function workbenchRunReportUri(runId: string, format: "markdown" | "json"): string {
@@ -248,14 +325,14 @@ export type WorkbenchMcpToolFamily = {
   label: string;
   /** "Reach for these when…" — written for an agent choosing between families, not for a changelog. */
   when: string;
-  tools: readonly WorkbenchMcpReadToolName[];
+  tools: readonly WorkbenchMcpToolName[];
 };
 
 /**
  * The families the served usage doc (`GET /api/mcp/llms.txt`) groups the surface into.
  *
  * They live here, beside the tool names themselves, because they are part of the SAME declaration: a
- * tool added to {@link WORKBENCH_MCP_READ_TOOL_NAMES} without a family would silently drop out of the
+ * tool added to {@link WORKBENCH_MCP_TOOL_NAMES} without a family would silently drop out of the
  * document an external agent onboards from. `workbench-mcp.test.ts` asserts the families **partition**
  * the tool list exactly — every tool in exactly one family, no family naming a tool that does not
  * exist — so classifying a new tool is a build requirement, not a convention.
@@ -305,5 +382,14 @@ export const WORKBENCH_MCP_TOOL_FAMILIES: readonly WorkbenchMcpToolFamily[] = [
       "Reach for these to work at the batch level — the benchmark matrices, their mass-run results " +
       "with per-member grades, and the collections tests and suites are organised in.",
     tools: ["suites_list", "suite_runs_list", "suite_runs_get", "collections_list"],
+  },
+  {
+    label: "Actions",
+    when:
+      "Reach for these to make the workbench DO something: run a discovery scan, start a saved " +
+      "benchmark suite, or launch a collection/ad-hoc run plan. Each needs its own token scope on " +
+      "top of `read`, and each returns a ticket to poll with `scans_get` or `suite_runs_get` " +
+      "rather than waiting. Nothing here deletes anything.",
+    tools: ["scan_run", "suite_run_start", "run_plan_start"],
   },
 ];
