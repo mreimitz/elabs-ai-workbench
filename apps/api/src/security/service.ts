@@ -24,9 +24,12 @@ import {
   capSecurityFindings,
   compareSecurityFindings,
   computeSecurityScore,
+  diffSecurityReports,
   SECURITY_ANALYZER_VERSION,
+  SECURITY_FINDING_LIMIT,
   type ScanDetail,
   type SecurityFinding,
+  type SecurityPostureDiff,
   type SecurityReport,
   type SecurityRuleId,
   type ServerConfig,
@@ -263,4 +266,118 @@ function skillDisplayName(
   const manifestName = version.manifest?.name;
   if (typeof manifestName === "string" && manifestName.length > 0) return manifestName;
   return version.versionLabel;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+// WP 1.4 — the posture DIFF
+// ══════════════════════════════════════════════════════════════════════════════════════════════
+//
+// Both diffs are three lines of orchestration each, and that is the whole point: **the arithmetic is
+// `diffSecurityReports` in the shared contract, and there is no second differ** (D-SP1, and the same
+// D-MCP4 "re-project, don't reimplement" instinct the assertions engine already runs on). This file
+// analyses two subjects and hands the two reports over; it does not decide what "new" means, does not
+// re-tally a count, and does not touch the score.
+//
+// **D-SP8 still holds, unchanged: nothing is persisted.** A diff is a pure derivation of two reports,
+// each of which is itself a pure derivation of immutable rows, so it recomputes both sides on every
+// request rather than caching either. No migration, no table, no column.
+//
+// The one thing that lives HERE rather than in the contract is the HTTP translation. The shared
+// differ throws a plain `Error` for the four pairings it refuses (different kinds, different owners,
+// different analyzer versions, a truncated side), because `packages/shared` has no idea it is behind
+// a web server. A plain throw would reach the central error handler as a **500**, which would read as
+// "the workbench broke" when the truth is "you asked for a comparison that cannot mean anything". So
+// {@link requireDiffable} asks the same four questions first and answers them with a **400** — the
+// same posture D-SP10 takes for a non-`success` scan and D-SP16 for an unreadable SKILL.md.
+
+/**
+ * Two scans of ONE server, diffed.
+ *
+ * The subject is analysed first so that an unknown *subject* id 404s before an unknown baseline does
+ * — the caller asked about the subject, and that is the error they can act on.
+ *
+ * A scan diffed against itself is legal and yields everything `unchanged`; the two ids are not
+ * required to differ, only to belong to the same server.
+ */
+export function diffScanPosture(
+  ports: SecurityAnalyzerPorts,
+  scanId: string,
+  baselineScanId: string,
+): SecurityPostureDiff {
+  const subject = analyzeScan(ports, scanId);
+  const baseline = analyzeScan(ports, baselineScanId);
+  requireDiffable(baseline, subject);
+  return diffSecurityReports(baseline, subject);
+}
+
+/**
+ * Two versions of ONE skill, diffed.
+ *
+ * Both sides go through {@link analyzeSkillVersion} with the SAME `skillId`, so its own 404 already
+ * refuses a version belonging to another skill on either side — a cross-skill diff is unreachable
+ * here rather than merely rejected, which is the stronger of the two.
+ */
+export function diffSkillPosture(
+  ports: SecuritySkillPorts,
+  skillId: string,
+  versionId: string,
+  baselineVersionId: string,
+): SecurityPostureDiff {
+  const subject = analyzeSkillVersion(ports, skillId, versionId);
+  const baseline = analyzeSkillVersion(ports, skillId, baselineVersionId);
+  requireDiffable(baseline, subject);
+  return diffSecurityReports(baseline, subject);
+}
+
+/**
+ * The HTTP face of the shared differ's four refusals — asked here so an unmeaningful comparison is a
+ * **400 naming what is wrong**, never a 500, and never a plausible-looking diff.
+ *
+ * The questions are asked in the differ's own order (kind → owner → version → truncation), so the two
+ * can never disagree about which problem a bad pairing has. Everything after this call is guarded
+ * twice on purpose: the throws in `diffSecurityReports` are the backstop for a future caller that
+ * forgets to come through here.
+ */
+function requireDiffable(baseline: SecurityReport, subject: SecurityReport): void {
+  if (baseline.subject.kind !== subject.subject.kind) {
+    throw httpError(
+      400,
+      `Cannot diff security posture: the baseline is a "${baseline.subject.kind}" report and the subject a "${subject.subject.kind}" report. ` +
+        "A posture diff compares two scans of one server, or two versions of one skill.",
+    );
+  }
+  if (baseline.subject.ownerId !== subject.subject.ownerId) {
+    throw httpError(
+      400,
+      `Cannot diff security posture: baseline ${baseline.subject.id} belongs to "${baseline.subject.name}" (${baseline.subject.ownerId}), ` +
+        `not to the subject's "${subject.subject.name}" (${subject.subject.ownerId}). ` +
+        "A posture diff compares two scans of ONE server, or two versions of ONE skill.",
+    );
+  }
+  if (baseline.analyzerVersion !== subject.analyzerVersion) {
+    // Unreachable while both sides are analysed by one running build, which is exactly why it is
+    // here: the day a report is persisted, cached or fetched from another instance, a silently
+    // cross-version diff would be the wrong answer nobody could see. Same guard, same words, as the
+    // CI gate's D-C22 refusal.
+    throw httpError(
+      400,
+      `Cannot diff security posture: baseline ${baseline.subject.id} was analysed by security analyzer version ${baseline.analyzerVersion}, ` +
+        `and subject ${subject.subject.id} by version ${subject.analyzerVersion}. ` +
+        "Findings produced under different analyzer versions are not on the same scale, so a rule's meaning may have changed underneath the comparison.",
+    );
+  }
+  const truncated = [
+    ...(baseline.truncated ? [`baseline ${baseline.subject.id}`] : []),
+    ...(subject.truncated ? [`subject ${subject.subject.id}`] : []),
+  ];
+  if (truncated.length > 0) {
+    throw httpError(
+      400,
+      `Cannot diff security posture: ${truncated.join(" and ")} produced more than ${SECURITY_FINDING_LIMIT} findings, ` +
+        `so the report lists only the first ${SECURITY_FINDING_LIMIT} of them ` +
+        `(baseline ${baseline.counts.total}, subject ${subject.counts.total} in total). ` +
+        'Diffing a truncated list would answer "what changed among the ones we listed", which is not a verdict. ' +
+        "Fix the findings the reports do list, then diff again.",
+    );
+  }
 }
