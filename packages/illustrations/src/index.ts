@@ -12,7 +12,8 @@
 //           glyph frame, ghost, calibration cube, station header, connectors, annotation cards and
 //           the `EntityRoot` wrapper. It ships NO entity and NO registry entry: the test of success
 //           is that WP 0.3 can build three entities without writing a single new `<path>`.
-//   WP 0.3  the first three entities, `registry.ts`, and the `/illustrations` gallery route.
+//   WP 0.3  the first three entities (`entities/`), `registry.ts` — the catalog, validated against
+//           WP 0.1's schema at module load — and the `/illustrations` gallery route in `apps/web`.
 //
 // The runtime rules that hold across all of it (D-IL3): React 19 + inline SVG, `react` as a PEER
 // dependency, `@mcp-token-footprint/shared` as the only workspace dependency, and ZERO new runtime
@@ -28,6 +29,16 @@ export * from "./iso-math.js";
 export * from "./line-system.js";
 export * from "./layers.js";
 export * from "./primitives/index.js";
+export * from "./entities/index.js";
+export {
+  ILLUSTRATION_COMPONENTS,
+  ILLUSTRATION_REGISTRY,
+  REGISTRY_VERSION,
+  findIllustration,
+  findIllustrationComponent,
+  illustrationViewBox,
+  searchIllustrations,
+} from "./registry.js";
 export {
   FACE_ADJACENCIES,
   assertFaceSeparation,
