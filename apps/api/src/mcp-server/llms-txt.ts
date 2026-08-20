@@ -9,7 +9,8 @@ import {
   WORKBENCH_MCP_SERVER_VERSION,
   WORKBENCH_MCP_TOOL_FAMILIES,
   WORKBENCH_MCP_TOOL_SCOPES,
-  type WorkbenchMcpReadToolName,
+  type ApiTokenScope,
+  type WorkbenchMcpToolName,
 } from "@mcp-token-footprint/shared";
 
 // ==================================================================================================
@@ -31,7 +32,7 @@ import {
 
 /** What the renderer needs from one registered tool — deliberately the `tools/list` projection. */
 export type WorkbenchLlmsTxtTool = {
-  name: WorkbenchMcpReadToolName;
+  name: WorkbenchMcpToolName;
   description: string;
 };
 
@@ -64,35 +65,51 @@ export function resolveDocumentOrigin(host: string | undefined, secure = false):
  * retyped (D-MCP8). If someone ever removes the rule, this reads "an execute" — which is what the
  * coarse method rule would then actually demand — instead of confidently advertising a stale `read`.
  */
-function mountScopeSentence(): string {
+function mountScopeNames(): readonly ApiTokenScope[] {
   const rule = API_TOKEN_ROUTE_SCOPES.find(
     (candidate) => candidate.method === "POST" && candidate.path === WORKBENCH_MCP_MOUNT_PATH,
   );
-  return rule ? rule.scopes.map((scope) => `\`${scope}\``).join(" or ") : "an execute";
+  return rule ? rule.scopes : [];
+}
+
+function mountScopeSentence(): string {
+  const scopes = mountScopeNames();
+  return scopes.length > 0 ? scopes.map((scope) => `\`${scope}\``).join(" or ") : "an execute";
 }
 
 /**
  * The per-tool scope lines, derived from `WORKBENCH_MCP_TOOL_SCOPES` over the tools THIS instance
- * registers. While every tool is a read (WP M.1's surface) that collapses to one sentence; when
- * WP M.3's write tools arrive it becomes a real per-tool list, with no edit to this file.
+ * registers. When every tool wants the same scope as the door itself, that collapses to one sentence;
+ * once a tool asks for MORE (WP M.3's write tools) it becomes a real per-tool list — derived, so this
+ * file never needs editing when the surface grows.
+ *
+ * The "plus" is stated explicitly, because it is the one thing a token-minting operator gets wrong
+ * (D-MCP8): an execute scope on its own cannot even open this endpoint, so a write-capable agent needs
+ * `read` AND the execute scope, not the execute scope instead of `read`.
  */
 function toolScopeLines(tools: readonly WorkbenchLlmsTxtTool[]): string[] {
   const scoped = tools.map((tool) => ({
     name: tool.name,
     scope: WORKBENCH_MCP_TOOL_SCOPES[tool.name],
   }));
-  const distinct = [...new Set(scoped.map((entry) => entry.scope))];
-  const only = distinct[0];
-  if (distinct.length === 1 && only !== undefined) {
-    return [
-      `- Every tool on this server needs the \`${only}\` scope — nothing here asks for more.`,
-    ];
+  const doorScopes = new Set<string>(mountScopeNames());
+  const beyondDoor = scoped.filter(
+    (entry) => entry.scope !== undefined && !doorScopes.has(entry.scope),
+  );
+  if (beyondDoor.length === 0) {
+    const distinct = [...new Set(scoped.map((entry) => entry.scope))];
+    const only = distinct[0];
+    if (distinct.length === 1 && only !== undefined) {
+      return [
+        `- Every tool on this server needs the \`${only}\` scope — nothing here asks for more.`,
+      ];
+    }
+    return [];
   }
   return [
-    "- Individual tools ask for more than that:",
-    ...scoped
-      .filter((entry) => entry.scope !== undefined)
-      .map((entry) => `  - ${entry.name} — \`${entry.scope}\``),
+    "- Most tools need nothing beyond that door scope. These ask for one MORE scope ON TOP of it —",
+    "  a token needs BOTH, and an execute scope on its own cannot open this endpoint at all:",
+    ...beyondDoor.map((entry) => `  - ${entry.name} — \`${entry.scope}\` plus ${mountScopeSentence()}`),
   ];
 }
 
@@ -136,12 +153,17 @@ export function buildWorkbenchLlmsTxt(input: WorkbenchLlmsTxtInput): string {
     "- Turned off? Settings › Features › Workbench MCP server. While off, every request here",
     '  answers 403 with code "feature_disabled" — including this page.',
     "",
-    "## Read-only, by construction",
+    "## What it does, and what it never does",
     "",
-    "Nothing on this surface starts a scan, launches a run, edits configuration, or deletes",
-    "anything. Write tools are a later, explicitly scoped addition; deletes are excluded at every",
-    "phase. No handler returns a secret value — server configs come back redacted (booleans saying",
-    "whether an env/header secret or a GitHub token is set, never the value).",
+    "Most of this surface reads. A few tools act, and they say so in their own descriptions: they",
+    "cost real wall-clock time or real provider spend, each needs its own scope on top of the door",
+    "scope, and each answers with a ticket to poll rather than blocking — see the Actions family",
+    "below, if this instance has one.",
+    "",
+    "Nothing here deletes anything, prunes anything, revokes anything, edits configuration, or",
+    "manages tokens — at any scope, at any phase. No handler returns a secret value either: server",
+    "configs come back redacted (booleans saying whether an env/header secret or a GitHub token is",
+    "set, never the value).",
     "",
     "## Access & scopes",
     "",

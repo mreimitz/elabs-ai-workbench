@@ -46,12 +46,18 @@ are cheap.
 
 A token carries only the permissions you tick:
 
-| Permission | What it allows |
-| --- | --- |
-| **Read** | Read everything the workbench has already measured — servers, scans, sessions, grades, skills, suites, reports. Needed by any caller that just wants to look. |
-| **Run scans** | Start a discovery scan of a server you have registered. |
-| **Launch runs** | Start a test run. |
-| **Run suites** | Start a suite mass-run. |
+| Permission | What it allows | The MCP tool it unlocks |
+| --- | --- | --- |
+| **Read** | Read everything the workbench has already measured — servers, scans, sessions, grades, skills, suites, reports. Needed by any caller that just wants to look. | every read tool — and connecting at all |
+| **Run scans** | Start a discovery scan of a server you have registered. | `scan_run` |
+| **Launch runs** | Start a test run — a collection's tests, or an explicit list of them. | `run_plan_start` |
+| **Run suites** | Start a saved suite's mass-run. | `suite_run_start` |
+
+The right-hand column is what the same permission unlocks for an assistant on the workbench's own
+[MCP endpoint](./20-workbench-mcp-server.md). Each of those three tools needs its permission **plus**
+Read, because Read is what lets a caller open that endpoint in the first place. They are also three
+separate permissions on purpose: "Launch runs" will not start a saved suite, and an assistant that
+tries is told to ask you for "Run suites" instead.
 
 Two limits are built in and are **not** switchable:
 
@@ -73,12 +79,16 @@ doing but are not, so they are called out here rather than left to be discovered
 | Start a discovery scan | **Run scans** |
 | Start a test run | **Launch runs** |
 | Start a suite mass-run | **Run suites** |
+| Let a *remote assistant* start a scan for you | **Read** + **Run scans** |
+| Let a *remote assistant* start a suite for you | **Read** + **Run suites** |
+| Let a *remote assistant* launch a run plan for you | **Read** + **Launch runs** |
 
 The MCP endpoint and the gate check are the two that surprise people: both are pure reads that
-happen to be sent as a `POST`, so they ask for **Read** and nothing more. In particular, a token
-with *only* "Run scans" cannot connect an assistant to the workbench at all — listing what an
-assistant can do is itself a read, so **Read is the price of admission**. An assistant that will one
-day take actions needs Read *plus* the permission for the action.
+happen to be sent as a `POST`, so *connecting* asks for **Read** and nothing more. In particular, a
+token with *only* "Run scans" cannot connect an assistant to the workbench at all — listing what an
+assistant can do is itself a read, so **Read is the price of admission**. That is why the last three
+rows say Read *plus*: an assistant that takes actions needs both, and ticking only the action
+permission gets it shut out at the door instead of let in with less power than you meant.
 
 ## Use a token
 
@@ -132,7 +142,8 @@ monitoring are unaffected.
 ## Where tokens sit in the bigger picture
 
 - [Workbench agent playbook](./20-workbench-mcp-server.md) — pointing an AI assistant at the app.
-  On your own machine that needs no token; from anywhere else it needs one with **Read**.
+  On your own machine that needs no token; from anywhere else it needs one with **Read**, plus
+  **Run scans** / **Launch runs** / **Run suites** for each action you want it to be able to take.
 - [The `mcpfp` command line](./22-mcpfp-cli.md) — scans, reports and footprint gates from a script.
 - [Settings](./13-settings.md) — the rest of what lives in Settings.
 - [Troubleshooting & FAQ](./14-troubleshooting.md) — if a call is being refused and you are not sure

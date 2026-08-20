@@ -13,6 +13,8 @@ import {
   WORKBENCH_MCP_RESOURCE_TEMPLATES,
   WORKBENCH_MCP_SERVER_NAME,
   WORKBENCH_MCP_TOOL_FAMILIES,
+  WORKBENCH_MCP_TOOL_NAMES,
+  WORKBENCH_MCP_WRITE_TOOL_NAMES,
   workbenchRunReportUri,
   workbenchScanReportUri,
 } from "@mcp-token-footprint/shared";
@@ -121,6 +123,30 @@ function scanSummary(
     largestPromptName: null,
     largestPromptTokens: 0,
   };
+}
+
+/**
+ * The write tools' dependencies, wired inert for this file (WP M.3). See the comment at the
+ * `registerWorkbenchMcpRoutes` call below for why they throw rather than being real.
+ */
+function inertWriteDeps() {
+  const refuse = (): never => {
+    throw new Error("this harness never invokes a write tool");
+  };
+  return {
+    scanService: { runScan: refuse },
+    suiteOrchestrator: { startSuiteRun: refuse, startPlanRun: refuse },
+    runPlans: {
+      suites: { get: refuse },
+      collections: { get: refuse },
+      tests: { listIdsByCollection: refuse, list: refuse },
+    },
+    tests: { list: refuse },
+    estimate: { scenarios: { list: refuse }, tests: { list: refuse }, scans: { getLatestForServer: refuse } },
+  } as unknown as Pick<
+    Parameters<typeof registerWorkbenchMcpRoutes>[1],
+    "scanService" | "suiteOrchestrator" | "runPlans" | "estimate"
+  >;
 }
 
 async function makeHarness(): Promise<Harness> {
@@ -310,6 +336,11 @@ async function makeHarness(): Promise<Harness> {
     suiteRuns,
     collections,
     runReports: { runs, tests, scenarios, runReports: runReportService },
+    // WP M.3 — this file measures and reads the SURFACE; the write tools' behaviour is
+    // `mcp-server-write-tools.test.ts`'s subject. Wiring them to stubs that throw keeps that split
+    // honest: nothing in this file can start a scan or a run even by accident, and a test that
+    // accidentally reached a write handler would fail loudly rather than launch something.
+    ...inertWriteDeps(),
   });
 
   await app.listen({ port: 0, host: "127.0.0.1" });
@@ -397,14 +428,23 @@ test("initialize succeeds and advertises tools + resources", async () => {
   assert.ok((client.getInstructions() ?? "").length > 0, "no instructions advertised");
 });
 
-test("tools/list returns EXACTLY the declared read-tool set", async () => {
+test("tools/list returns EXACTLY the declared tool set — reads AND writes", async () => {
   const h = await makeHarness();
   const client = await connect(h);
   const { tools } = await client.listTools();
 
   const actual = tools.map((tool) => tool.name).sort();
-  const declared = [...WORKBENCH_MCP_READ_TOOL_NAMES].sort();
+  const declared = [...WORKBENCH_MCP_TOOL_NAMES].sort();
   assert.deepEqual(actual, declared);
+  // The two halves, asserted separately so a regression says WHICH half moved: WP M.1's 21 reads are
+  // untouched by WP M.3, and WP M.3's three writes are all present.
+  for (const name of WORKBENCH_MCP_READ_TOOL_NAMES) {
+    assert.ok(actual.includes(name), `the read tool ${name} disappeared from the mount`);
+  }
+  for (const name of WORKBENCH_MCP_WRITE_TOOL_NAMES) {
+    assert.ok(actual.includes(name), `the write tool ${name} is declared but not registered`);
+  }
+  assert.equal(tools.length, WORKBENCH_MCP_READ_TOOL_NAMES.length + 3);
   // Every tool carries a description and an object input schema — a host must be able to plan.
   for (const tool of tools) {
     assert.ok((tool.description ?? "").length > 0, `${tool.name} has no description`);
@@ -829,7 +869,7 @@ test("turning the mcp_server feature off 403s the mount, and turning it back on 
 
   h.features.setFlags({ mcp_server: true });
   const after = await connect(h);
-  assert.equal((await after.listTools()).tools.length, WORKBENCH_MCP_READ_TOOL_NAMES.length);
+  assert.equal((await after.listTools()).tools.length, WORKBENCH_MCP_TOOL_NAMES.length);
 
   // Turning the MCP server off never touches another feature's endpoints.
   assert.equal(h.features.getFlags().assistant, true);
@@ -850,7 +890,7 @@ test("the mount serves an llms.txt usage doc that names EVERY registered tool an
   const document = await fetchLlmsTxt(h);
 
   // The whole point of generating the doc: it cannot fall behind the surface it documents.
-  for (const name of WORKBENCH_MCP_READ_TOOL_NAMES) {
+  for (const name of WORKBENCH_MCP_TOOL_NAMES) {
     assert.ok(document.includes(name), `llms.txt never mentions the tool ${name}`);
   }
   for (const template of Object.values(WORKBENCH_MCP_RESOURCE_TEMPLATES)) {
@@ -873,7 +913,15 @@ test("the mount serves an llms.txt usage doc that names EVERY registered tool an
     document.includes(String(WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET)),
     "no definition-footprint budget stated",
   );
-  assert.match(document, /read-only/i);
+  // The doc used to claim the mount was read-only. It is not any more (WP M.3), so the assertion is
+  // the honest pair instead of the old blanket claim: the write tools are named, and the one absolute
+  // that IS still true — nothing deletes — is still stated.
+  assert.match(document, /Actions/);
+  assert.match(document, /deletes/i);
+  assert.ok(
+    !/read-only, by construction/i.test(document),
+    "llms.txt still claims the mount is read-only",
+  );
   assert.match(document, /Settings › Features/);
 
   // A generated document must never become a data leak: it describes the surface, it does not read it.
