@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   SECURITY_ANALYZER_VERSION,
+  SECURITY_CREDENTIAL_PREFIX_PATTERNS,
   SECURITY_EVIDENCE_MAX_CHARS,
   SECURITY_FINDING_LIMIT,
   SECURITY_REDACTION_MARKER,
@@ -13,6 +14,7 @@ import {
   SECURITY_SEVERITY_DEDUCTION,
   SECURITY_SUBJECT_KINDS,
   type SecurityFinding,
+  type SecurityFindingAnchor,
   type SecurityReport,
   type SecurityRule,
   type SecurityRuleId,
@@ -22,7 +24,10 @@ import {
   compareSecurityFindings,
   computeSecurityScore,
   createSecurityFinding,
+  findPrefixedCredential,
   redactSecurityEvidence,
+  securityFindingAnchorKey,
+  securityFindingIdentity,
   securityFindingSchema,
   securityReportSchema,
 } from "./security-posture.js";
@@ -33,11 +38,14 @@ import {
 // Nothing here analyses anything — there is nothing to analyse yet; WP 1.2 brings the rules.
 
 /**
- * Every id this WP freezes, with the severity it was frozen at. Written out a second time, by hand,
- * so a rename is a red test rather than a quiet re-point (D-SP2) and a severity drift is a red test
- * rather than a silent change in what a CI gate counts (D-SP5).
+ * Every id this workstream freezes, with the severity it was frozen at. Written out a second time, by
+ * hand, so a rename is a red test rather than a quiet re-point (D-SP2) and a severity drift is a red
+ * test rather than a silent change in what a CI gate counts (D-SP5).
+ *
+ * WP 1.1 froze the eleven `subject: "server"` ids; WP 1.3 ADDED the seven `subject: "skill"` ids
+ * below without touching one of them, which is why `SECURITY_ANALYZER_VERSION` is still 1.
  */
-const FROZEN_RULES: Record<string, SecuritySeverity> = {
+const FROZEN_SERVER_RULES: Record<string, SecuritySeverity> = {
   "annotation.destructive-unmarked": "warning",
   "annotation.open-world-unmarked": "info",
   "annotation.readonly-contradiction": "error",
@@ -51,10 +59,30 @@ const FROZEN_RULES: Record<string, SecuritySeverity> = {
   "schema.unconstrained-additional-properties": "info",
 };
 
+/** The seven WP 1.3 froze. Only the three "this skill is steering the model" checks are `error`. */
+const FROZEN_SKILL_RULES: Record<string, SecuritySeverity> = {
+  "skill-surface.broad-allowed-tools": "warning",
+  "skill-surface.credential-in-body": "warning",
+  "skill-surface.executable-scripts": "info",
+  "skill-surface.hidden-instructions": "error",
+  "skill-surface.injection-phrasing": "error",
+  "skill-surface.invisible-unicode": "error",
+  "skill-surface.network-reference": "info",
+};
+
+const FROZEN_RULES: Record<string, SecuritySeverity> = {
+  ...FROZEN_SERVER_RULES,
+  ...FROZEN_SKILL_RULES,
+};
+
 // Written as escape sequences on purpose: a literal invisible character in a test file is
 // unreviewable, which is the same reason the redactor rewrites them in an excerpt.
 const ZERO_WIDTH_SPACE = "\u200B";
 const RIGHT_TO_LEFT_OVERRIDE = "\u202E";
+
+/** The two subject-level anchors, named so the D-SP12 tests read as the comparison they are. */
+const SERVER: SecurityFindingAnchor = { kind: "server" };
+const SKILL: SecurityFindingAnchor = { kind: "skill" };
 
 /** Build N findings of one severity, for the score table and the cap. */
 function findingsOfSeverity(severity: SecuritySeverity, count: number): SecurityFinding[] {
@@ -108,29 +136,42 @@ describe("security rule registry (D-SP2)", () => {
     }
   });
 
-  it("declares exactly the eleven frozen server rules, at their frozen severities", () => {
-    assert.equal(SECURITY_RULE_IDS.length, 11);
+  it("declares exactly the eighteen frozen rules, at their frozen severities", () => {
+    assert.equal(SECURITY_RULE_IDS.length, 18);
     assert.deepEqual([...SECURITY_RULE_IDS].sort(), Object.keys(FROZEN_RULES).sort());
     assert.equal(new Set(SECURITY_RULE_IDS).size, SECURITY_RULE_IDS.length, "ids must be unique");
     for (const id of SECURITY_RULE_IDS) {
-      assert.equal(SECURITY_RULES[id].subject, "server", `${id} must be a server rule`);
       assert.equal(SECURITY_RULES[id].severity, FROZEN_RULES[id], `${id} changed severity`);
     }
   });
 
-  it("declares no skill rule yet, but keeps `skill` in the subject vocabulary for WP 1.3", () => {
-    // The widening cast is load-bearing evidence, not noise: without it the compiler REFUSES the
-    // comparison because every declared subject is literally "server" — which is the property under
-    // test. It stays as a runtime assertion so it still bites once WP 1.3 widens the registry.
-    const skillRules = SECURITY_RULE_IDS.filter(
-      (id) => (SECURITY_RULES[id].subject as SecuritySubjectKind) === "skill",
-    );
-    assert.deepEqual(
-      skillRules,
-      [],
-      "WP 1.3 owns the skill rules; declaring them here pins nothing",
-    );
+  it("splits the registry eleven server / seven skill, each rule under its own subject", () => {
+    const bySubject = (kind: SecuritySubjectKind) =>
+      SECURITY_RULE_IDS.filter((id) => SECURITY_RULES[id].subject === kind).sort();
+
+    assert.deepEqual(bySubject("server"), Object.keys(FROZEN_SERVER_RULES).sort());
+    assert.deepEqual(bySubject("skill"), Object.keys(FROZEN_SKILL_RULES).sort());
     assert.ok((SECURITY_SUBJECT_KINDS as readonly string[]).includes("skill"));
+
+    // Every skill rule sits in the `skill-surface` category and every server rule outside it, so the
+    // id itself tells a reader which analyzer emits it without a lookup.
+    for (const id of bySubject("skill")) assert.equal(SECURITY_RULES[id].category, "skill-surface");
+    for (const id of bySubject("server")) {
+      assert.notEqual(SECURITY_RULES[id].category, "skill-surface", `${id} is filed as a skill rule`);
+    }
+  });
+
+  it("keeps WP 1.1's eleven server rules byte-frozen, which is why the version is still 1", () => {
+    // The forcing function for D-SP2. Adding the seven skill ids is additive; re-pointing, renaming
+    // or re-severitying one of the eleven is not, and would demand a `SECURITY_ANALYZER_VERSION`
+    // bump — so it must be a red test, not a judgement call.
+    for (const [id, severity] of Object.entries(FROZEN_SERVER_RULES)) {
+      const rule: SecurityRule | undefined = SECURITY_RULES[id as SecurityRuleId];
+      assert.ok(rule, `${id} disappeared from the registry`);
+      assert.equal(rule.severity, severity, `${id} changed severity`);
+      assert.equal(rule.subject, "server", `${id} changed subject`);
+    }
+    assert.equal(SECURITY_ANALYZER_VERSION, 1);
   });
 });
 
@@ -372,6 +413,180 @@ describe("compareSecurityFindings (D-SP6)", () => {
       [...ranks].sort((a, b) => a - b),
       "severity must never go back up",
     );
+  });
+});
+
+describe("the `skill` anchor (D-SP12)", () => {
+  it("is a real member of the type, the rank table, the key function and the zod union", () => {
+    const finding = createSecurityFinding({
+      ruleId: "skill-surface.executable-scripts",
+      anchor: { kind: "skill" },
+      message: "the version ships 3 script files",
+    });
+    assert.deepEqual(finding.anchor, { kind: "skill" });
+    // Like `server`, it names no component, so its key is its kind alone — and it is DISTINCT from
+    // `server`'s, which is the whole reason it exists rather than borrowing that one.
+    assert.equal(securityFindingAnchorKey({ kind: "skill" }), "skill");
+    assert.notEqual(
+      securityFindingAnchorKey({ kind: "skill" }),
+      securityFindingAnchorKey({ kind: "server" }),
+    );
+    assert.equal(securityFindingSchema.safeParse(finding).success, true);
+    assert.equal(
+      securityFindingSchema.safeParse({ ...finding, anchor: { kind: "skill", path: "x" } }).success,
+      false,
+      "the new variant must be `.strict()` like every other one",
+    );
+  });
+
+  it("gives a `skill` anchor and a `server` anchor distinct identities", () => {
+    // `securityFindingIdentity` is what CI WP 3.1 and WP 1.4's diff both key on. Had the skill
+    // finding borrowed `{ kind: "server" }`, a skill and a server firing the same rule id would
+    // collide — which is the second, load-bearing reason D-SP12 added a kind instead of reusing one.
+    const skill = { ruleId: "skill-surface.executable-scripts" as SecurityRuleId, anchor: SKILL };
+    const server = { ruleId: "skill-surface.executable-scripts" as SecurityRuleId, anchor: SERVER };
+    assert.notEqual(securityFindingIdentity(skill), securityFindingIdentity(server));
+    assert.equal(securityFindingIdentity(skill), "skill-surface.executable-scripts|skill");
+  });
+
+  it("ranks LAST, so no pre-existing pair's relative order can have moved", () => {
+    // Every pair of the four ORIGINAL kinds, sorted, must come out in the order WP 1.1 shipped:
+    // server → tool → parameter → file. Appending `skill` at rank 4 cannot disturb that; inserting
+    // it anywhere else would have silently reordered every report that already exists.
+    const sameRule = (anchor: SecurityFinding["anchor"]) =>
+      createSecurityFinding({
+        ruleId: "poisoning.invisible-unicode",
+        anchor,
+        message: "m",
+      });
+    const original = [
+      sameRule({ kind: "file", path: "a" }),
+      sameRule({ kind: "parameter", toolName: "t", parameterPath: "p" }),
+      sameRule({ kind: "tool", toolName: "t" }),
+      sameRule(SERVER),
+    ].sort(compareSecurityFindings);
+    assert.deepEqual(
+      original.map((finding) => finding.anchor.kind),
+      ["server", "tool", "parameter", "file"],
+    );
+
+    // …and the same four with a `skill` finding mixed in keep that order, with `skill` last.
+    const withSkill = [...original, sameRule(SKILL)].sort(compareSecurityFindings);
+    assert.deepEqual(
+      withSkill.map((finding) => finding.anchor.kind),
+      ["server", "tool", "parameter", "file", "skill"],
+    );
+  });
+
+  it("sorts a mixed skill/file report stably and round-trips through the report schema", () => {
+    const findings = [
+      createSecurityFinding({
+        ruleId: "skill-surface.network-reference",
+        anchor: { kind: "file", path: "SKILL.md" },
+        message: "an absolute URL",
+      }),
+      createSecurityFinding({
+        ruleId: "skill-surface.executable-scripts",
+        anchor: SKILL,
+        message: "3 scripts",
+      }),
+      createSecurityFinding({
+        ruleId: "skill-surface.invisible-unicode",
+        anchor: SKILL,
+        message: "an invisible character in the frontmatter",
+      }),
+      createSecurityFinding({
+        ruleId: "skill-surface.invisible-unicode",
+        anchor: { kind: "file", path: "scripts/run.sh" },
+        message: "an invisible character in a path",
+      }),
+    ];
+    const forwards = [...findings].sort(compareSecurityFindings);
+    const backwards = [...findings].reverse().sort(compareSecurityFindings);
+    assert.equal(JSON.stringify(backwards), JSON.stringify(forwards));
+
+    const report: SecurityReport = {
+      analyzerVersion: SECURITY_ANALYZER_VERSION,
+      generatedAt: "2026-08-20T10:00:00.000Z",
+      subject: {
+        kind: "skill",
+        id: "ver_01",
+        ownerId: "skl_01",
+        name: "Report writer",
+        capturedAt: "2026-08-20T09:00:00.000Z",
+      },
+      findings: forwards,
+      counts: { error: 2, warning: 0, info: 2, total: 4 },
+      score: computeSecurityScore(forwards),
+      truncated: false,
+    };
+    assert.deepEqual(securityReportSchema.parse(report), report);
+  });
+});
+
+describe("findPrefixedCredential (D-SP13)", () => {
+  // The asymmetry, shown in ONE place: detection is precise, redaction is generous, and both read
+  // the same list of prefix shapes. An over-masked identifier costs an operator a question; a rule
+  // that fires on every commit sha costs them the whole report.
+  const SHA = "5f2c9a1b3d4e6f708192a3b4c5d6e7f809a1b2c3"; // 40 hex characters
+  const SLUG = "generate-quarterly-revenue-summary-report"; // a long, honest kebab slug
+
+  it("fires on the prefixed shapes an operator can act on", () => {
+    for (const raw of [
+      `token = mcpfp_${"A".repeat(43)}`,
+      `key: sk-${"B".repeat(40)}`,
+      `export GH=ghp_${"c".repeat(36)}`,
+    ]) {
+      const hit = findPrefixedCredential(raw);
+      assert.ok(hit, `${raw.slice(0, 12)}… was not detected`);
+      assert.ok(raw.includes(hit.match));
+      assert.equal(raw.slice(hit.offset, hit.offset + hit.match.length), hit.match);
+    }
+  });
+
+  it("is SILENT on a commit sha and a long slug — the whole point of the split", () => {
+    assert.equal(findPrefixedCredential(`See commit ${SHA} for context.`), null);
+    assert.equal(findPrefixedCredential(`Run the ${SLUG} workflow.`), null);
+    assert.equal(findPrefixedCredential("no credential here at all"), null);
+    assert.equal(findPrefixedCredential(""), null);
+  });
+
+  it("still lets the REDACTOR mask all four, including the two the rule ignores", () => {
+    // Side by side, as the acceptance asks: the two halves disagree on purpose.
+    for (const raw of [
+      `token = mcpfp_${"A".repeat(43)}`,
+      `key: sk-${"B".repeat(40)}`,
+      `export GH=ghp_${"c".repeat(36)}`,
+      `See commit ${SHA} for context.`,
+    ]) {
+      assert.ok(
+        redactSecurityEvidence(raw).excerpt.includes(SECURITY_REDACTION_MARKER),
+        `the redactor let ${raw.slice(0, 16)}… through`,
+      );
+    }
+  });
+
+  it("returns the EARLIEST match, so the answer is total and a report stays byte-stable", () => {
+    const raw = `a sk-${"B".repeat(20)} then mcpfp_${"A".repeat(43)}`;
+    const first = findPrefixedCredential(raw);
+    assert.ok(first);
+    assert.equal(first.offset, raw.indexOf("sk-"));
+    // Called twice in a row it must answer identically: the prefix patterns carry the `g` flag, and
+    // a matcher whose `lastIndex` survived a call would give a different answer the second time.
+    assert.deepEqual(findPrefixedCredential(raw), first);
+    assert.deepEqual(findPrefixedCredential(raw), first);
+  });
+
+  it("keeps one definition of each prefix shape", () => {
+    // `CREDENTIAL_PATTERNS` is built FROM this list plus the catch-all, so a shape cannot be fixed in
+    // one and left stale in the other. Three prefixed shapes; the catch-all is deliberately absent.
+    assert.equal(SECURITY_CREDENTIAL_PREFIX_PATTERNS.length, 3);
+    for (const pattern of SECURITY_CREDENTIAL_PREFIX_PATTERNS) {
+      assert.ok(
+        /mcpfp_|sk-|gh\[pousr\]_/.test(pattern.source),
+        `${pattern.source} is not anchored on a vendor prefix`,
+      );
+    }
   });
 });
 

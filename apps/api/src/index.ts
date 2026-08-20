@@ -1444,11 +1444,15 @@ await registerMaintenanceRoutes(
   { repository: hubRepository, dataDir: config.dataDirectory },
 );
 await registerCompareRoutes(server, scans);
-// Security posture (roadmap/security-posture/, WP 1.2) — `GET /api/scans/:scanId/security`: the
-// eleven deterministic rules over an already-persisted scan, scored by the shared contract. Read-only
-// and computed on read (D-SP8 — nothing is persisted, no migration); the OAuth port is the narrow
-// scope-NAMES projection of D-SP9, never token material.
-await registerSecurityRoutes(server, { scans, servers, oauth: oauthRepository });
+// Security posture (roadmap/security-posture/, WP 1.2 + WP 1.3) — `GET /api/scans/:scanId/security`
+// (the eleven deterministic rules over an already-persisted scan) and
+// `GET /api/skills/:id/versions/:vid/security` (the seven over an already-persisted skill version),
+// both scored by the shared contract. Read-only and computed on read (D-SP8 — nothing is persisted,
+// no migration); the OAuth port is the narrow scope-NAMES projection of D-SP9, never token material,
+// and the skills port reads the REDACTED `getPublic`, never `getInternal` (which decrypts the PAT).
+// The skills repository here is the SAME instance the `/api/skills*` routes use — the analyzer adds
+// no repository, no query and no method of its own.
+await registerSecurityRoutes(server, { scans, servers, oauth: oauthRepository, skills });
 // CI assertions (roadmap/ci/, WP 1.3) — `POST /api/assertions/evaluate`: evaluate a versioned
 // `mcpfp.assert.json` against an ALREADY-persisted scan and return an itemized report. Read-only
 // (D-C9 — it never runs a scan), and every baseline question re-projects `buildComparison` above
