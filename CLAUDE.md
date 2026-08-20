@@ -570,7 +570,7 @@ the moment of the edit; renaming a path to dodge a check is itself a violation.
 pnpm okf:validate    # both conformance layers over the whole bundle
 pnpm okf:sync        # regenerate every index.md + the master roadmap view
 pnpm okf:test        # the bundle's own test suite
-pnpm okf -- status   # the RS / RM / DC table with statuses
+pnpm okf status      # the RS / RM / DC table with statuses
 ```
 
 Inside a Claude session the generators are `/new-research`, `/new-roadmap`, `/new-docu` and
