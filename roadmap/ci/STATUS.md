@@ -344,7 +344,54 @@ wp/ci/<id>`.
       README was missed.
 
 ## Phase 3 — Posture integration
-- [ ] WP 3.1 — `no-new-security-findings` assertion — depends: 1.3 ✅, security-posture 1.2 · spec: [`wp-3.1-no-new-security-findings.md`](./wp-3.1-no-new-security-findings.md). **Serialize after WP 2.2** — both edit `packages/shared/src/ci-assertions.ts` and `apps/api/src/assertions/service.ts`.
+- [x] WP 3.1 — `no-new-security-findings` assertion — done 2026-08-20 · `wp/ci/3.1` · spec:
+      [`wp-3.1-no-new-security-findings.md`](./wp-3.1-no-new-security-findings.md).
+      **One rule** — `family: "scan"`, `needsBaseline: true`, `{ rule, minSeverity? }` — that
+      analyses the subject scan and the baseline scan through **security-posture WP 1.2's**
+      `analyzeScan` (injected as a port, memoized per request so a gate with no posture rule never
+      invokes the analyzer and a gate with two never analyses twice) and fails when a finding
+      appeared that the baseline did not have. Decisions **D-C20–D-C22** in the log below.
+      **It contains no heuristic, no regex, no severity table and no score** — a test reads every
+      `.ts` in `apps/api/src/assertions/` and fails if a `SECURITY_RULE_IDS` member, a `RegExp`, a
+      `.test(`/`.match(`/`.exec(`, `computeSecurityScore`, a severity-deduction reference or a local
+      *definition* of the identity helper appears in any of them, while asserting `service.ts` does
+      **import** `securityFindingIdentity`. Severity ordering is read off `SECURITY_SEVERITIES`,
+      never restated. **No migration, no dependency, no scope change, no CLI change, no web change**
+      — `apps/api/src/security/**`, `compare/service.ts`, `api-tokens.ts`, `apps/api/src/api-tokens/**`,
+      `apps/cli/**`, `apps/web/**`, `apps/api/src/db/**`, `examples/**`, `pnpm-lock.yaml`, every
+      `package.json`, `.env.example` and `config/env.ts` all measured at **zero lines**, and
+      `packages/shared/src/security-posture.ts` gained **55 insertions and zero removals**.
+      **`renderAssertionMarkdown` is byte-identical** to WP 2.2's — the new rule's itemization reaches
+      the PR artifact through the existing generic renderer with no renderer change.
+      **Verified by the orchestrator, not taken on report:** current `main` (carrying WP 2.3) was
+      merged **INTO** the branch first — `user-guide/22-mcpfp-cli.md` auto-merged with WP 2.3's edits,
+      no conflict — the posture row was added to WP 2.3's rule×topology table by the orchestrator (the
+      agent was told not to create that file and supplied the row instead), and the gate was run **on
+      that merged state** (`typecheck` **0** · shared **152/152** · cli **87/87** · api **3467 passed
+      / 7 failed**, the pre-existing compatibility-roster failures · `build` **0** · `lint` **2**
+      errors, both the pre-existing oversized `all-models.json`; web **3574 passed / 5 skipped**, run
+      separately). Every zero-line-diff claim was re-measured, and **three independent teeth checks**
+      were run: replacing the identity set with a count comparison turned **exactly one** test red —
+      `A2 (D-C20) — one finding RESOLVED and a DIFFERENT one added fails, though every count is
+      identical`, which is the whole point of the rule — dropping the D-C22 analyzer-version guard
+      turned its test red, and folding the evidence excerpt into the identity turned two red; all
+      restored, `git status` clean.
+      **Four deviations, all declared.** (1) **No `apps/cli/**` change, including its test.** The
+      spec asked for the D-C8 skip to be asserted at the CLI level too, but its own Files section
+      lists `apps/cli/**` as zero-line-diff. The CLI's skip handling is rule-agnostic by construction
+      (`commands/assert.ts` warns on *any* `status === "skipped"` and returns success, already pinned
+      by `apps/cli/test/assert.test.ts`), so the agent kept the constraint and documented the existing
+      proof rather than adding a redundant copy — the orchestrator agrees, and flags it here so the
+      owner can overrule. (2) `securityFindingIdentity` is exercised from
+      `apps/api/test/ci-assertions.test.ts` rather than from `security-posture.test.ts`, again to stay
+      inside the declared file set. (3) A per-request memoize and a `requireBaselineScan` helper the
+      spec did not name. (4) `describeAnchor`/`describeFinding` live in the assertions service — pure
+      formatting of values read off a finding, with no rule id, severity or matcher, and there is no
+      anchor renderer in `shared` to reuse.
+      **Not verified:** nothing was run against a live workbench or a real MCP server. The route test
+      wires `analyzeScan` to the real `ScanRepository`/`ServerRepository` but stubs the OAuth port as
+      "nothing stored", so "`oauthRepository` satisfies `SecurityAnalyzerPorts` in the production
+      wiring" is a compile-time fact from `pnpm typecheck`, not a runtime one.
 
 ## Phase MCP — workbench MCP server (see [`mcp-server.md`](./mcp-server.md))
 - [x] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — done 2026-08-19 · `wp/ci/M.1`. 21 read tools + 4 report resource templates at `/api/mcp` (stateless streamable HTTP, GET/DELETE→405); new `mcp_server` Settings › Features flag (off ⇒ 403 `feature_disabled`); no new dependency, **no migration** (`user_version` 57 unchanged), additive-only wire. Gate green (shared 89 · api 3254 · web 3178+5 skipped · build · lint). **Live-verified against the built API on a copy of a real 91 MB dev DB**: MCP Inspector `initialize`/`tools/list`/7 tool calls, `resources/read` of a real run report, error + validation paths, flag off→403→on, off-state survives restart, fresh-DB boot. **Self-proof (D-MCP5 seed): the workbench scanned its own mount — 21 tools · 2,224 tokens · 200 resources (`generic_o200k`, countingVersion 2)**; the in-test `tools/list` measurement is 2,206 against a budget of 3,000 (`WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET`). Owner-acceptance pending: the both-theme + keyboard walk of the new Settings › Features row.
@@ -490,6 +537,52 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-20 · D-C20 / D-C21 / D-C22 locked at the WP 3.1 kickoff** (the
+  `no-new-security-findings` assertion). Full text + the design they bind:
+  [`wp-3.1-no-new-security-findings.md`](./wp-3.1-no-new-security-findings.md). Declared in
+  `packages/shared/src/{ci-assertions,security-posture}.ts`, enforced in
+  `apps/api/src/assertions/service.ts`, and pinned by `apps/api/test/ci-assertions.test.ts`.
+  - **D-C20 — "new" is set membership by (ruleId, anchor), never a count.** A finding is new when its
+    identity — its `ruleId` plus its anchor (the tool, the parameter path, the file, or the server
+    itself) — is in the subject's report and absent from the baseline's. The comparison is
+    `securityFindingIdentity`, declared in `packages/shared/src/security-posture.ts` rather than in
+    the assertions engine, because WP 1.4's posture diff needs the same notion of "the same finding"
+    and two implementations is how a diff and a gate end up disagreeing in front of an operator. A
+    count comparison would pass a release that **resolved one finding and introduced a worse one** —
+    the single most likely way this gate would be wrong in production — so the guardrail fixture is
+    built with total, per-severity **and** per-rule counts identical on both sides, and only set
+    membership catches it (the orchestrator confirmed that reverting to a count comparison turns
+    exactly that one test red). Evidence text is deliberately **outside** the identity: a reworded
+    description that still trips the same rule on the same tool is the same finding, and a gate that
+    fired on rewording gets switched off within a week. Severity is outside it too — it is a property
+    of the rule (D-SP5), so `ruleId` already implies it. The whole thing is sound only because
+    **D-SP2 freezes rule ids**: a renamed rule would read as one finding resolved plus one appearing,
+    the exact false alarm D-SP2 exists to prevent.
+  - **D-C21 — `minSeverity` defaults to `warning`.** `error` and `warning` findings gate; `info`
+    findings (an undescribed parameter, an unmarked open-world tool, an unconstrained
+    `additionalProperties`) are hygiene, and a gate that goes red on day one for hygiene is a gate
+    that gets deleted. The strict posture is opt-in and explicit (`"minSeverity": "info"`). It is an
+    **optional** field plus a named constant (`NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY`), not a
+    zod `.default()`, so the default reads as a decision somebody made rather than a schema detail.
+    The result message always says how many new findings fell **below** the floor, so nothing is
+    silently ignored, and a passing result still names the inventory ("this scan has 4 finding(s), 4
+    of which the baseline already had") because "nothing new" over four known findings is a different
+    sentence from "nothing new" over none.
+  - **D-C22 — an analyzer-version mismatch between the two reports is an ERROR, not a pass.** Both
+    reports come out of the same running build today, so the versions are equal by construction; the
+    check exists for the case that stops being true (a persisted or cached report, WP 1.4's diff, a
+    future cross-instance comparison). It is the exact shape of D-C8's `deltasComparable` guard: a
+    comparison that is not on the same scale is a **400** (exit 2), never a suppressed-to-zero pass.
+    The **same posture applies to capping**: if `capSecurityFindings` truncated either side's list,
+    the rule is a 400 naming the cap and both true totals — falling back to `counts` would be the
+    count comparison D-C20 forbids, and gating on the shortened list would answer "no new findings
+    among the ones we listed", which is not a verdict.
+
+  _Rationale:_ a posture gate is only kept if it is right about the two things operators notice
+  first — that swapping one problem for another is not "no change", and that hygiene is not a build
+  breaker. D-C20 and D-C21 are those two, written down. D-C22 is D-C8 applied to the one axis posture
+  can drift on.
 
 - **2026-08-20 · D-C17 / D-C18 / D-C19 locked at the WP 2.3 kickoff** (packaging the gate as a
   GitHub Actions workflow). Full text + the design they bind:
