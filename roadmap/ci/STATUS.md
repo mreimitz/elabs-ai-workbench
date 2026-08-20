@@ -288,7 +288,67 @@ wp/ci/<id>`.
       `apps/cli/src/help.ts:142-143` still says a remote `mcpfp assert` caller needs an execute scope.
       That sentence is now false — `POST /api/assertions/evaluate` needs only `read`. One comment-sized
       edit, for WP 2.x or a follow-up.
-- [ ] WP M.3 — scoped write tools: `scan:run` · `runs:launch` · `suites:run` — depends: M.2
+- [x] WP M.3 — scoped write tools: `scan:run` · `runs:launch` · `suites:run` — done 2026-08-20 ·
+      `wp/ci/M.3` · spec: [`wp-m.3-write-tools.md`](./wp-m.3-write-tools.md).
+      **Three write tools, one per execute scope in the frozen D-C4 vocabulary** — `scan_run`
+      (`scan:run`) re-projecting `ScanService.runScan`, `suite_run_start` (`suites:run`) re-projecting
+      `SuiteOrchestrator.startSuiteRun`, `run_plan_start` (`runs:launch`) re-projecting
+      `resolveRunPlan` + `startPlanRun`. **`run_plan_start` refuses `source: "suite"` twice** — the
+      enum has no such member (the SDK rejects it before dispatch) and the handler rejects the string
+      again naming `suite_run_start` — so `runs:launch` is never a back door onto a saved suite and
+      `suites:run` is not decorative. Each tool answers with a **ticket, not an outcome** (D-MCP11)
+      and names the read tool that polls it (`scans_get` / `suite_runs_get`, both already `read`); a
+      `failed` scan comes back as an **`isError`** result so an agent cannot read a zero-tool scan as
+      a clean bill of health. Both launch tools carry the launcher's **own** advisory estimate
+      (`buildRunPlanEstimate`, re-projected by import — D-MCP12), which never blocks a launch and
+      degrades to `estimate: null` + a note if it throws. Decisions **D-MCP10–D-MCP13** in the log
+      below. **No migration, no new dependency, no new environment variable, no feature flag, no web
+      change** — `apps/web/**`, `apps/cli/**`, `packages/shared/src/api-tokens.ts`,
+      `apps/api/src/api-tokens/**`, the three assistant shared modules, `apps/api/src/assistant/**`,
+      `feature-flags.ts`, `apps/api/src/db/**`, `pnpm-lock.yaml`, every `package.json`, `.env.example`
+      and `config/env.ts` all measured at **zero lines**.
+      **WP M.2's gate absorbed the first tools that actually need it with zero change to itself** —
+      `missingScopeForTool`, `withScopeEnforcement`, `scopeRefusal` and `UNDECLARED_TOOL_SCOPE` are
+      byte-identical. That was the point of building the mechanism before the tools, and it held.
+      **The mount now measures 24 tools · 2,749 definition tokens against the UNCHANGED 3,000 budget**
+      (`pnpm mcp:self-scan`, exit 0; ~8% headroom). The budget constant was not raised.
+      **D-MCP13 closed a latent default-open path:** `createWorkbenchMcpServer`'s `caller` parameter
+      used to default to `TRUSTED_LOCAL_CALLER` (allow-everything). Harmless while every tool was a
+      read; a forgotten argument would now hand a second embedding the three write tools. The default
+      is removed, `TRUSTED_LOCAL_CALLER` stays exported for embeddings that legitimately are trusted
+      and local, and omitting the argument is a compile error.
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`typecheck` **0** · shared **102/102** · cli **63/63** · api **3374 passed / 7 failed** — the
+      pre-existing compatibility-roster failures, byte-for-byte the measured baseline's — · `build`
+      **0** · `lint` **2** errors, both the pre-existing oversized `all-models.json`; web **3556
+      passed / 5 skipped**, run separately); `pnpm mcp:self-scan` → **24 tools · 2749 tokens · within
+      budget**, exit 0; every zero-line-diff claim; and **three independent teeth checks** — making
+      `missingScopeForTool` return `null` unconditionally turned **11** scope tests red across both
+      suites, deleting `scan_run`'s entry from `WORKBENCH_MCP_TOOL_SCOPES` turned the shared key-set
+      and write-surface gates red, and disabling the D-MCP10 handler refusal turned its test red; all
+      three restored, `git status` clean.
+      **Three deviations from the spec, all declared rather than taken silently, all accepted:**
+      (1) `apps/api/src/mcp-server/llms-txt.ts` was modified though the spec did not list it —
+      compile-forced (`WorkbenchLlmsTxtTool.name` was typed to the *read* tool union) and
+      acceptance-forced (A11 requires the doc to say an execute scope is needed **plus** `read`, and
+      its static "Read-only, by construction" section had become a false claim). (2)
+      `apps/api/test/workbench-mcp-self-scan.test.ts` was modified — it pinned the tool count to the
+      read list and went red at 24. (3) `server.ts` changed more than "signature + JSDoc": its
+      `initialize` `instructions` string said *"Read-only access… Nothing here starts a scan, launches
+      a run"*, which is the first thing every host reads and would have been a lie. Rewritten to name
+      the three action tools and keep the absolute that is still true (nothing deletes, nothing
+      changes configuration).
+      **Not verified:** nothing was exercised against a live provider or a real third-party MCP
+      server — `scan_run`'s success path scans this app's *own* mount, and the launch tools were
+      driven with a stubbed run starter, so no provider token was ever spent and the estimate's dollar
+      figures were never checked against a real invoice. `pnpm lint`'s clean half is inferred from the
+      error **count** (Biome exits 1 on the pre-existing oversized JSON), not from a green run.
+      **Two notes for later, neither a defect:** `WORKBENCH_MCP_READ_TOOL_NAMES`' JSDoc still says "a
+      gate test asserts this set-equals what `tools/list` returns", which is now true of the union
+      rather than of the read half alone — left untouched deliberately, because the spec listed that
+      symbol as byte-identical. And `pnpm mcp:self-scan` reports **2** resources where the WP M.1 line
+      above records 200: pre-existing and expected, since the self-scan's throwaway DB holds only its
+      own in-flight scan.
 - [x] WP M.4 — agent onboarding docs + self-scan CI gate — done 2026-08-19 · `wp/ci/M.4`. Three
       deliverables, all additive: **(a)** `GET /api/mcp/llms.txt` — an `llms.txt`-style usage doc
       **rendered per request from the registered tool definitions** (same name+description
@@ -318,6 +378,54 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-20 · D-MCP10 / D-MCP11 / D-MCP12 / D-MCP13 locked at the WP M.3 kickoff** (the scoped
+  write tools). Full text + the design they bind:
+  [`wp-m.3-write-tools.md`](./wp-m.3-write-tools.md). Declared in
+  `packages/shared/src/workbench-mcp.ts` + `apps/api/src/mcp-server/{tools,server}.ts` and pinned by
+  `packages/shared/src/workbench-mcp.test.ts` +
+  `apps/api/test/{mcp-server-write-tools,mcp-server-scopes,workbench-mcp-server}.test.ts`.
+  - **D-MCP10 — exactly three write tools, one per execute scope, and the scope decides the tool.**
+    `scan_run` needs `scan:run`; `suite_run_start` needs `suites:run`; `run_plan_start` needs
+    `runs:launch`. The mapping is declared once, in `WORKBENCH_MCP_TOOL_SCOPES`, and nowhere else.
+    **`run_plan_start` refuses `source: "suite"`** and names `suite_run_start` in the refusal, so a
+    `runs:launch` token can never run a saved suite through the generic plan endpoint — without that
+    refusal the two scopes would be indistinguishable in practice and `suites:run` would be
+    decorative. The refusal is enforced twice: the tool's `source` enum has no `"suite"` member (the
+    SDK rejects it before dispatch) and the handler rejects the string again with a readable
+    `isError` result, never a validation crash.
+  - **D-MCP11 — a write tool answers with the ticket, not the outcome, and names the read tool that
+    finishes the job.** `scan_run` is synchronous in the API (`ScanService.runScan` awaits), so it
+    returns a **compact scan summary** — never a full `ScanDetail`, whose per-tool definitions would
+    blow a host's context — and a scan that comes back `failed` is returned as an **`isError`**
+    result, so an agent cannot read a zero-tool scan as a clean bill of health (the same distinction
+    `mcpfp scan` draws with exit 2, D-C7). The two launch tools are asynchronous by construction (the
+    orchestrator returns a `running` `SuiteRun` immediately), so they return the suite-run id +
+    status and point at `suite_runs_get`. **No write tool blocks on a matrix, no write tool has a
+    `wait` mode, and no polling tool was added** — `scans_get` and `suite_runs_get` already exist and
+    are already `read`.
+  - **D-MCP12 — every launch tool carries an advisory cost estimate, and it is the SAME estimate the
+    UI's launcher shows.** `buildRunPlanEstimate` (`apps/api/src/estimate/service.ts`, behind
+    `GET /api/estimate/run-plan`) is re-projected **by import**, not re-derived, so an agent and the
+    on-screen launcher quote one number rather than two that drift. It is **advisory only**: it never
+    blocks a launch, a model with no pricing entry is reported unpriced rather than zero, and an
+    estimate that throws degrades to `estimate: null` plus a one-line note while the launch proceeds.
+    A cost preview must never be the reason a launch fails. `suite_run_start` builds it from the
+    saved suite's own membership, read **before** the launch so an unknown suite 404s once;
+    `run_plan_start` resolves and estimates **before** starting, so a plan that cannot resolve never
+    leaves a `suite_runs` row behind.
+  - **D-MCP13 — `createWorkbenchMcpServer`'s `caller` parameter is REQUIRED.** It previously
+    defaulted to `TRUSTED_LOCAL_CALLER`, which is allow-everything. That was harmless while one call
+    site existed and every tool was a read; it stopped being harmless the moment a forgotten argument
+    would hand a second embedding the three write tools. A default-open parameter in an authorization
+    path is a latent privilege escalation, so the default is removed and every embedding states who
+    it is in writing. `TRUSTED_LOCAL_CALLER` stays exported for embeddings that legitimately are
+    trusted and local. Omitting the argument at a call site is now a compile error.
+
+  _Rationale:_ D-MCP3 said write tools arrive "only behind explicit token scopes — scope = consent".
+  These four are what makes that sentence true rather than aspirational: one scope per tool so
+  consent is granular, a refusal that teaches instead of stonewalling, a cost figure in the result so
+  an agent's operator can see what a call spent, and no default-open path into any of it.
 
 - **2026-08-20 · D-C11 / D-C12 locked at the WP 2.1 kickoff** (`mcpfp suite run`). Full text + the
   design they bind: [`wp-2.1-suite-run.md`](./wp-2.1-suite-run.md). Declared in
