@@ -228,7 +228,60 @@ wp/ci/<id>`.
       a `scope_forbidden` on `assert` now names the wrong scope. The same stale claim also survives in
       two places in `user-guide/22-mcpfp-cli.md` (the `assert` row of the permissions table, and the
       `#### Permissions` paragraph under `assert`), which this WP's spec scoped to `help.ts` only.
-- [ ] WP 2.2 — suite/grade assertions + baseline-delta PR-comment artifact — depends: 1.3 ✅, 2.1 ✅ · spec: [`wp-2.2-suite-assertions-artifact.md`](./wp-2.2-suite-assertions-artifact.md)
+- [x] WP 2.2 — suite/grade assertions + baseline-delta PR-comment artifact — done 2026-08-20 ·
+      `wp/ci/2.2` · spec: [`wp-2.2-suite-assertions-artifact.md`](./wp-2.2-suite-assertions-artifact.md).
+      **Two new rules, exactly the two the README names** — `min-suite-score` (over
+      `aggregates.meanGrade`) and `max-suite-cost` (over `execCostUsd + judgeCostUsd`, with both
+      halves named in the message) — plus two new targets, `{ suite }` (its newest completed+settled
+      run) and `{ suiteRun }`. A `completed` suite run whose `meanGrade` is `null` **FAILS** rather
+      than skipping: a gate that demanded a score and got none has not been satisfied. **`mcpfp
+      assert --format markdown`** renders the PR-comment body from `renderAssertionMarkdown`, one
+      pure function in `packages/shared`, and **the format never changes the exit code**. Decisions
+      **D-C13–D-C16** in the log below. **No new API route, no migration, no dependency, no scope
+      change, no web change** — `apps/api/src/compare/service.ts` (one differ, D-MCP4),
+      `packages/shared/src/api-tokens.ts`, `apps/api/src/api-tokens/**`, `workbench-mcp.ts`,
+      `apps/api/src/mcp-server/**`, `apps/api/src/security/**`, `security-posture.ts`, `apps/web/**`,
+      `apps/api/src/db/**`, `pnpm-lock.yaml`, every `package.json`, `.env.example`, `config/env.ts`
+      and `assistant-route-manifest.ts` all measured at **zero lines**. `ASSERTIONS_VERSION` stays
+      **1**, and a test reads the repo's own `mcpfp.assert.example.json` off disk to prove it still
+      validates unchanged.
+      **Also closed here (the follow-up WP 2.1 surfaced and could not take):**
+      `apps/cli/src/commands/assert.ts` was still sending `scope: "scan:run"` on
+      `POST /api/assertions/evaluate`. Since WP M.2 that route needs only **`read`** (D-C10, closed);
+      the field only words a 403 message, so nothing was broken, but a `scope_forbidden` named the
+      wrong permission. Fixed there and in the two remaining stale places in
+      `user-guide/22-mcpfp-cli.md` (the permissions-table row and the `#### Permissions` paragraph).
+      **Verified by the orchestrator, not taken on report:** current `main` (which by then carried
+      WP M.3 + security-posture 1.1/1.2) was merged **INTO** the branch first — `apps/api/src/index.ts`
+      auto-merged with **no conflict** against security-posture's adjacent route registration — and
+      the gate was run **on that merged state** (`typecheck` **0** · shared **152/152** · cli
+      **87/87** · api **3438 passed / 7 failed**, the pre-existing compatibility-roster failures ·
+      `build` **0** · `lint` **2** errors, both the pre-existing oversized `all-models.json`; web
+      **3574 passed / 5 skipped**, run separately). Every zero-line-diff claim was re-measured, and
+      **three independent teeth checks** were run: dropping the D-C16 settled check turned the
+      unsettled-rating refusal **and** the suite D-C8 test red, neutering the D-C13 family refinement
+      turned the mixed-document test red, and letting `--format markdown` return success on a failing
+      gate turned the "the format does not change the exit code" test red — all restored, `git
+      status` clean. The two forward references to WP 3.1's rule are **comments only**; no security
+      rule and no `family: "security"` placeholder was added.
+      **One substantive deviation, disclosed and accepted:** an additive optional
+      `AssertionReport.baselineSkipReason`, set only when a baseline was *named* (or
+      defaulted-because-needed) and resolved to nothing. The spec's A5 said the report should be
+      byte-identical to WP 1.3's except the `kind` discriminant. Without this field the PR comment
+      cannot distinguish *"this is the server's first scan / the suite's first run"* from *"this gate
+      named no baseline"* — and D-C14 made that the **common** case for suite gates, whose two rules
+      are both absolute. The field is absent in both cases the acceptance test checks; reverting it is
+      a three-line change.
+      **Not verified — the one real coverage gap:** the suite family has **no over-the-wire test**.
+      Every suite case runs against fixture `SuiteRun` objects handed to the structural ports, so
+      "`SuiteService` and `SuiteRunRepository` satisfy the new read ports at runtime" is
+      compile-time-only, unlike WP 1.3's scan family which is exercised through a real Fastify app.
+      The risk is narrow — `getRun`/`listRuns` are the two methods `GET /api/suite-runs` already
+      calls and `SuiteService.list()` is the one `GET /api/suites` calls — but it is unproven, and it
+      is the obvious follow-up if you want the two families equally covered. The rendered markdown was
+      also never posted to a real GitHub PR comment (the grade and cost deltas are two lines separated
+      by one newline; GFM in comments renders that as two lines, a stricter CommonMark renderer would
+      join them).
 - [ ] WP 2.3 — GitHub Actions packaging: workflow example + docs — depends: 2.2 · spec: [`wp-2.3-github-actions.md`](./wp-2.3-github-actions.md)
 
 ## Phase 3 — Posture integration
@@ -378,6 +431,63 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-20 · D-C13 / D-C14 / D-C15 / D-C16 locked at the WP 2.2 kickoff** (suite/grade
+  assertions + the baseline-delta PR-comment artifact). Full text + the design they bind:
+  [`wp-2.2-suite-assertions-artifact.md`](./wp-2.2-suite-assertions-artifact.md). Declared in
+  `packages/shared/src/ci-assertions.ts`, enforced in `apps/api/src/assertions/service.ts`, and
+  pinned by `packages/shared/src/ci-assertions.test.ts` + `apps/api/test/ci-assertions.test.ts` +
+  `apps/cli/test/assert.test.ts`.
+  - **D-C13 — a gate document stays SINGLE-FAMILY: one target, one family of rules.**
+    `ASSERTION_RULE_META` carries a `family: "scan" | "suite"`; `assertionTargetSchema` gained
+    `{ suite }` and `{ suiteRun }`; the document refinement rejects a document whose rules do not all
+    belong to its target's family, with the issue `path` at `["rules", index]` so the operator is
+    told **which** rule is the odd one out rather than "this document is invalid" — and **every**
+    offending rule is named, not just the first. A repo that wants both a footprint gate and a
+    quality gate keeps two files and runs `mcpfp assert` twice, which is also what keeps the two exit
+    codes readable in a build log: you can see which gate said no. **`ASSERTIONS_VERSION` stays 1** —
+    new union members and a new refinement path are additive, and a test reads the repo's own
+    `mcpfp.assert.example.json` off disk and proves it still validates unchanged.
+  - **D-C14 — a NAMED baseline is always resolved and always echoed, even when no rule needs one.**
+    WP 1.3 resolved a baseline only when a baseline-dependent rule existed. The PR artifact's whole
+    value is the delta sentence and **both** suite rules are absolute, so a suite gate would otherwise
+    produce an artifact with nothing to compare. The trigger is now
+    `needsBaseline || requestedBaseline !== undefined` — one boolean, and the only behavioural change
+    to WP 1.3's engine; an unnamed baseline with no baseline-dependent rule still resolves nothing,
+    and D-C8's three outcomes are untouched (its tests pass unmodified). In the same change the
+    report's identity fields widen to a **discriminated** `AssertionSubjectRef`
+    (`{ kind: "scan" } & AssertionScanRef` | `{ kind: "suite_run" } & AssertionSuiteRunRef`): the scan
+    variant is byte-identical to WP 1.3's plus the discriminant, `AssertionScanRef` is exported
+    unchanged, and **`baseline.scan` keeps its name** (it is the baseline *subject*, named for wire
+    compatibility). One additive optional field, `baselineSkipReason`, records **why** a named
+    baseline resolved to nothing — without it the artifact cannot tell "this is the first run" from
+    "the gate named none", which is exactly the case D-C14 exists to serve.
+  - **D-C15 — the PR-comment body is ONE pure function in `packages/shared`, rendered from the
+    `AssertionReport` alone.** `renderAssertionMarkdown(report)`: a verdict heading (with a
+    `— N skipped` suffix, because a skip is neither a pass nor a failure), an identity line, a delta
+    sentence — `2,224 → 2,410 tokens (+186, +8.4%)` for a scan, a grade line plus a cost line for a
+    suite run — or one honest line saying why there is none, a rules table, a collapsed `<details>`
+    per failing rule using the already-capped `details` (never re-capped, never un-capped), and a
+    footer naming the assertions version and the evaluation instant. **Not** a second API endpoint
+    (the *evaluation* is server-side, *formatting* is the client's job — D-C6) and **not** a private
+    copy in `apps/cli` (WP 2.3's workflow would re-derive it). Deterministic for a given report, and
+    it carries no credential, no absolute local path and no filesystem detail — pinned by a negative
+    test. Instants are echoed as the report's own ISO strings rather than localized, so the artifact
+    does not change when the runner's timezone does.
+  - **D-C16 — a suite gate refuses a suite run that is not `completed` AND settled.** `running`,
+    `pending`, `capped`, `stopped` and `error` are **400**s (exit 2) naming the state, and so is a
+    `completed` run whose `ratingState` is still `pending`/`rating`. An **absent** `ratingState` fails
+    **closed**: the column is `NOT NULL` and backfilled by migration v27, so a run without one is not
+    a run whose review is over. The rule applies to the baseline as well as the subject, and to a
+    `{ suite }` target's **candidates** — a suite whose newest run is still going falls back to the
+    newest finished, fully-rated one rather than measuring the live matrix. A half-graded matrix read
+    as a mean score is exactly the silent-wrong-answer D-C8 exists to prevent: it would report a
+    quality regression that is really just grading latency. Same spirit as WP 1.3's refusal to assert
+    a `failed` scan.
+
+  _Rationale:_ a quality gate is only worth building if the number it reads is final. D-C16 is that
+  applied to the one case a suite makes easy to get wrong, and D-C13 is what keeps "the footprint
+  moved" and "the scores dropped" two separate answers in a build log instead of one mixed verdict.
 
 - **2026-08-20 · D-MCP10 / D-MCP11 / D-MCP12 / D-MCP13 locked at the WP M.3 kickoff** (the scoped
   write tools). Full text + the design they bind:
