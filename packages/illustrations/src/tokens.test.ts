@@ -273,13 +273,32 @@ describe("no color literal anywhere in this package (D-IL5)", () => {
   const COLOR_CALL = new RegExp(`\\b(?:${COLOR_FUNCTIONS.join("|")})\\(`, "i");
 
   const SRC_DIR = fileURLToPath(new URL(".", import.meta.url));
-  const SOURCES = readdirSync(SRC_DIR).map(
-    (name) => [name, readFileSync(join(SRC_DIR, name), "utf8")] as const,
-  );
 
-  it("scans every file in src/, including this one", () => {
+  /**
+   * RECURSIVE, and it has to be. WP 0.2 put the primitives in `src/primitives/`, the dev assertion
+   * in `src/dev/` and the preview sheet in `src/preview/` — a flat `readdirSync` would have walked
+   * straight past every file that actually draws something while still reporting green.
+   */
+  function readSources(dir: string, prefix = ""): (readonly [string, string])[] {
+    const found: (readonly [string, string])[] = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      const label = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) found.push(...readSources(path, label));
+      else found.push([label, readFileSync(path, "utf8")] as const);
+    }
+    return found;
+  }
+
+  const SOURCES = readSources(SRC_DIR);
+
+  it("scans every file in src/, at every depth, including this one", () => {
     assert.ok(SOURCES.length >= 4, `expected the package's sources, found ${SOURCES.length}`);
     assert.ok(SOURCES.some(([name]) => name === "tokens.css"));
+    assert.ok(
+      SOURCES.some(([name]) => name.includes("/")),
+      "the scan must reach the subdirectories the primitives live in",
+    );
   });
 
   it("carries no hex color anywhere", () => {
