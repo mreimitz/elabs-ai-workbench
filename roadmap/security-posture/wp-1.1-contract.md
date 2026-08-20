@@ -105,8 +105,9 @@ One new file, `packages/shared/src/security-posture.ts`, one test file beside it
 | `oauth.broad-scope` | warning | Stored OAuth scope breadth — a wildcard or an all-of-account scope on a server used for one job. |
 
 Severities are the **declared** ones (D-SP5) and were chosen against the README's "severity inflation
-is a defect" line: only the three checks where a finding means *this server is actively trying to
-steer a model* are `error`; hygiene that a reasonable server may legitimately fail is `info`.
+is a defect" line: `error` is reserved for a server asserting something its own surface contradicts —
+the three poisoning checks plus `annotation.readonly-contradiction`; hygiene that a reasonable server
+may legitimately fail is `info`. The split is **4 `error` · 4 `warning` · 3 `info`**.
 
 **No skill rule ids are declared.** WP 1.3 (the skill analyzer) is out of scope for the CI dependency
 and declaring ids nothing implements would leave the registry's integrity test unable to pin them.

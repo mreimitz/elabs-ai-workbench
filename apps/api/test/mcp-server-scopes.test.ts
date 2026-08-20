@@ -9,9 +9,11 @@ import {
   WORKBENCH_MCP_LLMS_TXT_PATH,
   WORKBENCH_MCP_MOUNT_PATH,
   WORKBENCH_MCP_READ_TOOL_NAMES,
+  WORKBENCH_MCP_TOOL_NAMES,
   WORKBENCH_MCP_TOOL_SCOPES,
+  WORKBENCH_MCP_WRITE_TOOL_NAMES,
   type ApiTokenScope,
-  type WorkbenchMcpReadToolName,
+  type WorkbenchMcpToolName,
 } from "@mcp-token-footprint/shared";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -66,6 +68,9 @@ import { TestService } from "../src/testing/test-service.js";
 // tool definition injected through the documented test seam. Fully offline: no MCP child process, no
 // provider key, no network.
 
+/** Emitted by every stubbed write dependency, so "did the handler run?" is a string search. */
+const HANDLER_MARKER = "WRITE_HANDLER_REACHED";
+
 const databases: AppDatabase[] = [];
 const apps: FastifyInstance[] = [];
 const clients: Client[] = [];
@@ -77,13 +82,16 @@ afterEach(async () => {
 });
 
 /**
- * Stand-ins for WP M.3's write tools. The names are cast because `WorkbenchMcpToolDefinition.name`
- * is deliberately narrowed to the REGISTERED read-tool union — production code cannot invent a tool
- * name, and a test that needs one says so out loud rather than widening the production type.
+ * Stand-ins for a tool this server does not have. WP M.3's REAL write tools now exercise the scope
+ * gate on the real surface (see the `A3`/`A4` cases at the bottom of this file), so these exist for
+ * the one path no real tool can reach: a tool that shipped with NO scope declaration at all. The names
+ * are cast because `WorkbenchMcpToolDefinition.name` is deliberately narrowed to the REGISTERED tool
+ * union — production code cannot invent a tool name, and a test that needs one says so out loud
+ * rather than widening the production type.
  */
-const WRITE_TOOL = "test_write_tool" as string as WorkbenchMcpReadToolName;
+const WRITE_TOOL = "test_write_tool" as string as WorkbenchMcpToolName;
 /** Absent from the scope map on purpose: the fail-closed path (a tool that shipped undeclared). */
-const UNMAPPED_TOOL = "test_unmapped_tool" as string as WorkbenchMcpReadToolName;
+const UNMAPPED_TOOL = "test_unmapped_tool" as string as WorkbenchMcpToolName;
 
 const FABRICATED_TOOLS: WorkbenchMcpToolDefinition[] = [
   {
@@ -110,6 +118,8 @@ type Harness = {
   baseUrl: string;
   mcpUrl: URL;
   serverId: string;
+  /** Which write handlers actually got as far as their dependency. Empty ⇒ the gate refused first. */
+  reached: string[];
   /** Every pino line the app emitted, newest last. Used to assert on the audit trail. */
   logLines: string[];
   /** Mint a token and return its plaintext (the only place it exists). */
@@ -180,6 +190,15 @@ async function makeHarness(
   // Same order as `apps/api/src/index.ts`: the guard is a ROOT hook installed before the feature
   // routes, so it covers the mount registered after it.
   registerApiTokenGuard(app, apiTokens, { authRequired: options.authRequired ?? false });
+  // WP M.3 — the write tools' dependencies. This file is about the GATE, not about the work: every
+  // write dependency throws a recognisable marker, so a refused call proves the handler never ran (the
+  // marker is absent) and an ALLOWED call proves the gate let it through (the marker comes back inside
+  // a normal isError result). Nothing here can actually start a scan or a run.
+  const reached: string[] = [];
+  const refuse = (what: string) => (): never => {
+    reached.push(what);
+    throw new Error(`${HANDLER_MARKER}:${what}`);
+  };
   const deps = {
     servers,
     scans,
@@ -190,7 +209,22 @@ async function makeHarness(
     suiteRuns,
     collections,
     runReports: { runs, tests, scenarios, runReports: runReportService },
-  };
+    scanService: { runScan: refuse("scan_run") },
+    suiteOrchestrator: {
+      startSuiteRun: refuse("suite_run_start"),
+      startPlanRun: refuse("run_plan_start"),
+    },
+    runPlans: {
+      suites: { get: refuse("suite_run_start") },
+      collections: { get: refuse("run_plan_start") },
+      tests: { listIdsByCollection: refuse("run_plan_start"), list: refuse("run_plan_start") },
+    },
+    estimate: {
+      scenarios: { list: refuse("estimate") },
+      tests: { list: refuse("estimate") },
+      scans: { getLatestForServer: refuse("estimate") },
+    },
+  } as unknown as Parameters<typeof registerWorkbenchMcpRoutes>[1];
   registerWorkbenchMcpRoutes(
     app,
     deps,
@@ -215,6 +249,7 @@ async function makeHarness(
     baseUrl,
     mcpUrl: new URL(`${baseUrl}${WORKBENCH_MCP_MOUNT_PATH}`),
     serverId: server.id,
+    reached,
     logLines,
     mint: (scopes) => {
       const created = apiTokens.create({ label: "test", scopes, expiresAt: null });
@@ -261,25 +296,33 @@ function auditEntries(h: Harness): Array<Record<string, unknown>> {
 
 // ── A7 — the scope map's key set equals what the server ACTUALLY registers ─────────────────────────
 
-test("A7 — WORKBENCH_MCP_TOOL_SCOPES covers exactly the registered tools, all at `read`", async () => {
+test("A7/A2 — WORKBENCH_MCP_TOOL_SCOPES covers exactly the registered tools, reads and writes", async () => {
   const h = await makeHarness();
   const client = await connect(h);
   const { tools } = await client.listTools();
 
   // Both directions in one assertion: a registered tool with no scope, and a scope for a tool that is
   // not registered, are each a failure. (The shared-package twin pins the same equality against the
-  // DECLARED name list, so declaration and registration are both covered.)
+  // DECLARED name list, so declaration and registration are both covered.) Comparing against the FULL
+  // name list rather than the read half is what makes a future undeclared write tool fail the gate.
   assert.deepEqual(
     tools.map((tool) => tool.name).sort(),
     Object.keys(WORKBENCH_MCP_TOOL_SCOPES).sort(),
   );
   assert.deepEqual(
     Object.keys(WORKBENCH_MCP_TOOL_SCOPES).sort(),
-    [...WORKBENCH_MCP_READ_TOOL_NAMES].sort(),
+    [...WORKBENCH_MCP_TOOL_NAMES].sort(),
   );
-  for (const name of Object.keys(WORKBENCH_MCP_TOOL_SCOPES)) {
-    assert.equal(WORKBENCH_MCP_TOOL_SCOPES[name], "read", name);
+  for (const name of WORKBENCH_MCP_READ_TOOL_NAMES) {
+    assert.equal(WORKBENCH_MCP_TOOL_SCOPES[name], "read", `${name} is a read tool`);
   }
+  // WP M.3 (D-MCP10) — one tool per execute scope, and the scope decides the tool.
+  assert.deepEqual(
+    Object.fromEntries(
+      WORKBENCH_MCP_WRITE_TOOL_NAMES.map((name) => [name, WORKBENCH_MCP_TOOL_SCOPES[name]]),
+    ),
+    { scan_run: "scan:run", suite_run_start: "suites:run", run_plan_start: "runs:launch" },
+  );
 });
 
 // ── A2 (D-MCP8) — a `read`-only token can open the mount and use it ───────────────────────────────
@@ -291,7 +334,7 @@ test("A2 — a read-only token completes initialize + tools/list + a real tool c
 
   assert.ok((client.getInstructions() ?? "").length > 0, "initialize completed");
   const { tools } = await client.listTools();
-  assert.equal(tools.length, WORKBENCH_MCP_READ_TOOL_NAMES.length);
+  assert.equal(tools.length, WORKBENCH_MCP_TOOL_NAMES.length);
 
   const result = await call(client, "servers_list");
   assert.equal(result.isError ?? false, false);
@@ -485,13 +528,27 @@ test("A11 — llms.txt states the mount's scope requirement, read from the decla
     );
   }
 
-  // The per-tool half, likewise derived: today every tool is a read, so it collapses to one sentence.
-  const distinctToolScopes = [...new Set(Object.values(WORKBENCH_MCP_TOOL_SCOPES))];
-  assert.equal(distinctToolScopes.length, 1, "WP M.1's surface is uniformly `read`");
-  assert.ok(
-    document.includes(`Every tool on this server needs the \`${distinctToolScopes[0]}\` scope`),
-    "llms.txt never states the per-tool scope",
+  // The per-tool half, likewise derived. WP M.3 made the surface non-uniform, so the doc must now
+  // list each tool that asks for MORE than the door scope, and must say the extra scope is ON TOP of
+  // `read` rather than instead of it (D-MCP8 — the one thing an operator minting a token gets wrong).
+  const doorScopes = new Set<string>(mountRule.scopes);
+  const beyondDoor = Object.entries(WORKBENCH_MCP_TOOL_SCOPES).filter(
+    ([, scope]) => !doorScopes.has(scope),
   );
+  assert.equal(beyondDoor.length, WORKBENCH_MCP_WRITE_TOOL_NAMES.length, "the write surface");
+  for (const [tool, scope] of beyondDoor) {
+    assert.ok(
+      document.includes(`  - ${tool} — \`${scope}\` plus`),
+      `llms.txt never says ${tool} needs \`${scope}\``,
+    );
+  }
+  assert.match(
+    document,
+    /ask for one MORE scope ON TOP of it/,
+    "llms.txt never says the execute scope is IN ADDITION to `read`",
+  );
+  // …and the Actions family heading an agent onboards from.
+  assert.match(document, /### Actions/);
 
   // …and the operator-facing facts an agent that gets refused needs next.
   assert.match(document, /Settings › API tokens/);
@@ -516,4 +573,101 @@ test("A10 — a tool that fails on its own merits is audited as a failure, not a
     undefined,
     "not a scope refusal — the tool ran and failed",
   );
+});
+
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// WP M.3 — the REAL write tools on the M.2 mechanism
+// ══════════════════════════════════════════════════════════════════════════════════════════════════
+// Everything above proved the gate with a fabricated tool, because no real write tool existed. Three
+// now do, so the same three postures are re-asserted against the surface an agent actually connects
+// to — no test seam, no `overrides` argument, no injected definition.
+//
+// The write dependencies in this harness throw a marker (see `makeHarness`), which is what makes
+// "refused" and "ran and failed" distinguishable here: a refusal carries the scope sentence and NOT
+// the marker; an allowed call carries the marker and NOT the scope sentence.
+
+/** Args that get each write tool past SCHEMA validation, so the only thing left to fail is the gate. */
+const WRITE_CALLS: ReadonlyArray<{
+  tool: (typeof WORKBENCH_MCP_WRITE_TOOL_NAMES)[number];
+  scope: ApiTokenScope;
+  args: Record<string, unknown>;
+}> = [
+  { tool: "scan_run", scope: "scan:run", args: { serverId: "any-server" } },
+  { tool: "suite_run_start", scope: "suites:run", args: { suiteId: "any-suite" } },
+  {
+    tool: "run_plan_start",
+    scope: "runs:launch",
+    args: { source: "adhoc", testIds: ["t1"], scenarioIds: ["e1"] },
+  },
+];
+
+for (const { tool, scope, args } of WRITE_CALLS) {
+  test(`A3 — a read-only token is refused on ${tool}, naming \`${scope}\``, async () => {
+    const h = await makeHarness();
+    const client = await connect(h, h.mint(["read"]).secret);
+
+    const result = await call(client, tool, args);
+    assert.equal(result.isError, true, "a scope refusal is an isError RESULT, not a transport error");
+    const text = result.content[0]?.text ?? "";
+    assert.match(text, new RegExp(scope.replace(":", ":")), "the refusal names the missing scope");
+    assert.match(text, /Settings/, "…and says where the operator grants it");
+    assert.ok(!text.includes("    at "), `the refusal leaked a stack trace: ${text}`);
+    // The load-bearing half: the handler never ran, so nothing was scanned, resolved or launched.
+    assert.ok(!text.includes(HANDLER_MARKER), "the refused tool's handler ran anyway");
+    assert.deepEqual(h.reached, [], "a refused call must not reach a single dependency");
+  });
+
+  test(`A3 — a token holding read + \`${scope}\` reaches ${tool}'s handler`, async () => {
+    const h = await makeHarness();
+    const client = await connect(h, h.mint(["read", scope]).secret);
+
+    const result = await call(client, tool, args);
+    // The stubbed dependency throws, so this is an isError result — but it is the HANDLER's error,
+    // carrying the marker, not the gate's refusal. That is exactly the distinction being proved.
+    const text = result.content[0]?.text ?? "";
+    assert.ok(text.includes(HANDLER_MARKER), `the gate refused a properly scoped token: ${text}`);
+    assert.ok(!/needs the `.+` scope/.test(text), `a scoped token still got a scope refusal: ${text}`);
+    assert.ok(h.reached.length > 0, "the handler never reached its dependency");
+  });
+
+  test(`A4 (D-MCP7) — a tokenless loopback caller reaches ${tool} with no scope at all`, async () => {
+    const h = await makeHarness();
+    const client = await connect(h);
+
+    const result = await call(client, tool, args);
+    const text = result.content[0]?.text ?? "";
+    assert.ok(text.includes(HANDLER_MARKER), `a local caller was gated by a scope: ${text}`);
+    assert.ok(h.reached.length > 0, "the local caller never reached the handler");
+  });
+
+  test(`A3 — a WRONG execute scope is still refused on ${tool}`, async () => {
+    const h = await makeHarness();
+    // Every execute scope EXCEPT this tool's own. `suites:run` must not open `scan_run`, and
+    // `runs:launch` must not open `suite_run_start` — otherwise the three scopes are one scope.
+    const others = (["scan:run", "runs:launch", "suites:run"] as ApiTokenScope[]).filter(
+      (candidate) => candidate !== scope,
+    );
+    const client = await connect(h, h.mint(["read", ...others]).secret);
+
+    const result = await call(client, tool, args);
+    assert.equal(result.isError, true);
+    assert.match(result.content[0]?.text ?? "", new RegExp(`\`${scope}\``));
+    assert.deepEqual(h.reached, [], "a wrongly-scoped call must not reach the handler");
+  });
+}
+
+test("A3 — the write tools' scope refusals are audited as refusals, with the scope that was missing", async () => {
+  const h = await makeHarness();
+  const token = h.mint(["read"]);
+  const client = await connect(h, token.secret);
+
+  for (const { args, tool } of WRITE_CALLS) await call(client, tool, args);
+
+  const entries = auditEntries(h);
+  assert.equal(entries.length, WRITE_CALLS.length, "one audit line per call, no more and no fewer");
+  assert.deepEqual(
+    entries.map((entry) => [entry.mcpTool, entry.ok, entry.refusedScope]),
+    WRITE_CALLS.map(({ tool, scope }) => [tool, false, scope]),
+  );
+  assert.ok(!h.logLines.join("\n").includes(token.secret), "the plaintext token reached a log line");
 });

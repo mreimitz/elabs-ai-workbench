@@ -265,7 +265,9 @@ expect it red. Pay particular attention to the D-SP9 secrecy test and the determ
 - **A10** — `GET /api/scans/:scanId/security` returns the report and 404s an unknown id. No other
   route was added, no feature flag, no migration.
 - **A11 (no severity inflation)** — Each rule emits exactly the registry's declared severity (D-SP5),
-  and the three `error` rules are the three the registry declares — a test enumerates them.
+  and the `error` rules are exactly the ones the registry declares — a test enumerates them. (The
+  registry's real split is **4 `error` · 4 `warning` · 3 `info`**; an earlier draft of this line said
+  three, which was a miscount.)
 - **A12 (gate)** — From the repo root: `pnpm typecheck && pnpm test && pnpm build && pnpm lint`, plus
   `pnpm --filter @mcp-token-footprint/web test` **separately**. Report exit codes and test counts.
   Two failures are **pre-existing** and must be reported as such, never fixed silently: 2 tests in

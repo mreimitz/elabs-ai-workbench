@@ -1,14 +1,18 @@
 import {
   WORKBENCH_MCP_DEFAULT_LIST_LIMIT,
   WORKBENCH_MCP_TOOL_SCHEMAS,
-  type WorkbenchMcpReadToolName,
+  type RunPlanEstimate,
+  type RunPlanInput,
+  type WorkbenchMcpToolName,
   deriveSkillSecuritySurface,
+  runPlanInputSchema,
 } from "@mcp-token-footprint/shared";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { z } from "zod";
 import {
   boundText,
   compactStep,
+  errorResult,
   jsonResult,
   safeTool,
   truncate,
@@ -17,6 +21,7 @@ import {
 import type { CollectionRepository } from "../collections/repository.js";
 import { DEFAULT_HEATMAP_MODELS } from "../compatibility/dataset.js";
 import { buildHeatmap, buildToolFindings } from "../compatibility/service.js";
+import { buildRunPlanEstimate, type EstimateDeps } from "../estimate/service.js";
 import type { GradeRepository } from "../grading/grade-repository.js";
 import {
   buildRunJsonReport,
@@ -24,23 +29,31 @@ import {
   type RunReportSources,
 } from "../reports/run-report-assembly.js";
 import type { ScanRepository } from "../scans/repository.js";
+import type { ScanService } from "../scans/service.js";
 import type { ServerRepository } from "../servers/repository.js";
 import type { SkillRepository } from "../skills/repository.js";
+import type { SuiteOrchestrator } from "../suites/orchestrator.js";
+import { resolveRunPlan, type RunPlanDeps } from "../suites/plan-routes.js";
 import type { SuiteRepository } from "../suites/repository.js";
 import type { SuiteRunRepository } from "../suites/suite-run-repository.js";
 import type { RunRepository } from "../testing/run-repository.js";
+import { toErrorMessage } from "../utils/errors.js";
 
 // ==================================================================================================
-// Workbench MCP server — the READ tool surface (roadmap/ci/mcp-server.md, WP M.1)
+// Workbench MCP server — the tool surface (roadmap/ci/mcp-server.md, WP M.1 reads + WP M.3 writes)
 // ==================================================================================================
 // Every handler below is a thin re-projection of a repository or service call that ALREADY exists in
 // this app (D-MCP4: "no logic in the MCP layer"). Where a derivation was only reachable from a React
 // component or from an Agent-SDK-bound module, it was MOVED to a place both callers can reach
 // (`deriveSkillSecuritySurface` in `packages/shared`, `compactStep` in `assistant/tools/util.ts`) —
-// never copied.
+// never copied. The three write tools hold to the same rule harder, not less: each is a CALL into the
+// service the HTTP route calls (`ScanService.runScan`, `SuiteOrchestrator.startSuiteRun` /
+// `resolveRunPlan` + `startPlanRun`), never a copy of what that service does.
 //
-// **Read-only, by construction (D-MCP3).** No handler writes, deletes, mutates config, starts a scan
-// or launches a run. Write tools are WP M.3, behind service-token scopes; deletes never arrive.
+// **Read-first, and nothing deletes (D-MCP3).** 21 handlers read. Three act — `scan_run`,
+// `suite_run_start`, `run_plan_start` — each behind its own service-token scope, because a headless
+// caller has no interactive approval step and scope IS the consent. No handler deletes, prunes,
+// revokes, mints a token, or edits configuration, at any scope, at any phase.
 //
 // **No secrets** (`.claude/rules/mcp-and-security.md`). Every handler reads only the REDACTED
 // projections: `ServerRepository.list()` (which carries `hasEnvSecrets`/`hasHeaderSecrets` booleans,
@@ -56,7 +69,7 @@ import type { RunRepository } from "../testing/run-repository.js";
 // "8 servers" from "the first 8 of 400". If you add a list tool, it takes `limit` and it emits both
 // markers; a bare `deps.x.list()` in a handler is the bug this comment exists to prevent.
 
-/** The repositories/services the read tools project. Deliberately narrow — see the banner. */
+/** The repositories/services the tools project. Deliberately narrow — see the banner. */
 export type WorkbenchMcpDeps = {
   servers: ServerRepository;
   scans: ScanRepository;
@@ -68,11 +81,19 @@ export type WorkbenchMcpDeps = {
   collections: CollectionRepository;
   /** The run-report assembly the HTTP export routes use (`reports/run-report-assembly.ts`). */
   runReports: RunReportSources;
+  /** The scan service the HTTP scan route uses — `runScan` is re-projected verbatim (D-MCP4). */
+  scanService: ScanService;
+  /** The suite orchestrator behind `POST /api/suites/:id/run` and `POST /api/run-plans`. */
+  suiteOrchestrator: SuiteOrchestrator;
+  /** The run-plan resolver's dependencies (`suites`/`collections`/`tests` services). */
+  runPlans: RunPlanDeps;
+  /** The launcher's advisory estimate (`buildRunPlanEstimate`) — D-MCP12. */
+  estimate: EstimateDeps;
 };
 
 /** One SDK-neutral tool definition: what to register, and what to run. */
 export type WorkbenchMcpToolDefinition = {
-  name: WorkbenchMcpReadToolName;
+  name: WorkbenchMcpToolName;
   description: string;
   /** A ZodRawShape from `WORKBENCH_MCP_TOOL_SCHEMAS` — what `McpServer.registerTool` consumes. */
   inputSchema: z.ZodRawShape;
@@ -93,7 +114,7 @@ const LIST_LIMIT = WORKBENCH_MCP_DEFAULT_LIST_LIMIT;
  * cannot read a field the declared schema does not have. The single cast is contained here.
  */
 function defineTool<S extends z.ZodRawShape>(
-  name: WorkbenchMcpReadToolName,
+  name: WorkbenchMcpToolName,
   inputSchema: S,
   description: string,
   handler: (args: z.infer<z.ZodObject<S>>) => CallToolResult | Promise<CallToolResult>,
@@ -145,9 +166,67 @@ function readSkillMdBody(skills: SkillRepository, versionId: string): string {
   return content.isBinary ? "" : content.text;
 }
 
+/** What every launch tool carries back: the advisory preview, or an honest note saying why not. */
+type AdvisoryEstimate = { estimate: RunPlanEstimate | null; estimateNote?: string };
+
 /**
- * Build every read tool. Exported separately from the `McpServer` factory so tests can call one
- * handler directly, without a transport or a protocol round-trip.
+ * The launcher's advisory cost preview (D-MCP12) — {@link buildRunPlanEstimate}, the SAME function
+ * `GET /api/estimate/run-plan` calls, re-projected rather than re-derived, so an agent and the UI see
+ * one number rather than two that drift.
+ *
+ * It is **advisory only**: it never blocks a launch, and a model with no pricing entry is reported
+ * unpriced rather than as zero (that is `buildRunPlanEstimate`'s own behaviour, preserved by calling
+ * it instead of copying it). If it throws for ANY reason the launch still proceeds and the result
+ * carries `estimate: null` plus a one-line note — a cost preview must never be the reason a launch
+ * fails.
+ */
+function advisoryEstimate(
+  deps: WorkbenchMcpDeps,
+  input: { testIds: string[]; environmentIds: string[]; repetitions: number },
+): AdvisoryEstimate {
+  try {
+    return { estimate: buildRunPlanEstimate(deps.estimate, input) };
+  } catch (error) {
+    return {
+      estimate: null,
+      estimateNote: `Cost preview unavailable (${toErrorMessage(error)}). The launch was unaffected.`,
+    };
+  }
+}
+
+/**
+ * Build the {@link RunPlanInput} a flat `run_plan_start` call describes, then validate it with the
+ * EXISTING `runPlanInputSchema` — the same parser `POST /api/run-plans` uses (D-MCP4). The MCP SDK's
+ * `inputSchema` is a ZodRawShape and cannot express a discriminated union, so the union member is
+ * reassembled here and the wire contract is enforced by the one parser that owns it: a `collection`
+ * with no `collectionId`, or an `adhoc` with no `testIds`, fails THERE, not in a hand-written check.
+ */
+function buildRunPlanInput(args: {
+  source: "collection" | "adhoc";
+  collectionId?: string;
+  testIds?: string[];
+  scenarioIds?: string[];
+  repetitions?: number;
+  maxConcurrency?: number;
+  aggregateCostCapUsd?: number;
+}): RunPlanInput {
+  const overrides = {
+    ...(args.repetitions !== undefined ? { repetitions: args.repetitions } : {}),
+    ...(args.maxConcurrency !== undefined ? { maxConcurrency: args.maxConcurrency } : {}),
+    ...(args.aggregateCostCapUsd !== undefined
+      ? { aggregateCostCapUsd: args.aggregateCostCapUsd }
+      : {}),
+  };
+  const candidate =
+    args.source === "collection"
+      ? { source: "collection", collectionId: args.collectionId, scenarioIds: args.scenarioIds, ...overrides }
+      : { source: "adhoc", testIds: args.testIds, scenarioIds: args.scenarioIds, ...overrides };
+  return runPlanInputSchema.parse(candidate);
+}
+
+/**
+ * Build every tool — the 21 reads, then the three Actions. Exported separately from the `McpServer`
+ * factory so tests can call one handler directly, without a transport or a protocol round-trip.
  */
 export function buildWorkbenchToolDefinitions(
   deps: WorkbenchMcpDeps,
@@ -463,6 +542,113 @@ export function buildWorkbenchToolDefinitions(
           collections: capped.items,
           total: capped.total,
           truncated: capped.truncated,
+        });
+      },
+    ),
+
+    // ── Actions (write — WP M.3) ──────────────────────────────────────────────────────────────
+    // Three tools, one per execute scope (D-MCP10). Each is a CALL into the service the HTTP route
+    // calls; each states in its description what it costs, which scope it needs, and which read tool
+    // finishes the job (D-MCP11). None of them waits, and none of them deletes.
+    defineTool(
+      "scan_run",
+      S.scan_run,
+      "Start a discovery scan of a registered MCP server and wait for it: opens a REAL connection to " +
+        "that server, so it takes as long as that server does. Needs the `scan:run` scope on top of " +
+        "`read`. Returns a summary; call scans_get with the scanId for the per-tool breakdown.",
+      async (args) => {
+        const detail = await deps.scanService.runScan(args.serverId, args.tokenProfile);
+        const summary = {
+          scanId: detail.id,
+          serverId: detail.serverId,
+          serverName: detail.serverName,
+          status: detail.status,
+          scannedAt: detail.scannedAt,
+          totalTools: detail.totalTools,
+          totalTokens: detail.totalTokens,
+          totalRawBytes: detail.totalRawBytes,
+          tokenProfile: detail.tokenProfile,
+          countingVersion: detail.countingVersion,
+          ...(detail.errorMessage ? { errorMessage: detail.errorMessage } : {}),
+          next: "Call scans_get with this scanId for the per-tool breakdown.",
+        };
+        // The REQUEST succeeded; the SCAN may not have. A failed scan comes back as an `isError`
+        // result carrying the same summary, so an agent cannot read a zero-tool row as a clean bill
+        // of health — the same distinction `mcpfp scan` draws with exit 2 (D-C7).
+        if (detail.status !== "success") {
+          return { isError: true, content: [{ type: "text" as const, text: JSON.stringify(summary) }] };
+        }
+        return jsonResult(summary);
+      },
+    ),
+
+    defineTool(
+      "suite_run_start",
+      S.suite_run_start,
+      "Start a saved benchmark suite's matrix run (its tests × environments × repetitions). SPENDS " +
+        "provider tokens against the configured cost caps. Needs the `suites:run` scope on top of " +
+        "`read`. Returns immediately with a suiteRunId and an advisory cost estimate; poll " +
+        "suite_runs_get.",
+      (args) => {
+        // Read the suite FIRST: an unknown id 404s once, here, before anything is estimated or
+        // started, and its stored membership is what the estimate must be built from.
+        const suite = deps.runPlans.suites.get(args.suiteId);
+        const estimate = advisoryEstimate(deps, {
+          testIds: suite.testIds,
+          environmentIds: suite.scenarioIds,
+          repetitions: suite.config.repetitions,
+        });
+        const suiteRun = deps.suiteOrchestrator.startSuiteRun(args.suiteId);
+        return jsonResult({
+          suiteRunId: suiteRun.id,
+          suiteId: args.suiteId,
+          status: suiteRun.status,
+          startedAt: suiteRun.startedAt,
+          source: suiteRun.source,
+          ...estimate,
+          next: "Call suite_runs_get with this suiteRunId for status, members and grades.",
+        });
+      },
+    ),
+
+    defineTool(
+      "run_plan_start",
+      S.run_plan_start,
+      "Launch a collection run (every test in a collection) or an ad-hoc run plan (explicit tests) " +
+        "against the given environments. SPENDS provider tokens against the configured cost caps. " +
+        "Needs the `runs:launch` scope on top of `read`. Returns a suiteRunId immediately plus an " +
+        "advisory cost estimate; poll suite_runs_get. Saved suites go through suite_run_start.",
+      (args) => {
+        // D-MCP10, said twice on purpose. The enum has no `"suite"` member, so the SDK refuses it
+        // before this runs; an agent that reaches here with one anyway is TOLD which tool to use,
+        // because `runs:launch` must never be a back door onto a saved suite — that would make
+        // `suites:run` decorative, and a scope nobody has to hold is not consent.
+        if ((args.source as string) === "suite") {
+          return errorResult(
+            "run_plan_start does not run saved suites. Call suite_run_start with the suite's id — " +
+              "that is a separate permission (`suites:run`), and holding `runs:launch` does not " +
+              "grant it.",
+          );
+        }
+        const input = buildRunPlanInput(args);
+        const resolved = resolveRunPlan(input, deps.runPlans);
+        // Resolve and estimate BEFORE starting, so a plan that cannot resolve never leaves a
+        // `suite_runs` row behind.
+        const estimate = advisoryEstimate(deps, {
+          testIds: resolved.testIds,
+          environmentIds: resolved.scenarioIds,
+          repetitions: resolved.config.repetitions,
+        });
+        const suiteRun = deps.suiteOrchestrator.startPlanRun(resolved);
+        return jsonResult({
+          suiteRunId: suiteRun.id,
+          status: suiteRun.status,
+          startedAt: suiteRun.startedAt,
+          source: suiteRun.source,
+          testCount: resolved.testIds.length,
+          environmentCount: resolved.scenarioIds.length,
+          ...estimate,
+          next: "Call suite_runs_get with this suiteRunId for status, members and grades.",
         });
       },
     ),

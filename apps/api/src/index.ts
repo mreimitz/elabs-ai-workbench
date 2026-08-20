@@ -137,6 +137,7 @@ import { registerReportRoutes } from "./reports/routes.js";
 import { ScanRepository } from "./scans/repository.js";
 import { registerScanRoutes } from "./scans/routes.js";
 import { ScanService } from "./scans/service.js";
+import { registerSecurityRoutes } from "./security/routes.js";
 import { loadSecretKey, SecretStore } from "./secrets/secret-store.js";
 import { ServerRepository } from "./servers/repository.js";
 import { registerServerRoutes } from "./servers/routes.js";
@@ -1442,6 +1443,11 @@ await registerMaintenanceRoutes(
   { repository: hubRepository, dataDir: config.dataDirectory },
 );
 await registerCompareRoutes(server, scans);
+// Security posture (roadmap/security-posture/, WP 1.2) — `GET /api/scans/:scanId/security`: the
+// eleven deterministic rules over an already-persisted scan, scored by the shared contract. Read-only
+// and computed on read (D-SP8 — nothing is persisted, no migration); the OAuth port is the narrow
+// scope-NAMES projection of D-SP9, never token material.
+await registerSecurityRoutes(server, { scans, servers, oauth: oauthRepository });
 // CI assertions (roadmap/ci/, WP 1.3) — `POST /api/assertions/evaluate`: evaluate a versioned
 // `mcpfp.assert.json` against an ALREADY-persisted scan and return an itemized report. Read-only
 // (D-C9 — it never runs a scan), and every baseline question re-projects `buildComparison` above
@@ -1517,9 +1523,13 @@ await registerReportRoutes(
     skills,
   },
 );
-// Workbench MCP server (Phase MCP, WP M.1) — read-only tools + report resources over the SAME
-// repositories every route above uses. `runReports` is the run-report assembly the export routes were
-// just given, so a report read over MCP and one downloaded over HTTP are the same document (D-MCP4).
+// Workbench MCP server (Phase MCP, WP M.1 reads + WP M.3 writes) — tools + report resources over the
+// SAME repositories and services every route above uses. `runReports` is the run-report assembly the
+// export routes were just given, so a report read over MCP and one downloaded over HTTP are the same
+// document; `scanService`, `suiteOrchestrator`, `runPlans` and `estimate` are literally the instances
+// `POST /api/servers/:id/scan`, `POST /api/suites/:id/run`, `POST /api/run-plans` and
+// `GET /api/estimate/run-plan` are wired with, so the mount re-projects those routes rather than
+// owning a second copy of what they do (D-MCP4). The mount never constructs its own service.
 registerWorkbenchMcpRoutes(server, {
   servers,
   scans,
@@ -1534,6 +1544,18 @@ registerWorkbenchMcpRoutes(server, {
     tests: testService,
     scenarios: scenarioService,
     runReports: runReportService,
+  },
+  scanService,
+  suiteOrchestrator,
+  runPlans: {
+    suites: suiteService,
+    collections: collectionService,
+    tests: testService,
+  },
+  estimate: {
+    scenarios: scenarioService,
+    tests: testService,
+    scans,
   },
 });
 await registerOAuthRoutes(server, oauthService);

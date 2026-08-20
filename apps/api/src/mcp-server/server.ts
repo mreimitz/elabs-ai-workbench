@@ -52,10 +52,12 @@ export const TRUSTED_LOCAL_CALLER: WorkbenchMcpCaller = {
 /**
  * Test seam (WP M.2 acceptance A8). Production calls `createWorkbenchMcpServer(deps, caller)` with
  * nothing here, so the registered surface is exactly `buildWorkbenchToolDefinitions` +
- * `WORKBENCH_MCP_TOOL_SCOPES`. It exists because the scope gate has to be provable NOW, and WP M.3's
- * write tools — the only tools that will ever need a scope other than `read` — do not exist yet.
- * It is unreachable from HTTP: `registerWorkbenchMcpRoutes` never forwards a request-derived value
- * into it, and an injected tool with no scope entry is refused like any other unmapped tool.
+ * `WORKBENCH_MCP_TOOL_SCOPES`. WP M.3's real write tools now prove the scope gate on the real surface,
+ * so the seam is no longer needed for THAT — it is kept because it is the only way to exercise the
+ * fail-closed path for a tool that shipped with **no** scope declaration at all, which no real tool can
+ * reach (the key-set gate test refuses one). It is unreachable from HTTP: `registerWorkbenchMcpRoutes`
+ * never forwards a request-derived value into it, and an injected tool with no scope entry is refused
+ * like any other unmapped tool.
  */
 export type WorkbenchMcpServerOverrides = {
   tools?: readonly WorkbenchMcpToolDefinition[];
@@ -150,29 +152,37 @@ export function withScopeEnforcement(
 }
 
 /**
- * Build a fresh `McpServer` carrying the workbench's read tools + report resources.
+ * Build a fresh `McpServer` carrying the workbench's tools + report resources.
  *
  * A NEW instance is built per request (the mount is stateless — see `routes.ts`), which is cheap: the
  * tool definitions are closures over repository handles that already exist for the HTTP routes, and
  * nothing here opens a connection or touches the filesystem.
  *
- * `instructions` is the one place a host is told what this server is for; it is deliberately two
- * sentences, because it is paid for on every `initialize` (D-MCP5).
+ * **`caller` is REQUIRED (D-MCP13).** It used to default to {@link TRUSTED_LOCAL_CALLER}, which is
+ * allow-everything. That was harmless while one call site existed and every tool was a read; it stopped
+ * being harmless the moment a forgotten argument would hand a second embedding WP M.3's write tools. A
+ * default-open parameter in an authorization path is a latent privilege escalation, so every embedding
+ * now says who it is — and an embedding that genuinely is a trusted local one passes
+ * {@link TRUSTED_LOCAL_CALLER} explicitly, in writing, where a reviewer can see it.
+ *
+ * `instructions` is the one place a host is told what this server is for; it is deliberately short,
+ * because it is paid for on every `initialize` (D-MCP5).
  */
 export function createWorkbenchMcpServer(
   deps: WorkbenchMcpDeps,
-  caller: WorkbenchMcpCaller = TRUSTED_LOCAL_CALLER,
+  caller: WorkbenchMcpCaller,
   overrides?: WorkbenchMcpServerOverrides,
 ): McpServer {
   const server = new McpServer(
     { name: WORKBENCH_MCP_SERVER_NAME, version: WORKBENCH_MCP_SERVER_VERSION },
     {
       instructions:
-        "Read-only access to this MCP Token Footprint workbench: registered MCP servers and their " +
-        "discovery scans, per-tool token footprints, model-compatibility findings, test runs and " +
-        "their grades and reports, Agent Skills with their footprint and security surface, and " +
-        "benchmark suites and collections. Nothing here starts a scan, launches a run, or changes " +
-        "configuration.",
+        "This MCP Token Footprint workbench: registered MCP servers and their discovery scans, " +
+        "per-tool token footprints, model-compatibility findings, test runs with their grades and " +
+        "reports, Agent Skills with their footprint and security surface, and benchmark suites and " +
+        "collections. Reading needs nothing extra. Three tools act — scan_run, suite_run_start, " +
+        "run_plan_start — each costing real time or provider spend and each needing its own token " +
+        "scope. Nothing here deletes anything or changes configuration.",
     },
   );
 

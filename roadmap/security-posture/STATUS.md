@@ -17,7 +17,7 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       files: a new `packages/shared/src/security-posture.ts` (657 lines), its test (555 lines), and
       **one** added export line in `packages/shared/src/index.ts`. It declares
       `SECURITY_ANALYZER_VERSION` (1), the severity / subject-kind / rule-category vocabularies, the
-      **frozen eleven-rule server registry** (3 `error` · 4 `warning` · 4 `info` — WP 1.2 implements
+      **frozen eleven-rule server registry** (4 `error` · 4 `warning` · 3 `info` — WP 1.2 implements
       them), six shapes with `.strict()` zod schemas, and five pure functions:
       `computeSecurityScore`, `compareSecurityFindings`, `redactSecurityEvidence`,
       `capSecurityFindings`, `createSecurityFinding`. Its only import is `zod` — no `node:*`, no
@@ -45,7 +45,66 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       anchor's JSDoc, not enforced at runtime — that becomes WP 1.2's obligation when it constructs
       anchors. `SecurityRule.deprecated` is declared but unused, so untested. Nothing was run against
       the running app (this WP adds no route and no UI).
-- [ ] WP 1.2 — server analyzer: poisoning/annotation/schema/OAuth rules + score — depends: 1.1 ✅ · spec: [`wp-1.2-server-analyzer.md`](./wp-1.2-server-analyzer.md)
+- [x] WP 1.2 — server analyzer: poisoning/annotation/schema/OAuth rules + score — done 2026-08-20 ·
+      `wp/security-posture/1.2` · spec: [`wp-1.2-server-analyzer.md`](./wp-1.2-server-analyzer.md).
+      **All eleven declared rules implemented, and only those eleven** —
+      `apps/api/src/security/{analyzer,service,routes}.ts` plus one narrow method on
+      `OAuthRepository` and a 6-line registration in `index.ts`. `analyzeScanTools({ scan,
+      oauthScopes, onRuleError? })` is **pure** (a test reads the source and fails on
+      `better-sqlite3` / `node:fs` / `fastify` / `new Date(` / `Date.now(`), so CI WP 3.1 can call it
+      with a `ScanDetail` it already holds instead of round-tripping through HTTP;
+      `analyzeScan(ports, scanId)` owns loading, the non-`success` refusal, ordering, capping,
+      counting-all and scoring. Served at **`GET /api/scans/:scanId/security`** — one route, thin,
+      404 unknown / 400 non-`success`. Decisions **D-SP7–D-SP11** in the log below. **Computed on
+      read, persisted nowhere: no migration, no table, no column** (pinned by a test that compares
+      `sqlite_master` and `PRAGMA user_version` before and after both a service call and a real HTTP
+      request). No new dependency, no environment variable, no feature flag.
+      **Three of the plan's own near-miss fixtures forced the MATCHERS to be tightened rather than
+      the tests weakened** — which is what the README's false-positive clause is for. Rule 1 now
+      requires an instruction-noun object after "ignore/disregard previous", so *"will ignore previous
+      drafts"* is silent; rule 6 matches bare verb tokens only in the tool **name** and only
+      unambiguous third-person forms in the description, so `list_deleted_items` +
+      `readOnlyHint: true` is silent; rule 8 excludes measurement/reference suffixes and normalizes
+      camelCase, so `token_count` and `access_key_id` are silent while `secret_access_key` still
+      fires. Rules 1 and 2 emit **at most one finding per tool** (three payloads in one description is
+      one hostile description; three `error` findings would move the score −45 for a single fact,
+      which the README calls a defect).
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`typecheck` **0** · shared **127/127** · cli **81/81** · api **3389 passed / 7 failed** — the
+      pre-existing compatibility-roster failures, byte-for-byte the measured list — a **+45-test**
+      delta all passing · `build` **0** · `lint` **2** errors, both the pre-existing oversized
+      `all-models.json`; web **3574 passed / 5 skipped**, run separately); the 7-file diff and all 14
+      zero-line-diff paths, including **zero removed lines** in WP 1.1's contract; and **three
+      independent teeth checks** — making `listGrantedScopes` also return the access token turned
+      both D-SP9 tests red, dropping `compareSecurityFindings` from the service turned both
+      determinism tests red, and accepting a non-`success` scan turned all three D-SP10/A10 tests
+      red; all restored, `git status` clean.
+      **Two corrections this WP surfaced in the plan's own documents, both now fixed:** the WP 1.1
+      ledger line and the WP 1.2 spec both said the registry declares **three** `error` rules. It
+      declares **four** — `annotation.readonly-contradiction` is the fourth. The real split is
+      **4 `error` · 4 `warning` · 3 `info`**, counted from the registry by the orchestrator.
+      **Nine deviations, all declared:** the three matcher tightenings above; `https`/`urls`/`uri`
+      added to rule 7's terms (with token matching, `https://…` is the token `https`, so a list with
+      only `http` would be blind to every real URL); rule 11's evidence is the whole granted scope
+      list, space-joined, with the message naming the broad ones; an optional `onRuleError` callback
+      because a pure analyzer has no logger and the spec still required a rule that throws to be
+      logged once; rule 3's parameter findings bounded by the same per-tool cap as rule 9 (same
+      drowning failure mode); and the two bound constants (`SECURITY_MAX_DESCRIPTION_CHARS` 2000,
+      `SECURITY_MAX_FINDINGS_PER_TOOL` 10) placed in `packages/shared/src/security-posture.ts` rather
+      than the analyzer — which the spec's Files section explicitly sanctions, since WP 1.1 had not
+      declared them and WP 2.1's UI will need the threshold.
+      **Not verified:** nothing was run against the running app (this WP has no UI; the route was
+      exercised over a real in-process Fastify instance with the real repositories, not against
+      `http://localhost:8081`). The heuristics were reviewed against fixtures, **not against a corpus
+      of real third-party MCP servers** — every "deliberately does not match" claim is argued and
+      fixture-pinned, but the false-positive rate in the wild is unmeasured. No live OAuth flow was
+      run (the D-SP9 tests store scopes through the real repository, with real encryption and
+      decryption, but no provider was contacted).
+      **Pre-existing web-test flake seen once by the implementing agent, not by the orchestrator, and
+      not this WP's** (`apps/web/**` is zero-diff): `apps/web/src/features/hub/ArtifactCanvas.tsx:211`
+      schedules `setTimeout(() => setCopied(false), 1500)` which can fire after
+      `ArtifactCanvas.test.tsx` tears its environment down, surfacing as an unhandled
+      `ReferenceError: window is not defined`. Owner-facing test-hygiene item.
 - [ ] WP 1.3 — skill analyzer: security-surface roll-up + score
 - [ ] WP 1.4 — posture diff (scan↔scan, version↔version)
 
@@ -111,7 +170,56 @@ _Entries: date · decision · rationale._
     (limit 200) shortened the list, so a gate reading `counts.error` cannot be fooled by display
     truncation.
 
-  _Rationale:_ the whole workstream's value is that a posture report can be **diffed** — release to
+- **2026-08-20 · D-SP7–D-SP11 locked at the WP 1.2 kickoff.** Full text + the design they bind:
+  [`wp-1.2-server-analyzer.md`](./wp-1.2-server-analyzer.md). Implemented in
+  `apps/api/src/security/{analyzer,service,routes}.ts` and pinned by
+  `apps/api/test/security-analyzer.test.ts`.
+  - **D-SP7 — the analyzer is a PURE function over an already-loaded `ScanDetail`, and a thin service
+    loads it.** `analyzeScanTools({ scan, oauthScopes, onRuleError? }): SecurityFinding[]` opens no
+    database, reads no config, has no clock and touches no network; a test reads the module source
+    and fails on `better-sqlite3`, `node:fs`, `fastify`, `new Date(` or `Date.now(`.
+    `analyzeScan(ports, scanId)` owns the loading, the refusal, the ordering, the capping and the
+    scoring. This is what lets `roadmap/ci/` WP 3.1 call the analyzer from the assertions engine with
+    the `ScanDetail` it already holds instead of round-tripping through HTTP. Ports are structurally
+    typed, exactly like `AssertionPorts`, so a test hands it three functions instead of a database.
+  - **D-SP8 — a posture report is computed on read and persisted nowhere.** It is a pure derivation
+    of rows that are already immutable (`mcp_scans` + `mcp_tool_scans` never change once a scan
+    settles), so a cache would be a second source of truth with a staleness bug waiting in it and a
+    table would be a migration for data we recompute in milliseconds. WP 1.4's diff recomputes both
+    sides. **No migration, no new table, no new column** — pinned by a test that compares
+    `sqlite_master` and `PRAGMA user_version` before and after both a service call and a real HTTP
+    request.
+  - **D-SP9 — the OAuth rule reads a NARROW, scope-only projection, and that is the only thing it may
+    see.** ⚠️ **Owner-reviewable: this is the one place this workstream touches a decryption path.**
+    Granted scopes live inside the encrypted `mcp_oauth_credentials.tokens_json`, so `OAuthRepository`
+    — which already decrypts routinely, inside `apps/api`, behind the runtime boundary — gained
+    exactly **one** method: `listGrantedScopes(serverId): string[] | null`. It reads `tokens.scope`
+    (falling back to the registered client's `scope`), splits on whitespace and returns strings: no
+    access token, no refresh token, no client secret, no expiry, no id. Nothing else in
+    `apps/api/src/oauth/` changed (`service.ts` / `provider.ts` / `routes.ts` all zero-line diffs).
+    Two tests pin it — one that the method returns exactly the scope names, and one that a stored
+    access token appears **nowhere** in `JSON.stringify(report)`; the fixture token is deliberately
+    under 32 characters so the WP 1.1 redactor's credential catch-all cannot mask a leak and make the
+    test pass for the wrong reason. A `null` produces **no finding** — "we could not tell" is not a
+    finding, and the rule never guesses. The orchestrator confirmed the guard bites by making the
+    method also return the access token: both tests went red.
+  - **D-SP10 — a report is refused for a scan that is not `success`.** A `running` or `failed` scan
+    has a partial or empty tool list; scoring it would hand a broken server a clean bill of health,
+    which is precisely the silent-wrong-answer this workstream exists to prevent. **400**, naming the
+    status. Same posture as CI WP 1.3's refusal to assert against a non-`success` scan.
+  - **D-SP11 — every heuristic's matcher is a named, exported constant with its own fixture pair.**
+    Each of the eleven rules ships a **positive** fixture and a **near-miss negative** fixture, and
+    each matcher constant carries a comment saying what it deliberately does **not** match — that
+    comment is the false-positive review, written down. Three of the plan's own near-misses forced
+    the matchers to be tightened rather than the tests weakened (see the WP line above).
+
+  _Rationale:_ D-SP7/D-SP8 are what make the analyzer callable from two places without a cache or a
+  second source of truth; D-SP9 keeps the one credential read as small as it can possibly be; D-SP10
+  keeps the report from ever being confidently wrong; D-SP11 turns the README's "false-positive
+  review is part of every rule's acceptance" from an intention into a mechanical, red-or-green
+  obligation.
+
+  _Rationale (D-SP1–D-SP6):_ the whole workstream's value is that a posture report can be **diffed** — release to
   release, and by a CI gate that must not cry wolf. Every one of these six exists to make two reports
   comparable: a frozen id, one score, one order, one redactor, one severity per rule, and a version
   stamp for the day any of that has to change.
