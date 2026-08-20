@@ -201,7 +201,8 @@ pnpm install     # pnpm 9.15.4 workspace — not npm/yarn
 pnpm dev         # API on :8080, Vite on :5173 (proxies /api → :8080)
 ```
 
-Quality gate (also what CI runs on every push/PR):
+Quality gate — run it locally; **no workflow runs it** (the repo's only workflow is
+`.github/workflows/mcp-self-scan.yml`, the MCP definition-footprint budget gate):
 
 ```bash
 pnpm typecheck && pnpm test && pnpm build && pnpm lint
@@ -248,8 +249,11 @@ packages/
 - **Persistence:** one SQLite file, evolved through `PRAGMA user_version`-gated migrations.
 - **Multi-provider inference** via the Vercel AI SDK (`@ai-sdk/*`); per-model pricing lives in code,
   and the cost cap rejects unpriced models.
-- **Tooling:** Biome for lint/format (no ESLint); the root `.github/workflows/ci.yml` runs
-  typecheck / test / build / lint.
+- **Tooling:** Biome for lint/format (no ESLint). The four-command quality gate is run **locally** —
+  there is no `ci.yml`. The repo's only workflow is `.github/workflows/mcp-self-scan.yml`, which
+  asserts the workbench MCP server's own definition-token budget. Copyable CI gates for *your*
+  repository live in [`examples/github-actions/`](./examples/github-actions/) — see
+  [`user-guide/23-ci-github-actions.md`](./user-guide/23-ci-github-actions.md).
 
 ## Data & security
 
