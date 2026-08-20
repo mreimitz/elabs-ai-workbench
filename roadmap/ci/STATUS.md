@@ -187,12 +187,52 @@ wp/ci/<id>`.
       is the record of what the team agreed the footprint may cost.
 
 ## Phase 2 — Suites & PR artifacts
-- [ ] WP 2.1 — `suite run` command: trigger, poll/stream, result summary
-- [ ] WP 2.2 — suite/grade assertions + baseline-delta PR-comment artifact
-- [ ] WP 2.3 — GitHub Actions packaging: workflow example + docs
+- [x] WP 2.1 — `suite run` command: trigger, poll/stream, result summary — done 2026-08-20 ·
+      `wp/ci/2.1` · spec: [`wp-2.1-suite-run.md`](./wp-2.1-suite-run.md).
+      `mcpfp suite run <suite>` starts a saved suite's matrix (`POST /api/suites/:id/run`) and, by
+      default, **waits by polling** `GET /api/suite-runs/:id` until it settles, then prints the
+      summary and the ten worst-scoring members. `<suite>` is an id **or an exact name**, resolved
+      id-first exactly as `mcpfp scan` does — `GET /api/suites` is requested **only** after a 404, so
+      a token minted with `suites:run` alone is not 403'd for a job it can do. Exit codes (D-C11):
+      `completed` → **0**; `error` · `capped` · `stopped` · a wait budget exhausted while still
+      running → **2**; **never `1`**, which stays reserved to `mcpfp assert` (D-C7). The wait covers
+      the post-run **rating** as well as the terminal status — the same pair the suite SSE stream
+      waits for — so a summary is never published while member grades are still landing; a budget
+      that expires on a terminal-but-unrated run keeps the status-derived code and prints a warning
+      **`--quiet` does not silence**. `--format json`'s `data` is `McpfpSuiteRunResult`
+      (`{ suiteRun, members }`, D-C12), each half verbatim from its endpoint. Decisions **D-C11 /
+      D-C12** in the log below. **No API change** (`apps/api/**` zero-diff), no schema change, no
+      migration, **no dependency** (`apps/cli`'s only runtime dep is still `@mcp-token-footprint/shared`,
+      and `pnpm-lock.yaml` is byte-identical).
+      **Two stale-doc corrections folded in, both of which this WP owns because it owns `apps/cli`:**
+      `help.ts` no longer claims a remote `mcpfp assert` caller needs an execute scope (it needs
+      **`read`** — D-C10, closed by WP M.2), and the configuration paragraph now states that
+      `suite run` needs **`suites:run` plus `read`**.
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`typecheck` **0** · shared **97/97** · cli **81/81** [63 before] · api **3344 passed / 7
+      failed** — the pre-existing compatibility-roster failures — · `build` **0** · `lint` **2**
+      errors, both the pre-existing oversized `all-models.json`; web **3556 passed / 5 skipped**, run
+      separately — every number byte-identical to the independently measured baseline); the
+      eight-file diff and every zero-diff claim; and **three independent teeth checks** — planting
+      `MCPFP_EXIT.assertionFailure` in `suite-run.ts` turned the D-C7 source-scan test red, letting
+      `capped` exit 0 turned the D-C11 exit-code table red, and demoting the rating warning from
+      `warn` to `narrate` turned the `--quiet`-survival test red; all three restored, `git status`
+      clean.
+      **Not independently re-run by the orchestrator:** nothing was exercised against a live API or a
+      real suite matrix — every test drives the CLI in-process against a `node:http` stub, so the
+      404-on-unknown-suite behaviour of `POST /api/suites/:id/run` is inferred from
+      `apps/api/src/suites/orchestrator.ts:338`, not observed.
+      **Follow-up this WP surfaced and did not take** (one line, for WP 2.2, which owns
+      `commands/assert.ts`): `apps/cli/src/commands/assert.ts:82` still sends `scope: "scan:run"` on
+      `POST /api/assertions/evaluate`. The field only words a 403 message, so nothing is broken — but
+      a `scope_forbidden` on `assert` now names the wrong scope. The same stale claim also survives in
+      two places in `user-guide/22-mcpfp-cli.md` (the `assert` row of the permissions table, and the
+      `#### Permissions` paragraph under `assert`), which this WP's spec scoped to `help.ts` only.
+- [ ] WP 2.2 — suite/grade assertions + baseline-delta PR-comment artifact — depends: 1.3 ✅, 2.1 ✅ · spec: [`wp-2.2-suite-assertions-artifact.md`](./wp-2.2-suite-assertions-artifact.md)
+- [ ] WP 2.3 — GitHub Actions packaging: workflow example + docs — depends: 2.2 · spec: [`wp-2.3-github-actions.md`](./wp-2.3-github-actions.md)
 
 ## Phase 3 — Posture integration
-- [ ] WP 3.1 — `no-new-security-findings` assertion
+- [ ] WP 3.1 — `no-new-security-findings` assertion — depends: 1.3 ✅, security-posture 1.2 · spec: [`wp-3.1-no-new-security-findings.md`](./wp-3.1-no-new-security-findings.md). **Serialize after WP 2.2** — both edit `packages/shared/src/ci-assertions.ts` and `apps/api/src/assertions/service.ts`.
 
 ## Phase MCP — workbench MCP server (see [`mcp-server.md`](./mcp-server.md))
 - [x] WP M.1 — read-only MCP server core: streamable-HTTP mount, read tools + report resources, feature flag — done 2026-08-19 · `wp/ci/M.1`. 21 read tools + 4 report resource templates at `/api/mcp` (stateless streamable HTTP, GET/DELETE→405); new `mcp_server` Settings › Features flag (off ⇒ 403 `feature_disabled`); no new dependency, **no migration** (`user_version` 57 unchanged), additive-only wire. Gate green (shared 89 · api 3254 · web 3178+5 skipped · build · lint). **Live-verified against the built API on a copy of a real 91 MB dev DB**: MCP Inspector `initialize`/`tools/list`/7 tool calls, `resources/read` of a real run report, error + validation paths, flag off→403→on, off-state survives restart, fresh-DB boot. **Self-proof (D-MCP5 seed): the workbench scanned its own mount — 21 tools · 2,224 tokens · 200 resources (`generic_o200k`, countingVersion 2)**; the in-test `tools/list` measurement is 2,206 against a budget of 3,000 (`WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET`). Owner-acceptance pending: the both-theme + keyboard walk of the new Settings › Features row.
@@ -278,6 +318,41 @@ wp/ci/<id>`.
 ## Decision log
 _Entries: date · decision · rationale. Kickoff locks D-C1–D-C3 (Phase 1) / D-MCP1–6 (Phase
 MCP) here._
+
+- **2026-08-20 · D-C11 / D-C12 locked at the WP 2.1 kickoff** (`mcpfp suite run`). Full text + the
+  design they bind: [`wp-2.1-suite-run.md`](./wp-2.1-suite-run.md). Declared in
+  `packages/shared/src/cli-contract.ts` and pinned by `apps/cli/test/{suite-run,exit-codes,contract}.test.ts`.
+  - **D-C11 — `mcpfp suite run` waits by default, waits by POLLING, and maps a terminal suite-run
+    status onto an exit code.** A CI step that fires and forgets cannot gate anything, so waiting is
+    the default and `--no-wait` is the deliberate opt-out (exit `0` straight after the `202`);
+    `--wait <seconds>` sets the total budget, default 30 minutes. It polls
+    `GET /api/suite-runs/:id` rather than consuming the SSE stream: an event-stream parser is exactly
+    the dependency D-C5 refuses, and the stream is the fragile half of the transport through proxies
+    and CI runners — the matrix runs in the API either way. Exit codes: `completed` → **0**; `error`,
+    `capped` (the aggregate cost cap soft-stopped the matrix) and `stopped` (an operator halted it) →
+    **2**; a budget exhausted while the status is still `pending`/`running` → **2**, naming the
+    suite-run id. **Never `1`** — D-C7 reserves that for `mcpfp assert`, and WP 2.2's suite/grade
+    assertions are what will legitimately emit it. "Settled" means a terminal status **and** a settled
+    `ratingState` (`rated`/`failed`/`skipped`), the same pair the suite SSE stream waits for, so a
+    summary is never published while member grades are still landing; a budget that runs out with a
+    terminal status but an unsettled rating is **not** a failure — the exit code comes from the status
+    and a loud warning says the grades may be incomplete, and **`--quiet` does not silence it**
+    (D-C8's posture).
+  - **D-C12 — the suite-run envelope composes exactly two reads, and says so in the type.**
+    `--format json`'s `data` is `{ suiteRun, members }`, declared as `McpfpSuiteRunResult` in
+    `packages/shared/src/cli-contract.ts`. The CLI does not compute, re-rank or re-shape either half:
+    `suiteRun` is `GET /api/suite-runs/:id` verbatim and `members` is
+    `GET /api/suite-runs/:id/members` verbatim, because no single endpoint returns both and WP 2.2's
+    PR artifact needs the member rows. Display ordering (worst score first) and the ten-row human cap
+    are presentation and never touch `data`; `--no-wait` yields `members: []`. The client invariant is
+    intact (transport + formatting), and the composition is declared in `shared` so WP 2.2 types
+    against it rather than re-deriving it from prose. `MCPFP_OUTPUT_VERSION` stays **1** — a new
+    command putting a new `data` in the existing envelope is precisely what `data` is for.
+
+  _Rationale:_ a suite gate is only worth building if a pipeline can tell three outcomes apart — the
+  matrix finished and scored, the matrix did not finish, and a later `mcpfp assert` said the scores
+  were not good enough. D-C11 keeps the first two distinguishable without spending the `1` that the
+  third needs.
 
 - **2026-08-20 · D-MCP7 / D-MCP8 / D-MCP9 locked at the WP M.2 kickoff** (owner). Full text + the
   design they bind: [`wp-m.2-mount-scopes.md`](./wp-m.2-mount-scopes.md). Declared in
