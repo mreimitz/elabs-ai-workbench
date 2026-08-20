@@ -1,0 +1,149 @@
+# TOPOLOGY B — an EXAMPLE workflow. Copy it into your own repository's `.github/workflows/`.
+#
+# This repository does not run it (roadmap/ci/ D-C17) — see the sibling
+# `mcpfp-footprint-gate.yml`. It is validated as TEXT by `apps/api/test/ci-examples.test.ts`; it has
+# never been executed by GitHub Actions.
+#
+# What it does
+#   Talks to a PERSISTENT workbench your team already runs — the one with your scan history, your
+#   provider credentials and your saved suites. Scans a server and checks its footprint AND its
+#   change against the previous scan, then runs a saved suite and checks the scores and the cost.
+#   Posts both verdicts as one PR comment.
+#
+# What it needs
+#   Two repository secrets:
+#     MCPFP_URL    where that workbench answers, e.g. https://workbench.internal:8081
+#     MCPFP_TOKEN  a service token from Settings › API tokens with these permissions:
+#                    Read        — to open any endpoint at all, to resolve a server or suite by
+#                                  NAME, to poll a suite run, and to evaluate a gate file
+#                    Run scans   — for `mcpfp scan`
+#                    Run suites  — for `mcpfp suite run`
+#                  An execute permission does NOT include Read. A token holding only "Run scans" is
+#                  refused at the door. See user-guide/21-service-tokens.md.
+#   The token is passed to the four CLI steps as an environment variable and NOWHERE else — not in a
+#   `run:` line, not in an `echo`, not in a URL.
+#
+# What it deliberately does NOT do
+#   • It does not start a workbench. If yours is down, the scan step exits 2 ("the gate could not
+#     run") and the job fails loudly rather than reporting a green footprint it never measured.
+#   • It does not carry on past a failing gate. The footprint gate runs first; if it says no, the
+#     suite half never runs and the PR comment carries the footprint verdict alone. That is
+#     deliberate — `continue-on-error` on a gate step is how a red gate becomes a green build.
+#   • It does not use `pnpm mcpfp` (D-C19): pnpm's banner lands on STDOUT and `pnpm --silent`
+#     collapses every non-zero exit to 1, the code reserved for "an assertion failed".
+#
+# Exit codes: 0 every rule passed · 1 the gate said no · 2 the gate could not run. Each command is
+# its own step, so the job log says which one produced the code (D-C9).
+#
+# Full walkthrough: user-guide/23-ci-github-actions.md
+name: MCP footprint + quality gate (shared workbench)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  # Where the shared workbench answers. A secret because an internal hostname is not public
+  # information; it is not a credential, and nothing here depends on it being one.
+  MCPFP_URL: ${{ secrets.MCPFP_URL }}
+  # Must match `"target": { "server": … }` in `mcpfp.assert.json`, byte for byte.
+  MCPFP_SERVER: "Everything (demo)"
+  # Must match `"target": { "suite": … }` in `mcpfp.suite.assert.json`, byte for byte.
+  MCPFP_SUITE: "Nightly regression"
+
+jobs:
+  remote-gate:
+    name: Footprint and quality budgets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Only the shared contract and the CLI: nothing else runs on this runner. `mcpfp` is a thin
+      # HTTP client — the scan, the matrix and the rule evaluation all happen in the workbench.
+      - name: Build the CLI
+        run: pnpm --filter "@mcp-token-footprint/cli..." build
+
+      # The token is scoped to the steps that actually present it, rather than declared once at the
+      # workflow level where every step — including any action you add later — would inherit it.
+      - name: Scan the server
+        env:
+          MCPFP_TOKEN: ${{ secrets.MCPFP_TOKEN }}
+        run: node apps/cli/dist/index.js scan "$MCPFP_SERVER" --format json --output scan.json
+
+      # Separate step (D-C9). This one can return 1: the footprint budget, plus the three baseline
+      # rules that only mean something here — this workbench remembers the previous scan.
+      - name: Check the footprint against the gate file
+        env:
+          MCPFP_TOKEN: ${{ secrets.MCPFP_TOKEN }}
+        run: |
+          node apps/cli/dist/index.js assert examples/github-actions/mcpfp.assert.json \
+            --format markdown --output gate-footprint.md
+
+      # Waits for the matrix by polling, up to its budget. Exits 2 if the run errored, was capped by
+      # the suite's aggregate cost cap, was stopped by an operator, or did not finish in time —
+      # never 1, which belongs to `assert` alone.
+      - name: Run the saved suite
+        env:
+          MCPFP_TOKEN: ${{ secrets.MCPFP_TOKEN }}
+        run: |
+          node apps/cli/dist/index.js suite run "$MCPFP_SUITE" --wait 1800 \
+            --format json --output suite-run.json
+
+      # A SECOND gate file, because a gate document asserts one family (D-C13): the footprint file
+      # above holds the scan rules, this one holds the suite rules. Two files, two `assert` calls,
+      # two readable verdicts in the build log.
+      - name: Check the suite's scores and cost against the quality gate file
+        env:
+          MCPFP_TOKEN: ${{ secrets.MCPFP_TOKEN }}
+        run: |
+          node apps/cli/dist/index.js assert examples/github-actions/mcpfp.suite.assert.json \
+            --format markdown --output gate-quality.md
+
+      # `if: always()` — whichever reports exist get posted, including when a gate said no. Written
+      # by the app itself, they carry no credential and no path from this runner.
+      - name: Post the gate reports on the pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          : > comment.md
+          for report in gate-footprint.md gate-quality.md; do
+            if [ -s "$report" ]; then
+              cat "$report" >> comment.md
+              printf '\n' >> comment.md
+            fi
+          done
+          if [ ! -s comment.md ]; then
+            echo "Neither gate produced a report — the gate could not run. See the steps above." >&2
+            exit 0
+          fi
+          gh pr comment "$PR_NUMBER" --body-file comment.md
+
+      - name: Upload the gate reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpfp-remote-gate
+          path: |
+            gate-footprint.md
+            gate-quality.md
+            scan.json
+            suite-run.json
+          if-no-files-found: warn

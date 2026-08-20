@@ -1,0 +1,153 @@
+# TOPOLOGY A — an EXAMPLE workflow. Copy it into your own repository's `.github/workflows/`.
+#
+# This repository does not run it (roadmap/ci/ D-C17): it would need a workbench and a registered
+# MCP server that this repo's CI does not have, so it would be permanently red or permanently
+# skipped — and a skipped gate in the repo that publishes gates is worse than no gate. The only
+# workflow here is `mcp-self-scan.yml`. This file is validated as TEXT by
+# `apps/api/test/ci-examples.test.ts`; it has never been executed by GitHub Actions.
+#
+# What it does
+#   Starts a THROWAWAY workbench on the runner, registers one MCP server, scans it, and fails the
+#   pull request if the server's tool definitions cost more than the budget in
+#   `mcpfp.assert.json`. Posts that verdict as a PR comment either way.
+#
+# What it needs
+#   Nothing but the runner. The API is reached over loopback at 127.0.0.1, which is open and needs
+#   NO service token (D-C2 — loopback is decided from the socket peer, never from a header). No
+#   repository secret is involved except the `GITHUB_TOKEN` GitHub issues to the job itself.
+#
+# What it deliberately does NOT do
+#   • It does not gate CHANGE. The database is created empty on every run, so every scan is a first
+#     scan: `no-new-tools`, `no-removed-tools` and `max-scan-delta` report SKIP on every single run
+#     and the job still exits 0 (D-C8, D-C18). They are in the gate file so the same file works
+#     unchanged against a persistent workbench — here they are decoration, not protection. If you
+#     need a delta gate, you need topology B (`mcpfp-remote-gate.yml`).
+#   • It does not gate QUALITY. A fresh database holds no provider credentials, no environments and
+#     no saved suites, so `mcpfp suite run` has nothing to run.
+#   • It does not use `pnpm mcpfp` (D-C19). pnpm prints its banner on STDOUT, and `pnpm --silent`
+#     collapses every non-zero exit to 1 — the code reserved for "an assertion failed". The built
+#     entry point has clean output and honest exit codes.
+#
+# Exit codes, and what they mean for this job
+#   0 = every rule passed (a SKIP is still a 0) · 1 = the gate said no · 2 = the gate could not run.
+#   Both 1 and 2 fail the job. The scan and the assert are two separate steps, so the job log always
+#   says WHICH of them produced the code (D-C9).
+#
+# Full walkthrough: user-guide/23-ci-github-actions.md
+name: MCP footprint gate (ephemeral workbench)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  # The instance this job talks to: the one it starts for itself, on loopback.
+  MCPFP_URL: http://127.0.0.1:8080
+  # The registered server's name. It must match, byte for byte, the name used when registering it
+  # below AND the `"target": { "server": … }` in `mcpfp.assert.json`.
+  MCPFP_SERVER: "Everything (demo)"
+
+jobs:
+  footprint-gate:
+    name: Token footprint budget
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Builds every package. The gate needs only the shared contract, the API and the CLI, so on a
+      # busy repository narrow it to
+      #   pnpm --filter "@mcp-token-footprint/api..." --filter "@mcp-token-footprint/cli..." build
+      # which skips the web bundle and saves several minutes per pull request.
+      - name: Build
+        run: pnpm build
+
+      # A throwaway database under the runner's temp dir: it is created empty, measured, and thrown
+      # away with the runner. Nothing here is persisted between runs — which is exactly why the
+      # baseline rules can never fire (see the banner).
+      - name: Start a throwaway workbench on the runner
+        env:
+          DATA_DIR: ${{ runner.temp }}/workbench-data
+          HOST: 127.0.0.1
+          PORT: "8080"
+        run: |
+          mkdir -p "$DATA_DIR"
+          nohup node apps/api/dist/index.js > "$RUNNER_TEMP/workbench.log" 2>&1 &
+          echo "started pid $!"
+
+      # A bounded poll, never a fixed `sleep`: a sleep that is long enough today is the reason a
+      # copied workflow flakes six months later. Two minutes, then give up and print the log.
+      - name: Wait for the workbench to answer
+        run: |
+          for _ in $(seq 1 60); do
+            if curl --silent --fail --max-time 2 "$MCPFP_URL/api/health" > /dev/null; then
+              echo "The workbench is answering at $MCPFP_URL"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The workbench did not answer within 120 seconds. Its log follows." >&2
+          cat "$RUNNER_TEMP/workbench.log" >&2
+          exit 2
+
+      # REPO-SPECIFIC — replace this body with your own server. A fresh database knows no servers,
+      # so the job has to register the one it is about to measure. A stdio server is spawned by the
+      # API on this runner; a streamable-HTTP server would send `"transport": "streamable_http"` and
+      # a `"url"` instead. Secrets belong in `"env"` / `"headers"` and are encrypted before they are
+      # persisted — but on a throwaway instance, prefer a server that needs none.
+      - name: Register the MCP server under test
+        run: |
+          curl --silent --show-error --fail-with-body \
+            --header 'content-type: application/json' \
+            --data '{"name": "Everything (demo)", "transport": "stdio", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-everything"]}' \
+            "$MCPFP_URL/api/servers"
+
+      # Two steps, never `&&`-chained into one (D-C9). A server that could not be reached fails HERE
+      # with exit 2, instead of turning into "the gate said no" one step later.
+      - name: Scan the server
+        run: node apps/cli/dist/index.js scan "$MCPFP_SERVER" --format json --output scan.json
+
+      - name: Check the footprint against the gate file
+        run: |
+          node apps/cli/dist/index.js assert examples/github-actions/mcpfp.assert.json \
+            --format markdown --output gate.md
+
+      # `if: always()` because a FAILING gate is the one whose reason a reviewer actually needs.
+      # Posted with the preinstalled GitHub CLI: no third-party action to pin, nothing to audit.
+      # `gate.md` carries no credential and no path from this machine, so it is safe on a public PR.
+      - name: Post the gate report on the pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          if [ ! -s gate.md ]; then
+            echo "No gate report was written — the gate could not run. See the steps above." >&2
+            exit 0
+          fi
+          gh pr comment "$PR_NUMBER" --body-file gate.md
+
+      - name: Upload the gate report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpfp-footprint-gate
+          path: |
+            gate.md
+            scan.json
+          if-no-files-found: warn

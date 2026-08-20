@@ -107,6 +107,7 @@ natural order you'll use the app in.
 - [Workbench agent playbook](./20-workbench-mcp-server.md) — let an outside AI assistant (Claude Code, Cursor) read your workbench.
 - [Service tokens](./21-service-tokens.md) — reach the workbench from CI or another machine, without a browser.
 - [The `mcpfp` command line](./22-mcpfp-cli.md) — run scans, gate a build on the footprint, and pull reports from a terminal or a build pipeline.
+- [Gating a pull request](./23-ci-github-actions.md) — wire the gate into GitHub Actions: two example workflows, the exit codes, and which rules work where.
 - [Settings](./13-settings.md) — providers, themes, and storage.
 - [Troubleshooting & FAQ](./14-troubleshooting.md) — common problems and fixes.
 
