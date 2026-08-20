@@ -322,7 +322,10 @@ test("A1 — GET /api/reports/scan/:id/json carries the posture section, counts 
   assert.deepEqual(section.report.counts, direct.counts);
   assert.deepEqual(section.report.score, direct.score);
   assert.equal(section.report.analyzerVersion, 1);
-  assert.ok(section.report.counts.total > 0, "the fixture produced no findings, so this proves nothing");
+  assert.ok(
+    section.report.counts.total > 0,
+    "the fixture produced no findings, so this proves nothing",
+  );
 });
 
 test("A1 — GET /api/reports/scan/:id/markdown carries the section, and its numbers match the JSON", async () => {
@@ -348,7 +351,11 @@ test("A1 — GET /api/reports/scan/:id/markdown carries the section, and its num
   // Every finding the report lists is in the document, in the report's own order.
   const positions = report.findings.map((finding) => markdown.indexOf(finding.message));
   assert.equal(positions.includes(-1), false, "a finding is missing from the exported document");
-  assert.deepEqual([...positions].sort((a, b) => a - b), positions, "the findings were re-ordered");
+  assert.deepEqual(
+    [...positions].sort((a, b) => a - b),
+    positions,
+    "the findings were re-ordered",
+  );
 });
 
 test("A1 — the server report carries the section in BOTH renderings, from ONE composed document", async () => {
@@ -384,7 +391,9 @@ test("A2 (D-SP24) — a FAILED scan still exports; the section names the refusal
   h.scans.failScan(created.id, "connection refused");
 
   // The analyzer refuses this scan outright — that is the precondition, not the assertion.
-  assert.throws(() => analyzeScan({ scans: h.scans, servers: h.servers, oauth: h.oauth }, created.id));
+  assert.throws(() =>
+    analyzeScan({ scans: h.scans, servers: h.servers, oauth: h.oauth }, created.id),
+  );
 
   const jsonRes = await fetch(`${h.baseUrl}/api/reports/scan/${created.id}/json`);
   assert.equal(jsonRes.status, 200, "an unscorable subject must never fail the export");
@@ -422,7 +431,11 @@ test("A2 (D-SP24) — an analyzer that throws an UNEXPECTED error never leaks it
   assert.equal(section.status, "unavailable");
   if (section.status !== "unavailable") return;
   assert.equal(section.reason.includes("/Users/someone"), false, "a local path reached the export");
-  assert.equal(section.reason.includes(PLANTED_CREDENTIAL), false, "a credential reached the export");
+  assert.equal(
+    section.reason.includes(PLANTED_CREDENTIAL),
+    false,
+    "a credential reached the export",
+  );
   assert.match(section.reason, /failed unexpectedly/);
   // …and it still renders as "not clean", not as a clean report.
   const markdown = renderSecuritySection(section).join("\n");
@@ -473,9 +486,15 @@ test("A3 (D-SP25) — heading, score line, count line and table header are the d
 
 test("A3 (D-SP23/D-SP25) — a CLEAN subject gets a real answer, never an empty table", () => {
   const lines = renderSecuritySection({ status: "analyzed", report: reportOf([]) });
-  assert.equal(lines[2], "Score: 100/100 (clean) · security analyzer version 1 · subject scan_1 · analysed 2026-08-20T12:00:00.000Z");
+  assert.equal(
+    lines[2],
+    "Score: 100/100 (clean) · security analyzer version 1 · subject scan_1 · analysed 2026-08-20T12:00:00.000Z",
+  );
   assert.equal(lines[4], "Findings: 0 total · 0 error · 0 warning · 0 info");
-  assert.equal(lines[6], "No findings — the security analyzer matched no rule against this subject.");
+  assert.equal(
+    lines[6],
+    "No findings — the security analyzer matched no rule against this subject.",
+  );
   assert.equal(
     lines.includes("| Severity | Rule | Anchor | Message |"),
     false,
@@ -615,7 +634,11 @@ test("A5 (D-SP9) — a stored OAuth access token appears NOWHERE in either expor
   const markdown = await (await fetch(`${h.baseUrl}/api/reports/scan/${scanId}/markdown`)).text();
 
   assert.equal(json.includes(STORED_ACCESS_TOKEN), false, "the access token leaked into the JSON");
-  assert.equal(markdown.includes(STORED_ACCESS_TOKEN), false, "the access token leaked into the Markdown");
+  assert.equal(
+    markdown.includes(STORED_ACCESS_TOKEN),
+    false,
+    "the access token leaked into the Markdown",
+  );
   // The OAuth rule DID fire, so the absence above is not merely an empty section.
   assert.ok(
     markdown.includes("oauth.broad-scope"),
