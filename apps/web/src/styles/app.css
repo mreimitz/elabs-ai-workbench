@@ -7,6 +7,13 @@
 @import "@elabs-ai/components-tokens/themes/light.css";
 @import "@elabs-ai/components-tokens/themes/dark.css";
 
+/* The illustration system's --illus-* indirection layer (RM-14, D-IL5). It must resolve AFTER the
+   theme stylesheets above, because every declaration in it reads a theme variable. No @source line
+   belongs beside the ones below: the package ships CSS custom properties and inline SVG, not
+   className strings, so Tailwind has nothing in it to scan. If a future illustration component does
+   introduce a className, it needs an @source added here or it will render unstyled with no error. */
+@import "@mcp-token-footprint/illustrations/tokens.css";
+
 /* Tailwind v4 ignores node_modules when auto-detecting content, so explicitly point it at the
    compiled @elabs-ai/components-* output whose className strings must generate utilities. */
 @source "../../node_modules/@elabs-ai/components-ui/dist";

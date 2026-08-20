@@ -147,6 +147,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@mcp-token-footprint/illustrations':
+        specifier: workspace:*
+        version: link:../../packages/illustrations
       '@mcp-token-footprint/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -238,6 +241,28 @@ importers:
       vitest:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.20.0)(jsdom@25.0.1)(lightningcss@1.32.0)
+
+  packages/illustrations:
+    dependencies:
+      '@mcp-token-footprint/shared':
+        specifier: workspace:*
+        version: link:../shared
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.0
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
 
   packages/shared:
     dependencies:

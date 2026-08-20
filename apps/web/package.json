@@ -13,6 +13,7 @@
     "test:coverage": "pnpm --filter @mcp-token-footprint/shared build && vitest run --coverage"
   },
   "dependencies": {
+    "@mcp-token-footprint/illustrations": "workspace:*",
     "@mcp-token-footprint/shared": "workspace:*",
     "@xyflow/react": "^12.11.1",
     "ai": "^6.0.0",
