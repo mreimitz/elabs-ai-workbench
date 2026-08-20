@@ -975,7 +975,7 @@ const EVALUATORS: { [K in AssertionRuleKind]: RuleEvaluator<K> } = {
         `Cannot compare security posture: ${truncated.join(" and ")} produced more than ${formatNumber(SECURITY_FINDING_LIMIT)} findings, ` +
           `so the report lists only the first ${formatNumber(SECURITY_FINDING_LIMIT)} of them ` +
           `(baseline ${formatNumber(baselineReport.counts.total)}, subject ${formatNumber(subjectReport.counts.total)} in total). ` +
-          "Comparing a truncated list would answer \"no new findings among the ones we listed\", which is not a verdict. " +
+          'Comparing a truncated list would answer "no new findings among the ones we listed", which is not a verdict. ' +
           "Fix the findings the report does list, then re-run the gate.",
       );
     }

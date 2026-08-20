@@ -1755,7 +1755,10 @@ test("A2 — an unchanged posture PASSES and the message still names the invento
   assert.match(result?.message ?? "", /No new security findings at or above "warning"/);
   // A passing gate is still informative: "nothing new" over two known findings is a different
   // sentence from "nothing new" over none.
-  assert.match(result?.message ?? "", /This scan has 2 finding\(s\), 2 of which the baseline already had\./);
+  assert.match(
+    result?.message ?? "",
+    /This scan has 2 finding\(s\), 2 of which the baseline already had\./,
+  );
   assert.equal(result?.details, undefined, "a pass itemizes nothing");
 });
 
@@ -1765,7 +1768,11 @@ test("A2 — a NEW error finding fails, and the details name the severity, the r
       [],
       [
         onTool(AN_ERROR, "search_issues"),
-        anchored(A_WARNING, { kind: "parameter", toolName: "search_issues", parameterPath: "token" }),
+        anchored(A_WARNING, {
+          kind: "parameter",
+          toolName: "search_issues",
+          parameterPath: "token",
+        }),
         anchored("oauth.broad-scope", { kind: "server" }),
       ],
     ),
@@ -1893,10 +1900,7 @@ test("A6 (D-C8) — with no earlier scan the rule SKIPS, the report still passes
       version: 1,
       target: { scan: "scn_new" },
       baseline: "previous",
-      rules: [
-        { rule: "max-server-tokens", max: 3000 },
-        { rule: "no-new-security-findings" },
-      ],
+      rules: [{ rule: "max-server-tokens", max: 3000 }, { rule: "no-new-security-findings" }],
     }),
   );
   assert.equal(statusOf(report, "no-new-security-findings"), "skipped");
