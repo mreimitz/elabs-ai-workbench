@@ -5,6 +5,30 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the app can draw itself
+
+There is a new page at **`/illustrations`**, and it is the first thing you can look at from the
+illustration workstream. It lists the app's own isometric drawings — an **MCP server**, a **skill**
+and an **LLM agent** — and they are live components rather than exported images, so switching the
+theme repaints every one of them. That is the whole point of how they are built: not one drawing
+names a colour, so a theme nobody has drawn them in still lights them correctly.
+
+Open one and you get it at all five **states**, at all three **footprints** framed against a single
+box so the size difference you see is the real one, at each of its **variants** (a server as stdio or
+as streamable-HTTP; a skill as one sheet or as a version stack), facing upstream and downstream, and
+its catalog entry — ports, keywords, tier, registry version. A **port overlay** switch marks the
+named attachment points a future diagram would connect lines to.
+
+A second tab carries the drawing vocabulary the three are composed from — the paper stage, the
+platform and housing solids, the glyph frame, the construction ghost, the six connector kinds, the
+calibration cube. Every entity is built only from those parts; a test refuses any entity whose
+rendered output contains a hand-drawn path at all.
+
+**What this is not, yet.** There is no scene composition: you cannot lay several of these out into a
+diagram, there is no step-by-step explainer, and you cannot describe a workflow to the assistant and
+get a picture back. Those are the next phases. The page is also route-only — there is no sidebar
+entry for it yet, so reach it by address.
+
 ## Unreleased — the list rail becomes a place
 
 Servers, Skills and Collections used to be a fixed 288-pixel list column beside a detail pane. One
