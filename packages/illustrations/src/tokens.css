@@ -1,0 +1,89 @@
+/* ==================================================================================================
+   The --illus-* indirection layer (D-IL5) — the ONLY file in this package that names an upstream
+   token, and the only place a face shade is decided.
+   ==================================================================================================
+   Every illustration component consumes `var(--illus-*)` and nothing else. This file binds that
+   closed set to the semantic variables of @elabs-ai/components-tokens, which is the whole of the
+   "derive from the current theme" logic: a future third theme gets the entire illustration library
+   for free, and a component can never be repainted by editing a component.
+
+   THERE IS NO COLOR LITERAL HERE, AND THERE IS NONE ANYWHERE ELSE IN THIS PACKAGE. Face shading is
+   derived with color-mix(in oklch, ...), never hand-picked. If a semantic token is missing upstream,
+   that is a gap to raise per .claude/rules/library-first.md — not something to hardcode around.
+
+   Consumed by apps/web via an @import in apps/web/src/styles/app.css, placed AFTER the two theme
+   stylesheets so the variables referenced below are already resolvable on <html>. The upstream
+   themes declare their tokens on [data-theme="light"] / [data-theme="dark"], which is the same
+   element :root matches, so the substitutions below see the active theme's values.
+
+   packages/illustrations/src/tokens.ts is the machine-readable mirror of the table below, and
+   tokens.test.ts holds the two files to each other. Add a token in one and the gate goes red.
+
+   -- Face derivation, and why these percentages ---------------------------------------------------
+   Research 3.3 asks for three-face shading at calibrated ratios (top ~100% / left ~75-80% /
+   right ~55-60% of the surface lightness) with a hard floor of >= 20% relative lightness separation
+   between adjacent faces, so depth survives export and low-quality screens.
+
+   The illustrative 12% / 24% mixes quoted in the research MISS that floor against the tokens this
+   app actually ships, so they are re-tuned here — which research 3.3 and WP 0.1 both name as the
+   sanctioned place, and the only one. The arithmetic, using the installed v4 theme values:
+
+     light   --card L = 1.000, --foreground L = 0.300   (mixing toward ink DARKENS)
+             left  32% -> L 0.776 = 77.6% of top; separation from top  22.4%
+             right 61% -> L 0.573 = 57.3% of top; separation from left 26.2%
+
+     dark    --card L = 0.250, --foreground L = 0.950   (mixing toward ink LIGHTENS)
+             left  10% -> L 0.320; separation from top  21.9%
+             right 26% -> L 0.432; separation from left 25.9%
+
+   On the dark stage the side faces come out LIGHTER than the top rather than darker. That is the
+   flip research 3.3 explicitly accepts ("exactly how physical lighting should flip on a dark
+   stage") and it is unavoidable with this token set: --card sits at L 0.25 with only --background
+   (L 0.21) below it, which cannot give 20% separation in the darkening direction. WP 0.2 adds the
+   dev-mode assertion that measures the RESOLVED separation, and the owner's both-theme look is what
+   confirms it reads as lighting rather than as an error.
+   ================================================================================================== */
+
+:root {
+  /* -- Stage ------------------------------------------------------------------------------------ */
+  --illus-paper: var(--background);
+  --illus-grid: var(--grid-line);
+  --illus-grid-major: var(--grid-line-major);
+
+  /* -- Ink -------------------------------------------------------------------------------------- */
+  --illus-ink: var(--foreground);
+  --illus-ink-muted: var(--muted-foreground);
+  --illus-guide: var(--rule);
+
+  /* -- Surfaces --------------------------------------------------------------------------------- */
+  --illus-surface: var(--card);
+  --illus-surface-sunken: var(--surface-muted);
+
+  /* -- Accent (D-IL6: one hero accent, 2-6% of any scene) --------------------------------------- */
+  --illus-accent: var(--primary);
+  --illus-accent-contrast: var(--primary-foreground);
+  --illus-accent-2: var(--chart-3);
+
+  /* -- Status chips ----------------------------------------------------------------------------- */
+  --illus-ok: var(--success);
+  --illus-warn: var(--warning);
+  --illus-error: var(--destructive);
+
+  /* -- Ground shadow: ink at ~7% alpha, derived rather than declared ----------------------------- */
+  --illus-shadow: color-mix(in oklch, var(--foreground) 7%, transparent);
+
+  /* -- The three faces (D-IL2 lighting rule, research 3.3) --------------------------------------
+     Tuned for the LIGHT stage, which is the app's default theme and the fallback for any theme that
+     has not been measured. A new theme adds its own block below; it does not edit a component. */
+  --illus-face-top: var(--illus-surface);
+  --illus-face-left: color-mix(in oklch, var(--illus-surface), var(--illus-ink) 32%);
+  --illus-face-right: color-mix(in oklch, var(--illus-surface), var(--illus-ink) 61%);
+}
+
+/* The dark stage needs far smaller mixes to clear the same 20% separation floor, because its base
+   surface sits low (L 0.25) so a small absolute step is a large relative one. Only the two derived
+   faces are re-tuned; every binding above is theme-independent by construction. */
+[data-theme="dark"] {
+  --illus-face-left: color-mix(in oklch, var(--illus-surface), var(--illus-ink) 10%);
+  --illus-face-right: color-mix(in oklch, var(--illus-surface), var(--illus-ink) 26%);
+}
