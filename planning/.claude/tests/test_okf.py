@@ -18,6 +18,16 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+# --- Fixtures pinned to THIS repository's bundle ------------------------------------------------
+# The completion tests copy the live bundle to a temp dir and complete an item there, so MVP_ITEM
+# must still be under Roadmap/ (never already in Roadmap/completed/). FOLLOW_ON_ITEM links it, which
+# proves the move re-points bundle links. NO_LEDGER_TAG names an item that genuinely has no
+# STATUS.md, which is the only case the --no-ledger waiver exists for.
+MVP_ITEM = "RM-01-advisor"
+FOLLOW_ON_ITEM = "RM-03-assistant-hub"
+NO_LEDGER_TAG = "RM-19"
+
 MODULE_PATH = ROOT / ".claude" / "scripts" / "okf.py"
 SPEC = importlib.util.spec_from_file_location("research_scaffold_okf", MODULE_PATH)
 assert SPEC and SPEC.loader
@@ -169,6 +179,34 @@ class OkfValidationTests(unittest.TestCase):
         self.assertNotIn("PROFILE035", codes)
         self.assertNotIn("PROFILE032", codes)
 
+    def test_resolve_link_survives_an_anchor_only_target(self) -> None:
+        """An anchor-only link reaches resolve_link as an empty head; it must not raise."""
+        for target in ("", "   ", "#section"):
+            self.assertIsNone(okf.resolve_link(ROOT, ROOT / "index.md", target))
+
+    def test_placeholder_guard_fires_on_prose_but_not_on_code(self) -> None:
+        """PROFILE009 catches an unfilled template, not legitimate content.
+
+        GitHub Actions ${{ }} expressions, mustache prompt templates and JSX props are document
+        content. Only a placeholder sitting in prose means a generator template leaked out live.
+        """
+        path = ROOT / "Roadmap" / "RM-99-example" / "item.md"
+        leaked = self.concept(_body="# Test\n\nThe title is {{TITLE}}.")
+        self.assertIn("PROFILE009", self.codes(path, leaked))
+
+        inline = self.concept(_body="# Test\n\nThe token is `${{ secrets.MCPFP_TOKEN }}`.")
+        self.assertNotIn("PROFILE009", self.codes(path, inline))
+
+        fenced = self.concept(
+            _body="# Test\n\n```yaml\nwith:\n  token: ${{ secrets.MCPFP_TOKEN }}\n```\n"
+        )
+        self.assertNotIn("PROFILE009", self.codes(path, fenced))
+
+        after_fence = self.concept(
+            _body="# Test\n\n```\n{{A}}\n```\n\nAnd then {{B}} in prose.\n"
+        )
+        self.assertIn("PROFILE009", self.codes(path, after_fence))
+
     def test_documentation_requires_delivered_increments_section(self) -> None:
         path = ROOT / okf.DOCU_ROOT / "DC-99-example" / "doc.md"
         content = self.concept(type="Documentation", status="draft")
@@ -262,7 +300,7 @@ class OkfValidationTests(unittest.TestCase):
 
     def test_hook_blocks_in_place_done_flip(self) -> None:
         """An agent must not be able to hand-complete a roadmap item."""
-        item = ROOT / "Roadmap" / "RM-01-one-way-sync-mvp" / "item.md"
+        item = ROOT / "Roadmap" / MVP_ITEM / "item.md"
         original = item.read_text(encoding="utf-8")
         metadata, body = okf.parse_frontmatter(original)
         assert metadata is not None
@@ -385,21 +423,21 @@ class GeneratorIntegrationTests(unittest.TestCase):
                 ).hexdigest()
         return digests
 
-    def make_docu(self, title: str = "Connector SDK") -> str:
+    def make_docu(self, title: str = "Fixture Subject") -> str:
         target = okf.new_docu(
             self.root,
             argparse.Namespace(
                 title=title,
-                subject="The connector plugin SDK: contract, model, helpers.",
-                scope_in="The SDK package and its conformance kit.",
-                scope_out="Engine internals and connector implementations.",
-                code_location=["packages/qlabs-catalog-sync-sdk/"],
+                subject="A test-fixture subject standing in for a part of the system.",
+                scope_in="Whatever the fixture completion records into it.",
+                scope_out="Everything else.",
+                code_location=["packages/shared/"],
                 slug=None,
             ),
         )
         return okf.item_tag(target.name) or target.name
 
-    def write_ledger(self, open_boxes: int = 0, item: str = "RM-01-one-way-sync-mvp") -> Path:
+    def write_ledger(self, open_boxes: int = 0, item: str = MVP_ITEM) -> Path:
         """Write the item's STATUS.md ledger, optionally leaving boxes open."""
         boxes = ["- [x] WP 1.1 — the shipped one — done 2026-08-20"]
         boxes += [f"- [ ] WP 1.{n + 2} — still open" for n in range(open_boxes)]
@@ -425,7 +463,7 @@ class GeneratorIntegrationTests(unittest.TestCase):
         defaults = dict(
             tag="RM-01",
             docu=["DC-01"],
-            shipped="The upstream sync path from source catalogs into Qlik.",
+            shipped="The fixture delivery this completion records.",
             deviation=[],
             gap=[],
             code_path=["packages/"],
@@ -456,8 +494,8 @@ class GeneratorIntegrationTests(unittest.TestCase):
         self.write_ledger()
         result = okf.complete_roadmap(self.root, self.completion_args(docu=[docu_tag]))
 
-        source = self.root / "Roadmap" / "RM-01-one-way-sync-mvp"
-        destination = self.root / "Roadmap" / "completed" / "RM-01-one-way-sync-mvp"
+        source = self.root / "Roadmap" / MVP_ITEM
+        destination = self.root / "Roadmap" / "completed" / MVP_ITEM
         self.assertFalse(source.exists())
         self.assertTrue(destination.is_dir())
         self.assertEqual(destination, result.destination)
@@ -470,13 +508,13 @@ class GeneratorIntegrationTests(unittest.TestCase):
         doc_path = next((self.root / okf.DOCU_ROOT).glob(f"{docu_tag}-*/doc.md"))
         doc_body = doc_path.read_text(encoding="utf-8")
         self.assertIn("### RM-01", doc_body)
-        self.assertIn("/Roadmap/completed/RM-01-one-way-sync-mvp/item.md", doc_body)
+        self.assertIn(f"/Roadmap/completed/{MVP_ITEM}/item.md", doc_body)
         self.assertEqual("current", okf.concept_metadata(doc_path)["status"])
 
         roadmap = (self.root / "Roadmap" / "roadmap.md").read_text(encoding="utf-8")
-        self.assertIn("completed/RM-01-one-way-sync-mvp/item.md", roadmap)
+        self.assertIn(f"completed/{MVP_ITEM}/item.md", roadmap)
         self.assertIn(
-            "RM-01-one-way-sync-mvp",
+            MVP_ITEM,
             (self.root / "Roadmap" / "completed" / "index.md").read_text(encoding="utf-8"),
         )
         self.assertEqual([], okf.validate(self.root))
@@ -486,19 +524,17 @@ class GeneratorIntegrationTests(unittest.TestCase):
         self.ensure_domains()
         docu_tag = self.make_docu()
         self.write_ledger()
-        follow_on = self.root / "Roadmap" / "RM-05-track-b-connectors-glossary" / "item.md"
+        follow_on = self.root / "Roadmap" / FOLLOW_ON_ITEM / "item.md"
         before = okf.concept_metadata(follow_on)["timestamp"]
-        self.assertIn("/Roadmap/RM-01-one-way-sync-mvp/item.md", follow_on.read_text())
+        self.assertIn(f"/Roadmap/{MVP_ITEM}/", follow_on.read_text())
 
         result = okf.complete_roadmap(self.root, self.completion_args(docu=[docu_tag]))
 
         text = follow_on.read_text(encoding="utf-8")
-        self.assertIn("/Roadmap/completed/RM-01-one-way-sync-mvp/item.md", text)
-        self.assertNotIn("](/Roadmap/RM-01-one-way-sync-mvp/", text)
+        self.assertIn(f"/Roadmap/completed/{MVP_ITEM}", text)
+        self.assertNotIn(f"](/Roadmap/{MVP_ITEM}", text)
         self.assertNotEqual(before, okf.concept_metadata(follow_on)["timestamp"])
-        self.assertIn(
-            "Roadmap/RM-05-track-b-connectors-glossary/item.md", result.repointed
-        )
+        self.assertIn(f"Roadmap/{FOLLOW_ON_ITEM}/item.md", result.repointed)
         self.assertEqual([], okf.validate(self.root))
 
     def test_complete_roadmap_refuses_while_work_packages_are_open(self) -> None:
@@ -513,9 +549,11 @@ class GeneratorIntegrationTests(unittest.TestCase):
     def test_complete_roadmap_requires_a_ledger_or_an_explicit_waiver(self) -> None:
         self.ensure_domains()
         docu_tag = self.make_docu()
-        with self.assertRaisesRegex(RuntimeError, "no STATUS.md ledger was found for RM-02"):
+        with self.assertRaisesRegex(
+            RuntimeError, f"no STATUS.md ledger was found for {NO_LEDGER_TAG}"
+        ):
             okf.complete_roadmap(
-                self.root, self.completion_args(tag="RM-02", docu=[docu_tag])
+                self.root, self.completion_args(tag=NO_LEDGER_TAG, docu=[docu_tag])
             )
 
     def test_complete_roadmap_rolls_back_on_late_failure(self) -> None:
@@ -564,14 +602,20 @@ class GeneratorIntegrationTests(unittest.TestCase):
         docu_tag = self.make_docu()
         self.write_ledger()
         okf.complete_roadmap(self.root, self.completion_args(docu=[docu_tag]))
-        buffer = io.StringIO()
-        with contextlib.redirect_stderr(buffer):
-            code = okf.check_references(
-                self.root, argparse.Namespace(tag="RM-01", scan_root=str(self.root))
-            )
-        # The task board still names the old path, and the tool must not fix it.
-        self.assertEqual(3, code)
-        self.assertIn("tasks.json", buffer.getvalue())
+        # A repository document outside the bundle still names the old path. The tool must
+        # REPORT it and must not edit it — everything outside --root is the operator's.
+        with tempfile.TemporaryDirectory() as scan_root:
+            guide = Path(scan_root) / "guide.md"
+            original = f"The plan lives in planning/Roadmap/{MVP_ITEM}/item.md.\n"
+            guide.write_text(original, encoding="utf-8")
+            buffer = io.StringIO()
+            with contextlib.redirect_stderr(buffer):
+                code = okf.check_references(
+                    self.root, argparse.Namespace(tag="RM-01", scan_root=scan_root)
+                )
+            self.assertEqual(3, code)
+            self.assertIn("guide.md", buffer.getvalue())
+            self.assertEqual(original, guide.read_text(encoding="utf-8"))
 
     def test_stale_reference_report_finds_outside_root_paths(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
