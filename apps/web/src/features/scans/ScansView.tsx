@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import type {
   PromptScan,
@@ -41,6 +41,7 @@ import {
   GitCompareArrows,
   Play,
 } from "lucide-react";
+import { SecurityPanel, useSecurityReport } from "../security/SecurityPanel";
 import { AdaptivePanelGroup } from "../../components/AdaptivePanelGroup";
 import { PageShell } from "../../components/PageShell";
 import { ResultCount } from "../../components/ResultCount";
@@ -49,6 +50,7 @@ import type { ActiveFilterChip } from "../../components/ViewToolbar";
 import { TabPanel, TabPanelContent } from "../../components/TabPanel";
 import { TabEmptyState } from "../../components/TabEmptyState";
 import { clickableRowTableProps, col, navCol, stickyScrollTableProps } from "../../lib/table";
+import { loadableData } from "../../lib/loadable";
 import { StatusBadge } from "../../components/StatusBadge";
 import { formatBytes, formatDateTime, formatNumber, formatPercent } from "../../lib/format";
 import { promptColumns, resourceColumns } from "./resourcePromptColumns";
@@ -110,7 +112,28 @@ export function ScansView(props: {
   const [serverFacet, setServerFacet] = useState<string[]>([]);
   const [statusFacet, setStatusFacet] = useState<string[]>([]);
   const [toolSearch, setToolSearch] = useState("");
-  const [detailTab, setDetailTab] = useState("tools");
+  // WP 2.1 (D-SP21) — the detail tab is URL state (`?tab=`), not component state, so a Security tab
+  // deep link (`/scans/:id?tab=security&baseline=…`) survives a reload and can be pasted to somebody
+  // else. No `<Route>` is added: the route `/scans/:scanId` already exists and the tab is a
+  // parameter on it, which is what keeps `ASSISTANT_ROUTE_MANIFEST` and its gate untouched.
+  const [detailTabParams, setDetailTabParams] = useSearchParams();
+  const detailTab = detailTabParams.get("tab") ?? "tools";
+  const setDetailTab = useCallback(
+    (next: string) => {
+      setDetailTabParams(
+        (previous) => {
+          const params = new URLSearchParams(previous);
+          params.set("tab", next);
+          // A baseline belongs to the Security tab; carrying it onto Tools would leave a parameter
+          // in the URL that nothing reads and that would silently re-arm on the way back.
+          if (next !== "security") params.delete("baseline");
+          return params;
+        },
+        { replace: true },
+      );
+    },
+    [setDetailTabParams],
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   // Resource read / prompt get consoles — targeted row + open flag.
   const [readResource, setReadResource] = useState<ResourceScan | null>(null);
@@ -159,6 +182,32 @@ export function ScansView(props: {
       }),
     [],
   );
+
+  // WP 2.1 — the posture report for the SELECTED scan, loaded here rather than inside the tab so the
+  // tab strip can badge `counts.total` before the tab has ever been opened (Radix unmounts inactive
+  // tab content). `enabled` keeps it from firing on the list-only route, and a `running` scan simply
+  // settles into the panel's error arm carrying D-SP10's own sentence.
+  const securityReport = useSecurityReport(
+    { kind: "scan", scanId: selectedScan?.id ?? "" },
+    { enabled: Boolean(selectedScan) && selectedScan?.status === "success" },
+  );
+  const securityCount = loadableData(securityReport.state)?.counts.total;
+
+  // The baselines a posture diff may name: this server's OTHER completed scans, newest first. A
+  // failed or running scan is left out because `analyzeScan` refuses it (D-SP10) — offering a choice
+  // that can only 400 would be a worse experience than not offering it.
+  const securityBaselines = useMemo(() => {
+    if (!selectedScan) return [];
+    return props.scans
+      .filter(
+        (scan) =>
+          scan.serverId === selectedScan.serverId &&
+          scan.id !== selectedScan.id &&
+          scan.status === "success",
+      )
+      .sort((a, b) => b.scannedAt.localeCompare(a.scannedAt))
+      .map((scan) => ({ id: scan.id, label: formatDateTime(scan.scannedAt) }));
+  }, [props.scans, selectedScan]);
 
   // Facet option lists derive from the data so they only show servers that exist.
   const serverOptions = useMemo(() => {
@@ -589,6 +638,10 @@ export function ScansView(props: {
                         count: selectedScan.resources.length,
                       },
                       { value: "prompts", label: "Prompts", count: selectedScan.prompts.length },
+                      // WP 2.1 — the count is the REPORT's `counts.total` (every finding the analyzer
+                      // produced, including any the display cap dropped), never the rendered row
+                      // count. Undefined until the report settles, so the strip never flashes a 0.
+                      { value: "security", label: "Security", count: securityCount },
                     ]}
                   >
                     {/* Tools / Resources / Prompts — the full definition footprint for this scan. Each
@@ -676,6 +729,23 @@ export function ScansView(props: {
                           emptyMessage="No prompts in this scan."
                         />
                       )}
+                    </TabPanelContent>
+
+                    {/* WP 2.1 — the posture of THIS scan: score, band, per-severity counts, the
+                        findings worst-first, and an optional diff against another scan of the same
+                        server. Everything is read off the report; nothing is re-sorted or re-tallied
+                        here. `scroll` stays on (the default) because the panel is a stacked
+                        composition, not a single full-height table. */}
+                    <TabPanelContent
+                      value="security"
+                      description="Deterministic findings over this scan's stored tool definitions — computed on read, never persisted."
+                    >
+                      <SecurityPanel
+                        target={{ kind: "scan", scanId: selectedScan.id }}
+                        baselines={securityBaselines}
+                        state={securityReport.state}
+                        onRetry={securityReport.reload}
+                      />
                     </TabPanelContent>
                   </TabPanel>
                 </div>
