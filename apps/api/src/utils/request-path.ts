@@ -83,6 +83,35 @@ export function requestPathEquals(path: RequestPath, exact: string): boolean {
   return path.raw === exact || path.decoded === exact;
 }
 
+// ── The STRICT (intersection) direction — for rules that RELAX, not rules that govern (D-MCP9) ────
+//
+// Everything above answers "is this request governed?" and answers it on the **union** of the raw and
+// decoded forms, because for that question the inclusive answer is the safe one: over-governing turns
+// a would-be 404 into a refusal, which is a refusal either way.
+//
+// A per-route scope rule (`API_TOKEN_ROUTE_SCOPES`) asks the OPPOSITE question — "may this request
+// need LESS than the coarse rule demands?" — and there the inclusive answer is the unsafe one. If
+// `/%61pi/mcp` matched the relaxed `POST /api/mcp → read` rule on its decoded form alone, a
+// `read`-only token would inherit that relaxation for a request whose raw form is not the mount at
+// all. So a relaxing rule applies only on the **intersection**: the raw form and the decoded form must
+// BOTH match, and an undecodable path matches nothing. An ambiguous path then falls back to the coarse
+// method rule — which demands MORE, i.e. the safe direction.
+//
+// Same module, opposite direction, on purpose. `apps/api/test/api-tokens-guard.test.ts` pins both with
+// a table that fails if either matcher is swapped for the other.
+
+/** Does `path` address exactly `exact` under BOTH interpretations? Used only to RELAX (D-MCP9). */
+export function requestPathEqualsStrict(path: RequestPath, exact: string): boolean {
+  if (path.decoded === null) return false;
+  return path.raw === exact && path.decoded === exact;
+}
+
+/** Does `path` sit at or under `prefix` under BOTH interpretations? Used only to RELAX (D-MCP9). */
+export function requestPathIsUnderStrict(path: RequestPath, prefix: string): boolean {
+  if (path.decoded === null) return false;
+  return isUnder(path.raw, prefix) && isUnder(path.decoded, prefix);
+}
+
 /** Every distinct interpretation, for a caller that has to run its own matcher over each. */
 export function requestPathCandidates(path: RequestPath): string[] {
   if (path.decoded === null || path.decoded === path.raw) return [path.raw];

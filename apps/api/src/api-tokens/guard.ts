@@ -4,7 +4,7 @@ import {
   API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE,
   type ApiTokenScope,
   readBearerToken,
-  requiredScopesForMethod,
+  requiredScopesForRoute,
 } from "@mcp-token-footprint/shared";
 import type { FastifyInstance } from "fastify";
 import { httpError } from "../utils/errors.js";
@@ -12,7 +12,9 @@ import {
   normalizeRequestPath,
   type RequestPath,
   requestPathEquals,
+  requestPathEqualsStrict,
   requestPathIsUnder,
+  requestPathIsUnderStrict,
 } from "../utils/request-path.js";
 import type { ApiTokenAuthResult, ApiTokenService, AuthenticatedApiToken } from "./service.js";
 
@@ -140,10 +142,12 @@ export type ApiTokenAccessRequest = {
  *     working from the same machine and never learn it was revoked).
  *  3. No token presented ⇒ loopback passes (unless `API_AUTH_REQUIRED`), remote gets
  *     `401 authentication_required`.
- *  4. A token-authenticated request is then scope-checked, COARSELY (per-route mapping is WP M.2/M.3):
- *     read methods need `read`; write methods need one of the execute scopes; `DELETE` is refused
- *     outright (D-MCP3 — deletes are excluded at every phase); and `/api/tokens*` is refused, because
- *     a token that could mint or revoke tokens would make revocation meaningless.
+ *  4. A token-authenticated request is then scope-checked: `API_TOKEN_ROUTE_SCOPES` first (WP M.2 —
+ *     the per-route overrides, which can only RELAX and are matched on the raw-AND-decoded
+ *     intersection, D-MCP9), then the coarse method rule behind it — read methods need `read`, write
+ *     methods need one of the execute scopes. `DELETE` is refused outright (D-MCP3 — deletes are
+ *     excluded at every phase, and the route table cannot even express one), and `/api/tokens*` is
+ *     refused, because a token that could mint or revoke tokens would make revocation meaningless.
  */
 export function decideApiTokenAccess(request: ApiTokenAccessRequest): ApiTokenAccessDecision {
   const { method, url, remoteAddress, authorization, authRequired, authenticate } = request;
@@ -183,7 +187,7 @@ export function decideApiTokenAccess(request: ApiTokenAccessRequest): ApiTokenAc
   };
 }
 
-/** Coarse authorization for an authenticated token. See {@link decideApiTokenAccess} rule 4. */
+/** Authorization for an authenticated token: route overrides, then the coarse method rule. Rule 4. */
 function scopeCheck(
   method: string,
   path: RequestPath,
@@ -201,7 +205,16 @@ function scopeCheck(
     };
   }
 
-  const allowed = requiredScopesForMethod(method);
+  // Per-route mapping first (WP M.2), coarse method rule behind it. The two matchers are the STRICT
+  // (raw-AND-decoded) ones on purpose — D-MCP9: a rule here can only ever RELAX what a route needs, so
+  // it must not fire on an ambiguous path. `/%61pi/mcp` therefore falls through to the coarse rule and
+  // still demands an execute scope, while `/api/mcp` gets the relaxed `read`. Swapping these for the
+  // inclusive `requestPathEquals` / `requestPathIsUnder` above would be a privilege escalation.
+  const allowed = requiredScopesForRoute(method, (rulePath, match) =>
+    match === "exact"
+      ? requestPathEqualsStrict(path, rulePath)
+      : requestPathIsUnderStrict(path, rulePath),
+  );
   if (allowed === null) {
     return {
       kind: "refused",

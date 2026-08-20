@@ -211,3 +211,84 @@ export function requiredScopesForMethod(method: string): readonly ApiTokenScope[
   if (verb === "GET" || verb === "HEAD" || verb === "OPTIONS") return ["read"];
   return API_TOKEN_EXECUTE_SCOPES;
 }
+
+// ── Per-route scope mapping (WP M.2) ──────────────────────────────────────────────────────────────
+//
+// {@link requiredScopesForMethod} above is COARSE by design: it can only see the HTTP verb, so every
+// POST looks like a write to it. Two real routes are not writes at all — `POST /api/mcp` (the MCP
+// mount: `initialize` / `tools/list` / `resources/read` are reads that happen to travel in a POST
+// body) and `POST /api/assertions/evaluate` (D-C10: it evaluates an already-persisted scan and writes
+// nothing). Both would otherwise demand an execute scope from a remote token, which is a lie about
+// what they do and pushes an operator toward over-granting.
+//
+// The table below is the fix, and its shape encodes three rules that keep it from becoming a hole:
+//
+//   • **It can only ever RELAX.** Every entry names a scope set that is a *weaker* requirement than
+//     the coarse rule it overrides. There is no mechanism here to make a route need MORE, because a
+//     route that needs more should not be reachable by a service token in the first place.
+//   • **It cannot express a `DELETE`** — the `method` union has no `"DELETE"` member, so a delete
+//     rule is a compile error rather than something a reviewer has to catch (D-MCP3: deletes are
+//     excluded at every phase). {@link requiredScopesForRoute} additionally short-circuits `DELETE`
+//     to `null` BEFORE consulting the table, so no ordering accident can grant one.
+//   • **It never covers `/api/tokens*`.** The guard refuses token CRUD to any token before it ever
+//     reaches a scope check, so a rule there would do nothing — but it would read as though it did,
+//     which is a trap for the next reader. A test asserts no rule's path sits under `/api/tokens`.
+//
+// **D-MCP9 — the path match is the SECURITY-critical half of this.** `requiredScopesForRoute` takes
+// the matcher as a parameter and has no default, because the API must match a relaxing rule on the
+// **intersection** of the raw and percent-decoded path forms (both must match), which is the exact
+// opposite of how the guard decides what is GOVERNED (the union — see `apps/api/src/utils/
+// request-path.ts`). Deciding "is this governed" inclusively and "does this relaxation apply"
+// conservatively both fail closed; swapping them would let `/%61pi/mcp` inherit the relaxed rule.
+
+/** One route→scope rule. `match: "exact"` is a whole-path equality; "prefix" governs a subtree. */
+export type ApiTokenRouteScopeRule = {
+  /** Deliberately no `"DELETE"`: a delete rule must be a compile error, not a review catch (D-MCP3). */
+  method: "GET" | "HEAD" | "OPTIONS" | "POST" | "PUT" | "PATCH";
+  path: string;
+  match: "exact" | "prefix";
+  /** Any ONE of these satisfies the request. Never empty — an empty set would read as "no scope needed". */
+  scopes: readonly ApiTokenScope[];
+};
+
+/**
+ * The per-route overrides. Everything NOT listed keeps the coarse method rule, so this table can only
+ * ever RELAX a specific route — never widen the default, never cover a DELETE.
+ *
+ * The mount rule is **exact**, not a prefix, on purpose: `/api/mcp/llms.txt` is a `GET` and already
+ * needs only `read` from the coarse rule, while a prefix here would silently relax any future
+ * `POST /api/mcp/*` that nobody re-reviewed.
+ */
+export const API_TOKEN_ROUTE_SCOPES: readonly ApiTokenRouteScopeRule[] = [
+  // D-MCP8 — `read` is the price of admission to the MCP mount. A client cannot speak MCP without
+  // `initialize`/`tools/list`, so a write-capable agent holds `read` PLUS its execute scope; a
+  // `scan:run`-only token cannot open the mount at all. Per-TOOL scopes are enforced inside the
+  // mount (`WORKBENCH_MCP_TOOL_SCOPES`), not here — this rule only gets the caller through the door.
+  { method: "POST", path: "/api/mcp", match: "exact", scopes: ["read"] },
+  // D-C10 — the CI assertions endpoint reads a persisted scan and writes nothing; it is a POST only
+  // because it carries a gate document as a body.
+  { method: "POST", path: "/api/assertions/evaluate", match: "exact", scopes: ["read"] },
+];
+
+/**
+ * The scopes ANY ONE of which satisfies this request, or `null` when none can (a `DELETE`).
+ * Consults {@link API_TOKEN_ROUTE_SCOPES} first, then falls back to {@link requiredScopesForMethod}.
+ *
+ * `pathMatches` is injected because the API must match on the RAW-and-DECODED **intersection**
+ * (D-MCP9) using `apps/api/src/utils/request-path.ts`, while a plain-string caller (a test, a doc
+ * generator) can pass a simple equality. There is deliberately no default that silently does the
+ * wrong one — an ambiguous path must fall back to the coarse rule, not inherit the relaxed one.
+ */
+export function requiredScopesForRoute(
+  method: string,
+  pathMatches: (rulePath: string, match: "exact" | "prefix") => boolean,
+): readonly ApiTokenScope[] | null {
+  const verb = method.toUpperCase();
+  // Before the table, always: no rule may ever authorize a delete (D-MCP3).
+  if (verb === "DELETE") return null;
+  for (const rule of API_TOKEN_ROUTE_SCOPES) {
+    if (rule.method !== verb) continue;
+    if (pathMatches(rule.path, rule.match)) return rule.scopes;
+  }
+  return requiredScopesForMethod(verb);
+}

@@ -1,4 +1,5 @@
 import {
+  API_TOKEN_ROUTE_SCOPES,
   WORKBENCH_MCP_DEFAULT_LIST_LIMIT,
   WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
   WORKBENCH_MCP_MAX_LIST_LIMIT,
@@ -7,6 +8,7 @@ import {
   WORKBENCH_MCP_SERVER_NAME,
   WORKBENCH_MCP_SERVER_VERSION,
   WORKBENCH_MCP_TOOL_FAMILIES,
+  WORKBENCH_MCP_TOOL_SCOPES,
   type WorkbenchMcpReadToolName,
 } from "@mcp-token-footprint/shared";
 
@@ -57,10 +59,47 @@ export function resolveDocumentOrigin(host: string | undefined, secure = false):
   return `${secure ? "https" : "http"}://${host}`;
 }
 
+/**
+ * The scope a token needs merely to OPEN the mount, read out of the shared route table rather than
+ * retyped (D-MCP8). If someone ever removes the rule, this reads "an execute" — which is what the
+ * coarse method rule would then actually demand — instead of confidently advertising a stale `read`.
+ */
+function mountScopeSentence(): string {
+  const rule = API_TOKEN_ROUTE_SCOPES.find(
+    (candidate) => candidate.method === "POST" && candidate.path === WORKBENCH_MCP_MOUNT_PATH,
+  );
+  return rule ? rule.scopes.map((scope) => `\`${scope}\``).join(" or ") : "an execute";
+}
+
+/**
+ * The per-tool scope lines, derived from `WORKBENCH_MCP_TOOL_SCOPES` over the tools THIS instance
+ * registers. While every tool is a read (WP M.1's surface) that collapses to one sentence; when
+ * WP M.3's write tools arrive it becomes a real per-tool list, with no edit to this file.
+ */
+function toolScopeLines(tools: readonly WorkbenchLlmsTxtTool[]): string[] {
+  const scoped = tools.map((tool) => ({
+    name: tool.name,
+    scope: WORKBENCH_MCP_TOOL_SCOPES[tool.name],
+  }));
+  const distinct = [...new Set(scoped.map((entry) => entry.scope))];
+  const only = distinct[0];
+  if (distinct.length === 1 && only !== undefined) {
+    return [`- Every tool on this server needs the \`${only}\` scope — nothing here asks for more.`];
+  }
+  return [
+    "- Individual tools ask for more than that:",
+    ...scoped
+      .filter((entry) => entry.scope !== undefined)
+      .map((entry) => `  - ${entry.name} — \`${entry.scope}\``),
+  ];
+}
+
 /** Render the usage doc. Pure — same inputs, same bytes. */
 export function buildWorkbenchLlmsTxt(input: WorkbenchLlmsTxtInput): string {
   const mountUrl = `${input.origin}${WORKBENCH_MCP_MOUNT_PATH}`;
   const byName = new Map(input.tools.map((tool) => [tool.name, tool]));
+  const mountScope = mountScopeSentence();
+  const scopeLines = toolScopeLines(input.tools);
   const lines: string[] = [];
 
   lines.push(
@@ -84,8 +123,8 @@ export function buildWorkbenchLlmsTxt(input: WorkbenchLlmsTxtInput): string {
     `- URL: ${mountUrl}`,
     "- Transport: streamable HTTP, stateless. POST only — GET and DELETE answer 405 (there is no",
     "  session to resume and no server-initiated stream to subscribe to).",
-    "- Auth: none on localhost, matching the rest of this app's local trust posture. Do not expose",
-    "  the port beyond your machine.",
+    "- Auth: none from localhost, matching the rest of this app's local trust posture. From any",
+    `  other machine, send Authorization: Bearer mcpfp_… — see "Access & scopes" below.`,
     `- Claude Code: claude mcp add --transport http workbench ${mountUrl}`,
     '- Any host with a JSON config (Cursor, Claude Desktop, …): { "mcpServers": { "workbench":',
     `  { "type": "http", "url": "${mountUrl}" } } }`,
@@ -101,6 +140,17 @@ export function buildWorkbenchLlmsTxt(input: WorkbenchLlmsTxtInput): string {
     "anything. Write tools are a later, explicitly scoped addition; deletes are excluded at every",
     "phase. No handler returns a secret value — server configs come back redacted (booleans saying",
     "whether an env/header secret or a GitHub token is set, never the value).",
+    "",
+    "## Access & scopes",
+    "",
+    "- From localhost: no credential, and no scope check. Every tool below is reachable.",
+    `- From anywhere else: a service token is required, and it must carry the ${mountScope} scope just`,
+    "  to open this endpoint — initialize and tools/list are reads, so a token without it cannot",
+    "  speak the protocol here at all.",
+    ...scopeLines,
+    "- No token can delete anything, and no token can manage tokens. Neither is switchable.",
+    "- Refused? The reply names the scope it wanted. Ask the operator to create a token with it in",
+    "  Settings › API tokens; a token's scopes are fixed when it is created.",
     "",
     "## Tools",
     "",

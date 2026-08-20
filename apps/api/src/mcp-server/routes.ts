@@ -1,8 +1,16 @@
-import { WORKBENCH_MCP_LLMS_TXT_PATH, WORKBENCH_MCP_MOUNT_PATH } from "@mcp-token-footprint/shared";
+import {
+  API_TOKEN_PREFIX,
+  WORKBENCH_MCP_LLMS_TXT_PATH,
+  WORKBENCH_MCP_MOUNT_PATH,
+} from "@mcp-token-footprint/shared";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { buildWorkbenchLlmsTxt, resolveDocumentOrigin } from "./llms-txt.js";
-import { createWorkbenchMcpServer } from "./server.js";
+import {
+  createWorkbenchMcpServer,
+  type WorkbenchMcpCaller,
+  type WorkbenchMcpServerOverrides,
+} from "./server.js";
 import { buildWorkbenchToolDefinitions, type WorkbenchMcpDeps } from "./tools.js";
 
 // ==================================================================================================
@@ -23,6 +31,13 @@ import { buildWorkbenchToolDefinitions, type WorkbenchMcpDeps } from "./tools.js
 //                not offer that", which matters because the app's own MCP client will scan this mount.
 //   • `DELETE` — session termination, when there is no session to terminate.
 //
+// **Auth (WP M.2, D-MCP2/D-MCP7/D-MCP8):** the mount inherits the whole API's posture from the
+// service-token guard — loopback passes with no credential, a remote caller must present a token, and
+// `API_AUTH_REQUIRED=true` extends that to loopback. `POST /api/mcp` is mapped to the **`read`** scope
+// in `API_TOKEN_ROUTE_SCOPES` (D-MCP8: `initialize`/`tools/list` are reads, so `read` is the price of
+// admission), and each tool then names its own scope in `WORKBENCH_MCP_TOOL_SCOPES`, enforced at
+// dispatch in `server.ts`. A tokenless loopback caller is unaffected by any of it (D-MCP7).
+//
 // **Feature flag (D-MCP6):** `/api/mcp` is claimed by the `mcp_server` feature in
 // `packages/shared/src/feature-flags.ts`. The root `onRequest` guard `registerFeatureRoutes` installs
 // in `index.ts` therefore 403s every verb here while the switch is off — including this file's own 405
@@ -35,9 +50,48 @@ const METHOD_NOT_ALLOWED = {
   id: null,
 };
 
-export function registerWorkbenchMcpRoutes(app: FastifyInstance, deps: WorkbenchMcpDeps): void {
+/**
+ * Who is calling this POST, in the terms the scope gate needs (WP M.2).
+ *
+ * `request.apiToken` is attached by the WP 1.1 guard and is **absent for a tokenless loopback
+ * request** — the normal local case. That absence becomes `grantedScopes: null`, which the gate reads
+ * as "no token was involved, allow everything" (D-MCP7), NOT as "a token with no scopes". Getting
+ * those two confused in either direction is the whole risk here: `[]` would lock the local browser out
+ * of its own tool surface, and treating a real empty-scope token as `null` would hand it everything.
+ * A token can never have zero scopes (`apiTokenCreateSchema` requires at least one), so the only
+ * source of `null` is genuinely "no credential".
+ *
+ * The audit line carries the token's DISPLAY prefix (`mcpfp_ab12cd34`) and never the credential — the
+ * plaintext exists only in the `Authorization` header and is never read here.
+ */
+function callerFor(request: FastifyRequest): WorkbenchMcpCaller {
+  const token = request.apiToken;
+  return {
+    grantedScopes: token ? token.scopes : null,
+    tokenPrefix: token ? `${API_TOKEN_PREFIX}${token.tokenPrefix}` : null,
+    audit: (entry) => {
+      request.log.info(
+        {
+          mcpTool: entry.tool,
+          ok: entry.ok,
+          durationMs: entry.durationMs,
+          tokenPrefix: token ? `${API_TOKEN_PREFIX}${token.tokenPrefix}` : null,
+          ...(entry.refusedScope ? { refusedScope: entry.refusedScope } : {}),
+        },
+        "workbench MCP tool call",
+      );
+    },
+  };
+}
+
+export function registerWorkbenchMcpRoutes(
+  app: FastifyInstance,
+  deps: WorkbenchMcpDeps,
+  /** Test seam only — see `WorkbenchMcpServerOverrides`. Production passes nothing. */
+  overrides?: WorkbenchMcpServerOverrides,
+): void {
   app.post(WORKBENCH_MCP_MOUNT_PATH, async (request: FastifyRequest, reply: FastifyReply) => {
-    const server = createWorkbenchMcpServer(deps);
+    const server = createWorkbenchMcpServer(deps, callerFor(request), overrides);
     const transport = new StreamableHTTPServerTransport({
       // Stateless — see the banner. `enableJsonResponse` makes a request/response POST answer with a
       // plain JSON body instead of a one-shot SSE stream.
