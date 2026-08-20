@@ -22,7 +22,8 @@
     "DC-20",
     "DC-21",
     "DC-22",
-    "DC-23"
+    "DC-23",
+    "DC-24"
   ],
   "allocated_rm": [
     "RM-01",
@@ -70,7 +71,7 @@
     "RS-10",
     "RS-11"
   ],
-  "next_dc": 24,
+  "next_dc": 25,
   "next_rm": 32,
   "next_rs": 12
 }
