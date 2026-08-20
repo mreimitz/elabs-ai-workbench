@@ -9,7 +9,6 @@ import {
   type SecurityPostureDiff,
   type SecurityReport,
   type SecurityRuleId,
-  securityFindingIdentity,
 } from "@mcp-token-footprint/shared";
 import { type ColumnDef, DataTable } from "@elabs-ai/components-data";
 import {
@@ -526,9 +525,4 @@ function EvidenceCell({ finding }: { finding: SecurityFinding }) {
       </PopoverContent>
     </Popover>
   );
-}
-
-/** Stable React key for a finding — the contract's own identity, so it survives a re-fetch. */
-export function findingKey(finding: SecurityFinding): string {
-  return securityFindingIdentity(finding);
 }

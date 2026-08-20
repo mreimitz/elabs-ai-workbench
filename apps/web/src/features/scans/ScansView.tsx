@@ -185,11 +185,13 @@ export function ScansView(props: {
 
   // WP 2.1 — the posture report for the SELECTED scan, loaded here rather than inside the tab so the
   // tab strip can badge `counts.total` before the tab has ever been opened (Radix unmounts inactive
-  // tab content). `enabled` keeps it from firing on the list-only route, and a `running` scan simply
-  // settles into the panel's error arm carrying D-SP10's own sentence.
+  // tab content). `enabled` only gates on there BEING a selected scan: a `running` one is left to
+  // settle into the panel's error arm carrying D-SP10's own sentence ("has status …, so it has no
+  // complete tool list to analyse"), which is a better answer than a skeleton that never resolves.
+  // A `failed` scan never reaches here at all — the detail pane renders `FailedScanDetail` instead.
   const securityReport = useSecurityReport(
     { kind: "scan", scanId: selectedScan?.id ?? "" },
-    { enabled: Boolean(selectedScan) && selectedScan?.status === "success" },
+    { enabled: Boolean(selectedScan) },
   );
   const securityCount = loadableData(securityReport.state)?.counts.total;
 
