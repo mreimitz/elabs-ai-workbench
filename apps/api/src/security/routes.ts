@@ -34,7 +34,8 @@ import {
  * additively. `apps/api/src/index.ts` always supplies it; a caller that wires only scan posture
  * simply does not get the skill route, which is the honest outcome rather than a route that 500s.
  */
-export type SecurityRoutePorts = SecurityAnalyzerPorts & Partial<Pick<SecuritySkillPorts, "skills">>;
+export type SecurityRoutePorts = SecurityAnalyzerPorts &
+  Partial<Pick<SecuritySkillPorts, "skills">>;
 
 export async function registerSecurityRoutes(app: FastifyInstance, ports: SecurityRoutePorts) {
   app.get("/api/scans/:scanId/security", async (request) => {

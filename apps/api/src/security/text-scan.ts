@@ -332,7 +332,9 @@ export function isInvisibleCodePoint(code: number): boolean {
 }
 
 /** The UTF-16 index and code point of the first invisible character, or `null`. */
-export function findInvisible(text: string): { index: number; length: number; code: number } | null {
+export function findInvisible(
+  text: string,
+): { index: number; length: number; code: number } | null {
   for (let index = 0; index < text.length; ) {
     const code = text.codePointAt(index);
     if (code === undefined) break;

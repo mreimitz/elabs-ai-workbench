@@ -797,6 +797,9 @@ export function createSecurityFinding(input: {
 // `.strict()` at every level, for the same reason `ci-assertions.ts` is: a typo'd key must be a loud
 // rejection naming the field, never a value that is silently dropped from a report somebody believes
 // is protecting them.
+//
+// D-SP12 — the anchor union's `skill` variant was APPENDED, never inserted: every other variant is
+// byte-identical to what WP 1.1 shipped, so no report that validates today stops validating.
 
 export const securitySeveritySchema = z.enum(SECURITY_SEVERITIES);
 export const securitySubjectKindSchema = z.enum(SECURITY_SUBJECT_KINDS);
@@ -816,9 +819,7 @@ export const securityRuleIdSchema = z.enum(
 
 export const securityFindingAnchorSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("server") }).strict(),
-  // D-SP12 — appended, never inserted: every variant above and below it is byte-identical to what
-  // WP 1.1 shipped, so no report that validates today stops validating.
-  z.object({ kind: z.literal("skill") }).strict(),
+  z.object({ kind: z.literal("skill") }).strict(), // D-SP12; see the note above
   z.object({ kind: z.literal("tool"), toolName: z.string().min(1) }).strict(),
   z
     .object({

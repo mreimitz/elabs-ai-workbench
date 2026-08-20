@@ -157,7 +157,11 @@ describe("security rule registry (D-SP2)", () => {
     // id itself tells a reader which analyzer emits it without a lookup.
     for (const id of bySubject("skill")) assert.equal(SECURITY_RULES[id].category, "skill-surface");
     for (const id of bySubject("server")) {
-      assert.notEqual(SECURITY_RULES[id].category, "skill-surface", `${id} is filed as a skill rule`);
+      assert.notEqual(
+        SECURITY_RULES[id].category,
+        "skill-surface",
+        `${id} is filed as a skill rule`,
+      );
     }
   });
 

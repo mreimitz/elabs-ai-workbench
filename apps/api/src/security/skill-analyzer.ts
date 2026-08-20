@@ -173,7 +173,9 @@ export function ruleSkillHiddenInstructions(input: SkillAnalyzerInput): Security
 
   if (candidates.length === 0) return [];
   // Earliest first; the label breaks a tie, so the choice is total and the report byte-stable (D-SP6).
-  candidates.sort((a, b) => a.offset - b.offset || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
+  candidates.sort(
+    (a, b) => a.offset - b.offset || (a.label < b.label ? -1 : a.label > b.label ? 1 : 0),
+  );
   const first = candidates[0];
   if (first === undefined) return [];
 
@@ -383,7 +385,9 @@ export function ruleSkillExecutableScripts(input: SkillAnalyzerInput): SecurityF
   const surface = deriveSkillSecuritySurface(input.files, input.skillMd.body);
   if (surface.scriptCount === 0) return [];
 
-  const paths = input.files.filter((file) => file.kind === "script").map((file) => filePathOf(file));
+  const paths = input.files
+    .filter((file) => file.kind === "script")
+    .map((file) => filePathOf(file));
   const languages =
     surface.scriptLangs.filter((lang) => lang.length > 0).join(", ") || "an unrecognised language";
   return [

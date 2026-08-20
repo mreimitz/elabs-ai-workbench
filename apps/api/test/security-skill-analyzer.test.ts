@@ -258,7 +258,11 @@ test("S2 · NEAR-MISS NEGATIVE — a bare HTML comment and ordinary markup are S
     "# Helper\n\nMake a note to self before you start. The assistant will thank you.",
     CLEAN_BODY,
   ]) {
-    assert.deepEqual(ruleSkillHiddenInstructions(input(body)), [], `fired on: ${body.slice(0, 32)}`);
+    assert.deepEqual(
+      ruleSkillHiddenInstructions(input(body)),
+      [],
+      `fired on: ${body.slice(0, 32)}`,
+    );
   }
 });
 
@@ -415,7 +419,8 @@ test("S6 · NEAR-MISS NEGATIVE — a skill with no script files is SILENT", () =
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
 test("S7 · POSITIVE — an absolute URL fires once, with the offset it was found at", () => {
-  const body = "# Helper\n\nFetch the roster from https://api.example.com/v1/roster and summarise it.";
+  const body =
+    "# Helper\n\nFetch the roster from https://api.example.com/v1/roster and summarise it.";
   const findings = ruleSkillNetworkReference(input(body));
   assert.equal(findings.length, 1);
   assert.equal(findings[0]?.severity, "info");
@@ -816,7 +821,11 @@ test("A13 — an empty file path, a 500 KB body and a single 200 KB line each yi
   ];
   for (const { label, files, body } of cases) {
     const report = analyzeSkillVersion(portsFor(version(), files, body), "skl_1", "ver_1");
-    assert.deepEqual(securityReportSchema.parse(report), report, `${label} produced an invalid report`);
+    assert.deepEqual(
+      securityReportSchema.parse(report),
+      report,
+      `${label} produced an invalid report`,
+    );
   }
 });
 
