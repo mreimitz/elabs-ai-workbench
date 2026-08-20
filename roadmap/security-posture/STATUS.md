@@ -105,7 +105,75 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       schedules `setTimeout(() => setCopied(false), 1500)` which can fire after
       `ArtifactCanvas.test.tsx` tears its environment down, surfacing as an unhandled
       `ReferenceError: window is not defined`. Owner-facing test-hygiene item.
-- [ ] WP 1.3 — skill analyzer: security-surface roll-up + score
+- [x] WP 1.3 — skill analyzer: security-surface roll-up + score — done 2026-08-20 ·
+      `wp/security-posture/1.3` · spec: [`wp-1.3-skill-analyzer.md`](./wp-1.3-skill-analyzer.md).
+      **Seven `skill-surface.*` rules, and only those seven** — three `error` (injection phrasing,
+      hidden instruction block, invisible unicode), two `warning` (a credential-shaped value in the
+      body, a broad `allowed-tools` grant), two `info` (ships executable scripts, references the
+      network) — over an ALREADY-persisted skill version, scored and ordered by WP 1.1's contract
+      exactly as the eleven server rules are. Served at
+      **`GET /api/skills/:id/versions/:vid/security`**. `analyzeSkillFiles({ version, files, skillMd,
+      onRuleError? })` is **pure** (source-scanned for `better-sqlite3` / `node:fs` / `fastify` /
+      `new Date(` / `Date.now(`); a port-call-counting test proves `getFileContent` is called exactly
+      once, for the SKILL.md); `analyzeSkillVersion(ports, skillId, versionId)` — which lives in the
+      **existing** `security/service.ts`, because a WP 1.2 test pins `computeSecurityScore` to exactly
+      one file — owns loading, the D-SP16 refusals, ordering, capping, counting-all and scoring.
+      Decisions **D-SP12–D-SP16** in the log below. **Computed on read, persisted nowhere: no
+      migration, no table, no column** (pinned by a `sqlite_master` + `PRAGMA user_version` comparison
+      across a service call and a real HTTP request). No new dependency, no environment variable, no
+      feature flag. Eleven files; `apps/api/src/skills/**` is a **zero-line diff** — the analyzer adds
+      no repository method, no query and no route to the skills module.
+      **Two rules were deliberately narrowed against the plan's false-positive clause.** The
+      hidden-instruction rule does **not** fire on a bare HTML comment — the one intentional
+      divergence from the server rule it mirrors — because a SKILL.md is authored Markdown where
+      `<!-- prettier-ignore -->` and TOC markers are ordinary editorial furniture; it fires on a
+      comment only when the comment *carries* a payload (an injection phrase or an address to the
+      model), and it scans **every** comment so an innocent first one cannot shield a later payload.
+      The credential rule reports only **prefixed** shapes (D-SP13), so a 40-character commit sha and
+      a long slug in prose stay silent. The scripts rule emits **exactly one** finding for a version,
+      never one per script: thirty scripts is one fact, and thirty `info` findings would cost 30
+      points for it.
+      **Verified by the orchestrator, not taken on report:** the gate re-run on the branch
+      (`typecheck` **0** · shared **162/162** [152 before] · cli **87/87** · api **3519 passed / 7
+      failed** — a **+45-test** delta, all passing · `build` **0** · `lint` **2** errors; web
+      **332 files, 3574 passed / 5 skipped**, run separately and identical to the baseline). **Each of
+      the 7 api failures and both lint errors was re-run against `main` itself and reproduces there**
+      — they are pre-existing, not this WP's. The authoritative 11-file change list and every
+      zero-line-diff path were re-checked with an explicit `git -C <worktree> diff main..HEAD`,
+      including **byte-identical `apps/api/test/security-analyzer.test.ts`** (D-SP14's proof) and a
+      zero-diff `roadmap/**`. **Four independent teeth checks**, each applied then reverted: adding
+      the catch-all to the *reporting* credential list turned `findPrefixedCredential (D-SP13)` red;
+      inserting the `skill` anchor at rank 1 instead of appending it turned the D-SP12 order-
+      preservation test red; making the scripts rule emit one finding per script turned both the
+      "thirty scripts is ONE finding" and the 98/`low` anti-inflation tests red; and pasting a copy of
+      the injection phrase list into `skill-analyzer.ts` turned the D-SP14 single-definition test red.
+      `git status` clean afterwards.
+      **Four deviations, all declared.** (1) **`apps/api/src/assertions/service.ts` is +7, not
+      zero-diff** — the spec required both the additive `skill` anchor and a zero-diff there, which is
+      not simultaneously achievable: `describeAnchor` is an exhaustive switch and the compiler demands
+      an arm. **The spec was wrong; the agent added the arm rather than a `default:`**, which would
+      have silently swallowed the next union member. No gate behaviour changes — `no-new-security-
+      findings` reads scan posture only. (2) The skills port on `registerSecurityRoutes` is
+      **optional**, because WP 1.2's test constructs `{ scans, servers, oauth }` and had to stay
+      byte-identical; `index.ts` always supplies it, and a test asserts exactly two security routes
+      exist, both read-only verbs. (3) Four comments in `security-posture.ts` that WP 1.1 wrote about
+      WP 1.3 ("`skill` has no rules yet") were updated — the spec said "zero removed lines", but
+      leaving them would have made the contract lie about itself. (4) `text-scan.ts` exports more than
+      the spec's three signatures (plural finders carrying the match *count* and the block *label*),
+      because `analyzer.ts` needs them to keep its messages byte-identical.
+      **Not verified:** nothing was run against the running app in a browser — this WP has no UI (that
+      is WP 2.1). The implementing agent did run the built API on a throwaway port with a fresh
+      migrated DB and uploaded a poisoned skill through the real path (59/`high`, the `sk-` key masked
+      to `«redacted»`, the sha correctly not reported); the orchestrator verified the gate and the
+      diff, not that live run. The heuristics were reviewed against fixtures, **not against a corpus
+      of real third-party skills** — the false-positive rate in the wild is unmeasured, exactly as for
+      WP 1.2's server rules. **One behaviour worth an owner glance, consistent rather than new:** a
+      payload hidden inside an HTML comment fires **both** the injection rule and the hidden-
+      instruction rule (−30), the same doubling the server rules already have for the same input.
+      **A correction to the plan's own documents:** WP 1.2's spec and ledger line name
+      `apps/api/test/compatibility-data.test.ts` as the home of the pre-existing failures. They
+      actually live in `compatibility-runner.test.ts` (5), `compatibility-tool-findings.test.ts` (1)
+      and `compatibility-session.test.ts` (1). The count (7) was right; the file was not.
 - [ ] WP 1.4 — posture diff (scan↔scan, version↔version)
 
 ## Phase 2 — Surfacing
@@ -224,7 +292,70 @@ _Entries: date · decision · rationale._
   comparable: a frozen id, one score, one order, one redactor, one severity per rule, and a version
   stamp for the day any of that has to change.
 
+- **2026-08-20 · D-SP12–D-SP16 locked at the WP 1.3 kickoff.** Full text + the design they bind:
+  [`wp-1.3-skill-analyzer.md`](./wp-1.3-skill-analyzer.md). Implemented in
+  `apps/api/src/security/{text-scan,skill-analyzer,service,routes}.ts` and pinned by
+  `apps/api/test/security-skill-analyzer.test.ts` + `packages/shared/src/security-posture.test.ts`.
+  - **D-SP12 — a skill-level finding gets its OWN anchor kind; it does not borrow the server's.**
+    `SecurityFindingAnchor` gained one additive member, `{ kind: "skill" }`, for a finding about the
+    version as a whole (it ships scripts; its frontmatter grants broad tool access) rather than about
+    one file in it. Reusing `{ kind: "server" }` would print the word *server* on a skill finding in
+    every UI, every export and every CI comment. The new kind ranks **last** (`skill: 4`) rather than
+    beside `server`, which it resembles: appending a rank leaves every existing pair's relative order
+    byte-identical, whereas inserting one at rank 1 would renumber `tool`/`parameter`/`file` and
+    silently reorder every report that already exists. `SECURITY_ANALYZER_VERSION` stays **1**.
+  - **D-SP13 — detection is precise, redaction is generous, over ONE definition.**
+    `redactSecurityEvidence`'s credential list ends in a catch-all (`[A-Za-z0-9_-]{32,}`) whose
+    over-masking is the correct error direction — an over-masked identifier costs one question, a
+    leaked token costs a rotation. That same catch-all is the **wrong** matcher for *reporting* a
+    credential, because a SKILL.md routinely carries a commit sha or a long slug. So
+    `SECURITY_CREDENTIAL_PREFIX_PATTERNS` (the prefixed shapes) is exported and used by
+    `findPrefixedCredential`, `CREDENTIAL_PATTERNS` is rebuilt **from** it plus the unchanged
+    catch-all, and neither list is re-typed. The redactor's output is unchanged for every input.
+  - **D-SP14 — a text heuristic has exactly ONE definition, and both analyzers call it.** The
+    injection phrase list, the hidden-instruction patterns and the invisible-codepoint ranges are the
+    same question asked of a tool description and of a SKILL.md body; a second copy is how the two
+    drift until `poisoning.injection-phrasing` and `skill-surface.injection-phrasing` mean different
+    things while claiming to mean the same one. They live in `apps/api/src/security/text-scan.ts`,
+    `analyzer.ts` re-exports every constant it exported before, and its three rules became thin
+    callers. **`apps/api/test/security-analyzer.test.ts` is byte-identical and green — that is the
+    proof the extraction preserved behaviour**, and a fingerprint test fails if any definition
+    acquires a second home. (Its reach is honest but bounded: it catches a *copied* list, not a
+    paraphrased re-implementation.)
+  - **D-SP15 — the skill analyzer reads the version row, the file LIST and the SKILL.md body, and
+    nothing else.** A version may hold 2,000 files and 50 MB, so a full-tree content scan would need
+    its own byte budget, its own truncation flag on `SecurityReport` and its own answer for "the scan
+    stopped early" — a shape change for a rule this WP does not have. SKILL.md is the text an agent
+    loads *every* time the skill is attached, which makes it the highest-value surface per byte read.
+    A credential committed into a helper script is therefore **not** found today; widening the reach
+    later is a **new rule id** (additive, D-SP2), never a change of meaning for one of these seven.
+  - **D-SP16 — a version whose SKILL.md cannot be read as text is a 400, not a clean report.** Five
+    of the seven rules read that body; scoring a version without it would hand it a near-clean bill of
+    health on the strength of the two rules that happened to still run. Refused with **400** naming
+    the case (`missing` or `binary`), the same posture D-SP10 takes for a non-`success` scan. A
+    version that simply has no findings is a different thing and still scores 100/`clean`. A version
+    id belonging to a *different* skill is a **404**, so a version can never be reported under another
+    skill's name.
+
+  _Rationale:_ D-SP12/D-SP14 keep the skill report and the server report one system rather than two
+  that resemble each other — the same anchor union, the same order, the same heuristic definitions —
+  which is the only reason WP 1.4's diff and WP 2.1's UI can treat them identically. D-SP13 and
+  D-SP16 are both about not being confidently wrong: one refuses to cry wolf, the other refuses to
+  issue a clean bill of health it cannot stand behind. D-SP15 draws the read boundary explicitly so
+  the gap is a documented bound rather than an unnoticed blind spot.
+
 ## Owner acceptance (owner-only)
+- [ ] **WP 1.3 — the false-positive rate on YOUR real skills, and the two narrowings.** Call
+      `GET /api/skills/:id/versions/:vid/security` for the skills you have actually registered. Two
+      judgement calls are yours to confirm: a **bare HTML comment in a SKILL.md does not fire**
+      (only one carrying a payload does), and the credential rule reports **prefixed shapes only**, so
+      a committed key in an unusual format is missed rather than a sha being reported. Also note that
+      a payload hidden inside an HTML comment fires **two** rules at once (−30) — consistent with the
+      server rules, but worth seeing once — accepted: ____
+- [ ] **D-SP15 — the read boundary, for your explicit sign-off.** The skill analyzer reads only the
+      version row, the file list and SKILL.md. A credential or an instruction payload committed into a
+      helper script or an L3 resource file is **not** scanned today. Say whether that bound is where
+      you want it, or whether widening it should be the next skill rule — accepted: ____
 - [ ] **WPs 1.1–1.2 — the false-positive rate on YOUR real servers.** Call
       `GET /api/scans/:scanId/security` for every server you have actually registered and read the
       findings. The heuristics were reviewed against fixtures, **never against a corpus of real
