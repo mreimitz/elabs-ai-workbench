@@ -1,12 +1,23 @@
 // The security-posture endpoints (roadmap/security-posture/):
 //
-//   GET /api/scans/:scanId/security                  → `SecurityReport`   (WP 1.2)
-//   GET /api/skills/:id/versions/:vid/security       → `SecurityReport`   (WP 1.3)
+//   GET /api/scans/:scanId/security                       → `SecurityReport`      (WP 1.2)
+//   GET /api/skills/:id/versions/:vid/security            → `SecurityReport`      (WP 1.3)
+//   GET /api/scans/:scanId/security/diff?baseline=        → `SecurityPostureDiff` (WP 1.4)
+//   GET /api/skills/:id/versions/:vid/security/diff?baseline=
+//                                                         → `SecurityPostureDiff` (WP 1.4)
 //
 // Thin, per the API convention: read the params, delegate, let the central error handler format
 // anything thrown (a repository's 404 for an unknown id, the service's D-SP10 400 for a non-`success`
-// scan, its D-SP16 400 for an unreadable SKILL.md). Read-only — they open no MCP connection, run no
-// scan, execute no skill, write nothing, persist nothing (D-SP8) and return no secret value.
+// scan, its D-SP16 400 for an unreadable SKILL.md, WP 1.4's 400 for a pairing that cannot mean
+// anything, and a `ZodError` → 400 for a missing `?baseline=`). Read-only — they open no MCP
+// connection, run no scan, execute no skill, write nothing, persist nothing (D-SP8) and return no
+// secret value.
+//
+// A diff route is deliberately a **sub-path of the report it diffs** (`…/security/diff`) rather than
+// a route of its own: the subject in the path is the thing being asked about, and the baseline is a
+// query parameter because it is an argument to the question, not a second subject. That also means
+// the diff surface needs no port the report surface did not already have — `apps/api/src/index.ts` is
+// untouched by this WP.
 //
 // The one thing this file adds on top of the services is a LOGGER for a rule that threw on a
 // malformed definition. The analyzers are pure by construction (D-SP7) and so have no logger of their
@@ -18,11 +29,14 @@
 // two files side by side.
 
 import type { FastifyInstance } from "fastify";
+import { securityDiffQuerySchema } from "@mcp-token-footprint/shared";
 import {
   type SecurityAnalyzerPorts,
   type SecuritySkillPorts,
   analyzeScan,
   analyzeSkillVersion,
+  diffScanPosture,
+  diffSkillPosture,
 } from "./service.js";
 
 /**
@@ -54,6 +68,28 @@ export async function registerSecurityRoutes(app: FastifyInstance, ports: Securi
     );
   });
 
+  // WP 1.4 — the same subject, measured against a NAMED baseline scan of the same server. The
+  // baseline is never inferred: resolving "the previous scan" would need a scan-history read these
+  // ports deliberately do not carry, and a baseline that quietly moved between two runs would answer
+  // the same question two different ways.
+  app.get("/api/scans/:scanId/security/diff", async (request) => {
+    const { scanId } = request.params as { scanId: string };
+    const { baseline } = securityDiffQuerySchema.parse(request.query);
+    return diffScanPosture(
+      {
+        ...ports,
+        onRuleError: (ruleId, error) => {
+          request.log.warn(
+            { ruleId, scanId, baselineScanId: baseline, err: error },
+            "security rule threw on a malformed tool definition; it contributed no finding",
+          );
+        },
+      },
+      scanId,
+      baseline,
+    );
+  });
+
   const skills = ports.skills;
   if (skills === undefined) return;
 
@@ -72,6 +108,29 @@ export async function registerSecurityRoutes(app: FastifyInstance, ports: Securi
       },
       id,
       vid,
+    );
+  });
+
+  // WP 1.4 — two versions of the SAME skill. Both sides are analysed under the `:id` in the path, so
+  // a `?baseline=` naming a version of another skill is a 404 from the service rather than a diff
+  // reported under this skill's name.
+  app.get("/api/skills/:id/versions/:vid/security/diff", async (request) => {
+    const { id, vid } = request.params as { id: string; vid: string };
+    const { baseline } = securityDiffQuerySchema.parse(request.query);
+    return diffSkillPosture(
+      {
+        skills,
+        ...(ports.now === undefined ? {} : { now: ports.now }),
+        onRuleError: (ruleId, error) => {
+          request.log.warn(
+            { ruleId, skillId: id, versionId: vid, baselineVersionId: baseline, err: error },
+            "security rule threw on a malformed skill version; it contributed no finding",
+          );
+        },
+      },
+      id,
+      vid,
+      baseline,
     );
   });
 }

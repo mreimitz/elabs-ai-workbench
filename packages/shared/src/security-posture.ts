@@ -793,6 +793,201 @@ export function createSecurityFinding(input: {
   return { ...base, evidence: redactSecurityEvidence(input.evidence.raw, input.evidence.offset) };
 }
 
+// ── WP 1.4 · the posture DIFF ───────────────────────────────────────────────────────────────────
+//
+// Ordering answers "which finding comes first". Identity answers "is this the SAME finding". This
+// third section answers the question an operator actually asks between two releases — **what
+// changed?** — and it answers it in exactly one place, for the same reason the score and the order
+// live in exactly one place (D-SP1).
+//
+// There is a concrete boundary this protects. `roadmap/ci/` WP 3.1's `no-new-security-findings`
+// gate did this set arithmetic inline, and WP 2.1's Security tab needs the same three buckets. Two
+// implementations of "what changed" is how a CI gate and a UI end up telling an operator different
+// stories about the same pair of scans, with no way to tell which one is lying — the failure D-C20
+// and D-SP2 were both written to prevent.
+//
+// Like everything else in this module it is PURE, and — the part that is easy to get wrong — it is
+// **clock-free**. A diff's `generatedAt` is derived from the two reports it was handed, never read
+// from a clock: the reports are the measurements, the diff is arithmetic over them, and arithmetic
+// that stamps itself with the current time is arithmetic nobody can reproduce.
+
+/**
+ * The per-severity tally a report carries, reused verbatim by each of the diff's three buckets.
+ *
+ * Derived from {@link SecurityReport} rather than re-declared, so "the shape of a count" keeps one
+ * definition and a field added to one can never go missing from the other.
+ */
+export type SecurityFindingCounts = SecurityReport["counts"];
+
+/**
+ * What changed between two posture reports of the **same subject** — two scans of one server, or two
+ * versions of one skill.
+ *
+ * The three buckets partition the two reports' findings by {@link securityFindingIdentity}:
+ *
+ *   • `added` — in the subject, not in the baseline. The plan's "new". It is named `added` because
+ *     `new` is a reserved word and `diff.new` reads like a constructor at every call site.
+ *   • `resolved` — in the baseline, not in the subject.
+ *   • `unchanged` — in both, carried as the **subject's** instance, because its evidence is the text
+ *     that is live today: a vendor who reworded a poisoned description while leaving it poisoned
+ *     should be shown this release's wording, not last release's.
+ *
+ * Two invariants follow, and both are pinned by tests:
+ * `added.length + unchanged.length === subject.findings.length`, and
+ * `resolved.length + (baseline findings the subject still carries) === baseline.findings.length`.
+ */
+export type SecurityPostureDiff = {
+  /** Both reports' version, which {@link diffSecurityReports} has already proven equal. */
+  analyzerVersion: number;
+  /**
+   * The LATER of the two reports' `generatedAt`, so a diff is dated by its freshest input. Never a
+   * clock read — see the section note above.
+   */
+  generatedAt: string;
+  /** What the subject was measured against. */
+  baseline: SecuritySubjectRef;
+  /** What was measured. */
+  subject: SecuritySubjectRef;
+  /** In the SUBJECT report's {@link compareSecurityFindings} order. */
+  added: SecurityFinding[];
+  /** In the BASELINE report's {@link compareSecurityFindings} order. */
+  resolved: SecurityFinding[];
+  /** In the SUBJECT report's {@link compareSecurityFindings} order. */
+  unchanged: SecurityFinding[];
+  counts: {
+    added: SecurityFindingCounts;
+    resolved: SecurityFindingCounts;
+    unchanged: SecurityFindingCounts;
+  };
+  score: {
+    baseline: SecurityScore;
+    subject: SecurityScore;
+    /**
+     * `subject.value − baseline.value`. **Positive means the posture improved**, which is the
+     * direction an operator reads a score in ("we went up four points"), not the direction a
+     * deduction moves. Both sides are echoed from the reports; no weight and no band is re-applied
+     * here (D-SP3 — {@link computeSecurityScore} is the only function permitted to do that).
+     */
+    delta: number;
+  };
+};
+
+/** Tally one bucket. Local: a diff's counts are its own and are never read off a report. */
+function countFindings(findings: readonly SecurityFinding[]): SecurityFindingCounts {
+  const counts: SecurityFindingCounts = { error: 0, warning: 0, info: 0, total: findings.length };
+  for (const finding of findings) counts[finding.severity] += 1;
+  return counts;
+}
+
+/** ISO-8601 out of `toISOString()` is fixed-width UTC, so lexicographic order IS chronological. */
+function laterInstant(a: string, b: string): string {
+  return a > b ? a : b;
+}
+
+/**
+ * The ONE posture differ: two reports in, `added` / `resolved` / `unchanged` out.
+ *
+ * **Four refusals, and not one of them is a quiet zero.** Each is a comparison that cannot mean what
+ * its reader will assume it means, and the point of this workstream is that a posture answer is
+ * either trustworthy or absent — never confidently wrong (D-SP10, D-SP16, D-C8 and D-C22 are the
+ * same instinct applied to four other inputs):
+ *
+ *   1. **Different subject KINDS.** A server report against a skill report share no anchor space, so
+ *      every finding would read as added and every finding as resolved.
+ *   2. **Different OWNERS.** Two scans of two different servers produce a diff in which the entire
+ *      tool surface changed — a real answer to a question nobody asked. A posture diff is
+ *      scan↔scan of one server, or version↔version of one skill.
+ *   3. **Different ANALYZER VERSIONS.** Exactly D-C22: findings produced under different versions
+ *      are not on the same scale, because a rule's meaning may have changed underneath the
+ *      comparison. `SECURITY_ANALYZER_VERSION` exists so that is detectable rather than silent.
+ *   4. **A TRUNCATED report on either side.** {@link capSecurityFindings} may have shortened a
+ *      report's LIST while its `counts` kept the true totals. Diffing the listed rows would answer
+ *      "what changed among the ones we happened to list", which is not the question; falling back to
+ *      the counts would be the count comparison {@link securityFindingIdentity} explains is unsound.
+ *
+ * It throws a plain `Error`, never an HTTP one: this module has no idea it is behind a web server
+ * (D-SP1 — its only import is `zod`). A caller that serves HTTP guards these four cases first and
+ * translates them into a **400** in its own words; the throws here are the backstop for the caller
+ * that forgets, and the reason a wrong pairing can never quietly produce a plausible-looking diff.
+ *
+ * Diffing a report against ITSELF is deliberately legal — everything lands in `unchanged`, `delta`
+ * is 0, and it is the cheapest available proof that the identity function is total.
+ */
+export function diffSecurityReports(
+  baseline: SecurityReport,
+  subject: SecurityReport,
+): SecurityPostureDiff {
+  if (baseline.subject.kind !== subject.subject.kind) {
+    throw new Error(
+      `Cannot diff security posture: the baseline is a "${baseline.subject.kind}" report and the subject a "${subject.subject.kind}" report. ` +
+        "A posture diff compares two scans of one server, or two versions of one skill.",
+    );
+  }
+  if (baseline.subject.ownerId !== subject.subject.ownerId) {
+    throw new Error(
+      `Cannot diff security posture: the baseline belongs to "${baseline.subject.ownerId}" and the subject to "${subject.subject.ownerId}". ` +
+        "A posture diff compares two scans of ONE server, or two versions of ONE skill.",
+    );
+  }
+  if (baseline.analyzerVersion !== subject.analyzerVersion) {
+    throw new Error(
+      `Cannot diff security posture: the baseline was analysed by security analyzer version ${baseline.analyzerVersion}, ` +
+        `and the subject by version ${subject.analyzerVersion}. ` +
+        "Findings produced under different analyzer versions are not on the same scale, so a rule's meaning may have changed underneath the comparison.",
+    );
+  }
+  if (baseline.truncated || subject.truncated) {
+    const sides = [
+      ...(baseline.truncated ? ["the baseline"] : []),
+      ...(subject.truncated ? ["the subject"] : []),
+    ];
+    throw new Error(
+      `Cannot diff security posture: ${sides.join(" and ")} produced more than ${SECURITY_FINDING_LIMIT} findings, ` +
+        `so the report lists only the first ${SECURITY_FINDING_LIMIT} of them ` +
+        `(baseline ${baseline.counts.total}, subject ${subject.counts.total} in total). ` +
+        'Diffing a truncated list would answer "what changed among the ones we listed", which is not a verdict.',
+    );
+  }
+
+  // Set membership by (ruleId, anchor) — never a count, and never the evidence text. A rule that
+  // fires on the same tool with a reworded description is the SAME finding; see
+  // `securityFindingIdentity` above for why both of those exclusions are load-bearing.
+  const baselineIdentities = new Set(baseline.findings.map(securityFindingIdentity));
+  const subjectIdentities = new Set(subject.findings.map(securityFindingIdentity));
+
+  // One pass over the subject in its own emit order, so `added` and `unchanged` inherit
+  // `compareSecurityFindings` for free and the diff is byte-stable for the same pair (D-SP6).
+  const added: SecurityFinding[] = [];
+  const unchanged: SecurityFinding[] = [];
+  for (const finding of subject.findings) {
+    if (baselineIdentities.has(securityFindingIdentity(finding))) unchanged.push(finding);
+    else added.push(finding);
+  }
+  const resolved = baseline.findings.filter(
+    (finding) => !subjectIdentities.has(securityFindingIdentity(finding)),
+  );
+
+  return {
+    analyzerVersion: subject.analyzerVersion,
+    generatedAt: laterInstant(baseline.generatedAt, subject.generatedAt),
+    baseline: baseline.subject,
+    subject: subject.subject,
+    added,
+    resolved,
+    unchanged,
+    counts: {
+      added: countFindings(added),
+      resolved: countFindings(resolved),
+      unchanged: countFindings(unchanged),
+    },
+    score: {
+      baseline: baseline.score,
+      subject: subject.score,
+      delta: subject.score.value - baseline.score.value,
+    },
+  };
+}
+
 // ── The wire schemas ────────────────────────────────────────────────────────────────────────────
 // `.strict()` at every level, for the same reason `ci-assertions.ts` is: a typo'd key must be a loud
 // rejection naming the field, never a value that is silently dropped from a report somebody believes
@@ -857,6 +1052,21 @@ export const securityScoreSchema = z
   })
   .strict();
 
+/**
+ * WP 1.4 — the per-severity tally, extracted so a report and each of a diff's three buckets validate
+ * against ONE definition. The object it replaced in {@link securityReportSchema} was byte-identical,
+ * so no payload that validated before validates differently now; the extraction exists only so the
+ * two cannot drift the way a second literal eventually does.
+ */
+export const securityFindingCountsSchema = z
+  .object({
+    error: z.number().int().nonnegative(),
+    warning: z.number().int().nonnegative(),
+    info: z.number().int().nonnegative(),
+    total: z.number().int().nonnegative(),
+  })
+  .strict();
+
 export const securitySubjectRefSchema = z
   .object({
     kind: securitySubjectKindSchema,
@@ -873,15 +1083,54 @@ export const securityReportSchema = z
     generatedAt: z.string().min(1),
     subject: securitySubjectRefSchema,
     findings: z.array(securityFindingSchema),
-    counts: z
-      .object({
-        error: z.number().int().nonnegative(),
-        warning: z.number().int().nonnegative(),
-        info: z.number().int().nonnegative(),
-        total: z.number().int().nonnegative(),
-      })
-      .strict(),
+    counts: securityFindingCountsSchema,
     score: securityScoreSchema,
     truncated: z.boolean(),
   })
   .strict();
+
+/**
+ * WP 1.4 — the wire shape of {@link diffSecurityReports}' answer.
+ *
+ * `.strict()` at every level like everything else here, and `delta` is `z.number().int()` **without**
+ * a sign bound on purpose: a posture that got worse is a negative delta, and a schema that refused
+ * one would refuse exactly the diff an operator most needs to see.
+ */
+export const securityPostureDiffSchema = z
+  .object({
+    analyzerVersion: z.number().int().positive(),
+    generatedAt: z.string().min(1),
+    baseline: securitySubjectRefSchema,
+    subject: securitySubjectRefSchema,
+    added: z.array(securityFindingSchema),
+    resolved: z.array(securityFindingSchema),
+    unchanged: z.array(securityFindingSchema),
+    counts: z
+      .object({
+        added: securityFindingCountsSchema,
+        resolved: securityFindingCountsSchema,
+        unchanged: securityFindingCountsSchema,
+      })
+      .strict(),
+    score: z
+      .object({
+        baseline: securityScoreSchema,
+        subject: securityScoreSchema,
+        delta: z.number().int(),
+      })
+      .strict(),
+  })
+  .strict();
+
+/**
+ * WP 1.4 — the query the two diff endpoints take: `?baseline=<scan id | skill version id>`.
+ *
+ * The baseline is always **named explicitly**; there is no "previous" shorthand here. Resolving one
+ * would mean listing a server's scan history, which is a read the security routes deliberately do not
+ * have — and a gate or a UI that silently picked a different baseline between two runs would produce
+ * two different diffs for the same question.
+ *
+ * `.strict()` because this endpoint takes exactly one parameter: `?baseline=…&minSeverity=error` is a
+ * caller who believes they applied a severity floor, and being told so beats being quietly ignored.
+ */
+export const securityDiffQuerySchema = z.object({ baseline: z.string().trim().min(1) }).strict();

@@ -39,7 +39,9 @@
 //     shared `securityFindingIdentity`, so a release that resolved one finding and introduced a
 //     different one FAILS where a count comparison would pass — and a rule that fires on the same
 //     tool with reworded evidence is the SAME finding, so a reworded description never turns the gate
-//     red.
+//     red. Since security-posture WP 1.4 the set arithmetic itself is the shared
+//     `diffSecurityReports`, which this rule calls for its `added` bucket rather than re-deriving:
+//     one definition of "what changed" for the gate, the posture diff and the UI alike.
 //   • **D-C21 — `minSeverity` defaults to `warning`.** `NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY`
 //     in the shared contract; `info` findings are hygiene and do not gate unless asked for.
 //   • **D-C22 — an analyzer-version mismatch between the two reports is a 400.** Exactly D-C8's
@@ -62,6 +64,7 @@ import {
   assertionTargetFamily,
   capAssertionDetails,
   DEFAULT_COMPARE_THRESHOLD,
+  diffSecurityReports,
   formatNumber,
   isSettledRatingState,
   NO_NEW_SECURITY_FINDINGS_DEFAULT_MIN_SEVERITY,
@@ -74,7 +77,6 @@ import {
   type SecurityFindingAnchor,
   type SecurityReport,
   type SecuritySeverity,
-  securityFindingIdentity,
   type ServerConfig,
   type Suite,
   type SuiteAggregates,
@@ -985,12 +987,16 @@ const EVALUATORS: { [K in AssertionRuleKind]: RuleEvaluator<K> } = {
     // **D-C20 — "new" is SET MEMBERSHIP by (ruleId, anchor), never a count.** A count comparison
     // would pass a release that resolved one finding and introduced a different, worse one — the
     // single most likely way this gate would be wrong in production. Evidence text is deliberately
-    // outside the identity (see `securityFindingIdentity`), so a reworded description that still
-    // trips the same rule on the same tool is the SAME finding and does not turn the gate red.
-    const baselineIdentities = new Set(baselineReport.findings.map(securityFindingIdentity));
-    const added = subjectReport.findings.filter(
-      (finding) => !baselineIdentities.has(securityFindingIdentity(finding)),
-    );
+    // outside the identity, so a reworded description that still trips the same rule on the same tool
+    // is the SAME finding and does not turn the gate red.
+    //
+    // security-posture WP 1.4 made that arithmetic the shared `diffSecurityReports`, which applies
+    // the same `securityFindingIdentity` this rule used to apply inline — so the gate and the posture
+    // diff can never disagree about which findings are new. Nothing about the gate's answer moved:
+    // `added` is still the subject's findings that the baseline did not have, still in the subject
+    // report's own emit order. This rule reads `added` and nothing else off the diff; the score
+    // delta and the resolved set belong to the diff's own consumers, not to a gate.
+    const added = diffSecurityReports(baselineReport, subjectReport).added;
     const gating = added.filter((finding) => severityAtLeast(finding.severity, threshold));
 
     const carried = subjectReport.counts.total - added.length;
