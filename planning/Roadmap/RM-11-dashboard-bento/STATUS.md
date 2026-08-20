@@ -153,8 +153,11 @@ cursor **spotlight** (brand-lime `color-mix`) is unwanted — elevation yes, col
 (3) **Overview and Scans should merge** — bring the measure tiles with their graphs across, make them
 look better, and put the two tables full-width at the bottom of the bento.
 
-- [ ] WP 2.1 — scan inventory tiles + both tables as bento tiles — spec [`WP-2.1-scan-tiles.md`](./WP-2.1-scan-tiles.md)
-- [ ] WP 2.2 — one page-level toolbar (correct order, shared timeline), Scans merged in, spotlight removed — spec [`WP-2.2-shell-restructure.md`](./WP-2.2-shell-restructure.md) · **depends on 2.1**
+- [x] WP 2.1 — scan inventory tiles + both tables as bento tiles — done 2026-08-20 · `fb26df0` · spec [`WP-2.1-scan-tiles.md`](./WP-2.1-scan-tiles.md). `InventoryTile` (Servers · Tools scanned · Resources · Prompts, one trend line each), `LargestToolTile`, and both tables as **full-width** bento tiles (`FootprintTableTile`, `RecentScansTile`), plus `scan-tile-data.ts`. Three of `ScansTab`'s eight metric cards were **deliberately dropped rather than moved** — "Total startup tokens" duplicates `StartupCostTile`, and "Unscanned"/"Failed" duplicate `AttentionTile`, which already surfaces both *with actions*. The owner's "enhance them so they look better" was a concrete defect: the sparklines were an 80×20 drawing adrift in a much wider card. Widening the box alone does not fix it — with the default `preserveAspectRatio` the drawing is merely letterboxed — so the tiles set `preserveAspectRatio="none"` + `h-6 w-full`. Verified in-browser: measured spans are hero/inventory 49%, four supporting tiles 24%, and `Top recommendation` + BOTH tables at **100%**.
+- [x] WP 2.2 — one page-level toolbar (correct order, shared timeline), Scans merged in, spotlight removed — done 2026-08-20 · `fb26df0` + `1ba96b4` · spec [`WP-2.2-shell-restructure.md`](./WP-2.2-shell-restructure.md). ONE `ViewToolbar` now sits **above** the tab strip in `DashboardView`, per the `toolbar-standard-2026-07-11` order (breadcrumb → one toolbar row → content); the three per-tab toolbar bands are gone. A single `?range=` param (preset token or `YYYY-MM-DD..YYYY-MM-DD`) drives **Overview, Testing and Issues**, adopting Testing's richer `DateRangePicker`; legacy `?oRange=` / `?tFrom=`+`?tTo=` still resolve and converge on the new key, and a **preset stays relative** while a **custom range stays pinned**. Tabs are Overview · Testing · Issues, with `?tab=scans` redirecting to Overview and preserving unrelated params. `ScansTab.tsx` deleted. Spotlight prop dropped — the yellow shade was upstream's `--primary`-tinted cursor gradient; `BentoGridItem`'s native hover lift is retained. **Owner-reported follow-up fixed in `1ba96b4`:** hovering a first-row tile clipped its top border, because the hover gesture is `hover:-translate-y-1` (4px of travel) + `shadow-xl` + a brightened `hover:border-ring/40` edge — and that edge is what carries the lift in dark theme — against a grid flush with its scroll container; `pt-2` gives it headroom. Also swapped the range control's `div role="group"` for a real `<fieldset>`, clearing the one `a11y/useSemanticElements` error. Verified in-browser both themes at 1400px: **0 spotlight overlays**, 0 horizontal overflow, 0 console errors, and a hovered top tile keeping 3.3px of headroom.
+- [x] WP 2.3 — fleet footprint plots every server, held at its last successful scan — done 2026-08-20 · `f2f3911` · spec [`WP-2.3-footprint-population.md`](./WP-2.3-footprint-population.md). Owner: *"fleet footprint shows only scanned MCP servers which have been scanned during the selected time and the result drops if a scan wasnt successfull."* The **total was already correct** (each server's last *successful* scan — `mcp-assets` contributes 628 despite its latest attempt failing) and its arithmetic is untouched, with its tests passing unmodified. The **chart** was wrong twice: it drew from the range-scoped response, so a server not scanned inside the window got no line at all; and it plotted only `measured` points, so a failed scan broke or dived the line. Now every server with ≥1 successful scan is plotted from the **standing** population regardless of window, and a failed or missing scan **carries the last successful value forward** — flat where nothing was measured, stepping only on a real change. Nothing is invented before a server's first success (no zero back-fill), and a server with **no** successful scan is *named* on the tile (`mcp-powerbi-fabric`) rather than drawn as a fabricated zero line — additive `unmeasuredServers` on the contract. **Invariant worth keeping: Σ of every line's final value === the headline total**, so the chart's right edge and the big number cannot disagree. Verified in-browser both themes: **7 distinct lines where a 7-day window previously produced 0**, axis spanning Jun 19–Jul 31 despite the range, no inner or page overflow.
+
+- [ ] WP 2.4 — the seven footprint lines are not distinguishable (D-DB4) — spec [`WP-2.4-series-differentiation.md`](./WP-2.4-series-differentiation.md)
 
 ### Decision log additions
 
@@ -171,3 +174,22 @@ look better, and put the two tables full-width at the bottom of the bento.
 - **2026-08-20 · the spotlight is removed, not made subtler.** It is upstream's opt-in
   `BentoGrid spotlight` overlay tinted from `--primary`; the owner wants hover elevation without the
   colour. Dropping the prop leaves `BentoGridItem`'s native hover lift intact.
+- **2026-08-20 · D-DB5 — "Since your last visit" stays dropped (owner).** Merging Scans retired
+  `ScansTab`'s change-summary card along with its `localStorage` plumbing. It was a *second*,
+  invisible, per-browser, unshareable change-window on a page whose whole premise is now one
+  explicit shared date range — two contradictory answers to "what changed?" side by side. Its
+  question is answered by `MoversTile` against the window the operator actually chose, and by
+  `RecentScansTile`. Owner confirmed the removal rather than restoring it.
+- **2026-08-20 · D-DB4 — many-series charts differentiate by STROKE, not by more colour (owner).**
+  Measured from the rendered SVG's gradient stops on the owner's data, the seven footprint lines
+  resolve to: lime `oklch(0.875 0.148 116.5)`, lime `(0.817 0.158 117.6)`, lime `(0.917 0.095 113.8)`,
+  blue `(0.715 0.084 241.8)`, blue `(0.895 0.058 239.4)`, grey `(0.705 0.009)`, grey `(0.595 0.004)`.
+  **`--chart-1..12` is not twelve distinguishable hues** — it is ~three hue families in lightness
+  steps plus two near-neutrals, so seven series yields three near-identical limes, two near-identical
+  blues and two greys at 2px. It also leaves series identity resting on colour alone. WP 2.4 adds
+  `seriesDashArray` stroke patterns. **Recorded so the next surface that plots many series does not
+  rediscover this**: adding an eighth colour does not add an eighth distinguishable line.
+  (Methodology note: a first measurement pass read `getComputedStyle(path).stroke`, which returns
+  `url(#line-gradient-…)` for these lines — parsing digits out of a gradient id produced meaningless
+  "chroma" numbers. The values above come from resolving the gradient stops. A stroke read that
+  returns a `url(...)` is not a colour.)
