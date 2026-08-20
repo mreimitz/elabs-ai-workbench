@@ -350,7 +350,12 @@ test("A8 — a tool ABSENT from the scope map is refused, however scoped (fail c
 
   const result = await call(client, UNMAPPED_TOOL);
   assert.equal(result.isError, true, "an undeclared tool must not be reachable by a token");
-  assert.match(result.content[0]?.text ?? "", /undeclared/);
+  const text = result.content[0]?.text ?? "";
+  assert.match(text, /undeclared/);
+  // …and it must NOT invent a permission. "This tool needs the `X` scope" would send an operator off
+  // to grant something that does not exist; the honest answer is that the server is broken.
+  assert.ok(!/needs the `.+` scope/.test(text), `the refusal invented a scope: ${text}`);
+  assert.ok(!text.includes("the undeclared thing"), "the refused tool's handler ran anyway");
 });
 
 // ── A9 (D-MCP7) — a tokenless loopback caller is unaffected ───────────────────────────────────────

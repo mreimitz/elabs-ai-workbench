@@ -63,7 +63,15 @@ export type WorkbenchMcpServerOverrides = {
 };
 
 /**
- * May `caller` invoke `toolName`? `null` when it may; otherwise the scope it is missing.
+ * The marker `missingScopeForTool` returns for a tool that names no scope at all. It is deliberately
+ * NOT a scope name (no member of the frozen D-C4 vocabulary can collide with it), so the refusal can
+ * say "this tool is broken" rather than inventing a permission for an operator to go and grant.
+ */
+export const UNDECLARED_TOOL_SCOPE = "undeclared";
+
+/**
+ * May `caller` invoke `toolName`? `null` when it may; otherwise the scope it is missing, or
+ * {@link UNDECLARED_TOOL_SCOPE} when the tool names none.
  *
  * **Fails closed twice over.** A tool that is absent from the scope map is refused rather than
  * allowed — the key-set test in `apps/api/test/mcp-server-scopes.test.ts` is what normally catches an
@@ -74,11 +82,11 @@ export function missingScopeForTool(
   toolName: string,
   caller: WorkbenchMcpCaller,
   toolScopes: Readonly<Record<string, ApiTokenScope>> = WORKBENCH_MCP_TOOL_SCOPES,
-): string | null {
+): ApiTokenScope | typeof UNDECLARED_TOOL_SCOPE | null {
   // D-MCP7: no token was involved at all — this is the open local path, unchanged by this WP.
   if (caller.grantedScopes === null) return null;
   const required = toolScopes[toolName];
-  if (required === undefined) return `${toolName} (undeclared)`;
+  if (required === undefined) return UNDECLARED_TOOL_SCOPE;
   return caller.grantedScopes.includes(required) ? null : required;
 }
 
@@ -87,19 +95,19 @@ export function missingScopeForTool(
  * not a thrown exception, because an `isError` result is what an MCP host shows the model — which is
  * the only way an agent learns what to ask its operator for.
  */
-function scopeRefusal(toolName: string, missing: string): CallToolResult {
-  return {
-    isError: true,
-    content: [
-      {
-        type: "text",
-        text:
-          `This tool needs the \`${missing}\` scope. The token you connected with does not have it — ` +
-          "create one in Settings › API tokens (a token also needs `read` to reach this server at " +
-          `all). Tool: ${toolName}.`,
-      },
-    ],
-  };
+function scopeRefusal(
+  toolName: string,
+  missing: ApiTokenScope | typeof UNDECLARED_TOOL_SCOPE,
+): CallToolResult {
+  const text =
+    missing === UNDECLARED_TOOL_SCOPE
+      ? `The tool ${toolName} declares no required scope, so this server refuses it to every token ` +
+        "(undeclared tool). This is a defect in the server, not something a different token would " +
+        "fix — report it rather than asking for more permissions."
+      : `This tool needs the \`${missing}\` scope. The token you connected with does not have it — ` +
+        "create one in Settings › API tokens (a token also needs `read` to reach this server at " +
+        `all). Tool: ${toolName}.`;
+  return { isError: true, content: [{ type: "text", text }] };
 }
 
 /**
