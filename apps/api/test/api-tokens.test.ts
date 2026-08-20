@@ -7,6 +7,7 @@ import { ZodError } from "zod";
 import {
   API_TOKEN_EXECUTE_SCOPES,
   API_TOKEN_PREFIX,
+  API_TOKEN_ROUTE_SCOPES,
   API_TOKEN_PREFIX_LENGTH,
   API_TOKEN_SCOPE_META,
   API_TOKEN_SCOPES,
@@ -17,6 +18,7 @@ import {
   looksLikeApiToken,
   readBearerToken,
   requiredScopesForMethod,
+  requiredScopesForRoute,
 } from "@mcp-token-footprint/shared";
 import { ApiTokenRepository } from "../src/api-tokens/repository.js";
 import { registerApiTokenRoutes } from "../src/api-tokens/routes.js";
@@ -123,6 +125,86 @@ test("A1 — the coarse method → scope rule is declared once, in shared", () =
   assert.equal(requiredScopesForMethod("DELETE"), null, "no scope can ever authorize a delete");
 });
 
+// ── WP M.2 (A1/A6) — the per-route scope table + resolver, still in packages/shared ───────────────
+//
+// These are contract tests over the DECLARATION. The guard's use of it (and the D-MCP9 strict path
+// matching that makes it safe) is pinned in `api-tokens-guard.test.ts`; the two halves are separate on
+// purpose, because a table that reads correctly and a matcher that applies it correctly are different
+// ways to get this wrong.
+
+test("A1 — the route table maps the two read-only POSTs, and nothing else", () => {
+  assert.deepEqual(
+    API_TOKEN_ROUTE_SCOPES.map((rule) => `${rule.method} ${rule.path} (${rule.match})`).sort(),
+    ["POST /api/assertions/evaluate (exact)", "POST /api/mcp (exact)"],
+  );
+  for (const rule of API_TOKEN_ROUTE_SCOPES) {
+    assert.deepEqual(rule.scopes, ["read"], `${rule.path} may only ever RELAX to \`read\``);
+  }
+});
+
+test("A6 — no rule can express a DELETE, target /api/tokens*, or carry an empty scope set", () => {
+  for (const rule of API_TOKEN_ROUTE_SCOPES) {
+    // The TYPE forbids "DELETE" (a compile error, not a review catch) — this is the runtime twin, so
+    // a cast or a hand-edited entry cannot smuggle one in either.
+    assert.notEqual(rule.method, "DELETE", `${rule.path} must not be a delete rule (D-MCP3)`);
+    // The guard refuses token CRUD before any scope check, so a rule here would do nothing — but it
+    // would READ as though it granted something, which is a trap for the next reader.
+    assert.ok(
+      rule.path !== "/api/tokens" && !rule.path.startsWith("/api/tokens/"),
+      `${rule.path} must not pretend to govern token CRUD`,
+    );
+    // An empty array would read as "no scope needed" and hand the route to any authenticated token.
+    assert.ok(rule.scopes.length > 0, `${rule.path} must require at least one scope`);
+    for (const scope of rule.scopes) {
+      assert.ok(
+        (API_TOKEN_SCOPES as readonly string[]).includes(scope),
+        `${rule.path} names ${scope}, which is not in the frozen vocabulary`,
+      );
+    }
+  }
+});
+
+test("A1 — requiredScopesForRoute consults the table, then falls back to the coarse rule", () => {
+  // A matcher a plain-string caller can pass. The API passes the RAW-and-DECODED strict one instead
+  // (D-MCP9) — that difference is the whole reason the parameter has no default.
+  const matcherFor = (path: string) => (rulePath: string, match: "exact" | "prefix") =>
+    match === "exact" ? path === rulePath : path === rulePath || path.startsWith(`${rulePath}/`);
+
+  assert.deepEqual(requiredScopesForRoute("POST", matcherFor("/api/mcp")), ["read"]);
+  assert.deepEqual(requiredScopesForRoute("post", matcherFor("/api/mcp")), ["read"], "verb case");
+  assert.deepEqual(requiredScopesForRoute("POST", matcherFor("/api/assertions/evaluate")), [
+    "read",
+  ]);
+
+  // Unmapped POSTs keep the coarse rule…
+  assert.deepEqual(
+    requiredScopesForRoute("POST", matcherFor("/api/servers/s1/scan")),
+    API_TOKEN_EXECUTE_SCOPES,
+  );
+  assert.deepEqual(
+    requiredScopesForRoute("POST", matcherFor("/api/run-plans")),
+    API_TOKEN_EXECUTE_SCOPES,
+  );
+  // …and the mount rule is EXACT, so a child path does not inherit it.
+  assert.deepEqual(
+    requiredScopesForRoute("POST", matcherFor("/api/mcp/llms.txt")),
+    API_TOKEN_EXECUTE_SCOPES,
+    "an exact rule must not relax a subtree",
+  );
+  // A GET keeps needing `read` whether or not a rule matched.
+  assert.deepEqual(requiredScopesForRoute("GET", matcherFor("/api/mcp/llms.txt")), ["read"]);
+});
+
+test("A6 — requiredScopesForRoute short-circuits DELETE before the table is even consulted", () => {
+  // A matcher that says YES to everything: if the table were consulted first, a delete would inherit
+  // `read`. It must not, however the table is spelled or ordered.
+  const matchesEverything = () => true;
+  assert.equal(requiredScopesForRoute("DELETE", matchesEverything), null);
+  assert.equal(requiredScopesForRoute("delete", matchesEverything), null);
+  // The fallback is unchanged and still exported — the route table extends around it, never edits it.
+  assert.equal(requiredScopesForMethod("DELETE"), null);
+});
+
 test("readBearerToken parses only a real bearer credential", () => {
   assert.equal(readBearerToken("Bearer mcpfp_abc"), "mcpfp_abc");
   assert.equal(readBearerToken("  bearer   mcpfp_abc  "), "mcpfp_abc");
@@ -227,8 +309,21 @@ test("authenticate distinguishes malformed / unknown / expired, and fails closed
 
   assert.deepEqual(service.authenticate(live.secret), {
     ok: true,
-    token: { id: live.token.id, label: "live", scopes: ["read"] },
+    // `tokenPrefix` (WP M.2) is the stored DISPLAY prefix, so the MCP mount's audit line can name
+    // WHICH token acted without the plaintext ever being in scope. It is read from the row — the same
+    // value the list endpoint shows — never re-derived from the presented credential.
+    token: {
+      id: live.token.id,
+      label: "live",
+      tokenPrefix: live.token.tokenPrefix,
+      scopes: ["read"],
+    },
   });
+  assert.ok(
+    live.secret.startsWith(`${API_TOKEN_PREFIX}${live.token.tokenPrefix}`),
+    "the display prefix really is the head of the plaintext — and nothing more of it",
+  );
+  assert.equal(live.token.tokenPrefix.length, API_TOKEN_PREFIX_LENGTH);
   assert.deepEqual(service.authenticate("nope"), { ok: false, reason: "malformed" });
   assert.deepEqual(service.authenticate(`${API_TOKEN_PREFIX}${"a".repeat(43)}`), {
     ok: false,

@@ -29,6 +29,12 @@ type ApiTokenRow = {
 export type ApiTokenAuthRow = {
   id: string;
   label: string;
+  /**
+   * The stored DISPLAY prefix (`API_TOKEN_PREFIX_LENGTH` characters after `mcpfp_`), so an
+   * audit line can name WHICH token acted without the plaintext ever being in scope. Read from the
+   * row, never re-derived from the presented credential — this layer must not see a plaintext.
+   */
+  tokenPrefix: string;
   scopes: ApiTokenScope[];
   expiresAt: string | null;
   lastUsedAt: string | null;
@@ -119,12 +125,13 @@ export class ApiTokenRepository {
   findByHash(hash: string): ApiTokenAuthRow | undefined {
     const row = this.db
       .prepare(
-        `SELECT id, label, scopes_json, expires_at, last_used_at FROM api_tokens WHERE token_hash = ?`,
+        `SELECT id, label, token_prefix, scopes_json, expires_at, last_used_at FROM api_tokens WHERE token_hash = ?`,
       )
       .get(hash) as
       | {
           id: string;
           label: string;
+          token_prefix: string;
           scopes_json: string;
           expires_at: string | null;
           last_used_at: string | null;
@@ -134,6 +141,7 @@ export class ApiTokenRepository {
     return {
       id: row.id,
       label: row.label,
+      tokenPrefix: row.token_prefix,
       scopes: readScopes(row.scopes_json),
       expiresAt: row.expires_at,
       lastUsedAt: row.last_used_at,

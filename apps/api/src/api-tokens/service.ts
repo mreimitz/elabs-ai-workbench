@@ -60,6 +60,13 @@ export type ApiTokenAuthResult =
 export type AuthenticatedApiToken = {
   id: string;
   label: string;
+  /**
+   * The DISPLAY prefix from the stored row (`ab12cd34`, the characters after `mcpfp_`) — enough to
+   * say WHICH token acted in an audit line, never enough to authenticate with. Added by WP M.2 for
+   * the MCP mount's per-tool-call audit line; it comes from the row, never from the presented
+   * plaintext, so no code path downstream of `authenticate` can accidentally hold a credential.
+   */
+  tokenPrefix: string;
   scopes: ApiTokenScope[];
 };
 
@@ -120,7 +127,15 @@ export class ApiTokenService {
     }
 
     this.touchIfStale(row, now);
-    return { ok: true, token: { id: row.id, label: row.label, scopes: row.scopes } };
+    return {
+      ok: true,
+      token: {
+        id: row.id,
+        label: row.label,
+        tokenPrefix: row.tokenPrefix,
+        scopes: row.scopes,
+      },
+    };
   }
 
   /** Write `last_used_at` only when the stored value is older than the throttle window (or absent). */

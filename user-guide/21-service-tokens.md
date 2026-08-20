@@ -60,6 +60,26 @@ Two limits are built in and are **not** switchable:
 - **No token can create or revoke other tokens.** A leaked token cannot mint replacements for
   itself, so revoking it genuinely ends its access.
 
+### Which permission does a caller need?
+
+The rule of thumb is "reading needs Read, doing needs the matching permission". Two things look like
+doing but are not, so they are called out here rather than left to be discovered:
+
+| The caller wants to… | Ticks |
+| --- | --- |
+| Read anything the workbench has measured | **Read** |
+| Connect an assistant to the workbench's own [MCP endpoint](./20-workbench-mcp-server.md) | **Read** |
+| Check a footprint gate (`mcpfp assert`) | **Read** |
+| Start a discovery scan | **Run scans** |
+| Start a test run | **Launch runs** |
+| Start a suite mass-run | **Run suites** |
+
+The MCP endpoint and the gate check are the two that surprise people: both are pure reads that
+happen to be sent as a `POST`, so they ask for **Read** and nothing more. In particular, a token
+with *only* "Run scans" cannot connect an assistant to the workbench at all — listing what an
+assistant can do is itself a read, so **Read is the price of admission**. An assistant that will one
+day take actions needs Read *plus* the permission for the action.
+
 ## Use a token
 
 Send it as an `Authorization` header:
@@ -72,9 +92,11 @@ curl -H "Authorization: Bearer mcpfp_your_token_here" \
 If the token is missing, wrong, revoked, or past its expiry date, the request is refused with a
 `401`. If the token is valid but lacks the permission that request needs, it is refused with a `403`.
 
-> **Coming next.** The `mcpfp` command line and per-tool permissions on the workbench's own MCP
-> endpoint are the next pieces of this feature and are not built yet. Tokens work today for direct
-> HTTP calls like the one above.
+Three things already accept a token: direct HTTP calls like the one above, the
+[`mcpfp` command line](./22-mcpfp-cli.md), and the workbench's own
+[MCP endpoint](./20-workbench-mcp-server.md#connecting-from-another-machine) — where the token goes
+in the assistant's config as an `Authorization` header, and each tool on that endpoint checks the
+permission it needs before it runs.
 
 ## Revoke a token
 
@@ -110,7 +132,8 @@ monitoring are unaffected.
 ## Where tokens sit in the bigger picture
 
 - [Workbench agent playbook](./20-workbench-mcp-server.md) — pointing an AI assistant at the app.
-  On your own machine that needs no token; from anywhere else it will.
+  On your own machine that needs no token; from anywhere else it needs one with **Read**.
+- [The `mcpfp` command line](./22-mcpfp-cli.md) — scans, reports and footprint gates from a script.
 - [Settings](./13-settings.md) — the rest of what lives in Settings.
 - [Troubleshooting & FAQ](./14-troubleshooting.md) — if a call is being refused and you are not sure
   why.

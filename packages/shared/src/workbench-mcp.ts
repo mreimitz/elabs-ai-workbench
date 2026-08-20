@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ApiTokenScope } from "./api-tokens.js";
 import { RUN_STATUSES, SUITE_RUN_STATUSES } from "./constants.js";
 
 // ==================================================================================================
@@ -74,6 +75,58 @@ export type WorkbenchMcpReadToolName = (typeof WORKBENCH_MCP_READ_TOOL_NAMES)[nu
 export const WORKBENCH_MCP_READ_TOOL_NAME_SET: ReadonlySet<string> = new Set(
   WORKBENCH_MCP_READ_TOOL_NAMES,
 );
+
+/**
+ * The scope each registered tool needs from a **token-authenticated** caller (WP M.2).
+ *
+ * Every tool in WP M.1's read surface is `read`; WP M.3's write tools name their execute scope here
+ * and nowhere else, so "what does this tool cost me in consent" is answered by one table rather than
+ * by reading handlers. A test asserts this record's key set equals the registered tool names
+ * **exactly** — a new tool with no scope, or a scope for a tool that does not exist, fails the gate,
+ * and the mount additionally refuses an unmapped tool at dispatch (fail closed, belt and braces).
+ *
+ * Two things this map deliberately does NOT decide:
+ *
+ *   • **Whether enforcement applies at all.** A tokenless loopback caller is trusted with the whole
+ *     mount (D-MCP7) — the same posture the rest of the API already has, where `curl` on the host can
+ *     `POST /api/runs` with no credential. The mount does not get a stricter rule than the API it is
+ *     mounted on; `API_AUTH_REQUIRED=true` is the one switch that changes that, for everything at once.
+ *   • **Whether the caller may open the mount.** That is the route rule (`API_TOKEN_ROUTE_SCOPES`:
+ *     `POST /api/mcp → read`, D-MCP8). A token-authenticated caller that reached a tool at all
+ *     therefore already holds `read` — which is why every read tool below naming `read` restates the
+ *     door rule rather than adding a second gate, and why a write-capable agent needs `read` **plus**
+ *     its execute scope.
+ */
+export const WORKBENCH_MCP_TOOL_SCOPES: Record<string, ApiTokenScope> = {
+  // ── Servers & scans ─────────────────────────────────────────────────────────────────────────
+  servers_list: "read",
+  scans_list: "read",
+  scans_get: "read",
+  scans_latest: "read",
+  scans_tools: "read",
+  compatibility_heatmap: "read",
+  compatibility_findings: "read",
+
+  // ── Runs & reports ──────────────────────────────────────────────────────────────────────────
+  runs_list: "read",
+  runs_get: "read",
+  runs_grades: "read",
+  run_report: "read",
+
+  // ── Skills ──────────────────────────────────────────────────────────────────────────────────
+  skills_list: "read",
+  skills_get: "read",
+  skills_versions: "read",
+  skills_files: "read",
+  skills_file_content: "read",
+  skills_security: "read",
+
+  // ── Suites, collections ─────────────────────────────────────────────────────────────────────
+  suites_list: "read",
+  suite_runs_list: "read",
+  suite_runs_get: "read",
+  collections_list: "read",
+};
 
 /** Hard ceiling on any `limit` argument — a host asking for more gets a validation error, not a dump. */
 export const WORKBENCH_MCP_MAX_LIST_LIMIT = 200;

@@ -321,14 +321,26 @@ wired from `apps/api/src/index.ts`); the wire contract is `packages/shared` (`ty
   `mcp-server/llms-txt.ts`). Contract in `packages/shared/src/workbench-mcp.ts`; feature-flagged by
   `mcp_server` (the flag's `/api/mcp` prefix covers the doc too). Owner-facing walkthrough:
   [`user-guide/20-workbench-mcp-server.md`](./user-guide/20-workbench-mcp-server.md); the dogfood
-  gate is `pnpm mcp:self-scan` (`mcp-server/self-scan.ts`).
+  gate is `pnpm mcp:self-scan` (`mcp-server/self-scan.ts`). **Scopes (WP M.2):** a *tokenless
+  loopback* caller reaches everything, exactly as before (D-MCP7 — the mount gets no stricter rule
+  than the API it is mounted on; `API_AUTH_REQUIRED=true` is the one switch that changes it, for the
+  whole API). A *token-authenticated* caller needs **`read` just to open the mount**
+  (`API_TOKEN_ROUTE_SCOPES`, D-MCP8 — `initialize`/`tools/list` are reads), and then each tool's own
+  scope from `WORKBENCH_MCP_TOOL_SCOPES` (all `read` today), enforced at dispatch in
+  `mcp-server/server.ts` as a readable `isError` result naming the missing scope, with one audit line
+  per tool call carrying the token's **display prefix** (never the credential).
 - **Tokens** (`api-tokens/`) — service-token CRUD for headless callers: `GET`/`POST /api/tokens`,
   `DELETE /api/tokens/:id` (the plaintext is returned **once**, from the create response, and never
   again). Plus the root `onRequest` **guard** that authenticates a presented `Authorization: Bearer
   mcpfp_…`, enforces "loopback open · remote requires a token" (D-C2, `API_AUTH_REQUIRED` forces it
-  on loopback too), and coarsely scope-checks a token-authenticated request — deletes and token CRUD
-  are refused to any token. Contract in `packages/shared/src/api-tokens.ts`; **no feature flag**
-  (an off-switch on an auth check is a foot-gun). See §7 and
+  on loopback too), and scope-checks a token-authenticated request — `API_TOKEN_ROUTE_SCOPES` first
+  (WP M.2: `POST /api/mcp` and `POST /api/assertions/evaluate` need only `read`, since both are reads
+  that travel in a POST body), then the coarse `requiredScopesForMethod` rule; deletes and token CRUD
+  are refused to any token. A route rule can only ever **relax**, cannot express a `DELETE` (the type
+  has no such member), and is matched on the raw-**and**-decoded path *intersection* — the opposite of
+  the inclusive union used to decide what is governed (D-MCP9, `utils/request-path.ts`). Contract in
+  `packages/shared/src/api-tokens.ts`; **no feature flag** (an off-switch on an auth check is a
+  foot-gun). See §7 and
   [`user-guide/21-service-tokens.md`](./user-guide/21-service-tokens.md).
 - **Maintenance** (`db/maintenance.ts`) — `POST /api/maintenance/{checkpoint,vacuum,prune-scans,prune-assistant}`.
 - **Health** — `GET /api/health`.
@@ -384,12 +396,19 @@ Keep real secrets in `.env.local` (never committed); only `.env.example` is trac
 CLI, an external agent on the MCP mount) presents instead of a browser session. A token is
 `mcpfp_` + 43 base64url chars (256 bits from `node:crypto`), stored as a **SHA-256 digest** with an
 8-character display prefix — the plaintext is returned **exactly once** by `POST /api/tokens` and is
-never persisted, listed, or logged. Scopes are a **frozen** tuple (D-C4) — `read` · `scan:run` ·
-`runs:launch` · `suites:run`, exactly the write scopes D-MCP3 names, so WP M.2/M.3 consume them
-unchanged; there is **no delete scope** and a token-authenticated `DELETE` is refused outright. The
-root `onRequest` guard (`api-tokens/guard.ts`) decides loopback **from the socket peer, never from a
-header** — do not enable `trustProxy` (a test pins it off). No feature flag: an off-switch on an auth
-check is a foot-gun. Owner-facing walkthrough:
+never persisted, listed, or logged (an audit line may carry the **display prefix**, never the
+credential). Scopes are a **frozen** tuple (D-C4) — `read` · `scan:run` · `runs:launch` ·
+`suites:run`, exactly the write scopes D-MCP3 names, consumed unchanged by WP M.2/M.3; there is **no
+delete scope** and a token-authenticated `DELETE` is refused outright. Mapping onto routes is
+`API_TOKEN_ROUTE_SCOPES` + `requiredScopesForRoute` in `packages/shared/src/api-tokens.ts` (WP M.2) —
+a table that can only ever **relax** a named route, backed by the unchanged coarse
+`requiredScopesForMethod` fallback. The root `onRequest` guard (`api-tokens/guard.ts`) decides
+loopback **from the socket peer, never from a header** — do not enable `trustProxy` (a test pins it
+off) — and matches a *relaxing* rule on the raw-**and**-decoded path intersection while it still
+decides what is *governed* on the union (D-MCP9: `requestPathEqualsStrict`/`requestPathIsUnderStrict`
+vs `requestPathEquals`/`requestPathIsUnder`; swapping the two directions is a privilege escalation,
+and a table in `api-tokens-guard.test.ts` goes red if you do). No feature flag: an off-switch on an
+auth check is a foot-gun. Owner-facing walkthrough:
 [`user-guide/21-service-tokens.md`](./user-guide/21-service-tokens.md).
 
 ---

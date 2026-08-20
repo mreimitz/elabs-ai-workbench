@@ -8,10 +8,12 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import {
   API_TOKEN_AUTH_REQUIRED_ERROR_CODE,
+  API_TOKEN_EXECUTE_SCOPES,
   API_TOKEN_INVALID_ERROR_CODE,
   API_TOKEN_LAST_USED_THROTTLE_MS,
   API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE,
   type ApiTokenScope,
+  requiredScopesForMethod,
 } from "@mcp-token-footprint/shared";
 import { registerApiTokenGuard, isLoopbackAddress } from "../src/api-tokens/guard.js";
 import { ApiTokenRepository } from "../src/api-tokens/repository.js";
@@ -19,6 +21,13 @@ import { registerApiTokenRoutes } from "../src/api-tokens/routes.js";
 import { ApiTokenService } from "../src/api-tokens/service.js";
 import { applyMigrations, type AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
+import {
+  normalizeRequestPath,
+  requestPathEquals,
+  requestPathEqualsStrict,
+  requestPathIsUnder,
+  requestPathIsUnderStrict,
+} from "../src/utils/request-path.js";
 
 // Service tokens (roadmap/ci/ WP 1.1, D-C2) — the GUARD, over a real Fastify app and a real SQLite
 // `api_tokens` table. The posture under test is the whole point of the WP: loopback stays open so the
@@ -100,6 +109,15 @@ async function makeApp(
   app.get("/api/scans", async (request) => ({ ok: true, tokenId: request.apiToken?.id ?? null }));
   app.post("/api/servers/s1/scan", async () => ({ ok: true }));
   app.delete("/api/scans/sc1", async () => ({ ok: true }));
+  // The two routes WP M.2 maps to `read` in `API_TOKEN_ROUTE_SCOPES` — stand-ins with the real paths,
+  // because what is under test is the guard's mapping, not either handler's body. Their real
+  // registrations live in `mcp-server/routes.ts` and `assertions/routes.ts`.
+  app.post("/api/mcp", async (request) => ({ ok: true, tokenId: request.apiToken?.id ?? null }));
+  app.delete("/api/mcp", async () => ({ ok: true }));
+  app.post("/api/mcp/llms.txt", async () => ({ ok: true }));
+  app.post("/api/assertions/evaluate", async () => ({ ok: true }));
+  // An unmapped POST that is NOT the scan stand-in — a second, independent fail-closed check.
+  app.post("/api/run-plans", async () => ({ ok: true }));
   // A near-miss for the `/api/tokens*` rule — proves that match is a path-SEGMENT boundary.
   app.get("/api/tokensmith", async () => ({ ok: true }));
   // A non-/api path: the SPA and static assets must stay untouched by the guard.
@@ -352,6 +370,186 @@ test("the guard matches on the PATH only — a query string does not smuggle a r
     headers: { authorization: `Bearer ${secret}` },
   });
   assert.equal(response.statusCode, 403, "the query string did not hide /api/tokens from the guard");
+});
+
+// ══ WP M.2 — per-route scope mapping (A2 · A3 · A4 · A5 · A6) ═════════════════════════════════════
+//
+// `API_TOKEN_ROUTE_SCOPES` can only ever RELAX a named route, and the two routes it names are reads
+// that happen to travel in a POST body. These tests assert BOTH directions on purpose: that the two
+// mapped routes now work for a `read`-only token, and that the coarse rule they were relaxed from is
+// still what everything else gets — otherwise the suite would merely restate the new behaviour
+// instead of proving the change.
+
+test("M.2/A2 (D-MCP8) — a read-only token may POST the MCP mount; the coarse rule would have refused it", () => {
+  // The "before" direction, asserted against the unchanged fallback rather than against a memory of
+  // it: under `requiredScopesForMethod` alone, POST demands an execute scope, so `read` was refused.
+  assert.deepEqual(requiredScopesForMethod("POST"), API_TOKEN_EXECUTE_SCOPES);
+  assert.ok(
+    !(requiredScopesForMethod("POST") as readonly string[]).includes("read"),
+    "the coarse rule this WP relaxes really does exclude `read` on a POST",
+  );
+});
+
+test("M.2/A2 — the read-only token reaches POST /api/mcp, and the mount rule is EXACT", async () => {
+  const h = await makeApp();
+  const { id, secret } = h.mint(["read"]);
+  const headers = { authorization: `Bearer ${secret}` };
+
+  h.reached.length = 0;
+  const mount = await remote(h, "/api/mcp", { method: "POST", headers });
+  assert.equal(mount.statusCode, 200);
+  assert.deepEqual(mount.json(), { ok: true, tokenId: id }, "the handler ran, as this token");
+  assert.deepEqual(h.reached, ["POST /api/mcp"]);
+
+  // `match: "exact"` — a child path must NOT inherit the relaxation, or any future POST under the
+  // mount would be silently relaxed by a rule nobody re-reviewed.
+  const child = await remote(h, "/api/mcp/llms.txt", { method: "POST", headers });
+  assert.equal(child.statusCode, 403, "an exact rule does not relax the subtree");
+  assert.equal(child.json<{ code?: string }>().code, API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE);
+});
+
+test("M.2/A3 (D-C10) — a read-only token may POST /api/assertions/evaluate", async () => {
+  const h = await makeApp();
+  const { secret } = h.mint(["read"]);
+  h.reached.length = 0;
+  const response = await remote(h, "/api/assertions/evaluate", {
+    method: "POST",
+    headers: { authorization: `Bearer ${secret}` },
+  });
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(h.reached, ["POST /api/assertions/evaluate"]);
+});
+
+test("M.2/A4 — an UNMAPPED POST still needs an execute scope (the table only relaxes what it names)", async () => {
+  const h = await makeApp();
+  const { secret } = h.mint(["read"]);
+  const headers = { authorization: `Bearer ${secret}` };
+
+  for (const path of ["/api/servers/s1/scan", "/api/run-plans"]) {
+    h.reached.length = 0;
+    const response = await remote(h, path, { method: "POST", headers });
+    assert.equal(response.statusCode, 403, path);
+    assert.equal(
+      response.json<{ code?: string }>().code,
+      API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE,
+      path,
+    );
+    assert.deepEqual(h.reached, [], `${path} reached a handler on a read-only token`);
+  }
+
+  // …and an execute-scoped token still passes there, so the fail-closed check is not vacuous.
+  const executor = h.mint(["scan:run"]);
+  assert.equal(
+    (
+      await remote(h, "/api/servers/s1/scan", {
+        method: "POST",
+        headers: { authorization: `Bearer ${executor.secret}` },
+      })
+    ).statusCode,
+    200,
+  );
+});
+
+test("M.2/A6 (D-MCP3) — a token-authenticated DELETE to the mount is still refused", async () => {
+  const h = await makeApp();
+  // Every scope at once: the table cannot express a DELETE rule, and the guard short-circuits one
+  // before the table is consulted, so no combination of grants reaches this handler.
+  const { secret } = h.mint(["read", "scan:run", "runs:launch", "suites:run"]);
+  h.reached.length = 0;
+  const response = await remote(h, "/api/mcp", {
+    method: "DELETE",
+    headers: { authorization: `Bearer ${secret}` },
+  });
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.json<{ code?: string }>().code, API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE);
+  assert.deepEqual(h.reached, []);
+});
+
+// ── A5 (D-MCP9) — a relaxing rule matches on the raw∩decoded INTERSECTION ──────────────────────────
+//
+// The guard decides what is GOVERNED on the raw∪decoded union (inclusive — over-governing is
+// harmless). A route→scope rule does the opposite job: it LOWERS what a request needs, so it applies
+// only when the raw form and the decoded form BOTH match it. `/%61pi/mcp` therefore falls back to the
+// coarse rule and is refused for a `read`-only token, even though the router would dispatch it to the
+// mount. Swap `requestPathEqualsStrict` for `requestPathEquals` in the guard and this table goes red.
+
+type RelaxShape = {
+  path: string;
+  /** 200 = the relaxed rule applied · 403 = it did not, and the coarse rule refused a read token. */
+  status: number;
+  why: string;
+};
+
+const RELAX_SHAPES: RelaxShape[] = [
+  { path: "/api/mcp", status: 200, why: "the plain form — the rule is supposed to apply here" },
+  {
+    path: "/%61pi/mcp",
+    status: 403,
+    why: "THE ambiguous form — the router reaches the mount, but a RELAXING rule must not fire",
+  },
+  {
+    path: "/api/%6dcp",
+    status: 403,
+    why: "an encoded byte in the last segment is equally ambiguous",
+  },
+  { path: "/%61pi/%6dcp", status: 403, why: "encoded bytes in both segments" },
+  {
+    path: "/api/assertions/%65valuate",
+    status: 403,
+    why: "the same rule for the assertions endpoint — one mechanism, not two",
+  },
+];
+
+test("M.2/A5 (D-MCP9) — an ambiguous path does NOT inherit a relaxed rule", async () => {
+  const h = await makeApp();
+  const { secret } = h.mint(["read"]);
+  const headers = { authorization: `Bearer ${secret}` };
+
+  for (const shape of RELAX_SHAPES) {
+    h.reached.length = 0;
+    const response = await remote(h, shape.path, { method: "POST", headers });
+    assert.equal(response.statusCode, shape.status, `${shape.path} — ${shape.why}`);
+    if (shape.status === 403) {
+      assert.equal(
+        response.json<{ code?: string }>().code,
+        API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE,
+        shape.path,
+      );
+      assert.deepEqual(h.reached, [], `${shape.path} REACHED the handler on a read-only token`);
+    }
+  }
+});
+
+test("M.2/A5 — the two matchers are opposite by construction, and neither may be swapped", () => {
+  const ambiguous = normalizeRequestPath("/%61pi/mcp");
+  const plain = normalizeRequestPath("/api/mcp");
+  const undecodable = normalizeRequestPath("/%zz/api/mcp");
+
+  // Governed-path direction (union, inclusive): the ambiguous form IS governed, and an undecodable
+  // path is governed too — that is what stops `/%61pi/tokens` from walking past the guard.
+  assert.equal(requestPathIsUnder(ambiguous, "/api"), true);
+  assert.equal(requestPathIsUnder(undecodable, "/api"), true);
+  assert.equal(requestPathEquals(ambiguous, "/api/mcp"), true);
+
+  // Relaxing direction (intersection, conservative): the ambiguous form does NOT match, so it keeps
+  // the stricter coarse rule; the plain form does.
+  assert.equal(requestPathEqualsStrict(plain, "/api/mcp"), true);
+  assert.equal(requestPathEqualsStrict(ambiguous, "/api/mcp"), false);
+  assert.equal(requestPathEqualsStrict(undecodable, "/api/mcp"), false);
+  assert.equal(requestPathIsUnderStrict(plain, "/api"), true);
+  assert.equal(requestPathIsUnderStrict(ambiguous, "/api"), false);
+  assert.equal(requestPathIsUnderStrict(undecodable, "/api"), false);
+
+  // Stated as the invariant rather than as five examples: on an ambiguous path the two directions
+  // must DISAGREE. If a refactor ever makes them agree, one of them has been swapped for the other.
+  assert.notEqual(
+    requestPathEquals(ambiguous, "/api/mcp"),
+    requestPathEqualsStrict(ambiguous, "/api/mcp"),
+  );
+  assert.notEqual(
+    requestPathIsUnder(ambiguous, "/api"),
+    requestPathIsUnderStrict(ambiguous, "/api"),
+  );
 });
 
 // ── A9 — no header-forged bypass ──────────────────────────────────────────────────────────────────
