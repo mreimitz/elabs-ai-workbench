@@ -225,6 +225,19 @@ _Entries: date · decision · rationale._
   stamp for the day any of that has to change.
 
 ## Owner acceptance (owner-only)
+- [ ] **WPs 1.1–1.2 — the false-positive rate on YOUR real servers.** Call
+      `GET /api/scans/:scanId/security` for every server you have actually registered and read the
+      findings. The heuristics were reviewed against fixtures, **never against a corpus of real
+      third-party MCP servers** — so the question is not "did it find the poisoned one" but "how many
+      of these findings would I roll my eyes at?" Anything that fires on an honest server is a
+      matcher to tighten (WP 1.2's near-miss fixtures are where the tightening goes), not a severity
+      to lower — accepted: ____
+- [ ] **D-SP9 — the one decryption-path touch, for your explicit sign-off.**
+      `OAuthRepository.listGrantedScopes` reads the encrypted OAuth blob and returns granted scope
+      **names** so `oauth.broad-scope` can judge them. 28 insertion-only lines, `string[] | null`, no
+      access token / refresh token / client secret / expiry / id, with a test asserting a stored
+      access token appears nowhere in a serialized report. Read the method and say whether publishing
+      scope names in a posture report is a line you want crossed — accepted: ____
 - [ ] A deliberately poisoned fixture server (injection phrasing + secret-shaped param +
       contradictory annotation) shows the expected findings with readable evidence in both
       themes; a clean server scores clean; the diff shows a finding appearing and resolving —

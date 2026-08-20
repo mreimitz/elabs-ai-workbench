@@ -987,6 +987,36 @@ MCP) here._
       the same host with **no** token is refused; a token holding only `scan:run` is refused at the
       door naming `read`; and the API log shows one audit line per tool call carrying
       `mcpfp_xxxxxxxx` and no secret — accepted: ____
+- [ ] **WP M.3 — the write tools, from a real MCP host.** Point Claude Code or Cursor at
+      `http://<host>:8081/api/mcp` with a token holding `read` + `scan:run`, and have the agent run
+      `scan_run` against a registered server: the result should be a compact summary naming
+      `scans_get`, not a wall of tool definitions. Then ask it to `suite_run_start` with the SAME
+      token — it must be refused with a message naming `suites:run`, and no suite run may appear.
+      Finally confirm the cost estimate in a launch result matches what the in-app launcher previews
+      for the same plan — accepted: ____
+- [ ] **WP 2.1 — `mcpfp suite run` against a real matrix.** Run a saved suite that takes minutes:
+      the progress lines should move (not repeat), the summary should name the worst members, and
+      the exit code should be 0. Then stop a run from the UI mid-flight and confirm the command
+      exits **2** saying `stopped`, not 0. If you have a suite that trips its cost cap, confirm
+      `capped` is also a 2 — that is the judgement call most worth your eye, since a capped run did
+      produce partial results — accepted: ____
+- [ ] **WP 2.2 — a quality gate that genuinely fails, and its PR comment.** Write a
+      `min-suite-score` your current suite misses, run `mcpfp assert --format markdown`, and read the
+      rendered comment: does the verdict line, the grade/cost delta and the collapsed detail block
+      tell you what to do? Post it on a real PR and confirm GitHub renders the two delta lines as two
+      lines. Then assert against a suite run that is still rating and confirm the **400** rather than
+      a low score — accepted: ____
+- [ ] **WP 2.3 — the example workflow, actually executed.** Copy
+      `examples/github-actions/mcpfp-footprint-gate.yml` into a repository that owns an MCP server
+      and let GitHub Actions run it. **Nobody has ever run these files** — this is the acceptance
+      that matters most in this batch. Confirm the health wait works, the scan and assert steps fail
+      independently, and `gh pr comment` posts the body — accepted: ____
+- [ ] **WP 3.1 — the posture gate against a real regression.** Scan a server, add a deliberately
+      poisoned tool to it (injection phrasing, or a `readOnlyHint: true` on a `delete_*`), scan
+      again, and run a gate carrying `no-new-security-findings`: it must fail naming the rule and the
+      tool. Then reword the offending description **without** removing the problem and confirm it
+      still reads as the SAME finding (no new failure, no resolved-then-new churn) — that is D-C20's
+      whole claim, and the one an operator will notice first — accepted: ____
 - [ ] A repository with an MCP server gated end-to-end: PR → workflow → scan + suite +
       assertions → PR comment with deltas; a deliberate budget breach fails the check —
       accepted: ____
