@@ -6,6 +6,7 @@ export { CalibrationCube } from "./CalibrationCube.js";
 export { Connector, arrowHeadPoints } from "./Connector.js";
 export { ConstructionGhost } from "./ConstructionGhost.js";
 export { EntityRoot, entityPortAnchors } from "./EntityRoot.js";
+export { FIGURE_PROPORTIONS, IsoFigure, figureBoxes, figureHeightUnits } from "./IsoFigure.js";
 export { GlyphFrame, resolveGlyphFace } from "./GlyphFrame.js";
 export { IsoHousing, isoExtrude } from "./IsoHousing.js";
 export {
@@ -30,6 +31,7 @@ export type { ConnectorProps } from "./Connector.js";
 export type { ConstructionGhostProps } from "./ConstructionGhost.js";
 export type { EntityMeta, EntityRootProps } from "./EntityRoot.js";
 export type { GlyphFace, GlyphFrameProps } from "./GlyphFrame.js";
+export type { FigureBoxes, IsoFigureProps } from "./IsoFigure.js";
 export type { IsoHousingProps } from "./IsoHousing.js";
 export type { IsoPlatformProps } from "./IsoPlatform.js";
 export type { PaperStageProps } from "./PaperStage.js";

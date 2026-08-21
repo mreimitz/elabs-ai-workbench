@@ -14,6 +14,7 @@ import { CalibrationCube } from "./CalibrationCube.js";
 import { CalloutCard, calloutCardHeight } from "./CalloutCard.js";
 import { ConstructionGhost } from "./ConstructionGhost.js";
 import { GlyphFrame } from "./GlyphFrame.js";
+import { FIGURE_PROPORTIONS, IsoFigure, figureBoxes, figureHeightUnits } from "./IsoFigure.js";
 import { IsoHousing, isoExtrude } from "./IsoHousing.js";
 import { IsoPlatform, PLATFORM_MAX_TIERS, platformHeight } from "./IsoPlatform.js";
 import { PaperStage } from "./PaperStage.js";
@@ -36,6 +37,7 @@ const EVERY_PRIMITIVE: readonly (readonly [string, () => ReactElement])[] = [
     ),
   ],
   ["ConstructionGhost", () => <ConstructionGhost width={6} depth={6} />],
+  ["IsoFigure", () => <IsoFigure footprint={6} floor={1.2} />],
   ["CalibrationCube", () => <CalibrationCube />],
   [
     "StationHeader",
@@ -165,6 +167,61 @@ describe("IsoPlatform — the quantized plinth", () => {
       .map((pair) => Number(pair.split(",")[0]));
     assert.equal(Math.max(...top), 83.138);
     assert.equal(Math.min(...top), -83.138);
+  });
+});
+
+describe("IsoFigure — the standing figure two entities share (WP 1.1 §3)", () => {
+  it("stacks torso, neck and head from the floor with no gap and no overlap", () => {
+    const { torso, neck, head, crown } = figureBoxes(6, 1.2);
+    assert.equal(torso.z0, 1.2);
+    assert.equal(neck.z0, torso.z0 + torso.h);
+    assert.equal(head.z0, neck.z0 + neck.h);
+    assert.equal(crown, head.z0 + head.h);
+  });
+
+  it("reproduces the owner exemplar's `m` numbers, which is why Agent could move onto it", () => {
+    // examples/Agent.example.tsx: torso 2.9 wide by 1.8 tall from z 1.2, neck 0.9 by 0.18 from 3.0,
+    // head 2.2 by 1.4 from 3.18, crown 4.58. The agent's 5.35 antenna tip is that plus 0.77.
+    //
+    // Rounded to three places, which is the same rounding `fmt` applies before any of these numbers
+    // reaches an attribute: 6 * (1.8 / 6) is 1.7999999999999998 in binary floating point, and
+    // asserting the raw double here would be asserting IEEE-754 rather than the exemplar. The CROWN
+    // is asserted exactly, because that one is load-bearing — every port anchor is measured against
+    // it, and `Agent.test.tsx` pins the antenna tip 0.77 above it at exactly 5.35.
+    const round = (value: number) => Number(value.toFixed(3));
+    const { torso, neck, head, crown } = figureBoxes(6, 1.2);
+    assert.deepEqual([torso.w, torso.h, torso.z0].map(round), [2.9, 1.8, 1.2]);
+    assert.deepEqual([neck.w, neck.h, neck.z0].map(round), [0.9, 0.18, 3]);
+    assert.deepEqual([head.w, head.h, head.z0].map(round), [2.2, 1.4, 3.18]);
+    assert.equal(crown, 4.58);
+    assert.equal(figureHeightUnits(6, 1.2), 4.58);
+  });
+
+  it("is one drawing at three scales — every proportion is a fraction of the footprint", () => {
+    for (const [footprint, expected] of [
+      [4, 4 * FIGURE_PROPORTIONS.torsoWidth],
+      [8, 8 * FIGURE_PROPORTIONS.torsoWidth],
+    ] as const) {
+      assert.equal(figureBoxes(footprint, 1.2).torso.w, expected);
+    }
+  });
+
+  it("draws three solids and a visor, and can drop the visor", () => {
+    const housings = (element: ReactElement) =>
+      attributeValues(render(element), "data-illus-primitive").filter(
+        (name) => name === "iso-housing",
+      ).length;
+    assert.equal(housings(<IsoFigure footprint={6} floor={1.2} />), 3);
+    const withVisor = render(<IsoFigure footprint={6} floor={1.2} />);
+    const without = render(<IsoFigure footprint={6} floor={1.2} visor={false} />);
+    assert.ok(withVisor.includes('data-illus-glyph-face="left"'));
+    assert.ok(!without.includes("data-illus-glyph-face"));
+  });
+
+  it("spends no accent just by standing there (D-IL6)", () => {
+    // The figure's accent budget belongs to whatever the entity CARRIES — the agent's antenna LED,
+    // the validator's verdict mark. Two figures side by side must not cost two accent moments.
+    assert.ok(!render(<IsoFigure footprint={6} floor={1.2} />).includes("var(--illus-accent)"));
   });
 });
 
