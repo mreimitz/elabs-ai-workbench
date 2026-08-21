@@ -142,6 +142,26 @@ total — the app says **"not measured"** rather than showing a zero. A 0% cache
 indistinguishable from caching that has stopped working, which is the one thing this must never
 imply. Cost has always been priced correctly per tier; what changed is that you can now see it.
 
+**The pre-launch estimate is measured from your own run history, and says so.** The launcher's token
+and cost band used to assume every run takes 1–8 turns — four constants nobody ever checked. It now
+reads the turn count off your **completed** runs, narrowest evidence first (this test on this
+environment → this environment → everywhere), and prints where the figure came from: *"Turn count
+from 51 past runs of this test on this environment."* On a fresh install it says the honest thing
+instead — *"Turn count is an assumption — no past runs to measure."* Stopped and errored runs are
+excluded, because their turn count measures the interruption rather than the task. Measured against
+this repository's own history the band now brackets **93–96%** of real runs' turn counts, against
+49–61% for the old constants.
+
+It is still only an estimate, and the **money** half of it did not improve — it got worse. The
+arithmetic charges an environment's whole scanned tool catalogue on every turn from the first, with
+no idea whether that environment defers tool loading, so a short run is over-stated two- to
+three-fold. Sharpening the turn count made that error bigger rather than smaller: on the
+most-measured test-and-environment pairing the dollar band's floor now sits above what 27 of 28 real
+runs actually cost, where the old band contained 19 of them. Both remaining defects are written down,
+with the measurements behind them, in
+[`planning/Roadmap/RM-34-estimator-turn-model-calibrate/STATUS.md`](./planning/Roadmap/RM-34-estimator-turn-model-calibrate/STATUS.md)
+rather than smoothed over — treat the band as a bound, not a forecast.
+
 ### 6 · Automatic run rating
 
 Every terminal run is graded automatically — **answer validation** (did the final answer address the
