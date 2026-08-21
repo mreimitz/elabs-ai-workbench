@@ -25,7 +25,9 @@ export const STUDIO_DEFAULT_MODE: StudioMode = "flow";
 export const STUDIO_DEFAULT_FILE = "SKILL.md";
 
 export function isStudioMode(value: string | null | undefined): value is StudioMode {
-  return value !== null && value !== undefined && (STUDIO_MODES as readonly string[]).includes(value);
+  return (
+    value !== null && value !== undefined && (STUDIO_MODES as readonly string[]).includes(value)
+  );
 }
 
 /** The Studio's complete, URL-carried view state. `file`/`sel` are `null` when the URL omits them —

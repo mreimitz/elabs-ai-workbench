@@ -96,11 +96,7 @@ export function SkillFlowPreview({ skillId, versionId, isHeadVersion }: SkillFlo
             }
           />
         ) : (
-          <SkillGraphCanvas
-            nodes={flow.nodes}
-            edges={flow.edges}
-            onSelectNode={handleSelectNode}
-          />
+          <SkillGraphCanvas nodes={flow.nodes} edges={flow.edges} onSelectNode={handleSelectNode} />
         )}
       </div>
     </div>

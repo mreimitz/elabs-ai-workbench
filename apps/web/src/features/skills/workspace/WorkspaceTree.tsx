@@ -178,39 +178,39 @@ export function WorkspaceTree({
     <div className="flex h-full min-h-0 flex-col">
       {/* O3 — shared toolbar height (`h-11`) so the tree toolbar and the open-file header align. */}
       {readOnly ? null : (
-      <div className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-2">
-        <ToolbarButton label="New file" onClick={() => onNewFile(targetDir)}>
-          <FilePlus2 className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton label="New folder" onClick={() => onNewFolder(targetDir)}>
-          <FolderPlus className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton label="Upload files" onClick={() => onUpload(targetDir)}>
-          <Upload className="size-4" aria-hidden />
-        </ToolbarButton>
-        <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-        <ToolbarButton
-          label={selectedIsSkillMd ? "SKILL.md can’t be renamed" : "Rename"}
-          disabled={!hasSelection || selectedIsSkillMd}
-          onClick={() => selectedId && onRename(selectedId, selectedIsFolder)}
-        >
-          <Pencil className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton
-          label={selectedIsSkillMd ? "SKILL.md can’t be moved" : "Move"}
-          disabled={!hasSelection || selectedIsSkillMd}
-          onClick={() => selectedId && onMove(selectedId, selectedIsFolder)}
-        >
-          <MoveRight className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton
-          label={selectedIsSkillMd ? "SKILL.md can’t be deleted" : "Delete"}
-          disabled={!hasSelection || selectedIsSkillMd}
-          onClick={() => selectedId && onDelete(selectedId, selectedIsFolder)}
-        >
-          <Trash2 className="size-4" aria-hidden />
-        </ToolbarButton>
-      </div>
+        <div className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-2">
+          <ToolbarButton label="New file" onClick={() => onNewFile(targetDir)}>
+            <FilePlus2 className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton label="New folder" onClick={() => onNewFolder(targetDir)}>
+            <FolderPlus className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton label="Upload files" onClick={() => onUpload(targetDir)}>
+            <Upload className="size-4" aria-hidden />
+          </ToolbarButton>
+          <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+          <ToolbarButton
+            label={selectedIsSkillMd ? "SKILL.md can’t be renamed" : "Rename"}
+            disabled={!hasSelection || selectedIsSkillMd}
+            onClick={() => selectedId && onRename(selectedId, selectedIsFolder)}
+          >
+            <Pencil className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton
+            label={selectedIsSkillMd ? "SKILL.md can’t be moved" : "Move"}
+            disabled={!hasSelection || selectedIsSkillMd}
+            onClick={() => selectedId && onMove(selectedId, selectedIsFolder)}
+          >
+            <MoveRight className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton
+            label={selectedIsSkillMd ? "SKILL.md can’t be deleted" : "Delete"}
+            disabled={!hasSelection || selectedIsSkillMd}
+            onClick={() => selectedId && onDelete(selectedId, selectedIsFolder)}
+          >
+            <Trash2 className="size-4" aria-hidden />
+          </ToolbarButton>
+        </div>
       )}
 
       <div className="shrink-0 border-b border-border p-2">

@@ -64,7 +64,14 @@ const makeVersion = (id: string, seq: number): SkillVersion => ({
 const VERSIONS = [makeVersion("ver-2", 2), makeVersion("ver-1", 1)];
 
 const FILES: SkillFileNode[] = [
-  { path: "SKILL.md", isSkillMd: true, isBinary: false, size: 64, kind: "skill_md", tokenTotal: 20 },
+  {
+    path: "SKILL.md",
+    isSkillMd: true,
+    isBinary: false,
+    size: 64,
+    kind: "skill_md",
+    tokenTotal: 20,
+  },
   {
     path: "references/api.md",
     isSkillMd: false,
@@ -182,9 +189,7 @@ if (typeof window.matchMedia !== "function") {
 /** Publishes the live location so a test can assert what the URL round-tripped to. */
 function LocationProbe() {
   const location = useLocation();
-  return (
-    <div data-testid="location">{`${location.pathname}${location.search}`}</div>
-  );
+  return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
 }
 
 const renderStudio = (initialEntry = "/skills/sk-1/studio") =>

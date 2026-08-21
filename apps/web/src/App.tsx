@@ -1039,9 +1039,7 @@ export function App() {
     // skill here is a real, linked PARENT (back to the inspector), and "Studio" is the leaf, so the
     // page contributes no breadcrumb slot of its own.
     if (skillStudioMatch) {
-      const studioSkill = skills.find(
-        (entry) => entry.id === skillStudioMatch.params.skillId,
-      );
+      const studioSkill = skills.find((entry) => entry.id === skillStudioMatch.params.skillId);
       return [
         { label: "Skills", to: "/skills" },
         {
