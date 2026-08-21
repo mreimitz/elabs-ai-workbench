@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T00:45:00Z"
+timestamp: "2026-08-22T03:20:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -257,9 +257,22 @@ met and — where the box touches code — the gate
       would strand the only way to edit a skill's keywords and files. **Nobody has used the Studio** —
       its 61.1%-of-viewport claim is a headless-Chromium measurement, it was never driven against a
       bound MCP server, and no save was ever completed.
-      **IN FLIGHT (batch 2, 2026-08-21) — WP 7.3** (`wp/roadmap-cleanup/rm30-7.3`): the settings panel
-      + the one draft store, which also pays back 7.1's inherited line (Overview's "Save as new
-      version" goes) and re-points WP 7.3a's D-UX18 immediate-save deviation at the draft store
+      **BATCH 2 LANDED 2026-08-21 — WP 7.3 and WP 7.4 both merged, gate green on `main`.**
+      7.3: the settings panel + **one draft store** — name · description · servers · keywords ·
+      `/command` entry points as form controls, no YAML by hand, one dirty count, one "Save as vN".
+      It closed **D-UX18** (binding no longer saves a version the instant you click) and paid 7.1's
+      first inherited line (Overview is mutation-free). It also found and fixed a **real corruption
+      bug in the shipped 7.3a engine**: a folded block scalar (`description: >`) was classified as a
+      plain scalar and would have been mangled on rewrite.
+      7.4: files join that same draft — tabs in the centre, an editable Files rail, and **one** save
+      for a file change plus a manifest change together. It paid 7.1's second inherited line: the
+      Inspector's Files tab is browse-only, its Save/Discard bar and `SaveWorkspaceDialog` are
+      **deleted**, with a guardrail that goes red if the dialog returns — and a **third** hidden save
+      path (the Files-tab bindings strip) went with it, which was the builder's judgement rather than
+      the spec's letter.
+      **Still open: 7.7 · 7.8 · 7.9** (7.8 needs a short design doc and owner approval BEFORE build).
+      **Nobody has still ever used any of this.** Three Studio WPs deep, no browser has been opened,
+      no save has been completed against a live API, and it has never met a bound MCP server
 - [ ] WP 3.4 — **RM-03 WP 2.3**: autonomy dial + hard budgets + steering + live HITL
       approval-gating + MCP elicitation. One box, two BLOCKING MUSTs (elicitation transport
       R-MCP4, the approval/HITL path). Unblocks RM-03's 18-box walk.
@@ -316,11 +329,24 @@ met and — where the box touches code — the gate
       **Neither was walked in a browser** — no two-theme look, no keyboard pass, no live notification,
       and AM-OB1's create-view→copy-URL→paste-in-a-fresh-tab flow is pinned only against a stubbed
       API. Recorded in RM-17's ledger as owner-acceptance, not glossed.
-      **IN FLIGHT (batch 2, 2026-08-21) — 2 more**: `AM-OB11` (typed GitHub Actions
-      `workflow_dispatch` action beside the generic webhook, `wp/roadmap-cleanup/am-ob11`, briefed
-      onto the **encrypted `github-account` token** per the ledger's own correction, not `api_tokens`)
-      and `AM-OB12` (share-of-verdict metrics, `wp/roadmap-cleanup/am-ob12`, verify-at-pickup).
-      Neither may take a migration — v61 is spent
+      **BATCH 2 LANDED 2026-08-21 — 3 more, so 5 of the 13 are done and 8 remain.**
+      `AM-OB11` (the typed `workflow_dispatch` action, on the **encrypted `github-account` token** per
+      the ledger's own correction — not `api_tokens`, which holds a one-way digest and cannot present
+      an outbound PAT); `AM-OB12` (the rating verdicts as filter dimensions); and **`AM-OB4`, which
+      was not in the batch and was dispatched mid-session** because AM-OB12 turned out to be blocked
+      on it — the share half could not exist without a ratio measure, and WP 6.11's own non-goals
+      forbid a fourteenth bespoke measure. AM-OB4 delivered the ratio, made `feedbackRate` real, and
+      **closed AM-OB12's blocked acceptance the same day**.
+      **Two structural findings came out of it, both bigger than the WPs that found them.** The two
+      byte-identical `buildRunFilterWhere` copies collapsed into one — and the header claiming *both*
+      were pinned to `matchesRunFilter` was **false**, only the repository copy was, so the charts
+      could have drifted from the runs feed unnoticed. And a share now omits a zero-denominator
+      bucket rather than plotting 0%, which is the same class of lie AM-OB10 fixed in the watch
+      engine: "nothing qualified" must not look like "nothing went wrong".
+      **Remaining 8 are mostly fenced or chart-touching**: AM-OB2 · AM-OB3 · AM-OB5 · AM-OB8 ·
+      AM-OB13 live in the runs-feed/console surface a concurrent RM-36 session holds, and AM-OB5 ·
+      AM-OB7 · AM-OB8 · AM-OB14 touch charts, where the panel suites mock
+      `@elabs-ai/components-charts` as no-ops. AM-OB6 is the one remaining migration-bearing item
 - [ ] WP 3.8 — **RM-14 Phases 2–4** (10 WPs): scene spec layout engine + connector router +
       renderer (2.1–2.4), explain mode (3.1–3.3), assistant compose tools (4.1–4.3). Largest
       remaining build. **The risk to weigh:** 24 illustration components exist and nothing composes
