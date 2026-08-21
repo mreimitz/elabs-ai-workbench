@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Estimator turn model — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the estimator turn-model calibration plan, read and updated by /next-wp RM-34."
 tags: ["roadmap", "RM-34"]
-timestamp: "2026-08-21T20:10:00Z"
+timestamp: "2026-08-21T21:00:00Z"
 status: "active"
 ---
 # Estimator turn model — work-package status ledger · **PRIORITY: MEDIUM**
@@ -150,8 +150,7 @@ The estimator's **pricing** is now correct and its **token model** is not.
       walk were not real. WP 1.2 has since merged and the orchestrator confirmed the endpoint now
       serves real profiles, but **nobody has yet looked at a real measured line in a browser** — that
       is WP 2.1's live pass.
-- [ ] **WP 2.1 — re-measure the band live against recorded runs** — _status: evidence gathered
-      2026-08-21, box left for the orchestrator_ — spec: [`wp-2.1-calibration.md`](./wp-2.1-calibration.md).
+- [x] **WP 2.1 — re-measure the band live against recorded runs** — **done 2026-08-21 · `wp/roadmap-cleanup/3.2` (`6faa5a5`, merged) · measured by agent D, adversarially reviewed and corrected by a second agent, verified by the orchestrator** — spec: [`wp-2.1-calibration.md`](./wp-2.1-calibration.md).
       Depends on: WP 1.2, WP 1.3. Also carries the `README.md` / `CHANGELOG.md` update and the
       [`DC-08`](/user-guide/DC-08-testing-console/doc.md) delivery record.
 

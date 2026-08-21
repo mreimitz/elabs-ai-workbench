@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T20:45:00Z"
+timestamp: "2026-08-21T21:15:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -170,7 +170,47 @@ met and — where the box touches code — the gate
 - [ ] WP 3.1 — **RM-26 WP 4.4** end-to-end verification: a real run through the built Docker
       image. 1 WP, needs a provider key. Highest value per hour on this list — it exercises
       migrations, the encrypted-secret path, static serving and the run engine in one shot
-- [ ] WP 3.2 — _status: in progress (agent B · validating + integrating `71d7b60`)_ — **RM-34 WP 2.1** re-measure the estimator band against recorded runs. 1 WP. Fixes
+- [x] WP 3.2 — **done 2026-08-21 · `wp/roadmap-cleanup/3.2` (`6faa5a5`, merged) — RM-34 is now at
+      ZERO open CHECKBOXES — but NOT retirable.**
+      Its Owner-acceptance section carries three live items as *prose*, so `/complete-roadmap` (which
+      reads checkboxes only) would not refuse — **the same trap this plan's §6 fell into with RM-13**.
+      They are: the owner judgement call on option (c); the follow-up WP for the unmodelled intercept;
+      and two hand walks never done (a keyboard pass over the launcher's estimate block, and a
+      real-value two-theme look at the **suite run-confirm** and **fork dialog** basis lines — only the
+      launcher was re-walked live). Those three are **not** yet in the WP 1.1 consolidated checklist,
+      because they carry no checkbox for it to have found. Not "re-measure": the measurement already existed as agent
+      D's rescued `71d7b60`, so this became **validate-and-integrate**, with a second agent briefed to
+      *try to break it*. It did, usefully. **The chartered defect is CLOSED** — RM-33's reference run
+      now falls inside the token band that previously topped out 1.86× below it, and the band brackets
+      93–96% of real turn counts against 49–61% before. **The money half got WORSE** — on the
+      most-measured pair the dollar floor now sits above what **27 of 28** real runs cost, against 19
+      of 28 before — and `README.md` now says exactly that, instead of claiming an improvement.
+      **Reviewer's corrections, each re-verified by the orchestrator against the code.** The three hard
+      facts hold: `estimate.ts:148–153` charges `turns × (footprint + systemPrompt)` unconditionally,
+      its header states the premise *"eager tool loading"* (`:8`), and **`tool_loading_mode` has ZERO
+      occurrences anywhere in `apps/api/src/estimate/`** — mode-blind *by construction*. But agent D's
+      causal story overreached: its "live context peaked at 27–34k" support is **circular**
+      (`accounting.ts:362`/`:651` set `toolDefs = 0` in deferred mode by construction, so that figure
+      cannot evidence what was billed); the **effective** mode is never persisted
+      (`run-service.ts:1389–1392` silently downgrades `deferred`→`eager` unless the model supports tool
+      search, so only the *requested* mode was ever read); and "always upward" is true of the
+      intercept, not the slope — the Banking pair's **0.77×** is direct counter-evidence. The reviewer
+      also **refuted** two rival explanations (a turn-counting mismatch; conversation-growth
+      convexity), so the negative intercept is real even though its cause is **not** established. All
+      arithmetic reconciled to the unit, including RM-33's independently recorded $0.4198–$1.5912 to
+      four decimals.
+      **`data/app.sqlite` was never touched** — the orchestrator confirmed md5 `1762bcdadae9…` and
+      mtime `16:22` identical, matching what agent D recorded.
+      **Consequences.** CLAUDE.md's RM-34 row read 🚧 *"3 of 4 WPs … Open: WP 2.1"*; ticking made that
+      false, so it was rewritten in the same commit. The two remaining estimator defects — the
+      mode-blind per-turn prefix, and a dollar band that excludes the answer — belong to a **NEW item,
+      not this one**, and that item must **measure per-turn billed input directly from `run_steps`
+      before assuming the deferred-loading cause**; fixing the wrong axis is a live risk here.
+      **Not verified:** the live endpoint responses and the browser walk were not re-run by the
+      reviewer (deliberately — it was told not to open the database or start the app), so WP 2.1's
+      live pass rests on agent D's session plus the reviewer's arithmetic reconciliation, which is
+      strong circumstantial agreement rather than an independent re-call. Whether those runs actually
+      executed in **deferred** mode is recorded nowhere and remains unknown. 1 WP. Fixes
       a number the owner has already seen be wrong (RM-33 recorded the band bracketing a real run
       at $0.42–$1.59 against $0.80 billed, because the 8-turn ceiling dominates at 19 turns).
       **Check first** whether "agent D" still holds it — the in-progress marker looks stale.
