@@ -853,6 +853,14 @@ const RATING_FILTERS: RunFilter[] = [
   { answerVerdict: ["answered"], errorBucket: ["mcp_server"] },
   { answerVerdict: ["answered"], status: ["completed"] },
   { insightVerdict: ["noise"], errorFixTarget: ["skill"] },
+  // Not rating filters — carried here because this fixture is the only one in the repo that RE-GRADES
+  // a run with a DIFFERENT score (rr2's answer_validation goes 1 → 0). The pre-existing 35-case
+  // cross-check above runs the predicate over HAND-WRITTEN candidates, so `buildFilterCandidate`'s own
+  // latest-per-grader restriction on the SCORE query was pinned by nothing: deleting it left the whole
+  // suite green. Running the score bounds through THIS three-way check closes that, for free.
+  { scoreGte: 0.6 },
+  { scoreLte: 0.3 },
+  { scoreGte: 0.6, grader: "answer_validation" },
 ];
 
 /** Total `count` over an unbounded window — the cheapest proof that the metrics SQL replica selected
