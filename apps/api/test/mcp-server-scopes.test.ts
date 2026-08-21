@@ -223,6 +223,7 @@ async function makeHarness(
       scenarios: { list: refuse("estimate") },
       tests: { list: refuse("estimate") },
       scans: { getLatestForServer: refuse("estimate") },
+      runs: { measureTurnProfiles: refuse("estimate") },
     },
   } as unknown as Parameters<typeof registerWorkbenchMcpRoutes>[1];
   registerWorkbenchMcpRoutes(
