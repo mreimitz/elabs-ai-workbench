@@ -34,6 +34,10 @@ import { describeEditOp, useEditOps, type EditOpsController } from "./use-edit-o
 const APPLY_PREVIEW_DEBOUNCE_MS = 150;
 const PROJECT_PREVIEW_DEBOUNCE_MS = 300;
 
+/** The one empty file list handed out while a draft is still loading — a module constant so a
+ *  consumer keying an effect off `baseFiles` doesn't re-run on every render (RM-30 WP 7.4). */
+const NO_FILES: SkillFileNode[] = [];
+
 /** Op discriminants that are TREE/file ops (not text splices) — routed to `treeOps`, not apply-preview. */
 const TREE_OP_TYPES = new Set(["add_file", "update_file", "rename_file", "delete_file"]);
 const isTreeOp = (op: SkillEditOp): boolean => TREE_OP_TYPES.has(op.op);
@@ -66,6 +70,14 @@ export type SkillDraftController = {
   edit: EditOpsController;
   /** The authoritative base graph — every op's anchors resolve against THIS (not the live preview). */
   baseGraph: SkillGraph | null;
+  /**
+   * RM-30 WP 7.4 — the base version's committed file list, the same array this store already loads
+   * for `apply-preview`. Published so a layer ABOVE (the Studio's files layer) can build its working
+   * tree from the SAME load instead of re-fetching `getSkillFiles` a second time. A STABLE empty
+   * array while the base is still loading — a fresh `[]` per render would re-seed a consumer's
+   * working tree on every render.
+   */
+  baseFiles: SkillFileNode[];
   /** The base version's tree sha (kept for reference; the save's staleness check is head-based). */
   treeSha: string | null;
   /** The version the draft forked from (the save's `baseVersionId`). */
@@ -99,10 +111,17 @@ export type SkillDraftController = {
    *  `transformContent` (RM-30 WP 7.3) is a PURE last step applied to the final text just before it
    *  is posted. It exists so a layer ABOVE this store — the Studio's settings panel, which edits
    *  frontmatter keys the op vocabulary has no op for — can ride the same one save, without a second
-   *  save path and without a wire change. Omitted ⇒ the content is exactly what it always was. */
+   *  save path and without a wire change. Omitted ⇒ the content is exactly what it always was.
+   *
+   *  `extraTreeOps` (RM-30 WP 7.4) is the same idea for the OTHER half of a version: file ops staged
+   *  outside the op buffer. The Studio's Files rail cannot stage into `edit.ops`, because a direct
+   *  code edit deliberately CLEARS that buffer (the text becomes authoritative over the ops) — which
+   *  would silently throw away a pending new file the moment the author typed in SKILL.md. They are
+   *  appended to the buffer's own tree ops, in that order, and ride the same one save. */
   save: (
     note?: string,
     transformContent?: (content: string) => string,
+    extraTreeOps?: SkillEditOp[],
   ) => Promise<SkillEditsResponse>;
   /**
    * RM-30 WP 7.3 — pending changes staged OUTSIDE the op buffer, one human-readable line each.
@@ -267,9 +286,10 @@ export function useSkillDraft(
     async (
       note?: string,
       transformContent?: (content: string) => string,
+      extraTreeOps?: SkillEditOp[],
     ): Promise<SkillEditsResponse> => {
       if (!base) throw new Error("The draft is not loaded yet.");
-      const treeOps = edit.ops.filter(isTreeOp);
+      const treeOps = [...edit.ops.filter(isTreeOp), ...(extraTreeOps ?? [])];
       const textOps = edit.ops.filter((op) => !isTreeOp(op));
       // Recompute the content FRESH at save time so it reflects every staged op even if the ~150 ms
       // apply-preview debounce hasn't fired yet — the saved version is then byte-exact for the ops. A
@@ -307,6 +327,7 @@ export function useSkillDraft(
   return {
     edit,
     baseGraph: base?.graph ?? null,
+    baseFiles: base?.files ?? NO_FILES,
     treeSha: base?.treeSha ?? null,
     baseVersionId: versionId,
     loading,

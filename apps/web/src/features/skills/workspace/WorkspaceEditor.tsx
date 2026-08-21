@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { BoundTool, ToolDiagnostic } from "@mcp-token-footprint/shared";
 import { Badge, Button, StatePanel, Text } from "@elabs-ai/components-ui";
 import { CodeEditor, type CodeEditorProps } from "@elabs-ai/components-editor";
@@ -50,6 +50,14 @@ export type WorkspaceEditorProps = {
   /** Skill IDE WP 8.5 — when set, the SKILL.md hover popup's "Test this tool…" command-link opens the
    *  runner Sheet (only meaningful for the SKILL.md editor, where tool references live). */
   onTestTool?: (tool: BoundTool) => void;
+  /**
+   * RM-30 WP 7.4 — render as a READ-ONLY preview: the Monaco surface is not editable, `onEdit` is
+   * never called, and the header says so instead of "Editing". The Inspector's Files tab uses it —
+   * editing a skill happens in the Studio, on the one draft, and only there.
+   */
+  readOnly?: boolean;
+  /** Rendered at the tail of the header row (the Inspector's "Edit in Studio" link). */
+  headerActions?: ReactNode;
 };
 
 /**
@@ -66,6 +74,8 @@ export function WorkspaceEditor({
   onHydrate,
   onEdit,
   onTestTool,
+  readOnly = false,
+  headerActions,
 }: WorkspaceEditorProps) {
   const isAdded = entry.originalPath === null;
   const needsFetch = !isAdded && !entry.isBinary && entry.baseText === undefined;
@@ -221,14 +231,15 @@ export function WorkspaceEditor({
     return <StatePanel kind="loading" title="Loading…" loadingLabel="Loading file…" />;
   }
 
-  const dirty = isAdded || isContentDirty(entry);
+  // A read-only preview is showing a COMMITTED file — it can never be "New" or "Modified".
+  const dirty = !readOnly && (isAdded || isContentDirty(entry));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* O3 — same `h-11` as the file-tree toolbar so the two column headers align exactly. */}
       <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border px-3">
         <div className="flex min-w-0 items-center gap-2">
-          {isAdded ? (
+          {!readOnly && isAdded ? (
             <Badge variant="secondary">New</Badge>
           ) : dirty ? (
             <Badge variant="warning">Modified</Badge>
@@ -237,9 +248,16 @@ export function WorkspaceEditor({
             {entry.path}
           </Text>
         </div>
-        <Text variant="meta" tone="muted" className="shrink-0">
-          Editing — save as a new version to persist
-        </Text>
+        <div className="flex shrink-0 items-center gap-2">
+          {readOnly ? (
+            <Badge variant="outline">Read-only</Badge>
+          ) : (
+            <Text variant="meta" tone="muted">
+              Editing — save as a new version to persist
+            </Text>
+          )}
+          {headerActions}
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
         <CodeEditor
@@ -247,11 +265,13 @@ export function WorkspaceEditor({
           value={entry.text}
           language={languageOf(entry.path)}
           path={entry.path}
-          readOnly={false}
+          readOnly={readOnly}
           height="100%"
-          ariaLabel={`Editing ${entry.path}`}
-          options={EDITABLE_OPTIONS}
-          onChange={(value) => onEdit(entry.path, value)}
+          ariaLabel={readOnly ? `${entry.path} (read-only)` : `Editing ${entry.path}`}
+          options={readOnly ? READ_ONLY_OPTIONS : EDITABLE_OPTIONS}
+          onChange={(value) => {
+            if (!readOnly) onEdit(entry.path, value);
+          }}
           onMount={(editor, monacoApi) => {
             editorRef.current = editor;
             monacoRef.current = monacoApi;

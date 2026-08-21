@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import type { SkillGraph } from "@mcp-token-footprint/shared";
+import type { SkillEditOp, SkillGraph } from "@mcp-token-footprint/shared";
 import {
   addFrontmatterListItem,
   isFrontmatterScalarEditable,
@@ -10,6 +10,8 @@ import {
 } from "../design/frontmatter-servers";
 import { applyPreviewOps, isPreviewOnlyNodeId } from "../design/use-edit-ops";
 import { useSkillDraft, type SkillDraftController } from "../design/use-skill-draft";
+import { useWorkspace, type WorkspaceController } from "../workspace/use-workspace";
+import { describeStudioFileOps, studioFileOps } from "./files/file-ops";
 
 // ── Skill Studio (RM-30 WP 7.3) — ONE draft store for the whole workbench ─────────────────────────
 // Before this WP the Studio had one draft store (`useSkillDraft`) but it lived INSIDE the editor, so
@@ -18,12 +20,20 @@ import { useSkillDraft, type SkillDraftController } from "../design/use-skill-dr
 // rail had no draft to write into. This module is the fix — the draft is lifted to the shell,
 // published through a context, and consumed by both the editor and the left rail's settings panel.
 //
-// The store spans THREE kinds of pending change and reports ONE dirty flag over all of them:
+// The store spans FOUR kinds of pending change and reports ONE dirty flag over all of them:
 //
 //   • canvas  — typed edit ops (`useEditOps` → `apply-preview` → the draft text). Unchanged.
 //   • code    — a direct edit of the draft text in the Monaco pane. Unchanged.
 //   • frontmatter — `name:` / `description:` / `servers:` / `keywords:`, staged here as declarative
 //     {@link SkillSettingsEdit}s and applied as a PURE text transform on top of the op-derived text.
+//   • files (RM-30 WP 7.4) — the version's OTHER files, staged as an in-memory working tree and
+//     derived into a tree-op batch at save time (`files/file-ops.ts`).
+//
+// The files layer is a separate layer for the same reason the frontmatter one is — and one more.
+// Staging a file op into the shared op buffer would look tempting (`save` already routes tree ops
+// out of it), but `setContent` CLEARS that buffer by design: the moment an author typed a character
+// in the SKILL.md code pane, a new file they had just created would vanish without a word. As its
+// own layer it survives every edit to the manifest, and vice versa.
 //
 // Frontmatter is a separate layer, not a fourth kind of op, for a concrete reason: the shared edit-op
 // vocabulary (`SKILL_EDIT_OP_TYPES`) has no `set_name`, `set_description` or `set_servers`, and
@@ -167,6 +177,20 @@ export type StudioDraftController = SkillDraftController & {
   stageSettingsEdit: (edit: SkillSettingsEdit) => void;
   /** The `/command` entry points of the live projection, in document order. */
   commands: StudioCommandEntry[];
+  /**
+   * RM-30 WP 7.4 — the files layer: the version's working tree plus every mutation the Files rail
+   * offers (create · upload · rename · move · delete · edit). Its `ops` are ONE half of the same
+   * save; nothing here writes anything until the author presses Save as vN.
+   */
+  files: WorkspaceController;
+  /** The staged file changes as tree ops, with anything targeting SKILL.md filtered out (the
+   *  manifest is written by `content`, and by nothing else — see `files/file-ops.ts`). */
+  fileOps: SkillEditOp[];
+  /** True when the SKILL.md DOCUMENT itself has unsaved changes — canvas ops, a hand edit, or a
+   *  settings change. Deliberately narrower than {@link SkillDraftController.dirty}, which also
+   *  counts staged file changes: the manifest's editor tab marks itself, and a new resource file
+   *  must not make SKILL.md look edited. */
+  manifestDirty: boolean;
 };
 
 /** `null` outside a Studio — every other host (the inspector, a test) keeps its own private draft. */
@@ -201,6 +225,26 @@ export function useStudioDraftController(
   const inner = useSkillDraft(skillId, versionId);
   const [staged, setStaged] = useState<SkillSettingsEdit[]>([]);
 
+  // ── the files layer ────────────────────────────────────────────────────────────────────────────
+  // Seeded from the SAME base-file load the draft already made (no second `getSkillFiles` fetch).
+  // `useWorkspace` re-seeds — dropping every staged file change — whenever the array it is handed
+  // changes IDENTITY, so the identity is pinned to the tree's CONTENT here. That is what makes the
+  // save dialog's 409 recovery honest: `reload()` re-fetches and hands back a fresh array, and its
+  // toast promises "your pending edits are kept". If the head moved for an unrelated reason the
+  // file list is byte-identical, the same array comes back, and the promise holds; if the files
+  // themselves moved, re-seeding from the new base is the correct — and the only safe — answer.
+  const baseFilesKey = inner.baseFiles
+    .map((file) => `${file.path}|${file.size}|${file.isBinary}`)
+    .join("\n");
+  // The deps are deliberately the content key, not the array itself.
+  const baseFiles = useMemo(() => inner.baseFiles, [baseFilesKey]);
+
+  const files = useWorkspace(baseFiles);
+  const fileOps = useMemo(
+    () => studioFileOps(baseFiles, files.entries),
+    [baseFiles, files.entries],
+  );
+
   const settingsEdits = useMemo(() => collapseSettingsEdits(staged), [staged]);
 
   // The live document: op-derived text (or the hand-edited text) with the frontmatter layer on top.
@@ -214,14 +258,18 @@ export function useStudioDraftController(
   // Only the edits that actually MOVE the document are pending. A bind of an already-bound server,
   // or a bind followed by an unbind, changes no bytes and must not read as an unsaved change.
   const extraPendingLines = useMemo(
-    () =>
-      settingsEdits
+    () => [
+      ...settingsEdits
         .filter((edit) => applySettingsEdit(inner.content, edit) !== inner.content)
         .map(describeSettingsEdit),
-    [settingsEdits, inner.content],
+      ...describeStudioFileOps(fileOps),
+    ],
+    [settingsEdits, inner.content, fileOps],
   );
 
   const settingsDirty = content !== inner.content;
+  /** The manifest document alone — file changes are a separate half of the same draft. */
+  const manifestDirty = inner.dirty || settingsDirty;
 
   const stageSettingsEdit = useCallback((edit: SkillSettingsEdit) => {
     setStaged((current) => [...current, edit]);
@@ -239,19 +287,27 @@ export function useStudioDraftController(
   );
 
   const innerReset = inner.reset;
+  const resetFiles = files.reset;
   const reset = useCallback(() => {
     setStaged([]);
+    resetFiles(baseFiles);
     innerReset();
-  }, [innerReset]);
+  }, [innerReset, resetFiles, baseFiles]);
 
   const innerSave = inner.save;
   const save = useCallback(
-    (note?: string, transformContent?: (text: string) => string) =>
-      innerSave(note, (text) => {
-        const withSettings = applySettingsEdits(text, settingsEdits);
-        return transformContent ? transformContent(withSettings) : withSettings;
-      }),
-    [innerSave, settingsEdits],
+    (note?: string, transformContent?: (text: string) => string, extraTreeOps?: SkillEditOp[]) =>
+      innerSave(
+        note,
+        (text) => {
+          const withSettings = applySettingsEdits(text, settingsEdits);
+          return transformContent ? transformContent(withSettings) : withSettings;
+        },
+        // The files layer rides the SAME one save. A caller's own extra ops (there are none today)
+        // are kept rather than replaced, so this can never silently drop a second contributor.
+        [...fileOps, ...(extraTreeOps ?? [])],
+      ),
+    [innerSave, settingsEdits, fileOps],
   );
 
   // The `/command` entry points, read from the same projection the canvas renders: the live
@@ -269,7 +325,7 @@ export function useStudioDraftController(
     () => ({
       ...inner,
       content,
-      dirty: inner.dirty || settingsDirty,
+      dirty: inner.dirty || settingsDirty || fileOps.length > 0,
       setContent,
       reset,
       save,
@@ -279,6 +335,9 @@ export function useStudioDraftController(
       settingsEdits,
       stageSettingsEdit,
       commands,
+      files,
+      fileOps,
+      manifestDirty,
     }),
     [
       inner,
@@ -293,6 +352,9 @@ export function useStudioDraftController(
       settingsEdits,
       stageSettingsEdit,
       commands,
+      files,
+      fileOps,
+      manifestDirty,
     ],
   );
 }
