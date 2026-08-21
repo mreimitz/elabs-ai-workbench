@@ -2,12 +2,18 @@
 // Agent — the LLM robot (tier 1, entity `runs`)
 // ==================================================================================================
 // This one is a REPRODUCTION, not a fresh design: `planning/Roadmap/RM-14-illustrations/examples/Agent.example.tsx`
-// is the owner's exemplar and the proportions below are its proportions, expressed as fractions of
-// the footprint so the same robot exists at S, M and L. At `m` (footprint 6) every dimension
-// evaluates to the exemplar's own number — torso 2.9 wide by 1.8 tall from z 1.2, neck 0.9 by 0.18
-// from 3.0, head 2.2 by 1.4 from 3.18, antenna base 4.58 and tip 5.35.
+// is the owner's exemplar and the proportions are its proportions, expressed as fractions of the
+// footprint so the same robot exists at S, M and L. At `m` (footprint 6) every dimension evaluates
+// to the exemplar's own number — torso 2.9 wide by 1.8 tall from z 1.2, neck 0.9 by 0.18 from 3.0,
+// head 2.2 by 1.4 from 3.18, antenna base 4.58 and tip 5.35.
 //
-// It is also the D-IL17 PROOF CASE. The face panel and the chest rules mount on `face="gaze"`, which
+// WP 1.1 §3 moved the standing figure — torso, neck, head, visor — into `primitives/IsoFigure.tsx`,
+// because `Validator` is the same silhouette carrying a shield, and D-IL12 forbids a reusable shape
+// living inside one entity. The proportions above did not move an inch; `figureBoxes` is the old
+// `agentBoxes` verbatim, sequential arithmetic and all, which is why the 5.35 assertion still holds
+// exactly. What stayed here is what makes this entity THIS entity: the antenna and the chest plates.
+//
+// It is also the D-IL17 PROOF CASE. The visor and the chest rules mount on `face="gaze"`, which
 // `GlyphFrame` resolves against the entity's `facing`: `upstream` (the default) puts them on the
 // LEFT face, so in a left-to-right process scene the agent looks toward the incoming work.
 // `McpServer` in this same folder deliberately does the opposite — it names a face outright, because
@@ -16,11 +22,11 @@
 import type { IllustrationRegistryEntry, IllustrationSize } from "@mcp-token-footprint/shared";
 import type { ReactElement } from "react";
 import { type IsoBox, faceExtent, fmt, footprintUnits, project } from "../iso-math.js";
-import { ILLUS_DASH, ILLUS_STROKE_DETAIL, ILLUS_STROKE_DETAIL_FINE } from "../line-system.js";
+import { ILLUS_DASH, ILLUS_STROKE_DETAIL } from "../line-system.js";
 import { ConstructionGhost } from "../primitives/ConstructionGhost.js";
 import { EntityRoot } from "../primitives/EntityRoot.js";
 import { GlyphFrame } from "../primitives/GlyphFrame.js";
-import { IsoHousing } from "../primitives/IsoHousing.js";
+import { IsoFigure, figureBoxes } from "../primitives/IsoFigure.js";
 import { IsoPlatform, platformHeight } from "../primitives/IsoPlatform.js";
 import type { EntityComponentProps } from "./entity-props.js";
 
@@ -58,50 +64,19 @@ export type AgentProps = EntityComponentProps;
 const PLATFORM_TIERS = 2;
 const FLOOR = platformHeight(PLATFORM_TIERS);
 
-// The exemplar's proportions, over its `m` footprint of 6 units.
-const TORSO_WIDTH = 2.9 / 6;
-const TORSO_HEIGHT = 1.8 / 6;
-const NECK_WIDTH = 0.9 / 6;
-const NECK_HEIGHT = 0.18 / 6;
-const HEAD_WIDTH = 2.2 / 6;
-const HEAD_HEIGHT = 1.4 / 6;
+/** The one proportion that is the AGENT's rather than the figure's: how far the mast rises. */
 const ANTENNA_HEIGHT = 0.77 / 6;
 
 type AgentBoxes = {
   readonly torso: IsoBox;
-  readonly neck: IsoBox;
-  readonly head: IsoBox;
   /** The world z the antenna rises from, and the z of its tip. */
   readonly antennaBase: number;
   readonly antennaTip: number;
 };
 
 function agentBoxes(footprint: number): AgentBoxes {
-  const torsoSide = footprint * TORSO_WIDTH;
-  const torsoHeight = footprint * TORSO_HEIGHT;
-  const neckSide = footprint * NECK_WIDTH;
-  const neckHeight = footprint * NECK_HEIGHT;
-  const headSide = footprint * HEAD_WIDTH;
-  const headHeight = footprint * HEAD_HEIGHT;
-  const torso: IsoBox = { cx: 0, cy: 0, w: torsoSide, d: torsoSide, z0: FLOOR, h: torsoHeight };
-  const neck: IsoBox = {
-    cx: 0,
-    cy: 0,
-    w: neckSide,
-    d: neckSide,
-    z0: FLOOR + torsoHeight,
-    h: neckHeight,
-  };
-  const head: IsoBox = {
-    cx: 0,
-    cy: 0,
-    w: headSide,
-    d: headSide,
-    z0: neck.z0 + neckHeight,
-    h: headHeight,
-  };
-  const antennaBase = head.z0 + headHeight;
-  return { torso, neck, head, antennaBase, antennaTip: antennaBase + footprint * ANTENNA_HEIGHT };
+  const { torso, crown } = figureBoxes(footprint, FLOOR);
+  return { torso, antennaBase: crown, antennaTip: crown + footprint * ANTENNA_HEIGHT };
 }
 
 /**
@@ -123,11 +98,10 @@ export function Agent({
   idPrefix,
 }: AgentProps): ReactElement {
   const footprint = footprintUnits(size);
-  const { torso, neck, head, antennaBase, antennaTip } = agentBoxes(footprint);
+  const { torso, antennaBase, antennaTip } = agentBoxes(footprint);
   // The one accent moment (D-IL6) is the antenna LED, and `error` recolours it rather than adding a
   // second mark — exactly as the exemplar does.
   const accent = state === "error" ? "var(--illus-error)" : "var(--illus-accent)";
-  const eye = state === "error" ? "var(--illus-error)" : "var(--illus-ink)";
   const base = project(0, 0, antennaBase);
   const tip = project(0, 0, antennaTip);
 
@@ -146,11 +120,8 @@ export function Agent({
     >
       <ConstructionGhost width={footprint} depth={footprint} />
       <IsoPlatform tiers={PLATFORM_TIERS} footprint={size} />
-      <IsoHousing width={torso.w} depth={torso.d} height={torso.h} z0={torso.z0} />
-      <IsoHousing width={neck.w} depth={neck.d} height={neck.h} z0={neck.z0} weight="detail-fine" />
-      <IsoHousing width={head.w} depth={head.d} height={head.h} z0={head.z0} />
+      <IsoFigure footprint={footprint} floor={FLOOR} />
       <ChestPanel box={torso} />
-      <FacePanel box={head} eye={eye} />
       <g data-illus-mark="antenna">
         <line
           x1={fmt(base.x)}
@@ -194,48 +165,6 @@ export function Agent({
 
 Agent.illusLayer = "structure" as const;
 Agent.entityHeightUnits = agentHeightUnits;
-
-/**
- * The visor and its two eyes, on the GAZE face of the head (D-IL17).
- *
- * `faceExtent` is asked for the LEFT face even though the art may land on the right one: every box
- * this entity draws is square (`w === d`), and for a square box the two side faces have identical
- * on-screen extents. `GlyphFrame` resolves which face the art actually mounts on; the extent is only
- * used to lay the art out inside it.
- */
-function FacePanel({ box, eye }: { box: IsoBox; eye: string }): ReactElement {
-  const { width, height } = faceExtent(box, "left");
-  const visorWidth = width * 0.78;
-  const visorHeight = height * 0.58;
-  const x = (width - visorWidth) / 2;
-  const y = (height - visorHeight) / 2;
-  const pupil = Math.min(visorWidth, visorHeight) * 0.19;
-  return (
-    <GlyphFrame face="gaze" box={box}>
-      <rect
-        x={fmt(x)}
-        y={fmt(y)}
-        width={fmt(visorWidth)}
-        height={fmt(visorHeight)}
-        rx={fmt(Math.min(4, visorHeight / 3))}
-        strokeWidth={ILLUS_STROKE_DETAIL_FINE}
-        style={{ fill: "var(--illus-surface-sunken)", stroke: "var(--illus-ink)" }}
-      />
-      <circle
-        cx={fmt(x + visorWidth * 0.31)}
-        cy={fmt(y + visorHeight / 2)}
-        r={fmt(pupil)}
-        style={{ fill: eye }}
-      />
-      <circle
-        cx={fmt(x + visorWidth * 0.69)}
-        cy={fmt(y + visorHeight / 2)}
-        r={fmt(pupil)}
-        style={{ fill: eye }}
-      />
-    </GlyphFrame>
-  );
-}
 
 /** Two rules across the chest, on the same gaze face — the exemplar's plate detail. */
 function ChestPanel({ box }: { box: IsoBox }): ReactElement {

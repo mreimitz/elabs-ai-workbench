@@ -36,7 +36,12 @@ describe("registry v0.1 — the catalog", () => {
     assert.deepEqual(ILLUSTRATION_REGISTRY.map((entry) => entry.id).sort(), [
       "agent",
       "mcp-server",
+      "model",
+      "prompt",
+      "provider",
+      "run",
       "skill",
+      "validator",
     ]);
   });
 

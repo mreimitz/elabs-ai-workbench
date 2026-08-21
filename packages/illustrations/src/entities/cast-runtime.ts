@@ -5,9 +5,27 @@
 // thinks with (`model`), who serves it (`provider`), what checks its work (`validator`), what the
 // work IS (`run`), and what starts it (`prompt`).
 //
-// This module is filled in the second commit of WP 1.1. The first commit lands the seam — this file
-// and its two empty siblings — so that WP 1.2 and WP 1.3 never have to append to a shared array.
+// Every one of them lives in its own file next to this one and is listed here exactly once. That is
+// the whole edit surface for a new component (WP 1.1 §1): `registry.ts` names no entity, and
+// `entities/index.ts` names no entity — the cast modules re-export their own members.
 
+export * from "./Model.js";
+export * from "./Prompt.js";
+export * from "./Provider.js";
+export * from "./Run.js";
+export * from "./Validator.js";
+
+import { Model, modelMeta } from "./Model.js";
+import { Prompt, promptMeta } from "./Prompt.js";
+import { Provider, providerMeta } from "./Provider.js";
+import { Run, runMeta } from "./Run.js";
+import { Validator, validatorMeta } from "./Validator.js";
 import type { IllustrationCastMember } from "./cast-member.js";
 
-export const ILLUSTRATION_RUNTIME_CAST: readonly IllustrationCastMember[] = [];
+export const ILLUSTRATION_RUNTIME_CAST: readonly IllustrationCastMember[] = [
+  { meta: modelMeta, component: Model },
+  { meta: providerMeta, component: Provider },
+  { meta: validatorMeta, component: Validator },
+  { meta: runMeta, component: Run },
+  { meta: promptMeta, component: Prompt },
+];
