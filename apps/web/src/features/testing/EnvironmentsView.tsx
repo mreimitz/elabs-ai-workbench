@@ -587,9 +587,16 @@ function AllowedServersCell({ scenario, missing }: { scenario: Scenario; missing
   return (
     <span className="flex flex-wrap items-center justify-end gap-1.5">
       <span className="tabular-nums">{formatNumber(total)}</span>
-      <Badge variant="warning" role="status" className="font-normal">
-        {missing === 1 ? "1 server no longer available" : `${missing} servers no longer available`}
-      </Badge>
+      {/* A native `<output>` — its implicit role IS `status` (polite), so the note is announced
+          without an explicit `role`, which is what `lint/a11y/useSemanticElements` asks for. Layout
+          element only; the visible chip is still the design system's `Badge`. */}
+      <output>
+        <Badge variant="warning" className="font-normal">
+          {missing === 1
+            ? "1 server no longer available"
+            : `${missing} servers no longer available`}
+        </Badge>
+      </output>
     </span>
   );
 }
