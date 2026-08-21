@@ -321,6 +321,12 @@ export function ServersOverview(props: {
           <ServerOverviewCard
             server={server}
             type={resolveServerType(server, typesById)}
+            // P2-2 (RM-36 WP 2.2) — the group heading already reads `QLIK-SAAS · [Production] · 2`,
+            // so repeating `[qlik-saas] [Production]` on every card inside it says nothing the
+            // section header has not already said. When the grid is grouped BY TYPE the card drops
+            // those two chips; ungrouped (or grouped by something else) it keeps them, because then
+            // nothing else on screen states them.
+            typeStatedByGroupHeading={state.groupById === "type"}
             latestScan={props.latestScansByServer.get(server.id)}
             posture={postureByServer.get(server.id)}
             postureSettled={postureSettled}
@@ -361,6 +367,9 @@ export function ServersOverview(props: {
 function ServerOverviewCard(props: {
   server: ServerConfig;
   type: ServerType | null;
+  /** P2-2 — true when the enclosing group heading already names this card's type + type status, so
+   *  the card must not repeat them. */
+  typeStatedByGroupHeading?: boolean;
   latestScan: ScanSummary | undefined;
   posture: SecurityFleetSummary | undefined;
   postureSettled: boolean;
@@ -384,20 +393,14 @@ function ServerOverviewCard(props: {
       href={`/servers/${server.id}`}
       onOpen={props.onOpen}
       virtualizeHint={props.virtualizeHint}
+      /* P2-2 — the chips moved OFF the title row onto their own line below it. They used to sit in
+         `status` (top-right, `shrink-0`), which squeezed the title: `mcp-assets` clipped to
+         `mcp-ass…` at 81px against the 90px it needed — the name clipped exactly on the card whose
+         name most needs reading, because `Scan failed` + `Medium risk` took the row. With only the
+         per-card actions left up there, the title gets that width back. The RISK chip stays (it
+         varies within a group); the type + type-status chips drop when the group heading already
+         names them. */
       badges={
-        <>
-          {props.type ? (
-            <>
-              <Badge variant="outline">{props.type.name}</Badge>
-              <ServerTypeStatusBadge status={props.type.status} />
-            </>
-          ) : null}
-          <Text variant="meta" tone="muted">
-            {server.transport === "stdio" ? "stdio" : "http"} · {AUTH_LABELS[server.authType]}
-          </Text>
-        </>
-      }
-      status={
         <>
           {/* Health DOT: aria-labelled only when it's the sole cue (healthy/scanning have no chip);
               decorative when the labelled chip beside it carries the state. */}
@@ -411,6 +414,15 @@ function ServerOverviewCard(props: {
             settled={props.postureSettled}
             healthChipShown={health.showChip}
           />
+          {props.type && !props.typeStatedByGroupHeading ? (
+            <>
+              <Badge variant="outline">{props.type.name}</Badge>
+              <ServerTypeStatusBadge status={props.type.status} />
+            </>
+          ) : null}
+          <Text variant="meta" tone="muted">
+            {server.transport === "stdio" ? "stdio" : "http"} · {AUTH_LABELS[server.authType]}
+          </Text>
         </>
       }
       metrics={
