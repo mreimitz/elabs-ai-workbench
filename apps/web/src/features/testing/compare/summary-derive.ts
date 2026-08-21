@@ -14,8 +14,9 @@ import type {
   CostBasis,
   RunGrade,
   RunStep,
+  TokenUsageActual,
 } from "@mcp-token-footprint/shared";
-import { CONTEXT_SEGMENTS } from "@mcp-token-footprint/shared";
+import { CONTEXT_SEGMENTS, cacheHitRate } from "@mcp-token-footprint/shared";
 import { countToolErrors, peakContextSnapshot, runDurationMs } from "../analytics-derive";
 import type { CompareVerdict, CompareVerdictReason, WorkspaceRun } from "./compare-runs";
 import { makeFocusToken } from "./flow/flow-types";
@@ -47,6 +48,16 @@ export type SummaryRun = {
   tokensIn: number;
   tokensOut: number;
   totalTokens: number;
+  /**
+   * RM-33 WP 3.2 — the prompt-cache composition of `tokensIn`, which stays GROSS (D-CT1). Compare had
+   * NO cached row anywhere before this: two runs could differ by 900k tokens and 4x in cost with
+   * nothing on the page to connect the two. `null` when the run cannot answer (a pre-migration-59 run,
+   * or one whose turns only ever reported a merged figure) — never a fabricated 0 (D-CT6).
+   */
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
+  /** Cache-read share of gross input, 0–1. `null` when the split is unknown — never 0 (D-CT6). */
+  cacheHitRate: number | null;
   costUsd: number;
   /**
    * Claude subscription (WP 3.1, D-CS4/D-CS8) — HOW `costUsd` was derived. `"subscription_reference"`
@@ -99,6 +110,35 @@ function contextTotalsOf(steps: RunStep[]): number[] {
     .map((s) => (s.context as ContextSnapshot).total);
 }
 
+/**
+ * RM-33 — a run summary projected into the `TokenUsageActual` shape the shared cache helpers read, so
+ * no surface re-derives "how much of this was cache" for itself.
+ *
+ * `undefined` when `cachedTokens` never reached the wire — the same rule the runs feed uses
+ * (`RunTableRow`). That distinction is the whole point: at the RECORD level an absent cache slice
+ * means the provider reported none, but at the RUN level it means the migration-59 columns are NULL,
+ * i.e. UNKNOWABLE. Feeding that straight into `cacheHitRate` would come back `0` — "caching did
+ * nothing" — about a run that may have been almost entirely served from cache.
+ */
+export function runSummaryUsage(summary: WorkspaceRun["run"]): TokenUsageActual | undefined {
+  if (summary.cachedTokens === undefined) return undefined;
+  return {
+    inputTokens: summary.tokensIn,
+    outputTokens: summary.tokensOut,
+    cachedInputTokens: summary.cachedTokens,
+    ...(summary.cacheReadTokens === undefined ? {} : { cacheReadTokens: summary.cacheReadTokens }),
+    ...(summary.cacheWriteTokens === undefined
+      ? {}
+      : { cacheWriteTokens: summary.cacheWriteTokens }),
+  };
+}
+
+/** The run's cache-read share, or `null` when the run cannot answer (never a 0 that means "unknown"). */
+export function runCacheHitRate(summary: WorkspaceRun["run"]): number | null {
+  const usage = runSummaryUsage(summary);
+  return usage ? cacheHitRate(usage) : null;
+}
+
 /** The model context window for the run (first snapshot carrying a positive limit), or 0. */
 function contextLimitOf(steps: RunStep[]): number {
   for (const s of steps) {
@@ -139,6 +179,11 @@ export function buildSummaryRun(
     tokensIn: summary.tokensIn,
     tokensOut: summary.tokensOut,
     totalTokens,
+    // RM-33 — straight off the run summary's migration-59 fields; `?? null` maps "the column was NULL"
+    // to UNKNOWN rather than to a zero that would read as "this run cached nothing".
+    cacheReadTokens: summary.cacheReadTokens ?? null,
+    cacheWriteTokens: summary.cacheWriteTokens ?? null,
+    cacheHitRate: runCacheHitRate(summary),
     costUsd: summary.costUsd,
     // Claude subscription (WP 3.1, D-CS4/D-CS8) — carry the run summary's cost basis (now populated by
     // the v29 data fix → toRunSummary → compareRuns) so the Δ-matrix cost cell can mark it "est.".
@@ -271,6 +316,47 @@ export function metricAccessors(fmt: SummaryFormatters): MetricAccessor[] {
       value: (r, pt) => (pt ? perTurn(r.tokensOut, r.turns) : r.tokensOut),
       format: fmt.number,
     },
+    // RM-33 WP 3.2 — the cache composition, beside the gross token rows it decomposes.
+    //
+    // Read and write are separate metrics on purpose (D-CT2), and they point in OPPOSITE directions:
+    // a cache read is billed at ~0.1x input, so more of it is better; a cache write is billed at
+    // 1.25x — a premium — so more of it is worse. One merged "cached" row would have to pick a single
+    // direction, and either choice would be wrong half the time.
+    {
+      key: "cacheRead",
+      label: "Cache read",
+      direction: "higher-better",
+      perTurnAware: true,
+      value: (r, pt) =>
+        r.cacheReadTokens === null
+          ? null
+          : pt
+            ? perTurn(r.cacheReadTokens, r.turns)
+            : r.cacheReadTokens,
+      format: fmt.number,
+    },
+    {
+      key: "cacheWrite",
+      label: "Cache write",
+      direction: "lower-better",
+      perTurnAware: true,
+      value: (r, pt) =>
+        r.cacheWriteTokens === null
+          ? null
+          : pt
+            ? perTurn(r.cacheWriteTokens, r.turns)
+            : r.cacheWriteTokens,
+      format: fmt.number,
+    },
+    {
+      // A ratio, so it is already per-turn-normalized — the toggle must not divide it a second time.
+      key: "cacheHitRate",
+      label: "Cache hit rate",
+      direction: "higher-better",
+      perTurnAware: false,
+      value: (r) => (r.cacheHitRate === null ? null : r.cacheHitRate * 100),
+      format: fmt.percent,
+    },
     {
       key: "cost",
       label: "Cost",
@@ -353,8 +439,13 @@ export function deriveDeltaBars(
       baselineText,
       bars,
       collapsed,
+      // RM-33 (D-CT6) — "every run is the same" and "no run could answer" are different statements,
+      // and before this the second rendered as the first ("— for all runs — no difference to
+      // compare"), which reads as a measured tie. Say which one it is.
       collapsedText: collapsed
-        ? `${baselineText} for all runs — no difference to compare${metric.key === "cost" && baselineValue === 0 ? " (unpriced model)" : ""}.`
+        ? allValues.every((v) => v == null)
+          ? `${metric.label} is not measured for these runs — shown as unavailable rather than as a zero.`
+          : `${baselineText} for all runs — no difference to compare${metric.key === "cost" && baselineValue === 0 ? " (unpriced model)" : ""}.`
         : "",
     };
   });

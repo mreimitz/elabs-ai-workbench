@@ -70,6 +70,8 @@ const SECRET_PAT_VALUE = "ghp-never-leak-this-collection-pat";
 type Harness = {
   baseUrl: string;
   mcpUrl: URL;
+  /** The fixture database, so a test can seed a column the harness's event stream cannot produce. */
+  db: AppDatabase;
   features: FeatureFlagsService;
   serverId: string;
   scanId: string;
@@ -352,6 +354,7 @@ async function makeHarness(): Promise<Harness> {
   return {
     baseUrl,
     mcpUrl: new URL(`${baseUrl}${WORKBENCH_MCP_MOUNT_PATH}`),
+    db,
     features,
     serverId: server.id,
     emptyServerId: httpServer.id,
@@ -605,6 +608,11 @@ test("run tools project the run, its grades and its report", async () => {
   assert.equal(detail.id, h.runId);
   assert.equal(detail.stepsTotal, 1);
   assert.equal(detail.stepsTruncated, false);
+  // RM-33 (D-CT6) — this fixture's run reported no cache slice, so the summary must carry NO cache
+  // keys at all. An agent cannot tell a fabricated `0` from "this run cached nothing", and the whole
+  // point of the split is to stop making that claim on a run's behalf.
+  assert.equal("cacheReadTokens" in detail, false, "absent ⇒ UNKNOWN, never a fabricated zero");
+  assert.equal("cacheWriteTokens" in detail, false);
 
   const graded = (await callJson(client, "runs_grades", { runId: h.runId })) as {
     grades: Array<{ graderId: string }>;
@@ -964,4 +972,26 @@ test("the usage doc is a GET while the mount itself still answers 405, and both 
 
   h.features.setFlags({ mcp_server: true });
   assert.equal((await fetch(docUrl)).status, 200);
+});
+
+test("runs_get carries the prompt-cache split so an agent can reconcile tokens with cost", async () => {
+  const h = await makeHarness();
+  // The migration-59 columns, as a real cached run leaves them: 1,000 gross input of which 800 was
+  // served from cache (~0.1x — a discount) and 100 was written to cache (1.25x — a premium).
+  h.db
+    .prepare(
+      `UPDATE runs SET tokens_in = 1000, cached_tokens = 900, cache_read_tokens = 800,
+                       cache_write_tokens = 100 WHERE id = @id`,
+    )
+    .run({ id: h.runId });
+
+  const client = await connect(h);
+  const detail = (await callJson(client, "runs_get", { runId: h.runId })) as {
+    tokensIn: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
+  };
+  assert.equal(detail.tokensIn, 1000, "D-CT1 — tokensIn stays GROSS, cached slice included");
+  assert.equal(detail.cacheReadTokens, 800);
+  assert.equal(detail.cacheWriteTokens, 100);
 });

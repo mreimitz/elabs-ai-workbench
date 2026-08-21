@@ -41,6 +41,11 @@ function run(over: Partial<SummaryRun>): SummaryRun {
     tokensIn: 1000,
     tokensOut: 200,
     totalTokens: 1200,
+    // RM-33 — the default fixture is a run that cannot report its cache split (the majority of an
+    // existing database). Tests that care set them explicitly.
+    cacheReadTokens: null,
+    cacheWriteTokens: null,
+    cacheHitRate: null,
     costUsd: 0.01,
     durationMs: 4000,
     peakContextTokens: 5000,
@@ -217,5 +222,81 @@ describe("context curves", () => {
   it("curveLimit is the greatest known window across the set", () => {
     expect(curveLimit([run({ contextLimit: 8000 }), run({ contextLimit: 128_000 })])).toBe(128_000);
     expect(curveLimit([run({ contextLimit: 0 })])).toBe(0);
+  });
+});
+
+// ── RM-33 WP 3.2 — the cache rows of the Δ panel ──────────────────────────────────────────────────
+//
+// Compare had no cached row at all, so two runs could differ by 900k tokens and 4x in cost with
+// nothing on the page connecting the two. Read and write are separate rows on purpose (D-CT2) and
+// point in OPPOSITE directions: a read is a ~0.1x discount (more is better), a write is a 1.25x
+// premium (more is worse). One merged "cached" row would have to pick a direction and be wrong half
+// the time.
+
+describe("cache metrics in the Δ panel (RM-33 WP 3.2)", () => {
+  const baseline = run({
+    id: "a",
+    letter: "A",
+    isBaseline: true,
+    cacheReadTokens: 400,
+    cacheWriteTokens: 100,
+    cacheHitRate: 0.4,
+  });
+  const b = run({
+    id: "b",
+    letter: "B",
+    cacheReadTokens: 800,
+    cacheWriteTokens: 50,
+    cacheHitRate: 0.8,
+  });
+
+  it("cache read is HIGHER-better — reading more from cache is a discount", () => {
+    const row = deriveDeltaBars([baseline, b], baseline, false, fmt).find(
+      (m) => m.key === "cacheRead",
+    )!;
+    expect(row.direction).toBe("higher-better");
+    expect(row.bars[0]!.deltaPercent).toBe(100); // 800 vs 400
+    expect(row.bars[0]!.tone).toBe("better");
+  });
+
+  it("cache write is LOWER-better — writing more to cache is a 1.25x premium", () => {
+    const row = deriveDeltaBars([baseline, b], baseline, false, fmt).find(
+      (m) => m.key === "cacheWrite",
+    )!;
+    expect(row.direction).toBe("lower-better");
+    expect(row.bars[0]!.deltaPercent).toBe(-50); // 50 vs 100
+    expect(row.bars[0]!.tone).toBe("better");
+  });
+
+  it("the hit rate is a ratio — the per-turn toggle must NOT divide it again", () => {
+    const absolute = deriveDeltaBars([baseline, b], baseline, false, fmt).find(
+      (m) => m.key === "cacheHitRate",
+    )!;
+    const perTurnRow = deriveDeltaBars([baseline, b], baseline, true, fmt).find(
+      (m) => m.key === "cacheHitRate",
+    )!;
+    expect(absolute.baselineText).toBe(perTurnRow.baselineText);
+    expect(perTurnRow.label).not.toContain("/ turn");
+  });
+
+  it("a set where NO run can answer says 'not measured', never 'no difference to compare'", () => {
+    // The default fixture leaves every cache field null — a pre-migration-59 comparison.
+    const x = run({ id: "x", letter: "A", isBaseline: true });
+    const y = run({ id: "y", letter: "B" });
+    const row = deriveDeltaBars([x, y], x, false, fmt).find((m) => m.key === "cacheRead")!;
+    expect(row.collapsed).toBe(true);
+    expect(row.collapsedText).toContain("not measured for these runs");
+    expect(row.collapsedText).toContain("rather than as a zero");
+    expect(row.collapsedText).not.toContain("no difference to compare");
+    expect(row.bars[0]!.valueText).toBe("—");
+  });
+
+  it("an all-equal MEASURED metric still reads as a tie, not as 'not measured'", () => {
+    const x = run({ id: "x", letter: "A", isBaseline: true, cacheReadTokens: 500 });
+    const y = run({ id: "y", letter: "B", cacheReadTokens: 500 });
+    const row = deriveDeltaBars([x, y], x, false, fmt).find((m) => m.key === "cacheRead")!;
+    expect(row.collapsed).toBe(true);
+    expect(row.collapsedText).toContain("no difference to compare");
+    expect(row.collapsedText).not.toContain("not measured");
   });
 });

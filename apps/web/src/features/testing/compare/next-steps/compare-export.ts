@@ -5,7 +5,8 @@
 // node-testable; the browser download wrapper lives in the card component.
 
 import type { CompareVerdict, WorkspaceRun } from "../compare-runs";
-import { formatCostUsd, formatDuration, formatNumber } from "../../../../lib/format";
+import { runCacheHitRate } from "../summary-derive";
+import { formatCostUsd, formatDuration, formatNumber, formatPercent } from "../../../../lib/format";
 
 /** One run's row in the exported comparison (the summary-level metrics, no trace). */
 type ExportRow = {
@@ -19,6 +20,15 @@ type ExportRow = {
   tokensIn: number;
   tokensOut: number;
   totalTokens: number;
+  /**
+   * RM-33 WP 3.2 — the prompt-cache composition of `tokensIn`, which is unchanged and still GROSS
+   * (D-CT1). `null` when the run cannot answer read-vs-write — absent means UNKNOWN, never zero
+   * (D-CT6) — so a consumer of this export can tell "no cache" from "not measured".
+   */
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
+  /** Cache-read share of gross input, 0–1. `null` when unknown. */
+  cacheHitRate: number | null;
   peakContextTokens: number;
   costUsd: number;
   durationMs: number | null;
@@ -38,6 +48,11 @@ function toRow(run: WorkspaceRun): ExportRow {
     tokensIn: s.tokensIn,
     tokensOut: s.tokensOut,
     totalTokens: s.tokensIn + s.tokensOut,
+    cacheReadTokens: s.cacheReadTokens ?? null,
+    cacheWriteTokens: s.cacheWriteTokens ?? null,
+    // The SAME derivation the workspace's Δ rows use, so the exported artifact and the page on screen
+    // can never disagree about what "hit rate" means — or about which runs cannot answer.
+    cacheHitRate: runCacheHitRate(s),
     peakContextTokens: s.peakContextTokens,
     costUsd: s.costUsd,
     durationMs: s.durationMs ?? null,
@@ -117,6 +132,24 @@ export function buildComparisonMarkdown(
   lines.push(metricRow("Tokens in", (r) => formatNumber(r.tokensIn)));
   lines.push(metricRow("Tokens out", (r) => formatNumber(r.tokensOut)));
   lines.push(metricRow("Total tokens", (r) => formatNumber(r.totalTokens)));
+  // RM-33 — each row is named with what it COSTS, because "cached" alone hides that a read is a
+  // discount and a write is a premium. An em dash means the run could not answer, not that it cached
+  // nothing.
+  lines.push(
+    metricRow("Cache read (~0.1×)", (r) =>
+      r.cacheReadTokens === null ? "—" : formatNumber(r.cacheReadTokens),
+    ),
+  );
+  lines.push(
+    metricRow("Cache write (1.25×)", (r) =>
+      r.cacheWriteTokens === null ? "—" : formatNumber(r.cacheWriteTokens),
+    ),
+  );
+  lines.push(
+    metricRow("Cache hit rate", (r) =>
+      r.cacheHitRate === null ? "—" : formatPercent(r.cacheHitRate * 100),
+    ),
+  );
   lines.push(metricRow("Peak context", (r) => formatNumber(r.peakContextTokens)));
   lines.push(metricRow("Cost", (r) => formatCostUsd(r.costUsd)));
   lines.push(

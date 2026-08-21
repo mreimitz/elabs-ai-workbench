@@ -2,6 +2,8 @@ import type {
   ContextSegment,
   ContextSnapshot,
   RunOutcome,
+  RunReportStatistics,
+  RunReportStepKpi,
   RunStep,
 } from "@mcp-token-footprint/shared";
 import {
@@ -24,31 +26,16 @@ import type { RunStreamState } from "./use-run-stream";
  * never guessed (e.g. unused-tool detection needs a run-time allowed-tools snapshot we don't capture).
  */
 
-// ── Report payload (mirror of apps/api/src/reports/reports.ts `createRunJsonReport`) ─────────────
+// ── Report payload ────────────────────────────────────────────────────────────────────────────────
+//
+// RM-33 WP 3.2 — these two shapes used to be HAND-WRITTEN mirrors of the API's `createRunJsonReport`
+// object literal: a wire shape with no type and no schema on either side, which
+// `.claude/rules/architecture.md` forbids and which could drift with nothing to catch it. They are
+// now the shared contract (`packages/shared` — `RunReportStatistics` / `RunReportStepKpi`, with
+// `.strict()` zod mirrors), so both ends read ONE definition and the API's tests validate what it
+// actually serializes against it.
 
-/** Per-step cumulative KPI snapshot — the figure steps don't carry on their own is `costUsd`. */
-export type RunReportStepKpi = {
-  turns: number;
-  toolCalls: number;
-  tokensIn: number;
-  tokensOut: number;
-  contextTokens: number;
-  costUsd: number;
-};
-
-/** Run-level statistics block of the report payload. */
-export type RunReportStatistics = {
-  turns: number;
-  toolCalls: number;
-  tokensIn: number;
-  tokensOut: number;
-  cachedTokens: number;
-  peakContextTokens: number;
-  contextLimit: number | null;
-  endStateContextTokens?: number;
-  estimatedCostUsd: number;
-  peakContextSegments: Record<ContextSegment, number> | null;
-};
+export type { RunReportStatistics, RunReportStepKpi };
 
 /**
  * The fields of the run report this dashboard consumes. The API returns more (`run`, `test`,
@@ -619,6 +606,13 @@ export type StepCumulativeKpi = {
   tokensIn: number;
   tokensOut: number;
   costUsd: number;
+  /**
+   * RM-33 WP 3.2 — the cumulative cache composition, when the source carries it. The run report's
+   * `stepKpis` does; the live console's own map does not, so its chips stay cache-silent rather than
+   * claiming a zero. Absent means UNKNOWN, never zero (D-CT6).
+   */
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
 };
 
 /** A step's OWN (non-cumulative) economics — how much it moved the run's ledger, plus its own timing. */
@@ -626,6 +620,15 @@ export type StepEconomics = {
   tokensInDelta: number;
   tokensOutDelta: number;
   costUsdDelta: number;
+  /**
+   * RM-33 WP 3.2 — how much of `tokensInDelta` this step served from cache (~0.1x — a discount) and
+   * how much it wrote to cache (1.25x — a PREMIUM). `null` when the snapshots this step sits between
+   * cannot answer, which is the honest reading for a run recorded before the split existed: a `0`
+   * would assert "this step used no cache", and the whole point of the split is to stop making that
+   * claim on a run's behalf.
+   */
+  cacheReadDelta: number | null;
+  cacheWriteDelta: number | null;
   /** The step's own wall-clock duration, or null when untimed (never fabricated). */
   durationMs: number | null;
 };
@@ -634,6 +637,8 @@ const ZERO_ECONOMICS: Omit<StepEconomics, "durationMs"> = {
   tokensInDelta: 0,
   tokensOutDelta: 0,
   costUsdDelta: 0,
+  cacheReadDelta: null,
+  cacheWriteDelta: null,
 };
 
 /**
@@ -652,7 +657,22 @@ function judgeCallEconomics(step: RunStep): Omit<StepEconomics, "durationMs"> | 
     tokensInDelta: toFiniteNumber(rec.judgeTokensIn),
     tokensOutDelta: toFiniteNumber(rec.judgeTokensOut),
     costUsdDelta: toFiniteNumber(rec.judgeCostUsd),
+    // The judge ledger records no cache composition (B5 keeps it separate from run cost, and RM-33
+    // deliberately leaves it alone — see WP 3.2's "out of scope"). Unknown, not zero.
+    cacheReadDelta: null,
+    cacheWriteDelta: null,
   };
+}
+
+/**
+ * The cache half of a per-step delta. `null` — UNKNOWN — unless BOTH snapshots carry the field, since
+ * a difference against a missing endpoint is not a measurement. `Math.max(0, …)` mirrors the token
+ * deltas: a cumulative ledger only ever moves forward, and the final step's summary patch can make a
+ * snapshot jump, never regress.
+ */
+function cacheDelta(current: number | undefined, previous: number | undefined): number | null {
+  if (current === undefined || previous === undefined) return null;
+  return Math.max(0, current - previous);
 }
 
 /**
@@ -667,7 +687,17 @@ export function derivePerStepEconomics(
   cumulative: ReadonlyMap<string, StepCumulativeKpi> | null,
 ): Map<string, StepEconomics> {
   const out = new Map<string, StepEconomics>();
-  let prev: StepCumulativeKpi = { tokensIn: 0, tokensOut: 0, costUsd: 0 };
+  // The zero origin carries a cache composition of 0/0, not `undefined`: before the first step nothing
+  // had been read from or written to cache, so the FIRST step's delta is measurable whenever its own
+  // snapshot is. Leaving the origin unknown would silently blank the first step of every run — and
+  // that is usually the largest one, since it is the turn that writes the prompt into cache.
+  let prev: StepCumulativeKpi = {
+    tokensIn: 0,
+    tokensOut: 0,
+    costUsd: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+  };
 
   for (const step of steps) {
     const durationMs = step.durationMs ?? null;
@@ -682,6 +712,8 @@ export function derivePerStepEconomics(
         tokensInDelta: Math.max(0, snap.tokensIn - prev.tokensIn),
         tokensOutDelta: Math.max(0, snap.tokensOut - prev.tokensOut),
         costUsdDelta: Math.max(0, snap.costUsd - prev.costUsd),
+        cacheReadDelta: cacheDelta(snap.cacheReadTokens, prev.cacheReadTokens),
+        cacheWriteDelta: cacheDelta(snap.cacheWriteTokens, prev.cacheWriteTokens),
         durationMs,
       });
       prev = snap;
@@ -709,13 +741,43 @@ export function rollupSubtreeEconomics(
   let tokensInDelta = own.tokensInDelta;
   let tokensOutDelta = own.tokensOutDelta;
   let costUsdDelta = own.costUsdDelta;
+  // RM-33 — the cache roll-up is only as trustworthy as its least-informed member. A node that moved
+  // tokens but cannot say how much of them was cache poisons the subtree's answer to `null`, because
+  // summing the rest would present a partial figure as the subtree's total. A node that moved NO
+  // tokens has nothing to decompose, so its silence is immaterial and contributes 0.
+  let cacheReadDelta = cacheContribution(own, "cacheReadDelta");
+  let cacheWriteDelta = cacheContribution(own, "cacheWriteDelta");
   for (const childId of childrenByParentId.get(stepId) ?? []) {
     const child = rollupSubtreeEconomics(childId, childrenByParentId, perStep);
     tokensInDelta += child.tokensInDelta;
     tokensOutDelta += child.tokensOutDelta;
     costUsdDelta += child.costUsdDelta;
+    cacheReadDelta = addCache(cacheReadDelta, cacheContribution(child, "cacheReadDelta"));
+    cacheWriteDelta = addCache(cacheWriteDelta, cacheContribution(child, "cacheWriteDelta"));
   }
-  return { tokensInDelta, tokensOutDelta, costUsdDelta, durationMs: own.durationMs };
+  return {
+    tokensInDelta,
+    tokensOutDelta,
+    costUsdDelta,
+    cacheReadDelta,
+    cacheWriteDelta,
+    durationMs: own.durationMs,
+  };
+}
+
+/** One node's contribution: its own figure, `0` when it moved no tokens, `null` when unknowable. */
+function cacheContribution(
+  econ: StepEconomics,
+  key: "cacheReadDelta" | "cacheWriteDelta",
+): number | null {
+  const value = econ[key];
+  if (value !== null) return value;
+  return econ.tokensInDelta === 0 ? 0 : null;
+}
+
+/** `null` (unknown) is absorbing — one unknowable contributor makes the whole sum unknowable. */
+function addCache(a: number | null, b: number | null): number | null {
+  return a === null || b === null ? null : a + b;
 }
 
 /** Map the terminal outcome / stop reason / stream error to a closing Errors row, or null when clean. */

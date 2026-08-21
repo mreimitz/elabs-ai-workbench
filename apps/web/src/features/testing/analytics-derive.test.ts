@@ -38,12 +38,16 @@ describe("derivePerStepEconomics", () => {
       tokensInDelta: 100,
       tokensOutDelta: 20,
       costUsdDelta: 0.01,
+      cacheReadDelta: null,
+      cacheWriteDelta: null,
       durationMs: 100,
     });
     expect(out.get("s1")).toEqual({
       tokensInDelta: 30,
       tokensOutDelta: 0,
       costUsdDelta: expect.closeTo(0.005, 10),
+      cacheReadDelta: null,
+      cacheWriteDelta: null,
       durationMs: 50,
     });
   });
@@ -55,6 +59,8 @@ describe("derivePerStepEconomics", () => {
       tokensInDelta: 0,
       tokensOutDelta: 0,
       costUsdDelta: 0,
+      cacheReadDelta: null,
+      cacheWriteDelta: null,
       durationMs: 5,
     });
   });
@@ -66,6 +72,8 @@ describe("derivePerStepEconomics", () => {
       tokensInDelta: 0,
       tokensOutDelta: 0,
       costUsdDelta: 0,
+      cacheReadDelta: null,
+      cacheWriteDelta: null,
       durationMs: 12,
     });
   });
@@ -93,6 +101,8 @@ describe("derivePerStepEconomics", () => {
       tokensInDelta: 400,
       tokensOutDelta: 120,
       costUsdDelta: 0.03,
+      cacheReadDelta: null,
+      cacheWriteDelta: null,
       durationMs: null,
     });
   });
@@ -101,9 +111,9 @@ describe("derivePerStepEconomics", () => {
 describe("rollupSubtreeEconomics", () => {
   test("sums a parent's own economics with every descendant's", () => {
     const perStep = new Map([
-      ["parent", { tokensInDelta: 10, tokensOutDelta: 5, costUsdDelta: 0.01, durationMs: 200 }],
-      ["child1", { tokensInDelta: 100, tokensOutDelta: 20, costUsdDelta: 0.02, durationMs: 50 }],
-      ["child2", { tokensInDelta: 50, tokensOutDelta: 10, costUsdDelta: 0.01, durationMs: 30 }],
+      ["parent", { tokensInDelta: 10, tokensOutDelta: 5, costUsdDelta: 0.01, cacheReadDelta: null, cacheWriteDelta: null, durationMs: 200 }],
+      ["child1", { tokensInDelta: 100, tokensOutDelta: 20, costUsdDelta: 0.02, cacheReadDelta: null, cacheWriteDelta: null, durationMs: 50 }],
+      ["child2", { tokensInDelta: 50, tokensOutDelta: 10, costUsdDelta: 0.01, cacheReadDelta: null, cacheWriteDelta: null, durationMs: 30 }],
     ]);
     const childrenByParentId = new Map([["parent", ["child1", "child2"]]]);
 
@@ -118,22 +128,30 @@ describe("rollupSubtreeEconomics", () => {
 
   test("a leaf with no children rolls up to exactly its own economics", () => {
     const perStep = new Map([
-      ["leaf", { tokensInDelta: 7, tokensOutDelta: 3, costUsdDelta: 0.001, durationMs: 10 }],
+      ["leaf", { tokensInDelta: 7, tokensOutDelta: 3, costUsdDelta: 0.001, cacheReadDelta: null, cacheWriteDelta: null, durationMs: 10 }],
     ]);
     const rollup = rollupSubtreeEconomics("leaf", new Map(), perStep);
-    expect(rollup).toEqual({ tokensInDelta: 7, tokensOutDelta: 3, costUsdDelta: 0.001, durationMs: 10 });
+    expect(rollup).toEqual({ tokensInDelta: 7, tokensOutDelta: 3, costUsdDelta: 0.001, cacheReadDelta: null, cacheWriteDelta: null, durationMs: 10 });
   });
 
   test("a stepId missing from perStep rolls up to zero (never throws)", () => {
     const rollup = rollupSubtreeEconomics("unknown", new Map(), new Map());
-    expect(rollup).toEqual({ tokensInDelta: 0, tokensOutDelta: 0, costUsdDelta: 0, durationMs: null });
+    expect(rollup).toEqual({
+      tokensInDelta: 0,
+      tokensOutDelta: 0,
+      costUsdDelta: 0,
+      // A subtree that moved no tokens has nothing to decompose — 0 of 0 is a fact, not a guess.
+      cacheReadDelta: 0,
+      cacheWriteDelta: 0,
+      durationMs: null,
+    });
   });
 
   test("recurses through a multi-level subtree", () => {
     const perStep = new Map([
-      ["a", { tokensInDelta: 1, tokensOutDelta: 0, costUsdDelta: 0, durationMs: null }],
-      ["b", { tokensInDelta: 2, tokensOutDelta: 0, costUsdDelta: 0, durationMs: null }],
-      ["c", { tokensInDelta: 4, tokensOutDelta: 0, costUsdDelta: 0, durationMs: null }],
+      ["a", { tokensInDelta: 1, tokensOutDelta: 0, costUsdDelta: 0, cacheReadDelta: null, cacheWriteDelta: null, durationMs: null }],
+      ["b", { tokensInDelta: 2, tokensOutDelta: 0, costUsdDelta: 0, cacheReadDelta: null, cacheWriteDelta: null, durationMs: null }],
+      ["c", { tokensInDelta: 4, tokensOutDelta: 0, costUsdDelta: 0, cacheReadDelta: null, cacheWriteDelta: null, durationMs: null }],
     ]);
     const childrenByParentId = new Map([
       ["a", ["b"]],

@@ -4,6 +4,7 @@ import type {
   GraderId,
   RunDetail,
   RunGrade,
+  SuiteAggregates,
   SuiteAnalytics,
   SuiteBreakdownSlice,
   SuiteReport,
@@ -33,6 +34,7 @@ import {
   SUBSCRIPTION_COST_FOOTNOTE,
   type RunReportEnrichment,
 } from "./reports.js";
+import { buildRunReportEnrichment } from "./run-report-assembly.js";
 
 /**
  * Benchmarks (WP 3.4) — the suite-RUN report export, the suite-scope analogue of the run report
@@ -70,6 +72,16 @@ export type SuiteRunReportCell = {
   // the export from "just links" into real numbers you can read without opening every run.
   tokensIn: number;
   tokensOut: number;
+  /**
+   * RM-33 (D-CT2/D-CT6) — this member's prompt-cache composition, read off the SAME `summary` the
+   * spend figures come from. `tokensIn` is unchanged and still GROSS (cache slice included, D-CT1).
+   * Each field is ABSENT when the member cannot answer — a pre-migration-59 run, or one whose steps
+   * only ever reported a merged figure. Absent means UNKNOWN, never zero: a fabricated `0` here would
+   * assert "this run cached nothing", which for the six runs the WP 1.2 backfill caught was flatly
+   * untrue (they held 107k–1.2M tokens of real cache).
+   */
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
   costUsd: number;
   turns: number;
   toolCalls: number;
@@ -207,6 +219,13 @@ function buildReportCells(
       score: selectRunScore(latestByGrader, grader),
       tokensIn: summary.tokensIn,
       tokensOut: summary.tokensOut,
+      // RM-33 — omit rather than zero-fill when the member's split is unknown (D-CT6).
+      ...(summary.cacheReadTokens === undefined
+        ? {}
+        : { cacheReadTokens: summary.cacheReadTokens }),
+      ...(summary.cacheWriteTokens === undefined
+        ? {}
+        : { cacheWriteTokens: summary.cacheWriteTokens }),
       costUsd: summary.costUsd,
       turns: summary.turns,
       toolCalls: summary.toolCalls,
@@ -219,10 +238,14 @@ function buildReportCells(
       // degrade this cell to summary-only, never 500 the export (mirrors resolveName/safeSuiteName).
       try {
         const run = deps.runs.getRun(runId);
-        const enrich: RunReportEnrichment = {
-          test: deps.tests.get(summary.testId),
-          scenario: deps.scenarios.get(summary.scenarioId),
-        };
+        // RM-33 WP 3.2 — the SAME enrichment builder the HTTP export uses, so an embedded member
+        // report carries the same cost decomposition as its own standalone report (D-CT5: one
+        // formula, entered from one place).
+        const enrich: RunReportEnrichment = buildRunReportEnrichment(
+          run,
+          deps.tests.get(summary.testId),
+          deps.scenarios.get(summary.scenarioId),
+        );
         cell.detail = createRunJsonReport(run, enrich);
         cell.grades = deps.grades.listByRun(runId);
         members.push({ runId, testName, scenarioName, run, enrich });
@@ -337,11 +360,30 @@ function renderSummary(lines: string[], suiteRun: SuiteRun, data: SuiteRunReport
     `- Grade std dev: ${formatScore(aggregates.gradeStdDev)}`,
     `- Pass rate (≥ 0.5): ${aggregates.passRateAt05 === null ? "n/a" : formatPercent(aggregates.passRateAt05)}`,
     `- Total tokens: ${aggregates.totalTokens}`,
+    // RM-33 (D-CT2) — the matrix-wide cache composition, rolled up ALL-OR-NOTHING by WP 1.2: one
+    // member whose split is unknown makes the whole aggregate unknown, because a partial sum would
+    // understate the fleet while looking complete. Read and write stay apart — a read is a ~0.1x
+    // discount, a write a 1.25x premium, and one merged bar would show the premium as a saving.
+    ...renderAggregateCacheLines(aggregates),
     // Exec cost + judge cost are SEPARATE ledgers (judge is never folded into exec); both estimated.
     `- Exec cost: $${aggregates.execCostUsd.toFixed(4)} (estimated)`,
     `- Judge cost: $${aggregates.judgeCostUsd.toFixed(4)} (estimated)`,
     "",
   );
+}
+
+/** The suite-wide cache split, or one honest line saying the matrix cannot answer (WP 1.2 rule). */
+function renderAggregateCacheLines(aggregates: SuiteAggregates): string[] {
+  if (aggregates.cacheReadTokens === undefined && aggregates.cacheWriteTokens === undefined) {
+    return [
+      "- Cache read / write: not measured across this matrix — at least one member run cannot report" +
+        " its split, and a partial sum would understate it while looking complete",
+    ];
+  }
+  return [
+    `- Cache read: ${aggregates.cacheReadTokens ?? 0} (billed ~0.1x input — a discount)`,
+    `- Cache write: ${aggregates.cacheWriteTokens ?? 0} (billed 1.25x input — a premium, not a saving)`,
+  ];
 }
 
 // ── Section 3 — Statistics (scatter + breakdowns + per-cell table) ──────────────────────────────────
@@ -360,9 +402,10 @@ function renderCells(lines: string[], cells: SuiteRunReportCell[]): void {
     return;
   }
   // Real per-member numbers (tokens/cost) inline — not just a link — plus a link to the full run report.
+  // RM-33 — the two cache columns read "—" for a member that cannot answer; never a fabricated 0.
   lines.push(
-    "| Test | Scenario | Rep | Status | Score | Turns | Tools | Tokens | Cost | Run |",
-    "|---|---|---:|---|---:|---:|---:|---:|---:|---|",
+    "| Test | Scenario | Rep | Status | Score | Turns | Tools | Tokens | Cache read | Cache write | Cost | Run |",
+    "|---|---|---:|---|---:|---:|---:|---:|---:|---:|---:|---|",
   );
   // Claude subscription (WP 3.2) — track whether ANY cell's cost is a subscription shadow reference so
   // the table footnote renders only when it's actually relevant (byte-identical for an all-`api_exact`
@@ -375,8 +418,10 @@ function renderCells(lines: string[], cells: SuiteRunReportCell[]): void {
     const isSubscription = isSubscriptionCostBasis(cell.costBasis);
     if (isSubscription) hasSubscriptionMember = true;
     const cost = `$${cell.costUsd.toFixed(4)}${isSubscription ? " *" : ""}`;
+    const cacheRead = cell.cacheReadTokens === undefined ? "—" : String(cell.cacheReadTokens);
+    const cacheWrite = cell.cacheWriteTokens === undefined ? "—" : String(cell.cacheWriteTokens);
     lines.push(
-      `| ${escapeMarkdownTable(cell.testName)} | ${escapeMarkdownTable(cell.scenarioName)} | ${cell.repetition} | ${cell.status} | ${formatScore(cell.score)} | ${cell.turns} | ${cell.toolCalls} | ${tokens} | ${cost} | ${link} |`,
+      `| ${escapeMarkdownTable(cell.testName)} | ${escapeMarkdownTable(cell.scenarioName)} | ${cell.repetition} | ${cell.status} | ${formatScore(cell.score)} | ${cell.turns} | ${cell.toolCalls} | ${tokens} | ${cacheRead} | ${cacheWrite} | ${cost} | ${link} |`,
     );
   }
   lines.push("");
