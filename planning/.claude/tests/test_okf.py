@@ -26,7 +26,25 @@ ROOT = Path(__file__).resolve().parents[2]
 # STATUS.md, which is the only case the --no-ledger waiver exists for.
 MVP_ITEM = "RM-01-advisor"
 FOLLOW_ON_ITEM = "RM-03-assistant-hub"
-NO_LEDGER_TAG = "RM-19"
+
+
+def _first_active_item_without_a_ledger() -> str | None:
+    """The tag of some ACTIVE roadmap item that genuinely has no STATUS.md.
+
+    Derived rather than hardcoded. This was pinned to a literal ("RM-19") until 2026-08-21, when
+    retiring that item moved it under Roadmap/completed/ and the test began failing with
+    "RM-19 is already completed" instead of the refusal it asserts. Any hardcoded tag here is a
+    time bomb, because the ledger-less items are exactly the ones most likely to be retired next.
+    Returns None when every active item has a ledger, in which case the test skips rather than
+    lying.
+    """
+    for item in sorted((ROOT / "Roadmap").glob("RM-*")):
+        if item.is_dir() and not (item / "STATUS.md").exists():
+            return "-".join(item.name.split("-")[:2])
+    return None
+
+
+NO_LEDGER_TAG = _first_active_item_without_a_ledger()
 
 MODULE_PATH = ROOT / ".claude" / "scripts" / "okf.py"
 SPEC = importlib.util.spec_from_file_location("research_scaffold_okf", MODULE_PATH)
@@ -547,6 +565,8 @@ class GeneratorIntegrationTests(unittest.TestCase):
         self.assertEqual(before, self.snapshot())
 
     def test_complete_roadmap_requires_a_ledger_or_an_explicit_waiver(self) -> None:
+        if NO_LEDGER_TAG is None:
+            self.skipTest("every active roadmap item has a STATUS.md ledger")
         self.ensure_domains()
         docu_tag = self.make_docu()
         with self.assertRaisesRegex(

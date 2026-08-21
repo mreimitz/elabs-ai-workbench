@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T19:52:00Z"
+timestamp: "2026-08-21T20:20:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -19,7 +19,10 @@ met and — where the box touches code — the gate
 > agent at all; they are walks of the running app.
 >
 > **Ordering rule:** Wave 1 (WP 1.1) should land before any Wave 2 sitting, because it is what
-> turns ~90 scattered acceptance boxes into one runnable checklist.
+> turns the scattered acceptance boxes into one runnable checklist. **It has landed** —
+> [`RM-18/owner-acceptance-consolidated.md`](../RM-18-platform/owner-acceptance-consolidated.md).
+> The real count is **192 boxes across 23 files, not the ~90 estimated here**; Wave 2's four sittings
+> are now A/B/C/D in that file.
 
 ## Wave 0 — free retirements and hygiene (no engineering)
 - [x] WP 0.1 — push `main` to `origin/main` — **done 2026-08-21 · no push was needed: the premise was
@@ -104,11 +107,40 @@ met and — where the box touches code — the gate
       so RM-07 can retire on its owner walk alone
 
 ## Wave 1 — the leverage batch
-- [ ] WP 1.1 — _status: in progress (agent A · `wp/roadmap-cleanup/1.1`)_ — **RM-18 WP 1.6**: one consolidated owner-acceptance checklist across all ledgers,
+- [x] WP 1.1 — **done 2026-08-21 · `wp/roadmap-cleanup/1.1` (`7e04155` · `bd59865`, merged)** —
+      **RM-18 WP 1.6**: one consolidated owner-acceptance checklist across all ledgers,
       grouped by prerequisite (browser · provider key · subscription · CI), with exact click-paths
       and expected outcomes. Pattern already proven twice —
       `RM-13-hub-fixes/owner-acceptance-walk.md` and
-      `completed/RM-04-assistant-hub-ux/owner-acceptance-walk.md`. Run via `/next-wp platform`
+      `completed/RM-04-assistant-hub-ux/owner-acceptance-walk.md`. Run via `/next-wp platform`.
+      **Delivered:** [`RM-18/owner-acceptance-consolidated.md`](../RM-18-platform/owner-acceptance-consolidated.md)
+      — 1,503 lines. **192 boxes from 23 files, worked as 193 checks**, in four sittings each gated on
+      exactly ONE prerequisite: **A** browser only (39 checks, 10 items) · **B** one provider key (113,
+      11 items) · **C** a subscription sign-in (35, 5 items) · **D** a real pipeline (6, RM-08). Every
+      check carries an exact URL/click-path, an unambiguous expected outcome, its fixture, and a
+      `Ledger:` back-pointer naming file, section and box ordinal.
+      **Validated by the orchestrator, not taken on report.** Scope is clean (no application code —
+      the new file, the WP 1.6 tick, one regenerated index). Exactly one box was ticked, in RM-18's
+      own ledger, with its timestamp bumped in the same write; **no other item's ledger was touched**.
+      Every route the checklist cites was checked against `apps/web/src/App.tsx` — `/advisor`,
+      `/testing/{collections,environments,review,suites}`, `/testing/runs/compare`, `/illustrations`,
+      `/servers` all exist, and all four redirects resolve exactly as described. Nothing fabricated.
+      **The count of ~90 in this plan's §1 and §5 was wrong — it is 192**, because §1 counted only the
+      13 items it had already identified, and only their `STATUS.md`. The same undercount the Wave 0
+      lesson warned about.
+      **Three findings verified against the code, each true:** (1) **~6 checks cannot be run at all
+      today** — the skill inspector's Design and Trace tabs are hidden by owner decision **O2b**
+      (`SkillInspector.tsx:353,365` rewrite `design`/`trace` → `files`), which is most of RM-23's 4
+      boxes and 3 of RM-22's 7; un-parking them is RM-30 Phase 7, so **Sitting B cannot fully clear
+      RM-23 until then**. (2) **RM-20's box says "check the servers rail badges" but RM-32 deleted the
+      rail** (`ServerRail.tsx` no longer exists) — the badge now lives on the `/servers` overview.
+      (3) **RM-02 has 22 open boxes, not the 18** the orchestrator's inventory reported — the
+      orchestrator's scan filtered on a heading regex and missed sections that do not match it, and
+      **this plan's own §3c says 22**. Seven further corrections are in the file's Appendix 2.
+      **Nothing was silently dropped:** items excluded for having prose-only pending walks (RM-17,
+      RM-34, `completed/` RM-21/RM-28/RM-33) are carried in **Appendix 1** rather than lost, and
+      **`completed/RM-04` (15) and `completed/RM-13` (28) ARE included**, flagged
+      *🗄 RETIRED — verification outstanding* — the outcome WP 0.3 specifically needed
 
 ## Wave 2 — the owner-acceptance sittings (OWNER only — never agent-doable)
 - [ ] **OWNER** WP 2.1 — Sitting A, browser only: RM-01 (1) · RM-05 (2) · RM-24 (2) · RM-27 (1) ·
