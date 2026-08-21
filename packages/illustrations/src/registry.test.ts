@@ -32,48 +32,24 @@ describe("registry v0.1 — the catalog", () => {
     assert.equal(REGISTRY_VERSION, "0.1.0");
   });
 
-  // THE ONE SEAM LEAK, recorded rather than papered over (WP 1.3). WP 1.1's seam makes "adding an
-  // entity touches its own file and its own cast module, and nothing else" true of the SOURCE — and
-  // it is: `registry.ts` and `entities/index.ts` name no entity. It is not true of this literal.
-  // A census has to be written out by hand or it stops being a census (deriving the expected list
-  // from the cast modules would make it a tautology with the seam test below), so every Phase 1 work
-  // package has to append to this one array — which means WP 1.2 and WP 1.3, running in parallel
-  // worktrees, both edit this line. That collision is real, but it is a list of strings rather than
-  // a structural conflict, and the alternative — deleting the census — costs more than it saves.
-  // The structural fix, if one is wanted, is to move the census into each cast module's own test.
-  it("publishes exactly the cast the four modules declare, and nothing else", () => {
-    // WP 1.2 FINDING, recorded where it bites. This literal is a hand-written census of the whole
-    // catalog, so it is the ONE place WP 1.1's seam does not hold: "adding an entity touches its own
-    // file and its own cast module, and nothing else" is true of `registry.ts` and
-    // `entities/index.ts` and false of this list, which every parallel work package must extend.
-    // WP 1.2 and WP 1.3 collide here by construction. The fix is to split the census per cast module
-    // and keep each half beside the module it censuses; that is a change to a shipped WP 1.1 test
-    // and is left as a finding rather than made unilaterally mid-parallel-run.
-    assert.deepEqual(ILLUSTRATION_REGISTRY.map((entry) => entry.id).sort(), [
-      "agent",
-      "assistant",
-      "collection",
-      "credentials-vault",
-      "database",
-      "diff-compare",
-      "environment",
-      "feedback-report",
-      "file",
-      "mcp-server",
-      "model",
-      "orchestrator",
-      "prompt",
-      "prompt-template",
-      "provider",
-      "resource",
-      "run",
-      "scan",
-      "skill",
-      "suite",
-      "token-meter",
-      "tool",
-      "validator",
-    ]);
+  // THE SEAM LEAK, now closed. WP 1.2 and WP 1.3 both reported that this block used to hold a
+  // hand-written literal of EVERY id in the catalog — the one place WP 1.1's "adding an entity
+  // touches its own file and its own cast module, and nothing else" was false, and the place the
+  // WP 1.3 rebase actually conflicted. The per-module censuses now live in `cast-*.test.ts`, beside
+  // the modules they census, so two work packages adding entities in parallel share no file.
+  //
+  // What is left here is the check those censuses CANNOT make: that `registry.ts` publishes the
+  // union of the four modules — nothing dropped by the `.parse`, nothing invented by the sort. It is
+  // derived on purpose. A literal here would be a fifth copy of the same list, which is what caused
+  // the collision in the first place.
+  it("publishes exactly the union of the four cast modules — nothing dropped, nothing invented", () => {
+    const declared = Object.values(ILLUSTRATION_CAST_MODULES)
+      .flat()
+      .map((member) => member.meta.id)
+      .sort();
+    assert.deepEqual(ILLUSTRATION_REGISTRY.map((entry) => entry.id).sort(), declared);
+    // And the union is a genuine partition: no module smuggles in an id another one also claims.
+    assert.equal(new Set(declared).size, declared.length);
   });
 
   it("validates against the WP 0.1 schema — every entry, and the catalog as a whole", () => {
