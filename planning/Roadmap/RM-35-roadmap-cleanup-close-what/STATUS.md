@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T20:20:00Z"
+timestamp: "2026-08-21T20:45:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -163,7 +163,7 @@ met and — where the box touches code — the gate
 - [ ] WP 3.1 — **RM-26 WP 4.4** end-to-end verification: a real run through the built Docker
       image. 1 WP, needs a provider key. Highest value per hour on this list — it exercises
       migrations, the encrypted-secret path, static serving and the run engine in one shot
-- [ ] WP 3.2 — **RM-34 WP 2.1** re-measure the estimator band against recorded runs. 1 WP. Fixes
+- [ ] WP 3.2 — _status: in progress (agent B · validating + integrating `71d7b60`)_ — **RM-34 WP 2.1** re-measure the estimator band against recorded runs. 1 WP. Fixes
       a number the owner has already seen be wrong (RM-33 recorded the band bracketing a real run
       at $0.42–$1.59 against $0.80 billed, because the 8-turn ceiling dominates at 19 turns).
       **Check first** whether "agent D" still holds it — the in-progress marker looks stale.
@@ -188,7 +188,30 @@ met and — where the box touches code — the gate
       rejected; unblocks RM-30's 61 done WPs
 - [ ] WP 3.4 — **RM-03 WP 2.3**: autonomy dial + hard budgets + steering + live HITL
       approval-gating + MCP elicitation. One box, two BLOCKING MUSTs (elicitation transport
-      R-MCP4, the approval/HITL path). Unblocks RM-03's 18-box walk
+      R-MCP4, the approval/HITL path). Unblocks RM-03's 18-box walk.
+      **⚠️ DETERMINED 2026-08-21 — THIS IS ALREADY BUILT. Do not dispatch it as engineering.** The
+      contradiction WP 0.4 flagged is resolved against the code, and the code wins. Every artefact
+      the ledger line claims exists on `main`:
+      • the four additive `HubEvent` members — `approval_requested` / `approval_responded` /
+        `elicitation_requested` / `elicitation_responded` (`packages/shared/src/constants.ts:1701–1704`),
+        plus hub-fixes WP 2.5's board-mirror pair `agent_approval_requested`/`_responded` (`:1684`);
+      • all four routes — `POST /api/hub/sessions/:id/approvals` (`apps/api/src/hub/routes.ts:1818`),
+        `POST …/:id/elicitation` (`:1833`), `PATCH …/:id/autonomy` (`:1884`) and
+        `POST /api/hub/missions/:id/agents/:agentSessionId/steer` (`:1891`);
+      • the turn-engine HITL seam as its **own module**, `apps/api/src/hub/hitl.ts`, alongside
+        `turn-engine.ts`, `session-service.ts` and `tools/approval-policy.ts`;
+      • the UI — `AutonomyModeSelect.tsx`, `AssistantPermissionCard.tsx`, `MissionApprovalQueue.tsx`
+        (the ledger's prose names them `AutonomyDial`/`ApprovalCard`/`ElicitationPanel`, which is why
+        a name-based search finds nothing — **the components were renamed, not dropped**).
+      **So RM-03 has NO engineering left.** Its WP 2.3 box is `[ ]` while its own text reads
+      *"✅ DONE 2026-07-18 · wp/assistant-hub/2.3 (integrated @ bb89591) … GAP-A/GAP-B CLOSED"*, with
+      only a live MCP `elicitation/create` round-trip against a real eliciting server outstanding —
+      which is **owner-acceptance, and is already carried as check B10 in
+      [`RM-18/owner-acceptance-consolidated.md`](../RM-18-platform/owner-acceptance-consolidated.md)**.
+      **Recommended: drop this WP and tick RM-03's WP 2.3 box as a ledger correction**, which moves
+      RM-03 from "engineering left" to "owner-acceptance only" and puts its 18-box walk in reach.
+      **Deliberately NOT ticked here:** a source-grep is weaker evidence than the gate that originally
+      proved it, and it is another item's ledger — the owner's call, exactly as WP 0.4 left it
 - [ ] WP 3.5 — **RM-14 Phases 2–4** (10 WPs): scene spec layout engine + connector router +
       renderer (2.1–2.4), explain mode (3.1–3.3), assistant compose tools (4.1–4.3). Largest
       remaining build. **The risk to weigh:** 24 illustration components exist and nothing composes
