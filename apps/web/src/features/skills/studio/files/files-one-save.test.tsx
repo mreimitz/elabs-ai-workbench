@@ -318,6 +318,27 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     expect(close).toBeDisabled();
   });
 
+  test("Flow and Split are offered for SKILL.md and DISABLED on a plain file tab", async () => {
+    renderStudio();
+    await waitForStudio();
+
+    expect(screen.getByRole("radio", { name: "Show flow" })).not.toBeDisabled();
+    expect(screen.getByRole("radio", { name: "Split view" })).not.toBeDisabled();
+
+    const rail = screen.getByTestId("studio-left-rail");
+    fireEvent.click(within(rail).getByText("api.md"));
+    await screen.findByTestId("editor:references/api.md");
+
+    // A resource file has no graph to project — the control is code-only rather than offering two
+    // views that would change nothing on screen.
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Show flow" })).toBeDisabled());
+    expect(screen.getByRole("radio", { name: "Split view" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "Show code" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+  });
+
   test("create + type + reference, then ONE save carrying BOTH halves", async () => {
     renderStudio();
     await waitForStudio();
@@ -330,9 +351,11 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     fireEvent.click(screen.getByTestId("type:references/limits.md"));
 
     // 3 — reference it from SKILL.md, in the Code view.
-    fireEvent.click(screen.getByRole("radio", { name: "Show code" }));
+    // Back to the manifest first: Flow|Code|Split are ITS views, so the control only accepts a
+    // change while the manifest tab is the active one (WP 7.4).
     const rail = screen.getByTestId("studio-left-rail");
     fireEvent.click(within(rail).getByText("SKILL.md"));
+    fireEvent.click(screen.getByRole("radio", { name: "Show code" }));
     fireEvent.click(await screen.findByTestId("type:SKILL.md"));
 
     // ONE dirty count over both halves, and still nothing saved.
@@ -366,9 +389,11 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     await createFile("limits.md", "references");
     fireEvent.click(await screen.findByTestId("type:references/limits.md"));
 
-    fireEvent.click(screen.getByRole("radio", { name: "Show code" }));
+    // Back to the manifest first: Flow|Code|Split are ITS views, so the control only accepts a
+    // change while the manifest tab is the active one (WP 7.4).
     const rail = screen.getByTestId("studio-left-rail");
     fireEvent.click(within(rail).getByText("SKILL.md"));
+    fireEvent.click(screen.getByRole("radio", { name: "Show code" }));
     fireEvent.click(await screen.findByTestId("type:SKILL.md"));
 
     const cluster = await screen.findByTestId("design-save-cluster");

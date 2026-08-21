@@ -236,22 +236,35 @@ export function StudioShell({
           </Button>
           <span aria-hidden className="h-5 w-px shrink-0 bg-border" />
 
+          {/* RM-30 WP 7.4 — Flow and Split are views of the SKILL.md DOCUMENT; a resource file has
+              no graph to project. On a file tab the control is therefore code-only, and says why,
+              rather than offering two views that would change nothing on screen. */}
           <ToggleGroup
             type="single"
             variant="segmented"
-            value={mode}
+            value={active === SKILL_MD ? mode : "code"}
             onValueChange={(value) => {
               if (isStudioMode(value)) setMode(value);
             }}
             aria-label="Editor view"
           >
-            <ToggleGroupItem value="flow" aria-label="Show flow">
+            <ToggleGroupItem
+              value="flow"
+              aria-label="Show flow"
+              disabled={active !== SKILL_MD}
+              title={active === SKILL_MD ? undefined : "Flow is a view of SKILL.md"}
+            >
               <Workflow className="size-4" aria-hidden /> Flow
             </ToggleGroupItem>
             <ToggleGroupItem value="code" aria-label="Show code">
               <Code2 className="size-4" aria-hidden /> Code
             </ToggleGroupItem>
-            <ToggleGroupItem value="split" aria-label="Split view">
+            <ToggleGroupItem
+              value="split"
+              aria-label="Split view"
+              disabled={active !== SKILL_MD}
+              title={active === SKILL_MD ? undefined : "Split is a view of SKILL.md"}
+            >
               <Columns2 className="size-4" aria-hidden /> Split
             </ToggleGroupItem>
           </ToggleGroup>
