@@ -31,9 +31,12 @@ import type {
   DashboardChart,
   DashboardChartInput,
   DashboardChartPatch,
+  CalibrationSet,
   GithubAccountStatus,
   GithubDevicePoll,
   GithubDeviceStart,
+  GradeFeedback,
+  GradeFeedbackInput,
   GraderId,
   JudgeSettingsResolved,
   JudgeSettingsUpdate,
@@ -1111,6 +1114,30 @@ export const regradeRun = (
   graderIds?: GraderId[],
 ): Promise<{ inserted: RunGrade[] }> =>
   apiPost<{ inserted: RunGrade[] }>(`/api/runs/${runId}/grade`, graderIds ? { graderIds } : {});
+
+// ── Benchmarks WP 6.1: grade feedback + the calibration set ─────────────────────────────────────
+// A human verdict ON a grade ("the grader got this right/wrong"), and the flagged subset of graded
+// runs those verdicts define. STRICTLY SEPARATE from grading (AR6) — recording a verdict changes no
+// score, no aggregate and no metric; the API writes only `grade_feedback` and never `run_grades`.
+// APPEND-ONLY: there is deliberately no update and no delete call here, because the API has none.
+
+/** Append one verdict to a grade (`POST /api/grades/:gradeId/feedback`). A changed mind posts again. */
+export const appendGradeFeedback = (
+  gradeId: string,
+  input: GradeFeedbackInput,
+): Promise<GradeFeedback> => apiPost<GradeFeedback>(`/api/grades/${gradeId}/feedback`, input);
+
+/** Every verdict on every grade of one run, oldest first — one call per run, not one per grade. */
+export const listRunGradeFeedback = (runId: string): Promise<GradeFeedback[]> =>
+  apiGet<GradeFeedback[]>(`/api/runs/${runId}/grade-feedback`);
+
+/** The calibration set: the graded runs a human has judged, composed on read. */
+export const getCalibrationSet = (): Promise<CalibrationSet> =>
+  apiGet<CalibrationSet>("/api/calibration/json");
+
+/** Download hrefs for the calibration set (plain `<a>` nav; Markdown sets content-disposition). */
+export const calibrationJsonHref = "/api/calibration/json";
+export const calibrationMarkdownHref = "/api/calibration/markdown";
 
 /**
  * The configured provider judge (references only) + the resolved judge source (Auto-Rating WP 2.3):

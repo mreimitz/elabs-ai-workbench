@@ -1,7 +1,8 @@
 import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import type { GraderId, RunGrade, RunStep } from "@mcp-token-footprint/shared";
+import type { GradeFeedback, GraderId, RunGrade, RunStep } from "@mcp-token-footprint/shared";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // Auto-Rating WP 3.2 — GradePanel is slimmed to a compact summary that links to the run console's
 // Report tab; mock the api client the same way ReportTab.test.tsx does.
@@ -11,6 +12,10 @@ vi.mock("../../lib/api", async (importOriginal) => {
     ...actual,
     getRunGrades: vi.fn(),
     regradeRun: vi.fn(),
+    // WP 6.1 — the panel also loads the human's call on each grade (one call per RUN, never per
+    // card). Stubbed here; the control's own behaviour is covered in GradeFeedbackControl.test.tsx.
+    listRunGradeFeedback: vi.fn(),
+    appendGradeFeedback: vi.fn(),
   };
 });
 
@@ -47,13 +52,17 @@ function renderPanel(props: Partial<Parameters<typeof GradePanel>[0]> = {}) {
   const onOpenReport = vi.fn();
   render(
     <MemoryRouter>
-      <GradePanel
-        runId="run_1"
-        steps={STEPS}
-        onSelectStep={onSelectStep}
-        onOpenReport={onOpenReport}
-        {...props}
-      />
+      {/* The app root mounts one TooltipProvider; the grade cards' tooltips (and WP 6.1's feedback
+          controls) need it here too. */}
+      <TooltipProvider>
+        <GradePanel
+          runId="run_1"
+          steps={STEPS}
+          onSelectStep={onSelectStep}
+          onOpenReport={onOpenReport}
+          {...props}
+        />
+      </TooltipProvider>
     </MemoryRouter>,
   );
   return { onSelectStep, onOpenReport };
@@ -62,6 +71,9 @@ function renderPanel(props: Partial<Parameters<typeof GradePanel>[0]> = {}) {
 beforeEach(() => {
   vi.mocked(api.getRunGrades).mockReset();
   vi.mocked(api.regradeRun).mockReset();
+  vi.mocked(api.listRunGradeFeedback).mockReset();
+  vi.mocked(api.listRunGradeFeedback).mockResolvedValue([]);
+  vi.mocked(api.appendGradeFeedback).mockReset();
 });
 
 afterEach(() => {
@@ -175,5 +187,65 @@ describe("GradePanel", () => {
     vi.mocked(api.getRunGrades).mockRejectedValue(new Error("boom"));
     renderPanel();
     expect(await screen.findByText("Couldn’t load grades")).toBeInTheDocument();
+  });
+
+  // ── WP 6.1 — the human's call on each grade card ──────────────────────────────────────────────
+
+  test("each grade card carries a feedback control, loaded with ONE call for the whole run", async () => {
+    vi.mocked(api.getRunGrades).mockResolvedValue({
+      grades: [],
+      latest: [
+        grade({ id: "g_judge", graderId: "outcome_judge", status: "graded", score: 0.8 }),
+        grade({ id: "g_rouge", graderId: "rouge1", status: "graded", score: 0.4 }),
+      ],
+    });
+    renderPanel();
+
+    await screen.findByText("Judge 80%");
+    fireEvent.click(screen.getByRole("button", { name: /grader detail/i }));
+
+    // One control per grade card, named for its grader so two cards never read the same.
+    expect(
+      await screen.findByRole("button", { name: "Outcome judge: Grader was right" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "ROUGE-1 overlap: Grader was wrong" }),
+    ).toBeInTheDocument();
+    // Two cards, ONE feedback fetch (the run-scoped read, not one call per card).
+    expect(api.listRunGradeFeedback).toHaveBeenCalledTimes(1);
+    expect(api.listRunGradeFeedback).toHaveBeenCalledWith("run_1");
+  });
+
+  test("AR6 — recording a verdict does NOT change the score the card shows", async () => {
+    vi.mocked(api.getRunGrades).mockResolvedValue({
+      grades: [],
+      latest: [grade({ id: "g_judge", graderId: "outcome_judge", status: "graded", score: 0.8 })],
+    });
+    const saved: GradeFeedback = {
+      id: "fb_1",
+      gradeId: "g_judge",
+      runId: "run_1",
+      verdict: "disagree",
+      createdAt: "2026-08-21T00:00:00Z",
+    };
+    vi.mocked(api.appendGradeFeedback).mockResolvedValue(saved);
+    renderPanel();
+
+    await screen.findByText("Judge 80%");
+    fireEvent.click(screen.getByRole("button", { name: /grader detail/i }));
+    expect(await screen.findByText("Outcome judge")).toBeInTheDocument();
+    expect(screen.getAllByText("80%").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Outcome judge: Grader was wrong" }));
+    await waitFor(() =>
+      expect(api.appendGradeFeedback).toHaveBeenCalledWith("g_judge", { verdict: "disagree" }),
+    );
+
+    // The grade is not refetched and the rendered percentage is untouched — the human's call is a
+    // separate dimension, not a correction (AR6).
+    expect(api.getRunGrades).toHaveBeenCalledTimes(1);
+    expect(api.regradeRun).not.toHaveBeenCalled();
+    expect(screen.getAllByText("80%").length).toBeGreaterThan(0);
+    expect(screen.getByText("Judge 80%")).toBeInTheDocument();
   });
 });

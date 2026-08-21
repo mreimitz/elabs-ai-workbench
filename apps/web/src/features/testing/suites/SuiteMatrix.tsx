@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { RunGrade, SuiteCell } from "@mcp-token-footprint/shared";
+import type { GradeFeedback, RunGrade, SuiteCell } from "@mcp-token-footprint/shared";
 import {
   Button,
   Table,
@@ -11,9 +11,10 @@ import {
   Text,
   cn,
 } from "@elabs-ai/components-ui";
-import { getRunGrades } from "../../../lib/api";
+import { getRunGrades, listRunGradeFeedback } from "../../../lib/api";
 import { BASE_VERDICT_LABELS, BaseVerdictBadge } from "../BaseVerdictChip";
-import { pickBaseVerdictEvidence } from "../grade-format";
+import { GradeFeedbackControl, latestFeedbackByGrade } from "../GradeFeedbackControl";
+import { GRADER_LABELS, pickBaseVerdictEvidence, pickPrimaryGrade } from "../grade-format";
 
 /**
  * The suite-run matrix — rows = tests × cols = scenarios, each cell rolling up that (test, scenario)'s
@@ -163,6 +164,31 @@ export function SuiteMatrix({ tests, scenarios, cells, repetitions, onOpenRun }:
     };
   }, [settledRunIds, gradesByRun]);
 
+  // WP 6.1 — the human's call on each settled cell's primary grade. Same cache-filling shape as the
+  // grades fetch above (one round trip per NEW run id, never per cell), and equally best-effort: a
+  // failed fetch leaves the cell's controls unset, which is the honest "nobody has judged it" state.
+  const [feedbackByGrade, setFeedbackByGrade] = useState<Map<string, GradeFeedback>>(new Map());
+  const [feedbackFetchedRuns, setFeedbackFetchedRuns] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const missing = settledRunIds.filter((id) => !feedbackFetchedRuns.has(id));
+    if (missing.length === 0) return;
+    let active = true;
+    void Promise.all(
+      missing.map((id) => listRunGradeFeedback(id).catch(() => [] as GradeFeedback[])),
+    ).then((results) => {
+      if (!active) return;
+      const rows = results.flat();
+      setFeedbackByGrade((current) => new Map([...current, ...latestFeedbackByGrade(rows)]));
+      setFeedbackFetchedRuns((current) => new Set([...current, ...missing]));
+    });
+    return () => {
+      active = false;
+    };
+  }, [settledRunIds, feedbackFetchedRuns]);
+
+  const recordFeedback = (row: GradeFeedback) =>
+    setFeedbackByGrade((current) => new Map(current).set(row.gradeId, row));
+
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <Table>
@@ -188,10 +214,19 @@ export function SuiteMatrix({ tests, scenarios, cells, repetitions, onOpenRun }:
               </TableCell>
               {scenarios.map((scenario) => {
                 const roll = rollups.get(`${test.id} ${scenario.id}`) ?? rollup([], repetitions);
+                const settled = Boolean(roll.runId) && SETTLED_ROLLUP_STATUSES.has(roll.status);
                 const baseVerdict =
-                  roll.runId && SETTLED_ROLLUP_STATUSES.has(roll.status)
+                  roll.runId && settled
                     ? pickBaseVerdictEvidence(gradesByRun.get(roll.runId) ?? [])
                     : undefined;
+                // WP 6.1 — the cell's feedback target is the SAME expectation grade the cell's score
+                // summarizes (`pickPrimaryGrade`, AR6-safe: it never picks a base-rating grader). A
+                // cell with no expectation grade gets no control at all rather than a control wired
+                // to a grade the operator cannot see.
+                const primaryGrade =
+                  roll.runId && settled
+                    ? pickPrimaryGrade(gradesByRun.get(roll.runId) ?? [])
+                    : null;
                 return (
                   <MatrixCell
                     key={scenario.id}
@@ -199,6 +234,16 @@ export function SuiteMatrix({ tests, scenarios, cells, repetitions, onOpenRun }:
                     baseVerdict={baseVerdict}
                     ariaSubject={`${test.name} × ${scenario.name}`}
                     onOpenRun={onOpenRun}
+                    {...(primaryGrade
+                      ? {
+                          feedbackTarget: {
+                            gradeId: primaryGrade.id,
+                            graderLabel: GRADER_LABELS[primaryGrade.graderId],
+                            current: feedbackByGrade.get(primaryGrade.id),
+                          },
+                          onFeedback: recordFeedback,
+                        }
+                      : {})}
                   />
                 );
               })}
@@ -215,6 +260,8 @@ function MatrixCell({
   baseVerdict,
   ariaSubject,
   onOpenRun,
+  feedbackTarget,
+  onFeedback,
 }: {
   rollup: CellRollup;
   /**
@@ -225,6 +272,14 @@ function MatrixCell({
   baseVerdict?: ReturnType<typeof pickBaseVerdictEvidence>;
   ariaSubject: string;
   onOpenRun: (runId: string) => void;
+  /**
+   * WP 6.1 — the grade this cell's human verdict attaches to (its primary expectation grade), or
+   * absent when the cell has no expectation grade to judge. Rendered as a SIBLING of the
+   * drill-through Button, never inside it: a toggle nested in a button is invalid markup and would
+   * swallow the outer control's keyboard behaviour.
+   */
+  feedbackTarget?: { gradeId: string; graderLabel: string; current: GradeFeedback | undefined };
+  onFeedback?: (next: GradeFeedback) => void;
 }) {
   const meta = CELL_META[roll.status];
   const countText = `${roll.doneCount} / ${roll.total}`;
@@ -285,6 +340,21 @@ function MatrixCell({
       >
         {surface}
       </Button>
+      {/* WP 6.1 — the human's call on this cell's grade. A SIBLING of the drill-through Button (not
+          a child): nesting a toggle inside a button is invalid markup and would make one click mean
+          two things. Icon-only + centred so a dense matrix stays a matrix. */}
+      {feedbackTarget && onFeedback ? (
+        <div className="mt-1 flex justify-center">
+          <GradeFeedbackControl
+            gradeId={feedbackTarget.gradeId}
+            graderLabel={`${ariaSubject} — ${feedbackTarget.graderLabel}`}
+            current={feedbackTarget.current}
+            onAppended={onFeedback}
+            size="sm"
+            hideLabel
+          />
+        </div>
+      ) : null}
     </TableCell>
   );
 }
