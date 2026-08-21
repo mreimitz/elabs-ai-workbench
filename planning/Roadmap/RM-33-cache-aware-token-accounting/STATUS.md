@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T15:35:00Z"
+timestamp: "2026-08-21T16:00:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -274,13 +274,31 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
       and the three-series Analytics stack all agree at 96.2%, and match
       `GET /api/runs/:id`'s `cacheReadTokens`/`cacheWriteTokens`.
       **Still owner's to judge:** whether the wording and the chart colours read well to you.
-- [ ] Hover a Trace turn chip — the split explains why that turn's cost sits far below list rate.
+- [x] Hover a Trace turn chip — done 2026-08-21, verified in **both themes** against the running app
+      (isolated DB copy, never the live file). On run `SHsiRblmacvEOJi4gkalE` the Trace tab renders 25
+      cache-bearing chips; hovering Turn 1's `34,735↑` opens *"Uncached: 3 · Cache read: 34,732 (billed
+      ~0.1×) · 100.0% served from cache"*. That turn's cost chip reads **$0.0126** where 34,735 tokens
+      at list rate would be ~$0.104 — the chip and the cost now reconcile, which was the specific
+      complaint (a cache-inclusive token count sitting beside a cache-discounted cost with nothing to
+      connect them). The same text is also present as an `sr-only` node on every chip, so it reaches
+      assistive tech and touch without a hover.
+      **Still owner's to judge:** whether the tooltip wording reads well to you.
 - [ ] `/dashboard` Testing tab: the cache-hit-rate series renders, and a window made only of
       **pre-migration** runs shows the measure as *unavailable*, not `0%`.
 - [ ] `POST /api/estimate/run-plan` for a plan matching a finished cached run returns a range whose
       low end lands near that run's real cost and whose high end lands near its uncached cost.
       **Blocked until WP 2.1 is built** — the estimate endpoint is still cache-blind.
-- [ ] Keyboard walk of every changed surface (tooltips reachable, visible focus).
+- [x] Keyboard walk — done 2026-08-21, driven against the running app (isolated DB copy). Measured on
+      the run console's Trace lens, which renders the densest concentration of token figures:
+      **26** figures carry a cache breakdown · **0** of them are tab stops · **26/26** resolve to real
+      `aria-describedby` description text · **40** tab stops walked with **0** lacking a focus
+      indicator · **0** tab stops are a bare token number.
+      That is the evidence for WP 3.1's reversed a11y decision: the breakdown is reachable by assistive
+      tech and by touch (both of which get the `sr-only` copy without hover), while a Trace table of
+      dozens of numbers adds **no** new tab stops. The one focusable element that also carries a
+      description is the context-window `IconButton` — focusable on purpose, since its disabled reason
+      is otherwise unreachable.
+      **Still owner's to judge:** driving it by hand, and whether the focus order feels right.
 
 ## Log
 
