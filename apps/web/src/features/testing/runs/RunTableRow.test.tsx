@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, test, vi } from "vitest";
 import type { RunSummary } from "@mcp-token-footprint/shared";
@@ -126,6 +126,35 @@ describe("RunTableRow — retention pin toggle (WP 2.3)", () => {
     renderPinnableRow(makeRun({ pinned: false }));
     const pin = screen.getByRole("button", { name: "Pin List files" });
     expect(pin).toHaveAttribute("aria-pressed", "false");
+  });
+
+  /**
+   * RM-36 WP 2.2 · P2-1 — the audit read this control as "an unlabeled strikethrough-bell glyph"
+   * beside "Open": it is the `PinOff` pin-with-a-slash, and it is the only icon-only control in the
+   * row's Actions cell besides the overflow menu. D-TB5 requires an icon-only control to carry a real
+   * accessible name AND a tooltip that MATCHES it, and never a native `title`. That holds today
+   * because the cell uses `IconButton`; this guard is what keeps it holding — a call site that
+   * swapped in a bare `Button` with a `title` would go red here.
+   */
+  test("P2-1 — the pin glyph carries an accessible name AND a matching tooltip, never a `title`", async () => {
+    renderPinnableRow(makeRun({ pinned: false }));
+    const pin = screen.getByRole("button", { name: "Pin List files" });
+
+    // A real accessible name, not a nameless icon button.
+    expect(pin.getAttribute("aria-label")).toBe("Pin List files");
+    // D-TB5: no native `title` escape hatch on an icon-only control.
+    expect(pin).not.toHaveAttribute("title");
+
+    // Radix opens the tooltip on focus (no delay) — the same path a keyboard user takes.
+    await act(async () => {
+      pin.focus();
+    });
+    const tip = screen.getByRole("tooltip");
+    expect(tip.textContent).toBe(pin.getAttribute("aria-label"));
+
+    // The row's other icon-only control (the overflow menu) is held to the same contract.
+    const menu = screen.getByRole("button", { name: "More actions for List files" });
+    expect(menu).not.toHaveAttribute("title");
   });
 
   test("a pinned run shows an 'Unpin' control", () => {
