@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UI/UX audit remediation — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the RM-36 audit-remediation plan, read and updated by /next-wp RM-36."
 tags: ["roadmap", "RM-36"]
-timestamp: "2026-08-21T19:42:28Z"
+timestamp: "2026-08-21T20:25:48Z"
 status: "active"
 ---
 
@@ -57,13 +57,13 @@ or record explicitly that they remain unmeasured.
 
 ### Phase 2 — reach, consistency and density
 
-- [ ] **WP 2.1** *(in progress · wp/ui-audit/2.1)* — keep the primary actions of `/testing/runs` and the run console reachable at
+- [x] **WP 2.1** — keep the primary actions of `/testing/runs` and the run console reachable at
       768px.
-      Spec: [`wp-2.1-responsive-actions.md`](./wp-2.1-responsive-actions.md) · finding P1-6
-- [ ] **WP 2.2** *(in progress · wp/ui-audit/2.2)* — consistency and density sweep: one encoding per runs-table column, drop the
+      Spec: [`wp-2.1-responsive-actions.md`](./wp-2.1-responsive-actions.md) · finding P1-6 — done 2026-08-21 · wp/ui-audit/2.1
+- [x] **WP 2.2** — consistency and density sweep: one encoding per runs-table column, drop the
       server-card chips the group heading already states, size the launcher's step 1, surface the
       swallowed 404, unstretch the skill-inspector card, retire the three side stripes.
-      Spec: [`wp-2.2-consistency-density.md`](./wp-2.2-consistency-density.md) · findings P2-1 … P2-6
+      Spec: [`wp-2.2-consistency-density.md`](./wp-2.2-consistency-density.md) · findings P2-1 … P2-6 — done 2026-08-21 · wp/ui-audit/2.2
 
 ## Owner-acceptance
 
@@ -92,8 +92,16 @@ that no test can stand in for:
       merged build: **0** console errors of any kind and **0** `<p>` containing another `<p>`, in
       **both** themes. The pre-merge baseline on the same probe captured the audit's exact markup:
       `<p class="text-meta font-normal text-muted-foreground"><p class="text-meta text-muted-foreground">estimated</p></p>`.
-- [ ] `/testing/runs` and the run console at a 768px-wide window: **+ New run** and **Re-run with
+- [x] `/testing/runs` and the run console at a 768px-wide window: **+ New run** and **Re-run with
       changes** are reachable.
+      **Verified 2026-08-21 by the orchestrator** on the running merged build, in **both** themes:
+      **zero** clipped named controls at **768, 1024 and 1280**. `+ New run` moved from right-edge
+      **958px** to inside the viewport, `Re-run with changes` from **975px** to inside; the audit's
+      own numbers (849 / 958 / 806 / 975) were reproduced on the pre-merge build first, so the probe
+      is known to detect the defect. The run console's bar measures **39px at both 1024 and 1280**
+      (one row — unchanged) and **96px at 768** (wrapped), so the wrap is content-driven and does not
+      fire at the roomy widths. WP 2.1's agent flagged a possible 1024 regression from its own
+      fixture; **it does not reproduce on real data.**
 - [ ] A keyboard-only pass over `/advisor` and `/skills/:skillId` Overview: every stop shows a ring.
       **Partially evidenced, NOT a full pass.** The orchestrator confirmed the new `/advisor`
       disclosure trigger is a real `<button>` that takes focus and paints a visible ring in **both**
@@ -165,3 +173,57 @@ Recorded so they are not lost. Neither was fixed; both are owner calls.
   enumeration comes back **byte-identical**, pinned by a test, so no other rule's wording can be
   silently mangled. But the durable fix is the API sending the names as a structured field instead of
   inlining them into prose, which would delete the parser. Worth a small additive wire change later.
+
+## Corrections and discoveries from Phase 2 (orchestrator-verified)
+
+- **Finding P2-4's premise in [`audit-report.md`](./audit-report.md) is WRONG, and the ledger says so
+  rather than inheriting it.** The audit recorded the repeating
+  `GET /api/servers/FInszS9xQ4Jvdpo0fUdML/latest-scan` **404** as "an environment references a server
+  id that no longer resolves". It does not. That id **is** a registered server (`mcp-powerbi-fabric`);
+  it 404s because it has **never been scanned** — which `EnvironmentsView.tsx`'s own pre-existing
+  comment already called out as "expected, not an error". Orchestrator-verified against the running
+  app: the id appears in `GET /api/servers`, and **no** environment in the owner's database has a
+  dangling `allowedServers` entry.
+  WP 2.2 shipped the right fix anyway: it keys off "this id is absent from `/api/servers`", **not**
+  off the 404, so it flags a genuinely deleted server and correctly stays silent for an unscanned
+  one. It is covered by four tests whose teeth were broken and re-proved. **Consequence:** the
+  acceptance sentence "the dangling-server 404 is visible in the UI" cannot be satisfied as written,
+  because the 404 it names is not a dangling reference. **Residual, for the owner:** an environment
+  pointing at a registered-but-never-scanned server is still surfaced nowhere. That may be worth
+  saying out loud — you cannot know that server's tool surface — but it is a **new** judgement, not
+  this audit's finding.
+
+- **The compare workspace's diff rail has been painting neutral in every state.** Found by WP 2.2
+  while checking whether `LaneCell`'s stripe was load-bearing (it is — it carries the D-UX9 diff
+  colour semantics, so it was correctly left alone). In
+  `apps/web/src/features/testing/compare/flow/LaneCell.tsx:125-128`, `"border-border"` is passed to
+  `cn()` **after** `DIFF_RAIL[diff]`, and `tailwind-merge` puts `border-<color>` and
+  `border-l-<color>` in the same conflict group — so the later class wins and the rail colour is
+  **deleted before it reaches the DOM**. Orchestrator-verified empirically by calling the app's own
+  `cn()` with the real class list: **all five** of `border-l-border` / `-success` / `-destructive` /
+  `-warning` / `-transparent` come back stripped, leaving only the `bg-*/10` tint to distinguish
+  added from removed. Not fixed here — it changes how the Compare Workspace looks in a way the owner
+  has not seen, and it is a colour-semantics bug, not a density sweep. **Needs its own work package**
+  (the fix is a class-order swap plus a guard; `DIFF_TINT` should be checked for the same trap).
+
+- **`ViewToolbar` cannot wrap, and it is app-local — one fix would cover ~40 views.**
+  `apps/web/src/components/ViewToolbar.tsx` renders its action cluster `ml-auto flex shrink-0` inside
+  a **non-wrapping** root row, which is why WP 2.1 had to solve the runs feed by collapsing into a
+  `⋯` menu instead of wrapping. Upstream `@elabs-ai/components-ui`'s own `ViewToolbar` documents the
+  opposite in its source: *"The row wraps; it never scrolls or clips. The action cluster wraps
+  INTERNALLY too."* Adding `flex-wrap` to the app-local component would fix this class of defect
+  across every view at once and let the runs feed drop its bespoke collapse. Out of WP 2.1's
+  ownership; **recommended as a follow-up work package**, with a per-view 1024/1280 re-check.
+
+- **768px is the app's worst width by construction, not just on these two routes.** `useIsMobile()`
+  is `width < 768`, so at *exactly* 768 every mobile mitigation is off while the desktop layout still
+  needs more room than it has, and `app-shell-main` is `overflow:hidden`. P1-6 only measured two
+  routes; other dense views very likely share it. `e2e/responsive-actions.spec.ts` is written so
+  adding a route is one line in its `CASES` array.
+
+- **P2-6 (the three side stripes) was deliberately SKIPPED, not forgotten.** All three are
+  misclassified by the static pass: `SourcesPanel.tsx:124` and `ReportTab.tsx:603` are **blockquote
+  rules** around quoted material (a citation snippet and verbatim judge evidence) — a left rule is the
+  standard typographic mark for a quotation, and making them a full border or a tint would make each
+  quote read as a card, which is a regression. `LaneCell.tsx:125` is load-bearing diff semantics. The
+  spec itself said to drop this finding if it cost more than it returned.

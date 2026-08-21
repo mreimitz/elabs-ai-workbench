@@ -45,6 +45,31 @@ markdown renderer bundled inside the design system, and patching them locally wo
 another library's class names, which breaks silently on the next upgrade. The gap has been written up
 for the design-system owner instead.
 
+Two more things on the same pass:
+
+- **A half-screen window no longer eats the button you came for.** At exactly 768px wide the runs
+  feed and the run console were losing their primary actions — `+ New run` sat 190 pixels past the
+  right edge of the page, `Re-run with changes` 207 past it, and because nothing in the page scrolls
+  sideways they were not off-screen, they were **gone**. The runs feed now folds its secondary
+  actions into an overflow menu below 1024px and keeps `+ New run` visible; the console's bar wraps
+  onto a second line instead of clipping. Wider windows are untouched — the console bar measures the
+  same 39 pixels at 1024 and 1280 as it always did, and only reflows when the row genuinely would not
+  fit.
+- **The runs table stopped saying the same thing two ways.** In one table, in adjacent rows, a suite
+  row's status carried an icon and a run row's did not; a suite's grade was plain text while a run's
+  was a badge; one row offered "Open console" and the next "Open". Two encodings in one column read
+  as two meanings. Each column now has one, and the row indent already tells you which is which.
+
+Server cards no longer repeat the chips their own group heading states — which also gives the card
+its title back, so `mcp-assets` stops rendering as `mcp-ass…`. The run launcher sizes itself to the
+step it is showing rather than holding a fixed height with 380 pixels of nothing under it, and its
+step rail says "Tests & environments" in full. On a skill's Overview, the shorter card stops
+stretching to match its taller neighbour.
+
+One finding was left alone on purpose: three "decorative" left-edge stripes flagged by the automated
+pass turned out to be two blockquote rules around quoted text and one that encodes diff state in the
+compare view. Changing them would have been the regression.
+
 
 ## Unreleased — skills get a workbench instead of a panel
 
