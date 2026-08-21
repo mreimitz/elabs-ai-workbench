@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { BoundTool, SkillFileNode } from "@mcp-token-footprint/shared";
-import {
-  Button,
-  ResizableHandle,
-  ResizablePanel,
-  StatePanel,
-} from "@elabs-ai/components-ui";
+import { Button, ResizableHandle, ResizablePanel, StatePanel } from "@elabs-ai/components-ui";
 import { PencilRuler } from "lucide-react";
 import { AdaptivePanelGroup } from "../../components/AdaptivePanelGroup";
 import { skillStudioPath } from "./studio/studio-url";
 import { WorkspaceEditor } from "./workspace/WorkspaceEditor";
 import { WorkspaceTree } from "./workspace/WorkspaceTree";
-import { buildWorkingTree, type WorkEntry } from "./workspace/workspace-model";
+import { SKILL_MD, buildWorkingTree, type WorkEntry } from "./workspace/workspace-model";
 
 // ── The Inspector's Files tab — BROWSE-ONLY (RM-30 WP 7.4) ────────────────────────────────────────
 // This tab used to be a file-manager workspace with its own Discard / Save… bar, its own tree-op
@@ -85,11 +80,16 @@ export function SkillFileExplorer({
     );
   };
 
+  // Deep-link the Studio AT the file being read. SKILL.md is the Studio's default surface, so
+  // naming it would only strand a redundant param on an otherwise clean URL (D-TB10).
+  const studioTo =
+    selectedEntry && selectedEntry.path !== SKILL_MD
+      ? skillStudioPath(skillId, { file: selectedEntry.path })
+      : skillStudioPath(skillId);
+
   const editInStudio = (
     <Button asChild size="sm" variant="outline">
-      <Link
-        to={skillStudioPath(skillId, selectedEntry ? { file: selectedEntry.path } : undefined)}
-      >
+      <Link to={studioTo}>
         <PencilRuler aria-hidden /> Edit in Studio
       </Link>
     </Button>

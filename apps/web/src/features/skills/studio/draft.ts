@@ -131,9 +131,7 @@ export function describeSettingsEdit(edit: SkillSettingsEdit): string {
     case "name":
       return edit.value === "" ? "Clear the skill name" : `Set the skill name to “${edit.value}”`;
     case "description":
-      return edit.value === ""
-        ? "Clear the description"
-        : `Set the description to “${edit.value}”`;
+      return edit.value === "" ? "Clear the description" : `Set the description to “${edit.value}”`;
     case "servers":
       return edit.action === "bind"
         ? `Bind the server “${edit.name}”`

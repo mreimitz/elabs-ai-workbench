@@ -111,7 +111,9 @@ function collectTsxFiles(dir: string, acc: string[] = []): string[] {
 
 const allTsx = collectTsxFiles(SRC_ROOT);
 const bareDialogFiles = allTsx.filter(
-  (rel) => !rel.startsWith(KIT_DIR) && readFileSync(path.join(SRC_ROOT, rel), "utf8").includes(BARE_DIALOG_CONTENT),
+  (rel) =>
+    !rel.startsWith(KIT_DIR) &&
+    readFileSync(path.join(SRC_ROOT, rel), "utf8").includes(BARE_DIALOG_CONTENT),
 );
 
 describe("GUARDRAIL — every dialog goes through the kit (bare <DialogContent> is ratcheted)", () => {
@@ -128,9 +130,10 @@ describe("GUARDRAIL — every dialog goes through the kit (bare <DialogContent> 
 
   it("every migrated Servers/Skills dialog is NOT on the allowlist and hand-rolls no bare <DialogContent>", () => {
     for (const rel of MIGRATED_ONTO_KIT) {
-      expect(ALLOWLIST.has(rel), `${rel} was migrated onto the kit — it must not be on the allowlist`).toBe(
-        false,
-      );
+      expect(
+        ALLOWLIST.has(rel),
+        `${rel} was migrated onto the kit — it must not be on the allowlist`,
+      ).toBe(false);
       const onDisk = allTsx.includes(rel);
       expect(onDisk, `${rel} should exist`).toBe(true);
       expect(

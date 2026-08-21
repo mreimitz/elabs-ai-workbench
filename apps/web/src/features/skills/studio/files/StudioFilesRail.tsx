@@ -7,12 +7,7 @@ import {
   NameDialog,
   UploadDialog,
 } from "../../workspace/WorkspaceDialogs";
-import {
-  baseNameOf,
-  collectFolders,
-  dirOf,
-  joinPath,
-} from "../../workspace/workspace-model";
+import { baseNameOf, collectFolders, dirOf, joinPath } from "../../workspace/workspace-model";
 
 // ── Skill Studio (RM-30 WP 7.4) — the Files rail, now EDITABLE ─────────────────────────────────────
 // WP 7.1 mounted the workspace tree here `readOnly`, because the Studio had nowhere to stage a file
@@ -129,9 +124,8 @@ export function StudioFilesRail({ selectedFile, onSelectFile, onPathMoved }: Stu
   const requestDelete = useCallback(
     (path: string, isFolder: boolean) => {
       const fileCount = isFolder
-        ? files.entries.filter(
-            (entry) => entry.path === path || entry.path.startsWith(`${path}/`),
-          ).length
+        ? files.entries.filter((entry) => entry.path === path || entry.path.startsWith(`${path}/`))
+            .length
         : 0;
       setDeleteTarget({ path, isFolder, fileCount });
     },

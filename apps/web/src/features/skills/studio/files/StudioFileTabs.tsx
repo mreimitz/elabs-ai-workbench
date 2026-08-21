@@ -81,9 +81,7 @@ export function StudioFileTabs({
             variant="ghost"
             size="icon-sm"
             label={closable ? `Close ${baseNameOf(active)}` : "Close file"}
-            disabledReason={
-              closable ? undefined : "SKILL.md stays open — it is the skill itself."
-            }
+            disabledReason={closable ? undefined : "SKILL.md stays open — it is the skill itself."}
             disabled={!closable}
             onClick={() => onClose(active)}
           >

@@ -174,7 +174,9 @@ export function StudioShell({
   // While the draft is still loading the working tree is empty, so `activeTab` would fall back to
   // SKILL.md and overwrite a cold-loaded `?file=`. Hold the URL's word until there is a tree to
   // check it against.
-  const active = draft.loading ? (urlState.file ?? SKILL_MD) : activeTab(urlState.file, existingPaths);
+  const active = draft.loading
+    ? (urlState.file ?? SKILL_MD)
+    : activeTab(urlState.file, existingPaths);
 
   const openFile = useCallback(
     (path: string) => {
@@ -371,10 +373,7 @@ export function StudioShell({
                   file gets its own Monaco model (and its own undo stack) without a second component.
                   Text is editable; a binary file is a preview — `WorkspaceEditor` owns both. */}
               {activeEntry ? (
-                <div
-                  className="flex min-h-0 flex-1 flex-col p-3"
-                  data-testid="studio-pane-file"
-                >
+                <div className="flex min-h-0 flex-1 flex-col p-3" data-testid="studio-pane-file">
                   <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
                     <WorkspaceEditor
                       key={activeEntry.id}
