@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Benchmarks \u2014 work-package status ledger \u00b7 PRIORITY: HIGH (parallel with Skill IDE)"
 description: "Living state for the Benchmarks plan, read and updated by /next-wp benchmarks. A box is"
 tags: ["roadmap", "RM-07"]
-timestamp: "2026-08-21T21:40:00Z"
+timestamp: "2026-08-21T21:50:00Z"
 status: "active"
 ---
 # Benchmarks — work-package status ledger · **PRIORITY: HIGH (parallel with Skill IDE)**
@@ -55,7 +55,7 @@ ticked **only** when that WP's Acceptance is met and the gate
 > retire on its owner walk alone*). The owner chose **build**, so this phase stays inside RM-07 and
 > RM-07 does **not** retire until it is done. Specs for both WPs already exist in
 > [`phase-6-judge-calibration.md`](./phase-6-judge-calibration.md).
-- [ ] WP 6.1 — grade feedback + calibration set (spec: `phase-6-judge-calibration.md`)
+- [ ] WP 6.1 — grade feedback + calibration set (spec: `phase-6-judge-calibration.md`) — _status: in progress (agent A · `wp/benchmarks/6.1`, dispatched 2026-08-21 via `RM-35` D-3)_
 - [ ] WP 6.2 — agreement analytics + judge-change re-grade guard
 
 ## Decision log
