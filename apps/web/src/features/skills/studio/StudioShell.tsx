@@ -19,8 +19,9 @@ import { SkillDesignView } from "../design/SkillDesignView";
 import type { SkillProblemsSummary } from "../design/ProblemsPanel";
 import { getSkillFiles } from "../skills-inspector-api";
 import { StudioContextPanel } from "./StudioContextPanel";
-import { StudioLeftRail, isStudioLeftRailTab, type StudioLeftRailTab } from "./StudioLeftRail";
+import { StudioLeftRail } from "./StudioLeftRail";
 import { StudioRail } from "./StudioRail";
+import { StudioDraftContext, useStudioDraftController } from "./draft";
 import { readStudioRailCollapsed, writeStudioRailCollapsed } from "./studio-layout";
 import {
   isStudioMode,
@@ -28,6 +29,7 @@ import {
   STUDIO_DEFAULT_FILE,
   writeStudioUrlState,
   type StudioMode,
+  type StudioRail as StudioRailTab,
 } from "./studio-url";
 
 // ── Skill Studio (RM-30 WP 7.1) — the workbench frame ─────────────────────────────────────────────
@@ -55,6 +57,8 @@ export type StudioShellProps = {
   isHeadVersion: boolean;
   /** The version label shown beside the exit control, e.g. "v4". */
   versionLabel: string;
+  /** RM-30 WP 7.3 — what a save would create, e.g. "v5". The toolbar's ONE save action names it. */
+  nextVersionLabel: string;
   /** A save (or a bind/unbind) landed a NEW immutable version — the route re-points onto it. */
   onVersionSaved: (newVersionId: string) => void;
   /** Where Exit goes (the skill's inspector). */
@@ -67,13 +71,14 @@ export function StudioShell({
   versionId,
   isHeadVersion,
   versionLabel,
+  nextVersionLabel,
   onVersionSaved,
   exitTo,
 }: StudioShellProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = readStudioUrlState(searchParams);
-  const { mode, sel } = urlState;
+  const { mode, rail: leftTab, sel } = urlState;
   void sel; // read below, once, for the mount-time selection seed
   const file = urlState.file ?? STUDIO_DEFAULT_FILE;
 
@@ -85,6 +90,10 @@ export function StudioShell({
   );
 
   const setMode = useCallback((next: StudioMode) => applyUrlState({ mode: next }), [applyUrlState]);
+  const setLeftTab = useCallback(
+    (next: StudioRailTab) => applyUrlState({ rail: next }),
+    [applyUrlState],
+  );
   const setFile = useCallback(
     (next: string) => applyUrlState({ file: next === STUDIO_DEFAULT_FILE ? null : next }),
     [applyUrlState],
@@ -103,8 +112,8 @@ export function StudioShell({
   // ── rails ────────────────────────────────────────────────────────────────────────────────────
   // Left opens by default (an author needs the file/tool/settings surface); the right context panel
   // starts COLLAPSED, per the WP: it is opened when there is something to look at, never held open
-  // as an empty column.
-  const [leftTab, setLeftTab] = useState<StudioLeftRailTab>("files");
+  // as an empty column. Which left tab is showing rides in the URL (`?rail=`, WP 7.3) so it is
+  // shareable and so the Tools palette can deep-link the Settings tab.
   const [leftCollapsed, setLeftCollapsedState] = useState(() =>
     readStudioRailCollapsed(LEFT_RAIL_KEY, false),
   );
@@ -132,7 +141,14 @@ export function StudioShell({
   const [detailContainer, setDetailContainer] = useState<HTMLDivElement | null>(null);
   const [problemsSummary, setProblemsSummary] = useState<SkillProblemsSummary | null>(null);
   const [problemsOpen, setProblemsOpen] = useState(false);
-  const [dirty, setDirty] = useState(false);
+
+  // ── RM-30 WP 7.3 — the ONE draft ─────────────────────────────────────────────────────────────
+  // Created here, in the shell, and published so the left rail's settings panel and the centre
+  // surface's editor are looking at the same working state. `dirty` is read straight off it rather
+  // than bubbled up from the editor: with the draft one level up, a round-trip through the editor's
+  // `onDirtyChange` would be a second copy of the same fact.
+  const draft = useStudioDraftController(skillId, versionId, nextVersionLabel);
+  const dirty = draft.dirty;
 
   // ── rail data (read-only; the editor owns the draft) ─────────────────────────────────────────
   const [files, setFiles] = useState<SkillFileNode[] | null>(null);
@@ -227,98 +243,96 @@ export function StudioShell({
   );
 
   return (
-    <PageShell
-      width="full"
-      scroll="fill"
-      bodyGutter="none"
-      headerVariant="toolbar"
-      header={toolbar}
-      className="flex h-full min-h-0 flex-col"
-      contentClassName="flex min-h-0 flex-1 flex-col"
-    >
-      {/* The breadcrumb names the page (Skills / <skill> / Studio); keep an AT-only H1 the way every
-          other toolbar-header route does (D-TB1). */}
-      <Heading level={1} className="sr-only">
-        {skillName} — Studio
-      </Heading>
+    <StudioDraftContext.Provider value={draft}>
+      <PageShell
+        width="full"
+        scroll="fill"
+        bodyGutter="none"
+        headerVariant="toolbar"
+        header={toolbar}
+        className="flex h-full min-h-0 flex-col"
+        contentClassName="flex min-h-0 flex-1 flex-col"
+      >
+        {/* The breadcrumb names the page (Skills / <skill> / Studio); keep an AT-only H1 the way every
+            other toolbar-header route does (D-TB1). */}
+        <Heading level={1} className="sr-only">
+          {skillName} — Studio
+        </Heading>
 
-      <div className="flex min-h-0 flex-1 flex-col" data-testid="studio-body">
-        <div className="flex min-h-0 flex-1">
-          <StudioRail
-            side="start"
-            label="Workspace"
-            collapsed={leftCollapsed}
-            onCollapsedChange={setLeftCollapsed}
-            testId="studio-left-rail"
-          >
-            <StudioLeftRail
-              skillId={skillId}
-              versionId={versionId}
-              isHeadVersion={isHeadVersion}
-              tab={leftTab}
-              onTabChange={setLeftTab}
-              files={files}
-              selectedFile={file}
-              onSelectFile={setFile}
-              toolsContainerRef={setToolsContainer}
-              onVersionSaved={onVersionSaved}
-              bindingBlockedReason={
-                dirty ? "Save or discard your unsaved edits before changing servers." : null
-              }
-            />
-          </StudioRail>
+        <div className="flex min-h-0 flex-1 flex-col" data-testid="studio-body">
+          <div className="flex min-h-0 flex-1">
+            <StudioRail
+              side="start"
+              label="Workspace"
+              collapsed={leftCollapsed}
+              onCollapsedChange={setLeftCollapsed}
+              testId="studio-left-rail"
+            >
+              <StudioLeftRail
+                skillId={skillId}
+                versionId={versionId}
+                isHeadVersion={isHeadVersion}
+                tab={leftTab}
+                onTabChange={setLeftTab}
+                files={files}
+                selectedFile={file}
+                onSelectFile={setFile}
+                toolsContainerRef={setToolsContainer}
+              />
+            </StudioRail>
 
-          {/* The centre surface: `flex-1 min-w-0`, so it takes everything the two fixed rails leave. */}
-          <section
-            aria-label="Editor"
-            className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3"
-            data-testid="studio-center"
-          >
-            <SkillDesignView
-              skillId={skillId}
-              versionId={versionId}
-              hideModeToggle
-              onDirtyChange={setDirty}
-              onVersionSaved={onVersionSaved}
-              onOpenDiff={() => navigate(`${exitTo}?tab=diff`)}
-              onHeaderActionsChange={setSaveActions}
-              onProblemsChange={setProblemsPanel}
-              problemsOpen={problemsOpen}
-              onProblemsOpenChange={setProblemsOpen}
-              onProblemsSummaryChange={setProblemsSummary}
-              onSelectedNodeChange={handleSelectedNodeChange}
-              flowToolsContainer={toolsContainer}
-              flowDetailContainer={detailContainer}
-              {...(initialSel ? { initialSelectedNodeId: initialSel } : {})}
-            />
-          </section>
+            {/* The centre surface: `flex-1 min-w-0`, so it takes everything the two fixed rails leave. */}
+            <section
+              aria-label="Editor"
+              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3"
+              data-testid="studio-center"
+            >
+              <SkillDesignView
+                skillId={skillId}
+                versionId={versionId}
+                hideModeToggle
+                onVersionSaved={onVersionSaved}
+                onOpenServerSettings={() => setLeftTab("settings")}
+                onOpenDiff={() => navigate(`${exitTo}?tab=diff`)}
+                onHeaderActionsChange={setSaveActions}
+                onProblemsChange={setProblemsPanel}
+                problemsOpen={problemsOpen}
+                onProblemsOpenChange={setProblemsOpen}
+                onProblemsSummaryChange={setProblemsSummary}
+                onSelectedNodeChange={handleSelectedNodeChange}
+                flowToolsContainer={toolsContainer}
+                flowDetailContainer={detailContainer}
+                {...(initialSel ? { initialSelectedNodeId: initialSel } : {})}
+              />
+            </section>
 
-          <StudioRail
-            side="end"
-            label="Context"
-            collapsed={contextCollapsed}
-            onCollapsedChange={setContextCollapsed}
-            testId="studio-context-panel"
-          >
-            <StudioContextPanel containerRef={setDetailContainer} />
-          </StudioRail>
+            <StudioRail
+              side="end"
+              label="Context"
+              collapsed={contextCollapsed}
+              onCollapsedChange={setContextCollapsed}
+              testId="studio-context-panel"
+            >
+              <StudioContextPanel containerRef={setDetailContainer} />
+            </StudioRail>
+          </div>
+
+          {/* The unified Problems strip, spanning the workbench. Registered by the editor so it reads
+              the SAME live projection the canvas and the code decorations do. */}
+          <div className="shrink-0 border-t border-border" data-testid="studio-problems">
+            {problemsPanel}
+          </div>
         </div>
 
-        {/* The unified Problems strip, spanning the workbench. Registered by the editor so it reads
-            the SAME live projection the canvas and the code decorations do. */}
-        <div className="shrink-0 border-t border-border" data-testid="studio-problems">
-          {problemsPanel}
-        </div>
-      </div>
-
-      <DiscardChangesDialog
-        open={exitConfirming}
-        onConfirm={() => {
-          setExitConfirming(false);
-          navigate(exitTo);
-        }}
-        onCancel={() => setExitConfirming(false)}
-      />
-    </PageShell>
+        <DiscardChangesDialog
+          open={exitConfirming}
+          onConfirm={() => {
+            setExitConfirming(false);
+            navigate(exitTo);
+          }}
+          onCancel={() => setExitConfirming(false)}
+        />
+      </PageShell>
+    </StudioDraftContext.Provider>
   );
 }

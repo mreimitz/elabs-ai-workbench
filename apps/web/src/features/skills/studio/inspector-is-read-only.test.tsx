@@ -10,9 +10,11 @@ import { SkillInspector } from "../SkillInspector";
 // inspector owns: its Design tab is a READ-ONLY flow preview, the SI13 header save cluster it used
 // to host is gone, and the one authoring affordance is a link into the Studio.
 //
-// Deliberately NOT asserted here: the Overview tab's keyword editor and the Files tab's
-// Save…/Discard bar still exist. Removing those is named, by step, in WPs 7.3 and 7.4 — so this
-// suite pins what 7.1 actually delivered rather than a claim it did not.
+// RM-30 WP 7.3 paid down half of 7.1's recorded debt: the Overview tab's keyword editor and its
+// "Save as new version" button are gone, pinned by `../overview-is-read-only.test.tsx`. The Files
+// tab's Save…/Discard bar is still there, by design — it is the only way to edit a file until WP 7.4
+// makes files editable in the Studio, and that WP names its deletion as a step. So this suite still
+// pins what is actually delivered rather than a claim it is not.
 
 const SKILL_MD = ["# Demo skill", "", "## Do the thing", "", "Body line.", ""].join("\n");
 

@@ -21,7 +21,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@elabs-ai/components-ui";
-import { AlertTriangle, Link2, Server, Tags } from "lucide-react";
+import { AlertTriangle, Link2, Play, Server, Tags } from "lucide-react";
 import { apiGet } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 import { formatDateTime } from "../../../lib/format";
@@ -127,12 +127,22 @@ export type BindServerDialogProps = {
   onBind: (candidate: BindCandidate) => void;
   /** Bind a server TYPE (writes the type name into `servers:`). Omitted ⇒ the Types section is hidden. */
   onBindType?: (candidate: BindTypeCandidate) => void;
+  /**
+   * RM-30 WP 7.3 (audit SI1) — run a discovery scan for a server that has never completed one,
+   * inline. Without it the only honest thing a never-scanned row could say was "open the server page
+   * and scan it there", which is exactly the detour SI1 asks to remove. Omitted ⇒ those rows keep
+   * the "View server" link alone, so every existing caller renders exactly as before.
+   */
+  onScan?: (candidate: BindCandidate) => void;
+  /** The server id whose scan is in flight — that row spins and every scan action disables. */
+  scanningServerId?: string | null;
 };
 
 /**
  * The bind-server picker dialog. Rows are REGISTERED servers; a row with no completed scan is still
- * bindable (binding is a frontmatter declaration) but says honestly that tools only appear after a
- * discovery scan, with a link to the server page — scans are never triggered from here.
+ * bindable (binding is a frontmatter declaration) and says honestly that tools only appear after a
+ * discovery scan — with a link to the server page and, when the host wires `onScan`, an inline
+ * "Scan now" (the only action in this dialog that reaches a server at all).
  */
 export function BindServerDialog({
   open,
@@ -145,6 +155,8 @@ export function BindServerDialog({
   busyKey,
   onBind,
   onBindType,
+  onScan,
+  scanningServerId = null,
 }: BindServerDialogProps) {
   const busy = busyKey !== null;
   const types = onBindType ? (typeCandidates ?? []) : [];
@@ -225,6 +237,9 @@ export function BindServerDialog({
                         busy={busy}
                         bindInFlight={busyKey === candidate.serverId}
                         onBind={onBind}
+                        {...(onScan ? { onScan } : {})}
+                        scanning={scanningServerId === candidate.serverId}
+                        scanBusy={scanningServerId !== null}
                       />
                     ))}
                   </ul>
@@ -275,12 +290,19 @@ function CandidateRow({
   busy,
   bindInFlight,
   onBind,
+  onScan,
+  scanning = false,
+  scanBusy = false,
 }: {
   candidate: BindCandidate;
   blocked: boolean;
   busy: boolean;
   bindInFlight: boolean;
   onBind: (candidate: BindCandidate) => void;
+  /** RM-30 WP 7.3 — offered only on a never-scanned row, and only when the host wires it. */
+  onScan?: (candidate: BindCandidate) => void;
+  scanning?: boolean;
+  scanBusy?: boolean;
 }) {
   const disabledReason = candidate.disabledReason;
   return (
@@ -306,12 +328,25 @@ function CandidateRow({
               : "No scan yet — tools appear after a discovery scan."}
           </Text>
           {!candidate.hasCompletedScan ? (
-            <Link
-              to={`/servers/${candidate.serverId}`}
-              className="w-fit text-xs text-primary underline-offset-2 hover:underline"
-            >
-              View server
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              {onScan ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={scanBusy}
+                  onClick={() => onScan(candidate)}
+                >
+                  {scanning ? <Spinner className="size-4" /> : <Play aria-hidden />}
+                  <span>{scanning ? "Scanning…" : "Scan now"}</span>
+                </Button>
+              ) : null}
+              <Link
+                to={`/servers/${candidate.serverId}`}
+                className="w-fit text-meta text-primary underline-offset-2 hover:underline"
+              >
+                View server
+              </Link>
+            </div>
           ) : null}
         </div>
 

@@ -1,72 +1,17 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
-import type { BoundTool, ServerType, SkillGraph, SkillServerBinding } from "@mcp-token-footprint/shared";
-import { SkillBindingHostContext } from "./bind-server-context";
+import type { BoundTool, SkillGraph } from "@mcp-token-footprint/shared";
+import { StudioDraftContext, type StudioDraftController } from "../studio/draft";
 import { ToolsPalette } from "./ToolsPalette";
 
-// Server-types WP 3.2 (A) — the palette renders a TYPE-resolved binding distinctly from a plain server
-// binding: the type name + a "Type" indicator + the type's lifecycle status + the resolved
-// representative, next to an ordinary server chip. Fetches are mocked at the module seam (never a real
-// network / MCP call). The pure classification is locked in binding-display.test.ts; this asserts the
-// rendered distinction.
-
-const SKILL_MD = [
-  "---",
-  "name: demo",
-  "description: A demo skill for the palette render test.",
-  "servers:",
-  "  - Acme-SaaS",
-  "  - files",
-  "---",
-  "",
-  "# Demo",
-  "",
-  "Body.",
-  "",
-].join("\n");
-
-const BINDINGS: SkillServerBinding[] = [
-  { serverName: "Acme-SaaS", serverId: "s-rep", typeId: "t-saas", resolvedVia: "type" },
-  { serverName: "files", serverId: "s-files" },
-];
-
-const TYPES: ServerType[] = [
-  {
-    id: "t-saas",
-    name: "Acme-SaaS",
-    status: "production",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
-    memberCount: 2,
-  },
-];
-
-const SERVERS = [
-  { id: "s-rep", name: "Acme Prod B" },
-  { id: "s-files", name: "files" },
-];
-
-vi.mock("../skills-inspector-api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../skills-inspector-api")>();
-  return {
-    ...actual,
-    getSkill: vi.fn(async () => ({}) as never),
-    getSkillFile: vi.fn(async () => ({ path: "SKILL.md", isBinary: false, text: SKILL_MD }) as never),
-    fetchSkillBindings: vi.fn(async () => BINDINGS),
-  };
-});
-
-vi.mock("../../../lib/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../../lib/api")>();
-  return {
-    ...actual,
-    apiGet: vi.fn(async (url: string) => (url === "/api/servers" ? SERVERS : [])),
-    apiPost: vi.fn(async () => ({})),
-    listServerTypes: vi.fn(async () => TYPES),
-  };
-});
+// ── RM-30 WP 7.3 — the palette is about TOOLS ─────────────────────────────────────────────────────
+// WP 7.3a had put the whole binding surface in here (chips, a picker, unbind) on an immediate-save
+// path. WP 7.3 moved it into the Studio's one settings panel, against the shared draft — so what is
+// asserted here is that the palette carries NO binding management at all, and that its empty state
+// deep-links the place that does. The type-vs-server chip coverage moved with the surface, to
+// `studio/settings/ServersField.test.tsx`; it was not dropped.
 
 // jsdom omits matchMedia / ResizeObserver (Radix reads them).
 if (typeof window.matchMedia !== "function") {
@@ -91,15 +36,7 @@ if (typeof window.ResizeObserver !== "function") {
 
 const graph: SkillGraph = { nodes: [], edges: [], warnings: [] };
 
-// The representative's tools (grouped under its own name — how WP 3.1 bound-tools reports them).
 const boundTools: BoundTool[] = [
-  {
-    serverId: "s-rep",
-    serverName: "Acme Prod B",
-    toolName: "get_app",
-    schemaParams: [],
-    definitionTokens: 40,
-  },
   {
     serverId: "s-files",
     serverName: "files",
@@ -109,43 +46,85 @@ const boundTools: BoundTool[] = [
   },
 ];
 
-function renderPalette() {
+/** The slice of the Studio draft the palette reads — only the declared `servers:` list. */
+function draftWithServers(servers: string[]): StudioDraftController {
+  return { settings: { servers } } as unknown as StudioDraftController;
+}
+
+function renderPalette(options: {
+  tools?: BoundTool[];
+  servers?: string[];
+  onOpenServerSettings?: () => void;
+  /** Omit the provider entirely — a palette mounted outside a Studio. */
+  noDraft?: boolean;
+}) {
+  const palette = (
+    <ToolsPalette
+      graph={graph}
+      boundTools={options.tools ?? []}
+      loading={false}
+      editMode={false}
+      canInsert={false}
+      onInsertTool={() => {}}
+      {...(options.onOpenServerSettings
+        ? { onOpenServerSettings: options.onOpenServerSettings }
+        : {})}
+    />
+  );
   return render(
     <MemoryRouter>
       <TooltipProvider>
-        <SkillBindingHostContext.Provider
-          value={{ skillId: "sk-1", versionId: "ver-1", editorDirty: false }}
-        >
-          <ToolsPalette
-            graph={graph}
-            boundTools={boundTools}
-            loading={false}
-            editMode={false}
-            canInsert={false}
-            onInsertTool={() => {}}
-          />
-        </SkillBindingHostContext.Provider>
+        {options.noDraft ? (
+          palette
+        ) : (
+          <StudioDraftContext.Provider value={draftWithServers(options.servers ?? [])}>
+            {palette}
+          </StudioDraftContext.Provider>
+        )}
       </TooltipProvider>
     </MemoryRouter>,
   );
 }
 
-describe("ToolsPalette — type-vs-server chips (WP 3.2 A)", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  test("a type-bound entry renders its type name, a Type indicator, and the lifecycle status", async () => {
-    renderPalette();
-    // The type chip carries the TYPE name + a "Type" indicator + the "Production" status badge.
-    expect(await screen.findByText("Acme-SaaS")).toBeTruthy();
-    expect(await screen.findByText("Type")).toBeTruthy();
-    expect(await screen.findByText("Production")).toBeTruthy();
+describe("ToolsPalette — no binding management (WP 7.3 moved it to Settings)", () => {
+  test("there is no bind picker, no bound-server chip list, and no unbind control", () => {
+    renderPalette({ tools: boundTools, servers: ["files"] });
+    expect(screen.queryByRole("button", { name: "Bind server…" })).toBeNull();
+    expect(screen.queryByText("Bound servers & types")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Unbind/ })).toBeNull();
   });
 
-  test("a plain server binding still renders as an ordinary server chip", async () => {
-    renderPalette();
-    // "files" is a plain server binding — present, and NOT labeled a Type (only one "Type" indicator).
-    expect(await screen.findByText("files")).toBeTruthy();
-    const typeLabels = await screen.findAllByText("Type");
-    expect(typeLabels).toHaveLength(1);
+  test("it still lists the bound servers' tools", () => {
+    renderPalette({ tools: boundTools, servers: ["files"] });
+    expect(screen.getByText("read_file")).toBeTruthy();
+  });
+});
+
+describe("ToolsPalette — the empty state deep-links Settings", () => {
+  test("with nothing bound, the only action opens the host's server settings", () => {
+    const onOpenServerSettings = vi.fn();
+    renderPalette({ tools: [], servers: [], onOpenServerSettings });
+
+    expect(screen.getByText("Not bound to a server")).toBeTruthy();
+    const action = screen.getByRole("button", { name: "Bind a server in Settings →" });
+    fireEvent.click(action);
+    expect(onOpenServerSettings).toHaveBeenCalledTimes(1);
+  });
+
+  test("bound but unscanned is a DIFFERENT state — it never tells you to bind again", () => {
+    renderPalette({ tools: [], servers: ["files"], onOpenServerSettings: vi.fn() });
+    expect(screen.getByText("No tools from the bound servers")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Bind a server in Settings →" })).toBeNull();
+  });
+
+  test("with no host to deep-link to, the empty state offers no dead control", () => {
+    renderPalette({ tools: [], servers: [] });
+    expect(screen.getByText("Not bound to a server")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Bind a server/ })).toBeNull();
+  });
+
+  test("outside a Studio the palette still renders — it just knows of no declared servers", () => {
+    renderPalette({ tools: [], noDraft: true });
+    expect(screen.getByText("Not bound to a server")).toBeTruthy();
   });
 });

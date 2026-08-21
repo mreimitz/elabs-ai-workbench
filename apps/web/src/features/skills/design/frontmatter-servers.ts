@@ -1,6 +1,15 @@
-// Skill Studio WP 7.3a (audit SI1, D-UX17a) — the pure text engine behind the Tools palette's
-// "Bind server" UI: read and edit the `servers:` list in a SKILL.md YAML frontmatter block WITHOUT a
-// YAML library. Deliberately conservative and line/offset-based so an edit splices in the new bytes
+// Skill Studio WP 7.3a (audit SI1, D-UX17a) — the pure text engine behind the first-class server
+// binding UI: read and edit a LIST key in a SKILL.md YAML frontmatter block WITHOUT a YAML library.
+//
+// RM-30 WP 7.3 generalized it. The engine was always key-agnostic apart from one hard-coded
+// `servers` regex, and the Studio's settings panel needs the SAME byte-preserving contract for
+// `keywords:` (a list) and `name:` / `description:` (scalars). So the internals are now
+// parameterized by key and exported as `parseFrontmatterList` / `addFrontmatterListItem` /
+// `removeFrontmatterListItem` / `parseFrontmatterScalar` / `setFrontmatterScalar`; the three
+// `…FrontmatterServer(s)` functions below are one-line wrappers over them and behave EXACTLY as
+// before (their 45 round-trip tests are the regression proof).
+//
+// Deliberately conservative and line/offset-based so an edit splices in the new bytes
 // and PRESERVES EVERY UNTOUCHED BYTE (indentation, comments, key order, CRLF vs LF, quoting of other
 // entries) — the same "preserve every untouched byte" contract the server-side edit engine holds.
 //
@@ -89,7 +98,15 @@ function findFrontmatter(lines: Line[]): FrontmatterBlock | null {
   return null;
 }
 
-const SERVERS_KEY_RE = /^servers[ \t]*:(.*)$/;
+/** `<key>:` at the start of a frontmatter line, capturing everything after the colon. The key is
+ *  escaped so a caller can never inject regex syntax through it. */
+function keyLineRegExp(key: string): RegExp {
+  return new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \t]*:(.*)$`);
+}
+
+/** A YAML block-scalar header — `>` or `|` with optional chomping (`+`/`-`) and indentation digits,
+ *  and an optional trailing comment. The VALUE lives on the indented lines below it. */
+const BLOCK_SCALAR_HEADER_RE = /^[|>][0-9]*[+-]?[0-9]*[ \t]*(#.*)?$/;
 
 /** One block-list item (`  - name`), with the line it lives on and its leading indentation. */
 type BlockItem = { lineIndex: number; indent: string; value: string };
@@ -168,12 +185,13 @@ function splitFlowSegments(inner: string): FlowSegment[] {
   return segments;
 }
 
-/** Locate + shape the top-level `servers:` entry inside the frontmatter block, if any. */
-function findServersEntry(lines: Line[], block: FrontmatterBlock): ServersEntry {
+/** Locate + shape the top-level `<key>:` entry inside the frontmatter block, if any. */
+function findEntry(lines: Line[], block: FrontmatterBlock, key: string): ServersEntry {
+  const keyRe = keyLineRegExp(key);
   for (let i = block.openLine + 1; i < block.closeLine; i++) {
     const line = lines[i];
     if (!line) continue;
-    const keyMatch = line.text.match(SERVERS_KEY_RE);
+    const keyMatch = line.text.match(keyRe);
     if (!keyMatch) continue;
     const rest = (keyMatch[1] ?? "").trim();
 
@@ -221,6 +239,12 @@ function findServersEntry(lines: Line[], block: FrontmatterBlock): ServersEntry 
       return { kind: "opaque" };
     }
 
+    // A BLOCK SCALAR header (`>` / `|`, with optional chomping + indentation indicators). The value
+    // is the indented lines BELOW, which this line-scoped editor cannot see, so replacing this one
+    // line would leave those continuation lines orphaned under a plain scalar — a corrupted
+    // document, not a rewritten one. Opaque, exactly like a shape we don't understand.
+    if (BLOCK_SCALAR_HEADER_RE.test(rest)) return { kind: "opaque" };
+
     return { kind: "scalar", lineIndex: i, value: parseScalarValue(rest) };
   }
   return { kind: "none" };
@@ -240,15 +264,15 @@ function normalizeNames(raw: string[]): string[] {
 }
 
 /**
- * The `servers:` names declared in the SKILL.md frontmatter, in order — trimmed, empties dropped,
- * deduped (first occurrence wins), exactly like the API's manifest parser. No frontmatter, no
- * `servers:` key, or an unparseable shape all degrade to `[]` (never a throw).
+ * The values of a LIST key (`servers:`, `keywords:`, …) declared in the SKILL.md frontmatter, in
+ * order — trimmed, empties dropped, deduped (first occurrence wins), exactly like the API's manifest
+ * parser. No frontmatter, no such key, or an unparseable shape all degrade to `[]` (never a throw).
  */
-export function parseFrontmatterServers(text: string): string[] {
+export function parseFrontmatterList(text: string, key: string): string[] {
   const lines = splitLines(text);
   const block = findFrontmatter(lines);
   if (!block) return [];
-  const entry = findServersEntry(lines, block);
+  const entry = findEntry(lines, block, key);
   switch (entry.kind) {
     case "none":
     case "opaque":
@@ -267,7 +291,7 @@ const AMBIGUOUS_PLAIN = new Set(["true", "false", "yes", "no", "on", "off", "nul
 const PLAIN_SAFE_RE = /^[A-Za-z_][A-Za-z0-9._/-]*$/;
 
 /** Serialize a server name as a YAML scalar: plain when unambiguous, else double-quoted (JSON rules). */
-function yamlName(name: string): string {
+function yamlScalar(name: string): string {
   if (PLAIN_SAFE_RE.test(name) && !AMBIGUOUS_PLAIN.has(name.toLowerCase())) return name;
   return JSON.stringify(name);
 }
@@ -283,14 +307,14 @@ function lineSpanEnd(line: Line): number {
 }
 
 /**
- * Add `name` to the frontmatter `servers:` list, preserving every untouched byte. A blank name or an
+ * Add `name` to the frontmatter list under `key`, preserving every untouched byte. A blank name or an
  * already-declared name (trimmed comparison) returns the input text unchanged (identity — callers can
  * `===` to detect the no-op). Creates the frontmatter block and/or the key as needed.
  */
-export function addFrontmatterServer(text: string, name: string): string {
+export function addFrontmatterListItem(text: string, key: string, name: string): string {
   const trimmed = name.trim();
   if (trimmed === "") return text;
-  if (parseFrontmatterServers(text).includes(trimmed)) return text;
+  if (parseFrontmatterList(text, key).includes(trimmed)) return text;
 
   const lines = splitLines(text);
   const eol = docEol(lines);
@@ -299,20 +323,20 @@ export function addFrontmatterServer(text: string, name: string): string {
   if (!block) {
     const hasBom = text.startsWith(BOM);
     const body = hasBom ? text.slice(1) : text;
-    const created = `---${eol}servers:${eol}  - ${yamlName(trimmed)}${eol}---${eol}`;
+    const created = `---${eol}${key}:${eol}  - ${yamlScalar(trimmed)}${eol}---${eol}`;
     return (hasBom ? BOM : "") + created + body;
   }
 
   const closeLine = lines[block.closeLine];
   if (!closeLine) return text; // unreachable — findFrontmatter guarantees the index
-  const entry = findServersEntry(lines, block);
+  const entry = findEntry(lines, block, key);
 
   switch (entry.kind) {
     case "opaque":
       return text; // a shape we don't understand — never splice into it
     case "none": {
       // Append the key + first item just before the closing fence.
-      const insert = `servers:${eol}  - ${yamlName(trimmed)}${eol}`;
+      const insert = `${key}:${eol}  - ${yamlScalar(trimmed)}${eol}`;
       return splice(text, closeLine.start, closeLine.start, insert);
     }
     case "block": {
@@ -322,22 +346,22 @@ export function addFrontmatterServer(text: string, name: string): string {
         const keyLine = lines[entry.keyLineIndex];
         if (!keyLine) return text;
         const at = lineSpanEnd(keyLine);
-        return splice(text, at, at, `  - ${yamlName(trimmed)}${eol}`);
+        return splice(text, at, at, `  - ${yamlScalar(trimmed)}${eol}`);
       }
       const itemLine = lines[lastItem.lineIndex];
       if (!itemLine) return text;
       const at = lineSpanEnd(itemLine);
       const itemEol = itemLine.eol !== "" ? itemLine.eol : eol;
-      return splice(text, at, at, `${lastItem.indent}- ${yamlName(trimmed)}${itemEol}`);
+      return splice(text, at, at, `${lastItem.indent}- ${yamlScalar(trimmed)}${itemEol}`);
     }
     case "flow": {
       const inner = text.slice(entry.innerStart, entry.innerEnd);
       const hasItems = entry.segments.some((segment) => parseScalarValue(segment.raw) !== "");
       if (!hasItems) {
-        return splice(text, entry.innerStart, entry.innerEnd, yamlName(trimmed));
+        return splice(text, entry.innerStart, entry.innerEnd, yamlScalar(trimmed));
       }
       const separator = inner.includes(", ") ? ", " : ",";
-      return splice(text, entry.innerEnd, entry.innerEnd, `${separator}${yamlName(trimmed)}`);
+      return splice(text, entry.innerEnd, entry.innerEnd, `${separator}${yamlScalar(trimmed)}`);
     }
     case "scalar": {
       // Normalize `servers: old` to a block list carrying both names (documented normalization —
@@ -345,26 +369,26 @@ export function addFrontmatterServer(text: string, name: string): string {
       const line = lines[entry.lineIndex];
       if (!line) return text;
       const lineEol = line.eol !== "" ? line.eol : eol;
-      const replacement = `servers:${lineEol}  - ${yamlName(entry.value)}${lineEol}  - ${yamlName(trimmed)}${lineEol}`;
+      const replacement = `${key}:${lineEol}  - ${yamlScalar(entry.value)}${lineEol}  - ${yamlScalar(trimmed)}${lineEol}`;
       return splice(text, line.start, lineSpanEnd(line), replacement);
     }
   }
 }
 
 /**
- * Remove `name` from the frontmatter `servers:` list, preserving every untouched byte. A name that
- * isn't declared returns the input text unchanged (identity). Removing the last name drops the
- * `servers:` key line; if that leaves the frontmatter block completely empty, the block is dropped
- * too (add→remove on a frontmatter-less document round-trips exactly).
+ * Remove `name` from the frontmatter list under `key`, preserving every untouched byte. A name that
+ * isn't declared returns the input text unchanged (identity). Removing the last value drops the
+ * `key:` line; if that leaves the frontmatter block completely empty, the block is dropped too
+ * (add→remove on a frontmatter-less document round-trips exactly).
  */
-export function removeFrontmatterServer(text: string, name: string): string {
+export function removeFrontmatterListItem(text: string, key: string, name: string): string {
   const trimmed = name.trim();
   if (trimmed === "") return text;
 
   const lines = splitLines(text);
   const block = findFrontmatter(lines);
   if (!block) return text;
-  const entry = findServersEntry(lines, block);
+  const entry = findEntry(lines, block, key);
 
   switch (entry.kind) {
     case "none":
@@ -438,4 +462,101 @@ function dropEmptyFrontmatter(text: string): string {
   const hasBom = openLine.text.startsWith(BOM);
   const from = hasBom ? openLine.start + BOM.length : openLine.start;
   return splice(text, from, lineSpanEnd(closeLine), "");
+}
+
+
+// ── The `servers:` list — the WP 7.3a public API, now one line each over the generic engine ───────
+// Behaviour is byte-for-byte what it was; `frontmatter-servers.test.ts` is the regression proof.
+
+/** The frontmatter `servers:` names, in order (see {@link parseFrontmatterList}). */
+export function parseFrontmatterServers(text: string): string[] {
+  return parseFrontmatterList(text, "servers");
+}
+
+/** Add a server name to the frontmatter `servers:` list (see {@link addFrontmatterListItem}). */
+export function addFrontmatterServer(text: string, name: string): string {
+  return addFrontmatterListItem(text, "servers", name);
+}
+
+/** Remove a server name from `servers:` (see {@link removeFrontmatterListItem}). */
+export function removeFrontmatterServer(text: string, name: string): string {
+  return removeFrontmatterListItem(text, "servers", name);
+}
+
+// ── RM-30 WP 7.3 — SCALAR frontmatter keys (`name:`, `description:`) ──────────────────────────────
+// The Studio settings panel edits the skill's own name and description without the author ever
+// touching YAML. Same conservative contract as the list editor: a shape this file doesn't
+// understand (a block scalar `>`/`|`, a list where a scalar was expected, a nested map) is REFUSED —
+// `setFrontmatterScalar` returns its input unchanged and `isFrontmatterScalarEditable` says so, so
+// the panel can disable the field with an honest reason instead of corrupting the document.
+
+/**
+ * The value of a SCALAR frontmatter key (`name:`, `description:`), or `null` when the key is absent
+ * or holds a shape this file will not edit (a list, a block scalar, a nested map). `null` is
+ * therefore "nothing this editor owns", NOT "the empty string".
+ */
+export function parseFrontmatterScalar(text: string, key: string): string | null {
+  const lines = splitLines(text);
+  const block = findFrontmatter(lines);
+  if (!block) return null;
+  const entry = findEntry(lines, block, key);
+  return entry.kind === "scalar" ? entry.value : null;
+}
+
+/**
+ * True when {@link setFrontmatterScalar} would actually write `key` — i.e. the key is absent (it
+ * would be created) or already holds a plain scalar. False for a list/flow/opaque value, where the
+ * write is refused. A document with no frontmatter block at all is editable (the block is created).
+ */
+export function isFrontmatterScalarEditable(text: string, key: string): boolean {
+  const lines = splitLines(text);
+  const block = findFrontmatter(lines);
+  if (!block) return true;
+  const entry = findEntry(lines, block, key);
+  return entry.kind === "none" || entry.kind === "scalar";
+}
+
+/**
+ * Set a SCALAR frontmatter key, preserving every untouched byte outside the one line it owns.
+ *
+ *  - an absent key is appended just before the closing fence; a missing frontmatter block is created;
+ *  - an existing plain scalar has its WHOLE line replaced with the canonical `key: <value>` (so a
+ *    trailing ` # comment` on that line does not survive — documented, and the only formatting this
+ *    write normalizes);
+ *  - an EMPTY `value` removes the key line entirely (and drops a frontmatter block left empty),
+ *    mirroring "removing the last list item drops the key";
+ *  - a list / flow / block-scalar / opaque value is REFUSED: the input is returned unchanged
+ *    (identity — callers can `===` to detect it), never spliced into.
+ */
+export function setFrontmatterScalar(text: string, key: string, value: string): string {
+  const lines = splitLines(text);
+  const eol = docEol(lines);
+  const block = findFrontmatter(lines);
+
+  if (!block) {
+    if (value === "") return text;
+    const hasBom = text.startsWith(BOM);
+    const body = hasBom ? text.slice(1) : text;
+    const created = `---${eol}${key}: ${yamlScalar(value)}${eol}---${eol}`;
+    return (hasBom ? BOM : "") + created + body;
+  }
+
+  const entry = findEntry(lines, block, key);
+  if (entry.kind === "flow" || entry.kind === "block" || entry.kind === "opaque") return text;
+
+  if (entry.kind === "none") {
+    if (value === "") return text;
+    const closeLine = lines[block.closeLine];
+    if (!closeLine) return text;
+    return splice(text, closeLine.start, closeLine.start, `${key}: ${yamlScalar(value)}${eol}`);
+  }
+
+  const line = lines[entry.lineIndex];
+  if (!line) return text;
+  if (value === "") {
+    return dropEmptyFrontmatter(splice(text, line.start, lineSpanEnd(line), ""));
+  }
+  if (entry.value === value) return text; // already exactly this — keep the bytes as they are
+  const lineEol = line.eol !== "" ? line.eol : eol;
+  return splice(text, line.start, lineSpanEnd(line), `${key}: ${yamlScalar(value)}${lineEol}`);
 }

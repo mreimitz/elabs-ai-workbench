@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import type {
   BoundTool,
   ServerConfig,
@@ -19,19 +20,18 @@ import {
   TooltipTrigger,
   toast,
 } from "@elabs-ai/components-ui";
-import { AlertTriangle, CircleDashed, Link2, Server, Tags, X } from "lucide-react";
+import { AlertTriangle, Link2, Pencil } from "lucide-react";
 import { apiGet, apiPost, listServerTypes } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
 import { ConfirmDialog } from "../../components/dialogs";
-import { IconButton } from "../../components/IconButton";
-import { ServerTypeStatusBadge } from "../servers/ServerTypeStatusBadge";
 import {
   deriveBindCandidates,
   deriveBindTypeCandidates,
   type BindCandidate,
   type BindTypeCandidate,
 } from "./design/bind-server-candidates";
-import { buildBindingChips, type BindingChip } from "./design/binding-display";
+import { buildBindingChips } from "./design/binding-display";
+import { ServerChip, TypeChip } from "./design/BindingChips";
 import { BindServerDialog, useServerDirectory } from "./design/BindServerDialog";
 import {
   addFrontmatterServer,
@@ -69,6 +69,15 @@ export type SkillBindingsPanelProps = {
   /** The inspector's refresh-and-select-new-version callback — fired after a bind/unbind lands a new
    *  immutable version (same contract as the editor's own save). */
   onVersionSaved: (newVersionId: string) => void;
+  /**
+   * RM-30 WP 7.3 — render as a pure REPORT: chips only, no picker, no unbind ×, no save path.
+   * The Inspector's Overview is the read/analyze register (D-UX17), and binding is now edited in the
+   * Studio's settings panel against the shared draft; a second, immediately-saving picker on a
+   * read-only tab is exactly the split-brain that deviation D-UX18 asked to close.
+   */
+  readOnly?: boolean;
+  /** Where "Edit in Studio" goes when {@link readOnly}. Omitted ⇒ no link is rendered. */
+  editInStudioTo?: string;
 };
 
 /**
@@ -82,6 +91,8 @@ export function SkillBindingsPanel({
   isHeadVersion,
   skillMdText,
   blockedReason = null,
+  readOnly = false,
+  editInStudioTo,
   onVersionSaved,
 }: SkillBindingsPanelProps) {
   // ── The declared binding list = the version's SAVED SKILL.md frontmatter `servers:` ──────────────
@@ -210,7 +221,10 @@ export function SkillBindingsPanel({
       : mdError
         ? `SKILL.md couldn’t be loaded: ${mdError}`
         : null);
-  const canManage = isHeadVersion && activeBlockedReason === null && busyKey === null;
+  // RM-30 WP 7.3 — `readOnly` collapses every management affordance at once, so a read-only host
+  // cannot end up with an unbind × on a chip because a later edit forgot one of the gates.
+  const canManage =
+    !readOnly && isHeadVersion && activeBlockedReason === null && busyKey === null;
 
   /** Run one binding edit end-to-end: fresh reads → mutate frontmatter → save-draft → hand over. */
   async function applyBindingEdit(
@@ -320,14 +334,14 @@ export function SkillBindingsPanel({
       </div>
 
       {/* Non-head hint: bindings are edited on the latest version only. */}
-      {!isHeadVersion ? (
+      {!isHeadVersion && !readOnly ? (
         <Text variant="meta" tone="muted">
           Viewing an older version — switch to Latest to change its server bindings.
         </Text>
       ) : null}
 
       {/* Blocked (host dirty / unreadable SKILL.md): a single inline reason, actions disabled. */}
-      {isHeadVersion && activeBlockedReason !== null ? (
+      {isHeadVersion && !readOnly && activeBlockedReason !== null ? (
         <Alert variant="warning">
           <AlertTriangle />
           <AlertTitle>Binding is unavailable right now</AlertTitle>
@@ -372,7 +386,7 @@ export function SkillBindingsPanel({
         </ul>
       )}
 
-      {isHeadVersion ? (
+      {isHeadVersion && !readOnly ? (
         <div className="flex">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -396,6 +410,18 @@ export function SkillBindingsPanel({
         </div>
       ) : null}
 
+      {readOnly && editInStudioTo ? (
+        <Button asChild variant="outline" size="sm" className="w-fit">
+          <Link to={editInStudioTo}>
+            <Pencil aria-hidden />
+            <span>Edit in Studio</span>
+          </Link>
+        </Button>
+      ) : null}
+
+      {/* The picker and the unbind confirm only ever mount for an editing host. */}
+      {readOnly ? null : (
+        <>
       <BindServerDialog
         open={bindOpen}
         onOpenChange={setBindOpen}
@@ -426,127 +452,8 @@ export function SkillBindingsPanel({
           if (unbindTarget !== null) void handleUnbind(unbindTarget);
         }}
       />
+        </>
+      )}
     </div>
-  );
-}
-
-/** One bound-server chip: the declared frontmatter name, its resolved tool count (or an honest "no
- *  tools yet" marker), and — when binding is available — the unbind ×. (Lifted from the Tools palette.) */
-function ServerChip({
-  name,
-  toolCount,
-  canUnbind,
-  onUnbind,
-}: {
-  name: string;
-  /** Resolved tool count from the bound-tools read; null ⇒ unscanned or not a registered name. */
-  toolCount: number | null;
-  canUnbind: boolean;
-  onUnbind: () => void;
-}) {
-  return (
-    <li className="min-w-0">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex min-w-0">
-            <Badge variant="outline" className="max-w-full gap-1 pe-0.5">
-              <Server className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-              <Text as="span" variant="meta" className="min-w-0 truncate font-mono" title={name}>
-                {name}
-              </Text>
-              {toolCount === null ? (
-                <CircleDashed className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-              ) : (
-                <Text as="span" variant="meta" tone="muted" className="shrink-0 tabular-nums">
-                  {toolCount}
-                </Text>
-              )}
-              {canUnbind ? (
-                <IconButton
-                  variant="ghost"
-                  size="icon"
-                  className="size-4 shrink-0"
-                  label={`Unbind server ${name}`}
-                  onClick={onUnbind}
-                >
-                  <X aria-hidden />
-                </IconButton>
-              ) : null}
-            </Badge>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          {toolCount === null
-            ? "No tools yet — the server has no completed scan, or no registered server matches this name."
-            : `${toolCount} ${toolCount === 1 ? "tool" : "tools"} from the latest completed scan.`}
-        </TooltipContent>
-      </Tooltip>
-    </li>
-  );
-}
-
-/** One TYPE-bound chip: the declared type name (Tags glyph), the type's lifecycle status, and the
- *  resolved representative member — or an honest "no representative yet" state when no member has a
- *  completed scan. The representative is chosen by the API resolver (D-ST3); this chip only reports it.
- *  (Lifted from the Tools palette.) */
-function TypeChip({
-  chip,
-  canUnbind,
-  onUnbind,
-}: {
-  chip: Extract<BindingChip, { kind: "type" }>;
-  canUnbind: boolean;
-  onUnbind: () => void;
-}) {
-  const label = chip.typeName ?? chip.name;
-  const hasRep = chip.representativeId !== null;
-  return (
-    <li className="min-w-0">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="inline-flex min-w-0">
-            <Badge variant="outline" className="max-w-full gap-1 pe-0.5">
-              <Tags className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-              <Text as="span" variant="meta" className="min-w-0 truncate font-mono" title={label}>
-                {label}
-              </Text>
-              <Text as="span" variant="meta" tone="muted" className="shrink-0">
-                Type
-              </Text>
-              {chip.status ? <ServerTypeStatusBadge status={chip.status} /> : null}
-              {hasRep && chip.toolCount !== null ? (
-                <Text as="span" variant="meta" tone="muted" className="shrink-0 tabular-nums">
-                  {chip.toolCount}
-                </Text>
-              ) : (
-                <CircleDashed className="size-3 shrink-0 text-muted-foreground" aria-hidden />
-              )}
-              {canUnbind ? (
-                <IconButton
-                  variant="ghost"
-                  size="icon"
-                  className="size-4 shrink-0"
-                  label={`Unbind server type ${label}`}
-                  onClick={onUnbind}
-                >
-                  <X aria-hidden />
-                </IconButton>
-              ) : null}
-            </Badge>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          {hasRep
-            ? `Server type — resolves to representative “${
-                chip.representativeName ?? "a scanned member"
-              }” (the member with the newest successful scan).${
-                chip.toolCount !== null
-                  ? ` ${chip.toolCount} ${chip.toolCount === 1 ? "tool" : "tools"} from its latest completed scan.`
-                  : ""
-              }`
-            : "Server type — no representative yet: no member has a completed scan. Tools appear once a member is scanned."}
-        </TooltipContent>
-      </Tooltip>
-    </li>
   );
 }
