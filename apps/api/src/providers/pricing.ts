@@ -160,7 +160,10 @@ export function resetPricingResolver(): void {
  * price — a genuinely unpriced model is not a "fallback", just unpriced, and must stay quiet). With
  * NO resolver installed: the pure code-table lookup (identical to the pre-WP2.6 behavior).
  */
-export function resolvePrice(model: string, opts?: PricingResolveOptions): ResolvedPrice | undefined {
+export function resolvePrice(
+  model: string,
+  opts?: PricingResolveOptions,
+): ResolvedPrice | undefined {
   const resolver = activeResolver;
   if (!resolver) return MODEL_PRICING[model];
   const hit = resolver.resolve(model, opts);
@@ -332,7 +335,8 @@ export function deriveProvider(model: string): string {
   const id = model.toLowerCase();
   if (id.startsWith("claude")) return "anthropic";
   if (id.startsWith("gpt") || /^o\d/.test(id) || id.startsWith("openai")) return "openai";
-  if (id.startsWith("gemini") || id.startsWith("google/") || id.startsWith("gemma")) return "google";
+  if (id.startsWith("gemini") || id.startsWith("google/") || id.startsWith("gemma"))
+    return "google";
   if (id.startsWith("grok")) return "xai";
   if (id.includes("mistral")) return "mistral";
   if (id.includes("llama")) return "meta";
@@ -373,4 +377,3 @@ export function buildSeedPricingRows(): SeedPricingRow[] {
     source: "seed",
   }));
 }
-

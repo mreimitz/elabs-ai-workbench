@@ -74,6 +74,9 @@ export function buildRunPlanEstimate(
       const { footprintTokens, hasFootprint } = resolveFootprint(deps.scans, serverIds);
       // WP2.6 — the launch preview prices through the DB-backed pricing map (the code table is the
       // seed + fallback), so an owner's edited price is reflected in the cost preview too.
+      // RM-33 WP 2.1 — the WHOLE resolved price is passed on. This used to be narrowed to
+      // `{ inPer1M, outPer1M }` right here, silently discarding `cachedInPer1M`/`cacheWritePer1M`,
+      // which is what left the preview unable to model prompt caching at all.
       const price = resolvePrice(scenario.model);
       return {
         environmentId: scenario.id,
@@ -84,7 +87,7 @@ export function buildRunPlanEstimate(
         hasFootprint,
         hasCostCap:
           scenario.guardrails.maxCostUsd !== undefined && scenario.guardrails.maxCostUsd !== null,
-        pricing: price ? { inPer1M: price.inPer1M, outPer1M: price.outPer1M } : null,
+        pricing: price ?? null,
         ...(scenario.guardrails.maxTurns ? { maxTurns: scenario.guardrails.maxTurns } : {}),
       } satisfies EstimateEnvInput;
     });
