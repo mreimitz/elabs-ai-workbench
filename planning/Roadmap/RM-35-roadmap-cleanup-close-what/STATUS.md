@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T19:40:00Z"
+timestamp: "2026-08-21T19:52:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -165,7 +165,12 @@ met and — where the box touches code — the gate
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade
       harness, perf pass). **Recheck the stale "blocked on Benchmarks P1/P3" flags first** — both
-      are done, exactly as RM-01's WP 2.1 flag was found stale on 2026-08-18
+      are done, exactly as RM-01's WP 2.1 flag was found stale on 2026-08-18.
+      **✅ RECHECKED AND CLEARED 2026-08-21** (done ahead of this WP, since it is read-only and it is
+      what makes the WP dispatchable). Both flags were false: `RM-07`'s **Phase 1 is 4/4** and
+      **Phase 3 is 5/5**. RM-18's ledger note now says so and records that **nothing in that item is
+      blocked on another workstream** — so WP 4.1 can be dispatched whenever the owner wants it, with
+      no unblocking work first. This is the **second** stale blocked-flag found in RM-18 this way.
 - [ ] WP 4.2 — **RM-25** team-server, 6 WPs. Its gate (RM-08 Phase 1) is met. Starting it revises
       the "single-owner local" scope in CLAUDE.md §1, so it is a product decision, not scheduling
 - [x] WP 4.3 — **RM-19** release — **done 2026-08-21 · `RM-19` → `Roadmap/completed/RM-19-release`,
