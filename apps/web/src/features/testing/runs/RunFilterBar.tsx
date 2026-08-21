@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import {
+  ANSWER_VALIDATION_VERDICTS,
+  FIX_TARGETS,
+  INSIGHT_SURPLUS_VERDICTS,
+  ROOT_CAUSE_BUCKETS,
   RUN_OUTCOMES,
   RUN_PHASES,
   RUN_STATUSES,
@@ -86,7 +90,13 @@ export type FilterFieldKey =
   | "interactiveOnly"
   | "needsAttention"
   | "feedback"
-  | "hasError";
+  | "hasError"
+  // Auto-rating dimensions (RM-17 Phase 6, AM-OB12) — the verdicts RM-06's always-on base graders
+  // already record, made reachable from the feed as well as from a chart's filter.
+  | "answerVerdict"
+  | "insightVerdict"
+  | "errorBucket"
+  | "errorFixTarget";
 
 const FIELD_LABELS: Record<FilterFieldKey, string> = {
   status: "Status",
@@ -107,6 +117,10 @@ const FIELD_LABELS: Record<FilterFieldKey, string> = {
   needsAttention: "Needs attention",
   feedback: "Feedback",
   hasError: "Has error",
+  answerVerdict: "Answer",
+  insightVerdict: "Insight",
+  errorBucket: "Root cause",
+  errorFixTarget: "Fix target",
 };
 
 /**
@@ -121,6 +135,12 @@ const FIELD_GROUPS: { label: string; fields: FilterFieldKey[] }[] = [
   { label: "Lifecycle", fields: ["status", "outcome"] },
   { label: "Scope", fields: ["model", "serverId", "scenarioId", "suiteId", "skillId"] },
   { label: "Metrics", fields: ["date", "score", "cost", "duration"] },
+  // AM-OB12 — its own group rather than folded into Metrics: these read the auto-rating verdicts,
+  // which are a SEPARATE dimension from the expectation scores `Score` filters on (AR6).
+  {
+    label: "Rating",
+    fields: ["answerVerdict", "insightVerdict", "errorBucket", "errorFixTarget"],
+  },
   { label: "Other", fields: ["pinned", "interactiveOnly", "needsAttention", "hasError", "feedback"] },
 ];
 
@@ -153,6 +173,37 @@ const STOP_REASON_OPTIONS: RunFilterOption[] = STOP_REASON_CODES.map((v) => ({
 }));
 const PHASE_OPTIONS: RunFilterOption[] = RUN_PHASES.map((v) => ({ value: v, label: humanizeToken(v) }));
 
+// AM-OB12 — the FROZEN RM-06 vocabularies, rendered. `humanizeToken` would title-case `mcp_server`
+// into "Mcp Server", so the two id-shaped vocabularies get hand-written labels.
+const ANSWER_VERDICT_OPTIONS: RunFilterOption[] = ANSWER_VALIDATION_VERDICTS.map((v) => ({
+  value: v,
+  label: humanizeToken(v),
+}));
+const INSIGHT_VERDICT_OPTIONS: RunFilterOption[] = INSIGHT_SURPLUS_VERDICTS.map((v) => ({
+  value: v,
+  label: v === "none" ? "None (stayed on-ask)" : humanizeToken(v),
+}));
+const ROOT_CAUSE_LABELS: Record<(typeof ROOT_CAUSE_BUCKETS)[number], string> = {
+  skill: "Skill",
+  mcp_server: "MCP server",
+  model_behavior: "Model behavior",
+  test_setup: "Test setup",
+  provider_infra: "Provider infra",
+};
+const FIX_TARGET_LABELS: Record<(typeof FIX_TARGETS)[number], string> = {
+  skill: "Skill",
+  mcp_server: "MCP server",
+  none: "No actionable fix",
+};
+const ROOT_CAUSE_OPTIONS: RunFilterOption[] = ROOT_CAUSE_BUCKETS.map((v) => ({
+  value: v,
+  label: ROOT_CAUSE_LABELS[v],
+}));
+const FIX_TARGET_OPTIONS: RunFilterOption[] = FIX_TARGETS.map((v) => ({
+  value: v,
+  label: FIX_TARGET_LABELS[v],
+}));
+
 const MULTI_FIELD_KEYS = new Set<FilterFieldKey>([
   "status",
   "outcome",
@@ -162,6 +213,10 @@ const MULTI_FIELD_KEYS = new Set<FilterFieldKey>([
   "serverId",
   "scenarioId",
   "skillId",
+  "answerVerdict",
+  "insightVerdict",
+  "errorBucket",
+  "errorFixTarget",
 ]);
 
 /** Strip one field's own key(s) from a filter, immutably. */
@@ -182,6 +237,10 @@ function clearField(filter: RunFilter, field: FilterFieldKey): RunFilter {
     case "needsAttention":
     case "hasError":
     case "feedback":
+    case "answerVerdict":
+    case "insightVerdict":
+    case "errorBucket":
+    case "errorFixTarget":
       delete next[field];
       return next;
     case "date":
@@ -247,6 +306,14 @@ function isFieldActive(filter: RunFilter, field: FilterFieldKey): boolean {
       return filter.hasError !== undefined;
     case "feedback":
       return filter.feedback !== undefined;
+    case "answerVerdict":
+      return (filter.answerVerdict?.length ?? 0) > 0;
+    case "insightVerdict":
+      return (filter.insightVerdict?.length ?? 0) > 0;
+    case "errorBucket":
+      return (filter.errorBucket?.length ?? 0) > 0;
+    case "errorFixTarget":
+      return (filter.errorFixTarget?.length ?? 0) > 0;
     default: {
       const _exhaustive: never = field;
       return _exhaustive;
@@ -274,6 +341,14 @@ function optionsFor(field: FilterFieldKey, data: RunFilterOptionData): RunFilter
       return data.skills;
     case "suiteId":
       return data.suites;
+    case "answerVerdict":
+      return ANSWER_VERDICT_OPTIONS;
+    case "insightVerdict":
+      return INSIGHT_VERDICT_OPTIONS;
+    case "errorBucket":
+      return ROOT_CAUSE_OPTIONS;
+    case "errorFixTarget":
+      return FIX_TARGET_OPTIONS;
     default:
       return [];
   }
@@ -347,6 +422,16 @@ function summarize(field: FilterFieldKey, filter: RunFilter, data: RunFilterOpti
       if (filter.feedback?.hasScore) parts.push("scored");
       return parts.length > 0 ? parts.join(", ") : "Any";
     }
+    case "answerVerdict":
+      return filter.answerVerdict ? labelsFor(filter.answerVerdict, ANSWER_VERDICT_OPTIONS) : null;
+    case "insightVerdict":
+      return filter.insightVerdict
+        ? labelsFor(filter.insightVerdict, INSIGHT_VERDICT_OPTIONS)
+        : null;
+    case "errorBucket":
+      return filter.errorBucket ? labelsFor(filter.errorBucket, ROOT_CAUSE_OPTIONS) : null;
+    case "errorFixTarget":
+      return filter.errorFixTarget ? labelsFor(filter.errorFixTarget, FIX_TARGET_OPTIONS) : null;
     default: {
       const _exhaustive: never = field;
       return _exhaustive;
