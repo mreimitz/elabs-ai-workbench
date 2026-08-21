@@ -48,6 +48,7 @@ import { PageShell } from "../../../components/PageShell";
 import { ViewToolbar } from "../../../components/ViewToolbar";
 import { useRouteCrumb } from "../../../components/route-crumb";
 import { notifyError } from "../../../lib/notify";
+import { TurnBasisNote } from "../turn-basis";
 import { SuiteEditor } from "./SuiteEditor";
 import { suiteStatusBadge } from "./SuiteRunConsole";
 
@@ -548,12 +549,17 @@ export function SuiteDetail() {
                 {runEstimateError}
               </Text>
             ) : runEstimate ? (
-              <Text variant="meta" tone="muted" className="tabular-nums">
-                ≈ {formatEstimateRange(runEstimate.tokens.low, runEstimate.tokens.high)} tokens
-                {runEstimate.environmentCount > runEstimate.unpricedEnvironmentCount
-                  ? ` · ${formatCostUsd(runEstimate.costUsd.low)}–${formatCostUsd(runEstimate.costUsd.high)} (estimate)`
-                  : ""}
-              </Text>
+              <>
+                <Text variant="meta" tone="muted" className="tabular-nums">
+                  ≈ {formatEstimateRange(runEstimate.tokens.low, runEstimate.tokens.high)} tokens
+                  {runEstimate.environmentCount > runEstimate.unpricedEnvironmentCount
+                    ? ` · ${formatCostUsd(runEstimate.costUsd.low)}–${formatCostUsd(runEstimate.costUsd.high)} (estimate)`
+                    : ""}
+                </Text>
+                {/* RM-34 WP 1.3 (D-ET5) — where that band's turn model came from; renders nothing
+                    on a response that predates the measurement. */}
+                <TurnBasisNote estimate={runEstimate} />
+              </>
             ) : null
           ) : variantCount > 0 ? (
             <Text variant="meta" tone="muted">

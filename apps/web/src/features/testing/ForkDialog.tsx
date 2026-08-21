@@ -20,6 +20,7 @@ import { estimateRunPlan, rerunRun } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
 import { formatNumber } from "../../lib/format";
 import { SelectField } from "../../components/SelectField";
+import { TurnBasisNote } from "./turn-basis";
 
 const WHOLE_RUN = "__whole__";
 
@@ -236,6 +237,10 @@ export function ForkDialog(props: {
                 <span>~{formatNumber(estimate.tokens.mid)} tokens</span>
                 <span>~${estimate.costUsd.mid.toFixed(4)}</span>
               </div>
+              {/* RM-34 WP 1.3 (D-ET5) — this is a mid-point, not a band, but it is driven by the
+                  same turn model, so it says where that model came from too. Renders nothing on a
+                  response that predates the measurement. */}
+              <TurnBasisNote estimate={estimate} className="mt-1 text-pretty" />
             </div>
           ) : null}
 

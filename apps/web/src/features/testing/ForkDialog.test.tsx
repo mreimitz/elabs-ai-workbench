@@ -119,3 +119,41 @@ test("a whole-run-only backend hides the fork-point selector", async () => {
     screen.getByText(/whole-run re-run only/i),
   ).toBeInTheDocument();
 });
+
+// --- RM-34 WP 1.3 (D-ET5) — the estimate says where its turn model came from -------------------
+
+const MEASURED: RunPlanEstimate = {
+  ...ESTIMATE,
+  environments: [
+    {
+      environmentId: "scn-1",
+      name: "Env",
+      model: "claude-sonnet-4",
+      priced: true,
+      footprintTokens: 2000,
+      hasCostCap: true,
+      tokens: { low: 100, mid: 200, high: 300 },
+      costUsd: { low: 0.001, mid: 0.002, high: 0.003 },
+      turnProfile: {
+        basis: "pair",
+        sampleSize: 51,
+        turns: { low: 5, mid: 9, high: 19 },
+        outputTokensPerTurn: 1036,
+      },
+    },
+  ],
+};
+
+test("the estimate names its turn basis and sample size when the response carries one", async () => {
+  vi.mocked(api.estimateRunPlan).mockResolvedValue(MEASURED);
+  renderDialog();
+  const note = await screen.findByText(/past runs of this test on this environment\./);
+  expect(note.textContent).toBe("Turn count from 51 past runs of this test on this environment.");
+});
+
+test("with no turnProfile on the wire (the pre-WP-1.2 response) it claims nothing", async () => {
+  vi.mocked(api.estimateRunPlan).mockResolvedValue(ESTIMATE);
+  renderDialog();
+  expect(await screen.findByText(/200 tokens/)).toBeInTheDocument();
+  expect(screen.queryByText(/Turn count/)).not.toBeInTheDocument();
+});

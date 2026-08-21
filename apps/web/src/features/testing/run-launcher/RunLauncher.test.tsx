@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type {
   Collection,
   ProviderCredential,
@@ -158,5 +158,88 @@ describe("RunLauncher — effective-limits summary (WP3.4, D-US3/D-US7)", () => 
   test("an environment with a wall-cap guardrail shows that duration instead of 'No cap'", async () => {
     await openToConfigureStep([CAPPED_ENV], "Capped env");
     expect(kpiValue("Wall cap")).toBe("45m 0s");
+  });
+});
+
+// --- RM-34 WP 1.3 (D-ET5) — the cost preview says where its turn model came from ----------------
+// The launcher's estimate is debounced 300 ms behind `window.setTimeout`, so each of these drives
+// the wizard to Configure, then lets the debounce fire before reading the note.
+
+/**
+ * Point `estimateRunPlan` at this response (overriding the harness stub `openToConfigureStep`
+ * installed), then advance past the 300 ms debounce and flush the resolved fetch.
+ */
+async function settleCostPreview(response: RunPlanEstimate) {
+  vi.mocked(api.estimateRunPlan).mockResolvedValue(response);
+  await act(async () => {
+    vi.advanceTimersByTime(400);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
+function measuredEnvironment(
+  basis: "pair" | "environment" | "global" | "default",
+  sampleSize: number,
+  id = "scn-api",
+) {
+  return {
+    environmentId: id,
+    name: "API env",
+    model: "claude-sonnet-4",
+    priced: true,
+    footprintTokens: 2000,
+    hasCostCap: false,
+    tokens: { low: 100, mid: 150, high: 200 },
+    costUsd: { low: 0.01, mid: 0.015, high: 0.02 },
+    turnProfile: {
+      basis,
+      sampleSize,
+      turns: { low: 4, mid: 6, high: 16 },
+      outputTokensPerTurn: 1148,
+    },
+  } satisfies RunPlanEstimate["environments"][number];
+}
+
+describe("RunLauncher — the cost preview declares its turn basis (RM-34 WP 1.3, D-ET5)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test("a measured pair basis names the sample behind the band", async () => {
+    await openToConfigureStep([API_ENV], "API env");
+    await settleCostPreview({ ...ESTIMATE, environments: [measuredEnvironment("pair", 51)] });
+
+    const note = screen.getByText(/past runs of this test on this environment\./);
+    expect(note.textContent).toBe("Turn count from 51 past runs of this test on this environment.");
+  });
+
+  test("a plan mixing a pair environment and a default environment reports the ASSUMPTION", async () => {
+    await openToConfigureStep([API_ENV], "API env");
+    await settleCostPreview({
+      ...ESTIMATE,
+      environmentCount: 2,
+      environments: [
+        measuredEnvironment("pair", 51),
+        measuredEnvironment("default", 0, "scn-new"),
+      ],
+    });
+
+    expect(
+      screen.getByText("Turn count is an assumption — no past runs to measure."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/51 past runs/)).not.toBeInTheDocument();
+  });
+
+  test("with no turnProfile on the wire the preview reads exactly as it does today", async () => {
+    await openToConfigureStep([API_ENV], "API env");
+    await settleCostPreview(ESTIMATE);
+
+    // The band itself still renders — only the provenance line is withheld.
+    expect(screen.getByText(/\(estimate\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/Turn count/)).not.toBeInTheDocument();
   });
 });
