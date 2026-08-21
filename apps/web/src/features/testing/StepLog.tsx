@@ -222,6 +222,15 @@ export type StepLogProps = {
    */
   matchFilterMode?: "filtered" | "all";
   onMatchFilterModeChange?: (mode: "filtered" | "all") => void;
+  /**
+   * Observability (WP 3.5) — restrict the log to the steps behind ONE agent-graph node (the graph
+   * lens' click-through, carried in the URL as `?focus=`). It joins the existing facet/search
+   * cascade, so it composes with them rather than replacing them, and — critically — it is applied
+   * AFTER the run-wide economics are derived, so a focused row still shows its true token/cost delta
+   * against the FULL run rather than against its visible neighbour. `undefined`/`null` is a complete
+   * no-op: every existing caller renders byte-identically.
+   */
+  focusStepIds?: ReadonlySet<string> | null;
 };
 
 export function StepLog({
@@ -233,6 +242,7 @@ export function StepLog({
   highlightQuery = "",
   matchFilterMode = "filtered",
   onMatchFilterModeChange,
+  focusStepIds = null,
 }: StepLogProps) {
   const [search, setSearch] = useState("");
   const [typeFacet, setTypeFacet] = useState<string[]>([]);
@@ -277,6 +287,8 @@ export function StepLog({
   const needle = search.trim().toLowerCase();
   const filtered = useMemo(() => {
     return logicalSteps.filter((step) => {
+      // WP 3.5 — the agent-graph node focus is just one more filter in the cascade.
+      if (focusStepIds && !focusStepIds.has(step.id)) return false;
       if (typeFacet.length > 0 && !typeFacet.includes(step.type)) return false;
       if (serverFacet.length > 0 && !(step.serverId && serverFacet.includes(step.serverId)))
         return false;
@@ -284,7 +296,7 @@ export function StepLog({
       if (needle.length > 0 && !searchHaystack(step).includes(needle)) return false;
       return true;
     });
-  }, [logicalSteps, typeFacet, serverFacet, errorsOnly, needle]);
+  }, [logicalSteps, focusStepIds, typeFacet, serverFacet, errorsOnly, needle]);
 
   // Observability (WP 3.2) — a FLAT run (every step persisted before WP3.1, or an executor that
   // never emits `parentStepId`) renders the ORIGINAL DataTable branch below, byte-for-byte unchanged.

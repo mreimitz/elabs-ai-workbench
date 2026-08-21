@@ -5,6 +5,34 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — a run finally shows its shape
+
+The run console could tell you everything about a session except the one thing you ask first: what
+did the agent actually *do*? Chat, Steps, Turns and Trace are all sequences — to see that the agent
+called `search_docs`, answered, called it again, answered, and called it a third time, you had to
+read the whole list and hold the pattern in your head.
+
+A **Graph** lens now draws the run as a node-link diagram. *Aggregated* — the default — merges calls
+that share a name into one node carrying a **×N** counter, so a repeated loop renders as an actual
+cycle with a traversal count on the edge, and the run's shape is legible at a glance. *Expanded*
+unrolls every call into its own node, left to right in execution order. Node chips carry call count,
+tokens, cost and duration; a failing node states "1 error" in words behind a glyph rather than
+relying on a red border, and parentage (a judge call under its rating span) is a dashed line rather
+than a hue.
+
+Selecting a node reveals the **Steps** lens filtered to exactly the steps behind that node, with a
+banner naming it and a way back. The lens, its mode and the selected node all ride in the URL
+(`?lens=graph&graph=expanded&focus=…`), so the exact view is shareable, and the zero-parameter run
+URL still opens the console as it always did.
+
+Nothing is stored. The graph is a pure projection of steps the console already holds, so it grows
+live as a run streams and is byte-identical on replay. A run recorded before step hierarchy existed
+renders flat and says so, rather than implying a structure it never had. Cost is reported as
+**unknown** — never as `$0.00` — on a run that carries no per-step snapshots.
+
+Built on the design system's existing flow canvas: no new dependency, no schema change, no wire
+change, no migration.
+
 ## Unreleased — the app can be handed to someone who has no repository
 
 `docker compose up --build` needs the source tree, so anyone outside this repository could not run
