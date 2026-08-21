@@ -114,10 +114,13 @@ import type {
   TRANSPORT_TYPES,
   TRIGGER_KINDS,
   WAITING_INPUT_REASONS,
+  WATCH_NO_DATA_POLICIES,
   WATCH_NOTIFY_SEVERITIES,
   WATCH_RULE_TRIGGERS,
   WATCH_WINDOW_DURATIONS,
+  WATCH_WINDOW_LEVELS,
   WATCH_WINDOW_OPS,
+  WATCH_WINDOW_STATES,
 } from "./constants.js";
 // model-identity WP3.3 (D-MI10) — `HubUsageProviderCredentialBucket.billing` reuses the ONE billing
 // vocabulary from the D-MI6 registry rather than re-declaring a parallel union here.
@@ -2428,6 +2431,18 @@ export type WatchWindowDuration = (typeof WATCH_WINDOW_DURATIONS)[number];
 /** The comparison a windowed threshold uses ({@link WATCH_WINDOW_OPS}): value `op` threshold → breach. */
 export type WatchWindowOp = (typeof WATCH_WINDOW_OPS)[number];
 
+/** What a windowed rule does when its window contained NO runs ({@link WATCH_NO_DATA_POLICIES}).
+ *  Absent resolves to {@link WATCH_DEFAULT_NO_DATA_POLICY} (`hold`) — see `watch-state.ts`. */
+export type WatchNoDataPolicy = (typeof WATCH_NO_DATA_POLICIES)[number];
+
+/** The severity LEVEL a threshold crossing reached ({@link WATCH_WINDOW_LEVELS}): `alert` = the
+ *  rule's `threshold`, `warn` = the optional, strictly-less-severe `warnThreshold`. */
+export type WatchWindowLevel = (typeof WATCH_WINDOW_LEVELS)[number];
+
+/** The outcome of scoring ONE window ({@link WATCH_WINDOW_STATES}). `no_data` is a FIRST-CLASS
+ *  outcome, distinct from `ok` — a window with no runs is signal, not silence. */
+export type WatchWindowState = (typeof WATCH_WINDOW_STATES)[number];
+
 /**
  * A windowed rule's threshold config (WP4.2, D-OB19): "measure `op` threshold over `window`", evaluated
  * on grid-ALIGNED completed windows by the in-process scheduler. The measure math DELEGATES to the WP1.2
@@ -2449,7 +2464,17 @@ export type WatchWindowConfig = {
   /** The trailing-window width. */
   window: WatchWindowDuration;
   op: WatchWindowOp;
+  /** The ALERT threshold — the severity the rule's `notify` action carries as configured. */
   threshold: number;
+  /** OPTIONAL WARNING threshold, strictly LESS SEVERE than `threshold` for the configured `op`
+   *  (`>=` → below it; `<=` → above it). Crossing only this fires at a DEMOTED severity
+   *  (`critical`→`warning`→`info`); crossing `threshold` fires at the configured one. Absent = a
+   *  single-threshold rule, exactly as before (AM-OB10). */
+  warnThreshold?: number;
+  /** What an EMPTY window means for this rule. Absent = {@link WATCH_DEFAULT_NO_DATA_POLICY}
+   *  (`hold`: neither fire nor recover) — NOT the pre-AM-OB10 "treat it as recovery" behaviour,
+   *  which is now the explicit `ok` opt-in. */
+  noData?: WatchNoDataPolicy;
   /** Minutes to suppress re-fires while continuously breached (0 = fire every breaching window). */
   cooldownMinutes: number;
 };
@@ -2471,6 +2496,16 @@ export type WatchRule = {
   /** The end (ISO-8601, a grid boundary) of the most recent window the scheduler evaluated — the
    *  boot catch-up baseline (D-OB19). Absent until the rule has been evaluated at least once. */
   lastEvaluatedAt?: string;
+  /** PAUSED until this instant (ISO-8601), or absent = not paused (AM-OB10). Distinct from
+   *  `enabled: false`: a DISABLED rule is one you do not want; a PAUSED rule is one you know about
+   *  and want quiet until a time. A paused rule STILL evaluates and still records its state — it
+   *  only suppresses action dispatch, so it never comes back armed and blind. The pause expires on
+   *  its own (a timestamp in the past resolves to active); there is no sweep. */
+  pausedUntil?: string;
+  /** OPTIONAL minimum minutes between action dispatches, for an `on_terminal` rule (AM-OB10). Absent
+   *  = no limit, exactly as before — 50 matching runs fire 50 times. The windowed equivalent is
+   *  {@link WatchWindowConfig.cooldownMinutes}; the evaluator reads this ONLY for `on_terminal`. */
+  minIntervalMinutes?: number;
   actions: WatchAction[];
   createdAt: string;
   updatedAt: string;
@@ -2484,6 +2519,8 @@ export type WatchRuleInput = {
   filter: RunFilter;
   sample?: number;
   window?: WatchWindowConfig;
+  /** AM-OB10 — minimum minutes between action dispatches (`on_terminal` only). */
+  minIntervalMinutes?: number;
   actions: WatchActionInput[];
 };
 
@@ -2496,6 +2533,11 @@ export type WatchRulePatch = {
   filter?: RunFilter;
   sample?: number;
   window?: WatchWindowConfig;
+  /** AM-OB10 — minimum minutes between action dispatches (`on_terminal` only). */
+  minIntervalMinutes?: number;
+  /** AM-OB10 — pause the rule until this instant; `null` CLEARS the pause (resume). Omitted keeps
+   *  the stored value, like every other field on this patch. */
+  pausedUntil?: string | null;
   actions?: WatchActionInput[];
 };
 
@@ -2518,6 +2560,12 @@ export type WatchRuleEventResult = {
   value?: number;
   /** WP4.2 — true when the window completed while the app was away (boot catch-up, "while you were away"). */
   late?: boolean;
+  /** AM-OB10 — the severity LEVEL a `window_fire` reached (`warn` = the optional lower threshold).
+   *  Absent on a single-threshold rule's fire, which is always an `alert`. */
+  level?: WatchWindowLevel;
+  /** AM-OB10 — set on a marker produced by an EMPTY window (`window_no_data`, or a `window_fire`
+   *  under the `notify` no-data policy). `value` is then absent — never fabricated as 0. */
+  noData?: boolean;
 };
 
 /** One append-only audit row (`watch_rule_events`). `action` is the action type that ran, or a
@@ -2552,8 +2600,12 @@ export type WatchWindowPreviewPoint = {
   value: number | null;
   /** How many runs (or graded/duration samples) backed the value. */
   n: number;
-  /** Whether `value op threshold` held — i.e. the rule would have fired for this window. */
+  /** Whether the rule would have fired for this window — `alert`/`warn`, or a `no_data` window under
+   *  the `notify` policy. (Arm/cooldown state is NOT replayed; this is per-window scoring.) */
   wouldHaveFired: boolean;
+  /** AM-OB10 — the scored outcome. `no_data` is distinct from `ok`, so the pre-save preview shows
+   *  "nothing ran" instead of a healthy-looking gap. */
+  state: WatchWindowState;
 };
 
 /** `POST /api/watch-rules/preview` response (WP4.2). The per-window values MATCH the WP1.2 metrics
