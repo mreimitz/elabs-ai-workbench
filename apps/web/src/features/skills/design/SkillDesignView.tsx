@@ -32,6 +32,8 @@ export type SkillDesignViewProps = {
   | "onProblemsSummaryChange"
   | "initialSelectedNodeId"
   | "onSelectedNodeChange"
+  | "flowToolsContainer"
+  | "flowDetailContainer"
 >;
 
 /**

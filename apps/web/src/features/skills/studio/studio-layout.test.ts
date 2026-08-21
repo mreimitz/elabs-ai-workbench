@@ -13,18 +13,19 @@ import {
 
 // ── RM-30 WP 7.1 acceptance: "centre surface ≥60% viewport width at 1600×1000 with both rails open,
 //    more when collapsed" ──────────────────────────────────────────────────────────────────────────
-// jsdom has no layout engine, so this pins the ARITHMETIC the flex row performs rather than claiming
-// a measured pixel. The row is `[left rail: fixed] [centre: flex-1 min-w-0] [context: fixed]` inside
-// the app shell's `<main>`, so the centre is exactly `available − leftRail − contextPanel`.
+// jsdom has no layout engine, so this pins the ARITHMETIC the flex row performs. It is not a guess:
+// the constants were CALIBRATED against the running app at 1600×1000 (Chromium via Playwright,
+// `getBoundingClientRect` on each region), and the numbers below are the ones the browser painted.
 //
-// The honest wrinkle, stated rather than hidden: the Studio does NOT own the app's 256px global nav
-// sidebar. Against the width the route actually controls the bar is met with both rails open; against
-// the RAW viewport it is met in the default state (context panel collapsed, which is what the WP
-// specifies) and misses with both rails open, purely because of that sidebar.
+// Measured with the pre-calibration widths (w-60 / w-64): centre 937px = 58.6% — a real miss, caused
+// by the design system's ~13.125px root making `w-60` paint at 197px rather than the 240px a 16px
+// root would give. The rails were trimmed to `w-56` and re-measured rather than the bar being
+// re-interpreted.
 
 const VIEWPORT = 1600;
 const BOTH_OPEN = { leftCollapsed: false, contextCollapsed: false };
 const DEFAULT_STATE = { leftCollapsed: false, contextCollapsed: true };
+const BOTH_COLLAPSED = { leftCollapsed: true, contextCollapsed: true };
 
 describe("studioCentreWidthPx", () => {
   test("is what the flex row leaves after the two rails and the app sidebar", () => {
@@ -34,10 +35,11 @@ describe("studioCentreWidthPx", () => {
   });
 
   test("collapsing a rail gives the width back to the centre", () => {
-    expect(studioCentreWidthPx(VIEWPORT, DEFAULT_STATE)).toBe(
+    expect(studioCentreWidthPx(VIEWPORT, DEFAULT_STATE)).toBeCloseTo(
       studioCentreWidthPx(VIEWPORT, BOTH_OPEN) +
         STUDIO_CONTEXT_PANEL_WIDTH_PX -
         STUDIO_COLLAPSED_RAIL_WIDTH_PX,
+      5,
     );
   });
 
@@ -47,25 +49,32 @@ describe("studioCentreWidthPx", () => {
 });
 
 describe("the ≥60% centre-surface bar at 1600×1000", () => {
-  test("BOTH rails open: ≥60% of the width the route controls", () => {
-    expect(studioCentreShareOfPage(VIEWPORT, BOTH_OPEN)).toBeGreaterThanOrEqual(0.6);
+  test("BOTH rails open clears 60% of the VIEWPORT — the acceptance bar as written", () => {
+    expect(studioCentreShareOfViewport(VIEWPORT, BOTH_OPEN)).toBeGreaterThanOrEqual(0.6);
   });
 
-  test("the DEFAULT state (context panel collapsed) clears 60% of the raw viewport too", () => {
-    expect(studioCentreShareOfViewport(VIEWPORT, DEFAULT_STATE)).toBeGreaterThanOrEqual(0.6);
+  test("…and the pre-calibration rails would NOT have — the bar has real margin, not luck", () => {
+    // `w-60` + `w-64` at this app's root: 197 + 210 = 407px of rail → 937px of centre.
+    const preCalibrationCentre = VIEWPORT - APP_SIDEBAR_WIDTH_PX - 197 - 210;
+    expect(preCalibrationCentre / VIEWPORT).toBeLessThan(0.6);
+    // The shipped widths beat that by a margin measured in tens of px, not ones.
+    expect(studioCentreWidthPx(VIEWPORT, BOTH_OPEN) - preCalibrationCentre).toBeGreaterThan(20);
   });
 
-  test("both rails collapsed gives MORE than both open — the direction the WP requires", () => {
-    const bothCollapsed = { leftCollapsed: true, contextCollapsed: true };
-    expect(studioCentreShareOfPage(VIEWPORT, bothCollapsed)).toBeGreaterThan(
-      studioCentreShareOfPage(VIEWPORT, BOTH_OPEN),
-    );
+  test("the DEFAULT state (context panel collapsed) is comfortably clear", () => {
+    expect(studioCentreShareOfViewport(VIEWPORT, DEFAULT_STATE)).toBeGreaterThanOrEqual(0.65);
   });
 
-  test("with the global nav sidebar out of the way, both rails open clear 60% of the VIEWPORT", () => {
-    expect(
-      studioCentreShareOfViewport(VIEWPORT, BOTH_OPEN, { appSidebarOpen: false }),
-    ).toBeGreaterThanOrEqual(0.6);
+  test("collapsing gives MORE — strictly monotone in the direction the WP requires", () => {
+    const open = studioCentreShareOfViewport(VIEWPORT, BOTH_OPEN);
+    const oneOpen = studioCentreShareOfViewport(VIEWPORT, DEFAULT_STATE);
+    const none = studioCentreShareOfViewport(VIEWPORT, BOTH_COLLAPSED);
+    expect(oneOpen).toBeGreaterThan(open);
+    expect(none).toBeGreaterThan(oneOpen);
+  });
+
+  test("against the width the ROUTE controls it is clear by a wide margin", () => {
+    expect(studioCentreShareOfPage(VIEWPORT, BOTH_OPEN)).toBeGreaterThanOrEqual(0.7);
   });
 });
 

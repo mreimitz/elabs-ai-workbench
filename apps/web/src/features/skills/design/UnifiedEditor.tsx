@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import type {
   BoundTool,
@@ -179,6 +180,22 @@ export type UnifiedEditorProps = {
   /** Publish the selected node id on every change, so a host can carry it in the URL. Must be a
    *  stable (`useCallback`) reference. */
   onSelectedNodeChange?: (nodeId: string | undefined) => void;
+  /**
+   * Where the host wants the flow surface's Tools palette rendered — a DOM node in its own rail.
+   * Supplying BOTH this and {@link flowDetailContainer} (even as `null`) makes the flow pane render
+   * the canvas ALONE, so the host's rails and the pane's own side panels are never both on screen
+   * showing the same two things twice.
+   *
+   * It is a container, not an element callback, ON PURPOSE: the panel is PORTALLED, so it stays in
+   * THIS component's React tree (live draft, live bound tools, live insert-at-cursor) while painting
+   * inside the host's rail — and no element ever travels through host state, which is what would
+   * otherwise re-render the host on every editor render and can loop. `null` = the host is hosting
+   * but its container is not mounted right now (a collapsed rail, an inactive tab) ⇒ render nothing.
+   */
+  flowToolsContainer?: HTMLElement | null;
+  /** Where the host wants the Node details panel rendered. See {@link flowToolsContainer} — the two
+   *  travel together, and both are portal targets. */
+  flowDetailContainer?: HTMLElement | null;
 };
 
 /**
@@ -202,6 +219,8 @@ export function UnifiedEditor({
   onProblemsSummaryChange,
   initialSelectedNodeId,
   onSelectedNodeChange,
+  flowToolsContainer,
+  flowDetailContainer,
 }: UnifiedEditorProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -733,8 +752,15 @@ export function UnifiedEditor({
   const flowVisible = mode !== "code";
   const graphEmpty = flowGraph.nodes.length === 0;
 
+  // RM-30 WP 7.1 — when the host has taken BOTH side panels, the pane is the canvas alone and the
+  // panels are portalled into the host's rails.
+  const sidePanelsHosted = flowToolsContainer !== undefined && flowDetailContainer !== undefined;
+
   const flowPane = (
     <FlowPane
+      sidePanelsHosted={sidePanelsHosted}
+      toolsContainer={flowToolsContainer ?? null}
+      detailContainer={flowDetailContainer ?? null}
       skillId={skillId}
       versionId={versionId}
       graph={graph}
@@ -1075,6 +1101,12 @@ function CollapsedPanelRail({
 }
 
 type FlowPaneProps = {
+  /** RM-30 WP 7.1 — the host paints the Tools palette and the Node details panel in its own rails,
+   *  so this pane is the canvas alone (no resizable group, no collapse rails). */
+  sidePanelsHosted: boolean;
+  /** Portal targets for those two panels, when `sidePanelsHosted`. `null` ⇒ not mounted right now. */
+  toolsContainer: HTMLElement | null;
+  detailContainer: HTMLElement | null;
   skillId: string;
   versionId: string;
   graph: SkillGraph;
@@ -1097,6 +1129,9 @@ type FlowPaneProps = {
 };
 
 function FlowPane({
+  sidePanelsHosted,
+  toolsContainer,
+  detailContainer,
   skillId,
   versionId,
   graph,
@@ -1119,6 +1154,87 @@ function FlowPane({
 }: FlowPaneProps) {
   const tools = useCollapsibleSidePanel("tools");
   const detail = useCollapsibleSidePanel("detail");
+
+  // RM-30 WP 7.1 — the two side panels, defined ONCE and mounted in exactly one place: the host's
+  // rails when it asked for them, this pane's own resizable columns otherwise. The palette takes its
+  // collapse chevron as an argument, because only the in-pane mount has a column to collapse.
+  const renderToolsPanel = useCallback(
+    (onCollapse?: () => void): ReactNode => (
+      <ToolsPalette
+        graph={graph}
+        boundTools={boundTools}
+        loading={boundToolsLoading}
+        editMode
+        canInsert={canInsert}
+        onInsertTool={onInsertTool}
+        fluid
+        {...(onCollapse ? { onCollapse } : {})}
+      />
+    ),
+    [graph, boundTools, boundToolsLoading, canInsert, onInsertTool],
+  );
+  const detailPanel = useMemo<ReactNode>(
+    () => (
+      <NodeDetailPanel
+        skillId={skillId}
+        versionId={versionId}
+        graph={graph}
+        selectedNodeId={selectedNodeId}
+        editMode
+        edit={edit}
+        previewOnlyLabel={previewOnlyLabel}
+        boundTools={boundTools}
+        onRegisterInsert={onRegisterInsert}
+        onTestTool={onTestTool}
+        width="100%"
+      />
+    ),
+    [
+      skillId,
+      versionId,
+      graph,
+      selectedNodeId,
+      edit,
+      previewOnlyLabel,
+      boundTools,
+      onRegisterInsert,
+      onTestTool,
+    ],
+  );
+
+  const canvas = (
+    <div className="relative h-full w-full min-w-0">
+      {graphEmpty ? (
+        <StatePanel
+          kind="empty"
+          title="Nothing to design yet"
+          description="No sections were found in this version's SKILL.md. Add a command or section, or switch to code and start typing."
+        />
+      ) : (
+        <SkillGraphCanvas
+          nodes={nodes}
+          edges={edges}
+          onSelectNode={onSelectNode}
+          editable
+          onConnect={onConnect}
+          onEdgesDelete={onEdgesDelete}
+          onToolDrop={onToolDrop}
+        />
+      )}
+    </div>
+  );
+
+  if (sidePanelsHosted) {
+    return (
+      <div className="h-full min-h-0 overflow-hidden rounded-lg border border-border bg-card">
+        {canvas}
+        {/* Painted in the host's rails, still mounted HERE — so both panels read the same live draft
+            the canvas does, and nothing crosses the component boundary as state. */}
+        {toolsContainer ? createPortal(renderToolsPanel(), toolsContainer) : null}
+        {detailContainer ? createPortal(detailPanel, detailContainer) : null}
+      </div>
+    );
+  }
 
   return (
     <AdaptivePanelGroup
@@ -1145,15 +1261,7 @@ function FlowPane({
             onExpand={() => tools.setCollapsed(false)}
           />
         ) : (
-          <ToolsPalette
-            graph={graph}
-            boundTools={boundTools}
-            loading={boundToolsLoading}
-            editMode
-            canInsert={canInsert}
-            onInsertTool={onInsertTool}
-            onCollapse={() => tools.setCollapsed(true)}
-          />
+          renderToolsPanel(() => tools.setCollapsed(true))
         )}
       </ResizablePanel>
       <ResizableHandle withHandle aria-label="Resize the Tools panel" />
@@ -1166,25 +1274,7 @@ function FlowPane({
         minSize={30}
         className="min-w-0"
       >
-        <div className="relative h-full w-full min-w-0">
-          {graphEmpty ? (
-            <StatePanel
-              kind="empty"
-              title="Nothing to design yet"
-              description="No sections were found in this version's SKILL.md. Add a command or section, or switch to code and start typing."
-            />
-          ) : (
-            <SkillGraphCanvas
-              nodes={nodes}
-              edges={edges}
-              onSelectNode={onSelectNode}
-              editable
-              onConnect={onConnect}
-              onEdgesDelete={onEdgesDelete}
-              onToolDrop={onToolDrop}
-            />
-          )}
-        </div>
+        {canvas}
       </ResizablePanel>
 
       <ResizableHandle withHandle aria-label="Resize the Node details panel" />
@@ -1220,19 +1310,7 @@ function FlowPane({
             >
               <PanelRightClose aria-hidden />
             </IconButton>
-            <NodeDetailPanel
-              skillId={skillId}
-              versionId={versionId}
-              graph={graph}
-              selectedNodeId={selectedNodeId}
-              editMode
-              edit={edit}
-              previewOnlyLabel={previewOnlyLabel}
-              boundTools={boundTools}
-              onRegisterInsert={onRegisterInsert}
-              onTestTool={onTestTool}
-              width="100%"
-            />
+            {detailPanel}
           </div>
         )}
       </ResizablePanel>

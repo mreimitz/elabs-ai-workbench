@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { BoundTool, SkillFileNode, SkillGraph } from "@mcp-token-footprint/shared";
+import type { SkillFileNode } from "@mcp-token-footprint/shared";
 import {
   Button,
   Heading,
@@ -17,8 +17,7 @@ import { ViewToolbar } from "../../../components/ViewToolbar";
 import { DiscardChangesDialog } from "../../../components/UnsavedChangesGuard";
 import { SkillDesignView } from "../design/SkillDesignView";
 import type { SkillProblemsSummary } from "../design/ProblemsPanel";
-import { useBoundTools } from "../use-bound-tools";
-import { getSkillFiles, getSkillGraph } from "../skills-inspector-api";
+import { getSkillFiles } from "../skills-inspector-api";
 import { StudioContextPanel } from "./StudioContextPanel";
 import { StudioLeftRail, isStudioLeftRailTab, type StudioLeftRailTab } from "./StudioLeftRail";
 import { StudioRail } from "./StudioRail";
@@ -75,6 +74,7 @@ export function StudioShell({
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = readStudioUrlState(searchParams);
   const { mode, sel } = urlState;
+  void sel; // read below, once, for the mount-time selection seed
   const file = urlState.file ?? STUDIO_DEFAULT_FILE;
 
   const applyUrlState = useCallback(
@@ -123,14 +123,19 @@ export function StudioShell({
   // ── the editor's chrome, handed up through the WP 7.1 slots ──────────────────────────────────
   const [saveActions, setSaveActions] = useState<ReactNode>(null);
   const [problemsPanel, setProblemsPanel] = useState<ReactNode>(null);
+  // Where the editor PAINTS its two flow side panels: a mount point in each rail. The editor
+  // portals into these, so exactly one Tools palette and one Node details panel exist, they stay in
+  // the editor's tree (live draft, live bound tools), and nothing travels through this shell's state
+  // on every editor render. A `null` container simply means that rail is collapsed or on another
+  // tab right now, and the editor renders nothing there.
+  const [toolsContainer, setToolsContainer] = useState<HTMLDivElement | null>(null);
+  const [detailContainer, setDetailContainer] = useState<HTMLDivElement | null>(null);
   const [problemsSummary, setProblemsSummary] = useState<SkillProblemsSummary | null>(null);
   const [problemsOpen, setProblemsOpen] = useState(false);
   const [dirty, setDirty] = useState(false);
 
   // ── rail data (read-only; the editor owns the draft) ─────────────────────────────────────────
   const [files, setFiles] = useState<SkillFileNode[] | null>(null);
-  const [graph, setGraph] = useState<SkillGraph | null>(null);
-  const { boundTools, loading: boundToolsLoading } = useBoundTools(skillId, versionId);
 
   useEffect(() => {
     let cancelled = false;
@@ -142,21 +147,6 @@ export function StudioShell({
       .catch(() => {
         // The rail degrades to an empty tree; the editor is unaffected (it loads its own document).
         if (!cancelled) setFiles([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [skillId, versionId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setGraph(null);
-    getSkillGraph(skillId, versionId)
-      .then((response) => {
-        if (!cancelled) setGraph(response.graph);
-      })
-      .catch(() => {
-        if (!cancelled) setGraph({ nodes: [], edges: [], warnings: [] });
       });
     return () => {
       cancelled = true;
@@ -270,9 +260,7 @@ export function StudioShell({
               files={files}
               selectedFile={file}
               onSelectFile={setFile}
-              graph={graph}
-              boundTools={boundTools}
-              boundToolsLoading={boundToolsLoading}
+              toolsContainerRef={setToolsContainer}
               onVersionSaved={onVersionSaved}
               bindingBlockedReason={
                 dirty ? "Save or discard your unsaved edits before changing servers." : null
@@ -299,6 +287,8 @@ export function StudioShell({
               onProblemsOpenChange={setProblemsOpen}
               onProblemsSummaryChange={setProblemsSummary}
               onSelectedNodeChange={handleSelectedNodeChange}
+              flowToolsContainer={toolsContainer}
+              flowDetailContainer={detailContainer}
               {...(initialSel ? { initialSelectedNodeId: initialSel } : {})}
             />
           </section>
@@ -310,7 +300,7 @@ export function StudioShell({
             onCollapsedChange={setContextCollapsed}
             testId="studio-context-panel"
           >
-            <StudioContextPanel graph={graph} selectedNodeId={sel} />
+            <StudioContextPanel containerRef={setDetailContainer} />
           </StudioRail>
         </div>
 

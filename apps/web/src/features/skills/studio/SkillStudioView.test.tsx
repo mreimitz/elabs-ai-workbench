@@ -249,21 +249,38 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(screen.queryByTestId("studio-context-panel")).toBeNull();
   });
 
-  test("the context panel opens, persists its state, and shows the selected node", async () => {
+  test("the context panel opens onto the editor's OWN Node details panel, and collapses again", async () => {
     renderStudio("/skills/sk-1/studio?sel=sec-1");
     await waitForStudio();
 
     fireEvent.click(screen.getByRole("button", { name: "Show the Context panel" }));
-    await screen.findByTestId("studio-context-panel");
-    // The `?sel=` node is what the panel is ABOUT — that is what makes the param meaningful.
-    const node = await screen.findByTestId("studio-context-node");
-    // The label appears twice on purpose (the node's own title, and its heading path).
-    expect(within(node).getAllByText("Do the thing").length).toBeGreaterThan(0);
-    expect(within(node).getByText("Sub-routine")).toBeInTheDocument();
-    expect(within(node).getByText("3–5")).toBeInTheDocument();
+    const panel = await screen.findByTestId("studio-context-panel");
+    // Portalled in from the editor, not re-implemented here — so it is the live, editable panel and
+    // it is the ONLY one on screen (the centre surface no longer carries a second copy).
+    await waitFor(() =>
+      expect(within(panel).getByRole("heading", { name: "Node details" })).toBeInTheDocument(),
+    );
+    expect(screen.getAllByRole("heading", { name: "Node details" })).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("button", { name: "Hide the Context panel" }));
     await screen.findByTestId("studio-context-panel-collapsed");
+  });
+
+  test("the Tools palette lives in the rail ONLY — the centre surface is the canvas alone", async () => {
+    renderStudio();
+    await waitForStudio();
+
+    // Not mounted while the Files tab is active (Radix unmounts inactive tab content).
+    expect(screen.queryByRole("heading", { name: "Tools" })).toBeNull();
+
+    const rail = screen.getByTestId("studio-left-rail");
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+
+    const palette = await screen.findByRole("heading", { name: "Tools" });
+    expect(rail.contains(palette)).toBe(true);
+    // Exactly one palette — the editor portals its own in rather than the shell mounting a copy.
+    expect(screen.getAllByRole("heading", { name: "Tools" })).toHaveLength(1);
   });
 
   test("the mode toggle round-trips through ?mode=", async () => {

@@ -1,15 +1,14 @@
 import { useMemo } from "react";
-import type { BoundTool, SkillFileNode, SkillGraph } from "@mcp-token-footprint/shared";
+import type { SkillFileNode } from "@mcp-token-footprint/shared";
 import {
   ScrollArea,
   StatePanel,
   Tabs,
   TabsContent,
-  TabsList,
   TabsTrigger,
   Text,
 } from "@elabs-ai/components-ui";
-import { ToolsPalette } from "../design/ToolsPalette";
+import { ScrollableTabsList } from "../../../components/ScrollableTabsList";
 import { SkillBindingsPanel } from "../SkillBindingsPanel";
 import { WorkspaceTree } from "../workspace/WorkspaceTree";
 import { buildWorkingTree } from "../workspace/workspace-model";
@@ -19,11 +18,12 @@ import { buildWorkingTree } from "../workspace/workspace-model";
 // the later work packages replace them in place:
 //   • Files    — the existing `WorkspaceTree`, browse-only (WP 7.4 makes it the editable multi-tab
 //                workspace and wires create/rename/move/delete through the draft store).
-//   • Tools    — the existing `ToolsPalette`, read-only (WP 7.7 rebuilds it as the components
-//                palette with a collapsible MCP-servers section).
+//   • Tools    — the editor's OWN live Tools palette, PORTALLED into this rail rather
+//                than mounted a second time here. That matters: the palette carries insert-at-cursor
+//                and drag-to-reference against the live draft, which a second instance could not.
+//                (WP 7.7 rebuilds it as the components palette.)
 //   • Settings — the existing `SkillBindingsPanel` (WP 7.3 grows the full settings panel: name,
 //                description, servers, keywords, command entry points, on one draft store).
-// Nothing here writes to the editor's draft, so the Studio still has exactly ONE save path.
 
 export type StudioLeftRailTab = "files" | "tools" | "settings";
 
@@ -45,10 +45,11 @@ export type StudioLeftRailProps = {
   /** The file the centre surface has open — the Studio's `?file=` param. */
   selectedFile: string;
   onSelectFile: (path: string) => void;
-  /** The version's projected graph, for the palette's "referenced" set (`null` while it loads). */
-  graph: SkillGraph | null;
-  boundTools: BoundTool[];
-  boundToolsLoading: boolean;
+  /** Mount point for the editor's live Tools palette, which is PORTALLED in (see
+   *  `StudioContextPanel` for why): pass the setter from a `useState`. It goes `null` whenever the
+   *  Tools tab isn't the active one, because Radix unmounts inactive tab content — and the editor
+   *  then simply renders no palette. */
+  toolsContainerRef: (node: HTMLDivElement | null) => void;
   /** A bind/unbind lands a new immutable version — the Studio re-points onto it. */
   onVersionSaved: (newVersionId: string) => void;
   /** Set while the editor draft is dirty: binding and editing must never race for the save path. */
@@ -64,9 +65,7 @@ export function StudioLeftRail({
   files,
   selectedFile,
   onSelectFile,
-  graph,
-  boundTools,
-  boundToolsLoading,
+  toolsContainerRef,
   onVersionSaved,
   bindingBlockedReason,
 }: StudioLeftRailProps) {
@@ -80,11 +79,19 @@ export function StudioLeftRail({
       }}
       className="flex min-h-0 flex-1 flex-col"
     >
-      <TabsList className="mx-2 mt-2 shrink-0">
+      {/* A rail is narrow by design: the three triggers share its width evenly (layout-only
+          overrides — `flex-1` + a tighter inline gutter), and the strip still scrolls rather than
+          clipping unreachably if a future label is longer than the share. Measured at the shipped
+          184px rail: the default `px-3` triggers overflowed and "Settings" was cut mid-word. */}
+      <ScrollableTabsList
+        fullWidth
+        containerClassName="shrink-0 px-2 pt-2"
+        className="[&>button]:min-w-0 [&>button]:flex-1 [&>button]:px-1.5"
+      >
         <TabsTrigger value="files">Files</TabsTrigger>
         <TabsTrigger value="tools">Tools</TabsTrigger>
         <TabsTrigger value="settings">Settings</TabsTrigger>
-      </TabsList>
+      </ScrollableTabsList>
 
       <TabsContent value="files" className="flex min-h-0 flex-1 flex-col">
         {files === null ? (
@@ -111,18 +118,7 @@ export function StudioLeftRail({
       </TabsContent>
 
       <TabsContent value="tools" className="flex min-h-0 flex-1 flex-col">
-        {graph === null ? (
-          <StatePanel kind="loading" title="Loading tools…" loadingLabel="Loading tools…" />
-        ) : (
-          <ToolsPalette
-            graph={graph}
-            boundTools={boundTools}
-            loading={boundToolsLoading}
-            editMode={false}
-            canInsert={false}
-            onInsertTool={() => {}}
-          />
-        )}
+        <div ref={toolsContainerRef} className="flex min-h-0 flex-1 flex-col" />
       </TabsContent>
 
       <TabsContent value="settings" className="flex min-h-0 flex-1 flex-col">
