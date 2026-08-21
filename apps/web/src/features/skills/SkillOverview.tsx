@@ -232,8 +232,16 @@ export function SkillOverview({
           hover. This is a dense operator surface (a skill's frontmatter, token footprint and
           security surface), so the flat resting state is the better read and the glow is not
           re-enabled. Add `spotlight` on the grid — or on a single BentoGridItem — to bring it back. */}
-      <BentoGrid>
-        <BentoGridItem size="lg" className="flex min-w-0 flex-col">
+      {/* P2-5 (RM-36 WP 2.2) — `items-start`. `BentoGrid` lays out on `auto-rows-[14rem]`, so a
+          `size="lg"` tile is handed a 2-row (≈28rem) grid area and, under the default
+          `align-items: stretch`, FILLS it whether or not it has 28rem of content. The Frontmatter
+          card carried ~130px of empty space below `metadata.tags` for exactly that reason — height
+          coupled to the taller Token-footprint tile beside it rather than to its own content.
+          `items-start` lets each tile size to its content; `max-h-full` on the tiles caps that at
+          the grid area it was given, so a long frontmatter still scrolls inside the card
+          (`CardContent`'s `overflow-y-auto`) instead of spilling over the row below. */}
+      <BentoGrid className="items-start">
+        <BentoGridItem size="lg" className="flex min-w-0 max-h-full flex-col">
           <CardHeader className="flex-none flex-row items-center justify-between gap-2">
             <CardTitle>Frontmatter</CardTitle>
             <Badge variant={version.manifestValid ? "success" : "destructive"}>
@@ -283,7 +291,7 @@ export function SkillOverview({
           </CardContent>
         </BentoGridItem>
 
-        <BentoGridItem size="lg" aria-label="Token footprint" className="flex min-w-0 flex-col">
+        <BentoGridItem size="lg" aria-label="Token footprint" className="flex min-w-0 max-h-full flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Token footprint</CardTitle>
           </CardHeader>
@@ -322,7 +330,7 @@ export function SkillOverview({
           </CardContent>
         </BentoGridItem>
 
-        <BentoGridItem size="lg" className="flex min-w-0 flex-col">
+        <BentoGridItem size="lg" className="flex min-w-0 max-h-full flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Triggers</CardTitle>
           </CardHeader>
@@ -431,7 +439,7 @@ export function SkillOverview({
           </CardContent>
         </BentoGridItem>
 
-        <BentoGridItem size="md" className="flex min-w-0 flex-col">
+        <BentoGridItem size="md" className="flex min-w-0 max-h-full flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Security surface</CardTitle>
           </CardHeader>
@@ -478,7 +486,7 @@ export function SkillOverview({
         {/* Servers — the skill↔server (and server-type) binding surface, reachable here now that the
             Design-tab Tools palette that used to host it is hidden (O2b). Overview has no editor draft,
             so it is never binding-blocked; `body` is the committed SKILL.md text (seed, no load flash). */}
-        <BentoGridItem size="md" className="flex min-w-0 flex-col">
+        <BentoGridItem size="md" className="flex min-w-0 max-h-full flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Servers</CardTitle>
           </CardHeader>

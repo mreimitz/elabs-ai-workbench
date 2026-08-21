@@ -258,3 +258,77 @@ describe("ServersOverview — actions and states", () => {
     expect(groupLabels()).toEqual(["Production", "Untyped"]);
   });
 });
+
+/**
+ * RM-36 WP 2.2 · P2-2 — a card must not repeat what its own group heading already states.
+ *
+ * The measured defect: the section header reads `QLIK-SAAS · [Production] · 2`, and then EVERY card
+ * inside it repeats `[qlik-saas] [Production]` as chips. By the reduction filter that is removable
+ * without loss — the grouping IS the statement. The RISK chip stays, because it varies within a
+ * group. And because the status chips sat in the card's top-right `shrink-0` slot, they squeezed the
+ * title: `mcp-assets` clipped to `mcp-ass…` (81px shown against 90px needed).
+ */
+describe("ServersOverview — P2-2: cards don't repeat their group heading (RM-36 WP 2.2)", () => {
+  const STORAGE_PREFIX = "mcp-token-footprint.entity-browser.servers";
+  const qlik = serverType("t1", "qlik-saas");
+
+  test("drops the type + type-status chips from a card under a heading that names them", async () => {
+    mount({ servers: [server("a", "mcp-assets", "t1")], serverTypes: [qlik] });
+    await screen.findByRole("link", { name: "mcp-assets" });
+
+    // The section header states the type and its lifecycle status once, for the whole section…
+    const section = screen.getByRole("region", { name: "qlik-saas" });
+    const header = within(section).getByText("qlik-saas");
+    expect(within(header.parentElement as HTMLElement).getByText("Production")).toBeTruthy();
+
+    // …and the card inside it no longer repeats either.
+    const card = cardFor("mcp-assets");
+    expect(within(card).queryByText("qlik-saas")).toBeNull();
+    expect(within(card).queryByText("Production")).toBeNull();
+  });
+
+  test("KEEPS the risk chip on the card — it varies within a group", async () => {
+    getSecurityFleetSummary.mockResolvedValue([
+      {
+        serverId: "a",
+        serverName: "mcp-assets",
+        scanId: "scan_a",
+        scannedAt: "2026-08-20T10:00:00.000Z",
+        score: { value: 70, band: "medium" as const, analyzerVersion: 1 },
+        counts: { error: 1, warning: 0, info: 0, total: 1 },
+      },
+    ]);
+    mount({
+      servers: [server("a", "mcp-assets", "t1")],
+      serverTypes: [qlik],
+      scans: new Map([["a", scan("a")]]),
+    });
+    expect(await within(cardFor("mcp-assets")).findByText("Medium risk")).toBeTruthy();
+  });
+
+  test("keeps the type chips when NOTHING else states them (grouping switched off)", async () => {
+    window.localStorage.setItem(`${STORAGE_PREFIX}.group-by`, "none");
+    mount({ servers: [server("a", "mcp-assets", "t1")], serverTypes: [qlik] });
+    const card = cardFor("mcp-assets");
+    expect(await within(card).findByText("qlik-saas")).toBeTruthy();
+    expect(within(card).getByText("Production")).toBeTruthy();
+  });
+
+  test("gives the title row its width back — the status chips are no longer beside the name", async () => {
+    mount({ servers: [server("a", "mcp-assets", "t1")], serverTypes: [qlik] });
+    const title = await screen.findByRole("link", { name: "mcp-assets" });
+
+    // The card's header row is `[ title + badges column ][ shrink-0 action cluster ]`. The status
+    // chips used to live in that shrink-0 cluster, stealing width from the title beside it.
+    const titleColumn = title.parentElement as HTMLElement;
+    const headerRow = titleColumn.parentElement as HTMLElement;
+    const actionCluster = headerRow.lastElementChild as HTMLElement;
+    expect(actionCluster).not.toBe(titleColumn);
+
+    // Nothing but the per-card actions competes with the title for the row's width…
+    expect(within(actionCluster).queryByText("Not scanned")).toBeNull();
+    expect(within(actionCluster).getByRole("button", { name: "Scan mcp-assets" })).toBeTruthy();
+    // …and the chip is still rendered — it moved down onto the badges line under the title.
+    expect(within(titleColumn).getByText("Not scanned")).toBeTruthy();
+  });
+});

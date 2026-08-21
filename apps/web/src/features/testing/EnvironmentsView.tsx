@@ -109,6 +109,21 @@ export function EnvironmentsView() {
     return map;
   }, [providers]);
 
+  // P2-4 (RM-36 WP 2.2) — the ids in an environment's `allowedServers` that no longer resolve to a
+  // registered server. This page used to say nothing at all about them: the server row was simply
+  // absent from `/api/servers`, its `…/latest-scan` 404'd into a swallowed `catch`, and the only
+  // trace of the dangling reference was a red line in the browser console. A dangling reference is
+  // exactly the data-integrity signal an operator needs, so it is surfaced INLINE on the row it
+  // belongs to. It is a KNOWN state, not an exceptional one — hence a chip on the Servers cell, not
+  // an error banner over the page (see `interaction-guidelines.md`: surface every outcome, and the
+  // out-of-scope note in the WP spec: nothing about the environments API changes).
+  const knownServerIds = useMemo(() => new Set(servers.map((server) => server.id)), [servers]);
+  const missingServerCount = useCallback(
+    (scenario: Scenario) =>
+      scenario.allowedServers.filter((allowed) => !knownServerIds.has(allowed.serverId)).length,
+    [knownServerIds],
+  );
+
   const runCredentialTest = useCallback(async (provider: ProviderCredential) => {
     setTestingProviders((prev) => {
       const next = new Set(prev);
@@ -319,11 +334,14 @@ export function EnvironmentsView() {
         // pill vs `eager` a gray outline — arbitrary emphasis on one of two peers).
         cell: (row) => <Badge variant="secondary">{row.toolLoadingMode}</Badge>,
       }),
+      // P2-4 — the Servers count, plus an inline note when one of the referenced servers no longer
+      // resolves. Sorting still keys off the raw count, so the added note changes no ordering.
       col<Scenario>({
         id: "tools",
         header: "Servers",
         numeric: true,
         value: (row) => row.allowedServers.length,
+        cell: (row) => <AllowedServersCell scenario={row} missing={missingServerCount(row)} />,
       }),
       col<Scenario>({
         id: "profiles",
@@ -377,7 +395,7 @@ export function EnvironmentsView() {
         ),
       }),
     ],
-    [providerById, testingProviders, runCredentialTest, healthTick],
+    [providerById, testingProviders, runCredentialTest, healthTick, missingServerCount],
   );
 
   // Catalog archetype (audit §C): full-width, header fixed, the table scrolls INTERNALLY (default
@@ -543,6 +561,43 @@ export function EnvironmentsView() {
         </AlertDialogContent>
       </AlertDialog>
     </PageShell>
+  );
+}
+
+/**
+ * P2-4 (RM-36 WP 2.2) — the Servers count, and an INLINE note when this environment references a
+ * server that no longer resolves.
+ *
+ * The defect this closes: `GET /api/servers/<id>/latest-scan` 404s on every load for a dangling
+ * reference, and the page showed no error text, no `role="alert"`, no `role="status"` and no toast —
+ * the failure existed only in the browser console. `architecture.md` and `interaction-guidelines.md`
+ * both forbid swallowing a failure like that.
+ *
+ * It is deliberately NOT an error banner over the whole page. A dangling reference is a KNOWN state
+ * of the data (a server was deleted; the environment kept pointing at it), not an exceptional
+ * failure, so it reads as information on the row it belongs to: a warning chip naming how many of
+ * the environment's servers are gone. `role="status"` (polite) rather than `role="alert"`, for the
+ * same reason.
+ */
+function AllowedServersCell({ scenario, missing }: { scenario: Scenario; missing: number }) {
+  const total = scenario.allowedServers.length;
+  if (missing === 0) {
+    return <span className="tabular-nums">{formatNumber(total)}</span>;
+  }
+  return (
+    <span className="flex flex-wrap items-center justify-end gap-1.5">
+      <span className="tabular-nums">{formatNumber(total)}</span>
+      {/* A native `<output>` — its implicit role IS `status` (polite), so the note is announced
+          without an explicit `role`, which is what `lint/a11y/useSemanticElements` asks for. Layout
+          element only; the visible chip is still the design system's `Badge`. */}
+      <output>
+        <Badge variant="warning" className="font-normal">
+          {missing === 1
+            ? "1 server no longer available"
+            : `${missing} servers no longer available`}
+        </Badge>
+      </output>
+    </span>
   );
 }
 

@@ -1049,10 +1049,17 @@ export function RunLauncher({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        {/* WideDialog-tier sizing (audit §S17/S22): a wider-than-high modal with a STABLE height —
-            header (auto) · body (1fr, the step content scrolls) · footer (auto). Switching steps
-            never resizes the dialog. */}
-        <DialogContent className="grid h-[min(85vh,640px)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-[min(1080px,95vw)]">
+        {/* WideDialog-tier sizing (audit §S17/S22): a wider-than-high modal — header (auto) · body
+            (1fr, the step content scrolls) · footer (auto).
+
+            P2-3 (RM-36 WP 2.2): the height used to be FIXED at `min(85vh,640px)` so that switching
+            steps never resized the dialog. The price was step 1: two radio cards and then roughly
+            380px of empty space above the footer — a modal that is mostly nothing, on the first
+            thing an operator sees. The height is now a CAP, not a floor, so the dialog sizes to the
+            step it is showing; a `min-h` on the step pane below keeps a short step (or an empty
+            state) from collapsing to a sliver, which bounds how far the dialog can move between
+            steps. */}
+        <DialogContent className="grid max-h-[min(85vh,640px)] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0 sm:max-w-[min(1080px,95vw)]">
           <DialogHeader className="flex-none gap-1 border-b border-border px-6 py-4 pe-12 text-start">
             <DialogTitle>Run</DialogTitle>
             <DialogDescription>
@@ -1085,11 +1092,20 @@ export function RunLauncher({
                 onStepChange={setStep}
                 className="min-h-0 flex-1 gap-0"
               >
-                {/* Vertical step rail — the wizard's left column, doubling as a running summary. */}
-                <div className="w-60 shrink-0 overflow-y-auto border-e border-border bg-muted/30 p-4">
+                {/* Vertical step rail — the wizard's left column, doubling as a running summary.
+                    P2-3: widened 240px → 288px. `WizardSteps` truncates each step's title and
+                    description, and at `w-60` the rail's 240px minus its padding, the step bullet
+                    and the gap left ~172px — enough to clip "Tests & environments" to
+                    "Tests & environme…" with the panel beside it half empty. */}
+                <div className="w-72 shrink-0 overflow-y-auto border-e border-border bg-muted/30 p-4">
                   <WizardSteps className="gap-4" />
                 </div>
-                <div className="min-w-0 flex-1 overflow-y-auto px-6 py-5">
+                {/* `min-h-[20rem]`: a floor, not a height. With the dialog now sized to its step
+                    (P2-3), a short step would otherwise collapse the modal to a sliver — this keeps
+                    the three steps within a similar band so moving between them is a small change,
+                    not a jump. `overflow-y-auto` is unaffected: a min-height never fights a taller
+                    child, and 20rem sits well under the body's own cap. */}
+                <div className="min-h-[20rem] min-w-0 flex-1 overflow-y-auto px-6 py-5">
                   <WizardStep step={STEP_TYPE}>{typeStep}</WizardStep>
                   <WizardStep step={STEP_SELECT}>
                     {mode === "suite" ? suiteSelectStep : interactiveSelectStep}

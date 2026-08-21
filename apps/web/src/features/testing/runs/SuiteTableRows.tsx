@@ -15,13 +15,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   Skeleton,
-  StatusBadge,
+  StatusBadge as BrandStatusBadge,
   TableCell,
   TableRow,
   Text,
 } from "@elabs-ai/components-ui";
 import { IconButton } from "../../../components/IconButton";
 import { StatusBadge as AppStatusBadge } from "../../../components/StatusBadge";
+import { CLOSED_BADGE_STATUS_TONE } from "../../../lib/status";
 import {
   ChevronDown,
   ChevronRight,
@@ -42,7 +43,7 @@ import {
   SubscriptionCostMarker,
   isSubscriptionReference,
 } from "../../../components/SubscriptionCostMarker";
-import { formatGradePercent } from "../grade-format";
+import { formatGradePercent, SCORE_TONE_TO_BRAND, scoreTone } from "../grade-format";
 import { runStatusBadgeStatus, runStatusBadgeView } from "../RunBar";
 import { SuiteKpiRail } from "../suites/SuiteKpiRail";
 import { suiteStatusBadge } from "../suites/SuiteRunConsole";
@@ -287,7 +288,23 @@ export function SuiteTableRows({
         {show("seen") ? <TableCell className="text-muted-foreground">—</TableCell> : null}
         {show("status") ? (
           <TableCell>
-            <StatusBadge status={badge.status}>{badgeLabel}</StatusBadge>
+            {/* P2-1 (RM-36 WP 2.2) — ONE encoding per column. This row used to render `@elabs-ai/
+                components-ui`'s own closed-enum `StatusBadge` (which draws a leading state icon)
+                while every child run row below it rendered the app-local one (no icon), so a single
+                Status column carried two visual encodings in adjacent rows and read as two meanings.
+                The parent/child distinction is already carried by the indent + the expander. The
+                suite's own status VOCABULARY and tone are unchanged — `suiteStatusBadge` and its
+                tests are untouched; only the chip technology moves onto the shared renderer, via the
+                same `CLOSED_BADGE_STATUS_TONE` bridge `SuiteRunConsole`'s header already uses. */}
+            <AppStatusBadge
+              view={{
+                kind: "chip",
+                label: badgeLabel,
+                tone: CLOSED_BADGE_STATUS_TONE[badge.status],
+                spinner: badge.status === "running",
+                dashed: badge.status === "pending",
+              }}
+            />
           </TableCell>
         ) : null}
         {show("turns") ? <MetricCell pending={metricsPending}>{formatNumber(turns)}</MetricCell> : null}
@@ -306,8 +323,27 @@ export function SuiteTableRows({
           </MetricCell>
         ) : null}
         {showGrade ? (
-          <TableCell className="tabular-nums text-muted-foreground">
-            {passRate === null ? "—" : `${formatPercent(passRate * 100)} pass`}
+          <TableCell>
+            {/* P2-1 — ONE encoding per column. The pass rate used to be plain muted text directly
+                above child rows whose Grade cell renders CHIPS (`GradeChip`/`BaseVerdictChip`), so
+                the same column spoke twice. The number and its meaning are unchanged (same
+                `formatPercent`, same "pass" suffix); it now renders on the SAME chip technology and
+                the SAME `scoreTone` thresholds `GradeChip` uses, so parent and child read as one
+                measure. A suite with no graded members still reads as an em dash, never a red 0. */}
+            {passRate === null ? (
+              <Text variant="meta" tone="muted" className="tabular-nums">
+                —
+              </Text>
+            ) : (
+              <BrandStatusBadge
+                status={SCORE_TONE_TO_BRAND[scoreTone(passRate)]}
+                size="sm"
+                hideIcon
+                className="tabular-nums"
+              >
+                {formatPercent(passRate * 100)} pass
+              </BrandStatusBadge>
+            )}
           </TableCell>
         ) : null}
         {show("started") ? (
@@ -324,15 +360,19 @@ export function SuiteTableRows({
         ) : null}
         <TableCell className={pinCell("right", "muted")}>
           <div className="flex items-center justify-end gap-1">
+            {/* P2-1 — ONE verb per column. This read "Open console" directly above child rows
+                whose action reads "Open", for the same gesture (drill into that row's console).
+                Same button variant/size as the run rows, so the column has one shape and one word. */}
             <Button
               variant="outline"
               size="sm"
+              aria-label={`Open ${name} suite console`}
               onClick={(event) => {
                 event.stopPropagation();
                 onOpenConsole();
               }}
             >
-              Open console
+              Open
             </Button>
             {onRun ? (
               <DropdownMenu>
@@ -571,8 +611,23 @@ export function MemberRow({
         primaryScore === undefined ? (
           <TableCell aria-hidden />
         ) : (
-          <TableCell className="tabular-nums text-muted-foreground">
-            {primaryScore === null ? "—" : formatGradePercent(primaryScore)}
+          <TableCell>
+            {/* P2-1 — the same ONE encoding the suite summary row and the standalone run row use:
+                a score is a chip toned by `scoreTone`, an absent score is an em dash. */}
+            {primaryScore === null ? (
+              <Text variant="meta" tone="muted" className="tabular-nums">
+                —
+              </Text>
+            ) : (
+              <BrandStatusBadge
+                status={SCORE_TONE_TO_BRAND[scoreTone(primaryScore)]}
+                size="sm"
+                hideIcon
+                className="tabular-nums"
+              >
+                {formatGradePercent(primaryScore)}
+              </BrandStatusBadge>
+            )}
           </TableCell>
         )
       ) : null}
