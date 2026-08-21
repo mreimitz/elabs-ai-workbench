@@ -257,11 +257,15 @@ export function KpiRail({
                 <span className="tabular-nums">{formatCostUsd(costUsd)}</span>
               )
             }
-            description={
-              <Text variant="meta" tone="muted">
-                {costDescription}
-              </Text>
-            }
+            // RM-36 P1-4 — a PLAIN STRING, never a `<Text>`. `MetricCard` already renders its
+            // `description` inside `<p className="text-meta font-normal text-muted-foreground">`, so
+            // wrapping this line in a `<Text>` (itself a `<p>`) put a `<p>` inside a `<p>`: invalid
+            // HTML the browser silently re-parents, and a React error on EVERY run-console load. The
+            // wrapper was also visually redundant — `variant="meta" tone="muted"` resolves to exactly
+            // `text-meta text-muted-foreground`, a subset of the classes the wrapper `<p>` carries —
+            // so the rendered line is byte-identical, wording included (D-CS4 owns that wording).
+            // Every other tile on this rail already passes its description as a plain string.
+            description={costDescription}
           />
         ) : null}
         {showTokens ? (
