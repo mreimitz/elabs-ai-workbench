@@ -3,7 +3,7 @@ type: "Documentation"
 title: "Testing console & run sessions"
 description: "How the workbench drives MCP servers through a real LLM agent loop and what a run session looks like across every backend."
 tags: ["documentation", "DC-08"]
-timestamp: "2026-08-21T11:54:11Z"
+timestamp: "2026-08-21T17:05:00Z"
 status: "current"
 ---
 
@@ -50,8 +50,9 @@ Completed 2026-08-21. Roadmap item: [RM-33](/Roadmap/completed/RM-33-cache-aware
 
 **Planned vs delivered:** The accounting was already correct — cost had always priced a cache read at ~0.1x and a write at 1.25x — so the workstream became a display and roll-up problem rather than a counting fix. Three things changed shape mid-plan. WP 3.1's dashboard panel was split out as WP 3.3 rather than ticked undelivered. WP 2.1's cost band changed dimension from turns to caching, which the plan's own acceptance criterion forced. And a first cut of the v59 backfill wrote 0/0 for six merged-only runs holding 107k to 1.2M tokens of real cache; running it against a copy of the real database caught that and made the backfill a three-way decision. WP 3.1's tab-stop accessibility decision was also reversed mid-build on the linter's advice.
 
-**Known gaps:** No hand-driven keyboard walk of the dashboard panel; its hover tooltip is unit-tested only because the dashboard chart stub no-ops ChartTooltip. The Step-log chip and compare delta rows have no two-theme or keyboard evidence. The estimate endpoint brackets a real run's cost but cannot land near it: the estimator's turn ceiling is 8 where the reference run took 19, so its absolute figures are proportionally low — the token model is now the dominant source of error and is a candidate for its own item. The DeltaMatrix table was deliberately left without cache columns, and fleet-report.ts was left alone because its aggregates are shaped differently. The judge-token aggregate asymmetry is recorded as a follow-up, not fixed.
+**Known gaps:** No hand-driven keyboard walk of the dashboard panel; its hover tooltip is unit-tested only because the dashboard chart stub no-ops ChartTooltip. The Step-log chip and compare delta rows have no two-theme or keyboard evidence. The estimate endpoint brackets a real run's cost but cannot land near it: the estimator's turn ceiling is 8 where the reference run took 19, so its absolute figures are proportionally low — the token model is now the dominant source of error and is a candidate for its own item. **That candidate became [RM-34](/Roadmap/RM-34-estimator-turn-model-calibrate/item.md), which closed the ceiling — the turn band is now measured from completed-run history and the reference run falls inside the token band — but found the estimator still wrong for a different reason (the per-turn prefix is charged in full from turn one). The user-facing behaviour is described in [9. Testing console](./09-testing.md#what-the-pre-launch-estimate-is-based-on); the measured evidence and the two follow-ups are in RM-34's ledger. Its `### RM-34` delivered increment lands here when the item is retired.** The DeltaMatrix table was deliberately left without cache columns, and fleet-report.ts was left alone because its aggregates are shaped differently. The judge-token aggregate asymmetry is recorded as a follow-up, not fixed.
 
 **Where the code lives:**
 
 - `packages/shared/src/token-usage.ts, packages/shared/src/types.ts, apps/api/src/providers/pricing.ts, apps/api/src/testing/accounting.ts, apps/api/src/db/database.ts, apps/api/src/observability/metrics.ts, apps/api/src/estimate/, apps/api/src/reports/, apps/web/src/components/TokenAmount.tsx, apps/web/src/features/dashboard/testing/CachePanel.tsx`
+

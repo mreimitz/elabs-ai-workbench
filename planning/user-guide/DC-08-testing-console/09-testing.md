@@ -3,7 +3,7 @@ type: "Guide Page"
 title: "9. Testing console \u2014 run a real session"
 description: "Scanning tells you what a server costs to load. The Testing console goes further: it drives"
 tags: ["documentation", "DC-08"]
-timestamp: "2026-08-21T19:00:00Z"
+timestamp: "2026-08-21T20:15:00Z"
 status: "current"
 ---
 # 9. Testing console — run a real session
@@ -92,6 +92,46 @@ know which sessions need a look.
 Before starting a run, the launcher shows an **effective limits** summary: the stall timeout, wait
 budget, wall-clock cap (if set), and the subscription run concurrency this session will be subject
 to. This tells you upfront what constraints will apply.
+
+### What the pre-launch estimate is based on
+
+Alongside the limits, the launcher shows an **estimated cost** — a token range and a dollar range
+for everything you're about to run. The single biggest thing driving that number is *how many turns
+the agent will take*, because an agent re-sends its context on every turn.
+
+The app doesn't guess at that any more. It reads the turn count off **your own completed runs**,
+preferring the narrowest evidence it has, and tells you which it used in a line under the band:
+
+- *"Turn count from 51 past runs of this test on this environment."* — the best case: this exact
+  pairing has enough history to speak for itself.
+- *"Turn count from 79 past runs on this environment."* — you selected several tests, so no single
+  pairing covers the whole plan; the environment's own history does.
+- *"Turn count from 122 past runs across all environments."* — a new environment with no runs yet.
+- *"Turn count is an assumption — no past runs to measure."* — a fresh install. This is the honest
+  label on the number the app has always shown.
+
+Only **completed** runs count. A run you stopped, or one that failed, tells you how long the
+interruption was rather than how long the task takes, so including it would drag the estimate down.
+A sample smaller than three runs is ignored entirely and the app falls back to the next-widest
+level, rather than building a range out of one or two data points. The same line appears wherever
+the estimate does — the run launcher, the suite run-confirm, and the fork dialog — and when a plan
+spans several environments, the line describes the *weakest* evidence behind the total, because the
+band is a sum and one unmeasured environment makes the whole figure partly assumed.
+
+The range stays a range on purpose. Even one test on one environment is genuinely variable — in this
+repository's own history, 51 runs of a single test put the 10th percentile at 5 turns and the 90th at
+16, with the longest run reaching 19. The ends of the range
+are the 10th and 90th percentile of what actually happened, so roughly one run in ten will land
+above the top and one in ten below the bottom. If a scenario sets a **max turns** guardrail, it caps
+the estimate too, and it is applied last.
+
+**Treat it as a bound, not a forecast.** The turn count is now measured, but the tokens-per-turn
+arithmetic still assumes the agent re-sends the environment's entire tool catalogue on every turn
+from the first one. For environments using deferred tool loading — where tool definitions are pulled
+in on demand — that over-states a short run by two to three times, and it means the dollar range's
+lower end can sit above what a typical run really costs. Both are known and written down; see
+[`RM-34`](/Roadmap/RM-34-estimator-turn-model-calibrate/STATUS.md). The figure is advisory: it blocks
+nothing, and the run's real cost is measured as it goes.
 
 ## The run console
 

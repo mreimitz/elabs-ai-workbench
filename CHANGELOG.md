@@ -27,6 +27,44 @@ ledger; it was retired on 2026-08-21 and its delivery recorded. **It has never b
 end:** no bundle has been built and cold-started on a clean machine, `run.ps1` has never been
 syntax-checked or run on Windows, and `--publish` has never been exercised.
 
+## Unreleased — the launch estimate counts your own runs instead of guessing
+
+The pre-launch token and cost band assumed every run takes between **1 and 8 turns** and emits **350
+output tokens a turn**. Those four numbers were written when the preview shipped and were never
+checked against a run. Measured over 122 completed runs on the owner's own database, the median run
+takes **6** turns and the 90th percentile takes **16** — so `8` was never a ceiling, it was roughly
+the two-thirds mark.
+
+**The turn count now comes from your completed runs**, keyed narrowest-first: past runs of this test
+on this environment, else of this environment, else of everything, and only the static constants when
+there is genuinely no history. Stopped and errored runs are excluded — their turn count records how
+long the interruption was, not how long the task takes. Output tokens per turn are measured from the
+same sample, because measuring one and assuming the other would be incoherent. A scenario's
+`maxTurns` guardrail still caps the result, applied last.
+
+**The estimate says where its number came from.** Under the band, in the run launcher, the suite
+run-confirm and the fork dialog: *"Turn count from 51 past runs of this test on this environment."* —
+or, on a fresh install, *"Turn count is an assumption — no past runs to measure."* A band built from
+51 real runs and a band built from three frozen constants used to paint identically, which is how an
+8-turn ceiling survived unnoticed against a 19-turn run.
+
+**Measured live, and the honest result is mixed.** The turn band brackets **93–96%** of real runs
+where the old constants managed 49–61%, and the run that exposed the problem — 19 turns, 966,904
+tokens, $0.80 billed — now falls inside the token band, where the old ceiling put it 1.86× out of
+reach. But sharpening the turn count exposed a second error it had been hiding: the arithmetic
+charges an environment's entire scanned tool footprint on **every** turn from the first and never
+looks at the environment's tool-loading mode; fitted against real runs it over-states them by a
+roughly constant 93k–175k tokens. That is negligible on a long run and a 2–3× error on
+a short one — so the token band's overall *coverage* of real runs went **down**, and the cost band's
+floor, which is evaluated at the busiest plausible run length, now sits above the typical run's real
+cost. Neither was fixed here; both are recorded as follow-up work with the numbers behind them.
+
+Treat the band as a bound, not a forecast. No migration, no new dependency, no feature flag.
+
+Plan and evidence: [`planning/Roadmap/RM-34-estimator-turn-model-calibrate/`](./planning/Roadmap/RM-34-estimator-turn-model-calibrate/)
+(ledger: [`STATUS.md`](./planning/Roadmap/RM-34-estimator-turn-model-calibrate/STATUS.md), decisions
+D-ET1–D-ET8).
+
 ## Unreleased — you can see what prompt caching is doing
 
 A run console could report **Tokens ↑ 958,457** while, two tabs away, a chart showed a single turn as
