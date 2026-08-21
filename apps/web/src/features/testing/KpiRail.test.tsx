@@ -336,9 +336,9 @@ describe("KpiRail — cache composition (RM-33)", () => {
       capabilities: ENGINE_CAPS,
       kpis: kpis({ tokensIn: 1000, cachedTokens: 900, cacheReadTokens: 900, cacheWriteTokens: 0 }),
     });
-    // 1,000, not the 100 a "helpful" subtraction would show. (The figure and its ↑ affix are separate
-    // text nodes inside one span, so match the container rather than an exact node.)
-    expect(screen.getByText((_, el) => el?.textContent === "1,000↑")).toBeInTheDocument();
+    // 1,000, not the 100 a "helpful" subtraction would show. No ↑ affix on the VALUE: the card's
+    // label already says "Tokens ↑" and carries an ArrowUp icon, so a third arrow would be noise.
+    expect(screen.getByText("1,000")).toBeInTheDocument();
   });
 
   test("a run whose split is unknown reads EXACTLY as it did before RM-33", () => {

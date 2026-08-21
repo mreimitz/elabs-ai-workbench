@@ -270,7 +270,9 @@ export function KpiRail({
               className="min-w-0"
               icon={<ArrowUp aria-hidden />}
               label="Tokens ↑"
-              value={<TokenAmount value={tokensIn} usage={tokenUsage} direction="in" />}
+              // No `direction` affix: this card already says "Tokens ↑" in its label AND carries an
+              // ArrowUp icon, so a third arrow on the number is noise. The tooltip is what is wanted.
+              value={<TokenAmount value={tokensIn} usage={tokenUsage} />}
               // RM-33 — the answer to "why is this number so large". `hitRate` is null when the split
               // is unknown, and then the description reads exactly as it did before.
               description={
@@ -283,7 +285,7 @@ export function KpiRail({
               className="min-w-0"
               icon={<ArrowDown aria-hidden />}
               label="Tokens ↓"
-              value={<TokenAmount value={tokensOut} direction="out" />}
+              value={<TokenAmount value={tokensOut} />}
               description={`received (${tokenFidelityLabel})`}
             />
           </>

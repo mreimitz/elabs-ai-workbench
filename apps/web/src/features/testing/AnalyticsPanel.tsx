@@ -48,6 +48,7 @@ import type { RunStreamState } from "./use-run-stream";
 import { RunGantt } from "./RunGantt";
 import type { ConsoleNavRef, ConsolePane } from "./console-anchors";
 import {
+  type CachedTokenRow,
   deriveCachedTokenRows,
   deriveContextSegmentRows,
   deriveErrorRows,
@@ -461,7 +462,8 @@ function TokensTab({ stream }: { stream: RunStreamState }) {
           subtitle="Per-turn: uncached, served from cache, and written to cache"
         >
           {cachedRows.length > 0 ? (
-            <div className="h-56 w-full">
+            <>
+              <div className="h-56 w-full">
               <BarChart
                 data={cachedRows as unknown as Record<string, unknown>[]}
                 xDataKey="turn"
@@ -481,7 +483,11 @@ function TokensTab({ stream }: { stream: RunStreamState }) {
                   rows={(point) => cachedTooltipRows(point)}
                 />
               </BarChart>
-            </div>
+              </div>
+              {/* A three-series stack is unreadable without one, and telling a cache READ from a
+                  cache WRITE is the entire point of splitting them. */}
+              <CompositionLegend rows={cachedRows} />
+            </>
           ) : (
             <EmptyState
               title="No provider usage yet"
@@ -1094,6 +1100,45 @@ function SegmentLegend() {
           <span className="size-2.5 shrink-0 rounded-sm" style={chartSwatchStyle(i)} aria-hidden />
           <Text variant="meta" tone="muted">
             {SEGMENT_LABELS[seg]}
+          </Text>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * RM-33 — the input-composition legend. Each entry names what the colour costs, because the series
+ * that matters most is the counter-intuitive one: a cache WRITE is billed at 1.25x, MORE than an
+ * uncached token, and the pre-RM-33 chart's single "Cached" block hid that entirely.
+ *
+ * Only the series actually present are listed — a run with no cache writes should not advertise an
+ * empty one, and a merged-only run must show its own labelled series instead of the read/write pair
+ * it cannot resolve.
+ */
+function CompositionLegend({ rows }: { rows: CachedTokenRow[] }) {
+  const hasMerged = rows.some((r) => r.mergedCache !== null);
+  const hasWrite = rows.some((r) => (r.cacheWrite ?? 0) > 0);
+  const entries: { color: string; label: string }[] = [
+    { color: "var(--chart-3)", label: "Uncached" },
+  ];
+  if (hasMerged) {
+    entries.push({ color: "var(--chart-8)", label: "Cached (split unavailable)" });
+  } else {
+    entries.push({ color: "var(--chart-1)", label: "Cache read · ~0.1× rate" });
+    if (hasWrite) entries.push({ color: "var(--chart-5)", label: "Cache write · 1.25× rate" });
+  }
+  return (
+    <ul className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-2.5">
+      {entries.map((entry) => (
+        <li key={entry.label} className="flex items-center gap-1.5">
+          <span
+            className="size-2.5 shrink-0 rounded-sm"
+            style={{ backgroundColor: entry.color }}
+            aria-hidden
+          />
+          <Text variant="meta" tone="muted">
+            {entry.label}
           </Text>
         </li>
       ))}

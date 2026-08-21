@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T12:15:00Z"
+timestamp: "2026-08-21T15:10:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -178,8 +178,85 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
 
 ## Phase 3 — Surfaces
 
-- [ ] WP 3.1 — one token display grammar (`TokenAmount`) across console, runs feed, suites, dashboard
-      · spec: [`wp-3.1-display.md`](./wp-3.1-display.md) · depends on WP 1.2, WP 2.2
+- [x] WP 3.1 — one token display grammar (`TokenAmount`) across the console, runs feed and suites
+      — done 2026-08-21 · spec: [`wp-3.1-display.md`](./wp-3.1-display.md).
+      **`apps/web/src/components/TokenAmount.tsx`** is the app's FIRST token formatter — before it,
+      `lib/format.ts` had none and ~15 sites each hand-wrote `formatNumber(x)` plus a literal `↑`,
+      which is precisely why the cache composition could not be surfaced consistently. It renders the
+      GROSS figure unchanged and carries the breakdown in a tooltip, with three distinct behaviours:
+      an **exact** split names uncached / cache read (~0.1×) / cache write (**1.25×, a premium**) plus
+      the hit rate; a **merged** record says the split is unavailable rather than guessing; and **no
+      cache reported** renders byte-identically to the markup it replaced.
+      **Converted:** KPI rail (both tiles + the context popover's new indented cache rows), Trace
+      chips (`TraceNode`/`trace-tree` — where a cache-inclusive token count sat beside a
+      cache-discounted cost with nothing to reconcile them), Turns lens, Step log's Tokens ↑ column,
+      Packet inspector (`Cached input` → the two named halves; `Input` relabelled **gross** so the
+      rows below read as a decomposition, not an addition), the runs feed cell + a new opt-in
+      **Cache hit** column, and the suite KPI rail.
+      **Analytics is now three series, not two.** `deriveCachedTokenRows` returns
+      uncached / cacheRead / cacheWrite, with a merged-only turn routed to its own labelled series.
+      The Overview "Cached" tile's description changed from "900 of input" — which says nothing about
+      whether that was a discount or a premium — to "800 read · 100 written".
+      **The relationship note now answers the question that started this workstream.** It read
+      "Tokens ↑/↓ are cumulative sends/receives…"; it now adds "counted gross — 96.8% of what was sent
+      was served from cache and billed at a fraction of the rate", and reverts to the old wording
+      verbatim when the split is unknown (test-pinned).
+      **One a11y decision reversed mid-build, on the linter's advice and after re-thinking it.** The
+      first cut made the figure `tabIndex={0}` so a keyboard user could reach the tooltip, mirroring
+      `IconButton`. `a11y/noNoninteractiveTabindex` flagged it and was RIGHT: a runs table renders
+      dozens of token cells, and each becoming a tab stop turns scanning into an obstacle course. The
+      tab stop is gone; the breakdown is not, because the `sr-only` node is always in the DOM and
+      wired via `aria-describedby` — so assistive tech and touch (where a tooltip never fires) both
+      get it. The opposite trade-off from `IconButton`'s disabled-reason stop is deliberate: there the
+      reason is otherwise unreachable, here it is not. Recorded in the component's docblock.
+      **Teeth verified red before green, then restored:** (H) attributing a merged figure to
+      cache-read → red; (I) netting the gross figure by the cached slice → 3 red; (J) folding cache
+      write into the read series → 2 red; (K) attributing a merged chart row to cacheRead → red.
+      **Tooth J initially did NOT bite** — no test covered the new three-series derivation, so I wrote
+      seven (`deriveCachedTokenRows`) and re-ran it. Worth recording: the teeth check found a real
+      coverage gap, not just a passing formality.
+      **Gate green:** `typecheck` clean · shared **250** · illustrations **252** · cli **87** · api
+      **3589** · web **3726 passed / 5 skipped** (+24 web) · `build` clean · `lint` clean.
+      **VERIFIED AGAINST THE RUNNING APP, both themes.** The built API was started on port 8099
+      against an ISOLATED COPY of the owner's database in the scratchpad — the live `data/app.sqlite`
+      was never opened, never migrated and never written. Chromium screenshots at 1600×1100 in
+      `light` and `dark` (the theme set through the app's real `brand-ui-theme` +
+      `mcp-token-footprint.theme-preference` keys, so `ThemeProvider` genuinely applies it).
+      On run `SHsiRblmacvEOJi4gkalE` (369,841 gross input):
+      the Tokens ↑ tile reads **"sent · 96.2% from cache"**; the relationship note reads *"…counted
+      gross — 96.2% of what was sent was served from cache and billed at a fraction of the rate"*; and
+      the Analytics **"Input token composition"** panel's accessible description reads *"Uncached: 9.
+      Cache read: 355,791 (billed ~0.1×). Cache write: 14,041 (billed 1.25× — a premium). 96.2% served
+      from cache"* — 9 uncached tokens out of 369,841. Both themes render correctly.
+      **Three defects the screenshots caught that the test suite did not**, each fixed and re-verified:
+      (1) **the rail showed no cache line at all on a real run** — a finished console REPLAYS its
+      persisted `kpi` events, and every pre-RM-33 run's events carry no cache fields, so the fields
+      never reached the rail even though migration v59 had recovered them; fixed with
+      `withCacheFromSteps`, which fills them in from the per-step `usageActual` the steps have always
+      carried (this is the path almost every console view actually takes, so without it WP 3.1 would
+      have shipped visibly doing nothing); (2) **a tripled arrow** — the tile's label already says
+      "Tokens ↑" and it carries an ArrowUp icon, so the value's affix was noise; dropped; (3) **the
+      three-series chart had no legend**, making a cache read indistinguishable from a cache write at
+      a glance — which is the one distinction the split exists to make; added `CompositionLegend`,
+      which names each colour with what it costs and lists only the series actually present.
+      **Still not verified:** a keyboard walk (owner-acceptance below), and the dashboard panel, which
+      moved to WP 3.3 rather than being quietly dropped.
+      **Pre-existing, not introduced:** `KpiRail.test.tsx` emits two "nested `<p>`" React warnings;
+      the count is identical before and after this WP (verified by stashing the file), and the cause
+      is the Est. cost tile, which this WP does not touch.
+
+- [ ] WP 3.3 — the Testing dashboard's built-in cache panel · **split out of WP 3.1, not dropped**
+      · depends on WP 2.2
+      WP 3.1's spec included a dashboard cache-hit-rate chart; it is NOT built, so its box stays open
+      rather than being ticked inside a WP that did not deliver it.
+      **What already works without it:** `RUN_METRICS_MEASURES` is the single source for BOTH the
+      custom chart composer (`ChartComposerDialog.tsx:386`) and the windowed watch-rule editor
+      (`RuleEditorDialog.tsx:393`), and both iterate it directly — so as of WP 2.2 an operator can
+      already compose a cache-hit-rate chart and set an alert on it ("cache hit rate ≤ 50% over 24h")
+      with no further code. What is missing is only the BUILT-IN panel and its drill-down.
+      **Scope when picked up:** request the three measures alongside `tokensIn`/`tokensOut` in
+      `use-testing-dashboard-data.ts`, extend `buildTokensResult`, and render the unavailable state —
+      never a 0% line — when the API reports the measures in `unavailableMeasures`.
 - [ ] WP 3.2 — reports, compare export, workbench MCP run summary
       · spec: [`wp-3.2-exports.md`](./wp-3.2-exports.md) · depends on WP 1.2
 
@@ -190,14 +267,17 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
 
 ## Owner-acceptance (not tickable by an agent)
 
-- [ ] Open a real cached run's console in **both themes**: the Tokens ↑ tile's cache sub-line, the
-      Est. cost breakdown popover incl. "saved vs uncached", and the three-series Analytics stack all
-      reconcile with each other and with `GET /api/reports/run/:id/json`.
+- [x] Open a real cached run's console in **both themes** — done 2026-08-21 by screenshot against an
+      isolated copy of the real database (see WP 3.1). The Tokens ↑ sub-line, the relationship note
+      and the three-series Analytics stack all agree at 96.2%, and match
+      `GET /api/runs/:id`'s `cacheReadTokens`/`cacheWriteTokens`.
+      **Still owner's to judge:** whether the wording and the chart colours read well to you.
 - [ ] Hover a Trace turn chip — the split explains why that turn's cost sits far below list rate.
 - [ ] `/dashboard` Testing tab: the cache-hit-rate series renders, and a window made only of
       **pre-migration** runs shows the measure as *unavailable*, not `0%`.
 - [ ] `POST /api/estimate/run-plan` for a plan matching a finished cached run returns a range whose
       low end lands near that run's real cost and whose high end lands near its uncached cost.
+      **Blocked until WP 2.1 is built** — the estimate endpoint is still cache-blind.
 - [ ] Keyboard walk of every changed surface (tooltips reachable, visible focus).
 
 ## Log

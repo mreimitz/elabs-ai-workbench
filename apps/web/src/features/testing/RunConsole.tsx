@@ -12,7 +12,7 @@ import type {
   SessionCapabilities,
   Test,
 } from "@mcp-token-footprint/shared";
-import { MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
+import { MODEL_CONTEXT_LIMITS , usageSplitKind } from "@mcp-token-footprint/shared";
 import { SearchInput } from "@elabs-ai/components-data";
 import {
   Alert,
@@ -495,6 +495,13 @@ export function RunConsole({
   // two `tool_call` rows (engine `:step:` + MCP-sink `:mcp:`) that the Network/Console panels collapse
   // into one, so the badge must count the de-duped list (same transform the StepLog applies) to match
   // what the log actually shows.
+  // RM-33 — the rail's KPIs with the cache composition filled in from the steps when the (possibly
+  // pre-RM-33) `kpi` events don't carry it. See `withCacheFromSteps`.
+  const railKpis = useMemo(
+    () => withCacheFromSteps(viewStream.kpis, viewStream.steps),
+    [viewStream.kpis, viewStream.steps],
+  );
+
   const logicalStepCount = useMemo(
     () => dedupeToolSteps(viewStream.steps).length,
     [viewStream.steps],
@@ -1052,7 +1059,7 @@ export function RunConsole({
                   (`currentContextTokens`, the latest `step.context` total) so they always agree (S1).
                   The turn-0 baseline card stays above as the pre-run footprint until a snapshot lands. */}
               <KpiRail
-                kpis={viewStream.kpis}
+                kpis={railKpis}
                 contextLimit={contextLimit}
                 guardrails={guardrails}
                 currentContextTokens={currentContextTokens}
@@ -1605,6 +1612,20 @@ function withSummaryTotals(map: Map<string, RunKpis>, detail: RunDetail): Map<st
     ...(detail.costBasis ?? prev?.costBasis
       ? { costBasis: detail.costBasis ?? prev?.costBasis }
       : {}),
+    // RM-33 — the cache composition, from the RUN ROW. This is the load-bearing line for every
+    // REPLAYED run, which is most of them: the persisted `kpi` events of any run recorded before
+    // RM-33 carry no cache fields, so a replayed console would show the rail's gross `tokensIn` with
+    // nothing to explain it even though migration v59 recovered the split onto the row. Prefer the
+    // summary, fall back to whatever the replayed event stream happened to carry.
+    ...(detail.cachedTokens ?? prev?.cachedTokens) === undefined
+      ? {}
+      : { cachedTokens: detail.cachedTokens ?? prev?.cachedTokens },
+    ...(detail.cacheReadTokens ?? prev?.cacheReadTokens) === undefined
+      ? {}
+      : { cacheReadTokens: detail.cacheReadTokens ?? prev?.cacheReadTokens },
+    ...(detail.cacheWriteTokens ?? prev?.cacheWriteTokens) === undefined
+      ? {}
+      : { cacheWriteTokens: detail.cacheWriteTokens ?? prev?.cacheWriteTokens },
   });
   return map;
 }
@@ -1615,22 +1636,84 @@ function withSummaryTotals(map: Map<string, RunKpis>, detail: RunDetail): Map<st
  * step records; cost is the one figure the steps don't carry (it's only on the `kpi` events), so it
  * is left at 0 here and the id-map path supplies the real number.
  */
+/**
+ * RM-33 — fill a run's cache composition in from its STEPS when the `kpi` events do not carry it.
+ *
+ * This is not a nicety, it is the path almost every console view actually takes. A finished run is
+ * rendered by REPLAYING its persisted `kpi` events, and every run recorded before RM-33 has events
+ * with no cache fields — so the rail would show a gross `tokensIn` of, say, 369,841 with nothing to
+ * explain it, even though the per-step `usageActual` right beside it says 355,791 of that was a cache
+ * READ. The steps are the durable source (they have always carried the full `TokenUsageActual`), so
+ * we prefer the event's own values and fall back to summing them.
+ *
+ * Only an EXACT split contributes to the halves: a turn reporting one merged figure leaves them
+ * unknowable, and summing it as a "read" would show a possible 1.25x premium as a 0.1x discount
+ * (D-CT2/D-CT6).
+ */
+function withCacheFromSteps(kpis: RunKpis | null, steps: RunStep[]): RunKpis | null {
+  if (!kpis) return kpis;
+  if (kpis.cachedTokens !== undefined && kpis.cacheReadTokens !== undefined) return kpis;
+  const derived = deriveKpisFromSteps(steps);
+  return {
+    ...kpis,
+    ...(kpis.cachedTokens ?? derived.cachedTokens) === undefined
+      ? {}
+      : { cachedTokens: kpis.cachedTokens ?? derived.cachedTokens },
+    ...(kpis.cacheReadTokens ?? derived.cacheReadTokens) === undefined
+      ? {}
+      : { cacheReadTokens: kpis.cacheReadTokens ?? derived.cacheReadTokens },
+    ...(kpis.cacheWriteTokens ?? derived.cacheWriteTokens) === undefined
+      ? {}
+      : { cacheWriteTokens: kpis.cacheWriteTokens ?? derived.cacheWriteTokens },
+  };
+}
+
 function deriveKpisFromSteps(steps: RunStep[]): RunKpis {
   let turns = 0;
   let toolCalls = 0;
   let tokensIn = 0;
   let tokensOut = 0;
   let contextTokens = 0;
+  // RM-33 — the cache composition, summed from the SAME per-step `usageActual` the tokens come from.
+  // This is the path a REPLAYED run actually takes (which is most runs a person opens), and the steps
+  // are the right source: they carry the split verbatim even for runs whose persisted `kpi` events
+  // predate RM-33. Only an EXACT split contributes — a turn reporting one merged figure leaves the
+  // halves unknowable, and summing it as a "read" would present a possible 1.25x premium as a 0.1x
+  // discount (D-CT2/D-CT6).
+  let cachedTokens = 0;
+  let cacheReadTokens = 0;
+  let cacheWriteTokens = 0;
+  let sawAnyCache = false;
+  let sawExactSplit = false;
   for (const step of steps) {
     if (step.type === "llm_response") turns += 1;
     if (step.type === "tool_call") toolCalls += 1;
     if (step.usageActual) {
       tokensIn += finiteNumber(step.usageActual.inputTokens);
       tokensOut += finiteNumber(step.usageActual.outputTokens);
+      const kind = usageSplitKind(step.usageActual);
+      if (kind !== "none") {
+        sawAnyCache = true;
+        cachedTokens += finiteNumber(step.usageActual.cachedInputTokens);
+      }
+      if (kind === "exact") {
+        sawExactSplit = true;
+        cacheReadTokens += finiteNumber(step.usageActual.cacheReadTokens);
+        cacheWriteTokens += finiteNumber(step.usageActual.cacheWriteTokens);
+      }
     }
     if (step.context) contextTokens = finiteNumber(step.context.total);
   }
-  return { turns, toolCalls, tokensIn, tokensOut, contextTokens, costUsd: 0 };
+  return {
+    turns,
+    toolCalls,
+    tokensIn,
+    tokensOut,
+    contextTokens,
+    costUsd: 0,
+    ...(sawAnyCache ? { cachedTokens } : {}),
+    ...(sawExactSplit ? { cacheReadTokens, cacheWriteTokens } : {}),
+  };
 }
 
 /**

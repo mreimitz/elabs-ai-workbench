@@ -1,6 +1,7 @@
 import type { RunStep } from "@mcp-token-footprint/shared";
 import { describe, expect, test } from "vitest";
 import {
+  deriveCachedTokenRows,
   derivePerStepEconomics,
   rollupSubtreeEconomics,
   type StepCumulativeKpi,
@@ -139,5 +140,73 @@ describe("rollupSubtreeEconomics", () => {
       ["b", ["c"]],
     ]);
     expect(rollupSubtreeEconomics("a", childrenByParentId, perStep).tokensInDelta).toBe(7);
+  });
+});
+
+// ── RM-33 WP 3.1 (D-CT2) — the input-composition rows behind the Analytics chart ────────────────
+//
+// The pre-RM-33 chart stacked `cached` against `uncached`. That merged a cache READ (~0.1x the input
+// rate — a discount) with a cache WRITE (1.25x — a premium) into one block that read as savings
+// whichever it happened to be. These pin the separation.
+
+describe("deriveCachedTokenRows (RM-33)", () => {
+  const llm = (id: string, usage: RunStep["usageActual"], turnIndex: number): RunStep =>
+    step({ id, type: "llm_response", usageActual: usage, turnIndex });
+
+  test("splits an exact record into uncached / cache read / cache write", () => {
+    const rows = deriveCachedTokenRows([
+      llm("s1", { inputTokens: 1000, outputTokens: 50, cacheReadTokens: 800, cacheWriteTokens: 100 }, 0),
+    ]);
+    expect(rows).toEqual([
+      { turn: "Turn 1", uncached: 100, cacheRead: 800, cacheWrite: 100, mergedCache: null },
+    ]);
+  });
+
+  test("a cache WRITE is never folded into the read series", () => {
+    // The tooth: if these two ever share a series again, an expensive turn renders as a cheap one.
+    const rows = deriveCachedTokenRows([
+      llm("s1", { inputTokens: 1000, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 900 }, 0),
+    ]);
+    expect(rows[0]?.cacheRead).toBe(0);
+    expect(rows[0]?.cacheWrite).toBe(900);
+  });
+
+  test("the three slices re-sum to the GROSS input (D-CT1 — a decomposition, not a subtraction)", () => {
+    const rows = deriveCachedTokenRows([
+      llm("s1", { inputTokens: 1234, outputTokens: 0, cacheReadTokens: 900, cacheWriteTokens: 34 }, 0),
+    ]);
+    const row = rows[0];
+    expect((row?.uncached ?? 0) + (row?.cacheRead ?? 0) + (row?.cacheWrite ?? 0)).toBe(1234);
+  });
+
+  test("a merged-only record goes to its OWN series, never attributed to reads", () => {
+    const rows = deriveCachedTokenRows([
+      llm("s1", { inputTokens: 1000, outputTokens: 0, cachedInputTokens: 900 }, 0),
+    ]);
+    expect(rows).toEqual([
+      { turn: "Turn 1", uncached: 100, cacheRead: null, cacheWrite: null, mergedCache: 900 },
+    ]);
+  });
+
+  test("a record with no cache at all puts the whole input in `uncached`", () => {
+    const rows = deriveCachedTokenRows([llm("s1", { inputTokens: 500, outputTokens: 10 }, 0)]);
+    expect(rows).toEqual([
+      { turn: "Turn 1", uncached: 500, cacheRead: 0, cacheWrite: 0, mergedCache: null },
+    ]);
+  });
+
+  test("a provider reporting more cache than input is clamped, never negative", () => {
+    const rows = deriveCachedTokenRows([
+      llm("s1", { inputTokens: 100, outputTokens: 0, cacheReadTokens: 500 }, 0),
+    ]);
+    expect(rows[0]?.uncached).toBe(0);
+  });
+
+  test("steps without provider usage are skipped entirely", () => {
+    const rows = deriveCachedTokenRows([
+      step({ id: "t1", type: "tool_call" }),
+      llm("s1", { inputTokens: 100, outputTokens: 0, cacheReadTokens: 50 }, 0),
+    ]);
+    expect(rows).toHaveLength(1);
   });
 });
