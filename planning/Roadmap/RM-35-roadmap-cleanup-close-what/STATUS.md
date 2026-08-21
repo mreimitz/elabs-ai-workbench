@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T19:25:00Z"
+timestamp: "2026-08-21T19:40:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -134,7 +134,22 @@ met and — where the box touches code — the gate
 - [ ] WP 3.2 — **RM-34 WP 2.1** re-measure the estimator band against recorded runs. 1 WP. Fixes
       a number the owner has already seen be wrong (RM-33 recorded the band bracketing a real run
       at $0.42–$1.59 against $0.80 billed, because the 8-turn ceiling dominates at 19 turns).
-      **Check first** whether "agent D" still holds it — the in-progress marker looks stale
+      **Check first** whether "agent D" still holds it — the in-progress marker looks stale.
+      **⚠️ ANSWERED 2026-08-21 — do NOT dispatch a fresh agent for this.** No process holds it, but
+      the worktree `.claude/worktrees/agent-acd2078a3c24a268f` (branch
+      `worktree-agent-acd2078a3c24a268f`) held **284 lines of uncommitted work** on exactly this WP:
+      a full live-calibration evidence writeup in RM-34's ledger, plus `README.md`, `CHANGELOG.md`,
+      `CLAUDE.md` and a `DC-08` delivery record. The branch had **no commits of its own**, so the
+      `git worktree remove` this WP's own note calls for would have destroyed it silently. It has
+      been committed verbatim as `71d7b60` on that branch — **rescued, not reviewed**: nothing in it
+      has been checked against the gate or the running app, and RM-34's box is still open because
+      agent D's own note says *"box left for the orchestrator"*.
+      **Its headline, which changes what this WP means:** *"the turn model is fixed and the estimator
+      is still wrong"* — measuring the turn band moved its ends onto real ground, but that exposed a
+      second, larger error on the **tokens-per-turn** axis which the previously under-stated turn
+      count had been masking. So WP 3.2 is now **validate-and-integrate `71d7b60`**, then decide
+      whether the newly-exposed tokens-per-turn error is in RM-34's scope or a new item — not
+      "re-measure the band"
 - [ ] WP 3.3 — **RM-30 Phase 7** Skill Studio: WP 7.1, 7.3, 7.4 then 7.7, 7.8, 7.9. Three batches,
       dependency chain `7.1 ∥ 7.2 → 7.3 → (7.4 ∥ 7.6) → 7.5`; round 2's 7.7–7.9 revise the same
       surface so they land after. Owner-directed rework of a surface the owner has already
