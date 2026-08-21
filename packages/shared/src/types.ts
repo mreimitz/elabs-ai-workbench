@@ -5207,8 +5207,9 @@ export type RunMetricsResponse = {
    * named ratio; it is now a real series.
    */
   unavailableMeasures: RunMetricsMeasure[];
-  /** RM-17 Phase 6 (AM-OB4) — the echoed ratio configuration, or `null` when the query carried none. */
-  ratio: RunMetricsRatioConfig | null;
+  /** RM-17 Phase 6 (AM-OB4) — the echoed ratio configuration. OPTIONAL, not nullable: a response
+   *  built before this field existed stays a valid `RunMetricsResponse` (additive-fields-only rule). */
+  ratio?: RunMetricsRatioConfig;
   series: RunMetricsSeries[];
 };
 

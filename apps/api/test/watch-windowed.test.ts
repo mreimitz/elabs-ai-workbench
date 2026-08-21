@@ -582,3 +582,95 @@ test("migration v39 — a pre-v39 (v38) DB gains the column; a pre-existing rule
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v39+v40+v41+v42+v43+v44+v45+v46 is a no-op");
   assert.equal(db.pragma("user_version", { simple: true }), 61, "version unchanged after the re-run");
 });
+
+// ══ AM-OB4 — a windowed rule can threshold an arbitrary SHARE ═════════════════════════════════════
+//
+// Before the ratio measure, a windowed rule could only threshold the four shares someone had thought
+// of in advance. It can now threshold any of them, because `RUN_METRICS_MEASURES` gained one generic
+// measure whose numerator is a filter — so "alert when more than 60% of runs error" and "alert when
+// more than 60% come back `unanswered`" are the same rule with a different numerator.
+
+const ratioWindow = (
+  over: WatchWindowConfig["window"],
+  ratio: WatchWindowConfig["ratio"],
+): WatchWindowConfig => ({
+  measure: "ratio",
+  ratio,
+  bucket: metricsBucketForWindow(over),
+  window: over,
+  op: ">=",
+  threshold: 0.6,
+  cooldownMinutes: 0,
+});
+
+test("AM-OB4 — a windowed rule thresholds a ratio, and the preview matches the metrics service", async () => {
+  const { db, repo, evaluator, notifications } = harness();
+  // Window 09:00–10:00: 2 of 3 runs errored (0.667 ≥ 0.6 → breach).
+  insertRuns(db, [
+    { id: "w1", startedAt: "2026-06-01T09:10:00.000Z", error: true },
+    { id: "w2", startedAt: "2026-06-01T09:20:00.000Z", error: true },
+    { id: "w3", startedAt: "2026-06-01T09:30:00.000Z" },
+  ]);
+  const window = ratioWindow("1h", { numerator: { hasError: true } });
+  const rule = makeWindowedRule(repo, window);
+
+  await evaluator.evaluateRule(rule, T("2026-06-01T10:05:00.000Z"), { boot: false });
+  assert.equal(notifications.length, 1, "the share breached its threshold");
+
+  // The preview reports the SAME number the metrics service does — the derived-once invariant, which
+  // is what makes a pre-save check trustworthy rather than a second opinion.
+  const preview = evaluator.preview({}, window, 1, T("2026-06-01T10:05:00.000Z"));
+  const direct = computeRunMetrics(db, {
+    filter: {},
+    from: "2026-06-01T09:00:00.000Z",
+    to: "2026-06-01T09:59:59.999Z",
+    bucket: "hour",
+    measures: ["ratio"],
+    ratio: { numerator: { hasError: true } },
+  });
+  assert.equal(preview.windows[0]?.value, direct.series[0]?.points[0]?.value);
+  assert.equal(preview.windows[0]?.value, 2 / 3);
+  assert.equal(preview.windows[0]?.wouldHaveFired, true);
+});
+
+test("AM-OB4 — an EMPTY window on a ratio rule is no_data, not a 0% recovery", async () => {
+  const { repo, evaluator, notifications } = harness();
+  // Nothing seeded at all: the denominator is 0 in every window.
+  const window = ratioWindow("1h", { numerator: { hasError: true } });
+  const rule = makeWindowedRule(repo, window);
+
+  const preview = evaluator.preview({}, window, 1, T("2026-06-01T10:05:00.000Z"));
+  // This is the AM-OB10 failure mode meeting the AM-OB4 rule: a zero DENOMINATOR omits the point, so
+  // the evaluator sees no series at all and must report `no_data`. If the measure had zero-filled,
+  // an empty window would read as a healthy 0% share and the rule would record a RECOVERY.
+  assert.equal(preview.windows[0]?.value, null);
+  assert.equal(preview.windows[0]?.state, "no_data");
+  assert.equal(preview.windows[0]?.n, 0);
+
+  // …and under the default `hold` policy nothing fires and nothing recovers.
+  await evaluator.evaluateRule(rule, T("2026-06-01T10:05:00.000Z"), { boot: false });
+  assert.equal(notifications.length, 0);
+});
+
+test("AM-OB4 — a stored ratio rule round-trips through watch_rules", () => {
+  const { repo } = harness();
+  const ratio = {
+    denominator: { outcome: ["error", "stopped_guardrail"] as const },
+    numerator: { outcome: ["stopped_guardrail"] as const },
+  };
+  const rule = repo.create({
+    name: "Guardrail share",
+    trigger: "windowed",
+    filter: {},
+    window: ratioWindow("24h", {
+      denominator: { outcome: [...ratio.denominator.outcome] },
+      numerator: { outcome: [...ratio.numerator.outcome] },
+    }),
+    actions: [{ type: "notify", severity: "warning" }],
+  });
+  const reloaded = repo.get(rule.id);
+  assert.deepEqual(reloaded?.window?.ratio, {
+    denominator: { outcome: ["error", "stopped_guardrail"] },
+    numerator: { outcome: ["stopped_guardrail"] },
+  });
+});

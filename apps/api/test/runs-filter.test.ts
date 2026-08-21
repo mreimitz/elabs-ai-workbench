@@ -657,7 +657,8 @@ const CANDIDATES: Record<string, RunFilterCandidate> = {
 };
 
 test("SQL translation agrees with matchesRunFilter for every seeded run", () => {
-  const runs = seed(createDatabase());
+  const db = createDatabase();
+  const runs = seed(db);
   const filters: RunFilter[] = [
     {},
     { status: ["completed"] },
@@ -695,6 +696,9 @@ test("SQL translation agrees with matchesRunFilter for every seeded run", () => 
     { feedback: { key: "verdict" } },
     { feedback: { key: "notes", hasScore: true } },
     { feedback: {} },
+    // AM-OB4 — "carries ANY feedback row", the field `feedbackRate`'s numerator is built from.
+    { feedback: { any: true } },
+    { feedback: { any: true }, status: ["completed"] },
   ];
   for (const filter of filters) {
     const sqlIds = ids(runs.queryRuns(filter));
@@ -703,6 +707,18 @@ test("SQL translation agrees with matchesRunFilter for every seeded run", () => 
       .map(([id]) => id)
       .sort();
     assert.deepEqual(sqlIds, predicateIds, `disagreement for ${JSON.stringify(filter)}`);
+
+    // AM-OB4 (acceptance #6) — run the SAME table through `computeRunMetrics`. Before the two
+    // `buildRunFilterWhere` copies were consolidated, this table only ever exercised the repository:
+    // the metrics header CLAIMED both translations were pinned to `matchesRunFilter`, and the claim
+    // was false. There is one builder now, so what this actually pins is that the metrics service
+    // still COMPOSES it — a `computeRunMetrics` that stopped calling it, or applied its own extra
+    // predicate, would show up here as a count that no longer matches the feed.
+    assert.equal(
+      metricsRunCount(db, filter),
+      sqlIds.length,
+      `metrics service vs repository SQL for ${JSON.stringify(filter)}`,
+    );
   }
 });
 

@@ -572,3 +572,188 @@ test("migration v45 — a pre-v45 (v44) DB gains dashboard_charts; neighboring r
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v45 is a no-op");
   assert.equal(db.pragma("user_version", { simple: true }), 61, "version unchanged after the re-run");
 });
+
+// ══ AM-OB4 — the ratio measure over the WIRE ══════════════════════════════════════════════════════
+//
+// The service-level maths is pinned in `metrics-runs.test.ts`. What these prove is the wire: that
+// `?ratio=` reaches the aggregation as a second JSON param (rather than forcing this GET to a POST),
+// that a saved chart carries its ratio through `dashboard_charts` unchanged, and that a
+// HALF-CONFIGURED ratio is refused identically wherever it is expressed.
+
+const RATIO_CHART: DashboardChartInput = {
+  name: "Guardrail share of failures",
+  config: {
+    source: "runs",
+    measures: ["ratio"],
+    filter: {},
+    bucket: "day",
+    chartType: "line",
+    ratio: {
+      denominator: { outcome: ["error", "stopped_guardrail"] },
+      numerator: { outcome: ["stopped_guardrail"] },
+    },
+  },
+};
+
+test("GET /api/metrics/runs accepts ?ratio= and returns the share, echoing the config back", async () => {
+  const { app, db } = await setup();
+  seedRunsForMetrics(db); // one completed run + one errored run, same day
+
+  const params = new URLSearchParams();
+  params.set("filter", "{}");
+  params.set("bucket", "day");
+  params.set("measures", "ratio");
+  params.set("ratio", JSON.stringify({ numerator: { hasError: true } }));
+
+  const res = await app.inject({ method: "GET", url: `/api/metrics/runs?${params.toString()}` });
+  assert.equal(res.statusCode, 200);
+  const body = res.json() as {
+    series: { measure: string; points: { value: number; n: number }[] }[];
+    unavailableMeasures: string[];
+    ratio?: unknown;
+  };
+  const ratioSeries = body.series.filter((s) => s.measure === "ratio");
+  assert.equal(ratioSeries.length, 1);
+  // Hand-counted: `run-bad` of { `run-ok`, `run-bad` }.
+  assert.deepEqual(
+    (ratioSeries[0] as { points: { value: number; n: number }[] }).points.map((p) => [p.value, p.n]),
+    [[0.5, 2]],
+  );
+  assert.deepEqual(body.unavailableMeasures, []);
+  assert.deepEqual(body.ratio, { numerator: { hasError: true } }, "the config is echoed for transparency");
+});
+
+test("GET /api/metrics/runs 400s on a half-configured or FTS-bearing ratio", async () => {
+  const { app } = await setup();
+  const query = (extra: Record<string, string>) => {
+    const params = new URLSearchParams({ filter: "{}", bucket: "day", ...extra });
+    return `/api/metrics/runs?${params.toString()}`;
+  };
+
+  // `ratio` selected with nothing to divide — a 400, not a silently empty chart.
+  const missing = await app.inject({ method: "GET", url: query({ measures: "ratio" }) });
+  assert.equal(missing.statusCode, 400);
+  assert.match((missing.json() as { error: string }).error, /numerator/i);
+
+  // A config with no `ratio` measure to plot it — the stale-config direction.
+  const stray = await app.inject({
+    method: "GET",
+    url: query({ measures: "count", ratio: JSON.stringify({ numerator: {} }) }),
+  });
+  assert.equal(stray.statusCode, 400);
+
+  // `q` on a ratio side. The metrics service has NO full-text path, so accepting this would answer a
+  // different question than the one asked — exactly as the query's own `filter.q` is already refused.
+  const withQ = await app.inject({
+    method: "GET",
+    url: query({ measures: "ratio", ratio: JSON.stringify({ numerator: { q: "timeout" } }) }),
+  });
+  assert.equal(withQ.statusCode, 400);
+  assert.match((withQ.json() as { error: string }).error, /full-text/i);
+
+  // Malformed JSON, and an unknown key inside (the `.strict()` shape).
+  assert.equal((await app.inject({ method: "GET", url: query({ measures: "ratio", ratio: "{oops" }) })).statusCode, 400);
+  assert.equal(
+    (
+      await app.inject({
+        method: "GET",
+        url: query({ measures: "ratio", ratio: JSON.stringify({ numerator: {}, nope: 1 }) }),
+      })
+    ).statusCode,
+    400,
+  );
+});
+
+test("a saved ratio chart round-trips through dashboard_charts and re-executes identically", async () => {
+  const { app, db } = await setup();
+  seedRunsForMetrics(db);
+
+  const created = (
+    await app.inject({ method: "POST", url: "/api/dashboard-charts", payload: RATIO_CHART })
+  ).json() as DashboardChart;
+  assert.equal(created.config.source, "runs");
+
+  const reloaded = (
+    await app.inject({ method: "GET", url: `/api/dashboard-charts/${created.id}` })
+  ).json() as DashboardChart;
+  assert.deepEqual(reloaded.config, created.config, "the ratio config survives storage byte-for-byte");
+
+  const queryFor = (config: DashboardChart["config"]) => {
+    if (config.source !== "runs") throw new Error("expected a runs config");
+    const params = new URLSearchParams();
+    params.set("filter", JSON.stringify(config.filter));
+    params.set("bucket", config.bucket);
+    params.set("measures", config.measures.join(","));
+    if (config.ratio) params.set("ratio", JSON.stringify(config.ratio));
+    return `/api/metrics/runs?${params.toString()}`;
+  };
+
+  const before = await app.inject({ method: "GET", url: queryFor(created.config) });
+  const after = await app.inject({ method: "GET", url: queryFor(reloaded.config) });
+  assert.equal(before.statusCode, 200);
+  assert.deepEqual(after.json(), before.json());
+});
+
+test("a chart config with a half-configured ratio is a 400 — in BOTH directions", async () => {
+  const { app } = await setup();
+  const post = (config: unknown) =>
+    app.inject({ method: "POST", url: "/api/dashboard-charts", payload: { name: "x", config } });
+
+  // "ratio" selected, no config.
+  const missing = await post({
+    source: "runs",
+    measures: ["ratio"],
+    filter: {},
+    bucket: "day",
+    chartType: "line",
+  });
+  assert.equal(missing.statusCode, 400);
+
+  // A config carried by a chart that does not plot a ratio — the stale-numerator direction, which is
+  // the one that misleads a reader rather than merely rendering nothing.
+  const stray = await post({
+    source: "runs",
+    measures: ["errorRate"],
+    filter: {},
+    bucket: "day",
+    chartType: "line",
+    ratio: { numerator: { hasError: true } },
+  });
+  assert.equal(stray.statusCode, 400);
+
+  // A `scans` chart has no `ratio` key at all — `.strict()` refuses it before the rule is reached.
+  const scans = await post({
+    source: "scans",
+    measures: ["scanCount"],
+    bucket: "day",
+    chartType: "line",
+    ratio: { numerator: {} },
+  });
+  assert.equal(scans.statusCode, 400);
+});
+
+test("ratio joins the same-unit family: it may share a chart with the other rates, not with tokens", async () => {
+  const { app } = await setup();
+  const post = (measures: string[], ratio?: unknown) =>
+    app.inject({
+      method: "POST",
+      url: "/api/dashboard-charts",
+      payload: {
+        name: "x",
+        config: {
+          source: "runs",
+          measures,
+          filter: {},
+          bucket: "day",
+          chartType: "line",
+          ...(ratio !== undefined ? { ratio } : {}),
+        },
+      },
+    });
+
+  const ok = await post(["ratio", "errorRate"], { numerator: { hasError: true } });
+  assert.equal(ok.statusCode, 201, "ratio is a `rate`, so it shares an axis with errorRate");
+
+  const mixed = await post(["ratio", "tokensIn"], { numerator: { hasError: true } });
+  assert.equal(mixed.statusCode, 400, "a share and a token count must never imply a shared axis");
+});

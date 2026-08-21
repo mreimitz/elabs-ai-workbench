@@ -10,19 +10,28 @@ import {
   ANSWER_VALIDATION_VERDICTS,
   INSIGHT_SURPLUS_VERDICTS,
   ROOT_CAUSE_BUCKETS,
+  RUN_METRICS_MEASURE_UNITS,
   RUN_METRICS_MEASURES,
+  RUN_METRICS_NAMED_RATIOS,
 } from "./constants.js";
-import { runFilterSchema } from "./schemas.js";
+import {
+  dashboardChartConfigSchema,
+  ratioConfigIssue,
+  runFilterSchema,
+  watchWindowConfigSchema,
+} from "./schemas.js";
 import {
   hasRunQueryParams,
   matchesRunFilter,
   parseRunFilter,
   parseRunFilterFromQuery,
   parseRunPagination,
+  parseRunMetricsRatio,
   parseRunSort,
   runNeedsAttention,
   RunFilterError,
   serializeRunFilter,
+  serializeRunMetricsRatio,
 } from "./run-filter.js";
 import type { RunFilter, RunFilterCandidate } from "./types.js";
 
@@ -453,7 +462,7 @@ test("empty filter matches everything", () => {
 // This lives beside the RunFilter tests on purpose: the filter fields and this list are the two
 // halves of the same decision. If you are AM-OB4 (WP 6.4) adding the `"ratio"` measure, adding it to
 // this list is correct and expected — that is the mechanism this test protects.
-test("RUN_METRICS_MEASURES is unchanged — AM-OB12 added FILTERS, not a bespoke share measure", () => {
+test("RUN_METRICS_MEASURES holds exactly one GENERIC share measure, and no bespoke ones", () => {
   assert.deepStrictEqual(
     [...RUN_METRICS_MEASURES],
     [
@@ -470,6 +479,10 @@ test("RUN_METRICS_MEASURES is unchanged — AM-OB12 added FILTERS, not a bespoke
       "cacheReadTokens",
       "cacheWriteTokens",
       "cacheHitRate",
+      // AM-OB4 (WP 6.4) — the ONE addition this test anticipated. It is the mechanism that makes a
+      // fifteenth `<something>Rate` unnecessary, so adding it here was the point; adding another
+      // bespoke share beside it would not be.
+      "ratio",
     ],
     "a measure was added or removed — see this test's comment before updating the expected list",
   );
@@ -491,4 +504,155 @@ test("RUN_METRICS_MEASURES is unchanged — AM-OB12 added FILTERS, not a bespoke
       );
     }
   }
+});
+
+// ══ AM-OB4 — the ratio config's contract ══════════════════════════════════════════════════════════
+
+test("AM-OB4 — `feedback.any` matches a run carrying ANY feedback row, and narrows nothing when absent", () => {
+  const withFeedback: RunFilterCandidate = {
+    status: "completed",
+    mode: "automated",
+    scenarioId: "s",
+    testId: "t",
+    costUsd: 0,
+    tokensIn: 0,
+    tokensOut: 0,
+    startedAt: "2026-07-01T00:00:00.000Z",
+    // A NOTE-ONLY row: a key, no score. `any` counts human attention, not scored attention.
+    feedbackKeys: ["notes"],
+    hasFeedbackScore: false,
+  };
+  const without: RunFilterCandidate = { ...withFeedback, feedbackKeys: [], hasFeedbackScore: false };
+  // An ABSENT `feedbackKeys` is conservatively NOT a match — absent is not a value.
+  const unknown: RunFilterCandidate = { ...withFeedback };
+  delete (unknown as { feedbackKeys?: string[] }).feedbackKeys;
+
+  assert.equal(matchesRunFilter(withFeedback, { feedback: { any: true } }), true);
+  assert.equal(matchesRunFilter(without, { feedback: { any: true } }), false);
+  assert.equal(matchesRunFilter(unknown, { feedback: { any: true } }), false);
+  // `any: false` and an absent `any` impose NO constraint, like every other optional field.
+  assert.equal(matchesRunFilter(without, { feedback: { any: false } }), true);
+  assert.equal(matchesRunFilter(without, { feedback: {} }), true);
+  // It is NOT a synonym for `hasScore` — that is the distinction that makes it worth a field.
+  assert.equal(matchesRunFilter(withFeedback, { feedback: { hasScore: true } }), false);
+  // …and it round-trips through the `.strict()` schema.
+  assert.deepEqual(parseRunFilter(serializeRunFilter({ feedback: { any: true } })), {
+    feedback: { any: true },
+  });
+});
+
+test("AM-OB4 — a ratio config round-trips byte-stably, and rejects what it should", () => {
+  const ratio = {
+    numerator: { outcome: ["stopped_guardrail"] as const },
+    denominator: { hasError: true },
+  };
+  const serialized = serializeRunMetricsRatio({
+    numerator: { outcome: [...ratio.numerator.outcome] },
+    denominator: ratio.denominator,
+  });
+  assert.deepEqual(parseRunMetricsRatio(serialized), {
+    numerator: { outcome: ["stopped_guardrail"] },
+    denominator: { hasError: true },
+  });
+  // Key-sorted like `serializeRunFilter`, so the same config always produces the same URL.
+  assert.equal(
+    serialized,
+    serializeRunMetricsRatio({
+      denominator: { hasError: true },
+      numerator: { outcome: ["stopped_guardrail"] },
+    }),
+  );
+
+  assert.throws(() => parseRunMetricsRatio("{oops"), RunFilterError);
+  assert.throws(() => parseRunMetricsRatio("[]"), RunFilterError);
+  // No numerator is not a ratio.
+  assert.throws(() => parseRunMetricsRatio("{}"));
+  // `.strict()` both at the config level and inside each side.
+  assert.throws(() => parseRunMetricsRatio(JSON.stringify({ numerator: {}, nope: 1 })));
+  assert.throws(() => parseRunMetricsRatio(JSON.stringify({ numerator: { nope: 1 } })));
+});
+
+test("AM-OB4 — `ratioConfigIssue` is the ONE coherence rule, and it bites in both directions", () => {
+  const config = { numerator: { hasError: true } };
+  // Coherent.
+  assert.equal(ratioConfigIssue(["ratio"], config), null);
+  assert.equal(ratioConfigIssue(["errorRate"], undefined), null);
+  assert.equal(ratioConfigIssue(["count", "ratio"], config), null);
+
+  // "ratio" selected with nothing to divide.
+  assert.match(String(ratioConfigIssue(["ratio"], undefined)), /numerator/i);
+  // A config a chart no longer plots — the direction that MISLEADS a reader rather than merely
+  // rendering nothing, which is why it is refused too.
+  assert.match(String(ratioConfigIssue(["errorRate"], config)), /not among the selected measures/i);
+  // `q` on either side. The metrics service has no FTS path.
+  assert.match(String(ratioConfigIssue(["ratio"], { numerator: { q: "x" } })), /full-text/i);
+  assert.match(
+    String(ratioConfigIssue(["ratio"], { numerator: {}, denominator: { q: "x" } })),
+    /full-text/i,
+  );
+});
+
+test("AM-OB4 — the chart and watch-rule zods run that SAME rule, so their 400s cannot disagree", () => {
+  const runsChart = (measures: string[], ratio?: unknown) => ({
+    source: "runs",
+    measures,
+    filter: {},
+    bucket: "day",
+    chartType: "line",
+    ...(ratio !== undefined ? { ratio } : {}),
+  });
+  const window = (measure: string, ratio?: unknown) => ({
+    measure,
+    bucket: "hour",
+    window: "1h",
+    op: ">=",
+    threshold: 0.5,
+    cooldownMinutes: 0,
+    ...(ratio !== undefined ? { ratio } : {}),
+  });
+
+  const cases: [string[], unknown][] = [
+    [["ratio"], undefined], // missing config
+    [["errorRate"], { numerator: {} }], // stray config
+    [["ratio"], { numerator: { q: "x" } }], // FTS on a side
+  ];
+  for (const [measures, ratio] of cases) {
+    const chart = dashboardChartConfigSchema.safeParse(runsChart(measures, ratio));
+    const rule = watchWindowConfigSchema.safeParse(window(measures[0] as string, ratio));
+    assert.equal(chart.success, false, `chart accepted ${JSON.stringify({ measures, ratio })}`);
+    assert.equal(rule.success, false, `rule accepted ${JSON.stringify({ measures, ratio })}`);
+  }
+
+  // …and the coherent case is accepted by both.
+  assert.equal(
+    dashboardChartConfigSchema.safeParse(runsChart(["ratio"], { numerator: { hasError: true } }))
+      .success,
+    true,
+  );
+  assert.equal(
+    watchWindowConfigSchema.safeParse(window("ratio", { numerator: { hasError: true } })).success,
+    true,
+  );
+});
+
+test("AM-OB4 — every NAMED ratio names a real measure and is a valid config", () => {
+  for (const [measure, config] of Object.entries(RUN_METRICS_NAMED_RATIOS)) {
+    assert.ok(
+      (RUN_METRICS_MEASURES as readonly string[]).includes(measure),
+      `named ratio "${measure}" is not a measure`,
+    );
+    // A named ratio must survive its own schema — otherwise it would 500 the first time it ran.
+    assert.doesNotThrow(() => parseRunMetricsRatio(JSON.stringify(config)));
+    assert.equal(
+      RUN_METRICS_MEASURE_UNITS[measure as keyof typeof RUN_METRICS_MEASURE_UNITS],
+      "rate",
+      "a share is a rate",
+    );
+  }
+  // `feedbackRate`'s numerator is the `feedback.any` field, not `hasScore` — a note-only verdict is
+  // still human attention, and the two would silently disagree if this drifted.
+  assert.deepEqual(RUN_METRICS_NAMED_RATIOS.feedbackRate, { numerator: { feedback: { any: true } } });
+  // `"ratio"` itself is NOT a named ratio: its config comes from the caller, and a default here
+  // would answer a question nobody asked.
+  assert.equal("ratio" in RUN_METRICS_NAMED_RATIOS, false);
 });
