@@ -1038,39 +1038,36 @@ export function RunConsole({
                     stacking context; the right-pane Network log is deliberately NOT focus-filtered —
                     it is the always-on inspector, and filtering it from another lens would hide rows
                     with no banner nearby to explain why. */}
-                <div
-                  data-testid="run-console-steps-lens"
-                  className="flex min-h-0 flex-col gap-2"
-                >
-                {/* Observability WP 3.5 — the graph lens' click-through lands here. The banner names
-                    the node the log is filtered to and offers the way back out; it renders ONLY when a
-                    focus is actually resolved, so an ordinary Steps lens is untouched. */}
-                {graphFocus ? (
-                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-                    <Text variant="meta" tone="muted" as="span">
-                      Showing the {graphFocus.stepIds.size} step
-                      {graphFocus.stepIds.size === 1 ? "" : "s"} behind the graph node
-                    </Text>
-                    <Badge variant="secondary">{graphFocus.node.label}</Badge>
-                    <Button variant="ghost" size="sm" onClick={clearGraphFocus}>
-                      Clear
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setLeftView("graph")}>
-                      Back to graph
-                    </Button>
-                  </div>
-                ) : null}
-                <StepLog
-                  steps={viewStream.steps}
-                  selectedStepId={selectedStepId}
-                  onSelectStep={setSelectedStepId}
-                  kpiByStepId={kpiByStepId}
-                  costBasis={capabilities.costBasis}
-                  highlightQuery={searchQuery}
-                  matchFilterMode={matchFilterMode}
-                  onMatchFilterModeChange={setMatchFilterMode}
-                  focusStepIds={graphFocus?.stepIds ?? null}
-                />
+                <div data-testid="run-console-steps-lens" className="flex min-h-0 flex-col gap-2">
+                  {/* Observability WP 3.5 — the graph lens' click-through lands here. The banner names
+                      the node the log is filtered to and offers the way back out; it renders ONLY when
+                      a focus is actually resolved, so an ordinary Steps lens is untouched. */}
+                  {graphFocus ? (
+                    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                      <Text variant="meta" tone="muted" as="span">
+                        Showing the {graphFocus.stepIds.size} step
+                        {graphFocus.stepIds.size === 1 ? "" : "s"} behind the graph node
+                      </Text>
+                      <Badge variant="secondary">{graphFocus.node.label}</Badge>
+                      <Button variant="ghost" size="sm" onClick={clearGraphFocus}>
+                        Clear
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setLeftView("graph")}>
+                        Back to graph
+                      </Button>
+                    </div>
+                  ) : null}
+                  <StepLog
+                    steps={viewStream.steps}
+                    selectedStepId={selectedStepId}
+                    onSelectStep={setSelectedStepId}
+                    kpiByStepId={kpiByStepId}
+                    costBasis={capabilities.costBasis}
+                    highlightQuery={searchQuery}
+                    matchFilterMode={matchFilterMode}
+                    onMatchFilterModeChange={setMatchFilterMode}
+                    focusStepIds={graphFocus?.stepIds ?? null}
+                  />
                 </div>
               </TabPanelContent>
               {/* Observability WP 3.4 — the "Turns" lens: per-turn summary cards for fast scanning of a
