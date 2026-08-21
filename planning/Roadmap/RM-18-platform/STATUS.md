@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Platform hardening \u2014 work-package status ledger \u00b7 PRIORITY: MEDIUM (rolling)"
 description: "Living state for the platform plan, read and updated by /next-wp platform. A box is ticked"
 tags: ["roadmap", "RM-18"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T16:20:00Z"
 status: "active"
 ---
 # Platform hardening — work-package status ledger · **PRIORITY: MEDIUM (rolling)**
@@ -22,7 +22,10 @@ Living state for the **platform** plan, read and updated by `/next-wp platform`.
 - [ ] WP 1.3 — diagnostics bundle: redacted export, secret-free proven by test
 - [ ] WP 1.4 — upgrade-path test harness: fixture DBs → migrate → invariants
 - [ ] WP 1.5 — performance & scale pass: fleet-scale fixtures, endpoint budgets, index review
-- [ ] WP 1.6 — owner-acceptance consolidation: one runnable checklist across all ledgers
+- [x] WP 1.6 — owner-acceptance consolidation: one runnable checklist across all ledgers — done
+      2026-08-21 · wp/roadmap-cleanup/1.1 · every pending owner walk in the bundle, grouped into four
+      sittings by prerequisite (browser · provider key · subscription · CI):
+      [`owner-acceptance-consolidated.md`](./owner-acceptance-consolidated.md)
 
 ## Decision log
 _Entries: date · decision · rationale._
