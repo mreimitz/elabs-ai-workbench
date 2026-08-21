@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Estimator turn model — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the estimator turn-model calibration plan, read and updated by /next-wp RM-34."
 tags: ["roadmap", "RM-34"]
-timestamp: "2026-08-21T14:05:00Z"
+timestamp: "2026-08-21T14:08:00Z"
 status: "active"
 ---
 # Estimator turn model — work-package status ledger · **PRIORITY: MEDIUM**
@@ -70,13 +70,13 @@ The estimator's **pricing** is now correct and its **token model** is not.
 
 ### Phase 2 — consume
 
-- [ ] **WP 1.2 — the pure estimator consumes a measured profile** —
+- [ ] **WP 1.2 — the pure estimator consumes a measured profile** — _status: in progress (agent B)_ —
       spec: [`wp-1.2-estimator.md`](./wp-1.2-estimator.md). Depends on: WP 1.1.
       Files: `apps/api/src/estimate/{estimate,service}.ts`, `apps/api/src/index.ts`.
 
 ### Phase 3 — surface + verify
 
-- [ ] **WP 1.3 — launcher and suite preview show the turn basis and sample size** —
+- [ ] **WP 1.3 — launcher and suite preview show the turn basis and sample size** — _status: in progress (agent C)_ —
       spec: [`wp-1.3-surface.md`](./wp-1.3-surface.md). Depends on: WP 1.1 (wire type only —
       runs in parallel with WP 1.2; the file sets are disjoint).
       Files: `apps/web/src/features/testing/run-launcher/RunLauncher.tsx`,
