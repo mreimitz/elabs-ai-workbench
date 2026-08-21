@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T08:55:00Z"
+timestamp: "2026-08-21T10:15:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -304,11 +304,90 @@ and an explicit "Not verified:" tail.
 > 1.4's "21st component proof" and `CLAUDE.md` §1's "remaining ~17 entities" are both off. Wants
 > correcting before WP 1.4 is written.
 
-- [ ] WP 1.1 — Runtime cast (`model`, `provider`, `validator`, `run`, `prompt`) + the cast-module
-      seam — spec: [`wp-1.1-runtime-cast.md`](./wp-1.1-runtime-cast.md) · **runs solo, first**
-      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
-      `cb93a6f`, branch `wp/illustrations/1.1`; not ticked until the orchestrator re-runs the gate
-      and verifies every Acceptance item plus the three teeth)
+- [x] WP 1.1 — Runtime cast (`model`, `provider`, `validator`, `run`, `prompt`) + the cast-module
+      seam — done 2026-08-21 · `wp/illustrations/1.1` (2 commits `78da767`, `247edc6`), merged
+      **--no-ff** as `8a7580e` · spec: [`wp-1.1-runtime-cast.md`](./wp-1.1-runtime-cast.md).
+      **Shipped:** the **cast-module seam** — `cast-member.ts` (the `IllustrationCastMember` type),
+      `cast-pilot.ts` (the three pilots moved out of `registry.ts`), `cast-runtime.ts` (this WP's
+      five), and `cast-assets.ts` + `cast-orchestration.ts` **committed, exported and empty** so WPs
+      1.2 and 1.3 create no file in common; `registry.ts` now names **no entity at all**, deriving
+      both `ILLUSTRATION_REGISTRY` and `ILLUSTRATION_COMPONENTS` from the concatenation, with a test
+      that reads `registry.ts`'s own source and fails if it ever imports an entity module — the
+      seam's headline sentence made mechanical rather than promised. Plus **five entities**:
+      `model` (processor package, lit die), `provider` (standing board with a deliberately blank
+      cartouche — no vendor mark), `validator` (standing figure carrying a shield on its gaze side),
+      `run` (track on a ground pad, direction chevrons, one lit) and `prompt` (message board on a
+      display post), each at S/M/L × five states × its variants with a co-located `*.test.tsx`
+      calling `contract-support.tsx`. 22 files, **+2054 / −117**, every one inside
+      `packages/illustrations` — `git diff cb93a6f --stat -- packages/shared apps/` is **empty**,
+      confirmed by the orchestrator, so the gallery picked the five up with no web change.
+      **Gate — re-run by the orchestrator in the worktree with `pnpm --dir <worktree>` on every
+      command, not taken on the agent's report:** typecheck all Done · shared **250** ·
+      illustrations **390** (252 before) · cli **87** · api **3589** · web **347 files / 3719 passed
+      / 5 skipped** · build Done · lint clean (**1689** files).
+      **Teeth verified by the orchestrator — each broken, watched go red, and restored:**
+      (a) a duplicate `model` cast member added to `cast-assets.ts` → module-load throw across nine
+      test files, `two illustration cast members share an id: "model" is claimed by runtime and
+      assets`; (b) `fill: accent` → `fill: "#c8ff00"` in `Validator.tsx` → **two independent**
+      guards, `validator (idle/grader) painted #c8ff00, which is not an --illus-* token` **and**
+      WP 0.1's recursive scan `entities/Validator.tsx carries a hex color` (390 → 387 pass / 3 fail);
+      (c) `run` handed `EntityRoot` a meta whose `ports` drop `exit` while its entry still declares
+      it → `not ok - exposes exactly the ports the entry declares … + 'exit'` (389 pass / 1 fail).
+      All three restored, 390/390.
+      **Both themes verified by the orchestrator BY LOOKING** at `gallery-light.png` and
+      `gallery-dark-via-app.png` — the dark shot taken after flipping the theme through the app's
+      **own** top-bar control (the `Theme: Dark` tooltip is in frame), not by setting `data-theme` by
+      hand. Eight entities, every silhouette distinguishable at `m`, one accent moment each, the
+      blank provider cartouche holding (no wordmark), and the port overlay drawing 42 markers —
+      exactly the sum the eight entries declare.
+      **The §3 `validator` decision, as the spec required:** built **option 1** — a new shared
+      `primitives/IsoFigure.tsx` with `Agent` refactored onto it. It does not abstract nothing: the
+      three stacked solids, the *sequential* stacking arithmetic (re-associating it would move the
+      exemplar's numbers, since float addition is not associative) and the visor moved, ~60 lines;
+      the antenna, chest plates and shield stayed behind. `agentHeightUnits("m") === 5.35` still
+      holds exactly, so the WP 0.2 exemplar is intact. It pays forward to WP 1.3's `assistant` and
+      research §5's `owner/user`.
+      **Accepted deviations:** one file beyond the spec's four cast modules —
+      `entities/cast-member.ts`, because the spec declares the `IllustrationCastMember` type without
+      saying where it lives; and `entities/index.ts` changed shape (cast modules now `export *` their
+      own entities, so the index names no component), without which adding an entity would still
+      have touched two shared files and the seam's claim would have been false. Every previously
+      public name still reaches the package surface.
+      **A build-order finding worth keeping:** in a **fresh** worktree `pnpm test` fails before it
+      starts — illustrations dies with `ERR_MODULE_NOT_FOUND … @mcp-token-footprint/shared/dist/index.js`,
+      because `pnpm -r --if-present test` does not build `shared` first. It only passes in the main
+      checkout because a `dist/` is already lying there. `pnpm --filter @mcp-token-footprint/shared
+      build` first is required, and every WP 1.2/1.3 agent must be told so.
+      **`REGISTRY_VERSION` deliberately left at `0.1.0`, and two documents disagree about that.**
+      D-IL12 says a new component bumps it; the shared constant's own doc comment says adding a
+      component is additive and leaves it alone. The agent followed the constant, because bumping
+      would mean editing `packages/shared`, which the spec forbids. **Owner decision, flagged not
+      taken** — it wants settling before WP 1.4 writes the registry-changelog discipline.
+      **An orchestrator error, recorded because it repeats a documented failure of this plan.** The
+      base commit `cb93a6f` — written by the orchestrator to fix the Dockerfile and the lint gate —
+      was staged with `git add -A` while **another session (RM-33, cache-aware token accounting) held
+      ~53 files of uncommitted work in the tree**, so that work was swept into the commit under a
+      message that neither mentions nor verifies it, and whose quoted gate numbers (shared 238 · api
+      3567 · web 346/3702) were measured **before** the sweep. The true post-sweep baseline is shared
+      **250** · api **3589** · web **347 / 3719**. The implementing agent caught this and corrected
+      the orchestrator, which is the only reason it is on the record. **The combination is green** —
+      the gate above covers it — but `cb93a6f` was not authored or verified by this session as far as
+      RM-33's files go, and its owner-acceptance belongs to whichever session wrote them. This is the
+      **third** time in RM-14 that another session's uncommitted work has been swept up by a merge or
+      a commit; the fix is to stage explicit paths, never `-A`, which this WP's own tick does.
+      **Front page not updated:** the **`CLAUDE.md` §1** capability table row already reads
+      🚧 Partially built and says Phase 0 is complete with the remaining entities not built; five of
+      those entities now exist, which makes the row's *count* stale but no sentence in it false. It is
+      updated when Phase 1 closes, so the front page moves once per phase rather than per WP.
+      **Not verified:** the **System** theme option (only Light and Dark were walked); any viewport
+      other than 1440×1000; the keyboard walk was not re-driven by the orchestrator, only the focus
+      screenshot looked at. **Port-label crowding on the flat entities** is real and visible in
+      `gallery-light-ports.png` — on `model` and `run` the `left`/`bottom`/`right` labels sit close
+      to the named ports because `EntityRoot` anchors side ports at `heightUnits / 2` and those two
+      are the flattest things in the catalog. It is inherited overlay behaviour, most visible on the
+      new entities; nobody measured an actual overlap. The **dark-stage lighting flip** (side faces
+      lighter than the top) persists unchanged — it lives in the token layer, so the five inherit it
+      identically; still an owner judgement, accepted at WP 0.1.
 - [ ] WP 1.2 — Assets & knowledge cast (`tool`, `resource`, `prompt-template`, `file`,
       `feedback-report`, `scan`, `token-meter`) — spec:
       [`wp-1.2-assets-cast.md`](./wp-1.2-assets-cast.md) · depends on 1.1 · parallel with 1.3
