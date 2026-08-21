@@ -16,6 +16,7 @@ import {
   type WatchNotifySeverity,
   type WatchRuleEventResult,
   type WatchWindowLevel,
+  type WatchWorkflowDispatchTarget,
 } from "@mcp-token-footprint/shared";
 
 /** The compact run view the webhook payload carries (no secrets — a summary of the terminal run). */
@@ -91,6 +92,14 @@ export interface WatchActionServices {
   runGrader(runId: string, graderId: string): Promise<void>;
   /** Decrypt a webhook action's URL by ref (transient; undefined if the ref is unknown). */
   resolveWebhookUrl(secretRef: string): string | undefined;
+  /**
+   * AM-OB11 — send a GitHub Actions `workflow_dispatch`. REQUIRED, not optional: unlike the WP4.3
+   * `notify` seam (which was a placeholder for something unbuilt), the sender exists, so an
+   * omitted wiring would make a configured action silently inert in production. Injected so the
+   * gate never makes a real GitHub call and never reads a real credential (conventions §12); the
+   * implementation is `watch/github-dispatch.ts`, the ONLY place the account token is read.
+   */
+  dispatchWorkflow(target: WatchWorkflowDispatchTarget): Promise<WatchRuleEventResult>;
   /** WP4.3 notification sink — UNDEFINED in WP4.1 => `notify` is accepted but inert. */
   notify?: (request: WatchNotifyRequest) => void;
   /** Injectable fetch for the webhook POST (a test injects a local receiver; prod uses global fetch). */
@@ -141,6 +150,12 @@ export async function executeWatchAction(
       }
       case "webhook": {
         return await executeWebhook(action, ctx, services);
+      }
+      case "workflow_dispatch": {
+        // AM-OB11 — the ONLY action that can start work OUTSIDE this app. It carries no run context
+        // by construction (GitHub 422s an undeclared input), so the on-terminal and windowed paths
+        // hand the dispatcher the identical target — see `executeWatchWindowAction`.
+        return await services.dispatchWorkflow(toDispatchTarget(action));
       }
     }
   } catch (error) {
@@ -249,6 +264,14 @@ export async function executeWatchWindowAction(
         };
         return postWebhook(url, body, services.fetchImpl);
       }
+      case "workflow_dispatch": {
+        // AM-OB11 — this action IS meaningful for a windowed rule, and that is the point of it: "the
+        // error rate crossed 30% over 6h" is exactly when you want CI to re-run the suite. So it must
+        // NOT fall into the "requires a run" default below. The target is identical to the
+        // on-terminal path's, because GitHub rejects any input the workflow does not declare, so
+        // there is no window context to append even if we wanted to.
+        return await services.dispatchWorkflow(toDispatchTarget(action));
+      }
       default:
         // pin / add_to_collection / promote_to_test / run_grader — no run to act on. Honest + audited.
         return {
@@ -259,6 +282,23 @@ export async function executeWatchWindowAction(
   } catch (error) {
     return { ok: false, error: scrub(toMessage(error)) };
   }
+}
+
+/**
+ * AM-OB11 — strip the discriminator off a `workflow_dispatch` action so the dispatcher receives the
+ * plain target. Written out field by field (not `{...action}` minus `type`) so a field added to the
+ * action later is a COMPILE error here rather than something silently forwarded to GitHub.
+ */
+function toDispatchTarget(
+  action: Extract<WatchAction, { type: "workflow_dispatch" }>,
+): WatchWorkflowDispatchTarget {
+  return {
+    owner: action.owner,
+    repo: action.repo,
+    workflow: action.workflow,
+    ref: action.ref,
+    ...(action.inputs !== undefined ? { inputs: action.inputs } : {}),
+  };
 }
 
 function toMessage(error: unknown): string {
