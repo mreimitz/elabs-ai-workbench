@@ -234,10 +234,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   // WP R1.4 (D-AS22) — see `activeAssistantThreadId`'s doc on `AssistantContextValue`.
   const [activeAssistantThreadId, setActiveAssistantThreadId] = useState<string | null>(null);
 
-  // Settings › Features — the operator's Assistant on/off switch. While it is off the API answers
-  // 403 for `/api/assistant/*`, so this provider stops polling auth status entirely (a pointless
-  // request whose only outcome would be a rejection) and force-closes the dock below.
-  const assistantFeatureEnabled = useFeatureEnabled("assistant");
+  // Settings › Features — the operator's App-assistant (dock) on/off switch. Deliberately the DOCK's
+  // own flag, not the full-page workspace's `assistant`: the two are independent features and killing
+  // the workspace must leave this dock alone. While it is off the API answers 403 for
+  // `/api/assistant/*`, so this provider stops polling auth status entirely (a pointless request whose
+  // only outcome would be a rejection) and force-closes the dock below. `authStatus` going null also
+  // drops `authConfigured`, which is what hides every page-hook "Ask the assistant" button.
+  const assistantFeatureEnabled = useFeatureEnabled("app_assistant");
 
   const refreshAuthStatus = useCallback(async () => {
     if (!assistantFeatureEnabled) {

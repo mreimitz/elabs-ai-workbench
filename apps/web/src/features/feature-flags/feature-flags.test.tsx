@@ -110,7 +110,7 @@ describe("FeatureGate", () => {
         <span>the real view</span>
       </FeatureGate>,
     );
-    expect(await screen.findByText("Assistant is turned off")).toBeTruthy();
+    expect(await screen.findByText("Assistant workspace is turned off")).toBeTruthy();
     expect(screen.queryByText("the real view")).toBeNull();
     const link = screen.getByRole("link", { name: /Settings . Features/i });
     expect(link.getAttribute("href")).toBe("/settings/features");
@@ -120,7 +120,7 @@ describe("FeatureGate", () => {
 describe("Settings › Features", () => {
   test("shows one switch per feature, reflecting the current state", async () => {
     renderWithProvider(<FeaturesSection />);
-    const toggle = await screen.findByRole("switch", { name: "Assistant" });
+    const toggle = await screen.findByRole("switch", { name: "Assistant workspace" });
     expect(toggle.getAttribute("aria-checked")).toBe("true");
     // The pane renders straight from the registry, so registering a feature needs no UI change here.
     expect(screen.getAllByRole("switch")).toHaveLength(APP_FEATURE_IDS.length);
@@ -131,25 +131,28 @@ describe("Settings › Features", () => {
 
   test("turning a feature OFF confirms first, naming what disappears", async () => {
     renderWithProvider(<FeaturesSection />);
-    fireEvent.click(await screen.findByRole("switch", { name: "Assistant" }));
+    fireEvent.click(await screen.findByRole("switch", { name: "Assistant workspace" }));
 
     // Nothing is written until the operator confirms.
     expect(api.updateFeatureFlags).not.toHaveBeenCalled();
-    expect(screen.getByText("Turn off Assistant?")).toBeTruthy();
-    expect(screen.getByText("The App-assistant dock and its ⌘J shortcut")).toBeTruthy();
+    expect(screen.getByText("Turn off Assistant workspace?")).toBeTruthy();
+    // The blast radius named is the WORKSPACE's own — the dock is a separate switch and must not
+    // appear here (it did while the two shared one flag).
+    expect(screen.getByText("The /api/hub endpoints (they answer 403 while off)")).toBeTruthy();
+    expect(screen.queryByText("The App-assistant dock and its ⌘J shortcut")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Turn off Assistant" }));
+    fireEvent.click(screen.getByRole("button", { name: "Turn off Assistant workspace" }));
     await waitFor(() => expect(api.updateFeatureFlags).toHaveBeenCalledWith({ assistant: false }));
   });
 
   test("cancelling the confirmation leaves the feature on", async () => {
     renderWithProvider(<FeaturesSection />);
-    fireEvent.click(await screen.findByRole("switch", { name: "Assistant" }));
+    fireEvent.click(await screen.findByRole("switch", { name: "Assistant workspace" }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(api.updateFeatureFlags).not.toHaveBeenCalled();
-    expect(screen.getByRole("switch", { name: "Assistant" }).getAttribute("aria-checked")).toBe(
-      "true",
-    );
+    expect(
+      screen.getByRole("switch", { name: "Assistant workspace" }).getAttribute("aria-checked"),
+    ).toBe("true");
   });
 
   test("turning a feature back ON applies immediately, with no confirmation", async () => {
@@ -161,10 +164,34 @@ describe("Settings › Features", () => {
     });
     renderWithProvider(<FeaturesSection />);
 
-    const toggle = await screen.findByRole("switch", { name: "Assistant" });
+    const toggle = await screen.findByRole("switch", { name: "Assistant workspace" });
     await waitFor(() => expect(toggle.getAttribute("aria-checked")).toBe("false"));
     fireEvent.click(toggle);
     await waitFor(() => expect(api.updateFeatureFlags).toHaveBeenCalledWith({ assistant: true }));
     expect(screen.queryByText(/Turn off/)).toBeNull();
+  });
+
+  // The two assistants are separate rows writing separate keys. Before 2026-08-21 they were one
+  // switch, so turning the workspace off also killed the dock — this pins them apart at the pane.
+  test("the workspace and the dock are two rows that write two different keys", async () => {
+    vi.mocked(api.getFeatureFlags).mockResolvedValue({
+      flags: { ...DEFAULT_APP_FEATURE_FLAGS, assistant: false },
+    });
+    renderWithProvider(<FeaturesSection />);
+
+    const workspace = await screen.findByRole("switch", { name: "Assistant workspace" });
+    const dock = screen.getByRole("switch", { name: "App assistant" });
+    // The workspace being off leaves the dock's own switch on.
+    await waitFor(() => expect(workspace.getAttribute("aria-checked")).toBe("false"));
+    expect(dock.getAttribute("aria-checked")).toBe("true");
+
+    // Turning the dock off writes ONLY the dock's key, and names only the dock's surfaces.
+    fireEvent.click(dock);
+    expect(screen.getByText("Turn off App assistant?")).toBeTruthy();
+    expect(screen.getByText("The App-assistant dock and its ⌘J shortcut")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Turn off App assistant" }));
+    await waitFor(() =>
+      expect(api.updateFeatureFlags).toHaveBeenCalledWith({ app_assistant: false }),
+    );
   });
 });

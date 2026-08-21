@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { afterEach, test } from "node:test";
 import Database from "better-sqlite3";
 import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import {
+  APP_FEATURE_META,
   APP_SETTING_FEATURES_KEY,
   DEFAULT_APP_FEATURE_FLAGS,
   FEATURE_DISABLED_ERROR_CODE,
+  featureForPath,
+  pathMatchesPrefix,
 } from "@mcp-token-footprint/shared";
 import { applyMigrations, type AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
@@ -61,9 +65,13 @@ async function makeApp(): Promise<Harness> {
 
   registerFeatureRoutes(app, features);
 
-  // Two stand-ins for the routes the Assistant feature owns, registered AFTER the guard exactly the
+  // Stand-ins for the routes the two assistant features own, registered AFTER the guard exactly the
   // way `index.ts` registers the real ones — this also proves the root hook covers later routes.
+  // `/api/assistant/threads` belongs to the DOCK (`app_assistant`), `/api/hub/sessions` to the
+  // WORKSPACE (`assistant`), and `/api/assistant/auth/status` to NEITHER — it is the shared Claude
+  // sign-in the workspace's own subscription adapter runs on, so the dock's switch must not touch it.
   app.get("/api/assistant/threads", async () => ({ ok: true }));
+  app.get("/api/assistant/auth/status", async () => ({ ok: true }));
   app.get("/api/hub/sessions", async () => ({ ok: true }));
   // A route no feature owns — must stay reachable no matter what is switched off.
   app.get("/api/scans", async () => ({ ok: true }));
@@ -119,12 +127,24 @@ test("PUT /api/features rejects an unknown feature id with 400", async () => {
 
 test("the guard passes every request through while the feature is ON", async () => {
   const h = await makeApp();
-  for (const path of ["/api/assistant/threads", "/api/hub/sessions", "/api/scans"]) {
+  for (const path of [
+    "/api/assistant/threads",
+    "/api/assistant/auth/status",
+    "/api/hub/sessions",
+    "/api/scans",
+  ]) {
     assert.equal((await fetch(`${h.baseUrl}${path}`)).status, 200, path);
   }
 });
 
-test("turning the Assistant off 403s BOTH of its API prefixes, with a machine-readable code", async () => {
+// ── The two assistants are INDEPENDENT switches ───────────────────────────────────────────────────
+//
+// They were a single `assistant` flag until 2026-08-21, so switching the full-page workspace off also
+// killed the right-hand dock — the defect these three tests pin closed. `assistant` owns `/api/hub`,
+// `app_assistant` owns `/api/assistant`, and neither owns `/api/assistant/auth` (the shared Claude
+// sign-in, which the workspace's own subscription adapter runs on).
+
+test("turning the workspace off 403s /api/hub and leaves the dock's endpoints alone", async () => {
   const h = await makeApp();
   await fetch(`${h.baseUrl}/api/features`, {
     method: "PUT",
@@ -132,13 +152,55 @@ test("turning the Assistant off 403s BOTH of its API prefixes, with a machine-re
     body: JSON.stringify({ assistant: false }),
   });
 
-  for (const path of ["/api/assistant/threads", "/api/hub/sessions"]) {
-    const response = await fetch(`${h.baseUrl}${path}`);
-    assert.equal(response.status, 403, path);
-    const body = (await response.json()) as { error: string; code?: string };
-    assert.equal(body.code, FEATURE_DISABLED_ERROR_CODE, path);
-    assert.match(body.error, /Settings › Features/);
+  const blocked = await fetch(`${h.baseUrl}/api/hub/sessions`);
+  assert.equal(blocked.status, 403);
+  const body = (await blocked.json()) as { error: string; code?: string };
+  assert.equal(body.code, FEATURE_DISABLED_ERROR_CODE);
+  assert.match(body.error, /Settings › Features/);
+
+  // THE REGRESSION: the dock is a different feature and must keep answering.
+  for (const path of ["/api/assistant/threads", "/api/assistant/auth/status"]) {
+    assert.equal((await fetch(`${h.baseUrl}${path}`)).status, 200, path);
   }
+});
+
+test("turning the dock off 403s /api/assistant and leaves the workspace alone", async () => {
+  const h = await makeApp();
+  await fetch(`${h.baseUrl}/api/features`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ app_assistant: false }),
+  });
+
+  const blocked = await fetch(`${h.baseUrl}/api/assistant/threads`);
+  assert.equal(blocked.status, 403);
+  const body = (await blocked.json()) as { error: string; code?: string };
+  assert.equal(body.code, FEATURE_DISABLED_ERROR_CODE);
+  assert.match(body.error, /Settings › Features/);
+
+  // The workspace is a different feature and must keep answering.
+  assert.equal((await fetch(`${h.baseUrl}/api/hub/sessions`)).status, 200);
+});
+
+test("the shared Claude sign-in survives the dock being switched off", async () => {
+  const h = await makeApp();
+  h.features.setFlags({ app_assistant: false });
+
+  // `/api/assistant/auth/*` sits UNDER the dock's own `/api/assistant` prefix but is exempted from it:
+  // Settings › Assistant drives this sign-in and the Hub's subscription adapter runs on the credential
+  // it stores, so a switched-off dock must not lock the owner out of the workspace.
+  for (const path of ["/api/assistant/auth", "/api/assistant/auth/status"]) {
+    assert.equal(h.features.blockingFeature(path), undefined, path);
+  }
+  assert.equal((await fetch(`${h.baseUrl}/api/assistant/auth/status`)).status, 200);
+
+  // The exemption is a prefix, not a substring: a sibling that merely STARTS with the same letters is
+  // still the dock's, and still blocked.
+  assert.equal(h.features.blockingFeature("/api/assistant/authorize")?.id, "app_assistant");
+
+  // Switching BOTH off still leaves the sign-in reachable — it belongs to neither feature.
+  h.features.setFlags({ assistant: false });
+  assert.equal((await fetch(`${h.baseUrl}/api/assistant/auth/status`)).status, 200);
 });
 
 test("a disabled feature never blocks unrelated routes or the flags endpoint itself", async () => {
@@ -146,7 +208,7 @@ test("a disabled feature never blocks unrelated routes or the flags endpoint its
   await fetch(`${h.baseUrl}/api/features`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ assistant: false }),
+    body: JSON.stringify({ app_assistant: false }),
   });
 
   assert.equal((await fetch(`${h.baseUrl}/api/scans`)).status, 200);
@@ -155,7 +217,7 @@ test("a disabled feature never blocks unrelated routes or the flags endpoint its
   const back = await fetch(`${h.baseUrl}/api/features`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ assistant: true }),
+    body: JSON.stringify({ app_assistant: true }),
   });
   assert.equal(back.status, 200);
   assert.equal((await fetch(`${h.baseUrl}/api/assistant/threads`)).status, 200);
@@ -172,8 +234,11 @@ test("a corrupt stored blob resolves to ENABLED rather than taking the feature d
   const h = await makeApp();
   // Write a shape that is valid JSON but not the flag map (the failure mode a hand-edited DB has).
   h.settings.put(APP_SETTING_FEATURES_KEY, "assistant=false");
-  assert.equal(h.features.refresh().assistant, true);
+  const resolved = h.features.refresh();
+  assert.equal(resolved.assistant, true);
+  assert.equal(resolved.app_assistant, true);
   assert.equal((await fetch(`${h.baseUrl}/api/assistant/threads`)).status, 200);
+  assert.equal((await fetch(`${h.baseUrl}/api/hub/sessions`)).status, 200);
 });
 
 // ── Path shapes — a percent-encoded path must not slip past the feature guard ─────────────────────
@@ -188,7 +253,8 @@ test("a corrupt stored blob resolves to ENABLED rather than taking the feature d
 
 test("a percent-encoded path cannot slip past the feature guard while the feature is OFF", async () => {
   const h = await makeApp();
-  h.features.setFlags({ assistant: false });
+  // Both off: the list below spans BOTH features' prefixes, so each entry is genuinely owned.
+  h.features.setFlags({ assistant: false, app_assistant: false });
 
   for (const path of [
     "/api/assistant/threads", // the plain form — the baseline
@@ -206,7 +272,7 @@ test("a percent-encoded path cannot slip past the feature guard while the featur
 
 test("normalization does not make the feature guard block routes no feature owns", async () => {
   const h = await makeApp();
-  h.features.setFlags({ assistant: false });
+  h.features.setFlags({ assistant: false, app_assistant: false });
 
   // An unrelated route stays reachable in BOTH spellings — the hardening must not turn into a
   // blanket refusal of anything containing an escape.
@@ -223,13 +289,79 @@ test("normalization does not make the feature guard block routes no feature owns
 
 test("blockingFeature matches the decoded path directly (the unit behind the two tests above)", async () => {
   const h = await makeApp();
-  h.features.setFlags({ assistant: false });
+  h.features.setFlags({ assistant: false, app_assistant: false });
 
-  assert.equal(h.features.blockingFeature("/api/assistant/x")?.id, "assistant");
-  assert.equal(h.features.blockingFeature("/%61pi/assistant/x")?.id, "assistant");
-  assert.equal(h.features.blockingFeature("/api/%61ssistant/x")?.id, "assistant");
+  assert.equal(h.features.blockingFeature("/api/assistant/x")?.id, "app_assistant");
+  assert.equal(h.features.blockingFeature("/%61pi/assistant/x")?.id, "app_assistant");
+  assert.equal(h.features.blockingFeature("/api/%61ssistant/x")?.id, "app_assistant");
+  assert.equal(h.features.blockingFeature("/api/hub/x")?.id, "assistant");
+  assert.equal(h.features.blockingFeature("/%61pi/hub/x")?.id, "assistant");
+  // The exemption relaxes only on the plain spelling. An ENCODED spelling of it stays blocked, and
+  // that asymmetry is deliberate — the same one the service-token guard documents (D-MCP9): a rule
+  // that *governs* matches the union of every interpretation, a rule that *relaxes* must not. Fastify
+  // would decode `%61uth` and dispatch to the sign-in handler, so relaxing on a candidate the guard
+  // has not itself decoded would hand an attacker a spelling that walks past the switch. Refusing an
+  // oddly-spelled sign-in is a nuisance; waving one through is a hole.
+  assert.equal(h.features.blockingFeature("/api/assistant/auth/status"), undefined);
+  assert.equal(h.features.blockingFeature("/api/assistant/%61uth/status")?.id, "app_assistant");
   assert.equal(h.features.blockingFeature("/api/scans"), undefined);
   assert.equal(h.features.blockingFeature("/%61pi/scans"), undefined);
   // A malformed escape decodes to nothing; it owns no feature and Fastify 400s it before the hook.
   assert.equal(h.features.blockingFeature("/%zz/api/assistant/x"), undefined);
+});
+
+// ── The exemption is a reviewed list, not a shape that can drift ──────────────────────────────────
+//
+// `app_assistant` governs `/api/assistant` MINUS `/api/assistant/auth`. Because the governed prefix is
+// the whole tree, a NEW dock endpoint is covered automatically — the risk runs the other way: the
+// exemption is a deliberate hole in a guard, and a hole widens by accident. So this walks the real
+// route file and asserts the exempted set is EXACTLY the sign-in surface. Adding any route under
+// `/api/assistant/auth`, or moving a dock route under it, turns this red and forces the decision to
+// be made on purpose.
+
+/** Every `/api/*` literal the assistant route file registers, any verb. */
+async function declaredAssistantRoutes(): Promise<string[]> {
+  const source = await readFile(new URL("../src/assistant/routes.ts", import.meta.url), "utf8");
+  const paths = [
+    ...source.matchAll(/\.(?:get|post|put|delete|patch)\s*\(\s*"(\/api\/[^"]+)"/g),
+  ].map((match) => match[1] as string);
+  // A sanity floor: if this reads zero the regex has drifted and every assertion below is vacuous.
+  assert.ok(paths.length >= 15, `expected assistant route literals, got ${paths.length}`);
+  return paths;
+}
+
+test("the dock flag's exemption covers exactly the shared sign-in, and nothing else", async () => {
+  const declared = await declaredAssistantRoutes();
+  const meta = APP_FEATURE_META.app_assistant;
+
+  const owned = declared.filter((path) =>
+    meta.apiPrefixes.some((prefix) => pathMatchesPrefix(path, prefix)),
+  );
+  // Partitioned by the LIVE matcher, not by re-implementing it here.
+  const exempt = [...new Set(owned.filter((path) => featureForPath(path, "api") === undefined))];
+  const governed = [...new Set(owned.filter((path) => featureForPath(path, "api")?.id === meta.id))];
+
+  // Every owned path lands on exactly one side.
+  assert.equal(exempt.length + governed.length, new Set(owned).size);
+
+  // The exempt side, spelled out. This is the reviewed list — changing it is the point of the test.
+  assert.deepEqual(exempt.sort(), [
+    "/api/assistant/auth",
+    "/api/assistant/auth/fallback",
+    "/api/assistant/auth/oauth/cancel",
+    "/api/assistant/auth/oauth/complete",
+    "/api/assistant/auth/oauth/start",
+    "/api/assistant/auth/status",
+    "/api/assistant/auth/token",
+  ]);
+
+  // …and the dock's own working endpoints are on the governed side, so the exemption did not swallow
+  // the feature it is carved out of.
+  for (const path of [
+    "/api/assistant/threads",
+    "/api/assistant/models",
+    "/api/assistant/starters",
+  ]) {
+    assert.ok(governed.includes(path), `${path} should be governed by the dock flag`);
+  }
 });

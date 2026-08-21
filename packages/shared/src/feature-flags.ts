@@ -26,7 +26,7 @@ import { z } from "zod";
 //      byte-identical string-set equality with `ASSISTANT_ROUTE_MANIFEST`.
 
 /** Every switchable feature id. Order here is the order the Settings › Features rows render in. */
-export const APP_FEATURE_IDS = ["assistant", "mcp_server"] as const;
+export const APP_FEATURE_IDS = ["assistant", "app_assistant", "mcp_server"] as const;
 
 export type AppFeatureId = (typeof APP_FEATURE_IDS)[number];
 
@@ -50,22 +50,63 @@ export type AppFeatureMeta = {
   routePrefixes: string[];
   /** API path prefixes the server-side guard rejects with 403 while the feature is off. */
   apiPrefixes: string[];
+  /**
+   * Sub-paths of `apiPrefixes` this feature does **not** own, even though they sit underneath one.
+   * A match here wins over `apiPrefixes` and takes the whole feature out of the running for that
+   * path, so the guard lets the request through.
+   *
+   * This exists for exactly one shape of problem: an endpoint tree that is *mostly* one feature's,
+   * with a shared corner another feature depends on. `/api/assistant/auth/*` is that corner — it is
+   * the Claude sign-in, driven from Settings › Assistant and consumed by the Hub's own subscription
+   * adapter (`apps/api/src/hub/subscription-adapter.ts`), so switching the DOCK off must not lock
+   * the owner out of signing the workspace in.
+   *
+   * Kept honest by `apps/api/test/feature-flags-routes.test.ts`, which walks the real Fastify route
+   * tree and fails if any registered path under an `apiPrefixes` entry is neither governed nor
+   * listed here — so a future `/api/assistant/<new>` cannot escape the guard by being forgotten.
+   */
+  apiExemptPrefixes?: string[];
 };
 
 export const APP_FEATURE_META: Record<AppFeatureId, AppFeatureMeta> = {
+  // ── The two assistants are TWO features, on purpose ────────────────────────────────────────────
+  // They were one switch until 2026-08-21, which meant turning the full-page workspace off also took
+  // the right-hand dock with it — two unrelated surfaces, one blast radius. They share nothing on the
+  // wire (`/api/hub` vs `/api/assistant`) and nothing in the UI, so they are switched independently.
+  // The id `assistant` deliberately stays with the WORKSPACE: it is the larger surface, it owns the
+  // sidebar group and the `/assistant/*` routes, and keeping the id means an operator who had already
+  // switched it off keeps the workspace off across this change (an unknown id would silently resolve
+  // back to ON — rule 1 above). The dock arrives as the new id, hence ON by default.
   assistant: {
     id: "assistant",
-    label: "Assistant",
+    label: "Assistant workspace",
     description:
-      "The AI assistant: the full-page Assistant workspace with its agents, crews, projects and audit trail, plus the App-assistant dock that answers about the page you are on.",
+      "The full-page Assistant at /assistant: its sessions, agents, crews, projects and audit trail. Does not affect the App-assistant dock — that is the switch below.",
     surfaces: [
       "The Assistant, Sessions, Agents & Crews, Projects and Audit items in the sidebar",
-      "The App-assistant dock and its ⌘J shortcut",
-      "The “Ask the assistant” buttons on pages that offer them",
-      "The /api/assistant and /api/hub endpoints (they answer 403 while off)",
+      "The /assistant pages (they show a “turned off” panel while off)",
+      "The /api/hub endpoints (they answer 403 while off)",
     ],
     routePrefixes: ["/assistant"],
-    apiPrefixes: ["/api/assistant", "/api/hub"],
+    apiPrefixes: ["/api/hub"],
+  },
+  app_assistant: {
+    id: "app_assistant",
+    label: "App assistant",
+    description:
+      "The dock on the right-hand side that answers about the page you are on. Does not affect the full-page Assistant workspace — that is the switch above.",
+    surfaces: [
+      "The App-assistant dock and its ⌘J shortcut",
+      "The “Ask the assistant” buttons on pages that offer them",
+      "The /api/assistant endpoints (they answer 403 while off)",
+    ],
+    // No route of its own: the dock is a panel beside whatever page you are on, never a URL. An empty
+    // list is the honest declaration — `featureForPath(…, "route")` simply never matches it.
+    routePrefixes: [],
+    apiPrefixes: ["/api/assistant"],
+    // The Claude sign-in is shared, NOT the dock's: Settings › Assistant drives it and the Hub's
+    // subscription adapter runs on it. Switching the dock off must not lock the workspace out.
+    apiExemptPrefixes: ["/api/assistant/auth"],
   },
   mcp_server: {
     id: "mcp_server",
@@ -174,6 +215,10 @@ export function featureForPath(
 ): AppFeatureMeta | undefined {
   for (const id of APP_FEATURE_IDS) {
     const meta = APP_FEATURE_META[id];
+    // An exempt sub-path takes the feature out of the running BEFORE its own prefixes are consulted,
+    // so a shared corner of an otherwise-owned tree (`/api/assistant/auth`) stays reachable while the
+    // feature is off. Route matching has no exemptions — a route either paints the panel or it does not.
+    if (kind === "api" && meta.apiExemptPrefixes?.some((p) => pathMatchesPrefix(path, p))) continue;
     const prefixes = kind === "route" ? meta.routePrefixes : meta.apiPrefixes;
     if (prefixes.some((prefix) => pathMatchesPrefix(path, prefix))) return meta;
   }

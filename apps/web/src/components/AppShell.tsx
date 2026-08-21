@@ -342,12 +342,15 @@ export function AppShell({
   children,
 }: AppShellProps) {
   const { pathname } = useLocation();
-  // Settings › Features — while the Assistant is switched off, its whole sidebar group AND the
-  // App-assistant dock (toggle, split column, mobile Sheet) are gone. Read here rather than drilled
-  // as a prop so every dock/nav site in this file agrees; outside a provider it reads ENABLED, so
-  // unit tests that render `AppShell` bare behave exactly like a stock install.
+  // Settings › Features — TWO independent switches, one per assistant surface. `assistant` is the
+  // full-page workspace and owns the sidebar group; `app_assistant` is the right-hand dock and owns
+  // the toggle, the split column and the mobile Sheet. They are read separately on purpose: turning
+  // the workspace off must leave the dock alone, and vice versa. Read here rather than drilled as
+  // props so every dock/nav site in this file agrees; outside a provider both read ENABLED, so unit
+  // tests that render `AppShell` bare behave exactly like a stock install.
   const assistantEnabled = useFeatureEnabled("assistant");
-  const dockAvailable = dockAvailableProp && assistantEnabled;
+  const appAssistantEnabled = useFeatureEnabled("app_assistant");
+  const dockAvailable = dockAvailableProp && appAssistantEnabled;
   // Only render a breadcrumb when there is real drill depth (≥2 crumbs): a top-level view + a
   // detail. On top-level views we render nothing (never a single crumb that repeats the page H1).
   const hasDrillDepth = breadcrumbs.length >= 2;

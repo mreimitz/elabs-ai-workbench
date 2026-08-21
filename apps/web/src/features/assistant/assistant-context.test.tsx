@@ -6,10 +6,12 @@ import type { AssistantAuthStatus } from "@mcp-token-footprint/shared";
 
 vi.mock("../../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../lib/api")>();
-  return { ...actual, getAssistantAuthStatus: vi.fn() };
+  return { ...actual, getAssistantAuthStatus: vi.fn(), getFeatureFlags: vi.fn() };
 });
 
 import * as api from "../../lib/api";
+import { DEFAULT_APP_FEATURE_FLAGS } from "@mcp-token-footprint/shared";
+import { FeatureFlagsProvider, useFeatureEnabled } from "../feature-flags/feature-flags-context";
 import { AssistantProvider, deriveAssistantEnvelope, useAssistant } from "./assistant-context";
 
 const DOCK_OPEN_KEY = "mcp-token-footprint.assistant.dock-open";
@@ -30,6 +32,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   vi.mocked(api.getAssistantAuthStatus).mockResolvedValue(SIGNED_OUT);
+  vi.mocked(api.getFeatureFlags).mockResolvedValue({ flags: DEFAULT_APP_FEATURE_FLAGS });
 });
 
 // ── deriveAssistantEnvelope — pure, no React ──────────────────────────────────────────────────────
@@ -286,5 +289,64 @@ describe("executeUiAction", () => {
     expect(screen.getByTestId("loc").textContent).toBe("/dashboard");
     expect(errorSpy).toHaveBeenCalled();
     errorSpy.mockRestore();
+  });
+});
+
+// ── Settings › Features — the dock rides on `app_assistant`, NOT on the workspace's `assistant` ────
+//
+// The two were one flag until 2026-08-21, so switching the full-page Assistant workspace off also
+// stopped this provider polling auth and force-closed the dock. They are independent features now,
+// and `authConfigured` is what every page-hook "Ask the assistant" button keys off — so the flag the
+// provider reads decides whether those buttons survive a workspace switch-off too.
+
+describe("AssistantProvider × Settings › Features", () => {
+  function renderWithFlags(overrides: { assistant?: boolean; app_assistant?: boolean }) {
+    vi.mocked(api.getAssistantAuthStatus).mockResolvedValue(SIGNED_IN);
+    vi.mocked(api.getFeatureFlags).mockResolvedValue({
+      flags: { ...DEFAULT_APP_FEATURE_FLAGS, ...overrides },
+    });
+    // The flag map is fetched, so it is UNRESOLVED for the first frames and reads ENABLED meanwhile
+    // (deliberate — nothing flickers away during boot). `dockFlag` is exposed alongside the assistant
+    // so a test can wait for the flag to actually land instead of asserting on that boot frame.
+    return renderHook(
+      () => ({ assistant: useAssistant(), dockFlag: useFeatureEnabled("app_assistant") }),
+      {
+        wrapper: ({ children }: { children: ReactNode }) => (
+          <MemoryRouter initialEntries={["/dashboard"]}>
+            <FeatureFlagsProvider>
+              <AssistantProvider>{children}</AssistantProvider>
+            </FeatureFlagsProvider>
+          </MemoryRouter>
+        ),
+      },
+    );
+  }
+
+  test("switching the WORKSPACE off leaves the dock signed in and openable", async () => {
+    const { result } = renderWithFlags({ assistant: false });
+    // THE REGRESSION: auth still resolves, so the dock toggle and every page hook stay reachable.
+    await waitFor(() => expect(result.current.assistant.authConfigured).toBe(true));
+    act(() => result.current.assistant.openAssistant());
+    expect(result.current.assistant.isOpen).toBe(true);
+  });
+
+  test("switching the DOCK off stops the auth poll and force-closes it", async () => {
+    const { result } = renderWithFlags({ app_assistant: false });
+    // Wait for the flag to LAND — asserting before that would just be reading the boot frame, where
+    // an unresolved flag map still reads enabled.
+    await waitFor(() => expect(result.current.dockFlag).toBe(false));
+    // …and let any auth request the boot frame already started settle, so the assertion below is
+    // about the switched-off state rather than whichever promise happened to land last.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    // While the dock is off, asking for auth is a no-op rather than a request that would 403.
+    await act(async () => {
+      await result.current.assistant.refreshAuthStatus();
+    });
+    expect(result.current.assistant.authStatus).toBeNull();
+    // `authConfigured` false is what hides the toggle and every "Ask the assistant" page hook.
+    expect(result.current.assistant.authConfigured).toBe(false);
+    expect(result.current.assistant.isOpen).toBe(false);
   });
 });

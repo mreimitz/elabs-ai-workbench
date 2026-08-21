@@ -160,6 +160,9 @@ research, and **missions**, where a planner proposes a team of subagents (roles,
 budgets) that run in parallel and synthesize a cited answer. Saved agents and crews live in a
 directory you can browse, reuse, and cost-track.
 
+The two are **separate switches** in Settings › Features — *App assistant* for the dock, *Assistant
+workspace* for the Hub — so you can run either one without the other.
+
 ![Agents & Crews: 9 saved agents organized into 10 crews, each with its model, tools, skills, and run history.](docs/screenshots/hub-agents.png)
 
 ### 10 · The bench itself, MCP-operable

@@ -5,6 +5,24 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the two assistants get their own switches
+
+Settings › Features carried one switch called **Assistant**. Turning it off did what it said and
+rather more: the full-page Assistant workspace disappeared from the sidebar *and* so did the
+App-assistant dock on the right-hand side of every page — two unrelated surfaces sharing one
+off-switch, with no way to keep one and drop the other.
+
+**They are now two switches.** *Assistant workspace* covers the `/assistant` pages and their sidebar
+group. *App assistant* covers the right-hand dock, its ⌘J shortcut and the “Ask the assistant”
+buttons that open it. Each turn-off confirmation names only its own surfaces, and turning either one
+off leaves the other exactly as it was.
+
+The Claude sign-in in Settings › Assistant belongs to neither and survives both: the workspace runs
+on that same credential, so switching the dock off can no longer lock you out of signing in.
+
+An instance that already had the Assistant switched off keeps the **workspace** off. The dock is a
+newly separate capability and arrives on, like every other feature does.
+
 ## Unreleased — the list rail becomes a place
 
 Servers, Skills and Collections used to be a fixed 288-pixel list column beside a detail pane. One

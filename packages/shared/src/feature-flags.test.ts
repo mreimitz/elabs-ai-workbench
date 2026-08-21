@@ -111,12 +111,36 @@ describe("pathMatchesPrefix / featureForPath", () => {
     assert.equal(featureForPath("/assistant/agents", "api"), undefined);
   });
 
-  it("resolves api paths to the owning feature (both prefixes)", () => {
-    assert.equal(featureForPath("/api/assistant/threads", "api")?.id, "assistant");
+  it("resolves api paths to the owning feature", () => {
+    // The two assistants own DIFFERENT trees — that is the whole point of the split.
     assert.equal(featureForPath("/api/hub/sessions", "api")?.id, "assistant");
+    assert.equal(featureForPath("/api/assistant/threads", "api")?.id, "app_assistant");
     assert.equal(featureForPath("/api/features", "api"), undefined);
     assert.equal(featureForPath("/api/health", "api"), undefined);
     assert.equal(featureForPath("/api/scans", "api"), undefined);
+  });
+
+  it("lets an exempt sub-path out of its feature's own governed tree", () => {
+    // `/api/assistant/auth` is the shared Claude sign-in: it sits under the dock's prefix but the
+    // WORKSPACE runs on it too, so the dock's switch must not reach it.
+    assert.equal(featureForPath("/api/assistant/auth", "api"), undefined);
+    assert.equal(featureForPath("/api/assistant/auth/status", "api"), undefined);
+    assert.equal(featureForPath("/api/assistant/auth/oauth/start", "api"), undefined);
+    // The exemption is a PREFIX, not a substring — a sibling that merely starts the same is still
+    // the dock's. `/api/assistant/authorize` is the shape that would leak if this used startsWith.
+    assert.equal(featureForPath("/api/assistant/authorize", "api")?.id, "app_assistant");
+    assert.equal(featureForPath("/api/assistant/auth-x", "api")?.id, "app_assistant");
+    // Exemptions are an API-side concept only; route matching has none to consult.
+    assert.equal(featureForPath("/assistant/agents", "route")?.id, "assistant");
+  });
+
+  it("keeps the workspace's route prefix off the dock, which owns no route at all", () => {
+    // The dock is a panel beside the current page, never a URL — nothing renders a "turned off"
+    // panel for it, and no route may resolve to it.
+    assert.deepEqual(APP_FEATURE_META.app_assistant.routePrefixes, []);
+    for (const path of ["/assistant", "/assistant/agents", "/dashboard", "/scans"]) {
+      assert.notEqual(featureForPath(path, "route")?.id, "app_assistant", path);
+    }
   });
 });
 
