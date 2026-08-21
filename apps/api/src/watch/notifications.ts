@@ -246,10 +246,17 @@ function buildNotification(
   if (request.window) {
     const w = request.window;
     const valueText = w.value !== null ? ` — measured ${w.value}` : "";
+    // AM-OB10 — say WHICH thing happened. A no-data alert must not read like a threshold crossing
+    // (there is no measurement to report), and a warning must not read like the alert.
+    const crossed = w.level === "warn" && w.warnThreshold !== undefined ? w.warnThreshold : w.threshold;
+    const defaultBody = w.noData
+      ? `No runs at all in the last ${w.window} — nothing was measured.`
+      : `${w.measure} ${w.op} ${crossed} over ${w.window}${valueText}` +
+        (w.level === "warn" ? " (warning level)" : "");
     return {
       severity: request.severity,
       title: w.ruleName,
-      body: request.template ?? `${w.measure} ${w.op} ${w.threshold} over ${w.window}${valueText}`,
+      body: request.template ?? defaultBody,
       linkPath: "/testing/observability/rules",
       ruleId: w.ruleId,
       late: w.late,

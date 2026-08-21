@@ -5,9 +5,12 @@ import {
   RUN_METRICS_GROUP_BY,
   RUN_METRICS_MEASURES,
   WATCH_COOLDOWN_MAX_MINUTES,
+  WATCH_MIN_INTERVAL_MAX_MINUTES,
+  WATCH_NO_DATA_POLICIES,
   WATCH_NOTIFY_SEVERITIES,
   WATCH_WINDOW_DURATIONS,
   WATCH_WINDOW_OPS,
+  validateWatchThresholds,
 } from "@mcp-token-footprint/shared";
 import {
   Alert,
@@ -158,6 +161,17 @@ export function RuleEditorDialog({
       if (!validation.ok) {
         setFormError(validation.message);
         setActiveSectionId("actions");
+        return;
+      }
+    }
+    // AM-OB10 — a warning that is not strictly LESS severe than the alert can never fire at the
+    // warning level. Caught here with the same shared predicate the API's zod uses, so the operator
+    // gets an inline message instead of a 400.
+    if (state.trigger === "windowed") {
+      const thresholds = validateWatchThresholds(state.window);
+      if (!thresholds.ok) {
+        setFormError(thresholds.message);
+        setActiveSectionId("trigger");
         return;
       }
     }
@@ -362,6 +376,25 @@ function TriggerSection({
               </Text>
             </div>
           </FieldRow>
+          {/* AM-OB10 — the on-terminal analogue of a windowed rule's cooldown. Without it, a broken
+              environment producing 50 failing runs produces 50 notifications. */}
+          <FieldRow id="rule-min-interval" label="Minimum minutes between alerts">
+            <div className="flex items-center gap-2">
+              <NumberInput
+                id="rule-min-interval"
+                value={state.minIntervalMinutes}
+                min={0}
+                max={WATCH_MIN_INTERVAL_MAX_MINUTES}
+                step={5}
+                clamp
+                onValueChange={(value) => patch({ minIntervalMinutes: value ?? 0 })}
+                className="w-28"
+              />
+              <Text variant="meta" tone="muted">
+                min · 0 = alert on every matching run
+              </Text>
+            </div>
+          </FieldRow>
         </DialogSection>
       ) : (
         <WindowConfigSection state={state} onChange={onChange} />
@@ -369,6 +402,13 @@ function TriggerSection({
     </div>
   );
 }
+
+/** AM-OB10 — what an EMPTY window means for this rule, in the operator's words. */
+const NO_DATA_POLICY_LABELS: Record<(typeof WATCH_NO_DATA_POLICIES)[number], string> = {
+  hold: "Hold — don't fire, don't recover (default)",
+  ok: "Treat as OK — count it as below the threshold",
+  notify: "Alert me — no runs at all is the problem",
+};
 
 function WindowConfigSection({
   state,
@@ -380,6 +420,9 @@ function WindowConfigSection({
   const window = state.window;
   const patchWindow = (partial: Partial<RuleFormState["window"]>) =>
     onChange({ ...state, window: { ...window, ...partial } });
+  // The SAME predicate the API's zod runs, so the inline message and the 400 can never disagree.
+  const thresholdCheck = validateWatchThresholds(window);
+  const warnError = thresholdCheck.ok ? null : thresholdCheck.message;
 
   return (
     <DialogSection title="Window threshold" description="measure op threshold, over a trailing window.">
@@ -456,13 +499,59 @@ function WindowConfigSection({
           </Select>
         </FieldRow>
 
-        <FieldRow id="window-threshold" label="Threshold">
+        <FieldRow id="window-threshold" label="Alert threshold">
           <NumberInput
             id="window-threshold"
             value={window.threshold}
             step={0.01}
             onValueChange={(value) => patchWindow({ threshold: value ?? 0 })}
           />
+        </FieldRow>
+
+        {/* AM-OB10 — an OPTIONAL second, less severe threshold. Crossing only this fires one step
+            down the existing severity ladder; crossing the alert fires at the configured one. */}
+        <FieldRow
+          id="window-warn-threshold"
+          label="Warning threshold (optional)"
+          {...(warnError !== null ? { error: warnError } : {})}
+        >
+          <div className="flex items-center gap-2">
+            <NumberInput
+              id="window-warn-threshold"
+              value={window.warnThreshold ?? null}
+              step={0.01}
+              placeholder="None…"
+              onValueChange={(value) =>
+                patchWindow({ warnThreshold: value === null ? undefined : value })
+              }
+            />
+            <Text variant="meta" tone="muted" className="text-pretty">
+              {window.op === ">=" ? "Below the alert threshold" : "Above the alert threshold"} · one
+              severity step lower
+            </Text>
+          </div>
+        </FieldRow>
+
+        {/* AM-OB10 — what an EMPTY window means. Before this existed, an empty window was recorded
+            as a RECOVERY: a bench that went silent while the rule was firing read as good news. */}
+        <FieldRow id="window-no-data" label="When no runs happened">
+          <Select
+            value={window.noData ?? "hold"}
+            onValueChange={(value) =>
+              patchWindow({ noData: value as NonNullable<typeof window.noData> })
+            }
+          >
+            <SelectTrigger id="window-no-data">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {WATCH_NO_DATA_POLICIES.map((policy) => (
+                <SelectItem key={policy} value={policy}>
+                  {NO_DATA_POLICY_LABELS[policy]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FieldRow>
 
         <FieldRow id="window-cooldown" label="Cooldown (minutes)">

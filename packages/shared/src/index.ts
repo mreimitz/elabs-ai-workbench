@@ -20,4 +20,5 @@ export * from "./security-posture.js";
 export * from "./skill-security.js";
 export * from "./token-usage.js";
 export * from "./types.js";
+export * from "./watch-state.js";
 export * from "./workbench-mcp.js";

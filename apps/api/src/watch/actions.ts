@@ -10,10 +10,12 @@
 // secret store transiently and NEVER echoed into a result/detail/error/log.
 
 import {
+  notifySeverityForLevel,
   WATCH_WEBHOOK_TIMEOUT_MS,
   type WatchAction,
   type WatchNotifySeverity,
   type WatchRuleEventResult,
+  type WatchWindowLevel,
 } from "@mcp-token-footprint/shared";
 
 /** The compact run view the webhook payload carries (no secrets — a summary of the terminal run). */
@@ -44,10 +46,19 @@ export interface WatchWindowSummaryView {
   window: string;
   windowStart: string;
   windowEnd: string;
-  /** The breach-direction extreme measure value; null only in edge paths (a fire always has a value). */
+  /** The breach-direction extreme measure value; null for a NO-DATA fire (AM-OB10) — never 0. */
   value: number | null;
   /** True when the window completed while the app was away (boot catch-up). */
   late: boolean;
+  /** AM-OB10 — the rule's optional WARNING threshold, when it has one (so an alert can say which of
+   *  the two levels was crossed and what the other one is). */
+  warnThreshold?: number;
+  /** AM-OB10 — the severity LEVEL this fire reached. Absent on a single-threshold rule (always an
+   *  alert) and on a no-data fire. A `warn` DEMOTES the notify action's configured severity by one. */
+  level?: WatchWindowLevel;
+  /** AM-OB10 — true when the window contained NO runs and the rule's no-data policy is `notify`.
+   *  `value` is then null: silence is the signal, not a fabricated zero. */
+  noData?: boolean;
 }
 
 /**
@@ -210,19 +221,23 @@ export async function executeWatchWindowAction(
   try {
     switch (action.type) {
       case "notify": {
+        // AM-OB10 — a WARN crossing demotes the configured severity by one step in the EXISTING
+        // vocabulary (`critical`→`warning`→`info`); an ALERT (and a single-threshold rule, and a
+        // no-data fire) keeps it exactly as configured. No second severity vocabulary.
+        const severity = notifySeverityForLevel(action.severity, ctx.window.level);
         if (!services.notify) {
           // WP4.3 seam — accepted + audited, inert until the notification sink lands (no scheduler change then).
           return {
             ok: true,
-            detail: `notify (${action.severity}) accepted — inert until WP4.3`,
+            detail: `notify (${severity}) accepted — inert until WP4.3`,
           };
         }
         services.notify({
-          severity: action.severity,
+          severity,
           window: ctx.window,
           ...(action.template !== undefined ? { template: action.template } : {}),
         });
-        return { ok: true, detail: `notify (${action.severity})` };
+        return { ok: true, detail: `notify (${severity})` };
       }
       case "webhook": {
         const url = services.resolveWebhookUrl(action.secretRef);

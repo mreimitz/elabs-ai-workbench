@@ -44,6 +44,9 @@ export function bucketForWindow(window: WatchWindowDuration): MetricsBucket {
   }
 }
 
+/** AM-OB10 — `warnThreshold` and `noData` are deliberately ABSENT here: a NEW rule is a
+ *  single-threshold rule under the default `hold` no-data policy, exactly like every rule that
+ *  already exists. Both are opt-in in the editor. */
 export function defaultWindowConfig(): WatchWindowConfig {
   const window: WatchWindowDuration = "1h";
   return {
@@ -181,6 +184,9 @@ export type RuleFormState = {
    *  meaningful for `on_terminal` (the deterministic per-run sampling the engine applies). */
   samplePercent: number;
   window: WatchWindowConfig;
+  /** AM-OB10 — minimum minutes between action dispatches for an `on_terminal` rule. 0 = no limit
+   *  (the field is then omitted on submit, so an untouched rule stays exactly as it was). */
+  minIntervalMinutes: number;
   actions: ActionFormState;
 };
 
@@ -192,6 +198,7 @@ export function emptyRuleFormState(): RuleFormState {
     filter: {},
     samplePercent: 100,
     window: defaultWindowConfig(),
+    minIntervalMinutes: 0,
     actions: emptyActionFormState(),
   };
 }
@@ -204,6 +211,7 @@ export function ruleToFormState(rule: WatchRule): RuleFormState {
     filter: rule.filter,
     samplePercent: rule.sample !== undefined ? Math.round(rule.sample * 100) : 100,
     window: rule.window ?? defaultWindowConfig(),
+    minIntervalMinutes: rule.minIntervalMinutes ?? 0,
     actions: actionsToFormState(rule.actions),
   };
 }
@@ -225,6 +233,9 @@ export function toWatchRuleInput(state: RuleFormState): WatchRuleInput {
   };
   if (state.trigger === "on_terminal" && state.samplePercent < 100) {
     input.sample = Math.max(0, Math.min(1, state.samplePercent / 100));
+  }
+  if (state.trigger === "on_terminal" && state.minIntervalMinutes > 0) {
+    input.minIntervalMinutes = state.minIntervalMinutes;
   }
   if (state.trigger === "windowed") {
     input.window = { ...state.window, bucket: bucketForWindow(state.window.window) };
@@ -248,6 +259,10 @@ export function toWatchRulePatch(state: RuleFormState, actionsTouched: boolean):
   patch.sample = state.trigger === "on_terminal" && state.samplePercent < 100
     ? Math.max(0, Math.min(1, state.samplePercent / 100))
     : undefined;
+  // AM-OB10 — always sent, so CLEARING works: 0 means "no limit", and the repository normalizes it
+  // to NULL. A windowed rule sends 0 too, because the interval is an `on_terminal` concept only (the
+  // windowed analogue is `window.cooldownMinutes`).
+  patch.minIntervalMinutes = state.trigger === "on_terminal" ? state.minIntervalMinutes : 0;
   if (state.trigger === "windowed") {
     patch.window = { ...state.window, bucket: bucketForWindow(state.window.window) };
   }

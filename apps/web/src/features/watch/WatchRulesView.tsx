@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import type { WatchRule, WatchRuleEvent } from "@mcp-token-footprint/shared";
+import {
+  isWatchRulePaused,
+  WATCH_PAUSE_PRESET_MINUTES,
+  type WatchRule,
+  type WatchRuleEvent,
+} from "@mcp-token-footprint/shared";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +31,7 @@ import {
   buttonVariants,
   toast,
 } from "@elabs-ai/components-ui";
-import { Bell, Copy, ListChecks, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { Bell, BellOff, Copy, ListChecks, MoreHorizontal, Pause, Pencil, Play, Plus, Trash2 } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { PageShell } from "../../components/PageShell";
 import { ViewToolbar } from "../../components/ViewToolbar";
@@ -134,6 +139,39 @@ export function WatchRulesView() {
     }
   }
 
+  /**
+   * AM-OB10 — pause ("stop telling me until <time>") is NOT disable ("I don't want this rule"). A
+   * paused rule keeps evaluating and keeps recording its state; only the actions are suppressed, so
+   * it never comes back armed and blind. `minutes === null` resumes.
+   */
+  async function setPause(rule: WatchRule, minutes: number | null) {
+    const pausedUntil =
+      minutes === null ? null : new Date(Date.now() + minutes * 60_000).toISOString();
+    const previous = rule.pausedUntil;
+    setRules((current) =>
+      current.map((r) =>
+        r.id === rule.id
+          ? { ...r, ...(pausedUntil === null ? { pausedUntil: undefined } : { pausedUntil }) }
+          : r,
+      ),
+    );
+    try {
+      await updateWatchRule(rule.id, { pausedUntil });
+      toast.success(minutes === null ? "Rule resumed" : "Rule paused", { description: rule.name });
+    } catch (error) {
+      setRules((current) =>
+        current.map((r) =>
+          r.id === rule.id
+            ? { ...r, ...(previous === undefined ? { pausedUntil: undefined } : { pausedUntil: previous }) }
+            : r,
+        ),
+      );
+      notifyError("Couldn’t update the rule. Try again.", {
+        description: getErrorMessage(error),
+      });
+    }
+  }
+
   async function performDelete() {
     if (!pendingDelete) return;
     const target = pendingDelete;
@@ -200,6 +238,7 @@ export function WatchRulesView() {
                 onDuplicate={() => openDuplicate(rule)}
                 onAudit={() => openAudit(rule)}
                 onDelete={() => setPendingDelete(rule)}
+                onSetPause={(minutes) => void setPause(rule, minutes)}
               />
             </li>
           ))}
@@ -240,6 +279,13 @@ export function WatchRulesView() {
   );
 }
 
+/** AM-OB10 — the pause durations offered in the row menu ("stop telling me until…"). */
+const PAUSE_PRESET_LABELS: Record<number, string> = {
+  60: "Pause for 1 hour",
+  240: "Pause for 4 hours",
+  1440: "Pause for 24 hours",
+};
+
 function RuleRow({
   rule,
   stats,
@@ -248,6 +294,7 @@ function RuleRow({
   onDuplicate,
   onAudit,
   onDelete,
+  onSetPause,
 }: {
   rule: WatchRule;
   stats: { fireCount: number; lastFiredAt: string | null } | undefined;
@@ -256,7 +303,10 @@ function RuleRow({
   onDuplicate: () => void;
   onAudit: () => void;
   onDelete: () => void;
+  /** `null` resumes; a number pauses for that many minutes. */
+  onSetPause: (minutes: number | null) => void;
 }) {
+  const paused = isWatchRulePaused(rule, Date.now());
   return (
     <Card>
       <CardContent className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-3">
@@ -271,6 +321,16 @@ function RuleRow({
               <Text className="min-w-0 truncate font-medium">{rule.name}</Text>
               <Badge variant="secondary">{triggerLabel(rule.trigger)}</Badge>
               {!rule.enabled ? <Badge variant="outline">disabled</Badge> : null}
+              {/* AM-OB10 — visibly DISTINCT from "disabled": the rule is still on and still
+                  evaluating, it just isn't telling you about it until the stated time. */}
+              {paused && rule.enabled ? (
+                <Badge variant="outline">
+                  <BellOff aria-hidden />
+                  <span>
+                    paused · resumes {rule.pausedUntil ? formatRelativeTime(rule.pausedUntil) : "soon"}
+                  </span>
+                </Badge>
+              ) : null}
             </div>
             <Text variant="meta" tone="muted" className="min-w-0 truncate">
               {actionsSummary(rule.actions)}
@@ -300,6 +360,20 @@ function RuleRow({
               </IconButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {paused ? (
+                <DropdownMenuItem onSelect={() => onSetPause(null)}>
+                  <Play aria-hidden />
+                  <span>Resume now</span>
+                </DropdownMenuItem>
+              ) : (
+                WATCH_PAUSE_PRESET_MINUTES.map((minutes) => (
+                  <DropdownMenuItem key={minutes} onSelect={() => onSetPause(minutes)}>
+                    <Pause aria-hidden />
+                    <span>{PAUSE_PRESET_LABELS[minutes] ?? `Pause for ${minutes} min`}</span>
+                  </DropdownMenuItem>
+                ))
+              )}
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onDuplicate}>
                 <Copy aria-hidden />
                 <span>Duplicate</span>

@@ -634,6 +634,49 @@ export const WATCH_CATCHUP_MAX_WINDOWS = 168;
 // accidental huge value can't be stored. A week is plenty for a "remind me again" cadence.
 export const WATCH_COOLDOWN_MAX_MINUTES = 7 * 24 * 60;
 
+// --- Observability — watch-rule severity / state semantics (RM-17 Phase 6, AM-OB10) ---------------
+// Three gaps the shipped WP4.1/WP4.2 engine left open, closed additively:
+//   (a) ONE threshold with no severity on it → an optional WARNING threshold BELOW the ALERT one;
+//   (b) an EMPTY window scored as `breached:false` and therefore recorded as RECOVERY — a bench that
+//       goes silent while a rule is firing read as good news → an explicit NO-DATA outcome + policy;
+//   (c) an `on_terminal` rule had NO suppression at all (50 failing runs → 50 notifications) → an
+//       optional minimum interval between action dispatches.
+// Nothing here adds a second severity vocabulary: `WATCH_NOTIFY_SEVERITIES` above stays the only one.
+
+/** What a windowed rule does when its window contained NO runs at all.
+ *  - `hold`   — neither fire nor recover; the rule keeps whatever state it was in (the DEFAULT, and
+ *               the only policy that cannot lie in either direction);
+ *  - `ok`     — treat an empty window as "below threshold" (the pre-AM-OB10 behaviour, kept as an
+ *               EXPLICIT opt-in rather than as an accident);
+ *  - `notify` — an empty window IS the signal; dispatch the rule's actions (subject to the same
+ *               arm/cooldown machine a breach uses). */
+export const WATCH_NO_DATA_POLICIES = ["hold", "ok", "notify"] as const;
+/** The policy an existing rule (and any rule that does not choose) resolves to. */
+export const WATCH_DEFAULT_NO_DATA_POLICY = "hold";
+/** The two severity LEVELS a threshold crossing can reach. `alert` is the rule's `threshold`; `warn`
+ *  is the optional, strictly-less-severe `warnThreshold`. This is NOT a severity vocabulary — it is
+ *  resolved INTO `WATCH_NOTIFY_SEVERITIES` (a `warn` crossing demotes the action's severity by one). */
+export const WATCH_WINDOW_LEVELS = ["warn", "alert"] as const;
+/** The outcome of scoring ONE window — what the evaluator decided and what the preview reports. */
+export const WATCH_WINDOW_STATES = ["no_data", "ok", "warn", "alert"] as const;
+/** Guard on an `on_terminal` rule's minimum interval between action dispatches (minutes); mirrors
+ *  {@link WATCH_COOLDOWN_MAX_MINUTES}, which is the windowed equivalent. */
+export const WATCH_MIN_INTERVAL_MAX_MINUTES = 7 * 24 * 60;
+/** The pause durations the rules list offers ("stop telling me until…", 1h / 4h / 24h). A pause is a
+ *  timestamp, so it expires on its own — there is no sweep and no state to un-stick. */
+export const WATCH_PAUSE_PRESET_MINUTES = [60, 240, 1440] as const;
+
+/** Audit markers this WP adds beside the shipped `window_fire`/`window_recover`/`window_catchup`/
+ *  `sampled_out`/`test_fire`/`error` rows. `watch_rule_events.action` is deliberately NOT
+ *  CHECK-constrained (see `db/schema.ts`), so a new marker is a zero-migration change — and
+ *  {@link WATCH_MARKER_WINDOW_NO_DATA} is deliberately NOT one of the two markers the repository's
+ *  `getWindowState` re-seeds from, which is what makes the `hold` policy hold. */
+export const WATCH_MARKER_WINDOW_NO_DATA = "window_no_data";
+/** Recorded when a PAUSED rule reached the point where it would have dispatched actions. */
+export const WATCH_MARKER_PAUSED = "paused";
+/** Recorded when an `on_terminal` rule matched but its minimum interval had not elapsed. */
+export const WATCH_MARKER_RATE_LIMITED = "rate_limited";
+
 // --- Observability — notification center (planning/Roadmap/RM-17-observability/, WP4.3, D-OB19) -----------------
 // The persistent in-app notification center the `notify` watch action (WP4.1, unblocked here) writes
 // to — the bell in the AppShell reads/streams these. Severities are the SAME closed vocabulary as

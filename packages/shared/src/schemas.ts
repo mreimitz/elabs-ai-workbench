@@ -132,6 +132,8 @@ import {
   TRIGGER_KINDS,
   WAITING_INPUT_REASONS,
   WATCH_COOLDOWN_MAX_MINUTES,
+  WATCH_MIN_INTERVAL_MAX_MINUTES,
+  WATCH_NO_DATA_POLICIES,
   WATCH_NOTIFY_SEVERITIES,
   WATCH_PREVIEW_MAX_WINDOWS,
   WATCH_RULE_MAX_ACTIONS,
@@ -142,6 +144,8 @@ import {
   WATCH_WINDOW_OPS,
 } from "./constants.js";
 import { HUB_ICON_MAX_LENGTH } from "./hub-icon.js";
+// AM-OB10 — the ONE warn-vs-alert predicate, shared with the API evaluator and the web editor.
+import { validateWatchThresholds } from "./watch-state.js";
 // Type-only imports for the recursive schemas — a `z.lazy` needs an explicit `z.ZodType<T>` annotation
 // (the generative-UI catalog node, and — crew nesting WP0.1 / D-CN5 — the self-referencing agent
 // report). `import type` is erased at build and introduces no runtime cycle (types.ts does not import
@@ -1270,11 +1274,24 @@ export const watchActionSchema = z.discriminatedUnion("type", [
 
 const watchActionsInputSchema = z.array(watchActionInputSchema).min(1).max(WATCH_RULE_MAX_ACTIONS);
 const watchSampleSchema = z.number().min(0).max(1).optional();
+// AM-OB10 — an `on_terminal` rule's minimum minutes between action dispatches. 0 is accepted and
+// means "no limit", identical to omitting it (so a form that always sends a number stays honest).
+const watchMinIntervalSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(WATCH_MIN_INTERVAL_MAX_MINUTES)
+  .optional();
 
 // WP4.2 windowed threshold config. The measure/groupBy/bucket vocabularies reuse the WP1.2 metrics
 // enums DIRECTLY (via the shared constants — those `z.enum` schemas are defined later in this file, so
 // referencing them here would be a use-before-definition). `.strict()` so an unknown key is a
 // ZodError -> 400. Present only on a `windowed` rule; the on-terminal engine never reads it.
+// AM-OB10 adds two OPTIONAL fields — `warnThreshold` (a WARNING level strictly less severe than the
+// alert one) and `noData` (what an EMPTY window means). Both absent = the shipped single-threshold
+// shape, so every stored rule re-validates unchanged. The warn-vs-alert relation is a CROSS-FIELD
+// rule, so it rides a `superRefine` over the ONE shared predicate (`validateWatchThresholds`) — the
+// editor calls the same function, so the client pre-check and the 400 can never disagree.
 export const watchWindowConfigSchema = z
   .object({
     measure: z.enum(RUN_METRICS_MEASURES),
@@ -1284,9 +1301,17 @@ export const watchWindowConfigSchema = z
     window: z.enum(WATCH_WINDOW_DURATIONS),
     op: z.enum(WATCH_WINDOW_OPS),
     threshold: z.number().finite(),
+    warnThreshold: z.number().finite().optional(),
+    noData: z.enum(WATCH_NO_DATA_POLICIES).optional(),
     cooldownMinutes: z.number().int().min(0).max(WATCH_COOLDOWN_MAX_MINUTES),
   })
-  .strict();
+  .strict()
+  .superRefine((config, ctx) => {
+    const check = validateWatchThresholds(config);
+    if (!check.ok) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["warnThreshold"], message: check.message });
+    }
+  });
 const watchWindowSchema = watchWindowConfigSchema.optional();
 
 export const watchRuleInputSchema = z
@@ -1297,6 +1322,7 @@ export const watchRuleInputSchema = z
     filter: runFilterSchema,
     sample: watchSampleSchema,
     window: watchWindowSchema,
+    minIntervalMinutes: watchMinIntervalSchema,
     actions: watchActionsInputSchema,
   })
   .strict();
@@ -1311,6 +1337,10 @@ export const watchRulePatchSchema = z
     filter: runFilterSchema.optional(),
     sample: watchSampleSchema,
     window: watchWindowSchema,
+    minIntervalMinutes: watchMinIntervalSchema,
+    // AM-OB10 — `null` CLEARS the pause (resume); a timestamp sets it; omitted keeps the stored
+    // value, the same "omitted keeps" rule every other field on this patch follows.
+    pausedUntil: z.string().datetime({ offset: true }).nullable().optional(),
     actions: watchActionsInputSchema.optional(),
   })
   .strict();

@@ -670,6 +670,12 @@ export type WatchRuleRow = {
   window_json: string | null;
   actions_json: string;
   last_evaluated_at: string | null;
+  /** AM-OB10 (v61) — paused until this ISO-8601 instant; NULL = not paused (and a PAST value simply
+   *  resolves to not-paused on read, which is why there is no sweep). */
+  paused_until: string | null;
+  /** AM-OB10 (v61) — minimum minutes between action dispatches for an `on_terminal` rule; NULL/0 =
+   *  no limit. */
+  min_interval_minutes: number | null;
   created_at: string;
   updated_at: string;
 };

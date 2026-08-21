@@ -103,4 +103,25 @@ describe("auditActionLabel", () => {
   test("falls back to the raw string for an unknown marker", () => {
     expect(auditActionLabel("mystery")).toBe("mystery");
   });
+
+  // RM-17 Phase 6 · AM-OB10 — the three new markers.
+  test("maps the AM-OB10 markers", () => {
+    expect(auditActionLabel("window_no_data")).toBe("No data in window");
+    expect(auditActionLabel("paused")).toBe("Paused — suppressed");
+    expect(auditActionLabel("rate_limited")).toBe("Rate limited");
+  });
+});
+
+describe("deriveRuleFireStats — the AM-OB10 markers are not fires", () => {
+  test("a no-data / paused / rate-limited row never counts as a fire", () => {
+    const at = "2026-08-21T10:00:00.000Z";
+    const rows = ["window_no_data", "paused", "rate_limited"].map((action, i) => ({
+      id: `e${i}`,
+      ruleId: "r",
+      at,
+      action,
+      result: { ok: true },
+    }));
+    expect(deriveRuleFireStats(rows)).toEqual({ fireCount: 0, lastFiredAt: null });
+  });
 });

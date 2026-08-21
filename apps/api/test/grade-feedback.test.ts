@@ -595,7 +595,7 @@ test("migration v60 — a pre-v60 (v59) DB gains grade_feedback; idempotent, imm
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), 60, "stamped to LATEST (60) after v60");
+  assert.equal(db.pragma("user_version", { simple: true }), 61, "stamped to LATEST (61) after v60");
   assert.ok(
     db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='grade_feedback'").get(),
     "v60 created grade_feedback on the existing (v59) DB",
@@ -626,7 +626,7 @@ test("migration v60 — a pre-v60 (v59) DB gains grade_feedback; idempotent, imm
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v60 is a no-op");
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    60,
+    61,
     "version unchanged after the re-run",
   );
 });
