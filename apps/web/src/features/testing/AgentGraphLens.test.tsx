@@ -1,4 +1,4 @@
-import type { RunStep } from "@mcp-token-footprint/shared";
+import type { RunStep, SessionCostBasis } from "@mcp-token-footprint/shared";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { Edge as RFEdge, Node as RFNode } from "@xyflow/react";
@@ -68,7 +68,7 @@ const SNAPSHOTS = new Map<string, StepCumulativeKpi>([
   ["s6", { tokensIn: 1200, tokensOut: 260, costUsd: 0.07 }],
 ]);
 
-function flowFor(mode: AgentGraphMode, over?: { costBasis?: "none" | "questions" | "subscription_reference" }) {
+function flowFor(mode: AgentGraphMode, over?: { costBasis?: SessionCostBasis }) {
   const steps = loopingRun();
   const graph = buildAgentGraph({ steps, mode });
   return {
@@ -144,13 +144,17 @@ describe("AgentGraphLens — the props handed to the graph canvas", () => {
     expect(total.costUsd).toBeCloseTo(0.07, 10);
   });
 
-  test("a cost basis with no honest per-node figure suppresses the cost chip; a subscription marks it", () => {
-    for (const basis of ["none", "questions"] as const) {
-      const { nodes } = flowFor("aggregated", { costBasis: basis });
-      for (const node of nodes) {
-        expect((node.data as { costSuppressed: boolean }).costSuppressed).toBe(true);
-        expect((node.data as { costEstimated: boolean }).costEstimated).toBe(false);
-      }
+  test("a `none` cost basis suppresses the cost chip; a subscription basis marks it an estimate", () => {
+    const suppressed = flowFor("aggregated", { costBasis: "none" });
+    for (const node of suppressed.nodes) {
+      expect((node.data as { costSuppressed: boolean }).costSuppressed).toBe(true);
+      expect((node.data as { costEstimated: boolean }).costEstimated).toBe(false);
+    }
+    // The ordinary API-metered basis shows a plain, unmarked figure.
+    const exact = flowFor("aggregated", { costBasis: "api_exact" });
+    for (const node of exact.nodes) {
+      expect((node.data as { costSuppressed: boolean }).costSuppressed).toBe(false);
+      expect((node.data as { costEstimated: boolean }).costEstimated).toBe(false);
     }
     const { nodes } = flowFor("aggregated", { costBasis: "subscription_reference" });
     for (const node of nodes) {

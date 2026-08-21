@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MemoryRouter, useSearchParams } from "react-router-dom";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 import type { RunStep, Scenario, SessionCapabilities, Test } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
@@ -533,8 +533,158 @@ describe("RunConsole — in-run search + view lenses (Observability WP3.4)", () 
 // exactly ONE view switcher, every tab has a panel and every panel a tab, and NO code path can put
 // `leftView` on a value that switcher does not render. These are structural (they read the source +
 // the exported allow-list/coercers), so they hold without a provider key or a live run.
+// ── Observability WP 3.5 — the agent-graph lens inside the console ───────────────────────────────
+// Exercises the REAL `AgentGraphLens` + the REAL `@elabs-ai/components-flow` canvas (nothing here is
+// stubbed): the `?lens=graph&graph=&focus=` URL round-trip, and the node → filtered-step-view
+// cross-link. The run below has TWO tools so a node focus visibly EXCLUDES steps — a filter that
+// happened to keep everything would prove nothing.
+describe("RunConsole — the agent-graph lens (Observability WP3.5)", () => {
+  afterEach(() => {
+    streamOverride = null;
+  });
+
+  function graphStep(over: Partial<RunStep> & Pick<RunStep, "id" | "type">): RunStep {
+    return {
+      runId: "run-graph-1",
+      index: 0,
+      label: over.type,
+      status: "ok",
+      profileTokens: {},
+      payload: {},
+      ...over,
+    } as RunStep;
+  }
+
+  function renderGraphConsole(initialEntry = "/") {
+    // Each call owns a WP3.1 `tool_io` child. That matters twice over: it exercises the projection's
+    // attach-child-to-its-parent rule, and it puts `StepLog` on its TREE branch — the flat DataTable
+    // branch virtualizes its rows, which jsdom cannot lay out, so it renders no rows to assert on
+    // (documented in `StepLog.test.tsx`).
+    const call = (id: string, index: number, tool: string): RunStep[] => [
+      graphStep({
+        id,
+        type: "tool_call",
+        index,
+        toolName: tool,
+        label: tool,
+        payload: { toolCallId: id, args: {} },
+      }),
+      graphStep({
+        id: `${id}:io`,
+        type: "context_event",
+        index: index + 100,
+        spanKind: "tool_io",
+        parentStepId: id,
+        label: `${tool} io`,
+      }),
+    ];
+    streamOverride = {
+      status: "running",
+      ratingState: null,
+      phase: null,
+      queuePosition: null,
+      phaseDeadlineAt: null,
+      steps: [...call("g1", 1, "search_docs"), ...call("g2", 2, "fetch_page"), ...call("g3", 3, "search_docs")],
+      kpis: null,
+      deltas: { text: "", reasoning: "" },
+      deltasByTurn: {},
+      error: null,
+      questions: [],
+      timeline: [],
+    };
+    return render(
+      <MemoryRouter initialEntries={[initialEntry]}>
+        <TooltipProvider>
+          <LocationProbe />
+          <RunConsole
+            target={{
+              kind: "run",
+              runId: "run-graph-1",
+              test: makeTest(),
+              scenario: makeScenario(),
+              mode: "automated",
+              replay: false,
+            }}
+            providerLabel="Anthropic"
+            capabilities={ENGINE_CAPS}
+          />
+        </TooltipProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  test("`?lens=graph` opens the graph, and the zero-param default is the AGGREGATED view", () => {
+    renderGraphConsole("/?lens=graph");
+    const canvas = screen.getByRole("region", { name: /Agent graph/ });
+    // Aggregated: `search_docs` merged into ONE node carrying its ×2 counter. Scoped to the canvas —
+    // the always-on right-pane step log lists the same tool names, and an unscoped query would pass
+    // on those instead of on the graph.
+    expect(within(canvas).getAllByText("search_docs")).toHaveLength(1);
+    expect(within(canvas).getByText("×2")).toBeInTheDocument();
+    // The default mode writes no `?graph=` param — a clean URL still means "aggregated".
+    expect(screen.getByTestId("url-probe").textContent).toBe("lens=graph");
+  });
+
+  test("`?lens=graph&graph=expanded` restores the EXPANDED view from a deep link", () => {
+    renderGraphConsole("/?lens=graph&graph=expanded");
+    const canvas = screen.getByRole("region", { name: /Agent graph/ });
+    // Expanded: one node per call, so `search_docs` appears twice and there is no ×N counter.
+    expect(within(canvas).getAllByText("search_docs")).toHaveLength(2);
+    expect(within(canvas).queryByText("×2")).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Expanded/ })).toBeChecked();
+  });
+
+  test("switching the mode round-trips through `?graph=`, and back to the default clears it", () => {
+    renderGraphConsole("/?lens=graph");
+    fireEvent.click(screen.getByRole("radio", { name: /Expanded/ }));
+    expect(screen.getByTestId("url-probe").textContent).toBe("lens=graph&graph=expanded");
+    fireEvent.click(screen.getByRole("radio", { name: /Aggregated/ }));
+    expect(screen.getByTestId("url-probe").textContent).toBe("lens=graph");
+  });
+
+  test("clicking a node reveals the Steps lens FILTERED to that node, and pins it as `?focus=`", () => {
+    const { container } = renderGraphConsole("/?lens=graph");
+    fireEvent.click(container.querySelector('.react-flow__node[data-id="tool:fetch_page"]')!);
+
+    // The URL now names both the lens and the focused node — a shareable, restorable state.
+    const params = new URLSearchParams(screen.getByTestId("url-probe").textContent ?? "");
+    expect(params.get("lens")).toBe("steps");
+    expect(params.get("focus")).toBe("tool:fetch_page");
+    // The banner explains what the log is showing and offers the way back out.
+    expect(screen.getByText(/Showing the 2 steps behind the graph node/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Clear" })).toBeInTheDocument();
+  });
+
+  test("a `?focus=` deep link cold-loads the filtered step view — the OTHER tool's rows are gone", () => {
+    renderGraphConsole("/?lens=steps&focus=tool%3Afetch_page");
+    // Scoped to the LEFT Steps lens (the right-pane Network log is deliberately unfiltered).
+    const lens = within(screen.getByTestId("run-console-steps-lens"));
+    // The focused node's step is listed…
+    expect(lens.getAllByTitle("fetch_page").length).toBeGreaterThan(0);
+    // …and the steps behind every OTHER node are filtered OUT (this is the assertion a filter that
+    // kept everything would fail).
+    expect(lens.queryByTitle("search_docs")).not.toBeInTheDocument();
+  });
+
+  test("Clear drops the focus, restores every step, and removes `?focus=` from the URL", () => {
+    renderGraphConsole("/?lens=steps&focus=tool%3Afetch_page");
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    const lens = within(screen.getByTestId("run-console-steps-lens"));
+    expect(lens.getAllByTitle("search_docs").length).toBeGreaterThan(0);
+    expect(new URLSearchParams(screen.getByTestId("url-probe").textContent ?? "").get("focus")).toBeNull();
+  });
+
+  test("an unknown `?focus=` degrades to NO filter rather than an unexplained empty log", () => {
+    renderGraphConsole("/?lens=steps&focus=tool%3Adoes_not_exist");
+    expect(screen.queryByText(/behind the graph node/)).not.toBeInTheDocument();
+    const lens = within(screen.getByTestId("run-console-steps-lens"));
+    expect(lens.getAllByTitle("search_docs").length).toBeGreaterThan(0);
+    expect(lens.getAllByTitle("fetch_page").length).toBeGreaterThan(0);
+  });
+});
+
 describe("RunConsole — left-view strip invariants (A-1, toolbar-reach WP 0.1)", () => {
-  const EXPECTED = ["chat", "steps", "turns", "raw", "analytics", "report"] as const;
+  const EXPECTED = ["chat", "steps", "turns", "graph", "raw", "analytics", "report"] as const;
   // Read RunConsole.tsx's own source to assert source-level invariants. vitest runs with cwd =
   // apps/web (its config's `include` is a package-relative glob); fall back to the repo-root-relative
   // path so this is robust to the cwd. (`import.meta.url` isn't a `file:` URL under jsdom vitest.)
@@ -544,12 +694,13 @@ describe("RunConsole — left-view strip invariants (A-1, toolbar-reach WP 0.1)"
     return readFileSync(path, "utf8");
   };
 
-  test("LEFT_VIEW_TABS is the ordered strip Chat · Steps · Turns · Trace · Analytics · Report", () => {
+  test("LEFT_VIEW_TABS is the ordered strip Chat · Steps · Turns · Graph · Trace · Analytics · Report", () => {
     expect(LEFT_VIEW_TABS.map((t) => t.value)).toEqual(EXPECTED);
     expect(LEFT_VIEW_TABS.map((t) => t.label)).toEqual([
       "Chat",
       "Steps",
       "Turns",
+      "Graph", // Observability WP 3.5 — the agent-graph lens
       "Trace", // historical mapping: the Trace pill's value is `raw`
       "Analytics",
       "Report",
@@ -565,7 +716,7 @@ describe("RunConsole — left-view strip invariants (A-1, toolbar-reach WP 0.1)"
     // …and every rendered `<TabPanelContent value="X">` must be one of those values, and vice versa.
     const panelValues = [...source.matchAll(/<TabPanelContent value="([a-z]+)"/g)].map((m) => m[1]);
     expect(new Set(panelValues)).toEqual(new Set(LEFT_VIEW_VALUES));
-    // exactly six panels, one per tab (no duplicate/extra panel on the JSX side).
+    // exactly one panel per tab, no more (no duplicate/extra panel on the JSX side).
     expect([...panelValues].sort()).toEqual([...LEFT_VIEW_VALUES].sort());
   });
 

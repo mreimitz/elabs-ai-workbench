@@ -83,9 +83,10 @@ export function toReactFlow(
   selectedNodeId: string | null,
   costBasis: SessionCostBasis | undefined,
 ): { nodes: RFNode[]; edges: RFEdge[] } {
-  // WP3.2's rule, reused: a basis with no honest per-step dollar figure shows no cost chip at all;
-  // a subscription run's shadow price is shown but MARKED an estimate (D-CS4).
-  const costSuppressed = costBasis === "none" || costBasis === "questions";
+  // WP3.2's `showsCostChip` rule, reused: a `"none"` basis has no dollar figure at all, so the chip
+  // is suppressed rather than rendered as $0.00; a subscription run's shadow price IS shown but
+  // MARKED an estimate (D-CS4/D-CS8 — exact tokens at list rate, marginal cost $0).
+  const costSuppressed = costBasis === "none";
   const costEstimated = costBasis === "subscription_reference";
 
   const nodes: AgentGraphRFNode[] = graph.nodes.map((node) => {

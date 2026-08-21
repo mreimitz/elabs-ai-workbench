@@ -456,3 +456,68 @@ describe("StepLog — the economics chip decomposes its own token delta by cache
     expect(screen.queryByText(/served from cache/)).not.toBeInTheDocument();
   });
 });
+
+// ── Observability WP 3.5 — the agent-graph node focus ────────────────────────────────────────────
+describe("StepLog — `focusStepIds` restricts the log to one agent-graph node's steps (WP3.5)", () => {
+  const steps = [
+    step({
+      id: "t1",
+      index: 1,
+      type: "tool_call",
+      toolName: "search_docs",
+      label: "search_docs",
+      usageActual: { inputTokens: 10, outputTokens: 0 },
+    }),
+    step({
+      id: "t1io",
+      index: 2,
+      type: "context_event",
+      spanKind: "tool_io",
+      parentStepId: "t1",
+      label: "t1 io",
+    }),
+    step({
+      id: "t2",
+      index: 3,
+      type: "tool_call",
+      toolName: "fetch_page",
+      label: "fetch_page",
+      usageActual: { inputTokens: 20, outputTokens: 0 },
+    }),
+    step({
+      id: "t2io",
+      index: 4,
+      type: "context_event",
+      spanKind: "tool_io",
+      parentStepId: "t2",
+      label: "t2 io",
+    }),
+  ];
+
+  test("no focus is a complete no-op — every row still renders", () => {
+    renderLog({ steps });
+    expect(screen.getByTitle("search_docs")).toBeInTheDocument();
+    expect(screen.getByTitle("fetch_page")).toBeInTheDocument();
+  });
+
+  test("a focus keeps only that node's steps and drops every other row", () => {
+    renderLog({ steps, focusStepIds: new Set(["t2", "t2io"]) });
+    expect(screen.getByTitle("fetch_page")).toBeInTheDocument();
+    expect(screen.queryByTitle("search_docs")).not.toBeInTheDocument();
+  });
+
+  test("the economics of a focused row are still measured against the WHOLE run, not its neighbour", () => {
+    // Cumulative snapshots: the SECOND tool call moved the ledger by 500 in / 50 out. If the focus
+    // filtered the steps BEFORE the deltas were derived, `t2` would diff against the origin and read
+    // 1,500 instead — so this pins the "filter after economics" ordering, not just the filter.
+    const kpiByStepId: ReadonlyMap<string, StepCumulativeKpi> = new Map([
+      ["t1", { tokensIn: 1000, tokensOut: 100, costUsd: 0.01 }],
+      ["t1io", { tokensIn: 1000, tokensOut: 100, costUsd: 0.01 }],
+      ["t2", { tokensIn: 1500, tokensOut: 150, costUsd: 0.02 }],
+      ["t2io", { tokensIn: 1500, tokensOut: 150, costUsd: 0.02 }],
+    ]);
+    renderLog({ steps, kpiByStepId, costBasis: "api_exact", focusStepIds: new Set(["t2", "t2io"]) });
+    expect(screen.getByText("500↑")).toBeInTheDocument();
+    expect(screen.queryByText("1,500↑")).not.toBeInTheDocument();
+  });
+});

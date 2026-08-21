@@ -110,6 +110,14 @@ import { TabPanel, TabPanelContent, type TabPanelTab } from "../../components/Ta
 // Observability WP 3.4 — in-run search (the ONE match helper/hook, two data sources) + view lenses.
 import { HighlightedSnippet } from "./SearchHighlight";
 import { TurnsLens } from "./TurnsLens";
+// Observability WP 3.5 — the agent-graph lens + the pure projection its `?focus=` deep link resolves against.
+import { AgentGraphLens } from "./AgentGraphLens";
+import {
+  buildAgentGraph,
+  coerceAgentGraphMode,
+  findAgentGraphNode,
+  type AgentGraphMode,
+} from "./agent-graph";
 import { useRunSearch } from "./use-run-search";
 import type { SearchHit } from "./run-search";
 import { notifyError } from "../../lib/notify";
@@ -129,6 +137,8 @@ export const LEFT_VIEW_TABS = [
   { value: "chat", label: "Chat" },
   { value: "steps", label: "Steps" },
   { value: "turns", label: "Turns" },
+  // Observability WP 3.5 — the run as a node-link GRAPH (which tools, how often, where it looped).
+  { value: "graph", label: "Graph" },
   // Historical mapping: the "Trace" pill's value is `raw` (findings/09 §2 named the tab `raw`).
   { value: "raw", label: "Trace" },
   { value: "analytics", label: "Analytics" },
@@ -325,22 +335,40 @@ export function RunConsole({
   // mounts (the right-pane Network tab AND the new left-pane Steps lens) stay in sync. Not URL-persisted
   // (the spec's own `?lens=&find=` contract doesn't include it).
   const [matchFilterMode, setMatchFilterMode] = useState<"filtered" | "all">("filtered");
+  // Observability WP 3.5 — the agent-graph lens' own URL state, seeded at mount exactly like
+  // `?lens=`/`?find=` above: `?graph=` is the aggregated/expanded mode, `?focus=` is the graph node
+  // whose steps the Steps lens is filtered to. Both are written back below, so a deep link restores
+  // the exact view (D-TB10: the zero-param URL still renders the default aggregated graph).
+  const [graphMode, setGraphMode] = useState<AgentGraphMode>(() =>
+    coerceAgentGraphMode(searchParams.get("graph")),
+  );
+  const [focusNodeId, setFocusNodeId] = useState<string | null>(() => searchParams.get("focus"));
 
   // Write `leftView`/`searchQuery` back into the URL. `replace:true` on both so tab switches and
   // keystrokes never spam browser history; the functional updater preserves every OTHER existing
   // param (`returnTo`, `turn`, …) untouched. The search-query write is debounced so a fast typist
   // doesn't fire a `replaceState` per keystroke.
+  // WP 3.5 folds the graph lens' own params into this SAME write. It has to be one effect: react-router
+  // hands a functional `setSearchParams` updater the params derived from the CURRENT location, so two
+  // effects writing in one commit both see the PRE-commit params and the second silently clobbers the
+  // first (the graph-node cross-link sets `leftView` and `focusNodeId` together, which is exactly that
+  // case). `?graph=` is omitted at its default and `?focus=` when nothing is focused, so an untouched
+  // console keeps a clean URL and the zero-param route still renders the default view (D-TB10).
   useEffect(() => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         if (leftView === "chat") next.delete("lens");
         else next.set("lens", leftView);
+        if (graphMode === "aggregated") next.delete("graph");
+        else next.set("graph", graphMode);
+        if (focusNodeId) next.set("focus", focusNodeId);
+        else next.delete("focus");
         return next;
       },
       { replace: true },
     );
-  }, [leftView, setSearchParams]);
+  }, [leftView, graphMode, focusNodeId, setSearchParams]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -506,6 +534,27 @@ export function RunConsole({
     () => dedupeToolSteps(viewStream.steps).length,
     [viewStream.steps],
   );
+
+  // Observability WP 3.5 — resolve `?focus=` (an agent-graph node id) against the CURRENT view's
+  // steps, in the current graph mode. Built only when a focus is actually set, so an ordinary console
+  // never pays for the projection. Reads `viewStream` like every other pane, so the click-through
+  // honours the as-of-k replay slice; an id that names nothing in this graph (a stale/mistyped deep
+  // link) resolves to `null` — no filter — instead of an empty, unexplained step list.
+  const graphFocus = useMemo(() => {
+    if (!focusNodeId) return null;
+    const graph = buildAgentGraph({ steps: viewStream.steps, mode: graphMode });
+    const node = findAgentGraphNode(graph, focusNodeId);
+    return node ? { node, stepIds: new Set(node.stepIds) } : null;
+  }, [focusNodeId, viewStream.steps, graphMode]);
+
+  // A graph node selection is a CROSS-LINK, not just a highlight: it pins the node in the URL and
+  // reveals the Steps lens filtered to that node's steps (the D-UX workflow-link grammar). Works
+  // identically live and in replay — both read the same accumulated steps.
+  const focusGraphNode = useCallback((node: { id: string }) => {
+    setFocusNodeId(node.id);
+    setLeftView("steps");
+  }, []);
+  const clearGraphFocus = useCallback(() => setFocusNodeId(null), []);
 
   // Observability WP 3.4 — in-run search. The live scan always runs over `viewStream` (so it honors
   // the as-of-k replay slice, S1, exactly like every other pane); the REPLAY-only FTS supplement is
@@ -985,6 +1034,32 @@ export function RunConsole({
                   visible strip above (only reachable via the search bar's lens switcher / `?lens=`) —
                   it owns its own scroll like Trace/Analytics. */}
               <TabPanelContent value="steps" scroll={false}>
+                {/* The wrapper carries the graph-focus banner above the log and gives the pair one
+                    stacking context; the right-pane Network log is deliberately NOT focus-filtered —
+                    it is the always-on inspector, and filtering it from another lens would hide rows
+                    with no banner nearby to explain why. */}
+                <div
+                  data-testid="run-console-steps-lens"
+                  className="flex min-h-0 flex-col gap-2"
+                >
+                {/* Observability WP 3.5 — the graph lens' click-through lands here. The banner names
+                    the node the log is filtered to and offers the way back out; it renders ONLY when a
+                    focus is actually resolved, so an ordinary Steps lens is untouched. */}
+                {graphFocus ? (
+                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+                    <Text variant="meta" tone="muted" as="span">
+                      Showing the {graphFocus.stepIds.size} step
+                      {graphFocus.stepIds.size === 1 ? "" : "s"} behind the graph node
+                    </Text>
+                    <Badge variant="secondary">{graphFocus.node.label}</Badge>
+                    <Button variant="ghost" size="sm" onClick={clearGraphFocus}>
+                      Clear
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setLeftView("graph")}>
+                      Back to graph
+                    </Button>
+                  </div>
+                ) : null}
                 <StepLog
                   steps={viewStream.steps}
                   selectedStepId={selectedStepId}
@@ -994,7 +1069,9 @@ export function RunConsole({
                   highlightQuery={searchQuery}
                   matchFilterMode={matchFilterMode}
                   onMatchFilterModeChange={setMatchFilterMode}
+                  focusStepIds={graphFocus?.stepIds ?? null}
                 />
+                </div>
               </TabPanelContent>
               {/* Observability WP 3.4 — the "Turns" lens: per-turn summary cards for fast scanning of a
                   long interactive session (the LangSmith Threads-view idea). */}
@@ -1005,6 +1082,21 @@ export function RunConsole({
                   steps={viewStream.steps}
                   onSelectTurn={(turnIndex) => navigateTo("chat", { kind: "turn", turnIndex })}
                   highlightQuery={searchQuery}
+                />
+              </TabPanelContent>
+              {/* Observability WP 3.5 — the "Graph" lens: the run as a node-link diagram. Aggregated
+                  merges repeated calls into ×N nodes (so loops show as cycles); expanded unrolls them
+                  in execution order. Reads `viewStream` like every other pane, so it truncates as-of-k
+                  in replay and grows live; it owns its own layout + canvas. */}
+              <TabPanelContent value="graph" scroll={false}>
+                <AgentGraphLens
+                  steps={viewStream.steps}
+                  kpiByStepId={kpiByStepId}
+                  costBasis={capabilities.costBasis}
+                  mode={graphMode}
+                  onModeChange={setGraphMode}
+                  selectedNodeId={focusNodeId}
+                  onSelectNode={focusGraphNode}
                 />
               </TabPanelContent>
               {/* Trace: the whole run as a turn-grouped, collapsible event tree (git-branch style) —
