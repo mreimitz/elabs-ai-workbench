@@ -1933,6 +1933,43 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
       `);
     },
   },
+  {
+    // v60 — Benchmarks Phase 6 (WP 6.1): the `grade_feedback` table (+ 1 covering index) — a HUMAN
+    // verdict (`agree`/`disagree`) plus an optional note ON ONE `run_grades` row.
+    //
+    // AR6 — this is a SEPARATE dimension, never a grade. The migration adds a NEW TABLE and touches
+    // NO existing table and NO existing column: `run_grades` is byte-for-byte what it was, so nothing
+    // a human clicks can change what an existing score, `meanGrade`, `passRateAt05` or quality×cost
+    // point means. `apps/api/test/grade-feedback.test.ts` pins that with a full-row snapshot taken
+    // before and after feedback is written, plus a `sqlite_master` check of the run_grades DDL.
+    //
+    // APPEND-ONLY by construction: there is no UNIQUE index on `grade_id`, because a changed mind is
+    // meant to INSERT a second row (the newest wins for display) rather than overwrite the first —
+    // the exact opposite of the v36 `run_feedback` upsert, and deliberately so.
+    //
+    // The DDL is IDENTICAL to schema.ts's baseline (`CREATE TABLE/INDEX IF NOT EXISTS`) so a FRESH DB
+    // (whose applyMigrations no-ops every step) and an UPGRADED DB (which runs THIS step) land the
+    // exact same shape — the v36/v43 pattern. An index on a BRAND-NEW table is safe in both places
+    // (no "column doesn't exist yet" ordering hazard). Guarded on `run_grades` presence for MINIMAL
+    // migration-test fixtures stamped below LATEST that may not have created it yet (the
+    // v19/v24/v27/v29/v30/v32/v33/v36 pattern). Bumps LATEST_SCHEMA_VERSION (auto-derived below) to 60.
+    version: 60,
+    up: (db) => {
+      const hasTable = (name: string) =>
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
+      if (!hasTable("run_grades")) return;
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS grade_feedback (
+          id          TEXT PRIMARY KEY,
+          grade_id    TEXT NOT NULL REFERENCES run_grades(id) ON DELETE CASCADE,
+          verdict     TEXT NOT NULL CHECK (verdict IN ('agree','disagree')),
+          note        TEXT,
+          created_at  TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_grade_feedback_grade ON grade_feedback(grade_id, created_at ASC);
+      `);
+    },
+  },
 ];
 
 /** The baseline schema version: the current full schema (schema.ts + every migration step above). */

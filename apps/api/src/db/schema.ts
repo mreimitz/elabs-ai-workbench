@@ -510,6 +510,31 @@ CREATE TABLE IF NOT EXISTS run_grades (
 );
 CREATE INDEX IF NOT EXISTS idx_run_grades_run ON run_grades(run_id, created_at ASC);
 
+-- Benchmarks Phase 6 (WP 6.1, migration v60) — a HUMAN verdict on ONE grade row: "the grader got
+-- this right" (agree) / "the grader got this wrong" (disagree), with an optional note. APPEND-ONLY,
+-- exactly like the run_grades rows it comments on: a changed mind INSERTs a new row and the newest
+-- row per grade_id is what a surface displays. The repository (grading/grade-feedback-repository.ts)
+-- exposes no update and no delete at all.
+--
+-- AR6 — this table is a SEPARATE dimension and NEVER a grade. Nothing in grading/suites/compare
+-- reads it; no score, aggregate, meanGrade, passRateAt05 or quality×cost point is derived from it.
+-- There is deliberately no column on run_grades pointing here, so a human verdict cannot change
+-- what any historical expectation metric means (see the "grades untouched" regression test in
+-- apps/api/test/grade-feedback.test.ts).
+--
+-- Distinct from Observability's run_feedback (D-OB15): that one is a generic score/note on a RUN or
+-- STEP and UPSERTS. This one targets a GRADE and appends. The verdict column is a two-value CHECK on
+-- purpose — there is no numeric column here that could be mistaken for, or averaged into, a score.
+-- ON DELETE CASCADE: deleting a run cascades run_grades, which cascades these.
+CREATE TABLE IF NOT EXISTS grade_feedback (
+  id          TEXT PRIMARY KEY,
+  grade_id    TEXT NOT NULL REFERENCES run_grades(id) ON DELETE CASCADE,
+  verdict     TEXT NOT NULL CHECK (verdict IN ('agree','disagree')),
+  note        TEXT,
+  created_at  TEXT NOT NULL             -- append-only; latest-per-grade wins for display
+);
+CREATE INDEX IF NOT EXISTS idx_grade_feedback_grade ON grade_feedback(grade_id, created_at ASC);
+
 -- Generic app-settings key/value store. WP 1.3 keeps the default judge (JudgeSettings) here under
 -- the 'judge' key. Values are JSON blobs; references only, never key material.
 CREATE TABLE IF NOT EXISTS app_settings (

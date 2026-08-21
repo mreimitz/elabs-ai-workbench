@@ -334,6 +334,22 @@ export type RunGradeRow = {
   created_at: string;
 };
 
+// Benchmarks Phase 6 (WP 6.1, migration v60) — one HUMAN verdict on one grade row. APPEND-ONLY (a
+// changed mind inserts a second row; newest per grade_id wins for display). A SEPARATE dimension from
+// grading (AR6): nothing in grading/suites/compare reads this table, and there is deliberately no
+// numeric column here that could be averaged into a score.
+export type GradeFeedbackRow = {
+  id: string;
+  grade_id: string;
+  verdict: "agree" | "disagree";
+  note: string | null;
+  created_at: string;
+};
+
+// The `grade_feedback` row JOINed to its grade's `run_id` — the shape the repository maps onto the
+// public `GradeFeedback` wire type (the table itself never stores `run_id` twice).
+export type GradeFeedbackJoinedRow = GradeFeedbackRow & { run_id: string };
+
 // Generic app-settings KV (WP 1.3 keeps the default judge here under the 'judge' key).
 export type AppSettingRow = {
   key: string;
