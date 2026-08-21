@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-22T01:30:00Z"
+timestamp: "2026-08-22T02:40:00Z"
 status: "active"
 ---
 
@@ -221,10 +221,61 @@ had one open box before the lock and now has fourteen.
       never blends into grades**
 - [ ] AM-OB3 — chart states URL-addressable (deep-linkable panel + time-bucket selection) ·
       _verify-at-pickup: drill-down shipped with 2.2; residual only_
-- [ ] AM-OB4 — ratio measure (numerator/denominator, each with its own filter) — unlocks error
-      rate, pass rate, cache-hit share, skill-attach share · slots beside the recorded `grader`
-      + `feedbackRate` follow-ups in `metrics.ts` · ⚠ beware the recorded `buildRunFilterWhere`
-      duplication when touching filters
+- [x] AM-OB4 — ratio measure — **done 2026-08-21 · `wp/roadmap-cleanup/am-ob4` (6 commits, merged) ·
+      25 files · 19 mutation probes, 19 red · no migration, `db/**` a zero-line diff.**
+      `RUN_METRICS_MEASURES` gains `"ratio"` (unit `rate`), configured as
+      `{ numerator: RunFilter, denominator?: RunFilter }` and carried on the metrics query, a saved
+      chart and a watch-rule window. Two semantics are pinned **in the type**, not left to a reader:
+      both sides NARROW the already-selected population and the numerator is ANDed with the
+      denominator, so **a share cannot exceed 1 by construction**; and `derived` is INHERITED by a
+      side that omits it — it is the one field where absent means `false`, so a numerator that never
+      mentions forks would otherwise intersect a `derived: true` chart to nothing and report a
+      confident 0%.
+      **No second query.** Each side's clauses are projected as columns onto the one
+      `SELECT … FROM runs` that already runs (`__ratio_den_x` / `__ratio_num_x`, per-measure param
+      prefixes), which is also why a numerator can name a skill, a server, a verdict or a feedback
+      row — dimensions the materialized row does not carry and the spec's suggested
+      `matchesRunFilter`-per-row approach could not have reached. Acceptance #3 was proved by
+      **counting `db.prepare` calls**, not by a source walk: every filter clause already contains
+      several `SELECT`s, so reading the string cannot tell a real second pass from a subquery.
+      **`feedbackRate` is real at last**, as the first `RUN_METRICS_NAMED_RATIOS` entry rather than a
+      fourteenth branch — which needed a new grammar field, `feedback.any`, because "runs with human
+      feedback" was not expressible at all (`key` needs a key you already know; `{}` constrains
+      nothing).
+      **The duplication is CLOSED, not tripled.** The two byte-identical `buildRunFilterWhere` copies
+      collapsed into `apps/api/src/observability/run-filter-sql.ts` — and the metrics header's claim
+      that **both** were pinned to `matchesRunFilter` turned out to be FALSE (only the repository copy
+      was), so the 35-case cross-check now runs through `computeRunMetrics` too. The charts could
+      have drifted from the feed unnoticed.
+      **It also closed AM-OB12's blocked half** — see that item's line.
+      **Teeth: 19 probes, and three came back green first, each exposing a weak fixture rather than a
+      holding guard.** P5a: deleting `hasError`'s outcome branch left the cross-check green because
+      every run in the shared fixture either had `status: 'error'` or no error at all — a separate
+      four-run fixture now covers both directions incl. the NULL-outcome run. P6: swapping
+      `feedbackRate`'s numerator changed no expected value because the only note-only feedback sat on
+      a run that also had a scored row. P9: a ratio param-prefix collision does not throw, it
+      silently answers with the other measure's values, and nothing end-to-end can observe it today —
+      so `buildRatioProjection` was exported and two projections are asserted to have disjoint param
+      names. **That guard is structural, not behavioural**, and is recorded as such.
+      The orchestrator re-probed independently: making a zero denominator emit a real
+      `{ value: 0 }` point turns **2 tests red** (the explicit-denominator case and the
+      zero-denominator case); reverted. Note for the next probe author — the first attempt returned a
+      bare `0`, which is falsy and was dropped downstream, so it proved nothing.
+      Gate green on `main` after the merge: shared 279 · illustrations 834 · cli 87 · api **3729** ·
+      web **369 files / 4090** · build · lint.
+      ⚠️ **A pre-existing perf case flaked once during this WP** — AM-OB12's rating-verdict case at
+      3.42× against its 3× ceiling, a wall-clock ratio measured while the whole suite runs in
+      parallel. It passed in isolation and in three other full runs including the final one. The
+      threshold was **not** retuned by someone who did not write it. Two WPs have now flagged this
+      case; it is one bad scheduling slice from a red gate.
+      **Not verified:** no browser was opened — the two-theme and keyboard walks of the two new share
+      editors are owner-acceptance. **The chart mock hides real rendering**: the composer and panel
+      suites mock `@elabs-ai/components-charts` as no-ops, so the composer tests assert only what is
+      requested and saved, never how a ratio series paints — a chart-prop bug on a rate-unit axis
+      would pass this gate silently, and no assertion was deliberately placed behind that mock.
+      Nothing ran against real data, so there is no statement about the ratio's query cost at fleet
+      scale. **One scope line for an owner glance:** `feedback.any` is a new public filter field
+      AM-OB12 did not anticipate, and the runs-feed filter bar does not expose it
 - [ ] AM-OB5 — pulse strip above the runs feed: adaptive buckets (1 min–1 week), **sqrt height
       scale**, count/cost/p95-duration, click→filter, drag→range, empty buckets render as gaps ·
       ⚠ chart · exact spec in research `03 §1`
@@ -347,8 +398,9 @@ had one open box before the lock and now has fourteen.
       **Follow-up left unbuilt, on purpose:** the account status already carries granted scopes, so
       the editor could warn up front when `repo` is missing — skipped because the scope→endpoint
       mapping is unconfirmed here and a wrong warning is worse than none
-- [ ] AM-OB12 — boolean grade/rating fields as share-true windowed metrics · **HALF BUILT and
-      MERGED 2026-08-21 · `wp/roadmap-cleanup/am-ob12` (6 commits, merged) · the box stays OPEN.**
+- [x] AM-OB12 — boolean grade/rating fields as share-true windowed metrics — **DONE 2026-08-21 in
+      TWO parts: `wp/roadmap-cleanup/am-ob12` (6 commits) shipped the filter dimensions, and
+      `wp/roadmap-cleanup/am-ob4` closed the share half the same day.**
       **What landed: the rating dimensions became filter dimensions.** `RunFilter` gains four array
       fields over the **frozen RM-06 vocabularies** — `answerVerdict` · `insightVerdict` ·
       `errorBucket` · `errorFixTarget` — with no boolean invented and no three-valued verdict
@@ -392,8 +444,17 @@ had one open box before the lock and now has fourteen.
       **Not verified:** no browser (the four chips reuse the existing multi-select recipe and add no
       new markup or colour, but nothing was looked at); nothing ran against real data — every
       verdict, bucket and fix target in every fixture was hand-written, and these filters have never
-      met a rating a real grader produced. **To close this box: build AM-OB4, then add the ratio
-      measure and re-check #3 and #4**
+      met a rating a real grader produced.
+      **CLOSED by AM-OB4 (same day).** Acceptance **#3** — a verdict numerator over this WP's own
+      eight-run rating fixture reads 1/8 of all runs and **1/2 of the runs actually rated** through an
+      explicit denominator. That second form is the one that matters: **an unrated run is not a
+      passing run**, and without a denominator a rating backlog reads as improving quality.
+      Acceptance **#4** — a windowed rule thresholding an unanswered share fires at 0.75 ≥ 0.6 with
+      the preview matching the service exactly, and the companion case proves an **all-unrated**
+      window reports `no_data` and records **no recovery** (the AM-OB10 bug class, held shut in a
+      second place).
+      **Still owner-acceptance, not done:** the two-theme and keyboard walk (#9), and nothing here
+      has ever met a rating a real grader produced
 - [ ] AM-OB13 — per-run/suite-run manual "send to webhook" (ids + report link) to an
       admin-configured endpoint, reusing WP 4.3's webhook config + signing · day-scale
 - [ ] AM-OB14 — per-bucket distribution bars on the issue list · _verify-at-pickup: the

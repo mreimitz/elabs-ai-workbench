@@ -71,6 +71,28 @@ pass turned out to be two blockquote rules around quoted text and one that encod
 compare view. Changing them would have been the regression.
 
 
+## Unreleased — charts and alerts can ask "what share?"
+
+Every measure on a chart or a watch rule was a single number over one set of runs — a count, a mean,
+a total. There was no way to ask what *share* of something something else was, which is the shape of
+almost every question worth alerting on: the error rate, the pass rate, how much of the token spend
+came from cache, what fraction of runs a skill was attached to, what share of answers the automatic
+rating called unanswered.
+
+You can now build a measure as a question: "count the runs that match **this** — out of the runs that
+match **that**". Both halves use the same filter controls as the runs feed, so anything you can
+filter for, you can take a share of. Two rules keep the answers honest: the numerator is always
+counted within the base, so a share can never exceed 100%; and a window where the base is **empty**
+is left out of the chart entirely rather than drawn as 0% — a bench where nothing qualified and a
+bench where nothing went wrong must not look the same.
+
+The "share of runs with human feedback" measure, which had been listed but never actually worked,
+works now.
+
+Under the hood, the two separately-maintained copies of the run-filter translation became one. They
+were supposed to be kept in step by a cross-check; only one of them was ever covered by it, so the
+charts could have drifted from the feed without anyone noticing.
+
 ## Unreleased — a skill's settings, edited as settings
 
 Changing what a skill binds to, what triggers it, or which `/commands` it answers meant editing YAML
