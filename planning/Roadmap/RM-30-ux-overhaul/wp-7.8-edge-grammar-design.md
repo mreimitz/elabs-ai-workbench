@@ -4,7 +4,7 @@ title: "WP 7.8 design — edge grammar + entry-point flows (for owner approval)"
 description: "The five decisions WP 7.8 needs signed off before any code is written: what a connection means, how an entry point's effective reading list is derived, what a refused connection says, where box positions live, and what this breaks."
 tags: ["roadmap", "RM-30"]
 timestamp: "2026-08-22T09:50:00Z"
-status: "approved"
+status: "final"
 ---
 
 # WP 7.8 design — edge grammar + entry-point flows
