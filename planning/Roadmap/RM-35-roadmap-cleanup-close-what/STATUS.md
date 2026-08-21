@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T22:35:00Z"
+timestamp: "2026-08-21T22:40:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -247,7 +247,9 @@ met and — where the box touches code — the gate
 - [ ] WP 3.3 — **RM-30 Phase 7** Skill Studio: WP 7.1, 7.3, 7.4 then 7.7, 7.8, 7.9. Three batches,
       dependency chain `7.1 ∥ 7.2 → 7.3 → (7.4 ∥ 7.6) → 7.5`; round 2's 7.7–7.9 revise the same
       surface so they land after. Owner-directed rework of a surface the owner has already
-      rejected; unblocks RM-30's 61 done WPs
+      rejected; unblocks RM-30's 61 done WPs.
+      **IN FLIGHT 2026-08-21 — WP 7.1 only** (`wp/roadmap-cleanup/rm30-7.1`, worktree agent).
+      7.2 is already done and 7.3/7.4 depend on 7.1, so this batch is one WP wide, not three
 - [ ] WP 3.4 — **RM-03 WP 2.3**: autonomy dial + hard budgets + steering + live HITL
       approval-gating + MCP elicitation. One box, two BLOCKING MUSTs (elicitation transport
       R-MCP4, the approval/HITL path). Unblocks RM-03's 18-box walk.
@@ -289,7 +291,12 @@ met and — where the box touches code — the gate
       _verify-at-pickup_ — the surface shipped before the amendment was written, so shrink each to
       its true residual instead of rebuilding. Two may need a migration (AM-OB2, AM-OB6); one at a
       time. **If RM-17 should retire before this is worked, split Phase 6 to its own RM item** —
-      recorded as the sanctioned alternative on lock day
+      recorded as the sanctioned alternative on lock day.
+      **IN FLIGHT 2026-08-21 — 2 of the 13**: `AM-OB1` (filter/view state in the URL,
+      `wp/roadmap-cleanup/am-ob1`) and `AM-OB10` (watch-rule WARNING/NO_DATA/PAUSED +
+      renotification, `wp/roadmap-cleanup/am-ob10`), each a worktree agent, both briefed to honour
+      *verify-at-pickup* by measuring the built residual before building. AM-OB10 holds the one
+      migration slot
 - [ ] WP 3.8 — **RM-14 Phases 2–4** (10 WPs): scene spec layout engine + connector router +
       renderer (2.1–2.4), explain mode (3.1–3.3), assistant compose tools (4.1–4.3). Largest
       remaining build. **The risk to weigh:** 24 illustration components exist and nothing composes
