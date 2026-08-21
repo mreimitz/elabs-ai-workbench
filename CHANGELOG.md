@@ -71,6 +71,25 @@ pass turned out to be two blockquote rules around quoted text and one that encod
 compare view. Changing them would have been the regression.
 
 
+## Unreleased — a skill's settings, edited as settings
+
+Changing what a skill binds to, what triggers it, or which `/commands` it answers meant editing YAML
+frontmatter by hand — and binding a server saved a whole new version of the skill the moment you
+clicked, whether or not you were finished.
+
+The Studio now has a settings panel: name, description, bound servers, keywords and command entry
+points, all as ordinary form controls. Everything you change there joins **one** set of unsaved
+edits together with your canvas and text edits — one unsaved-changes count, and one button that says
+which version it is about to create, e.g. "Save as v5". Binding a server stages like everything else
+instead of saving behind your back, and a registered server that has never been scanned offers to
+scan right there, so its tools appear without leaving the page.
+
+The skill's Overview page is now purely a report: its keyword editor and its own save button are
+gone, and its server list links into the Studio to make changes.
+
+One bug went with it: a description written as a folded YAML block would have been corrupted when
+anything else on the page rewrote the frontmatter. That shape is now refused rather than mangled.
+
 ## Unreleased — a rule can start a CI run, and the feed can ask about ratings
 
 Two additions around the parts of the bench that watch it for you.
