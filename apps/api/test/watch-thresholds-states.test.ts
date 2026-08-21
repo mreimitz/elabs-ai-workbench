@@ -1,9 +1,11 @@
 // Observability RM-17 Phase 6 · AM-OB10 — watch-rule threshold + state semantics.
 //
 // Proves (acceptance):
-//   1. A WARNING threshold below ALERT: crossing only the warning fires at a DEMOTED severity;
-//      crossing the alert fires at the configured one; a warn→alert ESCALATION re-fires through a
-//      cooldown; zod rejects a warning that is not strictly less severe than its alert.
+//   1. A WARNING threshold below ALERT: crossing only the warning fires EARLIER, at LEVEL `warn`,
+//      and at the rule's CONFIGURED severity — the same severity an alert crossing sends (owner
+//      decision 2026-08-22 overturned AM-OB10's one-step demotion); a warn→alert ESCALATION still
+//      re-fires through a cooldown; zod rejects a warning that is not strictly less severe than its
+//      alert.
 //   2. THE BUG FIX — a firing rule whose next window contains ZERO runs does NOT emit
 //      `window_recover` and does NOT re-arm. (A mutation test below proves this assertion actually
 //      bites: restoring the old `breached:false` collapse turns it red.)
@@ -249,7 +251,7 @@ test("AM-OB10 — the `notify` policy makes silence itself the alert", async () 
 
 // ═══ (1) Dual thresholds ══════════════════════════════════════════════════════════════════════════
 
-test("AM-OB10 — a WARNING crossing fires at a demoted severity; an ALERT crossing at the configured one", async () => {
+test("a WARNING crossing fires at the rule's CONFIGURED severity, exactly as an ALERT crossing does", async () => {
   const h = harness();
   // Hour 10: 1 error of 4 → errorRate 0.25 (warn, ≥ 0.2). Hour 11: 3 of 4 → 0.75 (alert, ≥ 0.6).
   insertRuns(h.db, [
@@ -273,10 +275,14 @@ test("AM-OB10 — a WARNING crossing fires at a demoted severity; an ALERT cross
   assert.equal(h.notifications.length, 1, "the warning level fired");
   assert.equal(
     h.notifications[0]?.severity,
-    "warning",
-    "a `critical` action DEMOTES one step on a warn crossing — no second severity vocabulary",
+    "critical",
+    "a `critical` rule sends `critical` on a WARN crossing — the level is not a severity dial (owner decision 2026-08-22)",
   );
-  assert.equal(h.notifications[0]?.window?.level, "warn");
+  assert.equal(
+    h.notifications[0]?.window?.level,
+    "warn",
+    "…and the level that fired still rides on the event, so warn stays distinguishable from alert",
+  );
 
   await h.evaluator.evaluateAll(T("2026-08-07T12:30:00.000Z"), { boot: false });
   assert.equal(
@@ -284,7 +290,11 @@ test("AM-OB10 — a WARNING crossing fires at a demoted severity; an ALERT cross
     2,
     "a warn→alert ESCALATION re-fires through a 10-hour cooldown — it is genuinely new information",
   );
-  assert.equal(h.notifications[1]?.severity, "critical", "the alert level uses the configured severity");
+  assert.equal(
+    h.notifications[1]?.severity,
+    "critical",
+    "the alert crossing sends the same configured severity — both levels do",
+  );
   assert.equal(h.notifications[1]?.window?.level, "alert");
   assert.equal(h.notifications[1]?.window?.warnThreshold, 0.2, "the alert names both thresholds");
 });
@@ -493,11 +503,11 @@ test("AM-OB10 — a pre-existing single-threshold rule still fires / suppresses 
 
   await h.evaluator.evaluateAll(T("2026-08-15T11:30:00.000Z"), { boot: false });
   assert.equal(h.notifications.length, 1, "first breach fires");
-  assert.equal(h.notifications[0]?.severity, "warning", "no warn threshold ⇒ no demotion");
+  assert.equal(h.notifications[0]?.severity, "warning", "a single-threshold rule sends what it configured");
   assert.equal(
     h.notifications[0]?.window?.level,
     "alert",
-    "a single-threshold crossing is reported as `alert` — additive, and it changes no severity",
+    "a single-threshold crossing is reported as `alert` — additive, and no level changes a severity",
   );
   assert.equal(
     h.notifications[0]?.window?.warnThreshold,

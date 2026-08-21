@@ -590,8 +590,10 @@ function WindowConfigSection({
           />
         </FieldRow>
 
-        {/* AM-OB10 — an OPTIONAL second, less severe threshold. Crossing only this fires one step
-            down the existing severity ladder; crossing the alert fires at the configured one. */}
+        {/* AM-OB10 — an OPTIONAL second, less severe threshold: an EARLIER signal, not a quieter
+            one. Crossing only this fires at level `warn` rather than `alert` (the level rides on the
+            event and the audit row), and the notification still goes out at the severity chosen
+            below — owner decision 2026-08-22 overturned the original one-step demotion. */}
         <FieldRow
           id="window-warn-threshold"
           label="Warning threshold (optional)"
@@ -608,8 +610,8 @@ function WindowConfigSection({
               }
             />
             <Text variant="meta" tone="muted" className="text-pretty">
-              {window.op === ">=" ? "Below the alert threshold" : "Above the alert threshold"} · one
-              severity step lower
+              {window.op === ">=" ? "Below the alert threshold" : "Above the alert threshold"} ·
+              notifies earlier, at the same severity
             </Text>
           </div>
         </FieldRow>

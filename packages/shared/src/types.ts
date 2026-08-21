@@ -2543,9 +2543,10 @@ export type WatchWindowConfig = {
   /** The ALERT threshold — the severity the rule's `notify` action carries as configured. */
   threshold: number;
   /** OPTIONAL WARNING threshold, strictly LESS SEVERE than `threshold` for the configured `op`
-   *  (`>=` → below it; `<=` → above it). Crossing only this fires at a DEMOTED severity
-   *  (`critical`→`warning`→`info`); crossing `threshold` fires at the configured one. Absent = a
-   *  single-threshold rule, exactly as before (AM-OB10). */
+   *  (`>=` → below it; `<=` → above it). Crossing only this fires at LEVEL `warn` instead of
+   *  `alert` — an earlier signal, carried on the event and the audit row — but the notification
+   *  goes out at the rule's CONFIGURED severity either way (owner decision 2026-08-22; AM-OB10's
+   *  one-step demotion was overturned). Absent = a single-threshold rule, exactly as before. */
   warnThreshold?: number;
   /** What an EMPTY window means for this rule. Absent = {@link WATCH_DEFAULT_NO_DATA_POLICY}
    *  (`hold`: neither fire nor recover) — NOT the pre-AM-OB10 "treat it as recovery" behaviour,

@@ -10,15 +10,18 @@
 //      does the window therefore end in ({@link watchWindowState})?
 //   3. Is this rule PAUSED right now ({@link isWatchRulePaused})?
 //
-// The one non-obvious rule: a `warn` crossing does NOT introduce a second severity vocabulary. It
-// DEMOTES the `notify` action's configured severity by one step in `WATCH_NOTIFY_SEVERITIES`
-// ({@link demoteNotifySeverity}), floored at `info` — so "critical when it's bad, warning when it's
-// getting bad" is expressible with the vocabulary that already exists.
+// LEVEL AND SEVERITY ARE INDEPENDENT AXES (owner decision 2026-08-22). The LEVEL (`warn`/`alert`)
+// says which threshold a value crossed; the SEVERITY is what the rule's `notify` action was
+// configured to send. A warning crossing notifies at the rule's configured severity, exactly as an
+// alert crossing does. AM-OB10 originally DEMOTED a `warn` one step down `WATCH_NOTIFY_SEVERITIES`;
+// the owner overturned that — an operator who set a rule to `critical` meant it, and a notification
+// that quietly arrives as `warning` is one the author never asked for and cannot see they lost. The
+// level still rides on the event and the audit row, so a warn is still distinguishable from an
+// alert, and a warn→alert escalation still re-fires through an active cooldown.
 
-import { WATCH_DEFAULT_NO_DATA_POLICY, WATCH_NOTIFY_SEVERITIES } from "./constants.js";
+import { WATCH_DEFAULT_NO_DATA_POLICY } from "./constants.js";
 import type {
   WatchNoDataPolicy,
-  WatchNotifySeverity,
   WatchRule,
   WatchWindowConfig,
   WatchWindowLevel,
@@ -83,24 +86,9 @@ export function watchWindowStateFires(state: WatchWindowState, policy: WatchNoDa
   return state === "warn" || state === "alert";
 }
 
-/** One step DOWN the existing severity ladder (`critical` → `warning` → `info`), floored at `info`.
- *  This is how a WARNING crossing is expressed without inventing a second vocabulary (AM-OB10). */
-export function demoteNotifySeverity(severity: WatchNotifySeverity): WatchNotifySeverity {
-  const index = WATCH_NOTIFY_SEVERITIES.indexOf(severity);
-  const floor = WATCH_NOTIFY_SEVERITIES[0] as WatchNotifySeverity;
-  if (index <= 0) return floor;
-  return (WATCH_NOTIFY_SEVERITIES[index - 1] ?? floor) as WatchNotifySeverity;
-}
-
-/** The severity a `notify` action carries for a crossing at `level`: the configured one for an
- *  `alert`, one step down for a `warn`. A fire with no level (a single-threshold rule, or a
- *  no-data fire) keeps the configured severity. */
-export function notifySeverityForLevel(
-  configured: WatchNotifySeverity,
-  level: WatchWindowLevel | undefined,
-): WatchNotifySeverity {
-  return level === "warn" ? demoteNotifySeverity(configured) : configured;
-}
+// There is deliberately NO severity-resolution function here any more. A `notify` action's severity
+// is whatever the rule configured, for every crossing level — see the header. Resolving it through a
+// helper would only invite the demotion back.
 
 /** Whether a rule is paused AT `nowMs`. A pause is a timestamp, so it expires on its own — an
  *  unparseable or past `pausedUntil` simply resolves to "not paused" (no sweep, nothing to unstick). */
