@@ -233,6 +233,19 @@ const renderStudio = (entry = "/skills/sk-1/studio?rail=settings") =>
 
 const saveDraftPosts = () => posts.filter((post) => post.path === "/api/skills/sk-1/save-draft");
 
+/**
+ * The settings panel, once its draft has LOADED. The panel frame mounts immediately while
+ * `getSkillFile` is still in flight, so every field legitimately reads empty for a tick — a test that
+ * asserts or types before that is racing the load, not testing the panel.
+ */
+const openLoadedSettings = async () => {
+  const panel = await screen.findByTestId("studio-settings");
+  await waitFor(() =>
+    expect((within(panel).getByLabelText("Name") as HTMLInputElement).value).toBe("demo"),
+  );
+  return panel;
+};
+
 beforeEach(() => {
   posts.length = 0;
   window.localStorage.clear();
@@ -241,8 +254,7 @@ beforeEach(() => {
 describe("§I8 — bind a server, add a keyword and a command, save ONE version", () => {
   test("the settings panel opens from the URL and reads the draft's frontmatter", async () => {
     renderStudio();
-    const panel = await screen.findByTestId("studio-settings");
-    expect((within(panel).getByLabelText("Name") as HTMLInputElement).value).toBe("demo");
+    const panel = await openLoadedSettings();
     expect((within(panel).getByLabelText("Description") as HTMLTextAreaElement).value).toBe(
       "A demo skill.",
     );
@@ -250,7 +262,7 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
 
   test("a settings change shows in the Code view LIVE, with no save", async () => {
     renderStudio("/skills/sk-1/studio?rail=settings&mode=code");
-    const panel = await screen.findByTestId("studio-settings");
+    const panel = await openLoadedSettings();
 
     fireEvent.change(within(panel).getByLabelText("Description"), {
       target: { value: "Rewritten from the panel." },
@@ -269,7 +281,7 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
 
   test("bind + keyword + command, then ONE save → ONE new version carrying the written YAML", async () => {
     renderStudio();
-    const panel = await screen.findByTestId("studio-settings");
+    const panel = await openLoadedSettings();
 
     // 1 — bind a registered server through the picker (never hand-typed YAML).
     fireEvent.click(within(panel).getByTestId("settings-bind-server"));
@@ -318,7 +330,7 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
     // dirty chip, the save dialog's pending list and its `canSave` gate are three separate places
     // that each have to count the settings layer, and an op in the batch masks all three.
     renderStudio();
-    const panel = await screen.findByTestId("studio-settings");
+    const panel = await openLoadedSettings();
 
     fireEvent.click(within(panel).getByTestId("settings-bind-server"));
     fireEvent.click(await screen.findByRole("button", { name: "Bind" }));
@@ -342,7 +354,7 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
 
   test("staging then undoing a bind leaves the draft clean — no version to save", async () => {
     renderStudio();
-    const panel = await screen.findByTestId("studio-settings");
+    const panel = await openLoadedSettings();
 
     fireEvent.click(within(panel).getByTestId("settings-bind-server"));
     fireEvent.click(await screen.findByRole("button", { name: "Bind" }));
