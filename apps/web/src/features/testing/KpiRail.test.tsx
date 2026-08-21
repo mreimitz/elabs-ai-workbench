@@ -10,11 +10,19 @@ import { TooltipProvider } from "@elabs-ai/components-ui";
 // KpiRail now pulls `@elabs-ai/components-ai` (the Context usage popover behind the Context tile); the @elabs-ai/components-ai
 // barrel imports xyflow CSS jsdom can't load, so stub it (the repo's standard posture). The popover's
 // hover/expand behavior is Radix's, not under test — these stubs keep the tile's own text assertable.
+//
+// RM-36 P1-4 — `Context` and `ContextTrigger` are FRAGMENTS, not `<div>`s, so the mocked DOM matches
+// the real one element-for-element: upstream `Context` is a Radix `HoverCard` root (a context
+// provider that renders NO DOM node) and `ContextTrigger` is `HoverCardTrigger asChild` (it renders
+// its child directly). Wrapping either in a `<div>` would inject a block element into `MetricCard`'s
+// description `<p>` that the real app never renders — and the nested-block assertions below would
+// then be measuring the mock instead of the component.
 vi.mock("@elabs-ai/components-ai", () => {
   const Pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
+  const Transparent = ({ children }: { children?: ReactNode }) => <>{children}</>;
   return {
-    Context: Pass,
-    ContextTrigger: Pass,
+    Context: Transparent,
+    ContextTrigger: Transparent,
     ContextContent: () => null,
     ContextContentHeader: () => null,
     ContextContentBody: Pass,
@@ -382,5 +390,88 @@ describe("KpiRail — cache composition (RM-33)", () => {
     const legacy = figureRelationshipNote({ showContext: true, showTokens: true, showCost: true });
     expect(withUnknown).toBe(legacy);
     expect(withUnknown).not.toMatch(/cache/);
+  });
+});
+
+// ── RM-36 WP 1.3 (audit finding P1-4) — valid HTML inside MetricCard's description ──────────────
+//
+// The defect: `MetricCard` renders whatever it is handed as `description` inside
+// `<p class="text-meta font-normal text-muted-foreground">`. The Est. cost tile handed it a `<Text>`,
+// which is itself a `<p>`, so the run console shipped this on EVERY load, in both themes:
+//
+//   <p class="text-meta font-normal text-muted-foreground"><p class="text-meta text-muted-foreground">estimated</p></p>
+//   → "In HTML, <p> cannot be a descendant of <p>. This will cause a hydration error."
+//
+// Invalid markup the browser silently re-parents, plus a permanent React error in the console of the
+// app's busiest screen — which is exactly how a REAL error goes unnoticed. These tests pin the SHAPE,
+// not one call site: any future tile that reaches for a block element here goes red.
+
+/** Elements that may NOT appear inside a `<p>` — `<p>` accepts phrasing content only. */
+const BLOCK_LEVEL_SELECTOR =
+  "p, div, ul, ol, li, section, article, header, footer, table, form, blockquote, pre, h1, h2, h3, h4, h5, h6";
+
+/** Every `<p>` in the tree that illegally contains a block-level descendant, as readable markup. */
+function blockInsideParagraph(container: HTMLElement): string[] {
+  return Array.from(container.querySelectorAll("p"))
+    .filter((paragraph) => paragraph.querySelector(BLOCK_LEVEL_SELECTOR) !== null)
+    .map((paragraph) => paragraph.outerHTML);
+}
+
+describe("KpiRail — MetricCard descriptions are phrasing content (RM-36 P1-4)", () => {
+  test("the Est. cost tile's description is MetricCard's OWN <p> — not a second <p> nested inside it", () => {
+    renderRail({ capabilities: ENGINE_CAPS });
+
+    // `getByText` returns the INNERMOST element holding the string. Before the fix that was the
+    // `<Text>`'s own `<p>`, whose parent was MetricCard's `<p>`; after it, it IS MetricCard's `<p>`,
+    // whose parent is the tile's `CardContent` div. The parent check is what makes this bite.
+    const description = screen.getByText("estimated");
+    expect(description.tagName).toBe("P");
+    expect(description.parentElement?.tagName).not.toBe("P");
+    // Nothing block-level below it either — the line is a bare text node.
+    expect(description.querySelector(BLOCK_LEVEL_SELECTOR)).toBeNull();
+    expect(description.children.length).toBe(0);
+  });
+
+  test("the subscription cost tile's description behaves identically (the OTHER cost lead word)", () => {
+    renderRail({ capabilities: SUBSCRIPTION_CAPS, kpis: kpis({ costUsd: 0.12 }) });
+
+    const description = screen.getByText("subscription reference");
+    expect(description.tagName).toBe("P");
+    expect(description.parentElement?.tagName).not.toBe("P");
+    expect(description.children.length).toBe(0);
+  });
+
+  test("NO <p> anywhere in the rendered rail contains a block-level element — every tile, both cost bases", () => {
+    // The sibling sweep the WP asks for: Context, Est. cost, Tokens ↑/↓, Tool calls and Turns all
+    // render across these two manifests, so a future tile that wraps its description in a block
+    // element fails here even if nobody thinks to write a test for that tile.
+    const engine = renderRail({
+      capabilities: ENGINE_CAPS,
+      guardrails: { maxTurns: 10, maxCostUsd: 2 },
+    });
+    expect(blockInsideParagraph(engine.container)).toEqual([]);
+    engine.unmount();
+
+    const subscription = renderRail({
+      capabilities: SUBSCRIPTION_CAPS,
+      guardrails: { maxTurns: 10, maxCostUsd: 2 },
+    });
+    expect(blockInsideParagraph(subscription.container)).toEqual([]);
+  });
+
+  test("the rendered cost wording is unchanged — 'estimated' / 'subscription reference · of $X cap' (D-CS4)", () => {
+    // D-CS4 owns these strings; the P1-4 fix removed a wrapper ELEMENT, never a character of text.
+    const capped = renderRail({ capabilities: ENGINE_CAPS, guardrails: { maxCostUsd: 2 } });
+    expect(screen.getByText("estimated · of $2.00 cap").textContent).toBe("estimated · of $2.00 cap");
+    capped.unmount();
+
+    const uncapped = renderRail({ capabilities: ENGINE_CAPS });
+    expect(screen.getByText("estimated").textContent).toBe("estimated");
+    uncapped.unmount();
+
+    renderRail({ capabilities: SUBSCRIPTION_CAPS, guardrails: { maxCostUsd: 2 } });
+    expect(screen.getByText("subscription reference · of $2.00 cap").textContent).toBe(
+      "subscription reference · of $2.00 cap",
+    );
   });
 });
