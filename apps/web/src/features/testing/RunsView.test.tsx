@@ -520,3 +520,66 @@ describe("RunsView — a saved view is a shareable named URL (AM-OB1)", () => {
     expect(screen.getByRole("button", { name: /Views/ })).toBeInTheDocument();
   });
 });
+
+/**
+ * RM-36 WP 2.1 (audit finding P1-6) — below `lg` the toolbar's secondary actions collapse into one
+ * `⋯` menu so "+ New run" stays on the page.
+ *
+ * HONEST SCOPE: these are COMPOSITION assertions (which controls are rendered where), NOT layout
+ * ones. jsdom performs no layout — every `getBoundingClientRect()` here is zeros — so nothing in
+ * `pnpm test` can see that a control left the viewport. The LAYOUT-REAL proof (real Chromium, real
+ * viewports, real rects, both themes) is `e2e/responsive-actions.spec.ts`, run by `pnpm test:e2e`.
+ */
+describe("RunsView — narrow-width action collapse (P1-6, composition-level NOT layout)", () => {
+  const ORIGINAL_MATCH_MEDIA = window.matchMedia;
+
+  /** Make only the WP 2.1 `(max-width: 1023px)` query match, leaving every other query as-is. */
+  function setNarrow(narrow: boolean) {
+    window.matchMedia = ((query: string) => ({
+      matches: narrow && query.includes("1023"),
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    })) as unknown as typeof window.matchMedia;
+  }
+
+  beforeEach(() => {
+    mockLoadRunsFeed.mockResolvedValue(POPULATED_FEED);
+  });
+  afterEach(() => {
+    window.matchMedia = ORIGINAL_MATCH_MEDIA;
+  });
+
+  test("below lg, the secondary actions move into the ⋯ menu and New run stays a toolbar button", async () => {
+    setNarrow(true);
+    renderRuns("/testing/runs");
+
+    // Wait for the POPULATED toolbar specifically — "Show forks" exists only there, so this rules
+    // out asserting against the transitional (loading) header, whose actions are a different set.
+    await screen.findByRole("button", { name: "Show forks" });
+    expect(screen.getByRole("button", { name: "New run" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "More run actions" })).toBeInTheDocument();
+    // Columns stays visible — it is what makes the dense table readable at a narrow width.
+    expect(screen.getByRole("button", { name: "Columns" })).toBeInTheDocument();
+    // …and the three widest secondary controls are no longer standalone toolbar items.
+    expect(screen.queryByRole("button", { name: "Compare runs" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Review these…" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Group by" })).not.toBeInTheDocument();
+  });
+
+  test("at lg and above the toolbar is unchanged — every action inline, no ⋯", async () => {
+    setNarrow(false);
+    renderRuns("/testing/runs");
+
+    await screen.findByRole("button", { name: "Show forks" });
+    expect(screen.getByRole("button", { name: "Compare runs" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Review these…" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Group by" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New run" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "More run actions" })).not.toBeInTheDocument();
+  });
+});

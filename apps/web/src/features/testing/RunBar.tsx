@@ -414,7 +414,21 @@ export function RunBar({
   const isInteractive = identity.mode === "interactive";
   const noun = isInteractive ? "session" : "run";
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-card px-4">
+    // RM-36 WP 2.1 (finding P1-6) — the row WRAPS instead of clipping. Measured at 768×900 the
+    // console's content column is 512px wide while this row's non-flexible children (badge · Locked ·
+    // durations · the action cluster) need ~890px; the row itself stayed exactly 512px, so the excess
+    // was CLIPPED by `app-shell-main`'s `overflow:hidden` — "Re-run with changes" sat at x-right 1120
+    // with NO horizontal scroller anywhere in the ancestor chain, i.e. unreachable, not off-screen.
+    // Three layout-only changes fix it, and none of them fires while the row fits:
+    //   • `flex-wrap` + `min-h-12` (was a fixed `h-12`) — a row that fits is still exactly 48px tall
+    //     and pixel-identical; a row that does not now grows a second line instead of clipping.
+    //   • the identity `Text` below takes `flex-1` (basis 0) so its long max-content width can never
+    //     be what FORCES the wrap — it yields first, exactly as the old `truncate` did.
+    //   • the action cluster drops `shrink-0` and wraps INTERNALLY, so it can also degrade on its own
+    //     line rather than escaping it (the same recipe upstream `ViewToolbar` documents).
+    // Deliberately content-driven, not breakpoint-driven: at 1280px nothing wraps (verified), so the
+    // roomy widths are untouched; the row only reflows where it was previously losing controls.
+    <header className="flex min-h-12 shrink-0 flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-border bg-card px-4 py-1.5">
       <StatusBadge view={badgeView}>{badgeLabel}</StatusBadge>
       {/* Unified Sessions (WP3.3, D-US1) — the live countdown to the server-authored deadline for the
           current phase (a wait budget while "Waiting for you", or an opt-in wall cap while running).
@@ -446,12 +460,19 @@ export function RunBar({
         </Text>
       ) : null}
       {/* The frozen harness context — the ONLY place on this screen that names the environment,
-          provider/model, and mode (the test name lives in the breadcrumb). Truncates, never wraps. */}
-      <Text variant="meta" tone="muted" className="min-w-0 truncate">
+          provider/model, and mode (the test name lives in the breadcrumb). Truncates, never wraps.
+          RM-36 WP 2.1: `flex-1` (flex-basis 0) so this line's max-content width is NOT what decides
+          where the wrapping row breaks — it grows into whatever space is left and truncates when
+          there is none, which is exactly what `min-w-0 truncate` did in the old non-wrapping row. */}
+      <Text variant="meta" tone="muted" className="min-w-0 flex-1 truncate">
         {identity.scenarioName} · {identity.model} ·{" "}
         <span className="capitalize">{identity.mode}</span>
       </Text>
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+      {/* RM-36 WP 2.1 — the action cluster wraps internally and may shrink. It used to be `shrink-0`
+          with no wrap, so once its buttons were wider than the row (768px viewport: ~530px of buttons
+          in a 480px row) it simply escaped the row's box and was clipped. `justify-end` keeps every
+          wrapped line right-aligned, so the cluster still reads as one right-hand group. */}
+      <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
         {/* Observability WP 2.5 (D-OB15) — run-level human feedback: editable live AND in replay
             (that's the point — see the WP design doc), so it sits OUTSIDE the replay/live branch
             below. `runId === null` (the pre-run surface, no session exists yet) shows nothing. */}

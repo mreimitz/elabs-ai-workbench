@@ -14,6 +14,14 @@ import {
   Badge,
   Button,
   Card,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   EmptyState,
   Heading,
   Select,
@@ -38,11 +46,20 @@ import {
   useIsMobile,
 } from "@elabs-ai/components-ui";
 import { FacetFilter, SearchInput } from "@elabs-ai/components-data";
-import { ClipboardCheck, GitCompareArrows, GitFork, Layers, PlayCircle, Plus } from "lucide-react";
+import {
+  ClipboardCheck,
+  GitCompareArrows,
+  GitFork,
+  Layers,
+  MoreHorizontal,
+  PlayCircle,
+  Plus,
+} from "lucide-react";
 import { deleteRun, deleteSuiteRun, getRunGrades, listServers, listSkills, pinRun, unpinRun } from "../../lib/api";
 import { formatCostUsd, formatDateTime, formatNumber, formatPercent, formatRelativeTime } from "../../lib/format";
 import { getErrorMessage } from "../../lib/errors";
 import { deriveRunStatusView } from "../../lib/status";
+import { IconButton } from "../../components/IconButton";
 import { KpiStat } from "../../components/KpiStat";
 import { PageShell } from "../../components/PageShell";
 import { ResultCount } from "../../components/ResultCount";
@@ -193,11 +210,47 @@ export function RunsView() {
  * Rendered inside the {@link RunsView} shell as the "Runs" peer tab; the "Suites" peer mounts the
  * existing {@link SuitesView} verbatim (toolbar-reach WP 4.3 · B-6).
  */
+/**
+ * RM-36 WP 2.1 (audit finding P1-6) — true while the viewport is narrower than the `lg` breakpoint
+ * (1024px), i.e. the widths at which this view's five toolbar actions no longer fit.
+ *
+ * WHY 1024 AND NOT 768. `useIsMobile()` is `width < 768`, so at EXACTLY 768px — the width the audit
+ * measured — every mobile mitigation in this file is switched OFF while the desktop cluster still
+ * needs ~720px against the ~480px the content column actually has beside the sidebar. `ViewToolbar`
+ * renders its action cluster `ml-auto shrink-0` inside a NON-wrapping row, so the excess escaped the
+ * row and was clipped by `app-shell-main`'s `overflow:hidden`: "Compare runs" measured x-right 849px
+ * and "+ New run" 958px in a 768px viewport, with no horizontally-scrollable ancestor — unreachable,
+ * not merely off-screen. `< 1024px` is therefore the honest trigger, and it leaves 1024px and 1280px
+ * byte-identical to before (verified by measurement, not assumption).
+ *
+ * matchMedia-driven, and `false` when `matchMedia` is unavailable or reports no match (jsdom) — so
+ * every existing render harness keeps rendering the full desktop cluster unchanged.
+ */
+const NARROW_TOOLBAR_QUERY = "(max-width: 1023px)";
+
+function useNarrowToolbar(): boolean {
+  const [narrow, setNarrow] = useState<boolean>(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia(NARROW_TOOLBAR_QUERY).matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mql = window.matchMedia(NARROW_TOOLBAR_QUERY);
+    const onChange = () => setNarrow(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return narrow;
+}
+
 function RunsFeedPanel() {
   const navigate = useNavigate();
   // P0 mobile audit T4 (2026-07-25 critique) — below 768px the wide interactive table (11+ columns,
   // sticky-pinned Name/Actions) doesn't fit a phone; see the `isMobile` branch further down.
   const isMobile = useIsMobile();
+  // RM-36 WP 2.1 (finding P1-6) — below `lg` the five toolbar actions collapse into one `⋯` menu.
+  const narrowToolbar = useNarrowToolbar();
   const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState<RunsFeedData | null>(null);
   const [gradesByRun, setGradesByRun] = useState<Map<string, RunGrade[]>>(new Map());
@@ -722,6 +775,61 @@ function RunsFeedPanel() {
       <span>Review these…</span>
     </Button>
   );
+  // Group by — the previously-floating control (D-TB2), now a toolbar action. The option labels are
+  // self-describing ("No grouping", "Group by type"), so no visible label.
+  const groupByAction = (
+    <Select value={groupBy} onValueChange={(value) => setGroupBy(value as GroupBy)}>
+      <SelectTrigger aria-label="Group by" className="w-44 min-w-0">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {GROUP_BY_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+  // RM-36 WP 2.1 (finding P1-6) — the narrow-width overflow menu. Below `lg` the three widest
+  // SECONDARY actions (Group by ≈176px · Review these… ≈150px · Compare runs ≈150px) fold in here,
+  // which takes the cluster from ~720px to ~250px and keeps "+ New run" — the feed's primary call to
+  // action — on the page at 768px. Columns stays visible: it is the one control that makes the dense
+  // table readable at a narrow width, and it is already compact. Group by becomes a radio group so a
+  // menu item still SHOWS the current grouping rather than merely setting it.
+  const overflowRunActions = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <IconButton variant="outline" size="icon-sm" label="More run actions">
+          <MoreHorizontal aria-hidden />
+        </IconButton>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Group by</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={groupBy}
+          onValueChange={(value) => setGroupBy(value as GroupBy)}
+        >
+          {GROUP_BY_OPTIONS.map((option) => (
+            <DropdownMenuRadioItem key={option.value} value={option.value}>
+              {option.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => navigate("/testing/runs/compare")}>
+          <GitCompareArrows aria-hidden />
+          <span>Compare runs</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onSelect={() => navigate(`/testing/review?filter=${serializeRunFilter(filter)}`)}
+        >
+          <ClipboardCheck aria-hidden />
+          <span>Review these…</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
   // Loading / error / empty share a toolbar with only the actions — there is nothing to filter yet.
   const transitionalHeader = (
     <ViewToolbar
@@ -868,26 +976,24 @@ function RunsFeedPanel() {
         </>
       }
       actions={
-        <>
-          <RunColumnChooser preference={columnsPreference} onChange={setColumnsPreference} />
-          {/* Group by — the previously-floating control (D-TB2), now the leftmost toolbar action. The
-              option labels are self-describing ("No grouping", "Group by type"), so no visible label. */}
-          <Select value={groupBy} onValueChange={(value) => setGroupBy(value as GroupBy)}>
-            <SelectTrigger aria-label="Group by" className="w-44 min-w-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {GROUP_BY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {reviewRunsAction}
-          {compareRunsAction}
-          {stickyNewRunAction}
-        </>
+        // RM-36 WP 2.1 (P1-6) — below `lg` the SECONDARY actions collapse into one `⋯` menu so the
+        // primary "+ New run" never leaves the page. Above it, the cluster is byte-identical to what
+        // it always was.
+        narrowToolbar ? (
+          <>
+            <RunColumnChooser preference={columnsPreference} onChange={setColumnsPreference} />
+            {overflowRunActions}
+            {stickyNewRunAction}
+          </>
+        ) : (
+          <>
+            <RunColumnChooser preference={columnsPreference} onChange={setColumnsPreference} />
+            {groupByAction}
+            {reviewRunsAction}
+            {compareRunsAction}
+            {stickyNewRunAction}
+          </>
+        )
       }
     />
   );
