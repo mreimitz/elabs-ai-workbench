@@ -32,6 +32,15 @@ describe("registry v0.1 — the catalog", () => {
     assert.equal(REGISTRY_VERSION, "0.1.0");
   });
 
+  // THE ONE SEAM LEAK, recorded rather than papered over (WP 1.3). WP 1.1's seam makes "adding an
+  // entity touches its own file and its own cast module, and nothing else" true of the SOURCE — and
+  // it is: `registry.ts` and `entities/index.ts` name no entity. It is not true of this literal.
+  // A census has to be written out by hand or it stops being a census (deriving the expected list
+  // from the cast modules would make it a tautology with the seam test below), so every Phase 1 work
+  // package has to append to this one array — which means WP 1.2 and WP 1.3, running in parallel
+  // worktrees, both edit this line. That collision is real, but it is a list of strings rather than
+  // a structural conflict, and the alternative — deleting the census — costs more than it saves.
+  // The structural fix, if one is wanted, is to move the census into each cast module's own test.
   it("publishes exactly the cast the four modules declare, and nothing else", () => {
     // WP 1.2 FINDING, recorded where it bites. This literal is a hand-written census of the whole
     // catalog, so it is the ONE place WP 1.1's seam does not hold: "adding an entity touches its own
@@ -42,10 +51,17 @@ describe("registry v0.1 — the catalog", () => {
     // and is left as a finding rather than made unilaterally mid-parallel-run.
     assert.deepEqual(ILLUSTRATION_REGISTRY.map((entry) => entry.id).sort(), [
       "agent",
+      "assistant",
+      "collection",
+      "credentials-vault",
+      "database",
+      "diff-compare",
+      "environment",
       "feedback-report",
       "file",
       "mcp-server",
       "model",
+      "orchestrator",
       "prompt",
       "prompt-template",
       "provider",
@@ -53,6 +69,7 @@ describe("registry v0.1 — the catalog", () => {
       "run",
       "scan",
       "skill",
+      "suite",
       "token-meter",
       "tool",
       "validator",
