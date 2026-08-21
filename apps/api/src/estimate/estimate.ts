@@ -5,9 +5,19 @@
 //
 // The estimate is ADVISORY (it blocks nothing) and intentionally wide. The dominant token driver is
 // the environment's tool-definition footprint, which is re-sent to the model on every agent turn
-// (eager tool loading), so the low/mid/high band is essentially "how many turns will the agent
-// take?" — spread by RUN_PLAN_ESTIMATE_TURNS_{LOW,MID,HIGH}, clamped by a scenario's `maxTurns`
-// guardrail when it is tighter than the high assumption.
+// (eager tool loading), so the TOKEN band is essentially "how many turns will the agent take?" —
+// spread by RUN_PLAN_ESTIMATE_TURNS_{LOW,MID,HIGH}, clamped by a scenario's `maxTurns` guardrail
+// when it is tighter than the high assumption.
+//
+// RM-33 WP 2.1 — the DOLLAR band no longer spreads on turns; it spreads on **prompt caching**.
+// Before this WP every input token was charged at the full rate and the re-sent prefix was re-charged
+// in full on every turn, which over-stated a real cached run by ~3.8x (measured: run
+// 4LnBMey0w53EnDRNG__TH billed $0.798 where this file predicted $3.00). The app switches Anthropic
+// caching on itself (`apps/api/src/providers/registry.ts`), so ignoring it was not a defensible
+// simplification. Both ends of `costUsd` are now evaluated at the SAME (high) turn count and differ
+// only in the caching assumption, so they are directly comparable; the turn spread stays on `tokens`.
+// All four terms come from `computeCostBreakdownForPrice` — D-CT5: there is exactly ONE cost formula
+// in the app, and this file must never grow a second one.
 
 import {
   RUN_PLAN_ESTIMATE_CHARS_PER_TOKEN,
@@ -18,10 +28,23 @@ import {
   type EstimateRange,
   type RunPlanEstimate,
   type RunPlanEstimateEnvironment,
+  type TokenUsageActual,
 } from "@mcp-token-footprint/shared";
+import { computeCostBreakdownForPrice } from "../providers/pricing.js";
 
-/** A per-token price for a model, or `null` when the model is genuinely unpriced. */
-export type EnvPricing = { inPer1M: number; outPer1M: number } | null;
+/**
+ * A per-token price for a model, or `null` when the model is genuinely unpriced. Structurally a
+ * `ResolvedPrice` — RM-33 WP 2.1 stopped the service narrowing it to the two headline rates, because
+ * throwing away `cachedInPer1M` is exactly what made the preview cache-blind.
+ */
+export type EnvPricing = {
+  inPer1M: number;
+  outPer1M: number;
+  /** Cache-READ rate. Its PRESENCE is the whole "can this model cache?" signal — see {@link cachingAssumedFor}. */
+  cachedInPer1M?: number;
+  /** Cache-WRITE rate when an owner pinned one; otherwise `computeCostBreakdownForPrice` derives 1.25x input. */
+  cacheWritePer1M?: number;
+} | null;
 
 /** One environment, fully resolved by the service, ready for the pure estimate. */
 export type EstimateEnvInput = {
@@ -68,13 +91,66 @@ function runTokens(env: EstimateEnvInput, test: EstimateTestInput, turns: number
   return Math.round(input + output);
 }
 
-/** The same run's cost in USD at a turn count, or `0` when unpriced (never negative). */
-function runCost(env: EstimateEnvInput, test: EstimateTestInput, turns: number): number {
-  if (!env.pricing) return 0;
+/**
+ * RM-33 WP 2.1 — whether this environment's cost band may model prompt caching at all.
+ *
+ * The signal is the resolved price publishing a cache-READ rate, and nothing else. There is
+ * deliberately no provider-kind fork ("is this Anthropic?"): a model we cannot price for cache reads
+ * would otherwise be charged a 1.25x cache-WRITE premium on its first turn with no discount to offset
+ * it, which is a worse lie than simply not claiming caching. When this is `false` the band collapses
+ * to today's full-rate number at both ends — correct, not a special case.
+ */
+function cachingAssumedFor(env: EstimateEnvInput): boolean {
+  return env.pricing !== null && env.pricing.cachedInPer1M !== undefined;
+}
+
+/**
+ * The token shape of ONE run at a turn count, as a {@link TokenUsageActual} the single cost formula
+ * can price. `inputTokens` is the GROSS total (D-CT1 — it already includes the cached slice), and is
+ * byte-identical to {@link runTokens}'s input term: this WP re-prices the same tokens, it does not
+ * re-count them.
+ *
+ * With `cached`, the prefix the agent re-sends every turn is modelled honestly: turn 1 WRITES it
+ * (1.25x), turns 2..N READ it (~0.1x), and the per-turn delta — here the user prompt — stays
+ * uncached at the full rate. With `cached` off, no cache slice is declared and the formula reduces to
+ * `input x inPer1M + output x outPer1M`, i.e. exactly the pre-RM-33 arithmetic.
+ */
+function runUsage(
+  env: EstimateEnvInput,
+  test: EstimateTestInput,
+  turns: number,
+  cached: boolean,
+): TokenUsageActual {
   const perTurnPrefix = env.footprintTokens + env.systemPromptTokens;
-  const input = turns * perTurnPrefix + test.promptTokens;
-  const output = turns * RUN_PLAN_ESTIMATE_OUTPUT_TOKENS_PER_TURN;
-  return (input / 1e6) * env.pricing.inPer1M + (output / 1e6) * env.pricing.outPer1M;
+  const inputTokens = turns * perTurnPrefix + test.promptTokens;
+  const outputTokens = turns * RUN_PLAN_ESTIMATE_OUTPUT_TOKENS_PER_TURN;
+  if (!cached) return { inputTokens, outputTokens };
+  return {
+    inputTokens,
+    outputTokens,
+    cacheWriteTokens: turns >= 1 ? perTurnPrefix : 0,
+    cacheReadTokens: Math.max(0, turns - 1) * perTurnPrefix,
+  };
+}
+
+/**
+ * The two ends of one run's cost band at a turn count: `cached` prices the re-sent prefix as one
+ * cache write plus cache reads, `uncached` charges every input token the full rate (the pre-RM-33
+ * number). Unpriced ⇒ `0` at both ends, exactly as before — that is `priced: false`'s job to explain,
+ * never a zero pretending to be free.
+ */
+function runCostEnds(
+  env: EstimateEnvInput,
+  test: EstimateTestInput,
+  turns: number,
+): { cached: number; uncached: number } {
+  const price = env.pricing ?? undefined;
+  const uncached = computeCostBreakdownForPrice(price, runUsage(env, test, turns, false)).totalUsd;
+  if (!cachingAssumedFor(env)) return { cached: uncached, uncached };
+  return {
+    cached: computeCostBreakdownForPrice(price, runUsage(env, test, turns, true)).totalUsd,
+    uncached,
+  };
 }
 
 function addRange(a: EstimateRange, b: EstimateRange): EstimateRange {
@@ -101,18 +177,20 @@ export function estimateRunPlan(
     const turns = turnBand(env.maxTurns);
     // Tokens for this environment across all tests × reps.
     let tokens = ZERO_RANGE;
-    let cost = ZERO_RANGE;
+    // RM-33 WP 2.1 — dollars are accumulated as the TWO caching ends, both at `turns.high`, not as a
+    // turn band. `turns.high` is the turn count the pre-RM-33 `costUsd.high` already used, which is
+    // what keeps the old arithmetic the band's honest upper bound.
+    let cachedCost = 0;
+    let uncachedCost = 0;
     for (const test of tests) {
       tokens = addRange(tokens, {
         low: runTokens(env, test, turns.low),
         mid: runTokens(env, test, turns.mid),
         high: runTokens(env, test, turns.high),
       });
-      cost = addRange(cost, {
-        low: runCost(env, test, turns.low),
-        mid: runCost(env, test, turns.mid),
-        high: runCost(env, test, turns.high),
-      });
+      const ends = runCostEnds(env, test, turns.high);
+      cachedCost += ends.cached;
+      uncachedCost += ends.uncached;
     }
     const scale = (r: EstimateRange): EstimateRange => ({
       low: r.low * reps,
@@ -120,7 +198,25 @@ export function estimateRunPlan(
       high: r.high * reps,
     });
     tokens = scale(tokens);
-    cost = scale(cost);
+    cachedCost *= reps;
+    uncachedCost *= reps;
+
+    // `low`/`high` are min/max rather than "cached is always the cheap one", because on a ONE-turn
+    // plan (`maxTurns: 1`) the whole prefix is a cache WRITE at 1.25x with no read to offset it, so
+    // caching genuinely costs more. The band's job is to bracket both outcomes; asserting an order
+    // that the arithmetic does not always produce would be the dishonest option. For every turn count
+    // >= 2 with a published cache-read rate this resolves to low = cached, high = the old number.
+    // `mid` is their midpoint: the caching assumption has exactly two honest ends, and inventing a
+    // third would be a figure nobody measured. Nothing renders `costUsd.mid` — the launcher shows
+    // low–high — but `EstimateRange` has three slots and `low <= mid <= high` must hold.
+    const costLow = Math.min(cachedCost, uncachedCost);
+    const costHigh = Math.max(cachedCost, uncachedCost);
+    const cost: EstimateRange = {
+      low: costLow,
+      mid: (costLow + costHigh) / 2,
+      high: costHigh,
+    };
+    const cachingAssumed = cachingAssumedFor(env);
 
     const priced = env.pricing !== null;
     // The most important caveat wins the single-line reason; unpriced dwarfs a missing footprint.
@@ -144,6 +240,7 @@ export function estimateRunPlan(
         high: Math.round(tokens.high),
       },
       ...(priced ? { costUsd: cost } : {}),
+      cachingAssumed,
     };
   });
 
@@ -162,6 +259,10 @@ export function estimateRunPlan(
     costUsd: totalCost,
     unpricedEnvironmentCount: envEstimates.filter((e) => !e.priced).length,
     uncappedEnvironmentCount: envEstimates.filter((e) => !e.hasCostCap).length,
+    // RM-33 WP 2.1 — `some`, not `every`: the plan band is a sum, so ONE caching environment already
+    // makes `costUsd.low` a genuinely cache-discounted figure the label has to explain. A plan where
+    // no environment can cache reports `false`, and its low and high ends are equal.
+    cachingAssumed: envEstimates.some((e) => e.cachingAssumed === true),
     environments: envEstimates,
   };
 }

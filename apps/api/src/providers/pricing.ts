@@ -160,7 +160,10 @@ export function resetPricingResolver(): void {
  * price — a genuinely unpriced model is not a "fallback", just unpriced, and must stay quiet). With
  * NO resolver installed: the pure code-table lookup (identical to the pre-WP2.6 behavior).
  */
-export function resolvePrice(model: string, opts?: PricingResolveOptions): ResolvedPrice | undefined {
+export function resolvePrice(
+  model: string,
+  opts?: PricingResolveOptions,
+): ResolvedPrice | undefined {
   const resolver = activeResolver;
   if (!resolver) return MODEL_PRICING[model];
   const hit = resolver.resolve(model, opts);
@@ -230,7 +233,28 @@ export function computeCostBreakdown(
   usage: TokenUsageActual,
   opts?: PricingResolveOptions,
 ): CostBreakdown {
-  const pricing = resolvePrice(model, opts);
+  return computeCostBreakdownForPrice(resolvePrice(model, opts), usage);
+}
+
+/**
+ * RM-33 WP 2.1 — the SAME formula as {@link computeCostBreakdown}, entered with an ALREADY-resolved
+ * price instead of a model id. A seam, not a second formula: `computeCostBreakdown` is now a one-line
+ * caller of it, so D-CT5 ("one pricing code path") holds more tightly than before, not less.
+ *
+ * It exists because the run-plan estimator (`apps/api/src/estimate/estimate.ts`) is deliberately
+ * PURE — no DB, no pricing tables. Its service resolves the price once, with its own
+ * {@link PricingResolveOptions}, and hands the rates in. Having the estimator call
+ * `computeCostBreakdown(model, …)` would re-enter {@link resolvePrice} a second time behind the
+ * service's back and possibly with different options, so the preview could silently disagree with
+ * the price the service actually resolved.
+ *
+ * `undefined` means "we have no price for this model": every term comes back `0` with
+ * `priced: false`, exactly as an unknown model id does.
+ */
+export function computeCostBreakdownForPrice(
+  pricing: ResolvedPrice | undefined,
+  usage: TokenUsageActual,
+): CostBreakdown {
   const split = usageSplitKind(usage);
   if (!pricing) {
     // Unpriced: every term is 0 because we CANNOT price it, not because it is free. `priced: false`
@@ -311,7 +335,8 @@ export function deriveProvider(model: string): string {
   const id = model.toLowerCase();
   if (id.startsWith("claude")) return "anthropic";
   if (id.startsWith("gpt") || /^o\d/.test(id) || id.startsWith("openai")) return "openai";
-  if (id.startsWith("gemini") || id.startsWith("google/") || id.startsWith("gemma")) return "google";
+  if (id.startsWith("gemini") || id.startsWith("google/") || id.startsWith("gemma"))
+    return "google";
   if (id.startsWith("grok")) return "xai";
   if (id.includes("mistral")) return "mistral";
   if (id.includes("llama")) return "meta";
@@ -352,4 +377,3 @@ export function buildSeedPricingRows(): SeedPricingRow[] {
     source: "seed",
   }));
 }
-
