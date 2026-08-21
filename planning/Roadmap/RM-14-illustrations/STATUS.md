@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T10:15:00Z"
+timestamp: "2026-08-21T10:30:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -391,10 +391,16 @@ and an explicit "Not verified:" tail.
 - [ ] WP 1.2 — Assets & knowledge cast (`tool`, `resource`, `prompt-template`, `file`,
       `feedback-report`, `scan`, `token-meter`) — spec:
       [`wp-1.2-assets-cast.md`](./wp-1.2-assets-cast.md) · depends on 1.1 · parallel with 1.3
+      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
+      `6f587b0`, branch `wp/illustrations/1.2`, running in parallel with the other; not ticked until the
+      orchestrator re-runs the gate and verifies every Acceptance item plus the three teeth)
 - [ ] WP 1.3 — Orchestration cast (`suite`, `collection`, `orchestrator`, `diff-compare`,
       `environment`, `database`, `credentials-vault`, `assistant`) — spec:
       [`wp-1.3-orchestration-cast.md`](./wp-1.3-orchestration-cast.md) · depends on 1.1 · parallel
       with 1.2
+      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
+      `6f587b0`, branch `wp/illustrations/1.3`, running in parallel with the other; not ticked until the
+      orchestrator re-runs the gate and verifies every Acceptance item plus the three teeth)
 - [ ] WP 1.4 — Contribution kit (scaffold script, checklist, registry changelog +
       `REGISTRY_VERSION`, scaffold-only Nth-component proof) — **no spec yet**
 
