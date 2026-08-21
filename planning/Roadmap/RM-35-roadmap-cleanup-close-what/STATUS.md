@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T21:15:00Z"
+timestamp: "2026-08-21T21:45:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -108,10 +108,25 @@ met and — where the box touches code — the gate
       ready to dispatch with both dependencies built. RM-17's completion banner was corrected so
       it no longer reads as the whole workstream. **Consequence for this plan: RM-17 moves out of
       Wave 0b and into Wave 3 — see WP 3.6.**
-- [ ] **OWNER** D-2 — RM-06 Phase 5 (3 WPs, cross-links): build, or split to a new RM item so
-      RM-06 can retire on its owner walk alone
-- [ ] **OWNER** D-3 — RM-07 Phase 6 (2 WPs, judge calibration): build, or split to a new RM item
-      so RM-07 can retire on its owner walk alone
+- [x] **OWNER** D-2 — **DECIDED 2026-08-21: BUILD.** RM-06 Phase 5 (3 WPs, cross-links) stays
+      inside RM-06 rather than splitting to a new item, so **RM-06 does not retire on its owner walk
+      alone** — it now waits on three work packages as well. Phase 5's "do not pick up without owner
+      instruction" gate is **satisfied, not removed**, and its heading records that. Original text:
+      build, or split to a new RM item so RM-06 can retire on its owner walk alone.
+- [x] **OWNER** D-3 — **DECIDED 2026-08-21: BUILD.** RM-07 Phase 6 (2 WPs, judge calibration) stays
+      inside RM-07 on the same terms, so **RM-07 does not retire on its owner walk alone** either.
+      Specs for both WPs already existed
+      ([`phase-6-judge-calibration.md`](../RM-07-benchmarks/phase-6-judge-calibration.md)); WP 6.2
+      depends on 6.1, so they are sequential, not parallel. Original text: build, or split to a new
+      RM item so RM-07 can retire on its owner walk alone.
+      **Consequence of D-1 + D-2 + D-3 together, stated plainly: all three parked decisions went the
+      EXPENSIVE way.** §5 of this plan valued them as the cheapest closures available — rejecting
+      D-1 alone would have retired RM-17 outright. Instead the roadmap gained **14 boxes (RM-17) + 3
+      WPs (RM-06) + 2 WPs (RM-07) = 19 new units of work**, and three items that were one walk from
+      closing are now blocked on engineering. That is a legitimate product call — the work was judged
+      worth doing — but Wave 0b can no longer be described as a cheap-closure wave, and Waves 2/2.5
+      shrink accordingly: **RM-06, RM-07 and RM-17 will not retire in Sitting B or its retirement
+      pass.**
 
 ## Wave 1 — the leverage batch
 - [x] WP 1.1 — **done 2026-08-21 · `wp/roadmap-cleanup/1.1` (`7e04155` · `bd59865`, merged)** —

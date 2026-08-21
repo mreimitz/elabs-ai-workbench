@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Auto-Rating \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the auto-rating plan, read and updated by /next-wp auto-rating. A box is"
 tags: ["roadmap", "RM-06"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T21:40:00Z"
 status: "active"
 ---
 # Auto-Rating — work-package status ledger · **PRIORITY: HIGH**
@@ -81,7 +81,12 @@ ticked **only** when the WP's Acceptance is met and the gate
       `POST /api/suite-runs/:id/report` regenerate (append-only)
       — done 2026-07-11 · wp/auto-rating/4.3 (rendered both-theme/keyboard walk = owner-acceptance)
 
-## Phase 5 — Cross-links (backlog, owner-gated — do not pick up without owner instruction)
+## Phase 5 — Cross-links · **UNPARKED 2026-08-21 — owner said BUILD**
+
+> **Owner instruction received 2026-08-21** (via `RM-35` D-2, which offered *build* or *split to a
+> new RM item so RM-06 can retire on its owner walk alone*). The owner chose **build**, so this
+> phase stays inside RM-06 and RM-06 does **not** retire until it is done. The "do not pick up
+> without owner instruction" gate is now **satisfied, not removed** — it did its job.
 - [ ] WP 5.1 — skill findings → SkillFlow suggestion drafts / Skill IDE deep-links; server
       findings → server detail (Advisor evidence when Advisor Phase 1 lands)
 - [ ] WP 5.2 — base verdict as CI assertable (`roadmap/ci/`) + verdict trend per server/skill

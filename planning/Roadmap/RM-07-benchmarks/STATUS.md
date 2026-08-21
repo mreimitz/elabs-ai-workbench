@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Benchmarks \u2014 work-package status ledger \u00b7 PRIORITY: HIGH (parallel with Skill IDE)"
 description: "Living state for the Benchmarks plan, read and updated by /next-wp benchmarks. A box is"
 tags: ["roadmap", "RM-07"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T21:40:00Z"
 status: "active"
 ---
 # Benchmarks — work-package status ledger · **PRIORITY: HIGH (parallel with Skill IDE)**
@@ -48,7 +48,13 @@ ticked **only** when that WP's Acceptance is met and the gate
 ## Phase 5 — Skill-effect A/B
 - [x] WP 5.1 — suite variant axis (± skill / version pin) + per-test delta view — done 2026-07-04 · wp/benchmarks/5.1 (5ceb7df; merged e9d61f3). Additive-only seam: `resolveAllowedSkills(scenarioId, overrides?)` (`applySkillOverrides` attach/detach/pin — scenario row never mutated) → `run-service.start(…, skillOverrides?)` (sole W6 run-service edit; validates at start) → orchestrator variant axis (`test × variant × rep` when `config.variants` set; each cell stamps `variantLabel`+overrides); `GET /api/suite-runs/:id/deltas?base=<label>` (`SuiteDeltaRow[]`); web Variants section (`SuiteEditor`, reuses `AddSkillModal`) + Skill-effect Delta tab. Gate green on merged main (typecheck · test **666/666**, +8 · build · lint, 390 files). **Invariants proven:** matrix cardinality (8 cells, variantLabel); override resolution (base run records NO skill, +variant records it — from `run_skills`); hand-computed deltas (pure + end-to-end); **deleted-skill variant fails at run START** (typed 400 before any cell schedules); variants ride `config_snapshot_json` (replay-exact). `suites/routes.ts`/`SuiteRunConsole.tsx`/`lib/api.ts` conflicts vs 3.5 resolved. **Documented gaps (follow-ups, not blockers):** the "Trace-tab deep-link for fractured runs" is unimplemented — `SuiteDeltaRow` is aggregate/mean-over-reps with no run id (design consequence of the front-loaded shape); the Quality×cost scatter (3.4) collapses same-scenario variants into one point — the Delta tab is the correct variant-comparison surface. **Not verified:** no live UI/themes (offline tests only — folded into E2E).
 
-## Phase 6 — Judge calibration & trust · BACKLOG (owner-added 2026-07-04 — NOT in the W1–W6 mission; do not pick up without owner instruction)
+## Phase 6 — Judge calibration & trust · **UNPARKED 2026-08-21 — owner said BUILD**
+
+> Owner-added 2026-07-04, outside the original W1–W6 mission. **Owner instruction received
+> 2026-08-21** (via `RM-35` D-3, which offered *build* or *split to a new RM item so RM-07 can
+> retire on its owner walk alone*). The owner chose **build**, so this phase stays inside RM-07 and
+> RM-07 does **not** retire until it is done. Specs for both WPs already exist in
+> [`phase-6-judge-calibration.md`](./phase-6-judge-calibration.md).
 - [ ] WP 6.1 — grade feedback + calibration set (spec: `phase-6-judge-calibration.md`)
 - [ ] WP 6.2 — agreement analytics + judge-change re-grade guard
 
