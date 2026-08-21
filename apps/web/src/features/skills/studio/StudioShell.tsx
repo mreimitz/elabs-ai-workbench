@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { SkillFileNode } from "@mcp-token-footprint/shared";
 import {
   Button,
   Heading,
@@ -10,6 +9,7 @@ import {
   TooltipContent,
   TooltipTrigger,
   Text,
+  cn,
 } from "@elabs-ai/components-ui";
 import { ArrowLeft, Code2, Columns2, TriangleAlert, Workflow } from "lucide-react";
 import { PageShell } from "../../../components/PageShell";
@@ -17,11 +17,14 @@ import { ViewToolbar } from "../../../components/ViewToolbar";
 import { DiscardChangesDialog } from "../../../components/UnsavedChangesGuard";
 import { SkillDesignView } from "../design/SkillDesignView";
 import type { SkillProblemsSummary } from "../design/ProblemsPanel";
-import { getSkillFiles } from "../skills-inspector-api";
+import { WorkspaceEditor } from "../workspace/WorkspaceEditor";
 import { StudioContextPanel } from "./StudioContextPanel";
 import { StudioLeftRail } from "./StudioLeftRail";
 import { StudioRail } from "./StudioRail";
 import { StudioDraftContext, useStudioDraftController } from "./draft";
+import { StudioFileTabs } from "./files/StudioFileTabs";
+import { SKILL_MD } from "./files/file-ops";
+import { activeTab, closeTab, liveTabs, openTab, remapPath, remapTabs } from "./files/tab-model";
 import { readStudioRailCollapsed, writeStudioRailCollapsed } from "./studio-layout";
 import {
   isStudioMode,
@@ -80,7 +83,6 @@ export function StudioShell({
   const urlState = readStudioUrlState(searchParams);
   const { mode, rail: leftTab, sel } = urlState;
   void sel; // read below, once, for the mount-time selection seed
-  const file = urlState.file ?? STUDIO_DEFAULT_FILE;
 
   const applyUrlState = useCallback(
     (next: Parameters<typeof writeStudioUrlState>[1]) => {
@@ -150,24 +152,63 @@ export function StudioShell({
   const draft = useStudioDraftController(skillId, versionId, nextVersionLabel);
   const dirty = draft.dirty;
 
-  // ── rail data (read-only; the editor owns the draft) ─────────────────────────────────────────
-  const [files, setFiles] = useState<SkillFileNode[] | null>(null);
+  // ── RM-30 WP 7.4 — the centre surface's editor tabs ───────────────────────────────────────────
+  // `?file=` names the ACTIVE tab (WP 7.1's param, unchanged); the OPEN SET is session state. The
+  // rendered set is `open ∩ what the working tree actually holds`, so a file that disappears by any
+  // route — a delete, a folder delete, a discard — can never leave a tab pointing at nothing.
+  const [openPaths, setOpenPaths] = useState<string[]>(() =>
+    urlState.file !== null && urlState.file !== SKILL_MD ? [urlState.file] : [],
+  );
+  const existingPaths = useMemo(
+    () => new Set(draft.files.entries.map((entry) => entry.path)),
+    [draft.files.entries],
+  );
+  const tabs = useMemo(
+    () =>
+      liveTabs(openPaths, existingPaths).map((path) => ({
+        path,
+        ...(draft.files.entryByPath(path) ? { entry: draft.files.entryByPath(path) } : {}),
+      })),
+    [openPaths, existingPaths, draft.files],
+  );
+  // While the draft is still loading the working tree is empty, so `activeTab` would fall back to
+  // SKILL.md and overwrite a cold-loaded `?file=`. Hold the URL's word until there is a tree to
+  // check it against.
+  const active = draft.loading
+    ? (urlState.file ?? SKILL_MD)
+    : activeTab(urlState.file, existingPaths);
 
-  useEffect(() => {
-    let cancelled = false;
-    setFiles(null);
-    getSkillFiles(skillId, versionId)
-      .then((loaded) => {
-        if (!cancelled) setFiles(loaded);
-      })
-      .catch(() => {
-        // The rail degrades to an empty tree; the editor is unaffected (it loads its own document).
-        if (!cancelled) setFiles([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [skillId, versionId]);
+  const openFile = useCallback(
+    (path: string) => {
+      setOpenPaths((current) => openTab(current, path));
+      setFile(path);
+    },
+    [setFile],
+  );
+
+  const closeFile = useCallback(
+    (path: string) => {
+      const result = closeTab(openPaths, path);
+      setOpenPaths(result.open);
+      // Closing a BACKGROUND tab must not steal the surface; only the active one hands over.
+      if (path === active) setFile(result.next);
+    },
+    [openPaths, active, setFile],
+  );
+
+  // A rename/move in the Files rail re-homes every open tab, and the URL follows when the file the
+  // centre surface is showing was inside the moved subtree.
+  const handlePathMoved = useCallback(
+    (from: string, to: string) => {
+      setOpenPaths((current) => remapTabs(current, from, to));
+      const moved = remapPath(active, from, to);
+      if (moved !== active) setFile(moved);
+    },
+    [active, setFile],
+  );
+
+  const activeEntry = active === SKILL_MD ? undefined : draft.files.entryByPath(active);
+  const manifestDirty = draft.manifestDirty;
 
   // ── exit, guarded by the shared discard dialog when the draft is dirty ───────────────────────
   const [exitConfirming, setExitConfirming] = useState(false);
@@ -195,22 +236,35 @@ export function StudioShell({
           </Button>
           <span aria-hidden className="h-5 w-px shrink-0 bg-border" />
 
+          {/* RM-30 WP 7.4 — Flow and Split are views of the SKILL.md DOCUMENT; a resource file has
+              no graph to project. On a file tab the control is therefore code-only, and says why,
+              rather than offering two views that would change nothing on screen. */}
           <ToggleGroup
             type="single"
             variant="segmented"
-            value={mode}
+            value={active === SKILL_MD ? mode : "code"}
             onValueChange={(value) => {
               if (isStudioMode(value)) setMode(value);
             }}
             aria-label="Editor view"
           >
-            <ToggleGroupItem value="flow" aria-label="Show flow">
+            <ToggleGroupItem
+              value="flow"
+              aria-label="Show flow"
+              disabled={active !== SKILL_MD}
+              title={active === SKILL_MD ? undefined : "Flow is a view of SKILL.md"}
+            >
               <Workflow className="size-4" aria-hidden /> Flow
             </ToggleGroupItem>
             <ToggleGroupItem value="code" aria-label="Show code">
               <Code2 className="size-4" aria-hidden /> Code
             </ToggleGroupItem>
-            <ToggleGroupItem value="split" aria-label="Split view">
+            <ToggleGroupItem
+              value="split"
+              aria-label="Split view"
+              disabled={active !== SKILL_MD}
+              title={active === SKILL_MD ? undefined : "Split is a view of SKILL.md"}
+            >
               <Columns2 className="size-4" aria-hidden /> Split
             </ToggleGroupItem>
           </ToggleGroup>
@@ -274,9 +328,9 @@ export function StudioShell({
                 isHeadVersion={isHeadVersion}
                 tab={leftTab}
                 onTabChange={setLeftTab}
-                files={files}
-                selectedFile={file}
-                onSelectFile={setFile}
+                selectedFile={active}
+                onSelectFile={openFile}
+                onPathMoved={handlePathMoved}
                 toolsContainerRef={setToolsContainer}
               />
             </StudioRail>
@@ -284,26 +338,67 @@ export function StudioShell({
             {/* The centre surface: `flex-1 min-w-0`, so it takes everything the two fixed rails leave. */}
             <section
               aria-label="Editor"
-              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-3"
+              className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
               data-testid="studio-center"
             >
-              <SkillDesignView
-                skillId={skillId}
-                versionId={versionId}
-                hideModeToggle
-                onVersionSaved={onVersionSaved}
-                onOpenServerSettings={() => setLeftTab("settings")}
-                onOpenDiff={() => navigate(`${exitTo}?tab=diff`)}
-                onHeaderActionsChange={setSaveActions}
-                onProblemsChange={setProblemsPanel}
-                problemsOpen={problemsOpen}
-                onProblemsOpenChange={setProblemsOpen}
-                onProblemsSummaryChange={setProblemsSummary}
-                onSelectedNodeChange={handleSelectedNodeChange}
-                flowToolsContainer={toolsContainer}
-                flowDetailContainer={detailContainer}
-                {...(initialSel ? { initialSelectedNodeId: initialSel } : {})}
+              <StudioFileTabs
+                tabs={tabs}
+                active={active}
+                onSelect={openFile}
+                onClose={closeFile}
+                manifestDirty={manifestDirty}
               />
+
+              {/* RM-30 WP 7.4 — the SKILL.md surface stays MOUNTED behind another file's tab, hidden
+                  rather than unmounted. Two things depend on that: the toolbar's one save cluster is
+                  registered BY this editor and cleared on its unmount, so unmounting it would take
+                  the Save button away exactly when an author has a file edit to save; and remounting
+                  would re-fit the canvas and re-fetch its bound tools on every tab switch. Monaco and
+                  the flow canvas both run `automaticLayout`/`ResizeObserver`, so they re-measure when
+                  the pane is shown again. */}
+              <div
+                className={cn(
+                  "min-h-0 flex-1 flex-col p-3",
+                  active === SKILL_MD ? "flex" : "hidden",
+                )}
+                data-testid="studio-pane-skill-md"
+              >
+                <SkillDesignView
+                  skillId={skillId}
+                  versionId={versionId}
+                  hideModeToggle
+                  onVersionSaved={onVersionSaved}
+                  onOpenServerSettings={() => setLeftTab("settings")}
+                  onOpenDiff={() => navigate(`${exitTo}?tab=diff`)}
+                  onHeaderActionsChange={setSaveActions}
+                  onProblemsChange={setProblemsPanel}
+                  problemsOpen={problemsOpen}
+                  onProblemsOpenChange={setProblemsOpen}
+                  onProblemsSummaryChange={setProblemsSummary}
+                  onSelectedNodeChange={handleSelectedNodeChange}
+                  flowToolsContainer={toolsContainer}
+                  flowDetailContainer={detailContainer}
+                  {...(initialSel ? { initialSelectedNodeId: initialSel } : {})}
+                />
+              </div>
+
+              {/* ONE editor instance for every other file, keyed by the working-tree entry so each
+                  file gets its own Monaco model (and its own undo stack) without a second component.
+                  Text is editable; a binary file is a preview — `WorkspaceEditor` owns both. */}
+              {activeEntry ? (
+                <div className="flex min-h-0 flex-1 flex-col p-3" data-testid="studio-pane-file">
+                  <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
+                    <WorkspaceEditor
+                      key={activeEntry.id}
+                      skillId={skillId}
+                      versionId={versionId}
+                      entry={activeEntry}
+                      onHydrate={draft.files.hydrate}
+                      onEdit={draft.files.setText}
+                    />
+                  </div>
+                </div>
+              ) : null}
             </section>
 
             <StudioRail

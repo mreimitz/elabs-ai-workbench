@@ -888,12 +888,12 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
               changeNonce={live.autoOpenNonce}
             />
           ) : (
+            // RM-30 WP 7.4 — browse-only: the tree and a read-only preview, with "Edit in Studio"
+            // as the one action. It can no longer save, so it needs no `onVersionSaved`.
             <SkillFileExplorer
               skillId={skillId}
               versionId={activeVersionId}
               files={files}
-              isHeadVersion={isHeadVersion}
-              onVersionSaved={(newVersionId) => void handleDesignSaved(newVersionId)}
               onTestTool={handleTestTool}
             />
           )}

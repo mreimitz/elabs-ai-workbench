@@ -33,8 +33,14 @@ const BARE_DIALOG_CONTENT = `<${"DialogContent"}`;
 const KIT_DIR = "components/dialogs/";
 
 /**
- * The nine Servers/Skills dialogs this task moved onto the kit — they must contain NO bare
+ * The Servers/Skills dialogs that task moved onto the kit — they must contain NO bare
  * `<DialogContent>` and must NOT appear on the allowlist below.
+ *
+ * It was nine. RM-30 WP 7.4 DELETED one of them — `workspace/SaveWorkspaceDialog.tsx`, the
+ * Inspector Files tab's own version-creating save — because that tab is browse-only now and the
+ * Studio's one draft owns the only save path. A deleted dialog cannot regress onto a bare shell, so
+ * dropping the row is the honest bookkeeping; the ratchet on the remaining eight is unchanged, and
+ * the file must NOT come back without coming back onto the kit.
  */
 const MIGRATED_ONTO_KIT: readonly string[] = [
   "features/servers/ServerWizard.tsx",
@@ -45,8 +51,10 @@ const MIGRATED_ONTO_KIT: readonly string[] = [
   "features/skills/PublishGithubDialog.tsx",
   "features/skills/PushGithubDialog.tsx",
   "features/skills/design/SaveVersionDialog.tsx",
-  "features/skills/workspace/SaveWorkspaceDialog.tsx",
 ];
+
+/** Dialogs on that list that have since been DELETED — they must stay gone, not silently return. */
+const DELETED_SINCE: readonly string[] = ["features/skills/workspace/SaveWorkspaceDialog.tsx"];
 
 /**
  * Files that STILL hand-roll a bare `<DialogContent>` and are OUT OF SCOPE for this task (owned by
@@ -103,7 +111,9 @@ function collectTsxFiles(dir: string, acc: string[] = []): string[] {
 
 const allTsx = collectTsxFiles(SRC_ROOT);
 const bareDialogFiles = allTsx.filter(
-  (rel) => !rel.startsWith(KIT_DIR) && readFileSync(path.join(SRC_ROOT, rel), "utf8").includes(BARE_DIALOG_CONTENT),
+  (rel) =>
+    !rel.startsWith(KIT_DIR) &&
+    readFileSync(path.join(SRC_ROOT, rel), "utf8").includes(BARE_DIALOG_CONTENT),
 );
 
 describe("GUARDRAIL — every dialog goes through the kit (bare <DialogContent> is ratcheted)", () => {
@@ -118,16 +128,28 @@ describe("GUARDRAIL — every dialog goes through the kit (bare <DialogContent> 
     ).toEqual([]);
   });
 
-  it("the nine migrated Servers/Skills dialogs are NOT on the allowlist and hand-roll no bare <DialogContent>", () => {
+  it("every migrated Servers/Skills dialog is NOT on the allowlist and hand-rolls no bare <DialogContent>", () => {
     for (const rel of MIGRATED_ONTO_KIT) {
-      expect(ALLOWLIST.has(rel), `${rel} was migrated onto the kit — it must not be on the allowlist`).toBe(
-        false,
-      );
+      expect(
+        ALLOWLIST.has(rel),
+        `${rel} was migrated onto the kit — it must not be on the allowlist`,
+      ).toBe(false);
       const onDisk = allTsx.includes(rel);
       expect(onDisk, `${rel} should exist`).toBe(true);
       expect(
         bareDialogFiles.includes(rel),
         `${rel} was migrated onto the kit — it must not contain a bare <DialogContent>`,
+      ).toBe(false);
+    }
+  });
+
+  it("a dialog deleted by a later work package has not silently come back", () => {
+    for (const rel of DELETED_SINCE) {
+      expect(
+        allTsx.includes(rel),
+        `${rel} was deleted (RM-30 WP 7.4 — the Inspector's Files tab is browse-only and the Studio ` +
+          `owns the only save path). If it is genuinely needed again, put it back on the kit and on ` +
+          `MIGRATED_ONTO_KIT, not here.`,
       ).toBe(false);
     }
   });

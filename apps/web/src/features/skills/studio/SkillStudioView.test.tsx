@@ -346,12 +346,18 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(row.closest('[aria-selected="true"]')).not.toBeNull();
   });
 
-  test("the Files rail is BROWSE-ONLY here (the editable workspace is WP 7.4)", async () => {
+  // RM-30 WP 7.4 replaced WP 7.1's "the Files rail is BROWSE-ONLY here" assertion: the rail IS the
+  // editable workspace now, and its mutation toolbar is the visible proof.
+  test("the Files rail is EDITABLE (RM-30 WP 7.4)", async () => {
     renderStudio();
     await waitForStudio();
     const rail = screen.getByTestId("studio-left-rail");
-    expect(within(rail).queryByRole("button", { name: "New file" })).toBeNull();
-    expect(within(rail).queryByRole("button", { name: "Delete" })).toBeNull();
+    expect(await within(rail).findByRole("button", { name: "New file" })).toBeInTheDocument();
+    expect(within(rail).getByRole("button", { name: "New folder" })).toBeInTheDocument();
+    expect(within(rail).getByRole("button", { name: "Upload files" })).toBeInTheDocument();
+    // The default selection is SKILL.md, and the manifest invariant survives the switch to an
+    // editable rail: rename / move / delete are all disabled AND say why.
+    expect(within(rail).getByRole("button", { name: "SKILL.md can’t be deleted" })).toBeDisabled();
   });
 
   test("the Problems strip is mounted ONCE, in the shell's bottom strip", async () => {
