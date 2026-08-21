@@ -715,7 +715,7 @@ test("SQL translation agrees with matchesRunFilter for every seeded run", () => 
 // materialized candidate · the metrics SQL replica) so no pair of them can drift.
 
 const RATING_NOW = "2026-08-03T00:00:00.000Z";
-const RATING_RUN_IDS = ["rr1", "rr2", "rr3", "rr4", "rr5", "rr6", "rr7"] as const;
+const RATING_RUN_IDS = ["rr1", "rr2", "rr3", "rr4", "rr5", "rr6", "rr7", "rr8"] as const;
 
 /**
  * Seven runs, one per branch that matters:
@@ -724,8 +724,10 @@ const RATING_RUN_IDS = ["rr1", "rr2", "rr3", "rr4", "rr5", "rr6", "rr7"] as cons
  *   rr3  MALFORMED evidence on both graders (must not throw, must not match)
  *   rr4  NO rating rows at all — the unrated run
  *   rr5  two findings sharing a bucket, plus a superseded forensics row with a different bucket
- *   rr6  evidence of the WRONG SHAPE — an object where an array belongs, and an array of scalars
+ *   rr6  an ARRAY OF SCALARS where an array of findings belongs — the member shape that makes an
+ *        unguarded `json_extract(je.value, …)` throw, so the `je.type = 'object'` guard has teeth
  *   rr7  a verdict / bucket outside the frozen vocabulary
+ *   rr8  an OBJECT where an array belongs — `json_each` walks its members instead of findings
  * All seven start inside one UTC day so a `day` bucket collapses to exactly one point.
  */
 function seedRatings(): { runs: RunRepository; db: AppDatabase } {
@@ -779,14 +781,23 @@ function seedRatings(): { runs: RunRepository; db: AppDatabase } {
     ["re5", "rr5", "error_forensics", 0.2, '[{"bucket":"skill","fixTarget":"skill"},{"bucket":"skill","fixTarget":"none"}]', "2026-08-03T12:00:00.000Z"],
     ["ri5", "rr5", "insight_surplus", 0.2, '{"verdict":"noise","surplusTokens":900}', "2026-08-03T09:00:00.000Z"],
 
-    // rr6: shape confusion. `json_each` yields SCALAR members for both of these, and `json_extract`
-    // throws on a scalar — the `je.type = 'object'` guard is what keeps this off the error path.
-    ["re6", "rr6", "error_forensics", null, '{"notAnArray":true}', "2026-08-03T09:00:00.000Z"],
+    // rr6: an array of SCALARS where findings belong. `json_each` yields those scalars as members,
+    // and `json_extract` THROWS on a member that is a JSON string — so the `je.type = 'object'` guard
+    // is the only thing keeping this off the error path. (An integer member silently returns NULL;
+    // the STRING member is what actually raises "malformed JSON", so one is included deliberately.)
+    ["re6", "rr6", "error_forensics", null, '["not-a-finding",7,true]', "2026-08-03T09:00:00.000Z"],
     ["ra6", "rr6", "answer_validation", null, "[1,2,3]", "2026-08-03T09:00:00.000Z"],
 
     // rr7: a verdict / bucket outside the frozen vocabulary (a future grader, or a hand-edited row).
     ["ra7", "rr7", "answer_validation", null, '{"verdict":"probably"}', "2026-08-03T09:00:00.000Z"],
     ["re7", "rr7", "error_forensics", null, '[{"bucket":"gremlins","fixTarget":"witchcraft"}]', "2026-08-03T09:00:00.000Z"],
+
+    // rr8: an OBJECT where an array belongs. `json_each` walks its MEMBERS, so a member that happens
+    // to BE an object is probed for `$.bucket` — the nested one below holds a real bucket value, and
+    // must STILL not match: a finding is an element of the inventory array, not any object anywhere
+    // inside the evidence.
+    ["re8", "rr8", "error_forensics", null, '{"notAnArray":true,"nested":{"bucket":"skill"}}', "2026-08-03T09:00:00.000Z"],
+    ["ra8", "rr8", "answer_validation", null, '{"notAVerdict":"answered"}', "2026-08-03T09:00:00.000Z"],
   ];
   for (const [id, runId, graderId, score, evidence, createdAt] of ratingRows) {
     rate.run({ id, runId, graderId, score, evidence, createdAt });
@@ -918,7 +929,7 @@ test("rating filters: an unrated run is EXCLUDED by every verdict, never counted
   // rr4 (never rated), rr3 (malformed evidence), rr6 (wrong evidence SHAPE) and rr7 (outside the
   // frozen vocabulary) are absent from all four.
   for (const list of [everyAnswer, everyInsight, everyBucket, everyFixTarget]) {
-    for (const excluded of ["rr3", "rr4", "rr6", "rr7"]) {
+    for (const excluded of ["rr3", "rr4", "rr6", "rr7", "rr8"]) {
       assert.ok(!list.includes(excluded), `${excluded} must not match any verdict`);
     }
   }
@@ -947,7 +958,7 @@ test("rating filters: malformed evidence_json does not take the query down (json
     }),
   );
   // The candidate builder reads the same rows through JSON.parse and must be equally unbothered.
-  for (const id of ["rr3", "rr6", "rr7"]) {
+  for (const id of ["rr3", "rr6", "rr7", "rr8"]) {
     const candidate = runs.buildFilterCandidate(id);
     assert.ok(candidate);
     assert.deepEqual(candidate.answerVerdicts, []);

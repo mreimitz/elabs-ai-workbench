@@ -28,12 +28,15 @@
 // `stableStringify` today so it is always valid or NULL, but a filter must not depend on that.
 // Hence, verified against SQLite 3.53.2:
 //   • `json_valid()` is total — NULL for NULL, 0 for garbage, never a throw.
-//   • The extraction is wrapped in `CASE WHEN json_valid(…) THEN …`, because `CASE` is the one
-//     construct SQLite guarantees evaluates in order (a bare `AND` may be reordered by the planner).
-//   • `json_each` is fed `'[]'` for anything not valid JSON, and yields zero rows for `'[]'`/NULL.
-//   • Each member is guarded by `je.type = 'object'` before `json_extract`, because `json_each` over
-//     a non-array (or an array of scalars) yields scalar members, and `json_extract(1, '$.bucket')`
-//     throws.
+//   • Every extraction is wrapped in `CASE`, which is the one construct SQLite guarantees evaluates
+//     in order; a bare `json_valid(x) AND json_extract(x, …)` may be reordered by the planner, and
+//     one reordering is a query that RAISES rather than a row that misses.
+//   • `json_each` is fed `'[]'` for anything that is not a valid JSON ARRAY, and yields zero rows for
+//     `'[]'`/NULL. The array check matters on its own: `json_each` over an OBJECT walks that object's
+//     members, so a nested `{"bucket":…}` would match in SQL while `matchesRunFilter`'s
+//     `Array.isArray` refused it. The cross-check caught exactly that.
+//   • Each member is then guarded by `je.type = 'object'` before `json_extract`, because an array of
+//     scalars yields scalar members and `json_extract('some-string', '$.bucket')` throws.
 
 import type { GraderId } from "@mcp-token-footprint/shared";
 
@@ -58,6 +61,27 @@ function latestRowOnly(graderParam: string): string {
   );
 }
 
+/** `evidence_json` when it is valid JSON, `'[]'` otherwise — total, never a throw. */
+const SAFE_EVIDENCE = "CASE WHEN json_valid(g.evidence_json) THEN g.evidence_json ELSE '[]' END";
+
+/**
+ * The `json_each` source for a findings inventory: the evidence when it is a JSON ARRAY, `'[]'`
+ * otherwise.
+ *
+ * The array check is NOT optional and NOT cosmetic. `json_each` over a JSON *object* walks that
+ * object's top-level members, so `{"nested":{"bucket":"skill"}}` would yield an object member
+ * carrying a real bucket and MATCH — while `matchesRunFilter`, which requires `Array.isArray`,
+ * would not. That divergence was caught by the cross-check, not reasoned about in advance: a
+ * finding is an ELEMENT OF the inventory array, never any object that happens to sit somewhere
+ * inside the evidence.
+ *
+ * `json_type` throws on invalid JSON exactly like `json_extract`, so it is fed the already-sanitized
+ * expression rather than the raw column, and the whole thing is written as nested `CASE` rather than
+ * `json_valid(x) AND json_type(x) = 'array'` — SQLite does not guarantee the evaluation order of an
+ * `AND`'s operands, and one reordering would be a query that raises instead of a row that misses.
+ */
+const FINDINGS_ARRAY = `CASE WHEN json_type(${SAFE_EVIDENCE}) = 'array' THEN ${SAFE_EVIDENCE} ELSE '[]' END`;
+
 /**
  * `answerVerdict` / `insightVerdict` → an EXISTS over the run's LATEST grade row for that base
  * grader, matching the `verdict` inside its evidence object. A run with no such grade row, or one
@@ -73,7 +97,7 @@ export function ratingVerdictClause(
   return (
     "EXISTS (SELECT 1 FROM run_grades g " +
     `WHERE g.run_id = runs.id AND g.grader_id = ${graderParam} ` +
-    "AND (CASE WHEN json_valid(g.evidence_json) THEN json_extract(g.evidence_json, '$.verdict') END) " +
+    `AND (CASE WHEN json_type(${SAFE_EVIDENCE}) = 'object' THEN json_extract(${SAFE_EVIDENCE}, '$.verdict') END) ` +
     `IN (${bindList(verdicts)}) AND ${latestRowOnly(graderParam)})`
   );
 }
@@ -93,7 +117,7 @@ export function ratingFindingClause(
   const graderParam = bind("error_forensics" satisfies GraderId);
   return (
     "EXISTS (SELECT 1 FROM run_grades g, " +
-    "json_each(CASE WHEN json_valid(g.evidence_json) THEN g.evidence_json ELSE '[]' END) je " +
+    `json_each(${FINDINGS_ARRAY}) je ` +
     `WHERE g.run_id = runs.id AND g.grader_id = ${graderParam} ` +
     `AND (CASE WHEN je.type = 'object' THEN json_extract(je.value, '$.${field}') END) ` +
     `IN (${bindList(values)}) AND ${latestRowOnly(graderParam)})`
