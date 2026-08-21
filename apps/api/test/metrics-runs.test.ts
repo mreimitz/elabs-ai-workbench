@@ -11,7 +11,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import Database from "better-sqlite3";
-import type { RunMetricsResponse, RunMetricsSeries } from "@mcp-token-footprint/shared";
+import type { RunFilter, RunMetricsResponse, RunMetricsSeries } from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
 import { GradeRepository } from "../src/grading/grade-repository.js";
@@ -639,4 +639,44 @@ test("RM-33 — repeated calls with the cache measures stay byte-identical", () 
     measures: ["cacheReadTokens", "cacheWriteTokens", "cacheHitRate"] as RunMetricsResponse["measures"],
   };
   assert.deepEqual(computeRunMetrics(db, params), computeRunMetrics(db, params));
+});
+
+// ── AM-OB12 — the auto-rating filter dimensions, through THIS translation ─────────────────────────
+//
+// A pointer test, deliberately small. The exhaustive three-way cross-check (this replica vs the
+// repository SQL vs the pure predicate, over malformed / re-rated / unrated / wrong-shaped evidence)
+// lives in `runs-filter.test.ts`; what belongs HERE is the fact that the metrics translation honours
+// the dimensions at all, so someone editing `buildRunFilterWhere` in metrics.ts sees a red test
+// rather than a chart that quietly stops narrowing.
+test("AM-OB12 — a rating verdict narrows the metrics query, and an unrated run never joins it", () => {
+  const db = createDatabase();
+  baseGraph(db);
+  insertRuns(db, [
+    { id: "mr-a", scenarioId: "scn-ant", testId: "t-1", status: "completed", startedAt: "2026-06-01T01:00:00.000Z" },
+    { id: "mr-b", scenarioId: "scn-ant", testId: "t-1", status: "completed", startedAt: "2026-06-01T02:00:00.000Z" },
+    { id: "mr-c", scenarioId: "scn-ant", testId: "t-1", status: "completed", startedAt: "2026-06-01T03:00:00.000Z" },
+  ]);
+  const rate = db.prepare(
+    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, evidence_json, grading_version, created_at)
+     VALUES (@id, @runId, @graderId, 'llm', 'graded', 0.5, 'test', @evidence, 1, @createdAt)`,
+  );
+  rate.run({ id: "mg-a", runId: "mr-a", graderId: "answer_validation", evidence: '{"verdict":"unanswered"}', createdAt: "2026-06-01T01:30:00.000Z" });
+  rate.run({ id: "mg-b", runId: "mr-b", graderId: "answer_validation", evidence: '{"verdict":"answered"}', createdAt: "2026-06-01T02:30:00.000Z" });
+  // mr-c is never rated.
+
+  const countOf = (filter: RunFilter): number =>
+    computeRunMetrics(db, { filter, bucket: "day", measures: ["count"] })
+      .series.flatMap((s) => s.points)
+      .reduce((sum, p) => sum + p.value, 0);
+
+  assert.equal(countOf({}), 3);
+  assert.equal(countOf({ answerVerdict: ["unanswered"] }), 1);
+  assert.equal(countOf({ answerVerdict: ["answered"] }), 1);
+  // The whole vocabulary still leaves the unrated run out — absence is not a verdict.
+  assert.equal(countOf({ answerVerdict: ["answered", "partial", "unanswered"] }), 2);
+  // A verdict nobody holds yields NO bucket at all, rather than a bucket reading zero.
+  assert.equal(
+    computeRunMetrics(db, { filter: { answerVerdict: ["partial"] }, bucket: "day", measures: ["count"] }).series.length,
+    0,
+  );
 });

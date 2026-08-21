@@ -42,6 +42,7 @@ import { CAPABILITY_SPLIT_MEASURES, METRICS_TIMEZONE } from "@mcp-token-footprin
 import type { AppDatabase } from "../db/database.js";
 import { capabilitiesForProviderKind } from "../testing/session-capabilities.js";
 import { PRIMARY_GRADER_PRIORITY } from "../suites/orchestrator.js";
+import { ratingFindingClause, ratingVerdictClause } from "./rating-filter-sql.js";
 
 // ── RunFilter → parameterized WHERE (mirror of run-repository's private builder — see header) ──────
 
@@ -178,6 +179,23 @@ function buildRunFilterWhere(filter: RunFilter): {
   // cross-check test.
   if (filter.derived === true) clauses.push("derived_from_run_id IS NOT NULL");
   else clauses.push("derived_from_run_id IS NULL");
+
+  // Auto-rating dimensions (RM-17 Phase 6, AM-OB12) — the ONE definition lives in
+  // `rating-filter-sql.ts` and is imported by BOTH `buildRunFilterWhere` copies, so these four
+  // clauses cannot drift the way the rest of this replica can. AR6: a read of what the graders
+  // already persisted, never a write or a reinterpretation.
+  if (nonEmpty(filter.answerVerdict)) {
+    clauses.push(ratingVerdictClause("answer_validation", filter.answerVerdict, bind, bindList));
+  }
+  if (nonEmpty(filter.insightVerdict)) {
+    clauses.push(ratingVerdictClause("insight_surplus", filter.insightVerdict, bind, bindList));
+  }
+  if (nonEmpty(filter.errorBucket)) {
+    clauses.push(ratingFindingClause("bucket", filter.errorBucket, bind, bindList));
+  }
+  if (nonEmpty(filter.errorFixTarget)) {
+    clauses.push(ratingFindingClause("fixTarget", filter.errorFixTarget, bind, bindList));
+  }
 
   return { clauses, params };
 }

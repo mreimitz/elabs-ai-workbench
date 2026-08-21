@@ -22,6 +22,7 @@ import {
 } from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
+import { computeRunMetrics } from "../src/observability/metrics.js";
 import { RunManager } from "../src/testing/run-manager.js";
 import { RunRepository } from "../src/testing/run-repository.js";
 import type { RunService } from "../src/testing/run-service.js";
@@ -704,6 +705,295 @@ test("SQL translation agrees with matchesRunFilter for every seeded run", () => 
     assert.deepEqual(sqlIds, predicateIds, `disagreement for ${JSON.stringify(filter)}`);
   }
 });
+
+// ── Auto-rating dimensions (RM-17 Phase 6, AM-OB12) ──────────────────────────────────────────────
+//
+// A SEPARATE fixture from `seed()` on purpose: base-rating grades carry scores, and folding them into
+// the shared graph would silently move the `scoreGte`/`grader` expectations above — a fixture change
+// masquerading as a passing test. This graph exists only to distinguish the rating dimensions, and it
+// is cross-checked THREE ways (the repository SQL · the pure predicate over the repository's OWN
+// materialized candidate · the metrics SQL replica) so no pair of them can drift.
+
+const RATING_NOW = "2026-08-03T00:00:00.000Z";
+const RATING_RUN_IDS = ["rr1", "rr2", "rr3", "rr4", "rr5", "rr6", "rr7"] as const;
+
+/**
+ * Seven runs, one per branch that matters:
+ *   rr1  answered / valuable / a GRADED-but-EMPTY forensics inventory (an operationally clean run)
+ *   rr2  re-rated — the superseded `answered` must lose to the later `unanswered`
+ *   rr3  MALFORMED evidence on both graders (must not throw, must not match)
+ *   rr4  NO rating rows at all — the unrated run
+ *   rr5  two findings sharing a bucket, plus a superseded forensics row with a different bucket
+ *   rr6  evidence of the WRONG SHAPE — an object where an array belongs, and an array of scalars
+ *   rr7  a verdict / bucket outside the frozen vocabulary
+ * All seven start inside one UTC day so a `day` bucket collapses to exactly one point.
+ */
+function seedRatings(): { runs: RunRepository; db: AppDatabase } {
+  const db = createDatabase();
+  db.prepare(
+    `INSERT INTO provider_credentials (id, kind, label, created_at, updated_at) VALUES ('prov-r', 'anthropic', 'Claude', @now, @now)`,
+  ).run({ now: RATING_NOW });
+  db.prepare(
+    `INSERT INTO scenarios (id, name, provider_id, model, created_at, updated_at) VALUES ('scn-r', 'R', 'prov-r', 'claude-sonnet-4', @now, @now)`,
+  ).run({ now: RATING_NOW });
+  db.prepare(
+    `INSERT INTO tests (id, name, user_prompt, created_at, updated_at) VALUES ('t-r', 'TR', 'go', @now, @now)`,
+  ).run({ now: RATING_NOW });
+
+  const runInsert = db.prepare(
+    `INSERT INTO runs (id, test_id, scenario_id, mode, status, outcome, started_at, cost_usd, tokens_in, tokens_out, active_duration_ms)
+     VALUES (@id, 't-r', 'scn-r', 'automated', 'completed', 'completed', @startedAt, 0.1, 100, 100, 1000)`,
+  );
+  RATING_RUN_IDS.forEach((id, i) => {
+    runInsert.run({ id, startedAt: `2026-08-03T0${i + 1}:00:00.000Z` });
+  });
+
+  // `evidence_json` is inserted RAW (never through `stableStringify`) so the malformed cases are real.
+  const rate = db.prepare(
+    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, evidence_json, grading_version, created_at)
+     VALUES (@id, @runId, @graderId, 'llm', 'graded', @score, 'test', @evidence, 1, @createdAt)`,
+  );
+  const ratingRows: Array<[string, string, string, number | null, string | null, string]> = [
+    // id, runId, graderId, score, evidence_json, createdAt
+    ["ra1", "rr1", "answer_validation", 1, '{"verdict":"answered","score":1,"quotes":[],"citedSteps":[]}', "2026-08-03T09:00:00.000Z"],
+    ["ri1", "rr1", "insight_surplus", 1, '{"verdict":"valuable","score":1,"quotes":[],"citedSteps":[]}', "2026-08-03T09:00:00.000Z"],
+    // An operationally clean run: `error_forensics` GRADED with an EMPTY inventory. Not "unrated" —
+    // but it carries no bucket, so it must match no bucket filter.
+    ["re1", "rr1", "error_forensics", 1, "[]", "2026-08-03T09:00:00.000Z"],
+
+    // rr2 re-rated. `run_grades` is append-only, so the earlier `answered` is still on disk.
+    ["ra2a", "rr2", "answer_validation", 1, '{"verdict":"answered"}', "2026-08-03T09:00:00.000Z"],
+    ["ra2b", "rr2", "answer_validation", 0, '{"verdict":"unanswered"}', "2026-08-03T11:00:00.000Z"],
+    ["re2", "rr2", "error_forensics", 0.5, '[{"bucket":"mcp_server","fixTarget":"mcp_server"},{"bucket":"provider_infra","fixTarget":"none"}]', "2026-08-03T09:00:00.000Z"],
+
+    // rr3: evidence that is not JSON at all. SQLite's json_* functions THROW on this, so an
+    // unguarded clause would 500 the WHOLE feed rather than merely fail to match this row.
+    ["ra3", "rr3", "answer_validation", null, "not json at all", "2026-08-03T09:00:00.000Z"],
+    ["re3", "rr3", "error_forensics", null, "{oops", "2026-08-03T09:00:00.000Z"],
+
+    // rr4: deliberately nothing.
+
+    // rr5: two findings sharing `skill` with different fix targets, plus a SUPERSEDED forensics row
+    // whose `test_setup` bucket must not match.
+    ["re5old", "rr5", "error_forensics", 0.4, '[{"bucket":"test_setup","fixTarget":"none"}]', "2026-08-03T09:00:00.000Z"],
+    ["re5", "rr5", "error_forensics", 0.2, '[{"bucket":"skill","fixTarget":"skill"},{"bucket":"skill","fixTarget":"none"}]', "2026-08-03T12:00:00.000Z"],
+    ["ri5", "rr5", "insight_surplus", 0.2, '{"verdict":"noise","surplusTokens":900}', "2026-08-03T09:00:00.000Z"],
+
+    // rr6: shape confusion. `json_each` yields SCALAR members for both of these, and `json_extract`
+    // throws on a scalar — the `je.type = 'object'` guard is what keeps this off the error path.
+    ["re6", "rr6", "error_forensics", null, '{"notAnArray":true}', "2026-08-03T09:00:00.000Z"],
+    ["ra6", "rr6", "answer_validation", null, "[1,2,3]", "2026-08-03T09:00:00.000Z"],
+
+    // rr7: a verdict / bucket outside the frozen vocabulary (a future grader, or a hand-edited row).
+    ["ra7", "rr7", "answer_validation", null, '{"verdict":"probably"}', "2026-08-03T09:00:00.000Z"],
+    ["re7", "rr7", "error_forensics", null, '[{"bucket":"gremlins","fixTarget":"witchcraft"}]', "2026-08-03T09:00:00.000Z"],
+  ];
+  for (const [id, runId, graderId, score, evidence, createdAt] of ratingRows) {
+    rate.run({ id, runId, graderId, score, evidence, createdAt });
+  }
+
+  // Two EXPECTATION grades so `meanScore` has something to report. The base-rating scores above are
+  // deliberately invisible to it (AR6 — `PRIMARY_GRADER_PRIORITY` excludes the three base graders),
+  // which the AR6 test below asserts rather than assumes.
+  rate.run({
+    id: "rj1",
+    runId: "rr1",
+    graderId: "outcome_judge",
+    score: 0.9,
+    evidence: null,
+    createdAt: "2026-08-03T09:30:00.000Z",
+  });
+  rate.run({
+    id: "rj2",
+    runId: "rr2",
+    graderId: "outcome_judge",
+    score: 0.1,
+    evidence: null,
+    createdAt: "2026-08-03T09:30:00.000Z",
+  });
+
+  return { runs: new RunRepository(db), db };
+}
+
+/** Every rating filter worth cross-checking, plus the whole-vocabulary sweeps that catch an
+ *  "absent read as a value" regression in either direction. */
+const RATING_FILTERS: RunFilter[] = [
+  {},
+  { answerVerdict: ["answered"] },
+  { answerVerdict: ["unanswered"] },
+  { answerVerdict: ["partial"] },
+  { answerVerdict: ["answered", "unanswered"] },
+  { answerVerdict: ["answered", "partial", "unanswered"] },
+  { insightVerdict: ["valuable"] },
+  { insightVerdict: ["noise"] },
+  { insightVerdict: ["none"] },
+  { insightVerdict: ["none", "valuable", "noise"] },
+  { errorBucket: ["skill"] },
+  { errorBucket: ["mcp_server"] },
+  { errorBucket: ["test_setup"] },
+  { errorBucket: ["provider_infra"] },
+  { errorBucket: ["skill", "mcp_server", "model_behavior", "test_setup", "provider_infra"] },
+  { errorFixTarget: ["skill"] },
+  { errorFixTarget: ["none"] },
+  { errorFixTarget: ["mcp_server"] },
+  { errorFixTarget: ["skill", "mcp_server", "none"] },
+  // Composed with the rest of the grammar, and with each other.
+  { answerVerdict: ["unanswered"], errorBucket: ["mcp_server"] },
+  { answerVerdict: ["answered"], errorBucket: ["mcp_server"] },
+  { answerVerdict: ["answered"], status: ["completed"] },
+  { insightVerdict: ["noise"], errorFixTarget: ["skill"] },
+];
+
+/** Total `count` over an unbounded window — the cheapest proof that the metrics SQL replica selected
+ *  the same rows as the repository. */
+function metricsRunCount(db: AppDatabase, filter: RunFilter): number {
+  return computeRunMetrics(db, { filter, bucket: "day", measures: ["count"] })
+    .series.filter((s) => s.measure === "count")
+    .flatMap((s) => s.points)
+    .reduce((sum, p) => sum + p.value, 0);
+}
+
+test("rating filters: the SQL translation, the predicate and the metrics replica all agree", () => {
+  const { runs, db } = seedRatings();
+  const allIds = ids(runs.queryRuns({}));
+  assert.deepEqual(allIds, [...RATING_RUN_IDS].sort());
+
+  for (const filter of RATING_FILTERS) {
+    const sqlIds = ids(runs.queryRuns(filter));
+    // The predicate runs over the repository's OWN materialized candidate, so this pins the evidence
+    // readers in `buildFilterCandidate` as well as the predicate itself.
+    const predicateIds = allIds
+      .filter((id) => {
+        const candidate = runs.buildFilterCandidate(id);
+        assert.ok(candidate, `no candidate for ${id}`);
+        return matchesRunFilter(candidate, filter);
+      })
+      .sort();
+    assert.deepEqual(sqlIds, predicateIds, `SQL vs predicate for ${JSON.stringify(filter)}`);
+
+    // The SECOND SQL translation (`observability/metrics.ts`'s replica) must select the same rows.
+    assert.equal(
+      metricsRunCount(db, filter),
+      sqlIds.length,
+      `metrics replica vs repository SQL for ${JSON.stringify(filter)}`,
+    );
+  }
+});
+
+test("rating filters: hand-counted expectations, so an agreeing PAIR of bugs still fails", () => {
+  const { runs } = seedRatings();
+  // rr1 answered; rr2's LATEST is unanswered — its superseded `answered` must not match.
+  assert.deepEqual(ids(runs.queryRuns({ answerVerdict: ["answered"] })), ["rr1"]);
+  assert.deepEqual(ids(runs.queryRuns({ answerVerdict: ["unanswered"] })), ["rr2"]);
+  assert.deepEqual(ids(runs.queryRuns({ answerVerdict: ["partial"] })), []);
+  assert.deepEqual(ids(runs.queryRuns({ insightVerdict: ["valuable"] })), ["rr1"]);
+  assert.deepEqual(ids(runs.queryRuns({ insightVerdict: ["noise"] })), ["rr5"]);
+  // rr5's LATEST forensics carries `skill` twice; its superseded `test_setup` row must not match.
+  assert.deepEqual(ids(runs.queryRuns({ errorBucket: ["skill"] })), ["rr5"]);
+  assert.deepEqual(ids(runs.queryRuns({ errorBucket: ["test_setup"] })), []);
+  assert.deepEqual(ids(runs.queryRuns({ errorBucket: ["mcp_server"] })), ["rr2"]);
+  assert.deepEqual(ids(runs.queryRuns({ errorBucket: ["provider_infra"] })), ["rr2"]);
+  // ANY finding may carry the value — rr5 has both a `skill` and a `none` fix target.
+  assert.deepEqual(ids(runs.queryRuns({ errorFixTarget: ["skill"] })), ["rr5"]);
+  assert.deepEqual(ids(runs.queryRuns({ errorFixTarget: ["none"] })), ["rr2", "rr5"]);
+});
+
+test("rating filters: an unrated run is EXCLUDED by every verdict, never counted as a default", () => {
+  const { runs } = seedRatings();
+  // The whole-vocabulary sweep is the real assertion: if absence were being read as some value,
+  // asking for EVERY member of a vocabulary would return the unrated/unreadable runs too.
+  const everyAnswer = ids(runs.queryRuns({ answerVerdict: ["answered", "partial", "unanswered"] }));
+  assert.deepEqual(everyAnswer, ["rr1", "rr2"]);
+  const everyInsight = ids(runs.queryRuns({ insightVerdict: ["none", "valuable", "noise"] }));
+  assert.deepEqual(everyInsight, ["rr1", "rr5"]);
+  const everyBucket = ids(
+    runs.queryRuns({
+      errorBucket: ["skill", "mcp_server", "model_behavior", "test_setup", "provider_infra"],
+    }),
+  );
+  assert.deepEqual(everyBucket, ["rr2", "rr5"]);
+  const everyFixTarget = ids(runs.queryRuns({ errorFixTarget: ["skill", "mcp_server", "none"] }));
+  assert.deepEqual(everyFixTarget, ["rr2", "rr5"]);
+
+  // rr4 (never rated), rr3 (malformed evidence), rr6 (wrong evidence SHAPE) and rr7 (outside the
+  // frozen vocabulary) are absent from all four.
+  for (const list of [everyAnswer, everyInsight, everyBucket, everyFixTarget]) {
+    for (const excluded of ["rr3", "rr4", "rr6", "rr7"]) {
+      assert.ok(!list.includes(excluded), `${excluded} must not match any verdict`);
+    }
+  }
+  // And rr1's GRADED-but-empty forensics inventory is in NO bucket — a clean run is not a run in
+  // some default bucket.
+  assert.ok(!everyBucket.includes("rr1"), "a clean forensics inventory belongs to no bucket");
+
+  // The unrated run is still there when nothing constrains it: a rating filter NARROWS, it never
+  // default-excludes the way `derived` does.
+  assert.ok(ids(runs.queryRuns({})).includes("rr4"));
+});
+
+test("rating filters: malformed evidence_json does not take the query down (json_* throws on it)", () => {
+  const { runs, db } = seedRatings();
+  // Each of these would raise SQLITE_ERROR "malformed JSON" against an unguarded json_extract /
+  // json_each, and that failure would be a 500 on the WHOLE runs feed — not one missing row.
+  assert.doesNotThrow(() => runs.queryRuns({ answerVerdict: ["answered"] }));
+  assert.doesNotThrow(() => runs.queryRuns({ insightVerdict: ["noise"] }));
+  assert.doesNotThrow(() => runs.queryRuns({ errorBucket: ["skill"] }));
+  assert.doesNotThrow(() => runs.queryRuns({ errorFixTarget: ["none"] }));
+  assert.doesNotThrow(() =>
+    computeRunMetrics(db, {
+      filter: { errorBucket: ["skill"] },
+      bucket: "day",
+      measures: ["count", "meanScore"],
+    }),
+  );
+  // The candidate builder reads the same rows through JSON.parse and must be equally unbothered.
+  for (const id of ["rr3", "rr6", "rr7"]) {
+    const candidate = runs.buildFilterCandidate(id);
+    assert.ok(candidate);
+    assert.deepEqual(candidate.answerVerdicts, []);
+    assert.deepEqual(candidate.errorBuckets, []);
+    assert.deepEqual(candidate.errorFixTargets, []);
+  }
+});
+
+// AR6 / D-OB15 (acceptance #6). The whole reframe rests on these filters being a READ. If one of them
+// wrote, re-scored or re-interpreted a grade, "what share of runs came back unanswered" would stop
+// being an observation OF the graders and start being a second opinion ABOUT them.
+test("AR6: rating filters leave run_grades and meanScore byte-identical, and never enter a score", () => {
+  const { runs, db } = seedRatings();
+  const gradeRows = () => JSON.stringify(db.prepare("SELECT * FROM run_grades ORDER BY id").all());
+  const meanScoreDoc = () =>
+    JSON.stringify(computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["meanScore"] }));
+
+  const gradesBefore = gradeRows();
+  const meanBefore = meanScoreDoc();
+
+  for (const filter of RATING_FILTERS) {
+    runs.queryRuns(filter);
+    computeRunMetrics(db, { filter, bucket: "day", measures: ["count", "meanScore"] });
+    for (const id of RATING_RUN_IDS) runs.buildFilterCandidate(id);
+  }
+
+  assert.equal(gradeRows(), gradesBefore, "a rating filter mutated run_grades");
+  assert.equal(meanScoreDoc(), meanBefore, "a rating filter changed what meanScore reports");
+
+  // The base-rating SCORES stay out of `meanScore` entirely (AR6): only the two `outcome_judge`
+  // grades back it, so the unfiltered mean is (0.9 + 0.1) / 2 — not a blend with the base graders'
+  // 1 / 0 / 0.5 / 0.2 rows sitting beside them.
+  const meanOf = (filter: RunFilter): number[] =>
+    computeRunMetrics(db, { filter, bucket: "day", measures: ["meanScore"] })
+      .series.filter((s) => s.measure === "meanScore")
+      .flatMap((s) => s.points)
+      .map((p) => p.value);
+  assert.deepEqual(meanOf({}), [0.5]);
+  // A verdict filter narrows the POPULATION and nothing else: each run keeps the score it had.
+  assert.deepEqual(meanOf({ answerVerdict: ["answered"] }), [0.9]);
+  assert.deepEqual(meanOf({ answerVerdict: ["unanswered"] }), [0.1]);
+  // And a filter that selects only UNRATED-for-score runs reports NOTHING rather than 0 — the same
+  // honesty rule a share metric needs (an empty numerator is not a zero).
+  assert.deepEqual(meanOf({ errorBucket: ["skill"] }), []);
+});
+
 
 // ── Route: GET /api/runs (no-param path, aliases, q full-text search, malformed → 400) ────────────
 
