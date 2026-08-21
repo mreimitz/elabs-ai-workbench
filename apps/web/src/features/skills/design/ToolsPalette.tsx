@@ -96,6 +96,17 @@ export type ToolsPaletteProps = {
    *  (fluid width) instead of pinning its own `w-72` column. Supplied by the Design surface's
    *  resizable panel chrome; omitted ⇒ the palette renders its classic fixed-width column. */
   onCollapse?: () => void;
+  /**
+   * RM-30 WP 7.1 — fill the host's width instead of pinning the classic `w-72` column, WITHOUT
+   * asking for a collapse chevron. Until now the two travelled together on `onCollapse`, which is
+   * wrong for a host that owns the collapse control itself: the Skill Studio's left rail has its own
+   * header chevron, and a second one inside the palette would be the same affordance twice — but a
+   * palette that keeps pinning 288px inside a 184px rail clips its own text.
+   *
+   * Defaults to "fluid when a collapse handler is supplied", so every existing call site is
+   * unchanged.
+   */
+  fluid?: boolean;
 };
 
 /** The tool names referenced by a `tool_ref` node anywhere in the graph (projected from SKILL.md text). */
@@ -118,6 +129,7 @@ export function ToolsPalette({
   canInsert,
   onInsertTool,
   onCollapse,
+  fluid,
 }: ToolsPaletteProps) {
   const [query, setQuery] = useState("");
 
@@ -403,7 +415,9 @@ export function ToolsPalette({
   return (
     <div
       className={`flex flex-col gap-3 overflow-hidden bg-card p-3 ${
-        onCollapse ? "h-full w-full min-w-0" : "w-72 shrink-0 border-r border-border"
+        (fluid ?? onCollapse !== undefined)
+          ? "h-full w-full min-w-0"
+          : "w-72 shrink-0 border-r border-border"
       }`}
     >
       <div className="flex flex-col gap-1">

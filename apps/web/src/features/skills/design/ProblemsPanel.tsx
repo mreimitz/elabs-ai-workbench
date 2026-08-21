@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { QualityReport, SkillGraph, ToolDiagnostic } from "@mcp-token-footprint/shared";
 import {
   Badge,
@@ -70,6 +70,15 @@ const SOURCE_META: Record<SkillProblemSource, { label: string; icon: LucideIcon 
   tool: { label: "Tool", icon: Wrench },
 };
 
+/** The live problem tally, published to a host that renders its own `Problems n` control
+ *  (RM-30 WP 7.1 — the Skill Studio toolbar). */
+export type SkillProblemsSummary = {
+  total: number;
+  error: number;
+  warning: number;
+  info: number;
+};
+
 export type ProblemsPanelProps = {
   skillId: string;
   versionId: string;
@@ -83,6 +92,15 @@ export type ProblemsPanelProps = {
   onGoToNode: (nodeId: string) => void;
   /** Reveal the line in the code editor (code deep link) — the panel switches to code mode. */
   onGoToLine: (line: number) => void;
+  /** RM-30 WP 7.1 — CONTROLLED open state. Supplied by a host that owns an external toggle (the
+   *  Skill Studio's `Problems n` toolbar button). Omitted ⇒ the panel owns its own open state,
+   *  exactly as before. */
+  open?: boolean;
+  /** RM-30 WP 7.1 — fired on every open/close, whether driven internally or by {@link open}. */
+  onOpenChange?: (open: boolean) => void;
+  /** RM-30 WP 7.1 — the live tally, so a host toolbar can render `Problems n` without duplicating
+   *  the aggregation. Fired whenever the counts change. */
+  onSummaryChange?: (summary: SkillProblemsSummary) => void;
 };
 
 /**
@@ -99,8 +117,22 @@ export function ProblemsPanel({
   dirty,
   onGoToNode,
   onGoToLine,
+  open: controlledOpen,
+  onOpenChange,
+  onSummaryChange,
 }: ProblemsPanelProps) {
-  const [open, setOpen] = useState(false);
+  // Open state is INTERNAL by default (every existing mount) and controlled when a host supplies
+  // `open` — the Studio's toolbar toggle. `onOpenChange` fires either way, so a host can mirror the
+  // panel's own chevron.
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      setInternalOpen(next);
+      onOpenChange?.(next);
+    },
+    [onOpenChange],
+  );
   const [quality, setQuality] = useState<QualityReport | null>(null);
   const [diagnostics, setDiagnostics] = useState<ToolDiagnostic[]>([]);
   // Non-blocking: a fetch failure surfaces a soft note but never hides the (always-live) projector part.
@@ -150,6 +182,16 @@ export function ProblemsPanel({
   }, [problems]);
 
   const total = problems.length;
+
+  // RM-30 WP 7.1 — publish the tally to a host toolbar (`Problems n`). Memoized object so the
+  // effect fires on a real count change, not on every render.
+  const summary = useMemo<SkillProblemsSummary>(
+    () => ({ total, error: counts.error, warning: counts.warning, info: counts.info }),
+    [total, counts],
+  );
+  useEffect(() => {
+    onSummaryChange?.(summary);
+  }, [summary, onSummaryChange]);
 
   return (
     <Collapsible

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import type {
   BoundTool,
@@ -70,7 +71,7 @@ import { findUnknownToolReferences, formatUnknownToolWarning } from "./code-inte
 import "./code-intel/decorations.css";
 import { CommandDialog } from "./CommandDialog";
 import { NodeDetailPanel } from "./NodeDetailPanel";
-import { ProblemsPanel } from "./ProblemsPanel";
+import { ProblemsPanel, type SkillProblemsSummary } from "./ProblemsPanel";
 import { ToolsPalette } from "./ToolsPalette";
 import { layoutSkillLanes } from "./graph-layout";
 import {
@@ -154,6 +155,47 @@ export type UnifiedEditorProps = {
    *  in the IDE toolbar, and is cleared (`null`) on unmount so it disappears with the Design surface.
    *  Omitted (a standalone host / tests) ⇒ the cluster renders inline in the toolbar as before. */
   onHeaderActionsChange?: (actions: ReactNode | null) => void;
+
+  // ── RM-30 WP 7.1 (Skill Studio) — host chrome slots ──────────────────────────────────────
+  // The Studio frames this editor in a full-viewport workbench whose OWN slim toolbar carries the
+  // view control and whose OWN bottom strip carries the problems panel. Every prop below is
+  // additive and opt-in: omit them and the editor renders exactly the chrome it always has (the
+  // inspector, the tests, any other host).
+
+  /** The host renders the `Flow | Code | Split` control itself — it writes the same `?mode=` param —
+   *  so this surface must not repeat it. */
+  hideModeToggle?: boolean;
+  /** Register the unified problems panel INTO the host's own bottom strip instead of rendering it at
+   *  the foot of this surface. Cleared (`null`) on unmount, exactly like the save cluster. */
+  onProblemsChange?: (problems: ReactNode | null) => void;
+  /** CONTROLLED open state for that panel — driven by the host's `Problems n` toolbar toggle. */
+  problemsOpen?: boolean;
+  /** Fired on every problems-panel open/close (the host toggle or the panel's own chevron). */
+  onProblemsOpenChange?: (open: boolean) => void;
+  /** The live problem tally, so the host toolbar can render `Problems n` without re-aggregating. */
+  onProblemsSummaryChange?: (summary: SkillProblemsSummary) => void;
+  /** Seed the canvas selection on MOUNT — the Studio's `?sel=` round-trip. One-shot: a later version
+   *  switch still clears the selection the way it always did. */
+  initialSelectedNodeId?: string;
+  /** Publish the selected node id on every change, so a host can carry it in the URL. Must be a
+   *  stable (`useCallback`) reference. */
+  onSelectedNodeChange?: (nodeId: string | undefined) => void;
+  /**
+   * Where the host wants the flow surface's Tools palette rendered — a DOM node in its own rail.
+   * Supplying BOTH this and {@link flowDetailContainer} (even as `null`) makes the flow pane render
+   * the canvas ALONE, so the host's rails and the pane's own side panels are never both on screen
+   * showing the same two things twice.
+   *
+   * It is a container, not an element callback, ON PURPOSE: the panel is PORTALLED, so it stays in
+   * THIS component's React tree (live draft, live bound tools, live insert-at-cursor) while painting
+   * inside the host's rail — and no element ever travels through host state, which is what would
+   * otherwise re-render the host on every editor render and can loop. `null` = the host is hosting
+   * but its container is not mounted right now (a collapsed rail, an inactive tab) ⇒ render nothing.
+   */
+  flowToolsContainer?: HTMLElement | null;
+  /** Where the host wants the Node details panel rendered. See {@link flowToolsContainer} — the two
+   *  travel together, and both are portal targets. */
+  flowDetailContainer?: HTMLElement | null;
 };
 
 /**
@@ -170,6 +212,15 @@ export function UnifiedEditor({
   onOpenDiff,
   onTestTool,
   onHeaderActionsChange,
+  hideModeToggle = false,
+  onProblemsChange,
+  problemsOpen,
+  onProblemsOpenChange,
+  onProblemsSummaryChange,
+  initialSelectedNodeId,
+  onSelectedNodeChange,
+  flowToolsContainer,
+  flowDetailContainer,
 }: UnifiedEditorProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -239,6 +290,23 @@ export function UnifiedEditor({
     setSelectedNodeId(undefined);
     setFlowFilter("__all__");
   }, [skillId, versionId]);
+
+  // RM-30 WP 7.1 — apply the host's `?sel=` seed ONCE, after the reset effect above has run for the
+  // mount (effects fire in declaration order, so this wins on the first commit and never fights a
+  // later version switch, which still clears the selection).
+  const selectionSeedRef = useRef<string | undefined>(initialSelectedNodeId);
+  useEffect(() => {
+    const seed = selectionSeedRef.current;
+    selectionSeedRef.current = undefined;
+    if (seed === undefined) return;
+    selectionSourceRef.current = "external";
+    setSelectedNodeId(seed);
+  }, []);
+
+  // RM-30 WP 7.1 — publish the selection so the host can carry it in the URL (`?sel=`).
+  useEffect(() => {
+    onSelectedNodeChange?.(selectedNodeId);
+  }, [selectedNodeId, onSelectedNodeChange]);
 
   // Bubble the dirty flag up (inspector-level unsaved-changes guard).
   useEffect(() => {
@@ -625,6 +693,49 @@ export function UnifiedEditor({
     return () => onHeaderActionsChange(null);
   }, [saveCluster, onHeaderActionsChange]);
 
+  // ── RM-30 WP 7.1 — the problems panel, defined ONCE for two mounts ──────────────────────────
+  // Same idiom as the save cluster above: one memoized element, rendered inline at the foot of this
+  // surface by default, or registered into a host's bottom strip (the Studio) when it asks for it.
+  // The memo's deps are all stable references, so the register-effect settles after one extra
+  // render instead of looping.
+  const problemsPanel = useMemo<ReactNode>(() => {
+    if (loading || error !== null || graph === null) return null;
+    return (
+      <ProblemsPanel
+        skillId={skillId}
+        versionId={versionId}
+        graph={syncGraph}
+        warnings={problemsWarnings}
+        dirty={draft.dirty}
+        onGoToNode={goToNode}
+        onGoToLine={goToLine}
+        {...(problemsOpen !== undefined ? { open: problemsOpen } : {})}
+        {...(onProblemsOpenChange ? { onOpenChange: onProblemsOpenChange } : {})}
+        {...(onProblemsSummaryChange ? { onSummaryChange: onProblemsSummaryChange } : {})}
+      />
+    );
+  }, [
+    loading,
+    error,
+    graph,
+    skillId,
+    versionId,
+    syncGraph,
+    problemsWarnings,
+    draft.dirty,
+    goToNode,
+    goToLine,
+    problemsOpen,
+    onProblemsOpenChange,
+    onProblemsSummaryChange,
+  ]);
+
+  useEffect(() => {
+    if (!onProblemsChange) return;
+    onProblemsChange(problemsPanel);
+    return () => onProblemsChange(null);
+  }, [problemsPanel, onProblemsChange]);
+
   if (error) {
     return (
       <StatePanel
@@ -641,8 +752,15 @@ export function UnifiedEditor({
   const flowVisible = mode !== "code";
   const graphEmpty = flowGraph.nodes.length === 0;
 
+  // RM-30 WP 7.1 — when the host has taken BOTH side panels, the pane is the canvas alone and the
+  // panels are portalled into the host's rails.
+  const sidePanelsHosted = flowToolsContainer !== undefined && flowDetailContainer !== undefined;
+
   const flowPane = (
     <FlowPane
+      sidePanelsHosted={sidePanelsHosted}
+      toolsContainer={flowToolsContainer ?? null}
+      detailContainer={flowDetailContainer ?? null}
       skillId={skillId}
       versionId={versionId}
       graph={graph}
@@ -685,25 +803,29 @@ export function UnifiedEditor({
       {/* Toolbar: the segmented view control + (flow-only) picker/add actions + the ONE save bar. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <ToggleGroup
-            type="single"
-            variant="segmented"
-            value={mode}
-            onValueChange={(value) => {
-              if (isEditorMode(value)) setMode(value);
-            }}
-            aria-label="Editor view"
-          >
-            <ToggleGroupItem value="flow" aria-label="Show flow">
-              <Workflow className="size-4" aria-hidden /> Flow
-            </ToggleGroupItem>
-            <ToggleGroupItem value="code" aria-label="Show code">
-              <Code2 className="size-4" aria-hidden /> Code
-            </ToggleGroupItem>
-            <ToggleGroupItem value="split" aria-label="Split view">
-              <Columns2 className="size-4" aria-hidden /> Split
-            </ToggleGroupItem>
-          </ToggleGroup>
+          {/* RM-30 WP 7.1 — the Studio's slim toolbar owns this control (same `?mode=` param), so it
+              is suppressed there rather than rendered twice. */}
+          {hideModeToggle ? null : (
+            <ToggleGroup
+              type="single"
+              variant="segmented"
+              value={mode}
+              onValueChange={(value) => {
+                if (isEditorMode(value)) setMode(value);
+              }}
+              aria-label="Editor view"
+            >
+              <ToggleGroupItem value="flow" aria-label="Show flow">
+                <Workflow className="size-4" aria-hidden /> Flow
+              </ToggleGroupItem>
+              <ToggleGroupItem value="code" aria-label="Show code">
+                <Code2 className="size-4" aria-hidden /> Code
+              </ToggleGroupItem>
+              <ToggleGroupItem value="split" aria-label="Split view">
+                <Columns2 className="size-4" aria-hidden /> Split
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
 
           {flowVisible && showFlowPicker ? (
             <div className="flex items-center gap-2">
@@ -802,16 +924,9 @@ export function UnifiedEditor({
       {/* WP 9.4 — the unified problems panel, mounted ONCE below the body so it renders IDENTICALLY in
           Flow, Code, and Split. It reads the SAME live projection (`syncGraph`) + the live projector
           warnings the canvas/code decorations use — plus (WP 7.5) the live unknown-tool findings —
-          and adds the persisted quality + tool findings. */}
-      <ProblemsPanel
-        skillId={skillId}
-        versionId={versionId}
-        graph={syncGraph}
-        warnings={problemsWarnings}
-        dirty={draft.dirty}
-        onGoToNode={goToNode}
-        onGoToLine={goToLine}
-      />
+          and adds the persisted quality + tool findings. RM-30 WP 7.1: when a host takes the panel
+          (the Studio's bottom strip) it is registered there instead, never rendered twice. */}
+      {onProblemsChange ? null : problemsPanel}
 
       <AddSectionDialog
         open={addSectionOpen}
@@ -986,6 +1101,12 @@ function CollapsedPanelRail({
 }
 
 type FlowPaneProps = {
+  /** RM-30 WP 7.1 — the host paints the Tools palette and the Node details panel in its own rails,
+   *  so this pane is the canvas alone (no resizable group, no collapse rails). */
+  sidePanelsHosted: boolean;
+  /** Portal targets for those two panels, when `sidePanelsHosted`. `null` ⇒ not mounted right now. */
+  toolsContainer: HTMLElement | null;
+  detailContainer: HTMLElement | null;
   skillId: string;
   versionId: string;
   graph: SkillGraph;
@@ -1008,6 +1129,9 @@ type FlowPaneProps = {
 };
 
 function FlowPane({
+  sidePanelsHosted,
+  toolsContainer,
+  detailContainer,
   skillId,
   versionId,
   graph,
@@ -1030,6 +1154,87 @@ function FlowPane({
 }: FlowPaneProps) {
   const tools = useCollapsibleSidePanel("tools");
   const detail = useCollapsibleSidePanel("detail");
+
+  // RM-30 WP 7.1 — the two side panels, defined ONCE and mounted in exactly one place: the host's
+  // rails when it asked for them, this pane's own resizable columns otherwise. The palette takes its
+  // collapse chevron as an argument, because only the in-pane mount has a column to collapse.
+  const renderToolsPanel = useCallback(
+    (onCollapse?: () => void): ReactNode => (
+      <ToolsPalette
+        graph={graph}
+        boundTools={boundTools}
+        loading={boundToolsLoading}
+        editMode
+        canInsert={canInsert}
+        onInsertTool={onInsertTool}
+        fluid
+        {...(onCollapse ? { onCollapse } : {})}
+      />
+    ),
+    [graph, boundTools, boundToolsLoading, canInsert, onInsertTool],
+  );
+  const detailPanel = useMemo<ReactNode>(
+    () => (
+      <NodeDetailPanel
+        skillId={skillId}
+        versionId={versionId}
+        graph={graph}
+        selectedNodeId={selectedNodeId}
+        editMode
+        edit={edit}
+        previewOnlyLabel={previewOnlyLabel}
+        boundTools={boundTools}
+        onRegisterInsert={onRegisterInsert}
+        onTestTool={onTestTool}
+        width="100%"
+      />
+    ),
+    [
+      skillId,
+      versionId,
+      graph,
+      selectedNodeId,
+      edit,
+      previewOnlyLabel,
+      boundTools,
+      onRegisterInsert,
+      onTestTool,
+    ],
+  );
+
+  const canvas = (
+    <div className="relative h-full w-full min-w-0">
+      {graphEmpty ? (
+        <StatePanel
+          kind="empty"
+          title="Nothing to design yet"
+          description="No sections were found in this version's SKILL.md. Add a command or section, or switch to code and start typing."
+        />
+      ) : (
+        <SkillGraphCanvas
+          nodes={nodes}
+          edges={edges}
+          onSelectNode={onSelectNode}
+          editable
+          onConnect={onConnect}
+          onEdgesDelete={onEdgesDelete}
+          onToolDrop={onToolDrop}
+        />
+      )}
+    </div>
+  );
+
+  if (sidePanelsHosted) {
+    return (
+      <div className="h-full min-h-0 overflow-hidden rounded-lg border border-border bg-card">
+        {canvas}
+        {/* Painted in the host's rails, still mounted HERE — so both panels read the same live draft
+            the canvas does, and nothing crosses the component boundary as state. */}
+        {toolsContainer ? createPortal(renderToolsPanel(), toolsContainer) : null}
+        {detailContainer ? createPortal(detailPanel, detailContainer) : null}
+      </div>
+    );
+  }
 
   return (
     <AdaptivePanelGroup
@@ -1056,15 +1261,7 @@ function FlowPane({
             onExpand={() => tools.setCollapsed(false)}
           />
         ) : (
-          <ToolsPalette
-            graph={graph}
-            boundTools={boundTools}
-            loading={boundToolsLoading}
-            editMode
-            canInsert={canInsert}
-            onInsertTool={onInsertTool}
-            onCollapse={() => tools.setCollapsed(true)}
-          />
+          renderToolsPanel(() => tools.setCollapsed(true))
         )}
       </ResizablePanel>
       <ResizableHandle withHandle aria-label="Resize the Tools panel" />
@@ -1077,25 +1274,7 @@ function FlowPane({
         minSize={30}
         className="min-w-0"
       >
-        <div className="relative h-full w-full min-w-0">
-          {graphEmpty ? (
-            <StatePanel
-              kind="empty"
-              title="Nothing to design yet"
-              description="No sections were found in this version's SKILL.md. Add a command or section, or switch to code and start typing."
-            />
-          ) : (
-            <SkillGraphCanvas
-              nodes={nodes}
-              edges={edges}
-              onSelectNode={onSelectNode}
-              editable
-              onConnect={onConnect}
-              onEdgesDelete={onEdgesDelete}
-              onToolDrop={onToolDrop}
-            />
-          )}
-        </div>
+        {canvas}
       </ResizablePanel>
 
       <ResizableHandle withHandle aria-label="Resize the Node details panel" />
@@ -1131,19 +1310,7 @@ function FlowPane({
             >
               <PanelRightClose aria-hidden />
             </IconButton>
-            <NodeDetailPanel
-              skillId={skillId}
-              versionId={versionId}
-              graph={graph}
-              selectedNodeId={selectedNodeId}
-              editMode
-              edit={edit}
-              previewOnlyLabel={previewOnlyLabel}
-              boundTools={boundTools}
-              onRegisterInsert={onRegisterInsert}
-              onTestTool={onTestTool}
-              width="100%"
-            />
+            {detailPanel}
           </div>
         )}
       </ResizablePanel>

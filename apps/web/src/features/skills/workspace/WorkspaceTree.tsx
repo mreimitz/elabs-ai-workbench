@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { ScrollArea, Text, Tree, type TreeNode } from "@elabs-ai/components-ui";
+import { Text, Tree, type TreeNode } from "@elabs-ai/components-ui";
 import { SearchInput } from "@elabs-ai/components-data";
 import {
   FileCode2,
@@ -96,13 +96,13 @@ function toTreeNodes(nodes: WorkNode[]): TreeNode[] {
     node.type === "folder"
       ? {
           id: node.path,
-          label: <span className="truncate">{node.name}</span>,
+          label: <span className="min-w-0 truncate">{node.name}</span>,
           icon: <Folder className="size-4 text-muted-foreground" />,
           children: toTreeNodes(node.children),
         }
       : {
           id: node.path,
-          label: <span className="truncate">{node.name}</span>,
+          label: <span className="min-w-0 truncate">{node.name}</span>,
           icon: fileIcon(node.entry),
         },
   );
@@ -121,6 +121,11 @@ export type WorkspaceTreeProps = {
   onRename: (path: string, isFolder: boolean) => void;
   onMove: (path: string, isFolder: boolean) => void;
   onDelete: (path: string, isFolder: boolean) => void;
+  /** RM-30 WP 7.1 — browse-only: hide the mutation toolbar (new/upload/rename/move/delete) and render
+   *  just search + the tree. Used by the Skill Studio's Files rail, which browses a COMMITTED version
+   *  (the editable multi-tab workspace lands in WP 7.4). The handlers above stay required so nothing
+   *  silently loses a wired action when the flag is dropped again. */
+  readOnly?: boolean;
 };
 
 /** The left pane: a toolbar (acting on the selection), a search box, and the interactive file tree. */
@@ -135,6 +140,7 @@ export function WorkspaceTree({
   onRename,
   onMove,
   onDelete,
+  readOnly = false,
 }: WorkspaceTreeProps) {
   const [query, setQuery] = useState("");
 
@@ -171,45 +177,54 @@ export function WorkspaceTree({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* O3 — shared toolbar height (`h-11`) so the tree toolbar and the open-file header align. */}
-      <div className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-2">
-        <ToolbarButton label="New file" onClick={() => onNewFile(targetDir)}>
-          <FilePlus2 className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton label="New folder" onClick={() => onNewFolder(targetDir)}>
-          <FolderPlus className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton label="Upload files" onClick={() => onUpload(targetDir)}>
-          <Upload className="size-4" aria-hidden />
-        </ToolbarButton>
-        <span className="mx-1 h-5 w-px bg-border" aria-hidden />
-        <ToolbarButton
-          label={selectedIsSkillMd ? "SKILL.md can’t be renamed" : "Rename"}
-          disabled={!hasSelection || selectedIsSkillMd}
-          onClick={() => selectedId && onRename(selectedId, selectedIsFolder)}
-        >
-          <Pencil className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton
-          label={selectedIsSkillMd ? "SKILL.md can’t be moved" : "Move"}
-          disabled={!hasSelection || selectedIsSkillMd}
-          onClick={() => selectedId && onMove(selectedId, selectedIsFolder)}
-        >
-          <MoveRight className="size-4" aria-hidden />
-        </ToolbarButton>
-        <ToolbarButton
-          label={selectedIsSkillMd ? "SKILL.md can’t be deleted" : "Delete"}
-          disabled={!hasSelection || selectedIsSkillMd}
-          onClick={() => selectedId && onDelete(selectedId, selectedIsFolder)}
-        >
-          <Trash2 className="size-4" aria-hidden />
-        </ToolbarButton>
-      </div>
+      {readOnly ? null : (
+        <div className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-2">
+          <ToolbarButton label="New file" onClick={() => onNewFile(targetDir)}>
+            <FilePlus2 className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton label="New folder" onClick={() => onNewFolder(targetDir)}>
+            <FolderPlus className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton label="Upload files" onClick={() => onUpload(targetDir)}>
+            <Upload className="size-4" aria-hidden />
+          </ToolbarButton>
+          <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+          <ToolbarButton
+            label={selectedIsSkillMd ? "SKILL.md can’t be renamed" : "Rename"}
+            disabled={!hasSelection || selectedIsSkillMd}
+            onClick={() => selectedId && onRename(selectedId, selectedIsFolder)}
+          >
+            <Pencil className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton
+            label={selectedIsSkillMd ? "SKILL.md can’t be moved" : "Move"}
+            disabled={!hasSelection || selectedIsSkillMd}
+            onClick={() => selectedId && onMove(selectedId, selectedIsFolder)}
+          >
+            <MoveRight className="size-4" aria-hidden />
+          </ToolbarButton>
+          <ToolbarButton
+            label={selectedIsSkillMd ? "SKILL.md can’t be deleted" : "Delete"}
+            disabled={!hasSelection || selectedIsSkillMd}
+            onClick={() => selectedId && onDelete(selectedId, selectedIsFolder)}
+          >
+            <Trash2 className="size-4" aria-hidden />
+          </ToolbarButton>
+        </div>
+      )}
 
       <div className="shrink-0 border-b border-border p-2">
         <SearchInput value={query} onValueChange={setQuery} placeholder="Search files…" />
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
+      {/* RM-30 WP 7.1 — a plain bounded scroll box, not the brand `ScrollArea`. Measured in the
+          Studio's 184px rail: the Radix viewport sizes its content wrapper to the CONTENT, so the
+          tree's rows came out 242px wide and every long file name was hard-clipped at the rail edge
+          with no ellipsis — the row never got narrow enough for the label's own `truncate` to fire.
+          A `min-h-0 flex-1 overflow-y-auto` box makes the rows exactly as wide as the rail, so they
+          ellipsis properly. Same swap, same reason, as the SI15 fix in `ProblemsPanel`; at the wider
+          Files-tab width this is visually identical to what `ScrollArea` produced. */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="p-2">
           {treeNodes.length === 0 ? (
             <Text variant="meta" tone="muted" className="px-2 py-1">
@@ -229,7 +244,7 @@ export function WorkspaceTree({
             />
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

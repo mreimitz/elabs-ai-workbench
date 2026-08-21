@@ -199,6 +199,11 @@ const SkillsView = lazy(() =>
 const SkillsOverview = lazy(() =>
   import("./features/skills/SkillsOverview").then((m) => ({ default: m.SkillsOverview })),
 );
+// RM-30 WP 7.1 — the Skill Studio, the full-viewport authoring workbench. Lazy like every other
+// skills route: it pulls in Monaco + the flow canvas, which nothing else on a cold load needs.
+const SkillStudioView = lazy(() =>
+  import("./features/skills/studio/SkillStudioView").then((m) => ({ default: m.SkillStudioView })),
+);
 const WatchRulesView = lazy(() =>
   import("./features/watch/WatchRulesView").then((m) => ({ default: m.WatchRulesView })),
 );
@@ -330,6 +335,12 @@ export function App() {
   );
   const skillMatch = useMemo(
     () => matchPath("/skills/:skillId", location.pathname),
+    [location.pathname],
+  );
+  // RM-30 WP 7.1 — the Studio is a CHILD of a skill, so `/skills/:skillId` (an exact match) does not
+  // cover it; match it separately so the selection + breadcrumb still name the right skill.
+  const skillStudioMatch = useMemo(
+    () => matchPath("/skills/:skillId/studio", location.pathname),
     [location.pathname],
   );
   const scanMatch = useMemo(
@@ -1024,6 +1035,20 @@ export function App() {
         },
       ];
     }
+    // RM-30 WP 7.1 — the Studio's own crumb: Skills / <skill> / Studio. Unlike the inspector, the
+    // skill here is a real, linked PARENT (back to the inspector), and "Studio" is the leaf, so the
+    // page contributes no breadcrumb slot of its own.
+    if (skillStudioMatch) {
+      const studioSkill = skills.find((entry) => entry.id === skillStudioMatch.params.skillId);
+      return [
+        { label: "Skills", to: "/skills" },
+        {
+          label: studioSkill?.displayName ?? "Skill",
+          to: `/skills/${skillStudioMatch.params.skillId}`,
+        },
+        { label: "Studio" },
+      ];
+    }
     // RM-32 D-OD5 — the skill LEAF is the switcher `SkillsView` contributes through the breadcrumb
     // slot; App owns only the parent crumb back to the registry overview.
     if (skillMatch) {
@@ -1158,6 +1183,7 @@ export function App() {
     scanMatch,
     selectedScan,
     skillMatch,
+    skillStudioMatch,
     selectedSkillId,
     skills,
     collectionMatch,
@@ -1413,6 +1439,11 @@ export function App() {
                     />
                   }
                 />
+                {/* RM-30 WP 7.1 — the Skill Studio. A place, not an action (D-TB10): its whole view
+                state (`?mode=&file=&sel=`) rides the URL, and it renders a usable workbench with no
+                query params at all. `/skills/` is already a PageShell prefix, so it mounts
+                full-bleed like the inspector. */}
+                <Route path="/skills/:skillId/studio" element={<SkillStudioView />} />
                 {/* Environments — the run-harness home (wire/type name stays `scenario`; see the
                 `Scenario` shared type + `/testing/scenarios` redirect below). */}
                 <Route path="/testing/environments" element={<EnvironmentsView />} />
