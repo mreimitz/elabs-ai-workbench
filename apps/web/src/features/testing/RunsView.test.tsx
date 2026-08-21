@@ -43,10 +43,14 @@ vi.mock("../../lib/api", async (importOriginal) => {
     listServers: vi.fn().mockResolvedValue([]),
     listSkills: vi.fn().mockResolvedValue([]),
     getRunGrades: vi.fn().mockResolvedValue({ latest: [] }),
+    // AM-OB1 — the saved-view picker fetches `run_views` on mount; stubbed so the `?view=<id>`
+    // resolution tests below are deterministic (and so the other suites don't hit the network).
+    listRunViews: vi.fn().mockResolvedValue([]),
   };
 });
 
 import { RunsView } from "./RunsView";
+import { listRunViews } from "../../lib/api";
 import { loadRunsFeed } from "./runs/runs-api";
 
 // jsdom omits matchMedia — Radix Tooltip (the ViewToolbar info ⓘ) reads it (mirrors EnvironmentEditor.test).
@@ -64,6 +68,7 @@ if (typeof window.matchMedia !== "function") {
 }
 
 const mockLoadRunsFeed = vi.mocked(loadRunsFeed);
+const mockListRunViews = vi.mocked(listRunViews);
 
 const EMPTY_FEED: RunsFeedData = {
   items: [],
@@ -166,6 +171,7 @@ function renderRuns(initialEntry: string) {
 
 beforeEach(() => {
   mockLoadRunsFeed.mockReset().mockResolvedValue(EMPTY_FEED);
+  mockListRunViews.mockReset().mockResolvedValue([]);
 });
 
 describe("RunsView — A-2 launcher-open param (?launch=1)", () => {
@@ -318,5 +324,199 @@ describe("RunsView — mobile card list below 768px (P0 mobile audit T4)", () =>
     await waitFor(() =>
       expect(screen.getByTestId("location")).toHaveTextContent("/testing/runs/run-1"),
     );
+  });
+});
+
+/**
+ * RM-17 Phase 6 · AM-OB1 — the WHOLE feed state serializes into the URL, so a pasted link reproduces
+ * exactly what the sender was looking at and a saved view is a shareable named URL.
+ *
+ * Before this work only the `RunFilter` (`filter=`, WP 2.3) round-tripped; the applied view, the
+ * sort, the grouping axis, the Type facet and the visible columns / preview mode lived in component
+ * `useState` and were silently lost on every reload. These tests pin BOTH directions: a URL hydrates
+ * the feed, and a control's change lands back in the URL.
+ */
+describe("RunsView — full feed state in the URL (AM-OB1)", () => {
+  beforeEach(() => {
+    mockLoadRunsFeed.mockResolvedValue(POPULATED_FEED);
+  });
+
+  test("a zero-query-param URL still renders the default feed and writes NOTHING (D-TB10)", async () => {
+    renderRuns("/testing/runs");
+
+    // Default columns (status · cost · started · duration) — `type`/`tokens` are hidden by default…
+    expect(await screen.findByRole("columnheader", { name: /Status/ })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /Tokens/ })).not.toBeInTheDocument();
+    // …default sort is Started, descending…
+    expect(screen.getByRole("columnheader", { name: /Started/ })).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+    // …and nothing has been written to the URL just by rendering.
+    expect(screen.getByTestId("location")).toHaveTextContent(/^\/testing\/runs$/);
+  });
+
+  test("a pasted URL reproduces sort, grouping, columns and the preview mode", async () => {
+    renderRuns("/testing/runs?sort=cost:asc&group=type&cols=tokens,cost&preview=cost");
+
+    // Sort — the Cost header carries the active ascending sort (default is Started/descending).
+    const costHeader = await screen.findByRole("columnheader", { name: /Cost/ });
+    expect(costHeader).toHaveAttribute("aria-sort", "ascending");
+    expect(screen.queryByRole("columnheader", { name: /Started/ })).not.toBeInTheDocument();
+
+    // Columns — exactly the two named, not the default set.
+    expect(screen.getByRole("columnheader", { name: /Tokens/ })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /Status/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /Duration/ })).not.toBeInTheDocument();
+
+    // Grouping — the Group-by control shows the restored axis…
+    expect(screen.getByRole("combobox", { name: "Group by" })).toHaveTextContent("Group by type");
+    // …and the grouped table renders its group header row.
+    expect(screen.getByText("Single runs")).toBeInTheDocument();
+
+    // Preview mode — a non-"none" mode is what puts the per-row disclosure on the row at all.
+    expect(
+      screen.getByRole("button", { name: "Expand preview for List files" }),
+    ).toBeInTheDocument();
+  });
+
+  test("the Type facet rides in the URL and narrows the feed on arrival", async () => {
+    renderRuns("/testing/runs?type=suite");
+
+    // The one row in the feed is a SINGLE run, so a suite-only facet hides it — and the count chip
+    // says so rather than the table silently looking empty.
+    expect(await screen.findByText("0 of 1 rows")).toBeInTheDocument();
+  });
+
+  test("sorting a column writes the sort into the URL (and flips direction on a second click)", async () => {
+    renderRuns("/testing/runs");
+
+    const costSort = await screen.findByRole("button", { name: "Cost" });
+    fireEvent.click(costSort);
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent("sort=cost%3Adesc"),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Cost" }));
+    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("sort=cost%3Aasc"));
+  });
+
+  test("returning the sort to its default REMOVES the param rather than writing the default", async () => {
+    renderRuns("/testing/runs?sort=cost:asc");
+
+    const startedSort = await screen.findByRole("button", { name: "Started" });
+    fireEvent.click(startedSort); // → started:desc, which is the default
+    await waitFor(() => expect(screen.getByTestId("location")).not.toHaveTextContent("sort="));
+  });
+
+  test("a malformed URL opens a working feed on the defaults instead of crashing", async () => {
+    renderRuns("/testing/runs?sort=by-vibes&group=sideways&preview=telepathy&filter=%7Bnope");
+
+    // Default sort, default grouping, default columns — every bad value degraded on its own, and the
+    // run is still there to click.
+    expect(await screen.findByRole("columnheader", { name: /Started/ })).toHaveAttribute(
+      "aria-sort",
+      "descending",
+    );
+    expect(screen.getByRole("combobox", { name: "Group by" })).toHaveTextContent("No grouping");
+    expect(screen.getByRole("link", { name: "Open List files run console" })).toBeInTheDocument();
+    // `preview=telepathy` fell back to "none", which is what removes the per-row disclosure entirely.
+    expect(
+      screen.queryByRole("button", { name: "Expand preview for List files" }),
+    ).not.toBeInTheDocument();
+  });
+
+  test("a `cols=` naming only unknown columns hides every optional column rather than guessing", async () => {
+    // Deliberate, documented behaviour: unknown keys are dropped, and an empty result is a real
+    // "hide every optional column" choice (the same state the column chooser can produce), not a
+    // signal to silently restore the default set.
+    renderRuns("/testing/runs?cols=not-a-column");
+
+    expect(await screen.findByRole("link", { name: "Open List files run console" })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /Started/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /Status/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("RunsView — a saved view is a shareable named URL (AM-OB1)", () => {
+  beforeEach(() => {
+    mockLoadRunsFeed.mockResolvedValue(POPULATED_FEED);
+  });
+
+  test("`?view=preset:failures` alone resolves the preset and writes the state it implies", async () => {
+    renderRuns("/testing/runs?view=preset%3Afailures");
+
+    // The picker shows the view's NAME (not the generic "Views" label)…
+    expect(await screen.findByRole("button", { name: /Failures/ })).toBeInTheDocument();
+    // …and the short named URL has been expanded into the self-describing form, so the recipient's
+    // own copy of the link needs no lookup.
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent("hasError%22%3Atrue"),
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent("view=preset%3Afailures");
+  });
+
+  test("`?view=<id>` alone resolves a PERSISTED view once its list loads", async () => {
+    mockListRunViews.mockResolvedValue([
+      {
+        id: "view-abc",
+        name: "My failing runs",
+        filter: { status: ["error"] },
+        columns: { visible: ["tokens"], previewMode: "none" },
+        sort: { key: "tokens", dir: "asc" },
+        createdAt: "2026-07-01T00:00:00Z",
+        updatedAt: "2026-07-01T00:00:00Z",
+      },
+    ]);
+    renderRuns("/testing/runs?view=view-abc");
+
+    // Its filter, its columns AND its sort are all restored — a view is the whole presentation.
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent("sort=tokens%3Aasc"),
+    );
+    expect(screen.getByTestId("location")).toHaveTextContent("cols=tokens");
+    expect(screen.getByTestId("location")).toHaveTextContent("error");
+    expect(screen.getByRole("columnheader", { name: /Tokens/ })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    // …and the picker shows the view's NAME, not the generic "Views" label. (Applying the view
+    // re-fetches the feed, which remounts the toolbar, so wait for the picker to settle.)
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /My failing runs/ })).toBeInTheDocument(),
+    );
+  });
+
+  test("a `view=` id that no longer exists drops out of the URL instead of showing a nameless label", async () => {
+    renderRuns("/testing/runs?view=deleted-view");
+
+    await waitFor(() => expect(screen.getByTestId("location")).not.toHaveTextContent("view="));
+    expect(screen.getByRole("button", { name: /Views/ })).toBeInTheDocument();
+  });
+
+  test("a URL that already describes its state is reproduced VERBATIM — `view=` is only the label", async () => {
+    // `hasError` is the Failures preset's filter; this link carries a DIFFERENT one alongside the
+    // preset id (what the app writes after the operator tweaks a filter under an applied view).
+    renderRuns("/testing/runs?view=preset%3Afailures&filter=%7B%22pinned%22%3Atrue%7D");
+
+    expect(await screen.findByRole("button", { name: /Failures/ })).toBeInTheDocument();
+    // The preset was NOT re-applied over the explicit filter…
+    await waitFor(() => expect(mockLoadRunsFeed).toHaveBeenCalled());
+    expect(screen.getByTestId("location")).toHaveTextContent("pinned%22%3Atrue");
+    expect(screen.getByTestId("location")).not.toHaveTextContent("hasError");
+  });
+
+  test("editing the bar after applying a view DROPS the view id (the label stops lying)", async () => {
+    renderRuns("/testing/runs?view=preset%3Afailures");
+
+    await screen.findByRole("button", { name: /Failures/ });
+    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("hasError"));
+
+    // Any hand-edit means the bar has drifted from the named view — `RunSavedViewsProps.activeId`
+    // has always documented that, and nothing implemented it until the id became shareable.
+    fireEvent.click(screen.getByRole("button", { name: "Show forks" }));
+
+    await waitFor(() => expect(screen.getByTestId("location")).not.toHaveTextContent("view="));
+    expect(screen.getByRole("button", { name: /Views/ })).toBeInTheDocument();
   });
 });
