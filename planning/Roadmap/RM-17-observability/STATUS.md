@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-21T15:20:00Z"
+timestamp: "2026-08-21T16:05:00Z"
 status: "active"
 ---
 
@@ -58,8 +58,8 @@ had one open box before the lock and now has fourteen.
 - [x] WP 3.2 — Tree StepLog + nested Gantt + per-step economics — done 2026-07-17 · wp/observability/3.2
 - [x] WP 3.3 — Fork-from-step (rerun + lineage + Compare pre-seed) — done 2026-07-17 · wp/observability/3.3
 - [x] WP 3.4 — In-run search + lenses — done 2026-07-17 · wp/observability/3.4
-- [ ] WP 3.5 — Agent-graph lens (aggregated/expanded) — **LOCKED 2026-08-21 (D-OB29), READY TO
-      DISPATCH** (arrived as amendment AM-OB9; spec
+- [ ] WP 3.5 — Agent-graph lens (aggregated/expanded) — _status: **in progress** (agent A,
+      dispatched 2026-08-21, branch `wp/observability/3.5`)_ — **LOCKED 2026-08-21 (D-OB29)** (arrived as amendment AM-OB9; spec
       [`phase-3-console/WP-3.5-agent-graph.md`](./phase-3-console/WP-3.5-agent-graph.md));
       deps 3.1/3.2 ✅ — no gate left, run `/next-wp observability`. ⚠️ chart-touching: needs a
       faithful-stub test (the panel suites mock `@elabs-ai/components-charts` as no-ops)
@@ -80,6 +80,13 @@ had one open box before the lock and now has fourteen.
 
 ## Phase 6 — Langfuse follow-ups (amendment locked 2026-08-21 · D-OB29)
 
+> _**Scoping in progress** (agent B, dispatched 2026-08-21, branch `wp/observability/phase-6-specs`):
+> none of these thirteen has a WP spec, which blocks every future `/next-wp` batch — a spec's
+> **Files** section is what proves two work packages can run in parallel, and its **Acceptance**
+> section is what a tick is validated against. Agent B verifies each item against the shipped
+> surface and writes one spec per item into `phase-6-langfuse/`, reporting which are already
+> satisfied and therefore droppable. No code changes._
+>
 > The fourteen items of [`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md), held
 > as **work packages, not decisions** — a `D-OB` number is a constraint the code must keep
 > honouring, and these are things to build. **Every item is individually droppable**; dropping
