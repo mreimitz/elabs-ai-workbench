@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-21T17:10:00Z"
+timestamp: "2026-08-21T20:05:00Z"
 status: "active"
 ---
 
@@ -58,8 +58,50 @@ had one open box before the lock and now has fourteen.
 - [x] WP 3.2 — Tree StepLog + nested Gantt + per-step economics — done 2026-07-17 · wp/observability/3.2
 - [x] WP 3.3 — Fork-from-step (rerun + lineage + Compare pre-seed) — done 2026-07-17 · wp/observability/3.3
 - [x] WP 3.4 — In-run search + lenses — done 2026-07-17 · wp/observability/3.4
-- [ ] WP 3.5 — Agent-graph lens (aggregated/expanded) — _status: **in progress** (agent A,
-      dispatched 2026-08-21, branch `wp/observability/3.5`)_ — **LOCKED 2026-08-21 (D-OB29)** (arrived as amendment AM-OB9; spec
+- [x] WP 3.5 — Agent-graph lens (aggregated/expanded) — done 2026-08-21 · `wp/observability/3.5`
+      (e94b97c · 348dd09 · 9bfc92d · 0edcf1b · 1b67cad · c237ec8, merged `5c365ec`) · spec
+      [`phase-3-console/WP-3.5-agent-graph.md`](./phase-3-console/WP-3.5-agent-graph.md).
+      A third console lens: the run as a node-link graph. **Aggregated** (default) merges calls
+      sharing a name into one node with a ×N counter, so a repeated loop renders as a real cycle
+      with a traversal count on the edge; **Expanded** unrolls every call left to right in
+      execution order. Node chips carry count / tokens / cost / duration. Selecting a node reveals
+      the Steps lens filtered to exactly that node's steps, with a banner and a way back; lens,
+      mode and selection all ride in the URL (`?lens=graph&graph=expanded&focus=…`), and the
+      zero-param run URL still opens the console unchanged (D-TB10).
+      **Pure projection — no schema change, no wire change, no migration, no new dependency**
+      (verified by diff: nothing under `packages/shared` or `apps/api`, no lockfile change). Built
+      on `@elabs-ai/components-flow`'s canvas, reusing the `MissionAgentNode` precedent.
+      New: `agent-graph.ts` (projection + cycle detection + deterministic layout, no React),
+      `AgentGraphNode.tsx`, `AgentGraphLens.tsx` + tests; `RunConsole.tsx` and `StepLog.tsx`
+      gained the lens and one optional `focusStepIds` filter.
+      **Honest-degradation cases, each test-pinned:** a pre-WP-3.1 run (no `parentStepId`) renders
+      **flat and says so** rather than implying a hierarchy it never had; cost reads **UNKNOWN,
+      never `$0.00`**, on a run with no per-step snapshots; an untimed node reports duration
+      unknown rather than 0 ms; an unrecognised `?focus=` degrades to no filter rather than an
+      unexplained empty log. Error state is carried by **words + a glyph**, parentage by a
+      **dashed line** — neither rests on colour alone.
+      **Recorded divergence (not a defect):** a `judge_call` node's figures come from the grading
+      service's separate judge ledger, which never moves a run's own totals, so on an auto-rated
+      run judge nodes sit *on top of* the KPI rail rather than inside it — the same reading the
+      step log already gives (a deliberate WP 3.2 choice).
+      **Agent-reported implementation trap worth keeping:** the graph's URL writes had to fold
+      into the **same** `setSearchParams` effect as `?lens=`, because React Router hands a
+      functional updater the params derived from the *current* location — two effects writing in
+      one commit both see pre-commit params and the second silently clobbers the first, which a
+      node cross-link (lens + focus together) triggers every time.
+      Gate re-run **by the orchestrator on the branch**: typecheck · lint (1749 files) · build ·
+      test all green — **8,678 passing** (shared 260 · illustrations 833 · cli 87 · api 3648 ·
+      web 3850 + 5 skipped), zero failures.
+      **The new guards were broken to confirm they bite** (not taken on the agent's word):
+      deleting `StepLog`'s focus-filter line turned **3** red including *both* the live and the
+      replayed cross-link; collapsing aggregation onto the expanded identity turned **28** red
+      across all three suites. Both mutations reverted, tree clean, 92 green.
+      **NOT verified — this is the owner-acceptance item:** the two-theme (`light`/`dark`) visual
+      walk and the keyboard pass, against the running app. No browser was run; every visual claim
+      is structural (semantic tokens only, `brand-ui audit` 0 issues). Also unverified: legibility
+      of loop-back edge labels at real zoom, and **Expanded mode on a long run — each call takes
+      its own column, so a ~200-step run is roughly 60,000 px wide; the canvas zooms to fit but
+      has a zoom floor, so it will need panning.** No large real run was available to test. (arrived as amendment AM-OB9; spec
       [`phase-3-console/WP-3.5-agent-graph.md`](./phase-3-console/WP-3.5-agent-graph.md));
       deps 3.1/3.2 ✅ — no gate left, run `/next-wp observability`. ⚠️ chart-touching: needs a
       faithful-stub test (the panel suites mock `@elabs-ai/components-charts` as no-ops)
@@ -904,6 +946,16 @@ webhook test-fire 4.3, real fork 3.3, real digest 5.5) — none claimed by an ag
   blind-spot noted 2026-07-17). Pending owner lock — nothing picked up.
 
 ## Owner-acceptance (pending — grows as WPs land)
+
+- **WP 3.5 agent-graph lens (added 2026-08-21) — the two-theme + keyboard walk.** Open a finished
+  run at `/testing/runs/:runId`, click the **Graph** pill (fourth: Chat · Steps · Turns · Graph ·
+  Trace · Analytics · Report). On a run that called the same tool more than once, switch
+  Aggregated ⇄ Expanded and confirm the ×N counter and the loop-back edge label read clearly in
+  **both** `light` and `dark` at real zoom — edge labels were the one thing the implementing agent
+  could not see. Click a node, confirm the step list below matches and the banner names it, then
+  tab to a node and press Enter. Also worth a look: **Expanded on your longest run** — each call
+  takes its own column, so a very long run is extremely wide and the canvas has a zoom floor;
+  judge whether panning is acceptable or it needs a cap. — accepted: ____
 
 - Both-theme (`light`/`dark`) + keyboard walks: Dashboard tabs, runs feed filter bar,
   rules UI, notification center, issues tab, review queue, pricing editor, sessions lens.
