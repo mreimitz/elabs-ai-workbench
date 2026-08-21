@@ -70,7 +70,7 @@ import { findUnknownToolReferences, formatUnknownToolWarning } from "./code-inte
 import "./code-intel/decorations.css";
 import { CommandDialog } from "./CommandDialog";
 import { NodeDetailPanel } from "./NodeDetailPanel";
-import { ProblemsPanel } from "./ProblemsPanel";
+import { ProblemsPanel, type SkillProblemsSummary } from "./ProblemsPanel";
 import { ToolsPalette } from "./ToolsPalette";
 import { layoutSkillLanes } from "./graph-layout";
 import {
@@ -154,6 +154,31 @@ export type UnifiedEditorProps = {
    *  in the IDE toolbar, and is cleared (`null`) on unmount so it disappears with the Design surface.
    *  Omitted (a standalone host / tests) ⇒ the cluster renders inline in the toolbar as before. */
   onHeaderActionsChange?: (actions: ReactNode | null) => void;
+
+  // ── RM-30 WP 7.1 (Skill Studio) — host chrome slots ──────────────────────────────────────
+  // The Studio frames this editor in a full-viewport workbench whose OWN slim toolbar carries the
+  // view control and whose OWN bottom strip carries the problems panel. Every prop below is
+  // additive and opt-in: omit them and the editor renders exactly the chrome it always has (the
+  // inspector, the tests, any other host).
+
+  /** The host renders the `Flow | Code | Split` control itself — it writes the same `?mode=` param —
+   *  so this surface must not repeat it. */
+  hideModeToggle?: boolean;
+  /** Register the unified problems panel INTO the host's own bottom strip instead of rendering it at
+   *  the foot of this surface. Cleared (`null`) on unmount, exactly like the save cluster. */
+  onProblemsChange?: (problems: ReactNode | null) => void;
+  /** CONTROLLED open state for that panel — driven by the host's `Problems n` toolbar toggle. */
+  problemsOpen?: boolean;
+  /** Fired on every problems-panel open/close (the host toggle or the panel's own chevron). */
+  onProblemsOpenChange?: (open: boolean) => void;
+  /** The live problem tally, so the host toolbar can render `Problems n` without re-aggregating. */
+  onProblemsSummaryChange?: (summary: SkillProblemsSummary) => void;
+  /** Seed the canvas selection on MOUNT — the Studio's `?sel=` round-trip. One-shot: a later version
+   *  switch still clears the selection the way it always did. */
+  initialSelectedNodeId?: string;
+  /** Publish the selected node id on every change, so a host can carry it in the URL. Must be a
+   *  stable (`useCallback`) reference. */
+  onSelectedNodeChange?: (nodeId: string | undefined) => void;
 };
 
 /**
@@ -170,6 +195,13 @@ export function UnifiedEditor({
   onOpenDiff,
   onTestTool,
   onHeaderActionsChange,
+  hideModeToggle = false,
+  onProblemsChange,
+  problemsOpen,
+  onProblemsOpenChange,
+  onProblemsSummaryChange,
+  initialSelectedNodeId,
+  onSelectedNodeChange,
 }: UnifiedEditorProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -239,6 +271,23 @@ export function UnifiedEditor({
     setSelectedNodeId(undefined);
     setFlowFilter("__all__");
   }, [skillId, versionId]);
+
+  // RM-30 WP 7.1 — apply the host's `?sel=` seed ONCE, after the reset effect above has run for the
+  // mount (effects fire in declaration order, so this wins on the first commit and never fights a
+  // later version switch, which still clears the selection).
+  const selectionSeedRef = useRef<string | undefined>(initialSelectedNodeId);
+  useEffect(() => {
+    const seed = selectionSeedRef.current;
+    selectionSeedRef.current = undefined;
+    if (seed === undefined) return;
+    selectionSourceRef.current = "external";
+    setSelectedNodeId(seed);
+  }, []);
+
+  // RM-30 WP 7.1 — publish the selection so the host can carry it in the URL (`?sel=`).
+  useEffect(() => {
+    onSelectedNodeChange?.(selectedNodeId);
+  }, [selectedNodeId, onSelectedNodeChange]);
 
   // Bubble the dirty flag up (inspector-level unsaved-changes guard).
   useEffect(() => {
@@ -625,6 +674,49 @@ export function UnifiedEditor({
     return () => onHeaderActionsChange(null);
   }, [saveCluster, onHeaderActionsChange]);
 
+  // ── RM-30 WP 7.1 — the problems panel, defined ONCE for two mounts ──────────────────────────
+  // Same idiom as the save cluster above: one memoized element, rendered inline at the foot of this
+  // surface by default, or registered into a host's bottom strip (the Studio) when it asks for it.
+  // The memo's deps are all stable references, so the register-effect settles after one extra
+  // render instead of looping.
+  const problemsPanel = useMemo<ReactNode>(() => {
+    if (loading || error !== null || graph === null) return null;
+    return (
+      <ProblemsPanel
+        skillId={skillId}
+        versionId={versionId}
+        graph={syncGraph}
+        warnings={problemsWarnings}
+        dirty={draft.dirty}
+        onGoToNode={goToNode}
+        onGoToLine={goToLine}
+        {...(problemsOpen !== undefined ? { open: problemsOpen } : {})}
+        {...(onProblemsOpenChange ? { onOpenChange: onProblemsOpenChange } : {})}
+        {...(onProblemsSummaryChange ? { onSummaryChange: onProblemsSummaryChange } : {})}
+      />
+    );
+  }, [
+    loading,
+    error,
+    graph,
+    skillId,
+    versionId,
+    syncGraph,
+    problemsWarnings,
+    draft.dirty,
+    goToNode,
+    goToLine,
+    problemsOpen,
+    onProblemsOpenChange,
+    onProblemsSummaryChange,
+  ]);
+
+  useEffect(() => {
+    if (!onProblemsChange) return;
+    onProblemsChange(problemsPanel);
+    return () => onProblemsChange(null);
+  }, [problemsPanel, onProblemsChange]);
+
   if (error) {
     return (
       <StatePanel
@@ -685,25 +777,29 @@ export function UnifiedEditor({
       {/* Toolbar: the segmented view control + (flow-only) picker/add actions + the ONE save bar. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          <ToggleGroup
-            type="single"
-            variant="segmented"
-            value={mode}
-            onValueChange={(value) => {
-              if (isEditorMode(value)) setMode(value);
-            }}
-            aria-label="Editor view"
-          >
-            <ToggleGroupItem value="flow" aria-label="Show flow">
-              <Workflow className="size-4" aria-hidden /> Flow
-            </ToggleGroupItem>
-            <ToggleGroupItem value="code" aria-label="Show code">
-              <Code2 className="size-4" aria-hidden /> Code
-            </ToggleGroupItem>
-            <ToggleGroupItem value="split" aria-label="Split view">
-              <Columns2 className="size-4" aria-hidden /> Split
-            </ToggleGroupItem>
-          </ToggleGroup>
+          {/* RM-30 WP 7.1 — the Studio's slim toolbar owns this control (same `?mode=` param), so it
+              is suppressed there rather than rendered twice. */}
+          {hideModeToggle ? null : (
+            <ToggleGroup
+              type="single"
+              variant="segmented"
+              value={mode}
+              onValueChange={(value) => {
+                if (isEditorMode(value)) setMode(value);
+              }}
+              aria-label="Editor view"
+            >
+              <ToggleGroupItem value="flow" aria-label="Show flow">
+                <Workflow className="size-4" aria-hidden /> Flow
+              </ToggleGroupItem>
+              <ToggleGroupItem value="code" aria-label="Show code">
+                <Code2 className="size-4" aria-hidden /> Code
+              </ToggleGroupItem>
+              <ToggleGroupItem value="split" aria-label="Split view">
+                <Columns2 className="size-4" aria-hidden /> Split
+              </ToggleGroupItem>
+            </ToggleGroup>
+          )}
 
           {flowVisible && showFlowPicker ? (
             <div className="flex items-center gap-2">
@@ -802,16 +898,9 @@ export function UnifiedEditor({
       {/* WP 9.4 — the unified problems panel, mounted ONCE below the body so it renders IDENTICALLY in
           Flow, Code, and Split. It reads the SAME live projection (`syncGraph`) + the live projector
           warnings the canvas/code decorations use — plus (WP 7.5) the live unknown-tool findings —
-          and adds the persisted quality + tool findings. */}
-      <ProblemsPanel
-        skillId={skillId}
-        versionId={versionId}
-        graph={syncGraph}
-        warnings={problemsWarnings}
-        dirty={draft.dirty}
-        onGoToNode={goToNode}
-        onGoToLine={goToLine}
-      />
+          and adds the persisted quality + tool findings. RM-30 WP 7.1: when a host takes the panel
+          (the Studio's bottom strip) it is registered there instead, never rendered twice. */}
+      {onProblemsChange ? null : problemsPanel}
 
       <AddSectionDialog
         open={addSectionOpen}

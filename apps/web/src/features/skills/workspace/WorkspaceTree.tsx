@@ -121,6 +121,11 @@ export type WorkspaceTreeProps = {
   onRename: (path: string, isFolder: boolean) => void;
   onMove: (path: string, isFolder: boolean) => void;
   onDelete: (path: string, isFolder: boolean) => void;
+  /** RM-30 WP 7.1 — browse-only: hide the mutation toolbar (new/upload/rename/move/delete) and render
+   *  just search + the tree. Used by the Skill Studio's Files rail, which browses a COMMITTED version
+   *  (the editable multi-tab workspace lands in WP 7.4). The handlers above stay required so nothing
+   *  silently loses a wired action when the flag is dropped again. */
+  readOnly?: boolean;
 };
 
 /** The left pane: a toolbar (acting on the selection), a search box, and the interactive file tree. */
@@ -135,6 +140,7 @@ export function WorkspaceTree({
   onRename,
   onMove,
   onDelete,
+  readOnly = false,
 }: WorkspaceTreeProps) {
   const [query, setQuery] = useState("");
 
@@ -171,6 +177,7 @@ export function WorkspaceTree({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* O3 — shared toolbar height (`h-11`) so the tree toolbar and the open-file header align. */}
+      {readOnly ? null : (
       <div className="flex h-11 shrink-0 items-center gap-1 overflow-x-auto border-b border-border px-2">
         <ToolbarButton label="New file" onClick={() => onNewFile(targetDir)}>
           <FilePlus2 className="size-4" aria-hidden />
@@ -204,6 +211,7 @@ export function WorkspaceTree({
           <Trash2 className="size-4" aria-hidden />
         </ToolbarButton>
       </div>
+      )}
 
       <div className="shrink-0 border-b border-border p-2">
         <SearchInput value={query} onValueChange={setQuery} placeholder="Search files…" />

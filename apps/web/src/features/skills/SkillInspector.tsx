@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import type { BoundTool, Skill, SkillFileNode, SkillVersion } from "@mcp-token-footprint/shared";
 import {
   Badge,
@@ -26,6 +26,7 @@ import {
   ExternalLink,
   GitBranch,
   GitPullRequest,
+  PencilRuler,
   RefreshCw,
   Settings2,
   Upload,
@@ -35,7 +36,6 @@ import { SecurityPanel, useSecurityReport } from "../security/SecurityPanel";
 import { formatDateTime } from "../../lib/format";
 import { loadableData } from "../../lib/loadable";
 import { getErrorMessage } from "../../lib/errors";
-import { DiscardChangesDialog } from "../../components/UnsavedChangesGuard";
 import { IconButton } from "../../components/IconButton";
 // The app's page frame (audit §S16) — carries the toolbar standard's `headerVariant="toolbar"`
 // slot (`bg-card` + border-b lift) that hosts `ViewToolbar`. This view previously used the raw
@@ -54,7 +54,8 @@ import { useRatingIssues } from "../issues/use-rating-issues";
 import { GithubSourceDialog } from "./GithubSourceDialog";
 import { PublishGithubDialog } from "./PublishGithubDialog";
 import { PushGithubDialog } from "./PushGithubDialog";
-import { SkillDesignView } from "./design/SkillDesignView";
+import { SkillFlowPreview } from "./studio/SkillFlowPreview";
+import { skillStudioPath } from "./studio/studio-url";
 import { ToolRunnerSheet } from "./design/ToolRunnerSheet";
 // WP R1.4 (D-AS22) — the Files tab's live-workspace mirror: detection/subscription runs HERE (not
 // gated by the active tab) so a change can auto-navigate INTO the Files tab from anywhere on this page.
@@ -166,21 +167,11 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
   const [sourceOpen, setSourceOpen] = useState(false);
   const [pushOpen, setPushOpen] = useState(false);
 
-  // Design-tab unsaved-changes guard (WP 4.2): the Design tab reports its local edit-op dirty state
-  // up here so a tab switch or a version change AWAY from a dirty Design tab is intercepted with the
-  // same confirm dialog the wizards use, instead of silently discarding staged edits.
-  const [designDirty, setDesignDirty] = useState(false);
-  const [pendingNav, setPendingNav] = useState<(() => void) | null>(null);
-
-  // SI13 — the Design surface's save cluster (dirty chip · Discard · Save…), registered up into THIS
-  // header's action row while the Design tab is mounted (its editor clears the slot on unmount, so
-  // the cluster vanishes with the surface — and a dirty draft can't outlive it, the guard above
-  // forces save/discard before any navigation away). The `() => node` form keeps a ReactNode from
-  // ever being interpreted as a setState updater.
-  const [designHeaderActions, setDesignHeaderActions] = useState<ReactNode>(null);
-  const handleDesignHeaderActions = useCallback((node: ReactNode | null) => {
-    setDesignHeaderActions(() => node);
-  }, []);
+  // RM-30 WP 7.1 (I2) — the inspector no longer HOLDS an editable draft. Authoring moved to the
+  // Skill Studio (`/skills/:skillId/studio`), which owns the one draft, the one dirty flag and the
+  // one save path, and guards its own exit. So the WP 4.2 tab/version unsaved-changes guard and the
+  // SI13 header save cluster are both gone from here: there is nothing on this page that can be
+  // dirty, and therefore no save bar anywhere on it.
 
   // Skill IDE WP 8.5 — the inline tool-runner Sheet lives at the inspector so both the Design and Files
   // surfaces can open it. Set (strictly on a user click / hover command-link) with the ALREADY-RESOLVED
@@ -342,45 +333,21 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
     setTab("diff");
   }, []);
 
-  // Guarded tab / version switches: while the Design tab is dirty, a navigation away is intercepted
-  // and routed through the shared `DiscardChangesDialog` instead of applying immediately. Confirming
-  // ALWAYS resets `designDirty` — the Design tab's content unmounts on a real tab switch (Radix Tabs
-  // unmounts inactive content), which drops its local op buffer along with it, so the flag would
-  // otherwise go stale and wrongly re-prompt next time.
-  const requestTabChange = useCallback(
-    (next: string) => {
-      // O2b — Design/Trace are hidden; never honor a request to open them (redirect to Files).
-      const target = next === "design" || next === "trace" ? "files" : next;
-      if (designDirty && tab === "design" && target !== "design") {
-        setPendingNav(() => () => setTab(target));
-        return;
-      }
-      setTab(target);
-    },
-    [designDirty, tab],
-  );
+  // RM-30 WP 7.1 — nothing on this page can be dirty any more (authoring is the Studio's), so a tab
+  // or version switch just applies. Trace stays hidden (its lens rides the Studio canvas), so a
+  // stale `trace` value still redirects to Files; `design` is a real tab again — a READ-ONLY flow
+  // preview whose only action is "Edit in Studio".
+  const requestTabChange = useCallback((next: string) => {
+    setTab(next === "trace" ? "files" : next);
+  }, []);
 
-  // O2b — if the tab ever lands on a hidden surface (stale state / deep link), bounce to Files.
   useEffect(() => {
-    if (tab === "design" || tab === "trace") setTab("files");
+    if (tab === "trace") setTab("files");
   }, [tab]);
 
-  const requestSelectionChange = useCallback(
-    (next: string) => {
-      if (designDirty && tab === "design" && next !== selection) {
-        setPendingNav(() => () => setSelection(next));
-        return;
-      }
-      setSelection(next);
-    },
-    [designDirty, tab, selection],
-  );
-
-  const confirmNav = useCallback(() => {
-    pendingNav?.();
-    setPendingNav(null);
-    setDesignDirty(false);
-  }, [pendingNav]);
+  const requestSelectionChange = useCallback((next: string) => {
+    setSelection(next);
+  }, []);
 
   // Refresh the skill + version list after the Design tab saves a new version, then switch the
   // active selection to it (mirrors "Pull latest"'s own refresh-and-select flow).
@@ -663,8 +630,13 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
           }
           actions={
             <>
-              {/* SI13 — the Design surface's save cluster (rendered only while it's mounted). */}
-              {designHeaderActions}
+              {/* RM-30 WP 7.1 (I2) — the one authoring entry point. The inspector reads a skill;
+                  the Studio edits it, and owns the only save path. */}
+              <Button asChild size="sm" className="shrink-0">
+                <Link to={skillStudioPath(skillId)}>
+                  <PencilRuler aria-hidden /> Edit in Studio
+                </Link>
+              </Button>
 
               {/* Icon-only action cluster (tooltips carry the labels, like the Servers toolbar).
                   Push vs Publish is EITHER/OR: a repo-bound skill pushes back to its source; an
@@ -739,12 +711,13 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={requestTabChange} className="flex min-h-0 flex-1 flex-col">
-        {/* O4 (2026-07-06 owner): tab order Overview · Files · Quality · Usage · Versions · Diff.
-            O2b: Design + Trace are HIDDEN for now (the visual-design surface is parked — see
-            roadmap Phase 7 note). Their content/components stay compiled; a stale `design`/`trace`
-            tab value redirects to Files via the effect below. */}
+        {/* O4 (2026-07-06 owner): tab order Overview · Design · Files · Quality · Usage · Versions ·
+            Diff. RM-30 WP 7.1 brings Design back as a READ-ONLY flow preview (authoring is the
+            Studio's). Trace stays hidden — its lens rides the same canvas and lands with WP 7.6; a
+            stale `trace` tab value redirects to Files via the effect below. */}
         <TabsList className="shrink-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="design">Design</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="quality">Quality</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
@@ -833,6 +806,8 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
           )}
         </TabsContent>
 
+        {/* RM-30 WP 7.1 (I2) — Design is a READ-ONLY flow preview. No palette, no node editor, no
+            draft, no save bar: the one action is "Edit in Studio". */}
         <TabsContent value="design" className="flex min-h-0 flex-1 flex-col pt-4">
           {filesError ? (
             <StatePanel
@@ -843,14 +818,10 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
           ) : !activeVersionId ? (
             <StatePanel kind="loading" title="Loading version…" loadingLabel="Loading version…" />
           ) : (
-            <SkillDesignView
+            <SkillFlowPreview
               skillId={skillId}
               versionId={activeVersionId}
-              onDirtyChange={setDesignDirty}
-              onVersionSaved={(newVersionId) => void handleDesignSaved(newVersionId)}
-              onOpenDiff={openDiff}
-              onTestTool={handleTestTool}
-              onHeaderActionsChange={handleDesignHeaderActions}
+              isHeadVersion={isHeadVersion}
             />
           )}
         </TabsContent>
@@ -952,12 +923,6 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
           />
         </TabsContent>
       </Tabs>
-
-      <DiscardChangesDialog
-        open={pendingNav !== null}
-        onConfirm={confirmNav}
-        onCancel={() => setPendingNav(null)}
-      />
 
       {/* WP 8.5 — the inline tool-runner Sheet, opened from the Design tool card / hover + Files hover. */}
       <ToolRunnerSheet tool={testTool} onClose={() => setTestTool(null)} />

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import type { BoundTool } from "@mcp-token-footprint/shared";
 import { SkillBindingHostContext, type SkillBindingHost } from "./bind-server-context";
-import { UnifiedEditor } from "./UnifiedEditor";
+import { UnifiedEditor, type UnifiedEditorProps } from "./UnifiedEditor";
 
 export type SkillDesignViewProps = {
   skillId: string;
@@ -20,7 +20,19 @@ export type SkillDesignViewProps = {
   /** SI13 — forwarded to {@link UnifiedEditor}: registers the save cluster (dirty chip · Discard ·
    *  Save…) into the inspector's page-header action row while this surface is mounted. */
   onHeaderActionsChange?: (actions: ReactNode | null) => void;
-};
+} & Pick<
+  UnifiedEditorProps,
+  // RM-30 WP 7.1 — the Skill Studio's host-chrome slots, forwarded verbatim (this component already
+  // spreads `{...props}` onto the editor). Every one is optional, so the inspector's own usage and
+  // the existing tests are unchanged.
+  | "hideModeToggle"
+  | "onProblemsChange"
+  | "problemsOpen"
+  | "onProblemsOpenChange"
+  | "onProblemsSummaryChange"
+  | "initialSelectedNodeId"
+  | "onSelectedNodeChange"
+>;
 
 /**
  * The Design tab. Since Skill IDE WP 9.2 (I10 — "one document, two live views") the Design tab HOSTS

@@ -73,6 +73,12 @@ export const ASSISTANT_ROUTE_MANIFEST: readonly AssistantRouteManifestEntry[] = 
   },
   { pattern: "/scans/:scanId", surface: "scan", pin: "scan", addressable: true, view: "scan" },
   { pattern: "/skills/:skillId", surface: "skill", pin: "skill", addressable: true, view: "skill" },
+  // RM-30 WP 7.1 — the Skill Studio, the full-viewport authoring workbench for the SAME skill the
+  // inspector shows. `resolveEntityPin` is prefix-based (`/skills/<id>/…`), so the dock stays pinned
+  // to that skill and keeps the `skill` surface here. Deliberately NOT `addressable`: `ui_navigate`'s
+  // registry names one view per entity, and "the skill" is already reachable at `/skills/:skillId`;
+  // an agent has no reason to drop the operator into an editing workbench.
+  { pattern: "/skills/:skillId/studio", surface: "skill", pin: "skill" },
   { pattern: "/testing/runs/:runId", surface: "run", pin: "run", addressable: true, view: "run" },
   {
     pattern: "/testing/suite-runs/:suiteRunId",
