@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { serializeRunMetricsRatio } from "@mcp-token-footprint/shared";
 import {
   apiGet,
   apiPost,
   createHubSession,
   getAssistantStarters,
+  getRunMetrics,
   sendHubMessage,
   updateHubSession,
 } from "./api";
@@ -205,5 +207,47 @@ describe("hub model identity rides the wire (model-identity WP 3.1)", () => {
     const mocked = mockFetchOk({ id: "s1" });
     await createHubSession({ mode: "chat", model: "claude-sonnet-5" });
     expect(sentBody(mocked)).toEqual({ mode: "chat", model: "claude-sonnet-5" });
+  });
+});
+
+// ══ AM-OB4 — `getRunMetrics` puts the ratio on the query string ═══════════════════════════════════
+//
+// Every other web suite MOCKS `lib/api`, so nothing exercised the URL this function actually builds:
+// deleting the `ratio` param left the whole web suite green (found by mutation). It matters because a
+// silently-dropped ratio is not an error — the API answers `unavailableMeasures: ["ratio"]` and the
+// chart renders an honest-looking blank.
+
+describe("getRunMetrics — the ratio param (AM-OB4)", () => {
+  beforeEach(() => {
+    mockFetchOk({ bucket: "day", timezone: "UTC", from: null, to: null, groupBy: null, measures: [], unavailableMeasures: [], series: [] });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("serializes the ratio through the SHARED codec, so the API parses byte-identically", async () => {
+    const ratio = { numerator: { hasError: true }, denominator: { status: ["completed"] as const } };
+    await getRunMetrics({
+      filter: {},
+      bucket: "day",
+      measures: ["ratio"],
+      ratio: { numerator: ratio.numerator, denominator: { status: [...ratio.denominator.status] } },
+    });
+    const [url] = vi.mocked(fetch).mock.calls[0] as [string];
+    const params = new URL(url, "http://localhost").searchParams;
+    expect(params.get("measures")).toBe("ratio");
+    expect(params.get("ratio")).toBe(
+      serializeRunMetricsRatio({
+        numerator: { hasError: true },
+        denominator: { status: ["completed"] },
+      }),
+    );
+  });
+
+  it("omits the param entirely when no ratio is requested", async () => {
+    await getRunMetrics({ filter: {}, bucket: "day", measures: ["errorRate"] });
+    const [url] = vi.mocked(fetch).mock.calls[0] as [string];
+    expect(new URL(url, "http://localhost").searchParams.has("ratio")).toBe(false);
   });
 });

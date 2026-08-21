@@ -1258,3 +1258,102 @@ test("boolean-branch filters: hand-counted, so an agreeing PAIR of bugs still fa
   assert.deepEqual(ids(runs.queryRuns({ needsAttention: true })), ["e3"]);
   assert.deepEqual(ids(runs.queryRuns({ needsAttention: false })), ["e1", "e2", "e4"]);
 });
+
+// ── AM-OB12 acceptance #3, closed by AM-OB4 ──────────────────────────────────────────────────────
+//
+// AM-OB12 made the auto-rating verdicts FILTERABLE and stopped there, on purpose: its own non-goals
+// forbid a fourteenth bespoke measure, so "what share of runs came back `unanswered`" had nothing to
+// compute it with until the ratio existed. These tests are that acceptance criterion — a ratio whose
+// NUMERATOR names a verdict IS the share metric, with no new measure and no new vocabulary.
+
+test("AM-OB12 #3 — a verdict numerator computes the share, hand-counted over the rating fixture", () => {
+  const { runs, db } = seedRatings();
+  // Eight runs, all inside one UTC day. Exactly one has a latest `unanswered` verdict (rr2 — rr1 is
+  // `answered`, and the other six are unrated, malformed, wrong-shaped or outside the vocabulary).
+  assert.equal(ids(runs.queryRuns({})).length, 8);
+  assert.deepEqual(ids(runs.queryRuns({ answerVerdict: ["unanswered"] })), ["rr2"]);
+
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: { numerator: { answerVerdict: ["unanswered"] } },
+  });
+  const points = res.series.filter((s) => s.measure === "ratio").flatMap((s) => s.points);
+  assert.deepEqual(
+    points.map((p) => [p.value, p.n]),
+    [[1 / 8, 8]],
+  );
+
+  // The narrower question the explicit denominator exists for: "of the runs we actually RATED, what
+  // share came back unanswered" — 1 of 2, not 1 of 8. An unrated run is not a passing run, and this
+  // is the distinction that stops a rating backlog from reading as improving quality.
+  const ofRated = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: {
+      denominator: { answerVerdict: ["answered", "partial", "unanswered"] },
+      numerator: { answerVerdict: ["unanswered"] },
+    },
+  });
+  assert.deepEqual(
+    ofRated.series.filter((s) => s.measure === "ratio").flatMap((s) => s.points).map((p) => [p.value, p.n]),
+    [[1 / 2, 2]],
+  );
+
+  // An error-forensics bucket share works the same way — rr2 and rr5 carry findings; rr2's include
+  // `mcp_server`.
+  const bucketShare = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: {
+      denominator: { errorBucket: ["skill", "mcp_server", "model_behavior", "test_setup", "provider_infra"] },
+      numerator: { errorBucket: ["mcp_server"] },
+    },
+  });
+  assert.deepEqual(
+    bucketShare.series.filter((s) => s.measure === "ratio").flatMap((s) => s.points).map((p) => [p.value, p.n]),
+    [[1 / 2, 2]],
+  );
+});
+
+test("AM-OB12 #3 — a verdict share with NO qualifying runs is OMITTED, never 0", () => {
+  const { db } = seedRatings();
+  // No run in the fixture has a `partial` answer verdict, so a denominator of `partial` runs is
+  // empty. "0% of the partial runs were X" is not a fact about anything.
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: {
+      denominator: { answerVerdict: ["partial"] },
+      numerator: { insightVerdict: ["noise"] },
+    },
+  });
+  assert.deepEqual(res.series.filter((s) => s.measure === "ratio"), []);
+  assert.equal(res.series.flatMap((s) => s.points).filter((p) => p.n === 0).length, 0);
+});
+
+test("AM-OB12 #6 — a verdict-numerator ratio leaves meanScore and run_grades byte-identical", () => {
+  const { db } = seedRatings();
+  const gradesBefore = db.prepare("SELECT * FROM run_grades ORDER BY id").all();
+  const meanBefore = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["meanScore"] });
+
+  const withShare = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["meanScore", "ratio"],
+    ratio: { numerator: { answerVerdict: ["unanswered"] } },
+  });
+
+  // The share is a READ of what the graders persisted; computing it neither writes a grade nor
+  // changes what `meanScore` selects (`PRIMARY_GRADER_PRIORITY` excludes the three base graders, so
+  // the base ratings are invisible to it — asserted, not assumed).
+  assert.deepEqual(db.prepare("SELECT * FROM run_grades ORDER BY id").all(), gradesBefore);
+  assert.deepEqual(
+    withShare.series.filter((s) => s.measure === "meanScore"),
+    meanBefore.series.filter((s) => s.measure === "meanScore"),
+  );
+});

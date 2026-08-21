@@ -674,3 +674,89 @@ test("AM-OB4 — a stored ratio rule round-trips through watch_rules", () => {
     numerator: { outcome: ["stopped_guardrail"] },
   });
 });
+
+// ── AM-OB12 acceptance #4, closed by AM-OB4 ──────────────────────────────────────────────────────
+//
+// "A windowed watch rule can threshold that ratio, and its historical preview reflects the same
+// values." AM-OB12 could not close this: a windowed rule's measure vocabulary is `RUN_METRICS_MEASURES`
+// verbatim, and there was no measure that could take a verdict share. There is now — the same generic
+// `ratio`, with a verdict in its numerator.
+
+/** Rate a run with a base-grader verdict, exactly as RM-06's graders persist one. */
+function rateAnswer(db: AppDatabase, id: string, runId: string, verdict: string, at: string): void {
+  db.prepare(
+    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, evidence_json, grading_version, created_at)
+     VALUES (@id, @runId, 'answer_validation', 'llm', 'graded', NULL, 'test', @evidence, 1, @at)`,
+  ).run({ id, runId, evidence: JSON.stringify({ verdict }), at });
+}
+
+test("AM-OB12 #4 — a windowed rule thresholds a VERDICT share, and the preview matches the service", async () => {
+  const { db, repo, evaluator, notifications } = harness();
+  // Window 09:00–10:00: four runs, three of them rated `unanswered` → a 75% unanswered share.
+  insertRuns(db, [
+    { id: "v1", startedAt: "2026-06-01T09:05:00.000Z" },
+    { id: "v2", startedAt: "2026-06-01T09:15:00.000Z" },
+    { id: "v3", startedAt: "2026-06-01T09:25:00.000Z" },
+    { id: "v4", startedAt: "2026-06-01T09:35:00.000Z" },
+  ]);
+  rateAnswer(db, "gv1", "v1", "unanswered", "2026-06-01T09:50:00.000Z");
+  rateAnswer(db, "gv2", "v2", "unanswered", "2026-06-01T09:50:00.000Z");
+  rateAnswer(db, "gv3", "v3", "unanswered", "2026-06-01T09:50:00.000Z");
+  rateAnswer(db, "gv4", "v4", "answered", "2026-06-01T09:50:00.000Z");
+
+  const window = ratioWindow("1h", { numerator: { answerVerdict: ["unanswered"] } });
+  const rule = makeWindowedRule(repo, window);
+
+  await evaluator.evaluateRule(rule, T("2026-06-01T10:05:00.000Z"), { boot: false });
+  assert.equal(notifications.length, 1, "0.75 >= the 0.6 threshold — quality drift became an alert");
+
+  // The preview must report the SAME number the metrics service does (the derived-once invariant),
+  // because it is what an operator consults BEFORE saving the rule.
+  const preview = evaluator.preview({}, window, 1, T("2026-06-01T10:05:00.000Z"));
+  const direct = computeRunMetrics(db, {
+    filter: {},
+    from: "2026-06-01T09:00:00.000Z",
+    to: "2026-06-01T09:59:59.999Z",
+    bucket: "hour",
+    measures: ["ratio"],
+    ratio: { numerator: { answerVerdict: ["unanswered"] } },
+  });
+  assert.equal(preview.windows[0]?.value, 0.75);
+  assert.equal(preview.windows[0]?.value, direct.series[0]?.points[0]?.value);
+  assert.equal(preview.windows[0]?.n, 4);
+  assert.equal(preview.windows[0]?.wouldHaveFired, true);
+});
+
+test("AM-OB12 #4 — an UNRATED window does not read as a healthy 0% unanswered share", async () => {
+  const { db, repo, evaluator, notifications } = harness();
+  // Four runs in the window, NONE of them rated. With a denominator of "runs we actually rated", the
+  // base is empty — so the rule reports no data rather than a reassuring 0%, and its default `hold`
+  // policy neither fires nor recovers. A rating backlog must not look like improving quality.
+  insertRuns(db, [
+    { id: "u1", startedAt: "2026-06-01T09:05:00.000Z" },
+    { id: "u2", startedAt: "2026-06-01T09:15:00.000Z" },
+    { id: "u3", startedAt: "2026-06-01T09:25:00.000Z" },
+    { id: "u4", startedAt: "2026-06-01T09:35:00.000Z" },
+  ]);
+
+  const window = ratioWindow("1h", {
+    denominator: { answerVerdict: ["answered", "partial", "unanswered"] },
+    numerator: { answerVerdict: ["unanswered"] },
+  });
+  const rule = makeWindowedRule(repo, window);
+
+  const preview = evaluator.preview({}, window, 1, T("2026-06-01T10:05:00.000Z"));
+  assert.equal(preview.windows[0]?.value, null);
+  assert.equal(preview.windows[0]?.state, "no_data");
+
+  await evaluator.evaluateRule(rule, T("2026-06-01T10:05:00.000Z"), { boot: false });
+  assert.equal(notifications.length, 0);
+  // …and critically, NO recovery was recorded. This is the AM-OB10 defect meeting AM-OB12's
+  // question: before the `no_data` state existed, an empty window wrote `window_recover` and re-armed
+  // — so "nobody rated anything this hour" would have been filed as "quality recovered".
+  assert.equal(
+    events(repo, rule.id).filter((e) => e.action === "window_recover").length,
+    0,
+    "an unrated window must not be recorded as a recovery",
+  );
+});
