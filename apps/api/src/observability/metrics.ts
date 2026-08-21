@@ -178,7 +178,7 @@ function ratioColumns(measure: RunMetricsMeasure): { num: string; den: string } 
  * the query filter's fork policy onto a side that does not mention forks (see its doc — without it a
  * `derived: true` chart's numerator would be an impossible intersection reading as a flat 0%).
  */
-function buildRatioProjection(
+export function buildRatioProjection(
   measure: RunMetricsMeasure,
   config: RunMetricsRatioConfig,
   queryFilter: RunFilter,

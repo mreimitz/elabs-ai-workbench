@@ -1156,3 +1156,105 @@ test("GET /api/runs returns 400 for a malformed / invalid filter", async () => {
   assert.equal(badSort.statusCode, 400);
   await app.close();
 });
+
+// ── The NULL-safe boolean branches (RM-17 Phase 6, AM-OB4) ───────────────────────────────────────
+//
+// A SEPARATE fixture from `seed()`, following `seedRatings()`'s precedent: folding these runs into
+// the shared graph would silently move a dozen existing hand-counted expectations, which is a fixture
+// change wearing a passing test's clothes.
+//
+// This exists because of a MUTATION result, not a reading. `hasError` translates to
+// `(status = 'error' OR COALESCE(outcome, '') = 'error')`, and deleting the SECOND half of that —
+// the whole reason the clause is NULL-safe — left the 35-case cross-check GREEN. Every run in the
+// shared fixture either has `status: 'error'` or no error at all, so the outcome branch was never
+// observed. The same blind spot covers `needsAttention`'s `COALESCE(seen, 0)`.
+//
+// Cross-checked THREE ways, like the rating table: the repository SQL · the pure predicate over the
+// repository's OWN materialized candidate · the metrics service. One builder serves all of them now,
+// so what this pins is that each consumer still composes it faithfully.
+
+const EDGE_NOW = "2026-08-05T00:00:00.000Z";
+
+/**
+ * Four runs, each the ONLY witness to one branch:
+ *   e1  completed + outcome 'error'   → hasError via the OUTCOME half alone
+ *   e2  status 'error' + outcome NULL → hasError via the STATUS half alone
+ *   e3  completed + outcome 'completed', UNSEEN → needsAttention via `seen = 0`
+ *   e4  completed + outcome NULL, seen → neither; the NULL-outcome run that a non-NULL-safe
+ *       `NOT (...)` would silently DROP from `hasError: false`
+ */
+function seedBooleanEdges(): { runs: RunRepository; db: AppDatabase } {
+  const db = createDatabase();
+  db.prepare(
+    `INSERT INTO provider_credentials (id, kind, label, created_at, updated_at) VALUES ('prov-e','anthropic','Claude',@now,@now)`,
+  ).run({ now: EDGE_NOW });
+  db.prepare(
+    `INSERT INTO scenarios (id, name, provider_id, model, created_at, updated_at) VALUES ('scn-e','E','prov-e','claude-sonnet-4',@now,@now)`,
+  ).run({ now: EDGE_NOW });
+  db.prepare(
+    `INSERT INTO tests (id, name, user_prompt, created_at, updated_at) VALUES ('t-e','TE','go',@now,@now)`,
+  ).run({ now: EDGE_NOW });
+
+  const insert = db.prepare(
+    `INSERT INTO runs (id, test_id, scenario_id, mode, status, outcome, seen, started_at,
+                       cost_usd, tokens_in, tokens_out, active_duration_ms)
+     VALUES (@id, 't-e', 'scn-e', 'automated', @status, @outcome, @seen, @startedAt, 0, 0, 0, 1000)`,
+  );
+  const rows: Array<[string, string, string | null, number]> = [
+    ["e1", "completed", "error", 1],
+    ["e2", "error", null, 1],
+    ["e3", "completed", "completed", 0],
+    ["e4", "completed", null, 1],
+  ];
+  rows.forEach(([id, status, outcome, seen], i) => {
+    insert.run({ id, status, outcome, seen, startedAt: `2026-08-05T0${i + 1}:00:00.000Z` });
+  });
+  return { runs: new RunRepository(db), db };
+}
+
+const EDGE_FILTERS: RunFilter[] = [
+  {},
+  { hasError: true },
+  { hasError: false },
+  { needsAttention: true },
+  { needsAttention: false },
+  { hasError: true, status: ["completed"] },
+  { hasError: false, seen: true },
+];
+
+test("boolean-branch filters: the SQL, the predicate and the metrics service all agree", () => {
+  const { runs, db } = seedBooleanEdges();
+  const allIds = ids(runs.queryRuns({}));
+  assert.deepEqual(allIds, ["e1", "e2", "e3", "e4"]);
+
+  for (const filter of EDGE_FILTERS) {
+    const sqlIds = ids(runs.queryRuns(filter));
+    const predicateIds = allIds
+      .filter((id) => {
+        const candidate = runs.buildFilterCandidate(id);
+        assert.ok(candidate, `no candidate for ${id}`);
+        return matchesRunFilter(candidate, filter);
+      })
+      .sort();
+    assert.deepEqual(sqlIds, predicateIds, `SQL vs predicate for ${JSON.stringify(filter)}`);
+    assert.equal(
+      metricsRunCount(db, filter),
+      sqlIds.length,
+      `metrics service vs repository SQL for ${JSON.stringify(filter)}`,
+    );
+  }
+});
+
+test("boolean-branch filters: hand-counted, so an agreeing PAIR of bugs still fails", () => {
+  const { runs } = seedBooleanEdges();
+  // e1 matches through the OUTCOME half ONLY (its status is `completed`) — the branch a mutation
+  // deleted without anything going red before this fixture existed.
+  assert.deepEqual(ids(runs.queryRuns({ hasError: true })), ["e1", "e2"]);
+  assert.deepEqual(ids(runs.queryRuns({ hasError: true, status: ["completed"] })), ["e1"]);
+  // …and the exact complement, INCLUDING the NULL-outcome run. Without COALESCE, SQL's three-valued
+  // logic makes `NOT (false OR NULL)` = NULL, and e4 would silently vanish from `hasError: false`.
+  assert.deepEqual(ids(runs.queryRuns({ hasError: false })), ["e3", "e4"]);
+  // needsAttention over the same graph: only the unseen, not-running run.
+  assert.deepEqual(ids(runs.queryRuns({ needsAttention: true })), ["e3"]);
+  assert.deepEqual(ids(runs.queryRuns({ needsAttention: false })), ["e1", "e2", "e4"]);
+});

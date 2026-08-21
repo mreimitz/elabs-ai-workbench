@@ -16,7 +16,7 @@ import { RUN_METRICS_NAMED_RATIOS } from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
 import { GradeRepository } from "../src/grading/grade-repository.js";
-import { computeRunMetrics } from "../src/observability/metrics.js";
+import { buildRatioProjection, computeRunMetrics } from "../src/observability/metrics.js";
 import { collectChildData } from "../src/suites/orchestrator.js";
 import { RunRepository } from "../src/testing/run-repository.js";
 import {
@@ -905,6 +905,33 @@ test("ratio: requested with NO config is unavailable — never a fabricated defa
   assert.equal(series(res, "count", null, null).points.length, 3);
 });
 
+test("ratio: two ratios can never share a bound param name, whatever they bind", () => {
+  // A prefix collision does NOT throw — the second projection's values simply overwrite the first's
+  // in one param bag, and the query answers with the wrong numbers. There is no observable pair to
+  // catch it end-to-end today (`feedbackRate`'s numerator binds nothing), so the invariant is pinned
+  // where it actually lives: two projections must produce DISJOINT param names.
+  const a = buildRatioProjection(
+    "ratio",
+    { numerator: { outcome: ["completed"] }, denominator: { status: ["completed"] } },
+    {},
+    "__r0",
+  );
+  const b = buildRatioProjection(
+    "feedbackRate",
+    { numerator: { outcome: ["error"] }, denominator: { status: ["error"] } },
+    {},
+    "__r1",
+  );
+  const shared = Object.keys(a.params).filter((k) => k in b.params);
+  assert.deepEqual(shared, [], "two ratios bound the same param name — one would overwrite the other");
+  // Each side of ONE ratio is also disjoint from the other: the numerator and denominator both start
+  // their own `@pN` sequence, so only the per-side tag keeps them apart.
+  const numeratorNames = Object.keys(a.params).filter((k) => k.startsWith("__r0n"));
+  const denominatorNames = Object.keys(a.params).filter((k) => k.startsWith("__r0d"));
+  assert.ok(numeratorNames.length > 0 && denominatorNames.length > 0);
+  assert.equal(new Set([...numeratorNames, ...denominatorNames]).size, Object.keys(a.params).length);
+});
+
 test("ratio: two ratio-bearing measures in one query keep their own bound params", () => {
   const db = createDatabase();
   seedMixed(db);
@@ -959,18 +986,36 @@ test("feedbackRate returns real values over seeded run_feedback, and is no longe
   seedMixed(db);
   seedFeedback(db, [
     { runId: "rA1", key: "verdict", score: 1 },
-    // A NOTE-ONLY row on a second run — `feedbackRate` counts human attention, not scored attention,
-    // so this run is in the numerator even though it has no score.
-    { runId: "rS1", key: "notes", score: null, comment: "looked fine" },
-    // A SECOND row on a run already counted — a run contributes ONCE, not once per feedback row.
+    // TWO rows on ONE run — a run contributes ONCE to the numerator, not once per feedback row.
     { runId: "rS1", key: "verdict", score: -1 },
+    { runId: "rS1", key: "quality", score: 0.5 },
+    // A NOTE-ONLY row (no score) on a run with nothing else. `feedbackRate` counts human ATTENTION,
+    // not scored attention, so this run IS in the numerator — and it is the only run that
+    // distinguishes `feedback.any` from `feedback.hasScore`, which is what makes the contrast
+    // assertion below meaningful rather than decorative.
+    { runId: "rQ1", key: "notes", score: null, comment: "looked fine" },
   ]);
 
   const res = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["feedbackRate"] });
   assert.deepEqual(res.unavailableMeasures, []);
   assert.deepEqual(pointMap(series(res, "feedbackRate", null, null)), {
     [DAY_1]: 1 / 2, // rA1 of { rA1, rO1 }
-    [DAY_2]: 1 / 3, // rS1 of { rA2, rS1, rQ1 } — counted once despite two rows
+    [DAY_2]: 2 / 3, // rS1 (twice-fed-back, counted once) + rQ1 (note-only), of three runs
+    [DAY_3]: 0 / 2,
+  });
+
+  // The contrast that pins the MEANING: a `hasScore` numerator excludes the note-only run, so if
+  // `feedbackRate` were ever redefined as "scored feedback" this expectation and the one above would
+  // swap places rather than both staying true.
+  const scoredOnly = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: { numerator: { feedback: { hasScore: true } } },
+  });
+  assert.deepEqual(pointMap(series(scoredOnly, "ratio", null, null)), {
+    [DAY_1]: 1 / 2,
+    [DAY_2]: 1 / 3, // rS1 only — rQ1's note carries no score
     [DAY_3]: 0 / 2,
   });
 });

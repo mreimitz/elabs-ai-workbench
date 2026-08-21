@@ -523,9 +523,10 @@ test("AM-OB4 — `feedback.any` matches a run carrying ANY feedback row, and nar
     hasFeedbackScore: false,
   };
   const without: RunFilterCandidate = { ...withFeedback, feedbackKeys: [], hasFeedbackScore: false };
-  // An ABSENT `feedbackKeys` is conservatively NOT a match — absent is not a value.
-  const unknown: RunFilterCandidate = { ...withFeedback };
-  delete (unknown as { feedbackKeys?: string[] }).feedbackKeys;
+  // An ABSENT `feedbackKeys` is conservatively NOT a match — absent is not a value. Built by
+  // OMISSION rather than by deleting a key, so the candidate is genuinely shaped like one a caller
+  // that never populated the field would produce.
+  const { feedbackKeys: _omitted, ...unknown } = withFeedback;
 
   assert.equal(matchesRunFilter(withFeedback, { feedback: { any: true } }), true);
   assert.equal(matchesRunFilter(without, { feedback: { any: true } }), false);
