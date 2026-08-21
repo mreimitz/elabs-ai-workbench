@@ -80,12 +80,20 @@
       // Browser-side debugging. Starts Vite first (background task) and attaches to Chrome, so
       // breakpoints work in apps/web/src/*.tsx. Vite proxies /api to the API on :8080 — run an API
       // profile too, or just use the "Full stack" compound below.
+      //
+      // `postDebugTask` is what makes stopping (or restarting, ⇧⌘F5) this session actually restart
+      // Vite. VS Code leaves an `isBackground` preLaunchTask running when the session ends and
+      // re-uses it next time, so without this the SAME Vite process is inherited across every
+      // later session — for days. That matters because Vite resolves the CSS `@import` chain once,
+      // at startup, and caches it: a server older than a change to the dependency graph serves
+      // stale CSS with no warning. See .vscode/free-web-port.sh for the incident.
       "name": "Web: debug in Chrome",
       "type": "chrome",
       "request": "launch",
       "url": "http://127.0.0.1:5173",
       "webRoot": "${workspaceFolder}/apps/web",
       "preLaunchTask": "dev web",
+      "postDebugTask": "free web port",
       "sourceMaps": true,
       "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },

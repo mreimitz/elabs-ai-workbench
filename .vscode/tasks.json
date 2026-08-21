@@ -25,15 +25,38 @@
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
     {
+      // Stop THIS workspace's Vite dev server, so the next one starts clean. A server belonging to
+      // another checkout is reported and left running — see the header of the script for both the
+      // why and the incident that produced it (a two-day-old server serving CSS with the
+      // `--illus-*` layer silently missing, which paints every illustration solid black).
+      //
+      // Wired in two places: as a `dependsOn` of "dev web" below, and as the `postDebugTask` of
+      // "Web: debug in Chrome" in launch.json. The second one is the load-bearing half — VS Code
+      // does not stop an `isBackground` task when a debug session ends, and RE-USES the running
+      // instance on the next launch, so without an explicit kill the same Vite process is inherited
+      // indefinitely and "restart the debug session" does not restart the dev server at all.
+      "label": "free web port",
+      "type": "shell",
+      "command": "${workspaceFolder}/.vscode/free-web-port.sh 5173",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "dedicated", "close": true }
+    },
+    {
       // Background task: Vite dev server for the Chrome profile. The problemMatcher's
       // `endsPattern` is what tells VS Code the server is up so the browser can launch — without
       // it the debug session would hang waiting for the task to "finish", which it never does.
+      //
+      // `dependsOrder: sequence` matters: shared must be built and the port must be free BEFORE
+      // Vite boots, or Vite silently falls through to 5174 and the profile's hardcoded
+      // http://127.0.0.1:5173 opens a dead page.
       "label": "dev web",
       "type": "shell",
       "command": "pnpm --filter @mcp-token-footprint/web dev",
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
-      "dependsOn": ["build shared"],
+      "dependsOn": ["build shared", "free web port"],
+      "dependsOrder": "sequence",
       "problemMatcher": {
         "owner": "vite",
         "pattern": {
