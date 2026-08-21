@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Estimator turn model — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the estimator turn-model calibration plan, read and updated by /next-wp RM-34."
 tags: ["roadmap", "RM-34"]
-timestamp: "2026-08-21T13:25:00Z"
+timestamp: "2026-08-21T14:05:00Z"
 status: "active"
 ---
 # Estimator turn model — work-package status ledger · **PRIORITY: MEDIUM**
@@ -39,10 +39,34 @@ The estimator's **pricing** is now correct and its **token model** is not.
 
 ### Phase 1 — measure
 
-- [ ] **WP 1.1 — turn-profile contract + completed-runs percentile query** —
-      spec: [`wp-1.1-turn-profile.md`](./wp-1.1-turn-profile.md). Depends on: —.
-      Files: `packages/shared/src/{constants,types,schemas}.ts`,
-      `apps/api/src/testing/run-repository.ts`.
+- [x] **WP 1.1 — turn-profile contract + completed-runs percentile query** — done 2026-08-21 ·
+      `wp/estimator-turns/1.1` (merged as `4ce9ced`) ·
+      spec: [`wp-1.1-turn-profile.md`](./wp-1.1-turn-profile.md).
+      `packages/shared` gains `RunPlanTurnProfile` / `RunPlanTurnBasis`, a `.strict()` zod schema, the
+      `RUN_PLAN_TURN_PERCENTILE_{LOW,MID,HIGH}` = 0.1/0.5/0.9 band ends and the
+      `RUN_PLAN_TURN_PROFILE_MIN_SAMPLES` = 3 floor; `RunPlanEstimateEnvironment` gains an optional
+      `turnProfile`. `RunRepository.measureTurnProfiles` returns pair / environment / global samples
+      from **one** pass over `status = 'completed' AND turns > 0`.
+      **611 insertions, 0 deletions** — the diff literally cannot have changed an existing field, and
+      `RUN_PLAN_ESTIMATE_TURNS_{LOW,MID,HIGH}` / `_OUTPUT_TOKENS_PER_TURN` still read 1 / 3 / 8 / 350
+      (D-ET1's fallback is intact, and a shared test now pins those four values).
+      **The design decision worth recording is `outputTokensPerTurn` = Σ`tokens_out` ÷ Σ`turns`, not
+      the mean of the per-run ratios.** The estimator multiplies output by a turn count, so a 20-turn
+      run must weigh twenty times a 1-turn one; a mean of ratios gives them equal say. On the WP's own
+      fixture (2 turns @ 200 · 18 turns @ 18,000) the two read **910** vs **550**.
+      Percentiles are **nearest-rank**, so every end the launcher will show is a turn count some run
+      actually took — an interpolated p90 of 15.7 is a number no run ever produced. At the n = 3 floor
+      the three ranks are 1 / 2 / 3, i.e. that sample's own min / median / max.
+      **Validated by the orchestrator, not taken on report:** the full diff was read; the gate re-run
+      independently in the worktree (typecheck clean · shared **260** · api **3633** · web **3767**
+      pass, 0 fail · build exit 0 · biome clean over 1,735 files); and the three teeth **broken by the
+      orchestrator's own hand and confirmed red**, then restored — widening the query to all statuses
+      (2 red), switching the percentile to linear interpolation (7 red), and swapping in a
+      mean-of-per-run-ratios (2 red).
+      **Not verified:** nothing visual — this WP renders nothing. The query was never run against the
+      owner's real database; the figures quoted in its code comments come from this plan's own
+      measurement pass, and WP 2.1 is where the live check happens. `EXPLAIN QUERY PLAN` reports the
+      existing `idx_runs_status_started` already serves the query, so **no index was added**.
 
 ### Phase 2 — consume
 
