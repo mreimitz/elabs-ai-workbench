@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T19:30:00Z"
+timestamp: "2026-08-21T19:40:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -15,7 +15,7 @@ the gate (`pnpm typecheck && pnpm test && pnpm build && pnpm lint`) is green.
 **Legend:** `[ ]` open · `[x]` done. Done lines: `… — done <YYYY-MM-DD> · wp/cache-tokens/<id>`.
 
 > Plan + invariants in [`item.md`](./item.md). Concrete form of **AM-OB6(a)** in
-> [`../RM-17-observability/amendment-2026-08-langfuse.md`](../RM-17-observability/amendment-2026-08-langfuse.md),
+> [`RM-17 amendment`](/Roadmap/RM-17-observability/amendment-2026-08-langfuse.md),
 > but wider in scope (Testing · Suites · Compare · Estimate · workbench MCP), so it lives as its own
 > item rather than folded into RM-17.
 

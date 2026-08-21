@@ -36,8 +36,8 @@ indistinguishable from caching that has stopped working. Migration **v59** recov
 **141 of 163** existing runs from per-step data already on disk; the rest are marked unknown rather
 than written off or silently zeroed.
 
-Plan and evidence: [`planning/Roadmap/RM-33-cache-aware-token-accounting/`](./planning/Roadmap/RM-33-cache-aware-token-accounting/)
-(ledger: [`STATUS.md`](./planning/Roadmap/RM-33-cache-aware-token-accounting/STATUS.md), decisions
+Plan and evidence: [`planning/Roadmap/completed/RM-33-cache-aware-token-accounting/`](./planning/Roadmap/completed/RM-33-cache-aware-token-accounting/)
+(ledger: [`STATUS.md`](./planning/Roadmap/completed/RM-33-cache-aware-token-accounting/STATUS.md), decisions
 D-CT1–D-CT6).
 
 ## Unreleased — the app can draw itself

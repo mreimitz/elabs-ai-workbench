@@ -34,4 +34,3 @@
 * [UX Overhaul — one shell, one grammar, every view](RM-30-ux-overhaul/) - Browse ux overhaul — one shell, one grammar, every view.
 * [Startup-footprint MVP and the expanded target](RM-31-mvp-footprint-analyzer/) - Browse startup-footprint mvp and the expanded target.
 * [Overview → Detail restructure (Servers · Skills · Collections)](RM-32-overview-detail/) - Browse overview → detail restructure (servers · skills · collections).
-* [Cache-aware token accounting & display](RM-33-cache-aware-token-accounting/) - Browse cache-aware token accounting & display.

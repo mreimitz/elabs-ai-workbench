@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Cache-aware token accounting & display"
 description: "Surface the prompt-cache composition (uncached / cache read / cache write) behind every token and cost figure in the app, roll the split up onto runs and suites so it is filterable and chartable, and make the launch cost preview cache-aware."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T08:12:00Z"
-status: "planned"
+timestamp: "2026-08-21T11:54:11Z"
+status: "done"
 ---
 
 # Cache-aware token accounting & display
@@ -19,13 +19,13 @@ Per-step capture and cost pricing are already cache-aware, but nothing downstrea
 
 ## Milestones
 
-- [ ] WP 1.1 — shared contract + `computeCostBreakdown` as the single pricing code path
-- [ ] WP 1.2 — emit the split on the `kpi` event, persist nullable run columns (migration 59) with backfill, roll up onto suite aggregates
-- [ ] WP 2.1 — cache-aware run-plan cost preview (range: cached prefix ↔ no caching)
-- [ ] WP 2.2 — `cacheReadTokens` / `cacheWriteTokens` / `cacheHitRate` observability measures
-- [ ] WP 3.1 — one token display grammar (`TokenAmount`) across console, runs feed, suites and dashboard
-- [ ] WP 3.2 — reports, compare export and the workbench MCP run summary
-- [ ] WP 4.1 — README + CHANGELOG + user-guide subject
+- [x] WP 1.1 — shared contract + `computeCostBreakdown` as the single pricing code path
+- [x] WP 1.2 — emit the split on the `kpi` event, persist nullable run columns (migration 59) with backfill, roll up onto suite aggregates
+- [x] WP 2.1 — cache-aware run-plan cost preview (range: cached prefix ↔ no caching)
+- [x] WP 2.2 — `cacheReadTokens` / `cacheWriteTokens` / `cacheHitRate` observability measures
+- [x] WP 3.1 — one token display grammar (`TokenAmount`) across console, runs feed, suites and dashboard
+- [x] WP 3.2 — reports, compare export and the workbench MCP run summary
+- [x] WP 4.1 — README + CHANGELOG + user-guide subject
 
 Per-WP state is the [`STATUS.md`](./STATUS.md) ledger — authoritative. Locked decisions **D-CT1–D-CT6**
 live there too.

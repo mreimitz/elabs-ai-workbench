@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-21T07:43:23Z"
+timestamp: "2026-08-21T11:54:11Z"
 status: "active"
 ---
 
@@ -40,7 +40,6 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-30-ux-overhaul](RM-30-ux-overhaul/item.md) — UX Overhaul — one shell, one grammar, every view · `active`
 * [RM-31-mvp-footprint-analyzer](RM-31-mvp-footprint-analyzer/item.md) — Startup-footprint MVP and the expanded target · `archived`
 * [RM-32-overview-detail](RM-32-overview-detail/item.md) — Overview → Detail restructure (Servers · Skills · Collections) · `planned`
-* [RM-33-cache-aware-token-accounting](RM-33-cache-aware-token-accounting/item.md) — Cache-aware token accounting & display · `planned`
 
 ## Completed Roadmap Items
 
@@ -49,6 +48,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-21-server-types](completed/RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `done`
 * [RM-28-toolbar-reach](completed/RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `done`
 * [RM-29-unified-sessions](completed/RM-29-unified-sessions/item.md) — Unified Sessions — one session experience across every run backend · `done`
+* [RM-33-cache-aware-token-accounting](completed/RM-33-cache-aware-token-accounting/item.md) — Cache-aware token accounting & display · `done`
 
 ## Research Topics
 
@@ -76,7 +76,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [DC-08-testing-console](../user-guide/DC-08-testing-console/doc.md) — Testing console & run sessions · `current`
 * [DC-09-suites-and-benchmarks](../user-guide/DC-09-suites-and-benchmarks/doc.md) — Suites & benchmarks · `draft`
 * [DC-10-compatibility](../user-guide/DC-10-compatibility/doc.md) — Model compatibility · `draft`
-* [DC-11-observability](../user-guide/DC-11-observability/doc.md) — Observability · `draft`
+* [DC-11-observability](../user-guide/DC-11-observability/doc.md) — Observability · `current`
 * [DC-12-app-assistant](../user-guide/DC-12-app-assistant/doc.md) — The app assistant dock · `draft`
 * [DC-13-assistant-hub](../user-guide/DC-13-assistant-hub/doc.md) — Assistant Hub · `current`
 * [DC-14-settings-and-features](../user-guide/DC-14-settings-and-features/doc.md) — Settings & feature flags · `draft`
