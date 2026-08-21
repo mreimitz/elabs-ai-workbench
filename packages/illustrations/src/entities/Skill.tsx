@@ -9,6 +9,13 @@
 // what every port anchor is measured against (D-IL7), so a variant that changed the height would
 // silently move `version-out` — a connector in a scene would jump when somebody switched a skill
 // from `plain` to `versioned`. Lamination is a detail of the solid, not a different solid.
+//
+// WP 1.2 REFACTOR: the lamination arithmetic that used to live in this file is now
+// `primitives/IsoSheetStack.tsx`, because `file` and `feedback-report` need the same slab-divided-
+// into-sheets shape and D-IL12 forbids a reusable shape living inside one entity. The drawing is
+// unchanged — the primitive reproduces this file's arithmetic in the same order, on purpose, so the
+// bytes are identical — and `skill` now passes the flush (unstaggered) default while `file` fans
+// its pile.
 
 import type { IllustrationRegistryEntry, IllustrationSize } from "@mcp-token-footprint/shared";
 import type { ReactElement } from "react";
@@ -16,8 +23,8 @@ import { type IsoBox, faceExtent, fmt, footprintUnits } from "../iso-math.js";
 import { ConstructionGhost } from "../primitives/ConstructionGhost.js";
 import { EntityRoot } from "../primitives/EntityRoot.js";
 import { GlyphFrame } from "../primitives/GlyphFrame.js";
-import { IsoHousing } from "../primitives/IsoHousing.js";
 import { IsoPlatform, platformHeight } from "../primitives/IsoPlatform.js";
+import { IsoSheetStack, sheetStackBoxes } from "../primitives/IsoSheetStack.js";
 import type { EntityComponentProps } from "./entity-props.js";
 
 /**
@@ -70,9 +77,6 @@ const SLAB_HEIGHT = 0.17;
 /** How many sheets each variant laminates the slab into. */
 const SHEETS: Record<SkillVariant, number> = { plain: 1, versioned: 3 };
 
-/** The share of a laminated slab's height that is air between sheets. */
-const LAMINATION_GAP = 0.22;
-
 function slabBox(footprint: number): IsoBox {
   const side = footprint * SLAB_WIDTH;
   return { cx: 0, cy: 0, w: side, d: side, z0: FLOOR, h: footprint * SLAB_HEIGHT };
@@ -96,18 +100,13 @@ export function Skill({
   const footprint = footprintUnits(size);
   const slab = slabBox(footprint);
   const sheets = SHEETS[resolved];
-  // Total height is fixed; the sheets and the gaps between them divide it up. With one sheet there
-  // are no gaps, so `plain` is exactly the whole slab.
-  const gap = sheets > 1 ? (slab.h * LAMINATION_GAP) / (sheets - 1) : 0;
-  const sheetHeight = (slab.h - gap * (sheets - 1)) / sheets;
   const accent = state === "error" ? "var(--illus-error)" : "var(--illus-accent)";
 
-  // The top sheet is the current version, and it is the one the manifest glyph is printed on.
-  const topSheet: IsoBox = {
-    ...slab,
-    z0: slab.z0 + (sheets - 1) * (sheetHeight + gap),
-    h: sheetHeight,
-  };
+  // Total height is fixed; the sheets and the gaps between them divide it up (WP 1.2's
+  // `IsoSheetStack`, which lifted this arithmetic out of here so `file` and `feedback-report` could
+  // not redraw it slightly differently). With one sheet there are no gaps, so `plain` is exactly the
+  // whole slab. The TOP sheet is the current version, and it is the one the manifest is printed on.
+  const topSheet: IsoBox = sheetStackBoxes(slab, sheets).top;
 
   return (
     <EntityRoot
@@ -124,17 +123,7 @@ export function Skill({
     >
       <ConstructionGhost width={footprint} depth={footprint} />
       <IsoPlatform tiers={PLATFORM_TIERS} footprint={size} />
-      {Array.from({ length: sheets }, (_, sheet) => (
-        <IsoHousing
-          key={`sheet-${sheet}`}
-          width={slab.w}
-          depth={slab.d}
-          height={sheetHeight}
-          z0={slab.z0 + sheet * (sheetHeight + gap)}
-          // The bottom sheet carries the silhouette; the ones above it are interior laminations.
-          weight={sheet === 0 ? "ink" : "detail"}
-        />
-      ))}
+      <IsoSheetStack box={slab} sheets={sheets} />
       <ManifestGlyph box={topSheet} accent={accent} />
     </EntityRoot>
   );

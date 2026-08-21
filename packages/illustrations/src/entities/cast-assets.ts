@@ -1,15 +1,40 @@
 // ==================================================================================================
-// The assets cast (WP 1.2) — DELIBERATELY EMPTY, and deliberately committed
+// The assets cast (WP 1.2) — what the app measures and carries
 // ==================================================================================================
-// WP 1.2 fills this with the tier-2 asset entities. It exists NOW, empty and exported and wired into
-// `registry.ts`, for one reason: WP 1.2 and WP 1.3 are meant to run in parallel worktrees, and a
-// module each of them CREATES is the same merge conflict as a shared array, moved one file over.
-// An empty module that is already imported is what makes the two branches genuinely independent.
+// The seven entities behind the numbers this app produces: the two halves of a server's advertised
+// surface (`tool`, `resource`) and the form its prompts are stamped from (`prompt-template`); the
+// artefacts around a run (`file`, `feedback-report`); the pass that takes the measurement (`scan`);
+// and the column the measurement is read off (`token-meter`).
 //
-// Filling it means adding the entity file next to this one, `export *`-ing it below, and pushing one
-// cast member into the array. Nothing else in the package is touched — `registry.ts` names no
-// entity, and `entities/index.ts` names no entity either.
+// WP 1.1 committed this module empty and already imported by `registry.ts`, so that WP 1.2 and
+// WP 1.3 could run in parallel worktrees without sharing a file. Filling it is therefore the WHOLE
+// structural edit: each entity lives in its own file next to this one, is `export *`-ed below so its
+// component, meta and height function reach the package's public surface, and is listed once in the
+// array. `registry.ts` names no entity and `entities/index.ts` names no entity, so neither changed.
 
+export * from "./FeedbackReport.js";
+export * from "./File.js";
+export * from "./PromptTemplate.js";
+export * from "./Resource.js";
+export * from "./Scan.js";
+export * from "./Tool.js";
+export * from "./TokenMeter.js";
+
+import { FeedbackReport, feedbackReportMeta } from "./FeedbackReport.js";
+import { File, fileMeta } from "./File.js";
+import { PromptTemplate, promptTemplateMeta } from "./PromptTemplate.js";
+import { Resource, resourceMeta } from "./Resource.js";
+import { Scan, scanMeta } from "./Scan.js";
+import { TokenMeter, tokenMeterMeta } from "./TokenMeter.js";
+import { Tool, toolMeta } from "./Tool.js";
 import type { IllustrationCastMember } from "./cast-member.js";
 
-export const ILLUSTRATION_ASSETS_CAST: readonly IllustrationCastMember[] = [];
+export const ILLUSTRATION_ASSETS_CAST: readonly IllustrationCastMember[] = [
+  { meta: toolMeta, component: Tool },
+  { meta: resourceMeta, component: Resource },
+  { meta: promptTemplateMeta, component: PromptTemplate },
+  { meta: fileMeta, component: File },
+  { meta: feedbackReportMeta, component: FeedbackReport },
+  { meta: scanMeta, component: Scan },
+  { meta: tokenMeterMeta, component: TokenMeter },
+];
