@@ -1098,6 +1098,16 @@ export const BASE_RATING_GRADER_IDS = [
   "error_forensics",
 ] as const;
 
+// Benchmarks WP 6.1 (Phase 6, judge calibration) — the two verdicts a human may record ON A GRADE.
+// Deliberately two-valued and deliberately NOT a score: this is the raw material for WP 6.2's
+// agreement rate (human-agree ÷ human-rated), and it never enters `run_grades`, `meanGrade`,
+// `passRateAt05`, the quality×cost scatter, or any other aggregate (AR6). See `GradeFeedback`.
+export const GRADE_FEEDBACK_VERDICTS = ["agree", "disagree"] as const;
+
+// The maximum length of a human's note on a grade verdict. Bounded because it is free text the API
+// stores and re-serves in an export; the cap keeps one pasted transcript from becoming the document.
+export const GRADE_FEEDBACK_NOTE_MAX_LENGTH = 2000;
+
 // The `app_settings` row key holding the default judge (JudgeSettings). WP 1.3 reads/writes it.
 export const APP_SETTING_JUDGE_KEY = "judge";
 

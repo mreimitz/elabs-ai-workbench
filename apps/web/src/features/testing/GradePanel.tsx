@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import type { RunGrade, RunStep } from "@mcp-token-footprint/shared";
+import type { GradeFeedback, RunGrade, RunStep } from "@mcp-token-footprint/shared";
 import {
   Button,
   Card,
@@ -22,11 +22,12 @@ import {
   toast,
 } from "@elabs-ai/components-ui";
 import { ChevronDown, ExternalLink, FileText, RotateCcw, Sparkles } from "lucide-react";
-import { getRunGrades, regradeRun } from "../../lib/api";
+import { getRunGrades, listRunGradeFeedback, regradeRun } from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
 import { InlineError } from "../../components/InlineError";
 import { BaseVerdictChip } from "./BaseVerdictChip";
 import { GradeChip } from "./GradeChip";
+import { GradeFeedbackControl, latestFeedbackByGrade } from "./GradeFeedbackControl";
 import {
   citedStepIdxs,
   filterExpectationGrades,
@@ -72,6 +73,10 @@ export function GradePanel({
   const [regrading, setRegrading] = useState(false);
   // A monotonically-increasing refetch trigger: retry after a failed load, and after a re-grade.
   const [nonce, setNonce] = useState(0);
+  // WP 6.1 — the human's call on each grade, fetched ONCE for the whole run (never per card) and
+  // reduced to the newest verdict per grade. Best-effort: a failed feedback fetch leaves the panel's
+  // grades fully usable with unset controls, because a missing verdict IS the honest empty state.
+  const [feedback, setFeedback] = useState<Map<string, GradeFeedback>>(new Map());
 
   useEffect(() => {
     let active = true;
@@ -86,6 +91,20 @@ export function GradePanel({
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [runId, nonce]);
+
+  useEffect(() => {
+    let active = true;
+    listRunGradeFeedback(runId)
+      .then((rows) => {
+        if (active) setFeedback(latestFeedbackByGrade(rows));
+      })
+      .catch(() => {
+        // Never blocks the grades themselves — see the state comment above.
       });
     return () => {
       active = false;
@@ -195,7 +214,14 @@ export function GradePanel({
               <CollapsibleContent className="flex flex-col gap-4 pt-3">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   {latest.map((grade) => (
-                    <GradeMetric key={grade.id} grade={grade} />
+                    <GradeMetric
+                      key={grade.id}
+                      grade={grade}
+                      feedback={feedback.get(grade.id)}
+                      onFeedback={(row) =>
+                        setFeedback((current) => new Map(current).set(row.gradeId, row))
+                      }
+                    />
                   ))}
                 </div>
                 {judgeGrades.length > 0 ? (
@@ -219,8 +245,25 @@ export function GradePanel({
   );
 }
 
-/** One grader's KPI tile: normalized score (or a muted "n/a"/"—"), with the status as a badge. */
-function GradeMetric({ grade }: { grade: RunGrade }) {
+/**
+ * One grader's KPI tile: normalized score (or a muted "n/a"/"—"), with the status as a badge — and
+ * (WP 6.1) the human's call on whether the grader got it right.
+ *
+ * The two live in the same tile but never merge: the score is the grader's, the thumbs are the
+ * reviewer's, and the tile shows exactly the same percentage before and after a thumb is clicked
+ * (AR6). The feedback control sits BELOW the status row, in the tile's `description` slot, so it
+ * reads as a footnote on the measurement rather than part of it.
+ */
+function GradeMetric({
+  grade,
+  feedback,
+  onFeedback,
+}: {
+  grade: RunGrade;
+  /** This grade's NEWEST human verdict, or `undefined` when nobody has judged it. */
+  feedback: GradeFeedback | undefined;
+  onFeedback: (next: GradeFeedback) => void;
+}) {
   const graded = grade.status === "graded" && grade.score != null;
   const dash = grade.status === "unevaluable" ? "n/a" : "—";
 
@@ -267,6 +310,13 @@ function GradeMetric({ grade }: { grade: RunGrade }) {
             <span className="min-w-0 break-words">{detail}</span>
           </span>
           {needsJudge ? <JudgeSetupLink /> : null}
+          <GradeFeedbackControl
+            gradeId={grade.id}
+            graderLabel={GRADER_LABELS[grade.graderId]}
+            current={feedback}
+            onAppended={onFeedback}
+            size="sm"
+          />
         </span>
       }
     />

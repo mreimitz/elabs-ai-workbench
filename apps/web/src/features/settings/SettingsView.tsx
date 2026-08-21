@@ -12,6 +12,7 @@ import type {
   AssistantAuthStatus,
   AssistantPruneResult,
   AvailableModel,
+  CalibrationSet,
   DigestSchedule,
   DigestScheduleMode,
   DigestWindowKind,
@@ -86,6 +87,7 @@ import {
   SelectTrigger,
   SelectValue,
   Separator,
+  Skeleton,
   Spinner,
   Switch,
   Table,
@@ -106,6 +108,7 @@ import {
   Coins,
   Copy,
   Database,
+  Download,
   ExternalLink,
   Gavel,
   Github,
@@ -131,6 +134,8 @@ import {
   apiGet,
   apiPost,
   apiPut,
+  calibrationJsonHref,
+  calibrationMarkdownHref,
   createPricing,
   createProvider,
   deletePricing,
@@ -139,6 +144,7 @@ import {
   generateDigest,
   getAssistantAuthStatus,
   getAssistantModels,
+  getCalibrationSet,
   getDigestSchedule,
   getGithubAccount,
   getJudgeSettings,
@@ -288,7 +294,18 @@ const SECTION_GROUPS: { label: string; sections: SectionDef[] }[] = [
         id: "grading",
         label: "Grading",
         icon: Gavel,
-        keywords: ["judge", "grader", "rating", "llm", "cli", "quality", "benchmark"],
+        keywords: [
+          "judge",
+          "grader",
+          "rating",
+          "llm",
+          "cli",
+          "quality",
+          "benchmark",
+          "calibration",
+          "feedback",
+          "agreement",
+        ],
       },
       {
         id: "assistant",
@@ -1545,11 +1562,97 @@ function GradingSection() {
               )}
             </div>
           </div>
+
+          <CalibrationSetCard />
           {/* ST1: this pane is explicit-save — the persistent dialog footer owns Save + Discard and
               shows the unsaved/saved state (design-remediation T5, item 6), so no inline Save here. */}
         </>
       )}
     </SectionPane>
+  );
+}
+
+/**
+ * Benchmarks WP 6.1 — the calibration set: the graded runs someone has passed judgement on, and the
+ * two ways to take it out of the app.
+ *
+ * It lives beside the judge because it is the judge's report card in waiting — WP 6.2 turns these
+ * counts into an agreement rate. Until then this card states only what is measured: how many grades
+ * carry a verdict and how those verdicts split. It deliberately does NOT compute a percentage: an
+ * agreement rate over a handful of verdicts, spanning who-knows-which grading versions, would read
+ * as a judge quality score long before it deserved to (AR6 — a human verdict is never a grade, and a
+ * number derived from one is not a grade either).
+ *
+ * Read-only + self-fetching: the pane's dirty-state footer (ST1) governs the judge FORM above; this
+ * card writes nothing, so it publishes nothing to that footer.
+ */
+function CalibrationSetCard() {
+  const [totals, setTotals] = useState<CalibrationSet["totals"] | null>(null);
+  const [versions, setVersions] = useState<number[]>([]);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    getCalibrationSet()
+      .then((set) => {
+        if (!active) return;
+        setTotals(set.totals);
+        setVersions(set.gradingVersions);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <>
+      <SubHeading
+        title="Calibration set"
+        description="The graded runs a human has judged — thumb a grade in a run console or a suite cell and it joins this set. Verdicts are recorded alongside grades and never change a score."
+      />
+      <RowGroup>
+        <SettingsRow
+          label="Recorded so far"
+          description={
+            failed
+              ? "Couldn’t read the calibration set — the export links below still work."
+              : versions.length > 1
+                ? `Spans grading versions ${versions.join(", ")} — scores from different versions are not comparable.`
+                : "Grades carrying a verdict, and how those verdicts split."
+          }
+        >
+          {totals === null ? (
+            <Skeleton className="h-5 w-40" />
+          ) : (
+            <Text className="tabular-nums">
+              {totals.gradesWithFeedback} graded {totals.gradesWithFeedback === 1 ? "row" : "rows"}{" "}
+              across {totals.runs} {totals.runs === 1 ? "run" : "runs"} · {totals.agree} agree /{" "}
+              {totals.disagree} disagree
+            </Text>
+          )}
+        </SettingsRow>
+        <SettingsRow
+          label="Export"
+          description="Identifiers, grader and judge names, scores, and your own notes. No credentials, no transcripts, no tool payloads."
+        >
+          <Button variant="outline" size="sm" asChild>
+            <a href={calibrationMarkdownHref}>
+              <Download aria-hidden />
+              <span>Markdown</span>
+            </a>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <a href={calibrationJsonHref} target="_blank" rel="noreferrer">
+              <Download aria-hidden />
+              <span>JSON</span>
+            </a>
+          </Button>
+        </SettingsRow>
+      </RowGroup>
+    </>
   );
 }
 
