@@ -18,6 +18,7 @@ import { FIGURE_PROPORTIONS, IsoFigure, figureBoxes, figureHeightUnits } from ".
 import { IsoHousing, isoExtrude } from "./IsoHousing.js";
 import { IsoPlatform, PLATFORM_MAX_TIERS, platformHeight } from "./IsoPlatform.js";
 import { IsoSheetStack, SHEET_STACK_GAP_FRACTION, sheetStackBoxes } from "./IsoSheetStack.js";
+import { TRACK_LANE, IsoTrack, TrackMarks, trackLaneBox } from "./IsoTrack.js";
 import { PaperStage } from "./PaperStage.js";
 import { PrincipleCard, principleCardHeight } from "./PrincipleCard.js";
 import { StationHeader } from "./StationHeader.js";
@@ -43,6 +44,8 @@ const EVERY_PRIMITIVE: readonly (readonly [string, () => ReactElement])[] = [
     "IsoSheetStack",
     () => <IsoSheetStack box={{ cx: 0, cy: 0, w: 3, d: 3, z0: 1.2, h: 1 }} sheets={3} />,
   ],
+  ["IsoTrack", () => <IsoTrack box={trackLaneBox(6, { z0: 0.7 })} />],
+  ["TrackMarks", () => <TrackMarks box={trackLaneBox(6, { z0: 0.7 })} />],
   ["CalibrationCube", () => <CalibrationCube />],
   [
     "StationHeader",
@@ -291,6 +294,61 @@ describe("IsoFigure — the standing figure two entities share (WP 1.1 §3)", ()
     // The figure's accent budget belongs to whatever the entity CARRIES — the agent's antenna LED,
     // the validator's verdict mark. Two figures side by side must not cost two accent moments.
     assert.ok(!render(<IsoFigure footprint={6} floor={1.2} />).includes("var(--illus-accent)"));
+  });
+});
+
+describe("IsoTrack — the lane two entities share (WP 1.3)", () => {
+  it("is one drawing at three scales — every dimension is a fraction of the footprint", () => {
+    for (const footprint of [4, 6, 8]) {
+      const box = trackLaneBox(footprint, { z0: 0.7 });
+      assert.equal(box.w, footprint * TRACK_LANE.length);
+      assert.equal(box.d, footprint * TRACK_LANE.depth);
+      assert.equal(box.h, footprint * TRACK_LANE.height);
+      assert.equal(box.z0, 0.7);
+    }
+  });
+
+  it("keeps `run`'s own `m` numbers, which is what made the extraction safe", () => {
+    // The proportions MOVED here from `Run.tsx`; they were not re-picked. At `m` the lane is still
+    // 5.04 units long, 1.8 deep and 0.78 tall, which is what `Run.test.tsx` pins through
+    // `runHeightUnits`. Re-deriving these from taste would have been a redraw wearing a refactor's
+    // clothes.
+    const box = trackLaneBox(6, { z0: 0.7 });
+    assert.deepEqual([box.w, box.d, box.h].map((value) => Number(value.toFixed(3))), [
+      5.04, 1.8, 0.78,
+    ]);
+  });
+
+  it("stacks by `cy` alone, so a rack of lanes cannot drift in length or height", () => {
+    const lanes = [-1.2, 0, 1.2].map((cy) => trackLaneBox(6, { cy, z0: 0.7 }));
+    assert.deepEqual(
+      lanes.map((box) => box.cy),
+      [-1.2, 0, 1.2],
+    );
+    assert.equal(new Set(lanes.map((box) => `${box.w}x${box.d}x${box.h}@${box.z0}`)).size, 1);
+  });
+
+  it("lights the LEADING chevron and only when an accent is passed (D-IL6)", () => {
+    const box = trackLaneBox(6, { z0: 0.7 });
+    const lit = render(<TrackMarks box={box} accent="var(--illus-accent)" />);
+    const unlit = render(<TrackMarks box={box} />);
+    assert.equal((lit.match(/var\(--illus-accent\)/g) ?? []).length, 1);
+    assert.equal((unlit.match(/var\(--illus-accent\)/g) ?? []).length, 0);
+  });
+
+  it("prints its marks on the lane's TOP face, and authors no <path>", () => {
+    const markup = render(<TrackMarks box={trackLaneBox(6, { z0: 0.7 })} chevrons={2} />);
+    assert.deepEqual(new Set(attributeValues(markup, "data-illus-glyph-face")), new Set(["top"]));
+    assert.equal(attributeValues(markup, "data-illus-mark").length, 2);
+    assert.ok(!markup.includes("<path"));
+  });
+
+  it("never divides by zero on a single-chevron lane", () => {
+    // `step` is (width - chevron) / (count - 1), which is Infinity at count 1. A lane short enough
+    // to carry one mark is a legitimate ask, so the primitive must answer it rather than emit NaN.
+    const markup = render(<TrackMarks box={trackLaneBox(4, { z0: 0.7 })} chevrons={1} />);
+    assert.ok(!markup.includes("NaN"));
+    assert.ok(!markup.includes("Infinity"));
   });
 });
 
