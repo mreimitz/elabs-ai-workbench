@@ -21,6 +21,7 @@ import type {
   DIGEST_WINDOW_KINDS,
   ERROR_FINDING_CATEGORIES,
   FIX_TARGETS,
+  GRADE_FEEDBACK_VERDICTS,
   GRADE_KINDS,
   GRADE_STATUSES,
   GRADER_IDS,
@@ -967,6 +968,129 @@ export type RunGrade = {
   judgeCostUsd: number; // SEPARATE ledger — never folded into run cost_usd (B5)
   gradingVersion: number;
   createdAt: string;
+};
+
+// --- Benchmarks — grade feedback & the calibration set (planning/Roadmap/RM-07-benchmarks/, Phase 6 WP 6.1) ----
+//
+// A HUMAN verdict ON A GRADE: "the grader got this right" / "the grader got this wrong", with an
+// optional note. It is the raw material for WP 6.2's trust metric (agreement rate per judge
+// model/method/grading_version) — nothing more.
+//
+// **AR6 / B15 — this NEVER becomes a grade.** A `GradeFeedback` row lives in its own `grade_feedback`
+// table, is APPEND-ONLY, and is read by no grader, aggregate, score, or suite/compare metric.
+// `RunGrade.score` and every expectation metric derived from it keep exactly the meaning they had
+// before a human ever clicked a thumb. Blending a human verdict into a score would silently redefine
+// every historical number in the app — precisely the regression AR6 exists to prevent. There is
+// deliberately NO field on {@link RunGrade} pointing here, and no aggregate anywhere that mixes them.
+//
+// Contrast with Observability's `run_feedback` (D-OB15): that one is a GENERIC score/note on a RUN or
+// a STEP and UPSERTS (a re-thumb replaces the row). This one targets ONE GRADE ROW and APPENDS (a
+// changed mind is new history, exactly like the grade rows it comments on). Separate tables, separate
+// endpoints, separate lenses — on purpose.
+
+/** A human's verdict on ONE grade row. Deliberately two-valued: a calibration signal, not a score. */
+export type GradeFeedbackVerdict = (typeof GRADE_FEEDBACK_VERDICTS)[number];
+
+/**
+ * One persisted human verdict on a grade (`grade_feedback`). APPEND-ONLY — a changed mind appends a
+ * new row, and the newest row per `gradeId` is what a surface displays. `runId` is the graded row's
+ * own run, resolved by JOIN (the table stores only the `grade_id` FK) so a caller can group feedback
+ * by run without a second query.
+ */
+export type GradeFeedback = {
+  id: string;
+  gradeId: string;
+  /** The run the graded row belongs to — derived from `run_grades`, never stored twice. */
+  runId: string;
+  verdict: GradeFeedbackVerdict;
+  note?: string;
+  createdAt: string;
+};
+
+/** Body of `POST /api/grades/:gradeId/feedback`. `note` is optional; the verdict is not. */
+export type GradeFeedbackInput = {
+  verdict: GradeFeedbackVerdict;
+  note?: string;
+};
+
+/**
+ * One graded row inside the calibration set: the grade's own provenance (grader, method, version,
+ * judge model) plus every human verdict recorded against it, oldest first.
+ *
+ * Note what is ABSENT, on purpose (see {@link CalibrationSet}): no provider-credential id, no run
+ * transcript, no tool arguments, no judge reasoning — the export is identity + judgement metadata +
+ * the human's own words, so it cannot carry secret or payload material by construction.
+ */
+export type CalibrationGrade = {
+  gradeId: string;
+  graderId: GraderId;
+  kind: GradeKind;
+  status: GradeStatus;
+  score: number | null;
+  rawScore: number | null;
+  method: string;
+  gradingVersion: number;
+  /** The judge model that produced the grade, when an LLM judge did (a model NAME, never a credential). */
+  judgeModel: string | null;
+  gradedAt: string;
+  /** Every human verdict on this grade, oldest first (the append-only history). */
+  feedback: GradeFeedback[];
+  /** The newest verdict — what a surface displays. Never null: a member grade has ≥ 1 verdict. */
+  latestVerdict: GradeFeedbackVerdict;
+};
+
+/** One run in the calibration set — its identity plus every grade of it that carries feedback. */
+export type CalibrationRun = {
+  runId: string;
+  testId: string | null;
+  testName: string | null;
+  scenarioId: string | null;
+  scenarioName: string | null;
+  /** The environment's model id (a model NAME, never a credential). */
+  model: string | null;
+  status: string;
+  startedAt: string | null;
+  grades: CalibrationGrade[];
+};
+
+/** Headline counts over a {@link CalibrationSet}. `agree + disagree === gradesWithFeedback`. */
+export type CalibrationTotals = {
+  /** Runs in the set. */
+  runs: number;
+  /** Grade rows carrying ≥ 1 verdict — the set's real size. */
+  gradesWithFeedback: number;
+  /** Verdict ROWS recorded (≥ `gradesWithFeedback`, because a changed mind appends). */
+  verdicts: number;
+  /** Grades whose LATEST verdict is `agree`. */
+  agree: number;
+  /** Grades whose LATEST verdict is `disagree`. */
+  disagree: number;
+  /** Verdict rows carrying a note. */
+  notes: number;
+};
+
+/**
+ * The calibration set (`GET /api/calibration/json`, plus its Markdown twin) — the flagged subset of
+ * graded runs that carry human feedback. Membership is DERIVED, never a stored flag: a run is in the
+ * set exactly when at least one of its grade rows has at least one `grade_feedback` row. That makes
+ * the set impossible to get out of sync with the feedback it is made of.
+ *
+ * **Contains no secrets, by construction.** Every field is an identifier, a grader/judge NAME, a
+ * number, a timestamp, or text a human typed themselves. No provider-credential id, no API key, no
+ * header/env value, no run transcript, no tool arguments, no judge reasoning ever enters this shape —
+ * `apps/api/test/grade-feedback.test.ts` seeds real secret material around a member run and asserts
+ * none of it appears in either export.
+ *
+ * `gradingVersions` is the distinct set of `grading_version` stamps present. WP 6.2's agreement math
+ * must not average across versions silently — the list is here so it cannot pretend not to know.
+ */
+export type CalibrationSet = {
+  generatedAt: string;
+  /** Distinct `gradingVersion` values present, ascending (the WP 6.2 aggregation guard). */
+  gradingVersions: number[];
+  totals: CalibrationTotals;
+  /** Member runs, newest run first. */
+  runs: CalibrationRun[];
 };
 
 /** B3 default judge — references only, NEVER key material. */

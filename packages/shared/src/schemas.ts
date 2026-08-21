@@ -23,6 +23,8 @@ import {
   ERROR_FINDING_CATEGORIES,
   FIX_TARGETS,
   GITHUB_REPO_NAME_PATTERN,
+  GRADE_FEEDBACK_NOTE_MAX_LENGTH,
+  GRADE_FEEDBACK_VERDICTS,
   GRADE_KINDS,
   GRADE_STATUSES,
   GRADER_IDS,
@@ -485,6 +487,34 @@ export const runGradeSchema = z.object({
   judgeTokensOut: z.number().int().nonnegative(),
   judgeCostUsd: z.number(),
   gradingVersion: z.number().int().nonnegative(),
+  createdAt: z.string(),
+});
+
+// --- Benchmarks — grade feedback & calibration set (Phase 6 WP 6.1) --------------------------
+// A human verdict ON a grade row. `.strict()` so an unknown key is a ZodError -> 400 — and in
+// particular so a caller can never smuggle a `score` in and have it quietly persisted: this table
+// stores a two-valued verdict and a note, never a number that could be mistaken for a grade (AR6).
+// The API layer additionally REFUSES to update or delete a row (append-only) — see
+// `apps/api/src/grading/grade-feedback-repository.ts`.
+
+/** A human's verdict on ONE grade row (`agree` | `disagree`). */
+export const gradeFeedbackVerdictSchema = z.enum(GRADE_FEEDBACK_VERDICTS);
+
+/** `POST /api/grades/:gradeId/feedback` body — one appended verdict, with an optional bounded note. */
+export const gradeFeedbackInputSchema = z
+  .object({
+    verdict: gradeFeedbackVerdictSchema,
+    note: z.string().trim().min(1).max(GRADE_FEEDBACK_NOTE_MAX_LENGTH).optional(),
+  })
+  .strict();
+
+/** One persisted `grade_feedback` row — validated on the way out. */
+export const gradeFeedbackSchema = z.object({
+  id: z.string(),
+  gradeId: z.string(),
+  runId: z.string(),
+  verdict: gradeFeedbackVerdictSchema,
+  note: z.string().optional(),
   createdAt: z.string(),
 });
 
