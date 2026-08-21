@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T10:30:00Z"
+timestamp: "2026-08-21T12:20:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -388,21 +388,117 @@ and an explicit "Not verified:" tail.
       new entities; nobody measured an actual overlap. The **dark-stage lighting flip** (side faces
       lighter than the top) persists unchanged — it lives in the token layer, so the five inherit it
       identically; still an owner judgement, accepted at WP 0.1.
-- [ ] WP 1.2 — Assets & knowledge cast (`tool`, `resource`, `prompt-template`, `file`,
-      `feedback-report`, `scan`, `token-meter`) — spec:
-      [`wp-1.2-assets-cast.md`](./wp-1.2-assets-cast.md) · depends on 1.1 · parallel with 1.3
-      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
-      `6f587b0`, branch `wp/illustrations/1.2`, running in parallel with the other; not ticked until the
-      orchestrator re-runs the gate and verifies every Acceptance item plus the three teeth)
-- [ ] WP 1.3 — Orchestration cast (`suite`, `collection`, `orchestrator`, `diff-compare`,
-      `environment`, `database`, `credentials-vault`, `assistant`) — spec:
-      [`wp-1.3-orchestration-cast.md`](./wp-1.3-orchestration-cast.md) · depends on 1.1 · parallel
-      with 1.2
-      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
-      `6f587b0`, branch `wp/illustrations/1.3`, running in parallel with the other; not ticked until the
-      orchestrator re-runs the gate and verifies every Acceptance item plus the three teeth)
+- [x] WP 1.2 — Assets & knowledge cast (`tool`, `resource`, `prompt-template`, `file`,
+      `feedback-report`, `scan`, `token-meter`) — done 2026-08-21 · `wp/illustrations/1.2`
+      (1 commit `98c4e89`), merged **--no-ff** as `7c82874` · spec:
+      [`wp-1.2-assets-cast.md`](./wp-1.2-assets-cast.md).
+      **Shipped:** seven tier-2 entities under `src/entities/`, `cast-assets.ts` filled, and
+      **`primitives/IsoSheetStack.tsx`** with `Skill.tsx` refactored onto it. 20 files,
+      **+2350 / −34**.
+      **Gate — re-run by the orchestrator in the worktree, path pinned:** typecheck all Done ·
+      shared **250** · illustrations **582** (390 before) · cli **87** · api **3589** · web **347
+      files / 3719 passed / 5 skipped** · build Done · lint clean (**1704** files).
+      **Teeth verified by the orchestrator — broken, watched go red, restored:** a `var(--illus-…)`
+      swapped for `#ff0055` in `Scan.tsx` → **two independent** guards, `scan (error/undefined)
+      painted #ff0055, which is not an --illus-* token` **and** `entities/Scan.tsx carries a hex
+      color`; `toolMeta.id` set to `"run"` → module-load throw naming both modules, `"run" is
+      claimed by runtime and assets` — the seam's cross-module uniqueness proven from the *other*
+      side. (A first attempt at the hex tooth silently substituted nothing and the suite stayed
+      green; the guard was not at fault, the break was. Recorded because a break that does not apply
+      is indistinguishable from a guard that does not bite.)
+      **The two decisions the spec demanded, both made and defended:** `IsoSheetStack` **yes** —
+      three callers (`skill`, `file`, `feedback-report`) and a genuinely shared invariant, since a
+      slab of *fixed total height* divided into sheets is what keeps a `versioned` skill exactly as
+      tall as a `plain` one, and `heightUnits` is what every port anchor measures against (D-IL7).
+      The **arch no** — built, then found to be three `IsoHousing` calls and one ordering rule with
+      one caller: the spec's "turns out to be trivial, report it" case. What it published instead is
+      the *fact*, `scanClearance(size) → { span, headroom }`, for Phase 2.
+      **A real footprint finding for the layout engine, pinned as arithmetic rather than as copied
+      numbers:** an arch's legs live inside its own quantized footprint, so the clear span is 0.8 of
+      it and **a same-size subject never fits** — at `l` the span is 6.4 units against an `l`
+      server's 8-unit plinth. An `l` arch clears an `m` server entirely. **Phase 2 rule: draw a
+      `scan` one size tier above its subject.** `Scan.test.tsx` asserts it against
+      `mcpServerHeightUnits`/`footprintUnits`. The server was **not** shrunk to make the picture work.
+      **Scale decided and recorded:** no entity is clamped to a size tier — S/M/L are quantized
+      footprints, so a `tool` at `l` is a large drawing of a small object and that is correct. What
+      each entity encodes instead is **plinth tiers**. Which tier a node gets is the scene's call.
+      **Accepted deviation, and the finding that came with it:** the WP touched
+      `src/registry.test.ts`, outside its allowed list, because that file held a hand-written census
+      of every catalog id — **the one place WP 1.1's seam did not hold**. The agent made the minimal
+      edit and wrote the finding into the test rather than papering over it. **Closed afterwards by
+      the orchestrator in `a6af1f3`** (see the WP 1.3 tick).
+      **Both themes verified by the orchestrator BY LOOKING** at `sheet-light.png` — all seven at
+      S/M/L × every variant, plus both arch-clearance renders. Three drawings were changed by the
+      agent *because of* looking (the token-meter column 0.26 → 0.32 with a chunkier pointer, its
+      `spend` mass to 0.8 opacity, the crate battens to 0.6) — none of which a green gate would have
+      caught.
+      **Not verified:** the gallery pick-up was confirmed against a **web-only Vite dev server**,
+      not this branch's own API — the page reads no API data, so nothing on it came from the
+      neighbouring process, but the API was not booted. No keyboard-only walk of the grid beyond
+      `Escape` closing the detail dialog. No contrast measured — "reads in both themes" here means
+      looked at. The **`l` arch over an `l` server has visible plinth overhang** (0.8 units per
+      side, legs painting over it); legible, but a compromise, and whether it is tolerable in a real
+      Phase 2 scene is an owner call.
+- [x] WP 1.3 — Orchestration cast (`suite`, `collection`, `orchestrator`, `diff-compare`,
+      `environment`, `database`, `credentials-vault`, `assistant`) — done 2026-08-21 ·
+      `wp/illustrations/1.3` (2 commits, rebased **twice** — first onto `7c82874`, then onto
+      `0b6cce5` after another session moved `main` mid-run), merged **--no-ff** as `c134278` ·
+      spec: [`wp-1.3-orchestration-cast.md`](./wp-1.3-orchestration-cast.md).
+      **Shipped:** eight entities under `src/entities/`, `cast-orchestration.ts` filled, and
+      **`primitives/IsoTrack.tsx`** with `Run.tsx` refactored onto it.
+      **Gate — re-run by the orchestrator in the worktree AFTER the second rebase, path pinned:**
+      typecheck all Done · shared **250** · illustrations **786** (390 before) · cli **87** · api
+      **3601** · web **348 files / 3748 passed / 5 skipped** · build Done · lint clean (**1724**
+      files).
+      **Teeth verified by the orchestrator — broken, watched go red, restored:** a hex in
+      `Database.tsx` → the same two independent guards; `suite` handed `EntityRoot` a meta whose
+      ports drop `collect` while its entry still declares it → `# fail 1`.
+      **The two reuse decisions, both taken rather than dodged:** the `run` track **was** extractable
+      — `IsoTrack.tsx` owns `TRACK_LANE`, `trackLaneBox`, `IsoTrack` and `TrackMarks`, and the agent
+      verified the `Run` refactor **byte-identical** across every size × state × variant before
+      committing. Honest accounting, since a primitive that abstracts nothing is also a finding: the
+      lane solid abstracts almost nothing (one `IsoHousing`), the *proportions* are what stop `suite`
+      becoming a second subtly-different track, and `TrackMarks` is the ~50 lines that would
+      otherwise have been copied. `assistant` reuses WP 1.1's **`IsoFigure` unmodified** at 68%
+      scale — the payment for that extraction, named in WP 1.1's own header.
+      **The sameness check did its job.** Rendering all sixteen at `m`/`idle` and looking changed
+      **two silhouettes, not two colours**: the orchestrator's gear teeth were shallow enough to read
+      as a **dial** (0.30 → 0.44 of the rim — the anti-clock constraint is a spec requirement, the
+      app has no scheduler), and `diff-compare`'s specimens sat too low to read at `m`.
+      **Both themes verified by the orchestrator BY LOOKING** at `new-eight-light.png`: eight
+      distinct silhouettes — a rack of run tracks, a drawer (two variants), a geared hub, a split
+      pedestal (two variants), a terrarium, a ribbed crate, a sealed vault column, a docked figure
+      (two variants) — one accent moment each, no vendor marks, no borrowed icon glyphs.
+      **Merge mechanics, recorded because they were not clean.** The rebase conflicted twice —
+      `primitives.test.tsx` (both sides purely additive; resolved as the union) and
+      `registry.test.ts`'s id census (the predicted collision). **The orchestrator committed
+      conflict markers once**: a resolution script asserted the wrong id count (20 rather than 23 —
+      it forgot the three pilots), threw before writing, and `git rebase --continue` accepted the
+      still-conflicted file. Caught by grepping the committed file for markers rather than trusting
+      the successful-looking rebase, then fixed and amended. **A rebase that reports success is not
+      evidence that the file is resolved.**
+      **The seam hole, closed by the orchestrator in `a6af1f3` after both WPs merged.** Each cast
+      module now carries its own census beside it (`cast-{pilot,runtime,assets,orchestration}.test.ts`),
+      and `registry.test.ts` keeps only the check those cannot make — that `registry.ts` publishes
+      the **union** of the four modules, derived rather than restated. **Verified by breaking both:**
+      dropping an id from the runtime census fails **exactly one file** (`not ok 198 - the runtime
+      cast (WP 1.1)`, `# fail 1` — the isolation the fix exists for), and making `registry.ts` filter
+      an entity out fails the union check. illustrations 786 → **794**.
+      **Not verified:** no keyboard-focus or screen-reader walk of the gallery (markup asserts
+      `<title>`/`<desc>` presence only). The `environment` + `agent` composition uses a **hand-applied
+      translate** in a preview script, because the scene layout engine is Phase 2 — `environmentFloorUnits(size)`
+      is exported for it but nothing consumes it yet, and an `m` agent in an `m` environment nearly
+      fills it (the container is most convincing at `l` holding a smaller occupant). No greyscale or
+      print check. The dark rendering was confirmed **legible**, not compared against WP 0.2's
+      recorded lighting-flip reference.
 - [ ] WP 1.4 — Contribution kit (scaffold script, checklist, registry changelog +
-      `REGISTRY_VERSION`, scaffold-only Nth-component proof) — **no spec yet**
+      `REGISTRY_VERSION`, scaffold-only Nth-component proof) — **no spec yet · the last open box in
+      Phase 1**. Two things must be settled before it is written: (1) the catalog now holds **23**
+      components, so the plan's "21st component proof" and `CLAUDE.md` §1's "~17 remaining" are both
+      wrong — the proof is the **24th**; (2) **`REGISTRY_VERSION` is still `0.1.0` and two documents
+      disagree about whether it should be** — D-IL12 says a new component bumps it, the shared
+      constant's own doc comment says adding a component is additive and leaves it alone. WP 1.1
+      followed the constant, because bumping means editing `packages/shared`. **Owner decision.**
 
 ## Phase 2 — Scene engine
 

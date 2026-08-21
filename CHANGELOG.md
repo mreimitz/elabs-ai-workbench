@@ -7,6 +7,16 @@ entries below that date name the paths as they were at the time). Per-phase git 
 
 ## Unreleased — the app can draw itself
 
+**Update (2026-08-21): the cast is now twenty-three, not three.** The catalogue covers most of what
+the app actually deals with — a **model**, a **provider** (a blank nameplate, never a vendor logo),
+a **validator**, a **run**, a **prompt**; a **tool**, a **resource**, a **prompt template**, a
+**file**, a **feedback report**, a **scan** (an arch a server stands under), a **token meter**; and
+a **suite**, a **collection**, an **orchestrator**, a **comparison**, an **environment**, a
+**database**, a **credentials vault** and an **assistant**. Everything below still holds — they are
+live components, they carry no colours of their own, and none of them is allowed a hand-drawn path.
+Still missing from this phase: the scaffold and checklist that let a new drawing be added by
+following a recipe rather than by copying a neighbour.
+
 There is a new page at **`/illustrations`**, and it is the first thing you can look at from the
 illustration workstream. It lists the app's own isometric drawings — an **MCP server**, a **skill**
 and an **LLM agent** — and they are live components rather than exported images, so switching the
