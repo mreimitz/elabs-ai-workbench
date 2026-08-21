@@ -71,6 +71,21 @@ pass turned out to be two blockquote rules around quoted text and one that encod
 compare view. Changing them would have been the regression.
 
 
+## Unreleased — a skill's files are editable where the skill is edited
+
+The Studio could edit a skill's instructions and its settings, but its files were a read-only list —
+to change a reference file or add one you went back to the inspector, which had its own separate
+save button and made its own separate version. Two places to edit one skill, two ways to save it.
+
+Files now open as tabs in the middle of the Studio, editable, and they join the same set of unsaved
+changes as everything else: add a reference file, type into it, mention it from the instructions, and
+that is **one** save producing **one** new version. The main instructions tab can't be closed, and
+the flow view is offered only where it means something.
+
+The inspector's file tab is now for reading — its save and discard controls are gone, along with the
+dialog behind them and a third hidden save path that lived on the same tab. There is one place to
+change a skill and one way to save it.
+
 ## Unreleased — charts and alerts can ask "what share?"
 
 Every measure on a chart or a watch rule was a single number over one set of runs — a count, a mean,
