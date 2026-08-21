@@ -215,3 +215,64 @@ describe("toWatchRulePatch", () => {
     expect(patch.window?.bucket).toBe("day");
   });
 });
+
+// ── RM-17 Phase 6 · AM-OB10 ──────────────────────────────────────────────────────────────────────
+
+describe("AM-OB10 — the new fields round-trip without changing an existing rule", () => {
+  test("a new draft is a single-threshold rule with no warning, no policy and no interval", () => {
+    const state = emptyRuleFormState();
+    expect(state.window.warnThreshold).toBeUndefined();
+    expect(state.window.noData).toBeUndefined();
+    expect(state.minIntervalMinutes).toBe(0);
+
+    const input = toWatchRuleInput({ ...state, name: "n" });
+    expect(input.minIntervalMinutes).toBeUndefined();
+  });
+
+  test("an on-terminal interval reaches the wire, and 0 keeps it off", () => {
+    const state = { ...emptyRuleFormState(), name: "n", minIntervalMinutes: 30 };
+    expect(toWatchRuleInput(state).minIntervalMinutes).toBe(30);
+    expect(toWatchRuleInput({ ...state, minIntervalMinutes: 0 }).minIntervalMinutes).toBeUndefined();
+  });
+
+  test("the interval is an on_terminal concept — a windowed rule never sends one", () => {
+    const state = { ...emptyRuleFormState(), name: "n", trigger: "windowed" as const, minIntervalMinutes: 30 };
+    expect(toWatchRuleInput(state).minIntervalMinutes).toBeUndefined();
+    // The PATCH always carries the field so an interval can be CLEARED; a windowed rule sends 0.
+    expect(toWatchRulePatch(state, false).minIntervalMinutes).toBe(0);
+  });
+
+  test("a stored rule's pause, interval, warning threshold and policy all load into the form", () => {
+    const rule: WatchRule = {
+      id: "r",
+      name: "R",
+      enabled: true,
+      trigger: "windowed",
+      filter: {},
+      minIntervalMinutes: 45,
+      pausedUntil: "2099-01-01T00:00:00.000Z",
+      window: {
+        measure: "errorRate",
+        bucket: "hour",
+        window: "1h",
+        op: ">=",
+        threshold: 0.6,
+        warnThreshold: 0.2,
+        noData: "notify",
+        cooldownMinutes: 60,
+      },
+      actions: [{ type: "pin" }],
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    };
+    const state = ruleToFormState(rule);
+    expect(state.minIntervalMinutes).toBe(45);
+    expect(state.window.warnThreshold).toBe(0.2);
+    expect(state.window.noData).toBe("notify");
+    // `pausedUntil` is deliberately NOT a form field — pausing is a row action, not an edit, so the
+    // editor can never silently re-pause or resume a rule as a side effect of saving something else.
+    expect(toWatchRulePatch(state, false).pausedUntil).toBeUndefined();
+    expect(toWatchRuleInput(state).window?.warnThreshold).toBe(0.2);
+    expect(toWatchRuleInput(state).window?.noData).toBe("notify");
+  });
+});

@@ -35,13 +35,18 @@ export function WindowPreviewStrip({
         value: point.value,
         n: point.n,
         wouldHaveFired: point.wouldHaveFired,
-        okValue: point.wouldHaveFired ? null : (point.value ?? 0),
-        firedValue: point.wouldHaveFired ? (point.value ?? 0) : null,
+        // AM-OB10 — a `no_data` window is NOT plotted as a zero-height "healthy" bar. It contributes
+        // to neither series, so the chart shows a real GAP, and the count line below says how many.
+        state: point.state,
+        okValue: point.state === "no_data" || point.wouldHaveFired ? null : (point.value ?? 0),
+        firedValue:
+          point.state !== "no_data" && point.wouldHaveFired ? (point.value ?? 0) : null,
       })),
     [preview],
   );
 
   const firedCount = rows.filter((row) => row.wouldHaveFired).length;
+  const noDataCount = rows.filter((row) => row.state === "no_data").length;
 
   return (
     <div className="flex flex-col gap-3">
@@ -78,6 +83,7 @@ export function WindowPreviewStrip({
           <Text variant="meta" tone="muted" className="tabular-nums">
             {firedCount} of {rows.length} trailing window{rows.length === 1 ? "" : "s"} would have
             fired · bucket: {preview.bucket}
+            {noDataCount > 0 ? ` · ${noDataCount} had no runs at all` : ""}
           </Text>
           {rows.length === 0 ? (
             <EmptyState
@@ -103,10 +109,15 @@ export function WindowPreviewStrip({
                   rows={(point) => [
                     {
                       color: point.wouldHaveFired ? "var(--destructive)" : "var(--chart-1)",
-                      label: point.wouldHaveFired ? "Would have fired" : "Value",
+                      label:
+                        point.state === "no_data"
+                          ? "No runs in this window"
+                          : point.wouldHaveFired
+                            ? "Would have fired"
+                            : "Value",
                       value:
                         point.value === null || point.value === undefined
-                          ? "no data"
+                          ? "nothing ran"
                           : formatNumber(Number(point.value)),
                     },
                     { color: "transparent", label: "Samples", value: formatNumber(Number(point.n ?? 0)) },

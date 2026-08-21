@@ -1,4 +1,9 @@
-import { WATCH_ACTION_TYPES } from "@mcp-token-footprint/shared";
+import {
+  WATCH_ACTION_TYPES,
+  WATCH_MARKER_PAUSED,
+  WATCH_MARKER_RATE_LIMITED,
+  WATCH_MARKER_WINDOW_NO_DATA,
+} from "@mcp-token-footprint/shared";
 import type { WatchAction, WatchRuleEvent, WatchRuleTrigger } from "@mcp-token-footprint/shared";
 
 /**
@@ -11,8 +16,11 @@ import type { WatchAction, WatchRuleEvent, WatchRuleTrigger } from "@mcp-token-f
 const REAL_ACTION_TYPES = new Set<string>(WATCH_ACTION_TYPES);
 
 /** True for a row that represents an actual action attempt (ok or failed) — excludes the
- *  decision/state markers (`sampled_out`, `window_recover`, `window_catchup`, `test_fire`) that the
- *  audit log also carries but that are not themselves a rule "firing". */
+ *  decision/state markers (`sampled_out`, `window_recover`, `window_catchup`, `test_fire`, and the
+ *  AM-OB10 `window_no_data` / `paused` / `rate_limited` markers) that the audit log also carries but
+ *  that are not themselves a rule "firing". A `window_fire` written for a PAUSED rule still counts:
+ *  the condition genuinely occurred, only the dispatch was suppressed — and the paired `paused` row
+ *  is what tells the operator nothing was sent. */
 function isFireActionRow(action: string): boolean {
   return REAL_ACTION_TYPES.has(action) || action === "window_fire";
 }
@@ -68,6 +76,12 @@ export function auditActionLabel(action: string): string {
   switch (action) {
     case "sampled_out":
       return "Sampled out";
+    case WATCH_MARKER_WINDOW_NO_DATA:
+      return "No data in window";
+    case WATCH_MARKER_PAUSED:
+      return "Paused — suppressed";
+    case WATCH_MARKER_RATE_LIMITED:
+      return "Rate limited";
     case "window_fire":
       return "Window fired";
     case "window_recover":

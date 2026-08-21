@@ -220,3 +220,78 @@ describe("WatchRulesView — audit", () => {
     expect(screen.getByText("Run run-1")).toBeInTheDocument();
   });
 });
+
+// ── RM-17 Phase 6 · AM-OB10 — pause is not disable ───────────────────────────────────────────────
+
+describe("WatchRulesView — pause (AM-OB10)", () => {
+  test("the overflow menu offers the three pause presets, and pausing PATCHes a timestamp", async () => {
+    mockUpdate.mockResolvedValueOnce({ ...ERROR_RATE_RULE, pausedUntil: "2099-01-01T00:00:00.000Z" });
+    renderView();
+    const row = (await screen.findByText("High error rate")).closest("li") as HTMLElement;
+    fireEvent.keyDown(
+      within(row).getByRole("button", { name: "More actions for High error rate" }),
+      { key: "Enter" },
+    );
+
+    expect(await screen.findByText("Pause for 1 hour")).toBeInTheDocument();
+    expect(screen.getByText("Pause for 4 hours")).toBeInTheDocument();
+    expect(screen.getByText("Pause for 24 hours")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Pause for 4 hours"));
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+    const [id, patch] = mockUpdate.mock.calls[0] as [string, { pausedUntil?: string | null }];
+    expect(id).toBe("rule-1");
+    // A pause is a TIMESTAMP, not a boolean — that is what lets it expire with no sweep.
+    expect(typeof patch.pausedUntil).toBe("string");
+    const until = Date.parse(patch.pausedUntil as string) - Date.now();
+    expect(until).toBeGreaterThan(3.9 * 60 * 60 * 1000);
+    expect(until).toBeLessThan(4.1 * 60 * 60 * 1000);
+  });
+
+  test("a paused rule shows a PAUSED chip distinct from `disabled`, and offers Resume", async () => {
+    const pausedRule: WatchRule = {
+      ...ERROR_RATE_RULE,
+      enabled: true,
+      pausedUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    };
+    mockListRules.mockReset();
+    mockListRules.mockResolvedValue([pausedRule]);
+    mockUpdate.mockResolvedValueOnce({ ...ERROR_RATE_RULE });
+    renderView();
+
+    const row = (await screen.findByText("High error rate")).closest("li") as HTMLElement;
+    expect(within(row).getByText(/paused/)).toBeInTheDocument();
+    expect(within(row).queryByText("disabled")).not.toBeInTheDocument();
+    // The rule is still ON — a pause suppresses telling you; disabling takes it out of the run.
+    expect(within(row).getByRole("switch")).toBeChecked();
+
+    fireEvent.keyDown(
+      within(row).getByRole("button", { name: "More actions for High error rate" }),
+      { key: "Enter" },
+    );
+    expect(await screen.findByText("Resume now")).toBeInTheDocument();
+    expect(screen.queryByText("Pause for 1 hour")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Resume now"));
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledWith("rule-1", { pausedUntil: null }));
+  });
+
+  test("an EXPIRED pause is simply not a pause — no chip, and the presets are offered again", async () => {
+    const expired: WatchRule = {
+      ...ERROR_RATE_RULE,
+      pausedUntil: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    };
+    mockListRules.mockReset();
+    mockListRules.mockResolvedValue([expired]);
+    renderView();
+
+    const row = (await screen.findByText("High error rate")).closest("li") as HTMLElement;
+    expect(within(row).queryByText(/paused/)).not.toBeInTheDocument();
+    fireEvent.keyDown(
+      within(row).getByRole("button", { name: "More actions for High error rate" }),
+      { key: "Enter" },
+    );
+    expect(await screen.findByText("Pause for 1 hour")).toBeInTheDocument();
+  });
+});

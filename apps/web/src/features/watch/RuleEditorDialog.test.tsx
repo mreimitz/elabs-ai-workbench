@@ -99,7 +99,14 @@ function samplePreview(fired: boolean): WatchWindowPreview {
     },
     bucket: "hour",
     windows: [
-      { windowStart: "2026-07-10T00:00:00Z", windowEnd: "2026-07-10T01:00:00Z", value: fired ? 0.5 : 0.1, n: 10, wouldHaveFired: fired },
+      {
+        windowStart: "2026-07-10T00:00:00Z",
+        windowEnd: "2026-07-10T01:00:00Z",
+        value: fired ? 0.5 : 0.1,
+        n: 10,
+        wouldHaveFired: fired,
+        state: fired ? "alert" : "ok",
+      },
     ],
   };
 }
@@ -151,7 +158,9 @@ describe("RuleEditorDialog — windowed save is gated behind the historical prev
     // (its `onChange` just updates the displayed text — see @elabs-ai/components-ui's `handleBlur`), so the change
     // must be followed by a blur for the new value to actually reach the form state.
     fireEvent.click(screen.getByRole("button", { name: "Trigger" }));
-    const thresholdInput = screen.getByLabelText("Threshold");
+    // AM-OB10 renamed this field to "Alert threshold" — there are now two (the second, optional
+    // one is the WARNING threshold, which must be strictly less severe).
+    const thresholdInput = screen.getByLabelText("Alert threshold");
     fireEvent.change(thresholdInput, { target: { value: "0.9" } });
     fireEvent.blur(thresholdInput);
     expect(screen.getByRole("button", { name: "Create rule" })).toBeDisabled();
@@ -182,6 +191,81 @@ describe("RuleEditorDialog — windowed save is gated behind the historical prev
     expect(input?.trigger).toBe("windowed");
     expect(input?.window?.bucket).toBe("hour"); // derived from the default 1h window
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
+  });
+});
+
+// ── RM-17 Phase 6 · AM-OB10 ──────────────────────────────────────────────────────────────────────
+
+describe("RuleEditorDialog — dual thresholds + the no-data policy (AM-OB10)", () => {
+  test("an inverted warning threshold is caught inline and blocks Save", async () => {
+    mockPreview.mockResolvedValue(samplePreview(false));
+    renderEditor();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Windowed rule" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Windowed threshold" }));
+
+    // The default rule is `errorRate >= 0.3`; a warning at 0.5 is MORE severe than the alert and
+    // could therefore never fire at the warning level — a footgun, not a preference.
+    const warn = screen.getByLabelText(/Warning threshold/);
+    fireEvent.change(warn, { target: { value: "0.5" } });
+    fireEvent.blur(warn);
+    expect(await screen.findByText(/must be below the alert threshold/i)).toBeInTheDocument();
+
+    // Run the preview AFTER the bad value, so the preview gate is satisfied and Save is enabled —
+    // otherwise this test would pass for the wrong reason (the disabled button), which is exactly
+    // what it did before the mutation probe caught it.
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Pin run" }));
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run preview" }));
+    await waitFor(() => expect(mockPreview).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Create rule" })).not.toBeDisabled(),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Create rule" }));
+    await waitFor(() =>
+      expect(screen.getAllByText(/must be below the alert threshold/i).length).toBeGreaterThan(1),
+    );
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  test("a valid warning threshold and a no-data policy both reach the wire", async () => {
+    mockPreview.mockResolvedValue(samplePreview(false));
+    mockCreate.mockResolvedValueOnce({
+      ...RULE_WITH_WEBHOOK,
+      id: "new-rule",
+      trigger: "windowed",
+      actions: [{ type: "pin" }],
+    });
+    renderEditor();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Windowed rule" } });
+    fireEvent.click(screen.getByRole("radio", { name: "Windowed threshold" }));
+
+    const warn = screen.getByLabelText(/Warning threshold/);
+    fireEvent.change(warn, { target: { value: "0.1" } });
+    fireEvent.blur(warn);
+    expect(screen.queryByText(/must be below the alert threshold/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Pin run" }));
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run preview" }));
+    await waitFor(() => expect(mockPreview).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole("button", { name: "Create rule" }));
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+    expect(mockCreate.mock.calls[0]?.[0]?.window?.warnThreshold).toBe(0.1);
+  });
+
+  test("the no-data picker defaults to `hold`, so an empty window is never read as recovery", () => {
+    renderEditor();
+    fireEvent.click(screen.getByRole("radio", { name: "Windowed threshold" }));
+    expect(screen.getByLabelText("When no runs happened")).toHaveTextContent(/Hold/);
+  });
+
+  test("an on-terminal rule exposes the minimum alert interval", () => {
+    renderEditor();
+    expect(screen.getByLabelText("Minimum minutes between alerts")).toBeInTheDocument();
   });
 });
 
