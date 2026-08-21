@@ -30,10 +30,27 @@ export function isStudioMode(value: string | null | undefined): value is StudioM
   );
 }
 
+/** The left rail's three tabs. RM-30 WP 7.3 put this in the URL so the Tools palette's empty state
+ *  can DEEP-LINK the Settings tab ("Bind a server in Settings →") rather than reach across the tree
+ *  for a callback — and so an author can share "open this skill on its settings". */
+export type StudioRail = "files" | "tools" | "settings";
+
+export const STUDIO_RAILS: readonly StudioRail[] = ["files", "tools", "settings"];
+
+/** What the left rail opens on when the URL names no tab. */
+export const STUDIO_DEFAULT_RAIL: StudioRail = "files";
+
+export function isStudioRail(value: string | null | undefined): value is StudioRail {
+  return (
+    value !== null && value !== undefined && (STUDIO_RAILS as readonly string[]).includes(value)
+  );
+}
+
 /** The Studio's complete, URL-carried view state. `file`/`sel` are `null` when the URL omits them —
  *  an absent param is NOT the same as an empty one, and the writer keeps absent URLs clean. */
 export type StudioUrlState = {
   mode: StudioMode;
+  rail: StudioRail;
   file: string | null;
   sel: string | null;
 };
@@ -49,10 +66,12 @@ function toParams(search: SearchLike): URLSearchParams {
 export function readStudioUrlState(search: SearchLike): StudioUrlState {
   const params = toParams(search);
   const mode = params.get("mode");
+  const rail = params.get("rail");
   const file = params.get("file");
   const sel = params.get("sel");
   return {
     mode: isStudioMode(mode) ? mode : STUDIO_DEFAULT_MODE,
+    rail: isStudioRail(rail) ? rail : STUDIO_DEFAULT_RAIL,
     file: file !== null && file.length > 0 ? file : null,
     sel: sel !== null && sel.length > 0 ? sel : null,
   };
@@ -70,6 +89,11 @@ export function writeStudioUrlState(
 ): URLSearchParams {
   const params = toParams(previous);
   if (next.mode !== undefined) params.set("mode", next.mode);
+  // The default rail is omitted rather than written, so a zero-param Studio URL stays clean (D-TB10).
+  if (next.rail !== undefined) {
+    if (next.rail === STUDIO_DEFAULT_RAIL) params.delete("rail");
+    else params.set("rail", next.rail);
+  }
   if (next.file !== undefined) {
     if (next.file === null || next.file.length === 0) params.delete("file");
     else params.set("file", next.file);

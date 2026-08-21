@@ -34,6 +34,8 @@ export type SkillDesignViewProps = {
   | "onSelectedNodeChange"
   | "flowToolsContainer"
   | "flowDetailContainer"
+  // RM-30 WP 7.3 — the Tools palette's deep link into the Studio rail's Settings tab.
+  | "onOpenServerSettings"
 >;
 
 /**

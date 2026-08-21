@@ -121,6 +121,9 @@ export function SkillStudioView() {
       versionId={activeVersionId}
       isHeadVersion={skill.currentVersionId === activeVersionId}
       versionLabel={formatVersionLabel(activeVersion)}
+      // What a save creates. The API always appends (`seq + 1`), so this is the version the toolbar's
+      // one save action can name — never a guess at which version is "next" in some other sense.
+      nextVersionLabel={`v${activeVersion.seq + 1}`}
       onVersionSaved={handleVersionSaved}
       exitTo={`/skills/${skill.id}`}
     />

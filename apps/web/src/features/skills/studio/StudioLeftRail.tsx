@@ -1,42 +1,29 @@
 import { useMemo } from "react";
 import type { SkillFileNode } from "@mcp-token-footprint/shared";
-import {
-  ScrollArea,
-  StatePanel,
-  Tabs,
-  TabsContent,
-  TabsTrigger,
-  Text,
-} from "@elabs-ai/components-ui";
+import { StatePanel, Tabs, TabsContent, TabsTrigger } from "@elabs-ai/components-ui";
 import { ScrollableTabsList } from "../../../components/ScrollableTabsList";
-import { SkillBindingsPanel } from "../SkillBindingsPanel";
 import { WorkspaceTree } from "../workspace/WorkspaceTree";
 import { buildWorkingTree } from "../workspace/workspace-model";
+import { SkillSettingsPanel } from "./settings/SkillSettingsPanel";
+import { isStudioRail, type StudioRail as StudioLeftRailTab } from "./studio-url";
 
 // ── Skill Studio (RM-30 WP 7.1) — the left rail's three tabs ──────────────────────────────────────
-// The shell is what this WP delivers; the tab CONTENTS mount the components that already exist, and
-// the later work packages replace them in place:
 //   • Files    — the existing `WorkspaceTree`, browse-only (WP 7.4 makes it the editable multi-tab
 //                workspace and wires create/rename/move/delete through the draft store).
 //   • Tools    — the editor's OWN live Tools palette, PORTALLED into this rail rather
 //                than mounted a second time here. That matters: the palette carries insert-at-cursor
 //                and drag-to-reference against the live draft, which a second instance could not.
 //                (WP 7.7 rebuilds it as the components palette.)
-//   • Settings — the existing `SkillBindingsPanel` (WP 7.3 grows the full settings panel: name,
-//                description, servers, keywords, command entry points, on one draft store).
+//   • Settings — RM-30 WP 7.3: the full settings panel — name · description · servers · keywords ·
+//                command entry points — writing to the ONE Studio draft.
 
-export type StudioLeftRailTab = "files" | "tools" | "settings";
-
-export const STUDIO_LEFT_RAIL_TABS: readonly StudioLeftRailTab[] = ["files", "tools", "settings"];
-
-export function isStudioLeftRailTab(value: string): value is StudioLeftRailTab {
-  return (STUDIO_LEFT_RAIL_TABS as readonly string[]).includes(value);
-}
+export type { StudioLeftRailTab };
+export { isStudioRail as isStudioLeftRailTab };
 
 export type StudioLeftRailProps = {
   skillId: string;
   versionId: string;
-  /** True when `versionId` is the skill's head — bindings are edited on the latest version only. */
+  /** True when `versionId` is the skill's head — settings are edited on the latest version only. */
   isHeadVersion: boolean;
   tab: StudioLeftRailTab;
   onTabChange: (tab: StudioLeftRailTab) => void;
@@ -50,10 +37,6 @@ export type StudioLeftRailProps = {
    *  Tools tab isn't the active one, because Radix unmounts inactive tab content — and the editor
    *  then simply renders no palette. */
   toolsContainerRef: (node: HTMLDivElement | null) => void;
-  /** A bind/unbind lands a new immutable version — the Studio re-points onto it. */
-  onVersionSaved: (newVersionId: string) => void;
-  /** Set while the editor draft is dirty: binding and editing must never race for the save path. */
-  bindingBlockedReason: string | null;
 };
 
 export function StudioLeftRail({
@@ -66,8 +49,6 @@ export function StudioLeftRail({
   selectedFile,
   onSelectFile,
   toolsContainerRef,
-  onVersionSaved,
-  bindingBlockedReason,
 }: StudioLeftRailProps) {
   const entries = useMemo(() => (files ? buildWorkingTree(files) : []), [files]);
 
@@ -75,7 +56,7 @@ export function StudioLeftRail({
     <Tabs
       value={tab}
       onValueChange={(value) => {
-        if (isStudioLeftRailTab(value)) onTabChange(value);
+        if (isStudioRail(value)) onTabChange(value);
       }}
       className="flex min-h-0 flex-1 flex-col"
     >
@@ -122,21 +103,11 @@ export function StudioLeftRail({
       </TabsContent>
 
       <TabsContent value="settings" className="flex min-h-0 flex-1 flex-col">
-        <ScrollArea className="min-h-0 flex-1">
-          <div className="flex flex-col gap-3 p-3">
-            <SkillBindingsPanel
-              skillId={skillId}
-              versionId={versionId}
-              isHeadVersion={isHeadVersion}
-              blockedReason={bindingBlockedReason}
-              onVersionSaved={onVersionSaved}
-            />
-            <Text variant="meta" tone="muted" className="text-pretty">
-              Name, description, keywords and command entry points move here next — for now they are
-              edited in the document itself.
-            </Text>
-          </div>
-        </ScrollArea>
+        <SkillSettingsPanel
+          skillId={skillId}
+          versionId={versionId}
+          isHeadVersion={isHeadVersion}
+        />
       </TabsContent>
     </Tabs>
   );

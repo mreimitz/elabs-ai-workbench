@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type {
   SkillFileContent,
   SkillFileNode,
@@ -17,12 +18,9 @@ import {
   Descriptions,
   DescriptionsItem,
   MetricCard,
-  Spinner,
   StatePanel,
-  TagInput,
   Text,
   cn,
-  toast,
 } from "@elabs-ai/components-ui";
 import { MessageResponse } from "@elabs-ai/components-ai";
 import {
@@ -31,17 +29,15 @@ import {
   FileText,
   Globe,
   Hash,
-  Save,
+  Pencil,
   ScrollText,
   Terminal,
 } from "lucide-react";
 import { SegmentedBar } from "../../components/TokenViz";
-import { ConfirmDialog } from "../../components/dialogs";
 import { getErrorMessage } from "../../lib/errors";
 import { formatBytes, formatNumber } from "../../lib/format";
 import { SkillBindingsPanel } from "./SkillBindingsPanel";
-import { getSkillFile, getSkillTriggers, postSkillEdits } from "./skills-inspector-api";
-import { notifyError } from "../../lib/notify";
+import { getSkillFile, getSkillTriggers } from "./skills-inspector-api";
 
 // O5 — document-scale prose for the rendered SKILL.md (the @elabs-ai/components-ai `MessageResponse` renderer emits
 // real HTML tags). Unlike the chat renderer this PRESERVES heading hierarchy so the doc reads like a
@@ -93,21 +89,11 @@ export type SkillOverviewProps = {
    */
   isHeadVersion: boolean;
   /**
-   * Skill IDE WP 6.1 — fired after a keyword edit in the Triggers panel lands a NEW immutable version
-   * (via `set_keywords` through the edits route), so the inspector can refresh + select it.
-   */
-  onVersionSaved?: (newVersionId: string) => void;
-  /**
    * Skill IDE WP 6.1 — deep-link a `/command` entry point into its Design-tab flow. Absent ⇒ the
    * commands render as static rows (no dead control).
    */
   onOpenFlow?: (flowId: string) => void;
 };
-
-/** Are two keyword lists identical in order + membership? (drives the Save-enabled state.) */
-function sameKeywords(a: string[], b: string[]): boolean {
-  return a.length === b.length && a.every((value, i) => value === b[i]);
-}
 
 /**
  * Overview tab (WP 1.7): the rendered SKILL.md is the primary content, alongside the parsed
@@ -120,22 +106,22 @@ export function SkillOverview({
   version,
   files,
   isHeadVersion,
-  onVersionSaved,
   onOpenFlow,
 }: SkillOverviewProps) {
   const skillMdPath = useMemo(() => files.find((f) => f.isSkillMd)?.path, [files]);
   const [body, setBody] = useState<string | null>(null);
   const [bodyError, setBodyError] = useState<string | null>(null);
 
-  // Skill IDE WP 6.1 — the trigger surface (description + keyword triggers + `/command` entry points),
-  // fetched from the read-only projection route. `keywordDraft` is the chip editor's staged list; a
-  // Save stages a single `set_keywords` op through the existing edits route (a new immutable version).
+  // The trigger surface (description + keyword triggers + `/command` entry points), from the
+  // read-only projection route.
+  //
+  // RM-30 WP 7.3 — this is now READ-ONLY. It used to carry a chip editor plus a "Save as new
+  // version" button, which was the last mutation left on the Inspector's Overview tab; the Inspector
+  // is the read/analyze register (D-UX17) and every one of those concepts is now edited in the
+  // Studio's settings panel, against one draft and one save. The editor is gone, not disabled: a
+  // greyed-out control that never becomes usable is worse than none.
   const [triggers, setTriggers] = useState<TriggerSurface | null>(null);
   const [triggersError, setTriggersError] = useState<string | null>(null);
-  const [keywordDraft, setKeywordDraft] = useState<string[]>([]);
-  const [savingKeywords, setSavingKeywords] = useState(false);
-  // K10 — saving keywords forks a new immutable version, so it is gated behind a confirm.
-  const [confirmSaveKeywords, setConfirmSaveKeywords] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,7 +131,6 @@ export function SkillOverview({
       .then((surface: TriggerSurface) => {
         if (cancelled) return;
         setTriggers(surface);
-        setKeywordDraft(surface.keywords);
       })
       .catch((error: unknown) => {
         if (!cancelled) setTriggersError(getErrorMessage(error, "Couldn’t load triggers"));
@@ -154,38 +139,6 @@ export function SkillOverview({
       cancelled = true;
     };
   }, [skillId, version.id]);
-
-  const keywordsDirty = triggers !== null && !sameKeywords(keywordDraft, triggers.keywords);
-
-  async function saveKeywords() {
-    if (savingKeywords) return;
-    setSavingKeywords(true);
-    try {
-      const result = await postSkillEdits(skillId, version.id, {
-        baseTreeSha: version.treeSha,
-        ops: [{ op: "set_keywords", keywords: keywordDraft }],
-        note: "Update trigger keywords",
-      });
-      if ("unchanged" in result) {
-        toast.info("No change", { description: "The keyword set is already up to date." });
-        return;
-      }
-      toast.success("Keywords saved", {
-        description: `Saved as v${result.version.seq} — the trigger surface is updated.`,
-      });
-      onVersionSaved?.(result.version.id);
-      setConfirmSaveKeywords(false);
-    } catch (error) {
-      notifyError("Couldn’t save keywords", {
-        description: getErrorMessage(
-          error,
-          "The edit was rejected. Re-open the skill and try again.",
-        ),
-      });
-    } finally {
-      setSavingKeywords(false);
-    }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -349,7 +302,7 @@ export function SkillOverview({
               />
             ) : (
               <>
-                {/* Keyword triggers — a chip editor staging `set_keywords`. */}
+                {/* Keyword triggers — READ-ONLY (RM-30 WP 7.3). Editing lives in the Studio. */}
                 <section aria-label="Keyword triggers" className="flex flex-col gap-2">
                   <div className="flex items-center gap-1.5">
                     <Hash className="size-3.5 text-muted-foreground" aria-hidden />
@@ -357,43 +310,33 @@ export function SkillOverview({
                       Keyword triggers
                     </Text>
                   </div>
-                  {/* O6 — "Save as new version" sits to the RIGHT of the keyword input. */}
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <TagInput
-                        value={keywordDraft}
-                        onValueChange={setKeywordDraft}
-                        disabled={savingKeywords}
-                        placeholder="Add a keyword phrase…"
-                        aria-label="Keyword triggers"
-                      />
-                    </div>
-                    <Button
-                      size="sm"
-                      className="shrink-0"
-                      onClick={() => setConfirmSaveKeywords(true)}
-                      disabled={!keywordsDirty || savingKeywords}
-                    >
-                      {savingKeywords ? <Spinner className="size-4" /> : <Save aria-hidden />}
-                      <span>{savingKeywords ? "Saving…" : "Save as new version"}</span>
-                    </Button>
-                    {keywordsDirty ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="shrink-0"
-                        onClick={() => setKeywordDraft(triggers.keywords)}
-                        disabled={savingKeywords}
-                      >
-                        Reset
-                      </Button>
-                    ) : null}
-                  </div>
+                  {triggers.keywords.length === 0 ? (
+                    <Text variant="meta" tone="muted">
+                      No keyword triggers — this skill is reached by a{" "}
+                      <span className="font-mono">/command</span> or by name.
+                    </Text>
+                  ) : (
+                    <ul className="flex flex-wrap gap-1">
+                      {triggers.keywords.map((keyword) => (
+                        <li key={keyword} className="min-w-0">
+                          <Badge variant="secondary" className="max-w-full truncate">
+                            {keyword}
+                          </Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <Text variant="meta" tone="muted">
-                    Natural-language phrases that trigger this skill. Saving writes them into the
-                    frontmatter <span className="font-mono">keywords</span> list as a new immutable
-                    version.
+                    Natural-language phrases that trigger this skill, from the frontmatter{" "}
+                    <span className="font-mono">keywords</span> list. Edit them in the Studio, where
+                    they save with the rest of the skill as one new version.
                   </Text>
+                  <Button asChild variant="outline" size="sm" className="w-fit">
+                    <Link to={`/skills/${skillId}/studio?rail=settings`}>
+                      <Pencil aria-hidden />
+                      <span>Edit in Studio</span>
+                    </Link>
+                  </Button>
                 </section>
 
                 {/* Command entry points. */}
@@ -483,22 +426,29 @@ export function SkillOverview({
           </CardContent>
         </BentoGridItem>
 
-        {/* Servers — the skill↔server (and server-type) binding surface, reachable here now that the
-            Design-tab Tools palette that used to host it is hidden (O2b). Overview has no editor draft,
-            so it is never binding-blocked; `body` is the committed SKILL.md text (seed, no load flash). */}
+        {/* Servers — READ-ONLY (RM-30 WP 7.3). The chips still report what the version binds and how
+            each name resolved; binding is edited in the Studio's settings panel, on the one draft.
+            `max-h-full` is RM-36 WP 2.2's P2-5 fix and is kept: with the grid on `items-start`, it
+            caps a content-sized tile at the grid area it was given so a long list scrolls inside the
+            card instead of spilling into the row below. */}
         <BentoGridItem size="md" className="flex min-w-0 max-h-full flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Servers</CardTitle>
           </CardHeader>
           <CardContent className="min-h-0 flex-1 overflow-y-auto">
-          <SkillBindingsPanel
-            skillId={skillId}
-            versionId={version.id}
-            isHeadVersion={isHeadVersion}
-            skillMdText={body}
-            blockedReason={null}
-            onVersionSaved={(id) => onVersionSaved?.(id)}
-          />
+            <SkillBindingsPanel
+              skillId={skillId}
+              versionId={version.id}
+              isHeadVersion={isHeadVersion}
+              skillMdText={body}
+              blockedReason={null}
+              readOnly
+              editInStudioTo={`/skills/${skillId}/studio?rail=settings`}
+              // Required by the panel's signature but unreachable in `readOnly` mode: this tab has
+              // no save path at all any more, so a callback here would be dead wiring pretending
+              // otherwise.
+              onVersionSaved={() => {}}
+            />
           </CardContent>
         </BentoGridItem>
       </BentoGrid>
@@ -548,18 +498,6 @@ export function SkillOverview({
         )}
       </section>
 
-      {/* K10 — saving keywords forks a new immutable version; confirm the consequence first. */}
-      <ConfirmDialog
-        open={confirmSaveKeywords}
-        onOpenChange={(open) => {
-          if (!open && !savingKeywords) setConfirmSaveKeywords(false);
-        }}
-        title="Save keywords as a new version?"
-        description="Skill versions are immutable. Saving these keyword triggers writes them into the frontmatter and creates a new version — the current version is left unchanged, so you can always roll back."
-        confirmLabel="Save as new version"
-        busy={savingKeywords}
-        onConfirm={() => void saveKeywords()}
-      />
     </div>
   );
 }

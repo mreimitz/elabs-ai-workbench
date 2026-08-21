@@ -1,9 +1,11 @@
 import { describe, expect, test } from "vitest";
 import {
   isStudioMode,
+  isStudioRail,
   readStudioUrlState,
   skillStudioPath,
   STUDIO_DEFAULT_MODE,
+  STUDIO_DEFAULT_RAIL,
   writeStudioUrlState,
 } from "./studio-url";
 
@@ -15,12 +17,20 @@ import {
 
 describe("readStudioUrlState", () => {
   test("an empty query is the usable default view (D-TB10: a route works with zero params)", () => {
-    expect(readStudioUrlState("")).toEqual({ mode: STUDIO_DEFAULT_MODE, file: null, sel: null });
+    expect(readStudioUrlState("")).toEqual({
+      mode: STUDIO_DEFAULT_MODE,
+      rail: STUDIO_DEFAULT_RAIL,
+      file: null,
+      sel: null,
+    });
   });
 
-  test("reads all three params", () => {
-    expect(readStudioUrlState("?mode=split&file=references/api.md&sel=sec-2")).toEqual({
+  test("reads every param", () => {
+    expect(
+      readStudioUrlState("?mode=split&rail=settings&file=references/api.md&sel=sec-2"),
+    ).toEqual({
       mode: "split",
+      rail: "settings",
       file: "references/api.md",
       sel: "sec-2",
     });
@@ -33,6 +43,7 @@ describe("readStudioUrlState", () => {
   test("an EMPTY file/sel param reads as absent, not as an empty selection", () => {
     expect(readStudioUrlState("?file=&sel=")).toEqual({
       mode: STUDIO_DEFAULT_MODE,
+      rail: STUDIO_DEFAULT_RAIL,
       file: null,
       sel: null,
     });
@@ -40,7 +51,12 @@ describe("readStudioUrlState", () => {
 
   test("accepts a URLSearchParams as well as a string", () => {
     const params = new URLSearchParams({ mode: "code", sel: "sec-1" });
-    expect(readStudioUrlState(params)).toEqual({ mode: "code", file: null, sel: "sec-1" });
+    expect(readStudioUrlState(params)).toEqual({
+      mode: "code",
+      rail: STUDIO_DEFAULT_RAIL,
+      file: null,
+      sel: "sec-1",
+    });
   });
 });
 
@@ -48,11 +64,13 @@ describe("writeStudioUrlState", () => {
   test("round-trips every field through read", () => {
     const written = writeStudioUrlState("", {
       mode: "code",
+      rail: "settings",
       file: "scripts/run.py",
       sel: "sec-7",
     });
     expect(readStudioUrlState(written)).toEqual({
       mode: "code",
+      rail: "settings",
       file: "scripts/run.py",
       sel: "sec-7",
     });
@@ -102,5 +120,38 @@ describe("isStudioMode", () => {
     expect(isStudioMode("design")).toBe(false);
     expect(isStudioMode(null)).toBe(false);
     expect(isStudioMode(undefined)).toBe(false);
+  });
+});
+
+// ── RM-30 WP 7.3 — the rail tab joins the URL ─────────────────────────────────────────────────────
+// The Tools palette's empty state deep-links the Settings tab, so which tab is showing has to be
+// addressable. It is also the one param with a DEFAULT that is deliberately NOT written, so a
+// zero-param Studio URL stays byte-clean (D-TB10).
+
+describe("the rail tab in the URL (WP 7.3)", () => {
+  test("an unrecognised rail degrades to the default instead of throwing", () => {
+    expect(readStudioUrlState("?rail=nonsense").rail).toBe(STUDIO_DEFAULT_RAIL);
+  });
+
+  test("writing the DEFAULT rail leaves the URL clean; a non-default one is written", () => {
+    expect(writeStudioUrlState("", { rail: STUDIO_DEFAULT_RAIL }).toString()).toBe("");
+    expect(writeStudioUrlState("", { rail: "settings" }).toString()).toBe("rail=settings");
+  });
+
+  test("switching back to the default REMOVES an existing rail param", () => {
+    const opened = writeStudioUrlState("", { rail: "settings" });
+    expect(writeStudioUrlState(opened, { rail: STUDIO_DEFAULT_RAIL }).toString()).toBe("");
+  });
+
+  test("skillStudioPath can deep-link the settings rail", () => {
+    expect(skillStudioPath("sk-1", { rail: "settings" })).toBe("/skills/sk-1/studio?rail=settings");
+  });
+
+  test("isStudioRail narrows exactly the three tabs", () => {
+    expect(isStudioRail("files")).toBe(true);
+    expect(isStudioRail("tools")).toBe(true);
+    expect(isStudioRail("settings")).toBe(true);
+    expect(isStudioRail("problems")).toBe(false);
+    expect(isStudioRail(null)).toBe(false);
   });
 });

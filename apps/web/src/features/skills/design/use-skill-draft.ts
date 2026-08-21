@@ -94,8 +94,26 @@ export type SkillDraftController = {
   /** Drop every staged op and revert the draft to the base content. */
   reset: () => void;
   /** Content-canonical save → a new immutable version (409 when the head moved). The op buffer becomes
-   *  the intent log attached to the new version's metadata. */
-  save: (note?: string) => Promise<SkillEditsResponse>;
+   *  the intent log attached to the new version's metadata.
+   *
+   *  `transformContent` (RM-30 WP 7.3) is a PURE last step applied to the final text just before it
+   *  is posted. It exists so a layer ABOVE this store — the Studio's settings panel, which edits
+   *  frontmatter keys the op vocabulary has no op for — can ride the same one save, without a second
+   *  save path and without a wire change. Omitted ⇒ the content is exactly what it always was. */
+  save: (
+    note?: string,
+    transformContent?: (content: string) => string,
+  ) => Promise<SkillEditsResponse>;
+  /**
+   * RM-30 WP 7.3 — pending changes staged OUTSIDE the op buffer, one human-readable line each.
+   * `useSkillDraft` itself never sets this; a wrapping store does (`studio/draft.ts`), and the
+   * editor's save cluster + save dialog fold them into the ONE pending-changes list so a
+   * frontmatter-only edit is still a saveable, reviewable change.
+   */
+  extraPendingLines?: string[];
+  /** RM-30 WP 7.3 — the version this draft would become, e.g. `"v5"`. When present the editor's save
+   *  action is labelled "Save as v5" instead of the generic "Save…". */
+  nextVersionLabel?: string;
 };
 
 /**
@@ -246,7 +264,10 @@ export function useSkillDraft(
   }, [load, manualEdit, edit.ops]);
 
   const save = useCallback(
-    async (note?: string): Promise<SkillEditsResponse> => {
+    async (
+      note?: string,
+      transformContent?: (content: string) => string,
+    ): Promise<SkillEditsResponse> => {
       if (!base) throw new Error("The draft is not loaded yet.");
       const treeOps = edit.ops.filter(isTreeOp);
       const textOps = edit.ops.filter((op) => !isTreeOp(op));
@@ -261,6 +282,10 @@ export function useSkillDraft(
             : (await applyPreview({ content: base.content, ops: textOps, files: base.files }))
                 .content;
       }
+      // The frontmatter layer (WP 7.3) runs LAST, over the op-derived text. Its keys and the op
+      // engine's splices never target the same bytes, so the order is a documented convention
+      // rather than a conflict resolution.
+      if (transformContent) finalContent = transformContent(finalContent);
       const intentLog: SkillIntentLogEntry[] = edit.ops.map((op) => ({
         op,
         summary: describeEditOp(op, base.graph),

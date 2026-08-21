@@ -86,7 +86,8 @@ import {
   isPreviewOnlyNodeId,
   isSectionNode,
 } from "./use-edit-ops";
-import { useSkillDraft } from "./use-skill-draft";
+import { useSkillDraft, type SkillDraftController } from "./use-skill-draft";
+import { useOptionalStudioDraft } from "../studio/draft";
 import { notifyError } from "../../../lib/notify";
 
 // ── Skill IDE WP 9.2 (I10) — the unified editor shell: Flow | Code | Split ─────────────────────────
@@ -196,16 +197,41 @@ export type UnifiedEditorProps = {
   /** Where the host wants the Node details panel rendered. See {@link flowToolsContainer} — the two
    *  travel together, and both are portal targets. */
   flowDetailContainer?: HTMLElement | null;
+  /** RM-30 WP 7.3 — open the host's server-binding surface. The Tools palette's "not bound to a
+   *  server" empty state uses it to deep-link the Studio rail's Settings tab. */
+  onOpenServerSettings?: () => void;
 };
 
 /**
- * The unified Flow/Code editor surface (WP 9.2). Owns the WP 9.1 live-draft store and renders it as a
- * segmented Flow | Code | Split view over ONE document. Hosted by the Design tab (default "flow") and
- * opened for `SKILL.md` from the Files tab (default "code").
+ * The unified Flow/Code editor surface (WP 9.2) — a segmented Flow | Code | Split view over ONE
+ * document. Hosted by the Design tab (default "flow") and opened for `SKILL.md` from the Files tab
+ * (default "code").
+ *
+ * RM-30 WP 7.3 moved WHERE the draft is created, not what it is. Inside the Skill Studio the draft
+ * belongs to the SHELL (so the settings panel in the left rail edits the same one), and this
+ * component consumes it from `StudioDraftContext`; anywhere else it still owns a private draft
+ * exactly as before. The branch is a component swap rather than a conditional hook, and it is stable
+ * for the life of a mount — a host either provides a Studio draft or it never does.
  */
-export function UnifiedEditor({
+export function UnifiedEditor(props: UnifiedEditorProps) {
+  const studioDraft = useOptionalStudioDraft();
+  return studioDraft ? (
+    <UnifiedEditorBody {...props} draft={studioDraft} />
+  ) : (
+    <UnifiedEditorWithOwnDraft {...props} />
+  );
+}
+
+/** The classic host path: this surface creates and owns the live draft. */
+function UnifiedEditorWithOwnDraft(props: UnifiedEditorProps) {
+  const draft = useSkillDraft(props.skillId, props.versionId);
+  return <UnifiedEditorBody {...props} draft={draft} />;
+}
+
+function UnifiedEditorBody({
   skillId,
   versionId,
+  draft,
   defaultMode = "flow",
   onDirtyChange,
   onVersionSaved,
@@ -221,7 +247,8 @@ export function UnifiedEditor({
   onSelectedNodeChange,
   flowToolsContainer,
   flowDetailContainer,
-}: UnifiedEditorProps) {
+  onOpenServerSettings,
+}: UnifiedEditorProps & { draft: SkillDraftController }) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Mode lives in the URL so it survives tab switches (Radix unmounts inactive tab content) AND doubles
@@ -242,7 +269,6 @@ export function UnifiedEditor({
     [setSearchParams],
   );
 
-  const draft = useSkillDraft(skillId, versionId);
   const { edit, baseGraph: graph, treeSha, draftGraph, manualEdit, loading, error } = draft;
 
   const { boundTools, loading: boundToolsLoading } = useBoundTools(skillId, versionId);
@@ -646,7 +672,14 @@ export function UnifiedEditor({
     [savedVersionId, onVersionSaved],
   );
 
-  const pendingCount = manualEdit ? 1 : edit.ops.length;
+  // RM-30 WP 7.3 — ONE pending-change tally across all three kinds of edit: canvas ops, a direct
+  // text edit, and the settings panel's frontmatter changes. Without the last term a
+  // frontmatter-only edit would render "0 unsaved changes" beside an enabled Save — and, worse, the
+  // save dialog's own `canSave` would be false, so the author could not save at all.
+  const extraPendingLines = useMemo(() => draft.extraPendingLines ?? [], [draft.extraPendingLines]);
+  const pendingCount = (manualEdit ? 1 : edit.ops.length) + extraPendingLines.length;
+  /** "Save as v5" when the host names the version bump (the Studio), else the classic "Save…". */
+  const saveLabel = draft.nextVersionLabel ? `Save as ${draft.nextVersionLabel}` : "Save…";
 
   // ── SI13 — the save cluster (dirty chip · Discard · Save…) ───────────────────────────────────────
   // ONE definition serving two mounts: registered into the inspector's header action row when the
@@ -673,7 +706,7 @@ export function UnifiedEditor({
               <Undo2 aria-hidden /> Discard
             </Button>
             <Button size="sm" onClick={() => setSaveOpen(true)}>
-              <Save aria-hidden /> Save…
+              <Save aria-hidden /> {saveLabel}
             </Button>
           </>
         ) : (
@@ -683,7 +716,7 @@ export function UnifiedEditor({
         )}
       </div>
     );
-  }, [loading, error, graph, draft.dirty, pendingCount]);
+  }, [loading, error, graph, draft.dirty, pendingCount, saveLabel]);
 
   // Register the cluster into the host's header slot; clear it when this surface unmounts (tab
   // switch / version reload) so the header never advertises a draft that no longer exists.
@@ -780,6 +813,7 @@ export function UnifiedEditor({
       onInsertTool={handleInsertTool}
       onRegisterInsert={registerInsert}
       onTestTool={onTestTool}
+      onOpenServerSettings={onOpenServerSettings}
     />
   );
 
@@ -957,6 +991,8 @@ export function UnifiedEditor({
         graph={graph}
         ops={edit.ops}
         manualEdit={manualEdit}
+        extraPendingLines={extraPendingLines}
+        saveLabel={saveLabel}
         baseTreeSha={treeSha ?? ""}
         save={draft.save}
         onReload={draft.reload}
@@ -1126,6 +1162,8 @@ type FlowPaneProps = {
   onInsertTool: (toolName: string) => void;
   onRegisterInsert: (fn: ((text: string) => boolean) | null) => void;
   onTestTool?: (tool: BoundTool) => void;
+  /** RM-30 WP 7.3 — the palette's "Bind a server in Settings →" deep link. */
+  onOpenServerSettings?: (() => void) | undefined;
 };
 
 function FlowPane({
@@ -1151,6 +1189,7 @@ function FlowPane({
   onInsertTool,
   onRegisterInsert,
   onTestTool,
+  onOpenServerSettings,
 }: FlowPaneProps) {
   const tools = useCollapsibleSidePanel("tools");
   const detail = useCollapsibleSidePanel("detail");
@@ -1169,9 +1208,10 @@ function FlowPane({
         onInsertTool={onInsertTool}
         fluid
         {...(onCollapse ? { onCollapse } : {})}
+        {...(onOpenServerSettings ? { onOpenServerSettings } : {})}
       />
     ),
-    [graph, boundTools, boundToolsLoading, canInsert, onInsertTool],
+    [graph, boundTools, boundToolsLoading, canInsert, onInsertTool, onOpenServerSettings],
   );
   const detailPanel = useMemo<ReactNode>(
     () => (
@@ -1442,6 +1482,12 @@ type UnifiedSaveDialogProps = {
   graph: SkillGraph;
   ops: ReturnType<typeof useSkillDraft>["edit"]["ops"];
   manualEdit: boolean;
+  /** RM-30 WP 7.3 — pending changes staged outside the op buffer (the settings panel's frontmatter
+   *  edits), already described. They are listed with the ops and, crucially, COUNT towards `canSave`:
+   *  a settings-only change is a real change. */
+  extraPendingLines: string[];
+  /** The save action's label, e.g. "Save as v5" (the Studio) or "Save…" elsewhere. */
+  saveLabel: string;
   baseTreeSha: string;
   save: (note?: string) => Promise<SkillEditsResponse>;
   onReload: () => Promise<void>;
@@ -1474,6 +1520,8 @@ function UnifiedSaveDialog({
   graph,
   ops,
   manualEdit,
+  extraPendingLines,
+  saveLabel,
   save,
   onReload,
   onDiscard,
@@ -1494,13 +1542,15 @@ function UnifiedSaveDialog({
     }
   }, [open]);
 
-  // Both categories of pending change, listed together (text edits + staged graph/tree ops).
+  // Every category of pending change, listed together: a direct text edit, staged graph/tree ops,
+  // and (WP 7.3) the settings panel's frontmatter edits.
   const pendingLines = useMemo(() => {
     const lines: string[] = [];
     if (manualEdit) lines.push("Edited SKILL.md text directly");
     for (const op of ops) lines.push(describeEditOp(op, graph));
+    lines.push(...extraPendingLines);
     return lines;
-  }, [manualEdit, ops, graph]);
+  }, [manualEdit, ops, graph, extraPendingLines]);
 
   const canSave = pendingLines.length > 0;
 
@@ -1735,7 +1785,11 @@ function UnifiedSaveDialog({
               </Button>
               <Button onClick={() => void handleSave()} disabled={saving || !canSave}>
                 {saving ? <Spinner className="size-4" /> : <Save aria-hidden />}
-                <span>{saving ? "Saving…" : "Save version"}</span>
+                {/* The trailing ellipsis means "opens a dialog" — inside the dialog it would be a
+                    lie, so the generic label drops it and a version-named one stands as it is. */}
+                <span>
+                  {saving ? "Saving…" : saveLabel.endsWith("…") ? "Save version" : saveLabel}
+                </span>
               </Button>
             </>
           )}
