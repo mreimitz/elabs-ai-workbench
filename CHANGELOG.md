@@ -5,6 +5,47 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the advice fits on the screen, and the grid stops lying
+
+The Advisor's top recommendation used to bury its own conclusion. It would tell you that trimming
+139 never-called tools from a server saves about 136,502 tokens a turn — and then print all 139 tool
+names as a comma-separated paragraph, twenty lines of `qlik_*` identifiers, between that sentence and
+the panel explaining how the number was reached. One recommendation filled the screen, so you saw one
+of sixteen without scrolling.
+
+The names are still there, now behind a disclosure that states the count — "Show 139 never-called
+tools" — so the fact survives the fold and only the identifiers are put away. Two recommendations now
+fit where one did.
+
+The same page held the only real target-size failures in the app: every evidence link under a
+recommendation was a 16-pixel-tall click target with four pixels between rows, which is below the
+accessibility floor and genuinely fiddly to hit. All 221 of them are now 26 pixels tall with room
+between the rows; a re-run of the audit's own probe reports zero failures where it previously found
+55.
+
+Two rendering bugs went with it:
+
+- **The illustration catalog drew the wrong grid.** Every blueprint stage derived its grid pattern's
+  id from the grid's geometry alone, so the 68 stages in a detail dialog shared two ids between them.
+  A browser resolves that to whichever came first, so every stage painted the *first* stage's grid
+  phase — and since the phase is computed from each stage's own centre, any stage of a different size
+  drew its grid out of registration with its own crosshair. It was invisible on the gallery, where
+  every card is the same size, and plain in the detail dialog, which exists precisely to show
+  different sizes side by side. Each stage now owns its ids: 68 stages, 68 grids.
+- **The run console logged a React error on every load.** The cost tile put a paragraph inside a
+  paragraph — invalid HTML the browser silently re-parents, and a permanent error in the console of
+  the busiest screen in the app, which is exactly how a real error goes unnoticed. The wording is
+  unchanged; the console is clean.
+
+One related fault is **not** fixed, and is recorded rather than quietly absorbed: the toolbars on
+tables inside a rendered `SKILL.md` — *Copy table*, *Download table*, *View fullscreen* — have no
+focus ring, name themselves with a tooltip attribute that assistive technology does not read, and are
+smaller than the minimum target size. They are not this app's markup; they come from a third-party
+markdown renderer bundled inside the design system, and patching them locally would mean overriding
+another library's class names, which breaks silently on the next upgrade. The gap has been written up
+for the design-system owner instead.
+
+
 ## Unreleased — a silent bench no longer reads as good news
 
 A watch rule that fires on a window — "error rate above 10% in the last hour" — decided, on every

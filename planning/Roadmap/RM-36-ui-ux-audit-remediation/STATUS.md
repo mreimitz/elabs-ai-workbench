@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UI/UX audit remediation — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the RM-36 audit-remediation plan, read and updated by /next-wp RM-36."
 tags: ["roadmap", "RM-36"]
-timestamp: "2026-08-21T19:18:32Z"
+timestamp: "2026-08-21T19:42:28Z"
 status: "active"
 ---
 
@@ -43,24 +43,24 @@ or record explicitly that they remain unmeasured.
 
 ### Phase 1 — the defects that are errors or rule violations
 
-- [ ] **WP 1.1** *(in progress · wp/ui-audit/1.1)* — `/advisor`: move the 139-name tool list out of the card's prose into a
+- [x] **WP 1.1** — `/advisor`: move the 139-name tool list out of the card's prose into a
       disclosure, and fix the 55 WCAG 2.5.8 evidence-chip target failures.
-      Spec: [`wp-1.1-advisor.md`](./wp-1.1-advisor.md) · findings P1-1, P1-2
-- [ ] **WP 1.2** *(in progress · wp/ui-audit/1.2)* — `PaperStage`: instance-unique SVG pattern ids, ending the live grid
+      Spec: [`wp-1.1-advisor.md`](./wp-1.1-advisor.md) · findings P1-1, P1-2 — done 2026-08-21 · wp/ui-audit/1.1
+- [x] **WP 1.2** — `PaperStage`: instance-unique SVG pattern ids, ending the live grid
       mis-registration in the illustration detail dialog.
-      Spec: [`wp-1.2-paperstage-ids.md`](./wp-1.2-paperstage-ids.md) · finding P1-3
-- [ ] **WP 1.3** *(in progress · wp/ui-audit/1.3)* — run console: remove the `<p>`-inside-`<p>` React error from the KPI cost tile.
-      Spec: [`wp-1.3-kpirail-nested-p.md`](./wp-1.3-kpirail-nested-p.md) · finding P1-4
-- [ ] **WP 1.4** *(in progress · wp/ui-audit/1.4)* — markdown table toolbar: raise the D-TB5 violation upstream and record the
+      Spec: [`wp-1.2-paperstage-ids.md`](./wp-1.2-paperstage-ids.md) · finding P1-3 — done 2026-08-21 · wp/ui-audit/1.2
+- [x] **WP 1.3** — run console: remove the `<p>`-inside-`<p>` React error from the KPI cost tile.
+      Spec: [`wp-1.3-kpirail-nested-p.md`](./wp-1.3-kpirail-nested-p.md) · finding P1-4 — done 2026-08-21 · wp/ui-audit/1.3
+- [x] **WP 1.4** — markdown table toolbar: raise the D-TB5 violation upstream and record the
       exception; do **not** patch around it locally.
-      Spec: [`wp-1.4-markdown-toolbar.md`](./wp-1.4-markdown-toolbar.md) · finding P1-5
+      Spec: [`wp-1.4-markdown-toolbar.md`](./wp-1.4-markdown-toolbar.md) · finding P1-5 — done 2026-08-21 · wp/ui-audit/1.4
 
 ### Phase 2 — reach, consistency and density
 
-- [ ] **WP 2.1** — keep the primary actions of `/testing/runs` and the run console reachable at
+- [ ] **WP 2.1** *(in progress · wp/ui-audit/2.1)* — keep the primary actions of `/testing/runs` and the run console reachable at
       768px.
       Spec: [`wp-2.1-responsive-actions.md`](./wp-2.1-responsive-actions.md) · finding P1-6
-- [ ] **WP 2.2** — consistency and density sweep: one encoding per runs-table column, drop the
+- [ ] **WP 2.2** *(in progress · wp/ui-audit/2.2)* — consistency and density sweep: one encoding per runs-table column, drop the
       server-card chips the group heading already states, size the launcher's step 1, surface the
       swallowed 404, unstretch the skill-inspector card, retire the three side stripes.
       Spec: [`wp-2.2-consistency-density.md`](./wp-2.2-consistency-density.md) · findings P2-1 … P2-6
@@ -70,14 +70,36 @@ or record explicitly that they remain unmeasured.
 Not started — nothing is built yet. When Phase 1 and Phase 2 are done, these are the hand checks
 that no test can stand in for:
 
-- [ ] `/advisor` read in both themes: the recommendation's number and decision are visible without
+- [x] `/advisor` read in both themes: the recommendation's number and decision are visible without
       scrolling past a list, and the evidence chips are comfortably clickable.
+      **Verified 2026-08-21 by the orchestrator on the running merged build** (own instance on
+      :8099 against an isolated DB copy; the live `data/app.sqlite` md5 confirmed unchanged).
+      At 1440×900 in **both** themes: **2** recommendation cards in the first viewport (was 1),
+      first card 515px tall, the sentence + "≈ 136,502 tokens/turn" + the Estimated-saving panel all
+      above the fold, and the 139 names behind a trigger reading "Show 139 never-called tools".
+      The 2.5.8 probe — the audit's own method, inline and spacing exceptions granted — reports
+      **0 failures, down from 55**; all **221** evidence links measure **26px** (was 16px).
 - [ ] `/illustrations` detail dialog in both themes: every stage's grid registers against its own
       crosshair at every size in the matrix.
-- [ ] Run console opened in both themes with the browser console visible: **no React error**.
+      **Measured clean, visually spot-checked only.** The orchestrator measured the dialog on the
+      running merged build in both themes: **68 `<pattern>` elements → 68 distinct ids** (was 68 → 2),
+      i.e. no stage can borrow another's grid phase, and the contract test additionally pins that each
+      stage's `url(#…)` resolves to the patterns that stage defined. The States and Sizes rows were
+      looked at in both themes and read correctly — but the rows **below the fold** of the dialog were
+      not scrolled through by eye, so the "every size in the matrix" half is left for the owner.
+- [x] Run console opened in both themes with the browser console visible: **no React error**.
+      **Verified 2026-08-21 by the orchestrator** on run `SHsiRblmacvEOJi4gkalE` on the running
+      merged build: **0** console errors of any kind and **0** `<p>` containing another `<p>`, in
+      **both** themes. The pre-merge baseline on the same probe captured the audit's exact markup:
+      `<p class="text-meta font-normal text-muted-foreground"><p class="text-meta text-muted-foreground">estimated</p></p>`.
 - [ ] `/testing/runs` and the run console at a 768px-wide window: **+ New run** and **Re-run with
       changes** are reachable.
 - [ ] A keyboard-only pass over `/advisor` and `/skills/:skillId` Overview: every stop shows a ring.
+      **Partially evidenced, NOT a full pass.** The orchestrator confirmed the new `/advisor`
+      disclosure trigger is a real `<button>` that takes focus and paints a visible ring in **both**
+      themes (light uses the app-side `--ring` contrast override). Every other stop on either route
+      was **not** walked, and `/skills/:skillId` Overview still carries the 11 unringed upstream
+      controls recorded as a known exception below — expect them.
 - [ ] The un-audited `/assistant/*` surfaces: either swept with the flag on, or explicitly recorded
       as still unmeasured.
 
@@ -120,3 +142,26 @@ that no test can stand in for:
       the code-block trio (`Copy Code` / `Download file`), which shares the identical defect and
       which no app-side `components` map covers. Decide whether to close the table half now or wait
       for the single upstream fix.
+
+## Follow-ups found while building (not part of any WP's scope)
+
+Recorded so they are not lost. Neither was fixed; both are owner calls.
+
+- **The Context tile's popover repeats the P1-4 defect, interaction-triggered.** WP 1.3 closed the
+  load-triggered nested `<p>` on the run console. The Context KPI tile's `description` is
+  `<ContextBreakdown>`, which at rest is a `<button>` — valid phrasing content, which is why the
+  audit saw only one nested pair. But `@elabs-ai/components-ui`'s `HoverCardContent` renders with
+  **no Portal**, and orchestrator-verified: `HoverCardPortal` is exported **zero** times by that
+  package and `@elabs-ai/components-ai` exports no `ContextPortal`. So **opening** that popover
+  renders its content — including a `<Text as="p">` — inside `MetricCard`'s own `<p>`. Closing it
+  needs an upstream portal export or a structural rewrite of a tile governed by the RM-33 contract;
+  it is not reachable from the call site. Same defect class as P1-4, and it belongs with the WP 1.4
+  upstream request.
+- **`/advisor` parses prose the API wrote, because the wire has no structured field.** WP 1.1 lifts
+  the 139 identifiers out of the card body by string-matching the lead-ins the advisor rules emit
+  (`"Never called: "`, `"Suggested allowedTools: "`) inside `recommendation.detail`. This was the
+  correct call **inside the WP** — the spec scopes it to `RecommendationCard.tsx` and forbids
+  touching `apps/api/` — and it is deliberately conservative: a detail carrying no recognised
+  enumeration comes back **byte-identical**, pinned by a test, so no other rule's wording can be
+  silently mangled. But the durable fix is the API sending the names as a structured field instead of
+  inlining them into prose, which would delete the parser. Worth a small additive wire change later.
