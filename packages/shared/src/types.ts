@@ -3947,8 +3947,23 @@ export type RunPlanEstimateEnvironment = {
   hasCostCap: boolean;
   /** Total tokens this environment contributes across its `testCount × repetitions` runs. */
   tokens: EstimateRange;
-  /** USD range across this environment's runs. Omitted (undefined) when {@link priced} is `false`. */
+  /**
+   * USD range across this environment's runs. Omitted (undefined) when {@link priced} is `false`.
+   *
+   * RM-33 WP 2.1 — the band's dimension is the **prompt-caching assumption**, not the turn count:
+   * `low` prices the agent's re-sent prefix as one cache WRITE plus cache READS, `high` prices every
+   * input token at the full rate (the pre-RM-33 arithmetic). Both ends are evaluated at the SAME
+   * (high) turn count, so the two numbers are directly comparable; the turn spread stays on
+   * {@link tokens}. When {@link cachingAssumed} is `false` the band collapses to a point.
+   */
   costUsd?: EstimateRange;
+  /**
+   * RM-33 WP 2.1 — whether {@link costUsd}`.low` actually models prompt caching. `true` only when the
+   * resolved price publishes a cache-read rate; there is deliberately NO provider-kind fork, so a
+   * model we cannot price for cache reads simply reports its full-rate cost at both ends. Additive:
+   * absent on any response produced before WP 2.1.
+   */
+  cachingAssumed?: boolean;
 };
 
 /** The advisory estimate for a whole run plan (the `GET /api/estimate/run-plan` response). */
@@ -3960,12 +3975,23 @@ export type RunPlanEstimate = {
   totalRuns: number;
   /** Total tokens across the whole plan — every environment, priced or not. */
   tokens: EstimateRange;
-  /** USD across PRICED environments only; unpriced environments are excluded (see {@link unpricedEnvironmentCount}). */
+  /**
+   * USD across PRICED environments only; unpriced environments are excluded (see
+   * {@link unpricedEnvironmentCount}). RM-33 WP 2.1 — `low` assumes prompt caching works, `high` is
+   * the same plan with no caching at all; see {@link RunPlanEstimateEnvironment.costUsd}.
+   */
   costUsd: EstimateRange;
   /** How many environments could not be priced (tokens counted, dollars not). */
   unpricedEnvironmentCount: number;
   /** How many environments have NO per-run cost cap — advisory warn rows; blocks nothing. */
   uncappedEnvironmentCount: number;
+  /**
+   * RM-33 WP 2.1 — `true` when at least one environment's {@link costUsd} low end models prompt
+   * caching, i.e. the range genuinely brackets "the cache works" against "it does not". `false` means
+   * every priced environment reported the same number at both ends and the label must not claim a
+   * caching discount. Additive: absent on any response produced before WP 2.1.
+   */
+  cachingAssumed?: boolean;
   environments: RunPlanEstimateEnvironment[];
 };
 

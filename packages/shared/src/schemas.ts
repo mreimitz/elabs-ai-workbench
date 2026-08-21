@@ -2312,6 +2312,49 @@ export const runPlanEstimateQuerySchema = z.object({
 
 export type RunPlanEstimateQuery = z.infer<typeof runPlanEstimateQuerySchema>;
 
+// --- RM-33 WP 2.1 — the run-plan estimate RESPONSE shape ----------------------------------------
+// The endpoint's answer had a type (`RunPlanEstimate`) but no zod mirror, so an additive field could
+// be added on one side and forgotten on the other with nothing to notice. These `.strict()` schemas
+// are the wire contract: a contract test parses the live route's body through them, so an undeclared
+// key is a failure rather than an undocumented extra. Nothing PARSES a request with them — the
+// request contract is `runPlanEstimateQuerySchema` above.
+
+export const estimateRangeSchema = z
+  .object({ low: z.number(), mid: z.number(), high: z.number() })
+  .strict();
+
+export const runPlanEstimateEnvironmentSchema = z
+  .object({
+    environmentId: z.string(),
+    name: z.string(),
+    model: z.string(),
+    priced: z.boolean(),
+    reason: z.string().optional(),
+    footprintTokens: z.number(),
+    hasCostCap: z.boolean(),
+    tokens: estimateRangeSchema,
+    costUsd: estimateRangeSchema.optional(),
+    /** RM-33 WP 2.1 — whether this environment's `costUsd.low` models prompt caching. */
+    cachingAssumed: z.boolean().optional(),
+  })
+  .strict();
+
+export const runPlanEstimateSchema = z
+  .object({
+    testCount: z.number(),
+    environmentCount: z.number(),
+    repetitions: z.number(),
+    totalRuns: z.number(),
+    tokens: estimateRangeSchema,
+    costUsd: estimateRangeSchema,
+    unpricedEnvironmentCount: z.number(),
+    uncappedEnvironmentCount: z.number(),
+    /** RM-33 WP 2.1 — whether ANY priced environment's low end models prompt caching. */
+    cachingAssumed: z.boolean().optional(),
+    environments: z.array(runPlanEstimateEnvironmentSchema),
+  })
+  .strict();
+
 // --- UX overhaul WP 3.3 (G11/S20) — skill usage response shape ----------------------------------
 // `GET /api/skills/:id/usage` → the environments a skill is attached to + its recent runs. Read-only
 // over `scenario_skills` + `run_skills`. Additive response contract; validates no request body.

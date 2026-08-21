@@ -230,7 +230,28 @@ export function computeCostBreakdown(
   usage: TokenUsageActual,
   opts?: PricingResolveOptions,
 ): CostBreakdown {
-  const pricing = resolvePrice(model, opts);
+  return computeCostBreakdownForPrice(resolvePrice(model, opts), usage);
+}
+
+/**
+ * RM-33 WP 2.1 — the SAME formula as {@link computeCostBreakdown}, entered with an ALREADY-resolved
+ * price instead of a model id. A seam, not a second formula: `computeCostBreakdown` is now a one-line
+ * caller of it, so D-CT5 ("one pricing code path") holds more tightly than before, not less.
+ *
+ * It exists because the run-plan estimator (`apps/api/src/estimate/estimate.ts`) is deliberately
+ * PURE — no DB, no pricing tables. Its service resolves the price once, with its own
+ * {@link PricingResolveOptions}, and hands the rates in. Having the estimator call
+ * `computeCostBreakdown(model, …)` would re-enter {@link resolvePrice} a second time behind the
+ * service's back and possibly with different options, so the preview could silently disagree with
+ * the price the service actually resolved.
+ *
+ * `undefined` means "we have no price for this model": every term comes back `0` with
+ * `priced: false`, exactly as an unknown model id does.
+ */
+export function computeCostBreakdownForPrice(
+  pricing: ResolvedPrice | undefined,
+  usage: TokenUsageActual,
+): CostBreakdown {
   const split = usageSplitKind(usage);
   if (!pricing) {
     // Unpriced: every term is 0 because we CANNOT price it, not because it is free. `priced: false`
