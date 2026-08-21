@@ -173,8 +173,18 @@ vi.mock("../../use-bound-tools", () => ({
 // The Code pane's Monaco is replaced by a plain readout of the value it is handed, so "the Code view
 // reflects each settings change live" is asserted against the real prop the editor passes down —
 // not against a claim.
+/** A hand edit typed into the Code pane — a document whose frontmatter differs from the base. */
+const HAND_EDITED = SKILL_MD.replace("name: demo", "name: renamed-by-hand");
+
 vi.mock("@elabs-ai/components-editor", () => ({
-  CodeEditor: ({ value }: { value?: string }) => <div data-testid="code-pane">{value}</div>,
+  CodeEditor: ({ value, onChange }: { value?: string; onChange?: (next: string) => void }) => (
+    <div data-testid="code-pane">
+      {value}
+      <Button data-testid="code-hand-edit" onClick={() => onChange?.(HAND_EDITED)}>
+        hand-edit (stub)
+      </Button>
+    </div>
+  ),
 }));
 vi.mock("../../design/code-intel", () => ({
   registerCodeIntel: vi.fn(() => ({
@@ -274,6 +284,23 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
     await waitFor(() =>
       expect(screen.getByTestId("code-pane").textContent).toContain(
         'description: "Rewritten from the panel."',
+      ),
+    );
+    expect(saveDraftPosts()).toHaveLength(0);
+  });
+
+  test("the sync runs BOTH ways: a hand edit in Code updates the settings fields", async () => {
+    // The fields read the live document rather than holding a private copy, which is the only way
+    // the two can't drift. Without it, an author who edits `name:` by hand in Code and then touches
+    // any settings field would silently write their old name back over it.
+    renderStudio("/skills/sk-1/studio?rail=settings&mode=code");
+    const panel = await openLoadedSettings();
+
+    fireEvent.click(await screen.findByTestId("code-hand-edit"));
+
+    await waitFor(() =>
+      expect((within(panel).getByLabelText("Name") as HTMLInputElement).value).toBe(
+        "renamed-by-hand",
       ),
     );
     expect(saveDraftPosts()).toHaveLength(0);
