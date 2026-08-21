@@ -845,7 +845,8 @@ function ActionsSection({
             <AlertDescription>
               Dispatched as{" "}
               <span className="font-medium">{githubAccount?.login ?? "your connected account"}</span>
-              . The workflow must already declare a <code>workflow_dispatch</code> trigger, and GitHub
+              . The workflow must already declare a{" "}
+              <code className="font-mono">workflow_dispatch</code> trigger, and GitHub
               rejects any input it does not declare — so only the inputs below are sent.
             </AlertDescription>
           </Alert>
