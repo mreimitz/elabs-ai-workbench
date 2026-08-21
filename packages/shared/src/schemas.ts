@@ -146,6 +146,15 @@ import {
 import { HUB_ICON_MAX_LENGTH } from "./hub-icon.js";
 // AM-OB10 — the ONE warn-vs-alert predicate, shared with the API evaluator and the web editor.
 import { validateWatchThresholds } from "./watch-state.js";
+// AM-OB11 — the `workflow_dispatch` action's field rules live in ONE module, shared with the API
+// dispatcher, so the wire's 400 and the dispatcher's refusal can never diverge.
+import {
+  isWatchWorkflowFile,
+  isWatchWorkflowOwner,
+  isWatchWorkflowRef,
+  isWatchWorkflowRepo,
+  validateWorkflowDispatchTarget,
+} from "./watch-workflow-dispatch.js";
 // Type-only imports for the recursive schemas — a `z.lazy` needs an explicit `z.ZodType<T>` annotation
 // (the generative-UI catalog node, and — crew nesting WP0.1 / D-CN5 — the self-referencing agent
 // report). `import type` is erased at build and introduces no runtime cycle (types.ts does not import
@@ -1223,6 +1232,51 @@ const watchTemplateSchema = z
 export const watchNotifySeveritySchema = z.enum(WATCH_NOTIFY_SEVERITIES);
 export const watchRuleTriggerSchema = z.enum(WATCH_RULE_TRIGGERS);
 
+// AM-OB11 — the typed GitHub Actions dispatch. INPUT and STORED are the SAME shape (there is no
+// credential to swap for a handle: the token is the app-wide connected GitHub account, read
+// server-side at dispatch time), so ONE factory builds the variant for both unions below — zod
+// object instances are not reusable across two discriminated unions without re-creating them, and
+// a factory keeps "the wire accepts exactly what storage returns" true by construction.
+//
+// Every field-level rule DELEGATES to `watch-workflow-dispatch.ts` — the SAME predicates the API
+// dispatcher re-asserts before it builds a URL — so a 400 here and a refusal there can never
+// disagree. The refinements are per-FIELD (not a `superRefine` on the object) deliberately:
+// `z.discriminatedUnion` requires each option to be a ZodObject, and an object-level effect would
+// make it a ZodEffects and fail to compile into the union.
+function watchWorkflowDispatchActionSchema() {
+  return z
+    .object({
+      type: z.literal("workflow_dispatch"),
+      owner: z
+        .string()
+        .trim()
+        .refine(isWatchWorkflowOwner, { message: "invalid GitHub owner" }),
+      repo: z.string().trim().refine(isWatchWorkflowRepo, { message: "invalid repository name" }),
+      workflow: z
+        .string()
+        .trim()
+        .refine(isWatchWorkflowFile, { message: "invalid workflow file name or id" }),
+      ref: z.string().trim().refine(isWatchWorkflowRef, { message: "invalid git ref" }),
+      inputs: z
+        .record(z.string())
+        .refine(
+          (inputs) =>
+            validateWorkflowDispatchTarget({
+              // Only the `inputs` half is under test here; the other three fields are checked by
+              // their own refinements above, so this probe uses values known to pass them.
+              owner: "o",
+              repo: "r",
+              workflow: "w.yml",
+              ref: "main",
+              inputs,
+            }).ok,
+          { message: "invalid workflow inputs" },
+        )
+        .optional(),
+    })
+    .strict();
+}
+
 // The INPUT action union (what the wire accepts). `webhook` carries the plaintext `url`.
 export const watchActionInputSchema = z.discriminatedUnion("type", [
   z
@@ -1245,6 +1299,7 @@ export const watchActionInputSchema = z.discriminatedUnion("type", [
       template: watchTemplateSchema,
     })
     .strict(),
+  watchWorkflowDispatchActionSchema(),
 ]);
 
 // The STORED/RETURNED action union (`webhook` carries only the opaque `secretRef`). Used to validate
@@ -1270,6 +1325,7 @@ export const watchActionSchema = z.discriminatedUnion("type", [
       template: watchTemplateSchema,
     })
     .strict(),
+  watchWorkflowDispatchActionSchema(),
 ]);
 
 const watchActionsInputSchema = z.array(watchActionInputSchema).min(1).max(WATCH_RULE_MAX_ACTIONS);

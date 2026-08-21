@@ -21,4 +21,5 @@ export * from "./skill-security.js";
 export * from "./token-usage.js";
 export * from "./types.js";
 export * from "./watch-state.js";
+export * from "./watch-workflow-dispatch.js";
 export * from "./workbench-mcp.js";

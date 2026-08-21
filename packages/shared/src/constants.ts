@@ -593,6 +593,10 @@ export const WATCH_ACTION_TYPES = [
   "promote_to_test",
   "run_grader",
   "webhook",
+  // RM-17 Phase 6 (AM-OB11) — the ONE typed integration beside the generic webhook: dispatch a
+  // GitHub Actions workflow, so "regression detected -> CI re-runs the suite" closes with no new
+  // infrastructure. Its vocabulary, bounds and URL builder live in `watch-workflow-dispatch.ts`.
+  "workflow_dispatch",
 ] as const;
 // A rule name length guard + a cap on the number of actions a single rule may carry (defensive; a
 // rule with hundreds of actions is almost certainly a mistake and would fan out audit rows).
