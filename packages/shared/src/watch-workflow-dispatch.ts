@@ -166,10 +166,7 @@ export function validateWorkflowDispatchTarget(
   if (inputs !== undefined) {
     const keys = Object.keys(inputs);
     if (keys.length > WATCH_WORKFLOW_INPUTS_MAX) {
-      return fail(
-        "inputs",
-        `GitHub accepts at most ${WATCH_WORKFLOW_INPUTS_MAX} workflow inputs.`,
-      );
+      return fail("inputs", `GitHub accepts at most ${WATCH_WORKFLOW_INPUTS_MAX} workflow inputs.`);
     }
     for (const key of keys) {
       if (!isWatchWorkflowInputKey(key)) {

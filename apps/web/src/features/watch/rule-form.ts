@@ -12,7 +12,10 @@ import type {
   WatchWindowConfig,
   WatchWindowDuration,
   WatchWindowOp,
+  WatchWorkflowDispatchTarget,
 } from "@mcp-token-footprint/shared";
+// AM-OB11 — the ONE validator, shared with the wire schema and the API dispatcher.
+import { validateWorkflowDispatchTarget } from "@mcp-token-footprint/shared";
 
 /**
  * Pure form<->wire conversions for the watch-rule editor (Observability WP4.4). No React here —
@@ -71,7 +74,23 @@ export type ActionFormState = {
    *  never surfaced here, only the FACT a secret exists); `url` always starts blank on load — a
    *  webhook's target is write-only, never echoed back by the API. */
   webhook: { enabled: boolean; url: string; template: string; hasSavedSecret: boolean };
+  /** AM-OB11 — the typed GitHub Actions dispatch. Unlike `webhook` this slot carries NO secret at
+   *  all, so it round-trips fully: the credential is the app-wide connected GitHub account, which
+   *  the API resolves server-side and never returns. `inputs` are edited as ordered pairs (blank
+   *  rows are allowed while typing) and collapsed to a record only on submit. */
+  workflow_dispatch: {
+    enabled: boolean;
+    owner: string;
+    repo: string;
+    workflow: string;
+    ref: string;
+    inputs: WorkflowInputPair[];
+  };
 };
+
+/** One `workflow_dispatch` input row. An ARRAY (not a record) so a half-typed blank row can exist
+ *  in the editor without silently colliding on an empty key. */
+export type WorkflowInputPair = { key: string; value: string };
 
 export function emptyActionFormState(): ActionFormState {
   return {
@@ -81,6 +100,17 @@ export function emptyActionFormState(): ActionFormState {
     promote_to_test: { enabled: false, collectionId: "" },
     run_grader: { enabled: false, graderId: "" },
     webhook: { enabled: false, url: "", template: "", hasSavedSecret: false },
+    // AM-OB11 — QUIET BY DEFAULT (conventions §11). This is the one action that spends money
+    // outside this app, so it never ships pre-enabled; `ref` defaults to "main" only as a
+    // placeholder-grade convenience once the operator turns it on.
+    workflow_dispatch: {
+      enabled: false,
+      owner: "",
+      repo: "",
+      workflow: "",
+      ref: "main",
+      inputs: [],
+    },
   };
 }
 
@@ -107,6 +137,16 @@ export function actionsToFormState(actions: WatchAction[]): ActionFormState {
         break;
       case "webhook":
         state.webhook = { enabled: true, url: "", template: action.template ?? "", hasSavedSecret: true };
+        break;
+      case "workflow_dispatch":
+        state.workflow_dispatch = {
+          enabled: true,
+          owner: action.owner,
+          repo: action.repo,
+          workflow: action.workflow,
+          ref: action.ref,
+          inputs: Object.entries(action.inputs ?? {}).map(([key, value]) => ({ key, value })),
+        };
         break;
       default: {
         const _exhaustive: never = action;
@@ -140,7 +180,33 @@ export function validateActions(state: ActionFormState): ActionsValidation {
       message: "Enter the webhook URL — it's never stored in a form this editor can prefill.",
     };
   }
+  if (state.workflow_dispatch.enabled) {
+    // AM-OB11 — the SAME validator the wire and the API dispatcher use, so the inline message here
+    // and the 400 can never disagree about what a valid target is.
+    const check = validateWorkflowDispatchTarget(workflowDispatchTarget(state.workflow_dispatch));
+    if (!check.ok) return { ok: false, message: check.message };
+  }
   return { ok: true };
+}
+
+/** Collapse the editor's ordered input rows to the wire's record, dropping fully-blank rows (a
+ *  half-typed row is a normal editing state, not a target). Exported for the validator + the form. */
+export function workflowDispatchTarget(
+  state: ActionFormState["workflow_dispatch"],
+): WatchWorkflowDispatchTarget {
+  const inputs: Record<string, string> = {};
+  for (const row of state.inputs) {
+    const key = row.key.trim();
+    if (key.length === 0 && row.value.trim().length === 0) continue;
+    inputs[key] = row.value;
+  }
+  return {
+    owner: state.owner.trim(),
+    repo: state.repo.trim(),
+    workflow: state.workflow.trim(),
+    ref: state.ref.trim(),
+    ...(Object.keys(inputs).length > 0 ? { inputs } : {}),
+  };
 }
 
 /** Build the wire action list from the fixed-slot form state. Assumes {@link validateActions} passed. */
@@ -169,6 +235,9 @@ export function actionsFormToInput(state: ActionFormState): WatchActionInput[] {
       url: state.webhook.url.trim(),
       ...(state.webhook.template.trim() ? { template: state.webhook.template.trim() } : {}),
     });
+  }
+  if (state.workflow_dispatch.enabled) {
+    out.push({ type: "workflow_dispatch", ...workflowDispatchTarget(state.workflow_dispatch) });
   }
   return out;
 }

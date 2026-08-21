@@ -276,3 +276,91 @@ describe("AM-OB10 — the new fields round-trip without changing an existing rul
     expect(toWatchRuleInput(state).window?.noData).toBe("notify");
   });
 });
+
+// ═══ AM-OB11 — the workflow_dispatch slot ════════════════════════════════════════════════════════
+
+describe("workflow_dispatch form state (AM-OB11)", () => {
+  const target = {
+    owner: "acme-labs",
+    repo: "workbench",
+    workflow: "nightly.yml",
+    ref: "main",
+  } as const;
+
+  test("a NEW rule ships the action OFF — the one action that spends money is quiet by default", () => {
+    const state = emptyActionFormState();
+    expect(state.workflow_dispatch.enabled).toBe(false);
+    expect(actionsFormToInput(state)).toEqual([]);
+  });
+
+  test("the wire action is built from the slot, dropping blank input rows", () => {
+    const state = emptyActionFormState();
+    state.workflow_dispatch = {
+      enabled: true,
+      ...target,
+      inputs: [
+        { key: "suite_id", value: "s-42" },
+        { key: "", value: "" }, // a half-typed row the operator left behind
+      ],
+    };
+    expect(actionsFormToInput(state)).toEqual([
+      { type: "workflow_dispatch", ...target, inputs: { suite_id: "s-42" } },
+    ]);
+  });
+
+  test("no inputs means the field is OMITTED, not sent as an empty object", () => {
+    const state = emptyActionFormState();
+    state.workflow_dispatch = { enabled: true, ...target, inputs: [] };
+    expect(actionsFormToInput(state)).toEqual([{ type: "workflow_dispatch", ...target }]);
+  });
+
+  test("a persisted action projects back onto the slot in full — nothing is write-only here", () => {
+    const state = actionsToFormState([
+      { type: "workflow_dispatch", ...target, inputs: { suite_id: "s-42" } },
+    ]);
+    expect(state.workflow_dispatch).toEqual({
+      enabled: true,
+      ...target,
+      inputs: [{ key: "suite_id", value: "s-42" }],
+    });
+  });
+
+  test("a DUPLICATE keeps the target (unlike a webhook, there is no secret to lose)", () => {
+    const rule: WatchRule = {
+      id: "r",
+      name: "Regression → CI",
+      enabled: true,
+      trigger: "on_terminal",
+      filter: {},
+      actions: [
+        { type: "webhook", secretRef: "ref-1" },
+        { type: "workflow_dispatch", ...target },
+      ],
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z",
+    };
+    const copy = ruleToDuplicateFormState(rule);
+    expect(copy.actions.webhook.enabled).toBe(false);
+    expect(copy.actions.workflow_dispatch.enabled).toBe(true);
+    expect(copy.actions.workflow_dispatch.owner).toBe("acme-labs");
+  });
+
+  test("validateActions refuses a target the API would refuse, using the SAME validator", () => {
+    const state = emptyActionFormState();
+    state.workflow_dispatch = {
+      enabled: true,
+      ...target,
+      repo: "acme-labs/workbench", // an extra URL path segment
+      inputs: [],
+    };
+    const result = validateActions(state);
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.message).toMatch(/not an owner\/repo pair or a URL/);
+  });
+
+  test("validateActions passes a good target", () => {
+    const state = emptyActionFormState();
+    state.workflow_dispatch = { enabled: true, ...target, inputs: [] };
+    expect(validateActions(state)).toEqual({ ok: true });
+  });
+});

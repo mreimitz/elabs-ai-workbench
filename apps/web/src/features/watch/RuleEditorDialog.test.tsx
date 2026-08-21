@@ -1,7 +1,11 @@
 import type { ComponentProps, ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import type { WatchRule, WatchWindowPreview } from "@mcp-token-footprint/shared";
+import type {
+  GithubAccountStatus,
+  WatchRule,
+  WatchWindowPreview,
+} from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // jsdom can't resolve @elabs-ai/components-charts' @visx deep imports (the established `GuardrailStopsPanel.test`/
@@ -27,23 +31,43 @@ vi.mock("../../lib/api", async (importOriginal) => {
     listServers: vi.fn().mockResolvedValue([]),
     listSkills: vi.fn().mockResolvedValue([]),
     listCollections: vi.fn().mockResolvedValue([]),
+    // AM-OB11 — the workflow-dispatch slot asks whether a GitHub account is connected. Stubbed so no
+    // test hits the network; each test sets the answer it needs.
+    getGithubAccount: vi.fn(),
     createWatchRule: vi.fn(),
     updateWatchRule: vi.fn(),
     previewWatchWindow: vi.fn(),
   };
 });
 
-import { ApiError, createWatchRule, previewWatchWindow, updateWatchRule } from "../../lib/api";
+import {
+  ApiError,
+  createWatchRule,
+  getGithubAccount,
+  previewWatchWindow,
+  updateWatchRule,
+} from "../../lib/api";
 import { RuleEditorDialog } from "./RuleEditorDialog";
 
 const mockCreate = vi.mocked(createWatchRule);
 const mockUpdate = vi.mocked(updateWatchRule);
 const mockPreview = vi.mocked(previewWatchWindow);
+const mockGithub = vi.mocked(getGithubAccount);
+
+const NO_GITHUB: GithubAccountStatus = { connected: false, clientIdConfigured: false };
+const CONNECTED_GITHUB: GithubAccountStatus = {
+  connected: true,
+  clientIdConfigured: true,
+  login: "octo-owner",
+  scopes: ["repo"],
+};
 
 beforeEach(() => {
   mockCreate.mockReset();
   mockUpdate.mockReset();
   mockPreview.mockReset();
+  mockGithub.mockReset();
+  mockGithub.mockResolvedValue(NO_GITHUB);
 });
 
 if (typeof window.matchMedia !== "function") {
@@ -327,5 +351,134 @@ describe("RuleEditorDialog — invalid config surfaces zod detail inline", () =>
     fireEvent.click(screen.getByRole("button", { name: "Create rule" }));
 
     expect(await screen.findByText("filter.dateFrom: Invalid datetime")).toBeInTheDocument();
+  });
+});
+
+// ═══ AM-OB11 — the GitHub Actions workflow_dispatch action slot ═══════════════════════════════════
+
+describe("RuleEditorDialog — workflow_dispatch (AM-OB11)", () => {
+  const SLOT = "Run a GitHub Actions workflow";
+
+  test("with NO connected GitHub account the slot is disabled and says why, reachably", async () => {
+    mockGithub.mockResolvedValue(NO_GITHUB);
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+
+    const checkbox = await screen.findByRole("checkbox", { name: SLOT });
+    // Wait for the lookup to SETTLE, so this asserts the "no account" reason and not the transient
+    // "checking…" one.
+    await waitFor(() =>
+      expect(screen.getByText(/No GitHub account is connected/)).toBeInTheDocument(),
+    );
+    expect(checkbox).toBeDisabled();
+
+    // The reason is VISIBLE (not tooltip-only) and wired to the control via aria-describedby, so a
+    // keyboard/screen-reader user gets it without hovering (D-TB5's discipline).
+    const describedBy = checkbox.getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    const reason = document.getElementById(describedBy as string);
+    expect(reason?.textContent).toMatch(/No GitHub account is connected/);
+    expect(reason?.textContent).toMatch(/Settings/);
+  });
+
+  test("the slot warns that it starts a CI run and spends money", async () => {
+    mockGithub.mockResolvedValue(CONNECTED_GITHUB);
+    renderEditor();
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: SLOT })).not.toBeDisabled());
+
+    expect(
+      screen.getByText(/Starts a CI run on GitHub and spends Actions minutes/),
+    ).toBeInTheDocument();
+    // ...and that no credential is kept on the rule.
+    expect(screen.getByText(/no credential is stored on the rule/)).toBeInTheDocument();
+  });
+
+  test("a connected account lets the slot be enabled and builds the wire action", async () => {
+    mockGithub.mockResolvedValue(CONNECTED_GITHUB);
+    mockCreate.mockResolvedValueOnce({ ...RULE_WITH_WEBHOOK, id: "new-rule" });
+    renderEditor();
+
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Regression → CI" } });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+
+    // The slot starts disabled while the account lookup is in flight — wait for it to settle rather
+    // than racing it (that transition is the behaviour, not a test artefact). Re-queried each poll
+    // because the disabled variant is wrapped in a Tooltip trigger, so the node is replaced.
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: SLOT })).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("checkbox", { name: SLOT }));
+
+    fireEvent.change(await screen.findByLabelText("Owner"), { target: { value: "acme-labs" } });
+    fireEvent.change(screen.getByLabelText("Repository"), { target: { value: "workbench" } });
+    fireEvent.change(screen.getByLabelText("Workflow file or id"), {
+      target: { value: "nightly.yml" },
+    });
+    // `ref` already defaults to "main" — a visible starting value, not a hidden default.
+    expect(screen.getByLabelText("Ref (branch or tag)")).toHaveValue("main");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create rule" }));
+    await waitFor(() => expect(mockCreate).toHaveBeenCalledTimes(1));
+    expect(mockCreate.mock.calls[0]?.[0]?.actions).toEqual([
+      {
+        type: "workflow_dispatch",
+        owner: "acme-labs",
+        repo: "workbench",
+        workflow: "nightly.yml",
+        ref: "main",
+      },
+    ]);
+  });
+
+  test("an invalid target is refused inline, before any request", async () => {
+    mockGithub.mockResolvedValue(CONNECTED_GITHUB);
+    renderEditor();
+
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Bad target" } });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: SLOT })).not.toBeDisabled());
+    fireEvent.click(screen.getByRole("checkbox", { name: SLOT }));
+
+    // An owner/repo pair typed into the repo field — the classic mistake, and the one that would be
+    // an extra URL path segment if it were not validated.
+    fireEvent.change(await screen.findByLabelText("Owner"), { target: { value: "acme-labs" } });
+    fireEvent.change(screen.getByLabelText("Repository"), {
+      target: { value: "acme-labs/workbench" },
+    });
+    fireEvent.change(screen.getByLabelText("Workflow file or id"), {
+      target: { value: "nightly.yml" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Create rule" }));
+
+    expect(await screen.findByText(/not an owner\/repo pair or a URL/)).toBeInTheDocument();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  test("editing a saved rule round-trips owner/repo/workflow/ref and its inputs", async () => {
+    mockGithub.mockResolvedValue(CONNECTED_GITHUB);
+    const saved: WatchRule = {
+      ...RULE_WITH_WEBHOOK,
+      actions: [
+        {
+          type: "workflow_dispatch",
+          owner: "acme-labs",
+          repo: "workbench",
+          workflow: "nightly.yml",
+          ref: "release",
+          inputs: { suite_id: "s-42" },
+        },
+      ],
+    };
+    renderEditor({ mode: "edit", rule: saved });
+    fireEvent.click(screen.getByRole("button", { name: "Actions" }));
+    await waitFor(() => expect(screen.getByRole("checkbox", { name: SLOT })).not.toBeDisabled());
+
+    expect(await screen.findByLabelText("Owner")).toHaveValue("acme-labs");
+    expect(screen.getByLabelText("Repository")).toHaveValue("workbench");
+    expect(screen.getByLabelText("Workflow file or id")).toHaveValue("nightly.yml");
+    expect(screen.getByLabelText("Ref (branch or tag)")).toHaveValue("release");
+    // Unlike a webhook URL, nothing here is write-only — there is no secret to withhold.
+    expect(screen.getByDisplayValue("suite_id")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("s-42")).toBeInTheDocument();
   });
 });

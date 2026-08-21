@@ -189,7 +189,9 @@ test("AM-OB11 — a workflow_dispatch action round-trips through watch_rules unc
   );
 
   // And it carries NO secret handle at all — unlike `webhook`, there is nothing to swap for a ref.
-  const stored = db.prepare("SELECT actions_json FROM watch_rules WHERE id = ?").get(created.id) as {
+  const stored = db
+    .prepare("SELECT actions_json FROM watch_rules WHERE id = ?")
+    .get(created.id) as {
     actions_json: string;
   };
   assert.equal(JSON.parse(stored.actions_json)[0].secretRef, undefined);
@@ -251,7 +253,11 @@ test("AM-OB11 — the action fires from a WINDOWED rule and is NOT caught by the
   );
 
   // The contrast: a genuinely run-scoped action still DOES fall into that default.
-  const pinned = await executeWatchWindowAction({ type: "pin" }, { window: WINDOW_VIEW }, services());
+  const pinned = await executeWatchWindowAction(
+    { type: "pin" },
+    { window: WINDOW_VIEW },
+    services(),
+  );
   assert.equal(pinned.ok, false);
   assert.match(pinned.error ?? "", /requires a run/);
 });
@@ -425,7 +431,10 @@ test("AM-OB11 — the engine records an audit row for a failed dispatch", async 
     new RunRepository(db),
     services({
       dispatchWorkflow: async (target) =>
-        dispatchGithubWorkflow(target, { token: () => undefined, fetchImpl: recordingFetch([], () => ({ status: 204 })) }),
+        dispatchGithubWorkflow(target, {
+          token: () => undefined,
+          fetchImpl: recordingFetch([], () => ({ status: 204 })),
+        }),
     }),
   );
   await engine.onRunSettled("run1", Date.parse(NOW));
@@ -476,10 +485,19 @@ const HOSTILE: Array<[string, WatchWorkflowDispatchTarget]> = [
     "owner smuggles a host",
     { owner: "evil.example.com/x", repo: "r", workflow: "w.yml", ref: "main" },
   ],
-  ["owner carries userinfo", { owner: "user:pass@evil", repo: "r", workflow: "w.yml", ref: "main" }],
-  ["repo adds a path segment", { owner: "o", repo: "r/../../user", workflow: "w.yml", ref: "main" }],
+  [
+    "owner carries userinfo",
+    { owner: "user:pass@evil", repo: "r", workflow: "w.yml", ref: "main" },
+  ],
+  [
+    "repo adds a path segment",
+    { owner: "o", repo: "r/../../user", workflow: "w.yml", ref: "main" },
+  ],
   ["repo percent-encodes a slash", { owner: "o", repo: "r%2Fx", workflow: "w.yml", ref: "main" }],
-  ["workflow is a path", { owner: "o", repo: "r", workflow: ".github/workflows/w.yml", ref: "main" }],
+  [
+    "workflow is a path",
+    { owner: "o", repo: "r", workflow: ".github/workflows/w.yml", ref: "main" },
+  ],
   ["ref traverses", { owner: "o", repo: "r", workflow: "w.yml", ref: "../main" }],
   ["ref looks like argv", { owner: "o", repo: "r", workflow: "w.yml", ref: "--upload-pack=x" }],
   ["ref carries a space", { owner: "o", repo: "r", workflow: "w.yml", ref: "ma in" }],
