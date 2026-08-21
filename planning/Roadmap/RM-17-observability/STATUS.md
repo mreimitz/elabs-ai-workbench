@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-21T16:05:00Z"
+timestamp: "2026-08-21T17:10:00Z"
 status: "active"
 ---
 
@@ -80,12 +80,36 @@ had one open box before the lock and now has fourteen.
 
 ## Phase 6 — Langfuse follow-ups (amendment locked 2026-08-21 · D-OB29)
 
-> _**Scoping in progress** (agent B, dispatched 2026-08-21, branch `wp/observability/phase-6-specs`):
-> none of these thirteen has a WP spec, which blocks every future `/next-wp` batch — a spec's
-> **Files** section is what proves two work packages can run in parallel, and its **Acceptance**
-> section is what a tick is validated against. Agent B verifies each item against the shipped
-> surface and writes one spec per item into `phase-6-langfuse/`, reporting which are already
-> satisfied and therefore droppable. No code changes._
+> ✅ **SCOPED 2026-08-21** (`wp/observability/phase-6-specs`, merged). Every item below now has a
+> real spec in [`phase-6-langfuse/`](./phase-6-langfuse/) — numbered WP 6.1–6.13, each carrying a
+> **Verification finding** against the shipped surface, a **Files** list (what proves parallel
+> safety) and an **Acceptance** checklist (what a tick is validated against). The batch order and
+> the drop recommendations are in
+> [`phase-6-langfuse/index-of-findings.md`](./phase-6-langfuse/index-of-findings.md).
+>
+> **Verdicts: 9 NOT BUILT · 4 PARTIALLY BUILT · 0 already finished.** The worry that drove the
+> scoping pass — that items were asking for things the 27 shipped WPs already did — turned out
+> to be only partly right: four shrink to a residual, none vanishes entirely.
+>
+> **Three corrections to the amendment, each re-verified against source by the orchestrator
+> before the merge:**
+> 1. **AM-OB2 needs NO migration.** `run_feedback` already carries
+>    `key TEXT NOT NULL DEFAULT 'verdict'` and a free-text `comment TEXT`
+>    (`apps/api/src/db/schema.ts`), so a corrected answer persists today with no schema change.
+>    The header note below listing it as migration-bearing was wrong — **AM-OB6 is now the only
+>    migration-bearing item in this phase.**
+> 2. **AM-OB10 is a LIVE DEFECT, not an enhancement.** `apps/api/src/watch/engine.ts` returns
+>    `breached: false` for an empty window, and the not-breached branch records `window_recover`
+>    with detail *"recovered (below threshold)"* and re-arms. **A bench that goes silent while a
+>    rule is firing is reported as recovered — silence is read as good news.** This changes the
+>    item's priority from "nice to have" to "a bug in alerting".
+> 3. **AM-OB11 targeted the wrong credential store.** `api_tokens` holds a one-way SHA-256 digest
+>    (`apps/api/src/api-tokens/service.ts`) and therefore cannot present an outbound PAT; the
+>    shipped `github-account` service already holds an **encrypted** GitHub token in
+>    `app_settings` with no migration. Use that, not `api_tokens`.
+>
+> **Two findings that need an owner decision before the affected items are worth building** —
+> see the Decision log entry dated 2026-08-21 below.
 >
 > The fourteen items of [`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md), held
 > as **work packages, not decisions** — a `D-OB` number is a constraint the code must keep
@@ -160,6 +184,33 @@ retirement._
 
 
 ## Decision log
+
+- **2026-08-21 — Phase 6 scoped; four owner decisions open, none of them mine to take.**
+  The scoping pass (`wp/observability/phase-6-specs`) surfaced four questions an agent must not
+  answer for the owner. Each blocks or reshapes specific items; nothing else in Phase 6 waits on
+  them.
+  1. **Fix the alerting defect first?** AM-OB10 (WP 6.9) turned out to describe a real bug: an
+     empty window is recorded as recovery, so a silent bench reads as a healthy one. If it jumps
+     the queue it displaces WP 6.4 from batch 1 — the two cannot both go first (both touch the
+     measure/rule seam). **Recommendation: yes, take it first.** A monitoring system that reports
+     "recovered" when it has no data is worse than one that reports nothing.
+  2. **Drop AM-OB3 and AM-OB14?** Both are PARTIALLY BUILT with only polish left — deep-linkable
+     chart state, and per-bucket distribution bars on an issue list that already charts
+     occurrence over time. Dropping either costs no capability. Owner's call; the evidence is in
+     `index-of-findings.md`.
+  3. **Two upstream `@elabs-ai/components-charts` requests.** The design system ships no histogram,
+     no pivot table, and no way to size a timeline bar by anything but time. AM-OB7 and AM-OB8
+     need them. Per `library-first.md` the answer is to raise the gap upstream, **never** to
+     hand-roll a chart here — so either the owner raises them, or those parts do not ship.
+  4. **AM-OB12's premise does not hold as written.** It asks for boolean share-true metrics and
+     names a "hallucination flag" as the example. Verified: the answer-validation verdict is
+     **three-way** — `ANSWER_VALIDATION_VERDICTS = ["answered","partial","unanswered"]`
+     (`packages/shared/src/constants.ts`) — and no hallucination flag exists anywhere in the
+     app. The spec proposes a reframe delivering the same value. Take the reframe, or drop the
+     item; do not build it as the amendment worded it.
+  Also recorded: **AM-OB6 part (d)** ("provider-ingested costs take precedence over inferred")
+  has nothing to build against — no provider hands this app a cost figure today. Recommend
+  dropping that sub-part while keeping (a)–(c).
 
 - **2026-08-21 — D-OB29: the Langfuse amendment is LOCKED.** Owner accepted
   [`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md) in full. Two sub-decisions,
