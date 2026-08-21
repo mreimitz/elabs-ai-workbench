@@ -22,6 +22,8 @@ import {
   dashboardChartReorderInputSchema,
   metricsBucketSchema,
   parseRunFilterFromQuery,
+  parseRunMetricsRatio,
+  ratioConfigIssue,
   RunFilterError,
   runFeedbackInputSchema,
   runMetricsGroupBySchema,
@@ -76,7 +78,17 @@ export async function registerObservabilityRoutes(
     const from = firstString(query.from);
     const to = firstString(query.to);
 
-    return computeRunMetrics(db, { filter, from, to, bucket, groupBy, measures });
+    // RM-17 Phase 6 (AM-OB4) — the `ratio` measure's config rides as a SECOND JSON param rather than
+    // making this a POST (four callers share this GET). The coherence rule is the SAME
+    // `ratioConfigIssue` the chart and watch-rule zods run, so a 400 here cannot disagree with theirs
+    // — including its `q` refusal, which mirrors the query filter's own rejection above: the metrics
+    // service has no FTS path, and silently dropping `q` would answer a different question.
+    const rawRatio = firstString(query.ratio);
+    const ratio = rawRatio !== undefined ? parseRunMetricsRatio(rawRatio) : undefined;
+    const ratioIssue = ratioConfigIssue(measures, ratio);
+    if (ratioIssue !== null) throw new RunFilterError(ratioIssue);
+
+    return computeRunMetrics(db, { filter, from, to, bucket, groupBy, measures, ratio });
   });
 
   app.get("/api/metrics/scans", async (request) => {

@@ -399,9 +399,9 @@ test("RunFilter composes with the metrics window (status + providerKind + date)"
   assert.equal(windowed.to, "2026-07-02T23:59:59.999Z");
 });
 
-// ── Empty slices OMITTED, feedbackRate unavailable ────────────────────────────────────────────────
+// ── Empty slices OMITTED ──────────────────────────────────────────────────────────────────────────
 
-test("empty slices are omitted (never zero-filled); feedbackRate is unavailable (no series)", () => {
+test("empty slices are omitted (never zero-filled); feedbackRate is a real series now", () => {
   const db = createDatabase();
   seedMixed(db);
   const res = computeRunMetrics(db, {
@@ -411,9 +411,17 @@ test("empty slices are omitted (never zero-filled); feedbackRate is unavailable 
   });
   // No grades seeded → meanScore has NO points anywhere (omitted, not 0-filled).
   assert.equal(res.series.filter((s) => s.measure === "meanScore").length, 0);
-  // feedbackRate has no backing store → listed in unavailableMeasures, emits no series.
-  assert.deepEqual(res.unavailableMeasures, ["feedbackRate"]);
-  assert.equal(res.series.filter((s) => s.measure === "feedbackRate").length, 0);
+  // AM-OB4 — `feedbackRate` is no longer permanently unavailable: it is a NAMED RATIO computed by the
+  // same machinery as `ratio`. Nothing here has feedback, so every bucket's numerator is 0 while the
+  // denominator is not — and a 0-of-N share IS a real measurement, so the points EXIST and read 0.
+  // (Contrast the zero-DENOMINATOR case, which is omitted — pinned by its own test below.)
+  assert.deepEqual(res.unavailableMeasures, []);
+  const feedbackSeries = res.series.filter((s) => s.measure === "feedbackRate");
+  assert.equal(feedbackSeries.length, 1);
+  for (const point of (feedbackSeries[0] as RunMetricsSeries).points) {
+    assert.equal(point.value, 0);
+    assert.ok(point.n > 0, "n is the DENOMINATOR count, so a real 0% share still reports its base");
+  }
 });
 
 // ── Acceptance #3 — meanScore equals the suite-analytics selection ────────────────────────────────
