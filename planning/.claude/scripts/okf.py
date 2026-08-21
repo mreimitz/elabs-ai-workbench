@@ -1760,7 +1760,15 @@ def project_link_rewrites(
                 replacement = "/" + relative(root, moved)
             else:
                 replacement = os.path.relpath(moved, path.parent).replace(os.sep, "/")
-            return match.group(0).replace(raw, replacement + trailer, 1)
+            # Rewrite ONLY the target span, never the label. `match.group(0).replace(raw, …)`
+            # replaced the FIRST occurrence of the target text anywhere in the link — so a
+            # self-labelled link like [`/Roadmap/RM-01-…/STATUS.md`](/Roadmap/RM-01-…/STATUS.md)
+            # had its LABEL rewritten and its real target left dangling. Slice by the group's own
+            # span instead, which cannot confuse the two.
+            whole = match.group(0)
+            start = match.start(1) - match.start(0)
+            end = match.end(1) - match.start(0)
+            return whole[:start] + replacement + trailer + whole[end:]
 
         updated = LINK_RE.sub(repoint, text)
         if updated == text:

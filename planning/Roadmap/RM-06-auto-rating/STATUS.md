@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Auto-Rating \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the auto-rating plan, read and updated by /next-wp auto-rating. A box is"
 tags: ["roadmap", "RM-06"]
-timestamp: "2026-08-21T21:55:00Z"
+timestamp: "2026-08-21T22:20:00Z"
 status: "active"
 ---
 # Auto-Rating — work-package status ledger · **PRIORITY: HIGH**
@@ -87,16 +87,33 @@ ticked **only** when the WP's Acceptance is met and the gate
 > new RM item so RM-06 can retire on its owner walk alone*). The owner chose **build**, so this
 > phase stays inside RM-06 and RM-06 does **not** retire until it is done. The "do not pick up
 > without owner instruction" gate is now **satisfied, not removed** — it did its job.
-- [ ] WP 5.1 — skill findings → SkillFlow suggestion drafts / Skill IDE deep-links; server
-      findings → server detail (Advisor evidence when Advisor Phase 1 lands) — **BLOCKED ON A SPEC:
-      this WP has none.** A spec-authoring pass is in progress (agent · `wp/auto-rating/phase-5-specs`,
-      2026-08-21) to produce `wp-5.1-cross-links.md` grounded in the real surfaces. Note the ledger
-      line's own conditional is already stale — **Advisor Phases 1–2 are DONE**, so the Advisor
-      evidence is available now, not "when Phase 1 lands"
-- [ ] WP 5.2 — base verdict as CI assertable (`roadmap/ci/`) + verdict trend per server/skill —
-      **BLOCKED ON A SPEC: this WP has none.** Same authoring pass will produce
-      `wp-5.2-verdict-ci-assertable.md`. The path `roadmap/ci/` in this line is **stale** — that
-      folder is now `planning/Roadmap/RM-08-ci/`
+- [ ] WP 5.1 — rating findings → skill/server links + rating-sourced SkillFlow suggestions —
+      spec [`wp-5.1-cross-links.md`](./wp-5.1-cross-links.md) (**M**, no migration; depends on
+      nothing open — its stated dep WP 4.3 is done). **Scope was much larger than this line implied
+      and is now much smaller: the Issues-tab half ALREADY SHIPS.** `IssuesPanel` describes itself as
+      "the ONE Issues-tab surface, shared by the MCP-server detail view and the skill inspector" and
+      is mounted on **both** (`ServersView.tsx:918`, `SkillInspector.tsx:801`), behind
+      `GET /api/{servers,skills}/:id/issues`; `RatingIssueService.resolveTargets`
+      (`issue-service.ts:156`) already resolves a bare `FixTarget` into concrete ids, and
+      `rating_issues` already persists `targetKind`/`targetId`/`targetName`/`skillVersionId`. **The
+      real remaining gap is narrow — nothing turns that id into a LINK**: `/skills/` and `/servers/`
+      appear nowhere in either issues feature directory, and every web consumer of `fixTarget` renders
+      a chip. Two corrections to the old line: the "when Advisor Phase 1 lands" conditional is
+      **stale** (Advisor Phases 1–2 done 2026-08-18), and the Advisor rule itself is an explicit
+      **non-goal**, deferred to an RM-01 Phase 3 WP, because Advisor's rule registry order is pinned
+      by a test in RM-01's file set
+- [ ] WP 5.2 — base rating as two suite-family CI assertions + an `answeredRate` trend measure —
+      spec [`wp-5.2-verdict-ci-assertable.md`](./wp-5.2-verdict-ci-assertable.md) (**M — was sized S
+      in `item.md`; corrected**, no migration: every column it reads exists at v26/v27/v41). It
+      **extends the built RM-08 assertion engine** rather than creating one. Three corrections to the
+      old line: `roadmap/ci/` is **stale** (now `planning/Roadmap/RM-08-ci/`, and complete — 11 WPs,
+      Phases 1–3 + Phase MCP); **"base verdict" does not exist as a value** — the base rating is three
+      facets (`answerValidation`, `insightSurplus`, `errorForensics`) and no scalar verdict is
+      persisted, so the spec gates the facets rather than inventing a composite, which would also
+      risk **AR6**; and "verdict trend per server/skill" had no home — resolved through the existing
+      metrics grammar, since `RUN_METRICS_GROUP_BY` already contains `server` and `skill`
+      (`constants.ts:411,415`), so one new measure reaches the chart composer and watch rules with
+      **no new endpoint and no new page**
 - [ ] WP 5.3 — judge-settings live preview + bounded re-rate window — **proposed 2026-08-19**
       (landscape research; spec [`wp-judge-preview-and-rerate.md`](./wp-judge-preview-and-rerate.md))
       — owner-gated, append-only per AR6

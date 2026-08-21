@@ -537,6 +537,34 @@ class GeneratorIntegrationTests(unittest.TestCase):
         )
         self.assertEqual([], okf.validate(self.root))
 
+    def test_repoint_rewrites_the_target_not_a_matching_label(self) -> None:
+        """A self-labelled link must have its TARGET repointed, never its label.
+
+        Regression guard. `repoint` used to do `match.group(0).replace(raw, replacement, 1)`,
+        which replaces the FIRST occurrence of the target text anywhere in the link. When the
+        label is byte-identical to the target — the natural way to write a bare path link, e.g.
+        [`/Roadmap/RM-01-advisor/STATUS.md`](/Roadmap/RM-01-advisor/STATUS.md) — the first
+        occurrence is inside the LABEL, so completing an item rewrote the label and left the real
+        target dangling at the old path. Found 2026-08-21 while authoring RM-06 Phase 5 specs.
+        """
+        self.ensure_domains()
+        docu_tag = self.make_docu()
+        self.write_ledger()
+
+        target = f"/Roadmap/{MVP_ITEM}/STATUS.md"
+        follow_on = self.root / "Roadmap" / FOLLOW_ON_ITEM / "item.md"
+        text = follow_on.read_text(encoding="utf-8")
+        follow_on.write_text(f"{text}\n\nSelf-labelled: [`{target}`]({target})\n", encoding="utf-8")
+
+        okf.complete_roadmap(self.root, self.completion_args(docu=[docu_tag]))
+
+        moved = f"/Roadmap/completed/{MVP_ITEM}/STATUS.md"
+        body = follow_on.read_text(encoding="utf-8")
+        # The TARGET (inside the parentheses) must have moved...
+        self.assertIn(f"]({moved})", body)
+        # ...and no target may still point at the old location.
+        self.assertNotIn(f"]({target})", body)
+
     def test_complete_roadmap_repoints_bundle_links_to_the_new_path(self) -> None:
         """A later roadmap item links the MVP; the move must not break it."""
         self.ensure_domains()
