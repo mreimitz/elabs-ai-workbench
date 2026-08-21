@@ -35,3 +35,4 @@
 * [Startup-footprint MVP and the expanded target](RM-31-mvp-footprint-analyzer/) - Browse startup-footprint mvp and the expanded target.
 * [Overview → Detail restructure (Servers · Skills · Collections)](RM-32-overview-detail/) - Browse overview → detail restructure (servers · skills · collections).
 * [Estimator turn model — calibrate the run-plan preview against measured run history](RM-34-estimator-turn-model-calibrate/) - Browse estimator turn model — calibrate the run-plan preview against measured run history.
+* [Roadmap cleanup — close what is already started](RM-35-roadmap-cleanup-close-what/) - Browse roadmap cleanup — close what is already started.
