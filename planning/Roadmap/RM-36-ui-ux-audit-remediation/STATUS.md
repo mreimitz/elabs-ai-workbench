@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UI/UX audit remediation — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the RM-36 audit-remediation plan, read and updated by /next-wp RM-36."
 tags: ["roadmap", "RM-36"]
-timestamp: "2026-08-21T19:02:58Z"
+timestamp: "2026-08-21T19:18:32Z"
 status: "active"
 ---
 
@@ -80,3 +80,43 @@ that no test can stand in for:
 - [ ] A keyboard-only pass over `/advisor` and `/skills/:skillId` Overview: every stop shows a ring.
 - [ ] The un-audited `/assistant/*` surfaces: either swept with the flag on, or explicitly recorded
       as still unmeasured.
+
+### Known upstream exception — the markdown toolbar's unringed icon buttons (WP 1.4)
+
+- [ ] **Owner decision recorded.** `/skills/:skillId` → Overview renders **11 icon-only controls
+      with no focus ring, named only by a native `title=`, measuring 21×21 / 23×23**. They are the
+      only unringed focusables the audit found anywhere in the app (finding **P1-5**), and they
+      violate the written D-TB5 rule in `.claude/rules/icon-affordances.md`.
+
+      **This is not app code and is deliberately not being patched locally.** The markup comes from
+      **`streamdown@2.5.0`**, a runtime dependency of **`@elabs-ai/components-ai@4.0.0`**, whose
+      `MessageResponse` component `apps/web/src/features/skills/SkillOverview.tsx:538` renders.
+      Source: `node_modules/.pnpm/streamdown@2.5.0_.../node_modules/streamdown/dist/chunk-BO2N2NFS.js`
+      — independently re-verified by the orchestrator: that chunk carries **8** occurrences of the
+      audit's exact class string and **zero** `focus-visible` rules, and `grep -rn "Copy table"` over
+      `apps/web/src apps/api/src packages` returns **no match**. The buttons carry `title:` with no
+      `aria-label` and no rest-prop spread to add one. `@elabs-ai/components-editor@4.0.0` bundles
+      the same version.
+
+      Per `.claude/rules/library-first.md` this is a **real upstream gap, not a licence to
+      hand-roll**; a CSS override of the library's class names would be a second styling system by
+      the back door and would break silently on the next `@elabs-ai/components-*` bump. The drafted
+      upstream request (one `label` prop feeding both tooltip and `aria-label`, a token-driven
+      `focus-visible:ring-2 ring-ring`, a ≥24px target — the
+      `apps/web/src/components/IconButton.tsx` treatment) is **awaiting the owner to send it**.
+
+      **A later audit that reports "11 unringed focusables on `/skills/:skillId`" should find this
+      entry and NOT re-file it.** Re-open only when `@elabs-ai/components-*` ships a fix, or when
+      the owner decides otherwise on the note below.
+
+- [ ] **Owner call — a partial local remedy exists and was NOT taken.** The app already owns a
+      sanctioned, non-CSS override: `MD_TABLE_COMPONENTS` in
+      `apps/web/src/features/testing/ChatMarkdown.tsx:147` replaces Streamdown's table block with
+      `@elabs-ai/components-ui` `Table*` inside the app's own `ExpandableTable`, whose toolbar IS
+      built from `IconButton`. Three surfaces pass it (`ChatMarkdown.tsx:81`,
+      `hub/ConversationPane.tsx:960`, `hub/AgentTranscript.tsx:164`); `SkillOverview.tsx:538` is the
+      one bare `MessageResponse` left — orchestrator-verified. Passing that existing map there would
+      remove **the table trio** with no CSS override and no new component — but would **not** remove
+      the code-block trio (`Copy Code` / `Download file`), which shares the identical defect and
+      which no app-side `components` map covers. Decide whether to close the table half now or wait
+      for the single upstream fix.
