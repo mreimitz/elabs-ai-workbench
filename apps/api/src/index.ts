@@ -68,6 +68,10 @@ import {
 } from "./grading/judge-chain.js";
 import { createOutcomeJudge, createProviderJudgeGenerate } from "./grading/judge.js";
 import { registerGradingRoutes } from "./grading/routes.js";
+// Benchmarks Phase 6 (WP 6.1) — grade feedback + the calibration set. Its own registrar (the grading
+// registrar's positional signature is already long, and these routes share only the database).
+import { registerCalibrationRoutes } from "./grading/calibration-routes.js";
+import { GradeFeedbackRepository } from "./grading/grade-feedback-repository.js";
 import { RunReportService } from "./grading/run-report.js";
 import { SkillflowConformanceGrader } from "./grading/skillflow-conformance.js";
 import { ToolHygieneGrader } from "./grading/tool-hygiene.js";
@@ -329,6 +333,9 @@ const assistantAuth = new AssistantAuthService(
 // The GradeService is passed to the RunService so a cleanly-completed run is auto-graded post-completion
 // (a fully-guarded hook that never blocks/mutates the run).
 const gradeRepository = new GradeRepository(db);
+// Benchmarks Phase 6 (WP 6.1) — append-only human verdicts ON grade rows. Held separately from
+// `gradeRepository` on purpose: it has no update and no delete, and it never touches `run_grades`.
+const gradeFeedbackRepository = new GradeFeedbackRepository(db);
 // Auto-Rating WP 1.5 (AR1) — composes the on-demand RunReport from the persisted run + its latest-per-
 // grader grade rows (pure read, never grades/executes/mutates — AR11). Shared by the report endpoint
 // (`registerGradingRoutes` below) and the run export (`registerReportRoutes`) so both surfaces agree.
@@ -1609,6 +1616,10 @@ await registerGradingRoutes(
   // runs row + appended to the run_events replay log; the live channel is gone by re-rate time).
   runRepository,
 );
+// Benchmarks Phase 6 (WP 6.1) — human verdicts ON grades + the derived calibration set. A SEPARATE
+// dimension from grading (AR6): these routes read `run_grades` and write only `grade_feedback`, so
+// no score or aggregate anywhere changes meaning when a human clicks a thumb.
+await registerCalibrationRoutes(server, db, gradeFeedbackRepository);
 // Rating Issues registry — reads + the manual resolve/re-open + the per-target MD/JSON exports.
 await registerRatingIssueRoutes(
   server,
