@@ -3,11 +3,21 @@ type: "Work Package Spec"
 title: "WP 7.8 design — edge grammar + entry-point flows (for owner approval)"
 description: "The five decisions WP 7.8 needs signed off before any code is written: what a connection means, how an entry point's effective reading list is derived, what a refused connection says, where box positions live, and what this breaks."
 tags: ["roadmap", "RM-30"]
-timestamp: "2026-08-21T22:13:56Z"
-status: "review"
+timestamp: "2026-08-22T09:50:00Z"
+status: "approved"
 ---
 
 # WP 7.8 design — edge grammar + entry-point flows
+
+> **APPROVED BY THE OWNER 2026-08-22.** All six recommended decisions (1–6) were accepted as
+> written. **Decision 7 — the genuine call — is settled: a trace recorded before the change
+> DEGRADES with a visible notice** rather than being migrated or hidden; they are records of past
+> runs, not live state. One consequence rides with decision 5: **WP 7.8's build may take one
+> migration** for app-side box positions, and must ship the Auto-arrange reset button that decision
+> names. A separate finding in this doc — that the projector resolves branch targets in NO real
+> case, so every fork currently draws as a straight line — was NOT folded into 7.8: the owner chose
+> to **investigate how branches are actually written in the registered skills first**, and decide
+> then whether it is a small fix or its own work package.
 
 **This is a proposal, not a build.** No application code changed. WP 7.8 is marked *"short design
 doc → owner approval BEFORE build"*; this is that document. The decisions are listed at the end.
