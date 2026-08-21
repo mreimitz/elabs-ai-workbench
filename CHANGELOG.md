@@ -5,6 +5,22 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the runs feed is a link again
+
+The runs feed could already be filtered, searched, grouped, sorted, re-columned and saved as a named
+view. None of that survived a reload, and none of it travelled: the filter was in the URL, but the
+applied view, the grouping, the sort, the type facet and the visible columns were held in the page
+and thrown away. Two people looking at "the failing runs, grouped by environment, sorted by cost"
+had no way to arrive at the same screen except by describing it to each other.
+
+All of it now rides in the address bar, so the arrangement you are looking at is the link you paste.
+A saved view is additionally a short named URL, and applying one writes out what it resolves to, so a
+shared link needs no lookup to reproduce. A value that is already at its default is left out, so the
+plain `/testing/runs` address is unchanged and stays clean; a stale or hand-mangled URL opens a
+working feed instead of an error. One small bug went with it — the view picker used to keep showing
+a view's name after you edited the filter underneath it, which would have made a shared link lie
+about where it came from.
+
 ## Unreleased — a tool result reads the same wherever you open it
 
 Most MCP servers answer a tool call by handing back a single block of text, and that text is almost

@@ -213,6 +213,11 @@ Every run and suite-run in one searchable, filterable feed with running totals (
 rate). Suite-runs expand into their member sessions; drill into any one to open its console. Runs can
 be compared, reviewed, and turned into repeatable suites.
 
+The feed's whole state — the filter, the applied saved view, the grouping, the sort, the visible
+columns — lives in the address bar, so any arrangement you can reach is a link you can paste to
+someone else and they see exactly what you see. A saved view is also a short named URL. The bare
+`/testing/runs` address still opens the plain default feed.
+
 ![The unified Runs feed: 76 runs, 70.6M tokens, $90.64, a 6.6% failure rate, with grades and durations.](docs/screenshots/runs-feed.png)
 
 ### 9 · The Assistant and the multi-agent Hub

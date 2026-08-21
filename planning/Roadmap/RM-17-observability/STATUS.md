@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-21T20:05:00Z"
+timestamp: "2026-08-21T22:55:00Z"
 status: "active"
 ---
 
@@ -176,9 +176,41 @@ had one open box before the lock and now has fourteen.
 > ([`../RM-35-roadmap-cleanup-close-what/STATUS.md`](../RM-35-roadmap-cleanup-close-what/STATUS.md))
 > records it as the alternative that was considered on lock day.
 
-- [ ] AM-OB1 — full `RunFilter` + view state serializes into the URL (saved views become named
-      URLs; routes rule D-TB10) · _verify-at-pickup: the built feed has filters/search/views —
-      check whether the state already round-trips before building_
+- [x] AM-OB1 — full `RunFilter` + view state serializes into the URL — **done 2026-08-21 ·
+      `wp/roadmap-cleanup/am-ob1` (`210251a` · `24a4901`, merged) · 5 web files, no wire change,
+      no migration.**
+      **The verify-at-pickup pass paid for itself and shrank the WP by more than half.** Already
+      round-tripping: the ENTIRE `RunFilter` (all ~30 fields incl. the `q` search) under `filter=`
+      via the byte-stable shared codec, plus the Runs/Suites peer-tab and the transient `launch=1`.
+      Lost on every reload, with no `localStorage` fallback either: **the applied saved view /
+      preset** (AM-OB1's actual headline — a saved view was NOT a shareable named URL), the sort,
+      the grouping axis, the single-vs-suite type facet, and the column/preview preference — which a
+      saved view *stores* but the feed reset to default anyway. So `packages/shared/src/run-filter.ts`
+      and `apps/api/src/observability/views.ts` are **untouched**: `RunView` already carries a stable
+      `id` and `GET /api/run-views` already lists them; the residual was purely web-side.
+      New: `runs/run-feed-url.ts`, one pure React-free codec over `filter · view · type · group ·
+      sort · cols · preview`, with two rules that make a URL safe to paste — **a field at its default
+      is omitted** (so zero-param `/testing/runs` is byte-unchanged, D-TB10) and **a malformed value
+      degrades to its default rather than throwing**. Applying a view writes `view=<id>` *plus* what
+      it resolves to (a shared link needs no lookup); `?view=<id>` alone is the short named form; a
+      URL carrying explicit state is reproduced verbatim; any hand-edit drops `view=`.
+      A pre-existing bug went with it: `RunSavedViewsProps.activeId` documented "null once the bar
+      has drifted from any named view" and nothing implemented it, so the picker kept showing a
+      view's name after a hand-edit — harmless while the id was ephemeral, a lie once it travels.
+      **The teeth were verified by the orchestrator, not taken on report:** mutating
+      `hasExplicitRunFeedState` to count `view` as explicit state turns **5 tests red** across both
+      new suites; reverted after. Gate green on `main` after the merge (typecheck all packages ·
+      web **359 files / 3912 passing**).
+      **Not verified:** no browser was opened — no two-theme look, no keyboard walk (nothing visible
+      was added, but that is not a visual pass), and **the live saved-view flow was never exercised
+      against the real API** — `listRunViews` is mocked, so "create a view, copy its URL, paste it in
+      a fresh tab" — the behaviour this WP is named for — is pinned only at component level.
+      **Two owner judgement calls recorded:** a `cols=` param whose entries are all unknown resolves
+      to "hide every optional column" rather than falling back to the default set (an empty column
+      list is itself a legitimate choice, and the two are indistinguishable once parsed); and
+      applying a view now yields a noticeably longer "copy link", deliberately, to keep it
+      self-describing. A genuinely readable `?view=my-failing-runs` would need a slug column —
+      i.e. a migration — and was **not** built
 - [ ] AM-OB2 — `corrected_output` as a feedback kind through the existing `putRunFeedback`
       upsert, plus a console/review-queue affordance; the corrected answer pre-fills the
       expectation on promote-to-test, and joins the report-export `humanFeedback` block ·
