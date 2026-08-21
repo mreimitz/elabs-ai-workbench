@@ -142,6 +142,16 @@ total — the app says **"not measured"** rather than showing a zero. A 0% cache
 indistinguishable from caching that has stopped working, which is the one thing this must never
 imply. Cost has always been priced correctly per tier; what changed is that you can now see it.
 
+**A run also has a shape, and a Graph lens now draws it.** The console reads the same session as a
+node-link diagram: which tools the agent reached for, how often, where it looped, and where it erred.
+*Aggregated* (the default) merges calls that share a name into one node carrying a ×N counter, so a
+repeated `search → answer → search` pattern shows up as an actual cycle rather than a long list.
+*Expanded* unrolls every call into its own node, left to right in execution order. Each node carries
+its call count, tokens, cost and duration; a node that failed says so in words, not just in colour.
+Selecting a node filters the step log to exactly the steps behind it, and both the lens and the
+selected node live in the URL, so the view is shareable. It is a projection of runs already recorded —
+no new data is stored, and a replayed run draws the identical graph.
+
 ### 6 · Automatic run rating
 
 Every terminal run is graded automatically — **answer validation** (did the final answer address the
