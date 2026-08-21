@@ -733,6 +733,22 @@ function showsCostChip(econ: StepEconomics, costBasis: SessionCostBasis | undefi
   return econ.costUsdDelta > 0 && costBasis !== "none";
 }
 
+/**
+ * RM-33 WP 3.2 — a step's OWN economics, shaped as the `TokenUsageActual` slice `TokenAmount` reads.
+ *
+ * `undefined` when the step's snapshots cannot answer read-vs-write, which is the honest state for a
+ * run whose per-step cache composition is unknown: `TokenAmount` then renders the plain number it
+ * always did, rather than a breakdown claiming the step used no cache.
+ */
+function stepDeltaUsage(econ: StepEconomics) {
+  if (econ.cacheReadDelta === null && econ.cacheWriteDelta === null) return undefined;
+  return {
+    inputTokens: econ.tokensInDelta,
+    cacheReadTokens: econ.cacheReadDelta ?? 0,
+    cacheWriteTokens: econ.cacheWriteDelta ?? 0,
+  };
+}
+
 /** One tree row's content: the step's label (left, truncating) + status/economics chips (right). */
 function StepTreeRowLabel({
   step,
@@ -769,8 +785,11 @@ function StepTreeRowLabel({
           {deriveStatusView(step.status).label}
         </StatusBadge>
         {econ.tokensInDelta > 0 ? (
-          <Text as="span" variant="meta" tone="muted" className="tabular-nums">
-            {formatNumber(econ.tokensInDelta)}↑
+          <Text as="span" variant="meta" tone="muted">
+            {/* RM-33 WP 3.2 — the chip's OWN cache composition, differenced out of the per-step
+                cumulative snapshots the run report now carries. With no breakdown to show this
+                renders byte-identically to the bare `formatNumber(...)↑` it replaced. */}
+            <TokenAmount value={econ.tokensInDelta} direction="in" usage={stepDeltaUsage(econ)} />
           </Text>
         ) : null}
         {econ.tokensOutDelta > 0 ? (

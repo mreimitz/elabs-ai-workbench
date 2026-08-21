@@ -16,7 +16,16 @@ function step(over: Partial<RunStep> & Pick<RunStep, "id" | "type">): RunStep {
 }
 
 function econ(over: Partial<StepEconomics> = {}): StepEconomics {
-  return { tokensInDelta: 0, tokensOutDelta: 0, costUsdDelta: 0, durationMs: null, ...over };
+  return {
+    tokensInDelta: 0,
+    tokensOutDelta: 0,
+    costUsdDelta: 0,
+    // RM-33 — hotspots never read the cache deltas; null keeps the fixture honest (unknown, not 0).
+    cacheReadDelta: null,
+    cacheWriteDelta: null,
+    durationMs: null,
+    ...over,
+  };
 }
 
 const FULL_CAPS: Pick<SessionCapabilities, "costBasis" | "contextWindow"> = {

@@ -58,6 +58,10 @@ function sum(id: string, letter: string, over: Partial<SummaryRun> = {}): Summar
     tokensIn: 1000,
     tokensOut: 200,
     totalTokens: 1200,
+    // RM-33 — these fixtures predate the split and never exercise it; null = unknown, never 0.
+    cacheReadTokens: null,
+    cacheWriteTokens: null,
+    cacheHitRate: null,
     costUsd: 0.01,
     durationMs: 4000,
     peakContextTokens: 5000,

@@ -1,4 +1,5 @@
 import type { RunStep, SessionCostBasis } from "@mcp-token-footprint/shared";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { StepLog, type StepLogProps } from "./StepLog";
@@ -17,8 +18,12 @@ function step(over: Partial<RunStep> & Pick<RunStep, "id" | "type">): RunStep {
 }
 
 function renderLog(props: Partial<StepLogProps> & Pick<StepLogProps, "steps">) {
+  // `TooltipProvider` is mounted once at the app root (`main.tsx`); a chip that carries a cache
+  // breakdown renders a Radix `Tooltip`, so it needs one here too.
   return render(
-    <StepLog selectedStepId={null} onSelectStep={() => {}} {...props} />,
+    <TooltipProvider>
+      <StepLog selectedStepId={null} onSelectStep={() => {}} {...props} />
+    </TooltipProvider>,
   );
 }
 
@@ -365,5 +370,89 @@ describe("StepLog — console-header search integration: highlight + filter-to-m
     fireEvent.click(screen.getByText("Show all"));
     // Now both are visible again (Show all never hides on membership).
     expect(screen.getByTitle("search_widgets")).toBeInTheDocument();
+  });
+});
+
+// ── RM-33 WP 3.2 — the economics chips carry the step's OWN cache composition ──────────────────────
+//
+// The chips are DIFFERENCES between consecutive cumulative snapshots, so they can only be cache-aware
+// if the snapshots are. WP 3.2 put the cache trio on the run report's `stepKpis`; these prove the
+// delta survives the trip to the chip, and that a run whose snapshots cannot answer keeps the bare
+// number it always showed instead of a breakdown claiming the step used no cache (D-CT6).
+
+describe("StepLog — the economics chip decomposes its own token delta by cache (RM-33 WP 3.2)", () => {
+  const llm0 = step({
+    id: "llm0",
+    index: 0,
+    type: "llm_response",
+    label: "Turn 1",
+    durationMs: 500,
+  });
+  const llm1 = step({
+    id: "llm1",
+    index: 1,
+    type: "llm_response",
+    label: "Turn 2",
+    durationMs: 400,
+  });
+  // One reparented child so the TREE branch renders (the flat DataTable branch has no economics chips
+  // at all). It carries no snapshot, so it contributes nothing to either rollup.
+  const io = step({
+    id: "io",
+    index: 2,
+    type: "context_event",
+    spanKind: "tool_io",
+    parentStepId: "llm1",
+    durationMs: 100,
+  });
+  const steps = [llm0, llm1, io];
+
+  test("a cache-aware snapshot pair yields a per-step breakdown naming the discount and the premium", () => {
+    // Turn 1: 1,000 in, of which 800 read (~0.1x) and 100 written (1.25x).
+    // Turn 2: another 1,000 in, of which 950 read and 0 written — the prefix is warm now.
+    const kpiByStepId: ReadonlyMap<string, StepCumulativeKpi> = new Map([
+      [
+        "llm0",
+        {
+          tokensIn: 1000,
+          tokensOut: 200,
+          costUsd: 0.1,
+          cacheReadTokens: 800,
+          cacheWriteTokens: 100,
+        },
+      ],
+      [
+        "llm1",
+        {
+          tokensIn: 2000,
+          tokensOut: 400,
+          costUsd: 0.15,
+          cacheReadTokens: 1750,
+          cacheWriteTokens: 100,
+        },
+      ],
+    ]);
+    renderLog({ steps, kpiByStepId, costBasis: "api_exact" });
+
+    // Both turns moved the same GROSS 1,000 tokens — the figure alone cannot tell them apart, which
+    // is precisely the blindness this WP removes.
+    expect(screen.getAllByText("1,000↑")).toHaveLength(2);
+    // Turn 1's own delta: 1,000 gross = 100 uncached + 800 read + 100 write.
+    expect(screen.getByText(/Uncached: 100\. Cache read: 800 \(billed ~0\.1×\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Cache write: 100 \(billed 1\.25× — a premium\)/)).toBeInTheDocument();
+    // Turn 2's own delta: 1,000 gross = 50 uncached + 950 read + 0 write (differenced, not
+    // cumulative) — and no write line at all, because nothing was written that turn.
+    expect(screen.getByText(/Uncached: 50\. Cache read: 950 \(billed ~0\.1×\)/)).toBeInTheDocument();
+  });
+
+  test("snapshots with no cache composition leave the chip a bare number — never a fabricated 0", () => {
+    const kpiByStepId: ReadonlyMap<string, StepCumulativeKpi> = new Map([
+      ["llm0", { tokensIn: 1000, tokensOut: 200, costUsd: 0.1 }],
+      ["llm1", { tokensIn: 2000, tokensOut: 400, costUsd: 0.15 }],
+    ]);
+    renderLog({ steps, kpiByStepId, costBasis: "api_exact" });
+    expect(screen.getAllByText("1,000↑")).toHaveLength(2);
+    expect(screen.queryByText(/Cache read/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/served from cache/)).not.toBeInTheDocument();
   });
 });
