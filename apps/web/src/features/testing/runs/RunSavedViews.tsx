@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { RunFilter, RunView } from "@mcp-token-footprint/shared";
 import {
   AlertDialog,
@@ -53,6 +53,19 @@ export type RunSavedViewsProps = {
   /** Opaque sort hint captured verbatim into a saved view's `sort` field. */
   currentSort: unknown;
   onApply: (view: AppliedRunView) => void;
+  /**
+   * AM-OB1 — a view id that arrived in the URL as the SHORT named form (`?view=<id>` with no other
+   * feed-state param) and still has to be resolved into real state. Presets resolve immediately;
+   * a persisted view waits for the `run_views` list this component already fetches. Read ONCE, on
+   * mount: later view changes come from {@link onApply} and must not re-trigger a resolve.
+   */
+  pendingViewId?: string | null;
+  /**
+   * Called exactly once for a {@link pendingViewId}: with the resolved view (the caller applies it),
+   * or with `null` when the id names nothing — a deleted saved view, or a preset that no longer
+   * exists — so the caller can drop the dead id from the URL instead of showing a nameless label.
+   */
+  onPendingResolved?: (view: AppliedRunView | null) => void;
 };
 
 /**
@@ -68,6 +81,8 @@ export function RunSavedViews({
   currentColumns,
   currentSort,
   onApply,
+  pendingViewId = null,
+  onPendingResolved,
 }: RunSavedViewsProps) {
   const [views, setViews] = useState<RunView[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,6 +107,50 @@ export function RunSavedViews({
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // AM-OB1 — resolve a `?view=<id>` short named URL, exactly once. The ref is seeded from the FIRST
+  // render's prop and cleared the moment it is answered, so neither the async `run_views` load nor a
+  // later `currentColumns`/`currentSort` identity change can re-fire it (which would fight the
+  // operator's own edits). A preset needs no fetch; a persisted view waits for `loading` to settle.
+  const pendingRef = useRef<string | null>(pendingViewId);
+  const latestRef = useRef({ currentColumns, currentSort, onPendingResolved });
+  latestRef.current = { currentColumns, currentSort, onPendingResolved };
+  useEffect(() => {
+    const pending = pendingRef.current;
+    if (pending === null) return;
+    const { currentColumns: columns, currentSort: sort, onPendingResolved: resolve } = latestRef.current;
+    if (resolve === undefined) return;
+    if (isPresetViewId(pending)) {
+      pendingRef.current = null;
+      const preset = RUN_VIEW_PRESETS.find((p) => p.id === pending);
+      resolve(
+        preset
+          ? {
+              id: preset.id,
+              name: preset.name,
+              filter: preset.filter,
+              columns: preset.columns ?? columns,
+              sort,
+            }
+          : null,
+      );
+      return;
+    }
+    if (loading) return;
+    pendingRef.current = null;
+    const view = views.find((v) => v.id === pending);
+    resolve(
+      view
+        ? {
+            id: view.id,
+            name: view.name,
+            filter: view.filter,
+            columns: normalizeColumnsPreference(view.columns),
+            sort: view.sort,
+          }
+        : null,
+    );
+  }, [loading, views]);
 
   const activeSavedView = activeId && !isPresetViewId(activeId) ? views.find((v) => v.id === activeId) : undefined;
 

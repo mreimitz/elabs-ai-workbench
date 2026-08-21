@@ -52,13 +52,15 @@ import { runStatusBadgeStatus } from "./RunBar";
 import { RunLauncher, type RunLauncherIntent } from "./run-launcher/RunLauncher";
 import { EMPTY_RUN_FILTER_OPTIONS, RunFilterBar, type RunFilterOptionData } from "./runs/RunFilterBar";
 import { type FeedItem, type FeedSuiteItem, type RunsFeedData, loadRunsFeed } from "./runs/runs-api";
+import { isEmptyRunFilter } from "./runs/run-filter-url";
 import {
-  isEmptyRunFilter,
-  parseFilterFromSearchParams,
-  writeFilterToSearchParams,
-} from "./runs/run-filter-url";
+  type RunFeedViewState,
+  hasExplicitRunFeedState,
+  parseRunFeedViewState,
+  parseRunTableSort,
+  writeRunFeedViewState,
+} from "./runs/run-feed-url";
 import {
-  DEFAULT_RUN_COLUMNS_PREFERENCE,
   type RunColumnsPreference,
   type RunTableColumnKey,
   toVisibleColumnSet,
@@ -237,24 +239,58 @@ function RunsFeedPanel() {
   // serialize/parse helper, so a WP2.2 dashboard drill-down link (or a bookmark) hydrates the bar
   // exactly. `typeFacet` (single vs. suite ROW SHAPE) has no RunFilter equivalent — it stays a small
   // client-side facet on top, applied to the already-filtered feed by `runs-table-model.ts`.
-  const filter = useMemo(() => parseFilterFromSearchParams(searchParams), [searchParams]);
-  const setFilter = useCallback(
-    (next: RunFilter) => {
-      setSearchParams((current) => writeFilterToSearchParams(current, next), { replace: true });
+  //
+  // RM-17 Phase 6 · AM-OB1 — the filter was the ONLY half of the feed's state the URL carried; the
+  // applied saved view, the sort, the grouping axis, the Type facet and the column/preview preference
+  // all lived in `useState` and were lost on every reload, so a pasted URL never reproduced what the
+  // sender was looking at. All of it now rides in the URL through the ONE `run-feed-url.ts` codec
+  // (`filter` · `view` · `type` · `group` · `sort` · `cols` · `preview`), each param omitted at its
+  // default so the zero-param `/testing/runs` is byte-unchanged (D-TB10).
+  const feedState = useMemo(() => parseRunFeedViewState(searchParams), [searchParams]);
+  const { filter, typeFacet, groupBy, columns: columnsPreference } = feedState;
+  const { key: sortKey, dir: sortDir } = feedState.sort;
+  const activeViewId = feedState.viewId;
+
+  /**
+   * Apply a partial change to the feed's view state.
+   *
+   * `viewId` is DROPPED unless the patch names one: any hand-edit of the filter/sort/grouping/columns
+   * means the bar has drifted from whatever named view was applied, which is exactly the contract
+   * `RunSavedViewsProps.activeId` documents ("`null` if the bar has drifted") and which nothing
+   * previously implemented — the picker kept claiming a view whose filter was no longer active. Now
+   * that the id is shareable, that stale label would travel with the URL, so it is cleared here.
+   */
+  const updateFeedState = useCallback(
+    (patch: Partial<RunFeedViewState>) => {
+      setSearchParams(
+        (current) => {
+          const next: RunFeedViewState = {
+            ...parseRunFeedViewState(current),
+            viewId: null,
+            ...patch,
+          };
+          return writeRunFeedViewState(current, next);
+        },
+        { replace: true },
+      );
     },
     [setSearchParams],
   );
-  const [typeFacet, setTypeFacet] = useState<string[]>([]);
-  const [groupBy, setGroupBy] = useState<GroupBy>("none");
-  const [sortKey, setSortKey] = useState<SortKey>("started");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-
-  // Saved views (WP2.3) — which preset/persisted view is currently applied (for the picker's highlight
-  // + "Update"/"Delete" availability); column visibility + the preview-cell content source, restored by
-  // applying a view and captured when saving one.
-  const [activeViewId, setActiveViewId] = useState<string | null>(null);
-  const [columnsPreference, setColumnsPreference] = useState<RunColumnsPreference>(
-    DEFAULT_RUN_COLUMNS_PREFERENCE,
+  const setFilter = useCallback(
+    (next: RunFilter) => updateFeedState({ filter: next }),
+    [updateFeedState],
+  );
+  const setTypeFacet = useCallback(
+    (next: string[]) => updateFeedState({ typeFacet: next }),
+    [updateFeedState],
+  );
+  const setGroupBy = useCallback(
+    (next: GroupBy) => updateFeedState({ groupBy: next }),
+    [updateFeedState],
+  );
+  const setColumnsPreference = useCallback(
+    (next: RunColumnsPreference) => updateFeedState({ columns: next }),
+    [updateFeedState],
   );
   const visibleColumns = useMemo(
     () => toVisibleColumnSet(columnsPreference.visible),
@@ -533,14 +569,17 @@ function RunsFeedPanel() {
 
   const onSort = useCallback(
     (key: SortKey) => {
-      if (key === sortKey) {
-        setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
-      } else {
-        setSortKey(key);
-        setSortDir(NUMERIC_SORT_KEYS.has(key) ? "desc" : "asc");
-      }
+      const dir: SortDir =
+        key === sortKey
+          ? sortDir === "asc"
+            ? "desc"
+            : "asc"
+          : NUMERIC_SORT_KEYS.has(key)
+            ? "desc"
+            : "asc";
+      updateFeedState({ sort: { key, dir } });
     },
-    [sortKey],
+    [sortKey, sortDir, updateFeedState],
   );
 
   const openRunById = useCallback(
@@ -565,18 +604,42 @@ function RunsFeedPanel() {
 
   // Apply a saved view / preset (WP2.3): replaces the filter (→ URL, re-fetches) and restores its
   // columns + sort presentation hints wholesale.
+  //
+  // AM-OB1 — written as ONE URL update carrying both the view's id and everything it resolves to, so
+  // the resulting link is self-describing: a recipient reproduces the exact feed without having to
+  // look the view up (and still sees its NAME in the picker). The short form `?view=<id>` on its own
+  // is resolved on arrival by `RunSavedViews` — see `pendingViewId` below.
   const applyView = useCallback(
     (view: AppliedRunView) => {
-      setFilter(view.filter);
-      setColumnsPreference(view.columns);
-      const sort = parseViewSort(view.sort);
-      if (sort) {
-        setSortKey(sort.key);
-        setSortDir(sort.dir);
-      }
-      setActiveViewId(view.id);
+      const sort = parseRunTableSort(view.sort);
+      updateFeedState({
+        filter: view.filter,
+        columns: view.columns,
+        viewId: view.id,
+        ...(sort ? { sort } : {}),
+      });
     },
-    [setFilter],
+    [updateFeedState],
+  );
+
+  // AM-OB1 — the SHORT named-URL form. `?view=<id>` ON ITS OWN means "open the feed on that named
+  // view": there is no explicit state in the URL to reproduce, so the view is looked up and applied
+  // (which then writes its filter/columns/sort out, making the URL self-describing from there on). A
+  // URL that DOES carry explicit state is reproduced verbatim — `view=` is only the picker's label,
+  // so a shared link never silently re-resolves into something else. Read from the FIRST render only
+  // (`RunSavedViews` seeds a ref from it); afterwards this is always `null`.
+  const pendingViewIdRef = useRef<string | null>(
+    hasExplicitRunFeedState(searchParams) ? null : feedState.viewId,
+  );
+  const pendingViewId = pendingViewIdRef.current;
+  const onPendingViewResolved = useCallback(
+    (view: AppliedRunView | null) => {
+      pendingViewIdRef.current = null;
+      // A dead id (a deleted saved view) drops out of the URL rather than showing a nameless label.
+      if (view === null) updateFeedState({});
+      else applyView(view);
+    },
+    [applyView, updateFeedState],
   );
 
   const openExistingRun = useCallback(
@@ -769,6 +832,8 @@ function RunsFeedPanel() {
             currentColumns={columnsPreference}
             currentSort={{ key: sortKey, dir: sortDir }}
             onApply={applyView}
+            pendingViewId={pendingViewId}
+            onPendingResolved={onPendingViewResolved}
           />
           <FacetFilter
             title="Type"
@@ -1027,35 +1092,6 @@ function withPinnedRun(data: RunsFeedData, runId: string, pinned: boolean): Runs
         : item,
     ),
   };
-}
-
-/** Every valid {@link SortKey} — used only to validate a saved view's opaque `sort` blob below. */
-const ALL_SORT_KEYS = new Set<SortKey>([
-  "name",
-  "type",
-  "environment",
-  "status",
-  "turns",
-  "tools",
-  "tokens",
-  "cost",
-  "grade",
-  "started",
-  "duration",
-]);
-
-/** A saved view's opaque `sort` blob, given meaning ONLY here (the API never interprets it) — the
- *  shape `RunsView` itself writes when saving (`{ key: SortKey, dir: SortDir }`). Anything else
- *  (foreign/older client, hand-edited) is ignored rather than thrown on, so applying a view never
- *  crashes the feed over its presentation hint. */
-function parseViewSort(raw: unknown): { key: SortKey; dir: SortDir } | null {
-  if (raw === null || typeof raw !== "object") return null;
-  const obj = raw as Record<string, unknown>;
-  const key = obj.key;
-  const dir = obj.dir;
-  if (typeof key !== "string" || !ALL_SORT_KEYS.has(key as SortKey)) return null;
-  if (dir !== "asc" && dir !== "desc") return null;
-  return { key: key as SortKey, dir };
 }
 
 /**
