@@ -10,6 +10,7 @@ import {
   ASSISTANT_ENTITY_KINDS,
   ASSISTANT_OAUTH_TOKEN_PREFIX,
   COLLECTION_FILE_FORMAT_VERSION,
+  CONTEXT_SEGMENTS,
   DASHBOARD_CHART_MAX_MEASURES,
   DASHBOARD_CHART_NAME_MAX_LENGTH,
   DASHBOARD_CHART_SCAN_MEASURE_UNITS,
@@ -556,6 +557,63 @@ export const costBreakdownSchema = z
     savedVsUncachedUsd: z.number(),
     priced: z.boolean(),
     split: z.enum(["exact", "merged", "none"]),
+  })
+  .strict();
+
+/**
+ * RM-33 WP 3.2 — the run export's per-step cumulative KPI snapshot ({@link RunReportStepKpi}).
+ * `.strict()`: one builder (`apps/api/src/reports/run-kpi-by-step.ts`) produces it, so an unexpected
+ * key means somebody hand-rolled the shape instead of importing it.
+ */
+export const runReportStepKpiSchema = z
+  .object({
+    turns: z.number().int().nonnegative(),
+    toolCalls: z.number().int().nonnegative(),
+    tokensIn: z.number().int().nonnegative(),
+    tokensOut: z.number().int().nonnegative(),
+    contextTokens: z.number().int().nonnegative(),
+    costUsd: z.number(),
+    // RM-33 (D-CT6) — absent means UNKNOWN (a pre-migration run / a merged-only turn), never zero.
+    cachedTokens: z.number().int().nonnegative().optional(),
+    cacheReadTokens: z.number().int().nonnegative().optional(),
+    cacheWriteTokens: z.number().int().nonnegative().optional(),
+  })
+  .strict();
+
+/** The peak context snapshot's per-segment composition — every `ContextSegment`, no extras. */
+const peakContextSegmentsSchema = z
+  .object(
+    Object.fromEntries(CONTEXT_SEGMENTS.map((segment) => [segment, z.number()])) as Record<
+      (typeof CONTEXT_SEGMENTS)[number],
+      z.ZodNumber
+    >,
+  )
+  .strict();
+
+/**
+ * RM-33 WP 3.2 — the run export's `statistics` block ({@link RunReportStatistics}).
+ *
+ * `.strict()` is the point of the schema, not a detail: this block was an untyped API-local literal
+ * that `apps/web` re-declared by hand, so the two could drift with nothing to catch it. A key the
+ * contract does not name is now a test failure on both sides.
+ */
+export const runReportStatisticsSchema = z
+  .object({
+    turns: z.number().int().nonnegative(),
+    toolCalls: z.number().int().nonnegative(),
+    tokensIn: z.number().int().nonnegative(),
+    tokensOut: z.number().int().nonnegative(),
+    cachedTokens: z.number().int().nonnegative(),
+    // D-CT6 — absent means UNKNOWN, never zero.
+    cacheReadTokens: z.number().int().nonnegative().optional(),
+    cacheWriteTokens: z.number().int().nonnegative().optional(),
+    peakContextTokens: z.number().int().nonnegative(),
+    contextLimit: z.number().int().positive().nullable(),
+    endStateContextTokens: z.number().int().nonnegative().optional(),
+    estimatedCostUsd: z.number(),
+    costBasis: z.enum(["api_exact", "subscription_reference"]).optional(),
+    costBreakdown: costBreakdownSchema.optional(),
+    peakContextSegments: peakContextSegmentsSchema.nullable(),
   })
   .strict();
 

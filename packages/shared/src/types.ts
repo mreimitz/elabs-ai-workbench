@@ -2638,6 +2638,79 @@ export type RunReport = {
   generatedAt: string;
 };
 
+/**
+ * RM-33 WP 3.2 — one cumulative-KPI snapshot in a run export's `stepKpis` map, keyed by step id
+ * (`GET /api/reports/run/:id/json`). Produced by `apps/api/src/reports/run-kpi-by-step.ts`.
+ *
+ * The cache trio is OPTIONAL and the absence rule is D-CT6: **absent means UNKNOWN, never zero**. A
+ * run recorded before RM-33 has `kpi` events with no cache fields, and the builder falls back to
+ * summing the per-step `usageActual` — but only an EXACT split contributes to the halves, so a turn
+ * that reported one merged figure leaves them absent rather than presenting a possible 1.25x cache
+ * WRITE premium as a 0.1x cache READ discount (D-CT2).
+ */
+export type RunReportStepKpi = {
+  turns: number;
+  toolCalls: number;
+  tokensIn: number;
+  tokensOut: number;
+  contextTokens: number;
+  costUsd: number;
+  /** Cache read + cache write, MERGED (the legacy figure). Absent ⇒ unknown. */
+  cachedTokens?: number;
+  /** Served from cache, billed at ~0.1x input (a discount). Absent ⇒ unknown. */
+  cacheReadTokens?: number;
+  /** Written to cache, billed at 1.25x input (a PREMIUM, not a saving). Absent ⇒ unknown. */
+  cacheWriteTokens?: number;
+};
+
+/**
+ * RM-33 WP 3.2 — the `statistics` block of a run export (`GET /api/reports/run/:id/json`).
+ *
+ * This shape has crossed the wire since the C4 run export shipped, but it lived as an API-local
+ * object literal with a hand-written mirror in `apps/web/.../analytics-derive.ts` — a wire shape with
+ * no contract, which `.claude/rules/architecture.md` forbids. It is declared here so both ends import
+ * ONE definition and {@link runReportStatisticsSchema} can validate it.
+ *
+ * `tokensIn` is unchanged and stays the provider-billed GROSS input, cached slice included (D-CT1);
+ * the cache figures are added ALONGSIDE it, never subtracted from it.
+ */
+export type RunReportStatistics = {
+  turns: number;
+  toolCalls: number;
+  /** Provider-billed GROSS input — INCLUDES the cached slice (D-CT1). */
+  tokensIn: number;
+  tokensOut: number;
+  /**
+   * Cache read + cache write, MERGED — summed from the run's per-step `usageActual`. Unlike the two
+   * fields below this one is ALWAYS present (it predates RM-33 and a run with no cache legitimately
+   * reports `0`).
+   */
+  cachedTokens: number;
+  /** Served from cache, billed at ~0.1x input (a discount). Absent ⇒ UNKNOWN, never zero (D-CT6). */
+  cacheReadTokens?: number;
+  /** Written to cache, billed at 1.25x input (a PREMIUM). Absent ⇒ UNKNOWN, never zero (D-CT6). */
+  cacheWriteTokens?: number;
+  peakContextTokens: number;
+  contextLimit: number | null;
+  endStateContextTokens?: number;
+  /**
+   * The run's PERSISTED cost, recorded turn by turn while it executed. This is the authoritative
+   * figure; {@link costBreakdown} decomposes the same tokens at the price on file NOW, so the two can
+   * differ if the model's price changed since the run or the run spanned more than one model.
+   */
+  estimatedCostUsd: number;
+  /** Present only for a `claude_subscription` run — see {@link CostBasis}. */
+  costBasis?: CostBasis;
+  /**
+   * RM-33 WP 3.2 — the four terms behind the cost, so a reader can see WHY a 958k-token run billed
+   * $0.80 rather than $3.00. Computed by the ONE cost formula (`computeCostBreakdown`, D-CT5) from the
+   * run's recorded usage. Absent when the caller did not supply one, so an older consumer sees the
+   * document it always saw.
+   */
+  costBreakdown?: CostBreakdown;
+  peakContextSegments: Record<ContextSegment, number> | null;
+};
+
 /** Mean + standard deviation for one numeric dimension across a test-group's member runs (WP 4.1). Both null when unevaluable (e.g. zero graded members). */
 export type SuiteReportVariance = {
   mean: number | null;
