@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T17:20:00Z"
+timestamp: "2026-08-21T17:25:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -317,6 +317,8 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
       never a 0% line — when the API reports the measures in `unavailableMeasures`.
 - [ ] WP 3.2 — reports, compare export, workbench MCP run summary
       · spec: [`wp-3.2-exports.md`](./wp-3.2-exports.md) · depends on WP 1.2
+      · **status: in progress** (`wp/cache-tokens/3.2`, agent `exports`) — run SOLO: it touches the
+      shared wire files, the API reports, the web compare workspace and the MCP mount at once.
 
 ## Phase 4 — Record
 
