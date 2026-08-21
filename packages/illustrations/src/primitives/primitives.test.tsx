@@ -374,14 +374,71 @@ describe("PaperStage — grid before drawing", () => {
     assert.ok(markup.includes("--illus-paper)"), "the paper is still paper");
   });
 
-  it("derives its pattern ids from the grid, so two stages share or differ HONESTLY", () => {
-    const a = attributeValues(render(<PaperStage width={40} height={40} />), "id");
-    const b = attributeValues(render(<PaperStage width={90} height={90} />), "id");
-    const c = attributeValues(render(<PaperStage width={40} height={40} cell={24} />), "id");
-    assert.deepEqual(a, b, "same grid, same definition");
-    assert.notDeepEqual(a, c, "different grid, different definition");
-    // And nothing in an id can be mistaken for a colour literal by the package's own guard.
-    for (const id of [...a, ...c]) assert.match(id, /^illus-[a-z]/);
+  // ── The P1-3 contract: one page, one grid EACH ────────────────────────────────────────────────
+  // `url(#id)` resolves to the FIRST matching element in document order, and each stage computes its
+  // pattern's phase from its OWN centre. So a shared id is not merely invalid markup: every stage on
+  // the page paints the first stage's grid phase, and any stage of a different size draws its grid
+  // out of registration with its own crosshair and registration marks. The measured case was the
+  // gallery's detail dialog — 36 patterns, 2 ids, 48 `url(#…)` consumers.
+  //
+  // This is the assertion that BITES: it renders three stages of three different sizes into ONE
+  // tree, which is the only arrangement that can tell an instance-unique id from a geometry-only
+  // one. Rendering them separately cannot — `useId` is stable per position, so two lone stages in
+  // two lone trees legitimately agree.
+  it("gives every stage on ONE page its own pattern ids, so none borrows another's grid phase", () => {
+    // One `<g>`, not one `<svg>`: what matters is that the three stages share ONE React tree and one
+    // document, which is what makes `useId` hand them different ids — and a bare `<svg>` in a test
+    // trips the a11y lint rule that (rightly) wants a title on a real one.
+    const markup = render(
+      <g>
+        <PaperStage width={40} height={40} />
+        <PaperStage width={90} height={90} />
+        <PaperStage width={160} height={160} />
+      </g>,
+    );
+
+    const ids = attributeValues(markup, "id");
+    assert.equal(ids.length, 6, "three stages, a minor and a major pattern each");
+    assert.equal(new Set(ids).size, 6, `pattern ids collided across stages: ${ids.join(", ")}`);
+
+    // Each stage's own `url(#…)` references resolve to the two patterns that stage defined — not to
+    // a sibling's. `<g data-illus-primitive="paper-stage">` never nests, so splitting on it gives
+    // one chunk per stage (the first chunk is everything before the first stage).
+    const stages = markup.split('<g data-illus-primitive="paper-stage">').slice(1);
+    assert.equal(stages.length, 3, "expected three stage groups");
+    const seen = new Set<string>();
+    for (const [index, stage] of stages.entries()) {
+      const own = attributeValues(stage, "id");
+      const references = attributeValues(stage, "fill").filter((value) => value.startsWith("url("));
+      assert.deepEqual(
+        references,
+        own.map((id) => `url(#${id})`),
+        `stage ${index} paints a grid it did not define`,
+      );
+      for (const id of own) {
+        assert.equal(seen.has(id), false, `stage ${index} re-used an earlier stage's id ${id}`);
+        seen.add(id);
+      }
+    }
+
+    // And the phases really are different, which is what made the shared id visible on screen.
+    assert.ok(
+      new Set(attributeValues(markup, "patternTransform")).size > 1,
+      "three sizes should place their grids at different phases",
+    );
+  });
+
+  it("keeps the grid geometry in the id, and keeps the id safe to reference", () => {
+    const [minor, major] = attributeValues(render(<PaperStage width={40} height={40} />), "id");
+    assert.ok(minor && major);
+    assert.ok(minor.endsWith(`-c${ISO_UNIT}-m4`), `the geometry left the id: ${minor}`);
+    assert.equal(major, `${minor}-major`);
+    const wider = attributeValues(render(<PaperStage width={40} height={40} cell={24} />), "id")[0];
+    assert.ok(wider, "a stage with a wider cell still defines a minor pattern");
+    assert.ok(wider.endsWith("-c24-m4"), `a different grid should say so: ${wider}`);
+    // Nothing in an id can be mistaken for a colour literal by the package's own guard, and nothing
+    // in it needs escaping inside a `url(…)` reference.
+    for (const id of [minor, major, wider]) assert.match(id, /^illus-[a-z][a-zA-Z0-9_-]*$/);
   });
 });
 
