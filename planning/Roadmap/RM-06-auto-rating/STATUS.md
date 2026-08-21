@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Auto-Rating \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the auto-rating plan, read and updated by /next-wp auto-rating. A box is"
 tags: ["roadmap", "RM-06"]
-timestamp: "2026-08-21T21:40:00Z"
+timestamp: "2026-08-21T21:55:00Z"
 status: "active"
 ---
 # Auto-Rating — work-package status ledger · **PRIORITY: HIGH**
@@ -88,8 +88,15 @@ ticked **only** when the WP's Acceptance is met and the gate
 > phase stays inside RM-06 and RM-06 does **not** retire until it is done. The "do not pick up
 > without owner instruction" gate is now **satisfied, not removed** — it did its job.
 - [ ] WP 5.1 — skill findings → SkillFlow suggestion drafts / Skill IDE deep-links; server
-      findings → server detail (Advisor evidence when Advisor Phase 1 lands)
-- [ ] WP 5.2 — base verdict as CI assertable (`roadmap/ci/`) + verdict trend per server/skill
+      findings → server detail (Advisor evidence when Advisor Phase 1 lands) — **BLOCKED ON A SPEC:
+      this WP has none.** A spec-authoring pass is in progress (agent · `wp/auto-rating/phase-5-specs`,
+      2026-08-21) to produce `wp-5.1-cross-links.md` grounded in the real surfaces. Note the ledger
+      line's own conditional is already stale — **Advisor Phases 1–2 are DONE**, so the Advisor
+      evidence is available now, not "when Phase 1 lands"
+- [ ] WP 5.2 — base verdict as CI assertable (`roadmap/ci/`) + verdict trend per server/skill —
+      **BLOCKED ON A SPEC: this WP has none.** Same authoring pass will produce
+      `wp-5.2-verdict-ci-assertable.md`. The path `roadmap/ci/` in this line is **stale** — that
+      folder is now `planning/Roadmap/RM-08-ci/`
 - [ ] WP 5.3 — judge-settings live preview + bounded re-rate window — **proposed 2026-08-19**
       (landscape research; spec [`wp-judge-preview-and-rerate.md`](./wp-judge-preview-and-rerate.md))
       — owner-gated, append-only per AR6
