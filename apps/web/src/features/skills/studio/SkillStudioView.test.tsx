@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { TooltipProvider } from "@elabs-ai/components-ui";
+import { Button, TooltipProvider } from "@elabs-ai/components-ui";
 import type { Skill, SkillFileNode, SkillGraph, SkillVersion } from "@mcp-token-footprint/shared";
 import { SkillStudioView } from "./SkillStudioView";
 
@@ -132,10 +132,37 @@ vi.mock("../design/code-intel", () => ({
   })),
 }));
 
-// The React Flow canvas stays out of jsdom; `buildFlow`/`ExplainerLegend` remain real.
+// The React Flow canvas stays out of jsdom; `buildFlow`/`ExplainerLegend` remain real. The stub
+// keeps the two halves of the canvas's CONTRACT that the `?sel=` round-trip depends on: it reports a
+// selection UP (`onSelectNode`) and it reflects the built nodes' `selected` flag back DOWN — so both
+// directions of the shell's selection plumbing are exercised for real rather than assumed.
 vi.mock("../design/SkillGraphCanvas", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../design/SkillGraphCanvas")>();
-  return { ...actual, SkillGraphCanvas: () => <div data-testid="canvas" /> };
+  return {
+    ...actual,
+    SkillGraphCanvas: ({
+      nodes,
+      onSelectNode,
+    }: {
+      nodes: Array<{ id: string; selected?: boolean }>;
+      onSelectNode: (nodeId: string | undefined) => void;
+    }) => (
+      <div
+        data-testid="canvas"
+        data-selected={nodes
+          .filter((node) => node.selected)
+          .map((node) => node.id)
+          .join(",")}
+      >
+        <Button size="sm" onClick={() => onSelectNode("sec-1")}>
+          Select sec-1 (stub)
+        </Button>
+        <Button size="sm" onClick={() => onSelectNode(undefined)}>
+          Clear selection (stub)
+        </Button>
+      </div>
+    ),
+  };
 });
 
 if (typeof window.matchMedia !== "function") {
@@ -251,6 +278,27 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(screen.getByRole("radio", { name: "Split view" })).toHaveAttribute(
       "aria-checked",
       "true",
+    );
+  });
+
+  test("selecting a node on the canvas round-trips through ?sel=", async () => {
+    renderStudio();
+    await waitForStudio();
+    expect(url()).not.toContain("sel=");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Select sec-1 (stub)" }));
+    await waitFor(() => expect(url()).toContain("sel=sec-1"));
+
+    // Clearing the selection CLEARS the param — it never strands an empty `sel=` on the URL.
+    fireEvent.click(screen.getByRole("button", { name: "Clear selection (stub)" }));
+    await waitFor(() => expect(url()).not.toContain("sel="));
+  });
+
+  test("?sel= from a cold load seeds the canvas selection (the reload half)", async () => {
+    renderStudio("/skills/sk-1/studio?sel=sec-1");
+    await waitForStudio();
+    await waitFor(() =>
+      expect(screen.getByTestId("canvas")).toHaveAttribute("data-selected", "sec-1"),
     );
   });
 
