@@ -92,6 +92,7 @@ import {
   RUN_OUTCOMES,
   RUN_PHASES,
   RUN_PLAN_SOURCES,
+  RUN_PLAN_TURN_BASES,
   RUN_SORT_DIRECTIONS,
   RUN_SORT_FIELDS,
   RUN_STATUSES,
@@ -2381,6 +2382,18 @@ export const estimateRangeSchema = z
   .object({ low: z.number(), mid: z.number(), high: z.number() })
   .strict();
 
+// RM-34 WP 1.1 — the measured turn model that produced an environment's token band. `sampleSize` is
+// the honest companion of `basis`: `"default"` always carries 0, and a measured basis carries the
+// completed-run count behind it, so a band read off 3 runs is never mistaken for one read off 51.
+export const runPlanTurnProfileSchema = z
+  .object({
+    basis: z.enum(RUN_PLAN_TURN_BASES),
+    sampleSize: z.number().int().nonnegative(),
+    turns: estimateRangeSchema,
+    outputTokensPerTurn: z.number().nonnegative(),
+  })
+  .strict();
+
 export const runPlanEstimateEnvironmentSchema = z
   .object({
     environmentId: z.string(),
@@ -2394,6 +2407,8 @@ export const runPlanEstimateEnvironmentSchema = z
     costUsd: estimateRangeSchema.optional(),
     /** RM-33 WP 2.1 — whether this environment's `costUsd.low` models prompt caching. */
     cachingAssumed: z.boolean().optional(),
+    /** RM-34 WP 1.1 — the turn model behind `tokens`, and the basis it was measured on. */
+    turnProfile: runPlanTurnProfileSchema.optional(),
   })
   .strict();
 

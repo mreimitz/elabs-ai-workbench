@@ -1264,6 +1264,36 @@ export const RUN_PLAN_ESTIMATE_OUTPUT_TOKENS_PER_TURN = 350;
 // prompt) — matches the `raw_json_rough` bytes/4 heuristic; good enough for an advisory band.
 export const RUN_PLAN_ESTIMATE_CHARS_PER_TOKEN = 4;
 
+// --- RM-34 WP 1.1 (D-ET1…D-ET5) — the MEASURED turn model -------------------------------------
+// The three constants above were never measured; they were the shape of a guess made when the
+// preview shipped. Against the owner's own completed runs they are wrong in the same direction on
+// both axes: turns run p10 4 / p50 6 / p90 16 against 1/3/8, and output lands at ~1,148 tokens a
+// turn against 350 — so `8` is not a ceiling, it is roughly the 66th percentile, and a 19-turn run
+// cannot be reproduced at any price. The app already persists the evidence (`runs.turns`,
+// `runs.tokens_out`), so the band's ends move onto measured ground. The constants above STAY: they
+// are the `"default"` basis a fresh install, a new environment and a never-run test all still need
+// (D-ET1 — history-first, never history-only).
+
+// Where a turn band came from, narrowest measured basis first (D-ET5). The estimate carries this so
+// an operator can tell a band measured from 51 of their own runs from one the app guessed.
+export const RUN_PLAN_TURN_BASES = ["pair", "environment", "global", "default"] as const;
+
+// How many completed runs a level must hold before it is allowed to speak for itself (D-ET2). A
+// level below the floor falls through WHOLE to the next one — a 2-run pair is never blended into its
+// environment's 79 runs, because the blend would be a figure nobody measured.
+//
+// 3 is a JUDGEMENT, not a derivation. The measured (environment, test) pairs cluster at 51, 28, 16,
+// 8, 5, 4 and 3 completed runs; a floor of 3 keeps every genuinely repeated pair and rejects the
+// one-off, whose single turn count says more about that one afternoon than about the task.
+export const RUN_PLAN_TURN_PROFILE_MIN_SAMPLES = 3;
+
+// The band's ends as percentiles of the observed turn counts (D-ET3). Deliberately NOT min/max: the
+// largest pair spans 5–19 turns over 51 runs, and one 19-turn outlier should widen the band, not
+// define it. Read nearest-rank, so every end the UI shows is a turn count that actually happened.
+export const RUN_PLAN_TURN_PERCENTILE_LOW = 0.1;
+export const RUN_PLAN_TURN_PERCENTILE_MID = 0.5;
+export const RUN_PLAN_TURN_PERCENTILE_HIGH = 0.9;
+
 // ==================================================================================================
 // Assistant (WP 0.1) — shared contract
 // ==================================================================================================

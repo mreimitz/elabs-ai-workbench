@@ -76,6 +76,7 @@ import type {
   RUN_OUTCOMES,
   RUN_PHASES,
   RUN_PLAN_SOURCES,
+  RUN_PLAN_TURN_BASES,
   RUN_SORT_DIRECTIONS,
   RUN_SORT_FIELDS,
   RUN_STATUSES,
@@ -3998,6 +3999,30 @@ export type ScaffoldFromServerResult = {
 /** A rough low/mid/high band. `low ≤ mid ≤ high`. Tokens (integers) or USD (fractional) depending on use. */
 export type EstimateRange = { low: number; mid: number; high: number };
 
+// --- RM-34 WP 1.1 (D-ET2/D-ET4/D-ET5) — the measured turn model on the wire ---------------------
+// The turn band above used to be three frozen constants. It can now be MEASURED from the app's own
+// completed runs, so the estimate says both what it measured and where it measured it — an advisory
+// number whose provenance is invisible cannot be judged.
+
+/** Where an environment's turn band came from — narrowest measured basis first (D-ET5). */
+export type RunPlanTurnBasis = (typeof RUN_PLAN_TURN_BASES)[number];
+
+/**
+ * One environment's turn model, measured from completed runs (D-ET2/D-ET3) or — when no level cleared
+ * `RUN_PLAN_TURN_PROFILE_MIN_SAMPLES` — the `"default"` static constants (D-ET1). Turns and output
+ * tokens are measured on the SAME sample: a profile that measured turns but assumed output would be
+ * internally inconsistent (D-ET4).
+ */
+export type RunPlanTurnProfile = {
+  basis: RunPlanTurnBasis;
+  /** Completed runs behind this profile. `0` when `basis === "default"` — nothing was measured. */
+  sampleSize: number;
+  /** p10 / p50 / p90 of observed `turns`, nearest-rank, BEFORE any `maxTurns` clamp (D-ET6). */
+  turns: EstimateRange;
+  /** Measured output tokens per turn: Σ `tokens_out` ÷ Σ `turns` over the same sample (D-ET4). */
+  outputTokensPerTurn: number;
+};
+
 /** One environment's contribution to a run-plan estimate. */
 export type RunPlanEstimateEnvironment = {
   environmentId: string;
@@ -4037,6 +4062,13 @@ export type RunPlanEstimateEnvironment = {
    * absent on any response produced before WP 2.1.
    */
   cachingAssumed?: boolean;
+  /**
+   * RM-34 WP 1.1 — the turn model behind {@link tokens}, and where it came from (D-ET5). Additive and
+   * strictly optional: absent on any response produced before RM-34, and absent means "this response
+   * predates the measurement", never "measured nothing" — a profile that measured nothing still says
+   * so, as `basis: "default"` with `sampleSize: 0`.
+   */
+  turnProfile?: RunPlanTurnProfile;
 };
 
 /** The advisory estimate for a whole run plan (the `GET /api/estimate/run-plan` response). */
