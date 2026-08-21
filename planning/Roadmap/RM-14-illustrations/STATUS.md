@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T03:10:00Z"
+timestamp: "2026-08-21T07:40:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -153,8 +153,135 @@ and an explicit "Not verified:" tail.
       `--chart-3`, a light grey there) — that is the §2.3 table applied literally, and worth an owner
       glance. `packages/illustrations/scripts/` is **not typechecked** (the package tsconfig includes
       only `src`); both scripts were run successfully and ship nothing.
-- [ ] WP 0.3 — Pilot entities (`mcp-server`, `skill`, `agent`) + registry v0.1 + `/illustrations`
-      gallery route v0 — spec: [`wp-0.3-pilot-entities.md`](./wp-0.3-pilot-entities.md)
+- [x] WP 0.3 — Pilot entities (`mcp-server`, `skill`, `agent`) + registry v0.1 + `/illustrations`
+      gallery route v0 — done 2026-08-21 · `wp/illustrations/0.3` (5 commits `69941f1`..`c43520b`),
+      merged **--no-ff** as `a175d08` — *not* fast-forward, because another session's commit
+      `4c50e23` landed on `main` first (see the deviations tail) · spec:
+      [`wp-0.3-pilot-entities.md`](./wp-0.3-pilot-entities.md).
+      **Shipped:** three pilot entities under `src/entities/` — `mcp-server`
+      (`stdio` / `streamable-http`), `skill` (`plain` / `versioned`) and `agent` (D-IL17 `facing`,
+      default `upstream`) — each at S/M/L × all five states × its variants, each with a co-located
+      `*.test.tsx` calling a shared `contract-support.tsx` harness that asserts **against the
+      registry entry, never against a literal repeated in the test**; `src/registry.ts` — registry
+      v0.1 (`REGISTRY_VERSION` re-exporting the shared `ILLUSTRATION_REGISTRY_VERSION` so there is
+      one value under two names, entries `.parse`d against the WP 0.1 zod schema **at module load**,
+      and a separate component map held equal to the entry ids **in both directions** because the
+      schema is `.strict()` and `packages/shared` must not import React); and
+      `apps/web/src/features/illustrations/` — the `/illustrations` route: a live grid in the current
+      theme, a detail dialog with the states × sizes × variants × facing matrix + a port overlay +
+      the entry itself, and a second tab that finally makes WP 0.2's primitives sheet reachable
+      through the running app. 26 files, **+2675 / −165**.
+      **Gate on the branch (re-run by the orchestrator in the worktree with the path pinned, not
+      taken on the agent's report):** typecheck clean · shared **236** · illustrations **252** (166
+      before) · cli **87** · api **3564** (baseline exactly) · web **346 files / 3697 passed / 5
+      skipped** (344 / 3678 / 5 before) · build all Done · lint clean (1668 files) · exit 0.
+      **Gate re-run by the orchestrator on the MERGED `main`**, because this WP and `4c50e23` had
+      never been tested together: shared **238** · illustrations **252** · cli **87** · api **3567** ·
+      web **346 files / 3702 passed / 5 skipped** · build Done · lint clean · exit 0. The deltas over
+      the branch numbers (+2 shared, +3 api, +5 web) are `4c50e23`'s, not this WP's.
+      **Teeth verified by the orchestrator — five guards, each broken, watched go red, and restored:**
+      (1) manifest entry deleted → `not ok 1 - Test A … App.tsx routes with NO manifest entry (add
+      one with a real surface or a reasoned exempt/redirect): ["/illustrations"]`, restored → `# pass
+      5 / # fail 0`; (2) `#a3e635` substituted for `var(--illus-accent)` in `Skill.tsx` → **two**
+      independent failures, `not ok 24 - skill — construction (D-IL5, D-IL12)` **and** WP 0.1's
+      recursive scan `not ok 63 - no color literal anywhere in this package (D-IL5)`; (3) a raw
+      `<path>` injected into `McpServer` → `mcp-server (s/stdio) drew a <path>; entities compose
+      primitives`, which is how the spec's otherwise-unenforceable "composed only from primitives"
+      became a test; (4) the entity made to render **1 of its 5 declared ports** → `not ok 14 -
+      mcp-server — the drawing matches the entry`; (5) `"/illustrations"` removed from
+      `PAGESHELL_EXACT_ROUTES` → this WP's own `illustrations-route.test.ts` fails (`the PageShell
+      registry mounts it full-bleed — the direction NO test gates (spec §4b)`) **while the
+      pre-existing `App.test.ts` stayed 28/28 green** — the silent-failure asymmetry spec §4b warns
+      about, observed live and now closed *for this route*.
+      **A trap that cost an owner-visible false alarm, and that WILL recur — read this before the
+      acceptance walk.** Minutes after the merge the owner opened `127.0.0.1:5173/illustrations` and
+      **every illustration was a solid black rectangle** while the surrounding chrome rendered
+      perfectly. Nothing was wrong with the code. That dev server had been running since **Aug 19
+      14:48**, which is **before WP 0.1 linked `@mcp-token-footprint/illustrations` into `apps/web`
+      at all** (the symlink is stamped Aug 20 22:26). When its Tailwind pass first processed
+      `app.css`, `@import "@mcp-token-footprint/illustrations/tokens.css"` could not resolve, the
+      `@import` was **dropped silently — no warning, no error** — and the result was cached and served
+      unchanged for a day and a half. With the `--illus-*` layer absent, every `fill: var(--illus-...)`
+      is invalid at computed-value time and falls back to the CSS initial value for `fill`, which is
+      **black** — so the failure mode of a missing token layer is not "unstyled", it is "perfectly
+      laid out and entirely black". Diagnosed, not guessed: the transformed `app.css` that server
+      served contained **0** occurrences of `illus` across 296 KB; a fresh `vite` on the **same tree**
+      served all **18** `--illus-*` properties; and the production build
+      (`dist/assets/index-D0J9cWRW.css`) carries all 18 too. **The fix is to restart the dev server**;
+      there is no code change, and none was made. Two lessons worth keeping: a long-running dev server
+      is *not* evidence about the tree it points at, and this is the concrete browser-level proof WP
+      0.1's ledger recorded as missing when it verified the `@import` "through the build, not in a
+      browser".
+      **A non-finding, recorded so a later reader does not mistake it for a hole:** adding a port to
+      an entity's registry entry **alone** fails nothing. That is correct — `EntityRoot` draws the
+      overlay straight from `meta.ports`, so a drawing cannot under-claim its entry by construction;
+      teeth (4) covers the direction that *can* break, which is a drawing that stops routing through
+      `EntityRoot`.
+      **Both themes verified by the orchestrator BY LOOKING**, not accepted from the report, at
+      `gallery-{light,dark}.png`, `detail-light.png`, `detail-ports-{light,dark}.png` and
+      `keyboard-card-focus.png`: three distinguishable faces, one accent moment per entity, the five
+      states legible (`dimmed` genuinely recedes, `error` reads as a red dashed ground ring + red
+      LED, `highlight` as an accent pool), the three footprints framed against one box so the scale
+      difference is real, and — with the port overlay **off** — the two `mcp-server` variants plainly
+      distinct: the antenna on `streamable-http`, the local-process block on `stdio`. With the
+      overlay **on**, the port dots and labels sit on top of exactly those two marks and hide them;
+      that is a legibility observation for the owner walk, not a defect.
+      **Accepted deviations (the agent's, each justified):** variant id is `streamable-http`, not the
+      spec prose's `streamable_http`, because WP 0.1's schema types `variants` as kebab-case
+      `illustrationIdSchema` — the contract wins, and the snake_case domain name survives in
+      `entity: "mcp_servers"`; `agent` declares `variants: []` because `upstream`/`downstream` are the
+      two values of the first-class `facing` prop (D-IL17) and listing them twice would give the
+      catalog two ways to say one thing — the detail renders both facings for *every* entity instead;
+      the entity `variant` prop is `string`, not a per-entity union, so all entities share the one
+      `EntityComponentProps` the gallery and the future scene renderer need, with an unknown variant
+      falling back to the default (D-IL16's "ignore what you cannot do"); **the detail is a dialog,
+      not a route**, because the spec sanctions exactly one manifest entry and nothing links to a
+      single illustration today — WP 4.1 owns the `illustration` addressable view; `PageShell` +
+      `ViewToolbar` rather than the spec's `PageHeader`, which D-TB1 retired; two tabs, absorbing WP
+      0.2's unrouted preview page (its three assertions carried over, not dropped); **no nav item**,
+      since D-TB10 decouples route from nav and where an asset repository belongs in the IA is an
+      owner decision; `contract-support.tsx` is a shared harness *called by* each co-located test, so
+      the file that goes red is still the entity's own; `IllustrationCanvas` takes a **required**
+      `alt` because Biome's `noSvgWithoutTitle` rejects an unnamed `<svg>`, mirroring `IconButton`'s
+      `label`.
+      **A real bug the agent found by looking, which the green gate had not:** wrapping a card in
+      `@elabs-ai/components-ui`'s `Button` clamped every 232 px illustration to **16 px**, because
+      `Button` carries `[&_svg]:size-4` and assumes any nested SVG is an icon glyph. The page rendered
+      three specks with every test passing. Fixed by moving the drawing outside the button per
+      `EntityCard`'s activation contract, and pinned by a test forbidding `svg[role="img"]` inside any
+      button on the page.
+      **Orchestrator-added / orchestrator-caused deviations:** the agent ran `pnpm format`, which
+      reformatted a handful of lines in `App.tsx` and `assistant-route-manifest.ts` that this WP does
+      not otherwise touch — harmless, but note `pnpm lint` is `biome check --formatter-enabled=false`,
+      so formatting is **not** gated and that churn was not required; and the orchestrator committed
+      one wording fix (`c43520b`) because README §12 said the page could be reached "from the
+      breadcrumb's Home", which is the way back **out**, not in.
+      **Merged over another session's uncommitted work — owner-directed, and the second time this has
+      happened in this plan.** ~400 lines splitting the Assistant feature flag into
+      `assistant_workspace` + `app_assistant` sat unstaged in `main`, touching `README.md` and
+      `CHANGELOG.md` — the same two files this WP edits — so git refused the merge. On the owner's
+      instruction it was committed as-is as `4c50e23`, under a message stating plainly that the
+      committing session neither authored nor verified it. The `CHANGELOG.md` conflict was resolved
+      by **keeping both** entries.
+      **Front page updated in this WP, as its spec requires (the first owner-visible delivery):** the
+      capability table row moved **🔜 Planned → 🚧 Partially built** with what shipped and what did
+      not, a README §12 tour was added, and a `CHANGELOG.md` entry written. Note for future WPs: the
+      capability table lives in **`CLAUDE.md` §1**, not `README.md` — README has no such table, so the
+      rule's "capability table" is CLAUDE.md's.
+      **Not verified:** the live walk was performed by the implementing agent on **port 5174, not
+      5173** (5173 was held by a different checkout), and the app shell around the gallery in every
+      screenshot was served by that **neighbouring instance's API on :8080** — the gallery itself
+      reads no API data, so nothing on the page depends on it, but the surrounding chrome is not this
+      branch's. The page has **never been walked at `localhost:8080`**, the built/Docker instance —
+      that is precisely the owner-acceptance item below. The orchestrator verified the **light**
+      focus ring by looking; the **dark** focus ring was not, and the tab order is taken from the
+      agent's report rather than re-driven. Commit `4c50e23` was **not authored or verified by this
+      session** — the merged gate covers the combination, not that commit in isolation, and its own
+      owner-acceptance is unrecorded and belongs to whichever session wrote it. The **dark-stage
+      lighting flip** persists and remains an owner judgement (accepted at WP 0.1). The merged-gate
+      lint file count (3341) was inflated by the then-still-present worktree, since removed.
+      `packages/illustrations/scripts/` is still outside the package tsconfig and therefore still not
+      typechecked.
 
 ## Phase 1 — Entity library v1 + contribution kit
 
