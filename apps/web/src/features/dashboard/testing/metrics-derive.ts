@@ -301,6 +301,107 @@ export function buildTokensResult(series: RunMetricsSeries[]): TokensResult {
   return { inRows, outRows, inClasses, outClasses, hasData: inClasses.length > 0 || outClasses.length > 0 };
 }
 
+// ── Panel 4b — Prompt cache (RM-33 WP 3.3) ────────────────────────────────────
+
+/** The two halves of the prompt-cache split, in the order they are always ordered and coloured.
+ *  They are NEVER one "cached" figure (D-CT2): a read is billed at ~0.1× (a discount), a write at
+ *  1.25× (a premium), so a single merged bar would render a premium as a saving. */
+export const CACHE_KINDS = ["read", "write"] as const;
+export type CacheKind = (typeof CACHE_KINDS)[number];
+
+/** The label each half carries EVERYWHERE it is named — the wording WP 3.1 established for the run
+ *  console (`TokenAmount`, `KpiRail`, `PacketInspector`), reused verbatim so one grammar holds. */
+export const CACHE_KIND_LABELS: Record<CacheKind, string> = {
+  read: "Cache read (~0.1× rate)",
+  write: "Cache write (1.25× rate)",
+};
+
+const CACHE_KIND_MEASURES: Record<CacheKind, RunMetricsMeasure> = {
+  read: "cacheReadTokens",
+  write: "cacheWriteTokens",
+};
+
+/** The three measures this panel requests. Exported so the panel can ask `unavailableMeasures`
+ *  about exactly the set it plotted, rather than re-spelling the names. */
+export const CACHE_MEASURES: RunMetricsMeasure[] = [
+  "cacheReadTokens",
+  "cacheWriteTokens",
+  "cacheHitRate",
+];
+
+/** The pivoted-row key the hit-rate LINE plots — a PERCENTAGE (0–100), never a token count. The
+ *  suffix is part of the name so no chart can plot it on the token axis by accident. */
+export const CACHE_HIT_RATE_KEY = "cacheHitRatePercent";
+
+/** One plotted cache bar: a (kind × capability class) pair with its OWN total. */
+export type CacheSeriesEntry = {
+  /** The {@link PivotedRow} key this entry's bar reads (`read:exact`, `write:none`, …). */
+  key: string;
+  kind: CacheKind;
+  /** The `tokens` capability class this series is labelled with (D-OB14 — never blended). */
+  cls: string;
+  /** {@link CACHE_KIND_LABELS}, with the capability class appended ONLY when more than one is present. */
+  label: string;
+  /** This entry's own total — never summed with another entry's, in this module or a panel. */
+  total: number;
+};
+
+export type CacheResult = {
+  /** One row per bucket: a numeric field per {@link CacheSeriesEntry} present in that bucket, plus
+   *  {@link CACHE_HIT_RATE_KEY} when the API reported a rate for it. A key absent from a bucket is
+   *  OMITTED from the row (never zero-filled) — the D-CT6 rule, all the way to the chart. */
+  rows: PivotedRow[];
+  entries: CacheSeriesEntry[];
+  hasTokens: boolean;
+  hasHitRate: boolean;
+  hasData: boolean;
+};
+
+/**
+ * Panel 4b: `cacheReadTokens`/`cacheWriteTokens` (capability-split per D-OB14, one series per class)
+ * plus `cacheHitRate` (a single unlabelled RATE series, on the `errorRate` precedent).
+ *
+ * The hit rate is converted to a percentage HERE so the chart never has to decide whether a `0.7`
+ * means 0.7% or 70%. Absence stays absence: a bucket the API omitted from the rate series leaves
+ * {@link CACHE_HIT_RATE_KEY} off that row entirely, so the line breaks rather than dipping to a 0%
+ * that would read as "caching stopped working" (D-CT6). A window where NO run has a known split is
+ * not this function's business at all — the API reports those measures in `unavailableMeasures`
+ * and emits no series, and the panel renders its own explicit "not measured" state.
+ */
+export function buildCacheResult(series: RunMetricsSeries[]): CacheResult {
+  const perKind = CACHE_KINDS.map((kind) => ({
+    kind,
+    classes: buildCapabilityClassSeries(series, CACHE_KIND_MEASURES[kind], TOKEN_CLASS_LABELS),
+  }));
+  // A class suffix is noise while there is only one class, and load-bearing the moment there are two.
+  const classCount = new Set(perKind.flatMap((k) => k.classes.map((c) => c.cls))).size;
+
+  const entries: CacheSeriesEntry[] = [];
+  const named: NamedPoints[] = [];
+  for (const { kind, classes } of perKind) {
+    for (const c of classes) {
+      const key = `${kind}:${c.cls}`;
+      const label = classCount > 1 ? `${CACHE_KIND_LABELS[kind]} · ${c.label}` : CACHE_KIND_LABELS[kind];
+      entries.push({ key, kind, cls: c.cls, label, total: c.total });
+      named.push({ key, label, points: c.points });
+    }
+  }
+
+  const hitRate = series.find((s) => s.measure === "cacheHitRate");
+  const hasHitRate = hitRate !== undefined && hitRate.points.length > 0;
+  if (hitRate && hasHitRate) {
+    named.push({
+      key: CACHE_HIT_RATE_KEY,
+      label: "Cache hit rate",
+      points: hitRate.points.map((p) => ({ bucketStart: p.bucketStart, value: p.value * 100 })),
+    });
+  }
+
+  const rows = pivotToRows(named);
+  const hasTokens = entries.length > 0;
+  return { rows, entries, hasTokens, hasHitRate, hasData: rows.length > 0 && (hasTokens || hasHitRate) };
+}
+
 export type CostResult = {
   costRows: PivotedRow[];
   costClasses: CapabilityClassSeries[];
