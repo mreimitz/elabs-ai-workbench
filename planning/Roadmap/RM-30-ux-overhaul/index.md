@@ -19,3 +19,4 @@
 * [Kickoff prompt — paste to the PM agent (Opus 4.8) to run the Toolbar-standard program](toolbar-kickoff-prompt.md) - You are the Project Manager agent for the Toolbar-standard program of this repo
 * [One-row toolbar standard — audit & plan · 2026-07-11](toolbar-standard-2026-07-11.md) - Status: PLANNED (report only — owner decision 2026-07-11; no code changed yet).
 * [UX Overhaul — Program-wide verification report (WP 5.1)](verification-report.md) - Branch: wp/ux/5.1 (forked from ux/integration; Phases 0–4 all merged)
+* [WP 7.8 design — edge grammar + entry-point flows (for owner approval)](wp-7.8-edge-grammar-design.md) - The five decisions WP 7.8 needs signed off before any code is written: what a connection means, how an entry point's effective reading list is derived, what a refused connection says, where box positions live, and what this breaks.
