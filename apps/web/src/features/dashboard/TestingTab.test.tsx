@@ -76,7 +76,10 @@ function metricsSeries(over: Partial<RunMetricsSeries>): RunMetricsSeries {
   return { measure: "count", group: null, capabilityClass: null, points: [], ...over };
 }
 
-function runMetricsResponse(series: RunMetricsSeries[]): RunMetricsResponse {
+function runMetricsResponse(
+  series: RunMetricsSeries[],
+  unavailableMeasures: RunMetricsResponse["unavailableMeasures"] = [],
+): RunMetricsResponse {
   return {
     bucket: "day",
     timezone: "UTC",
@@ -84,7 +87,7 @@ function runMetricsResponse(series: RunMetricsSeries[]): RunMetricsResponse {
     to: null,
     groupBy: null,
     measures: [],
-    unavailableMeasures: [],
+    unavailableMeasures,
     series,
   };
 }
@@ -156,6 +159,35 @@ const EXPENSIVE_RUN: RunSummary = {
   costUsd: 9.5,
 };
 
+/** RM-33 WP 3.3 — swapped by `installUnmeasuredCache()` so one test can exercise the panel's
+ *  "the API could not measure this" branch through the whole tab. */
+const DEFAULT_CACHE_FIXTURE = (): RunMetricsResponse =>
+  runMetricsResponse([
+    metricsSeries({
+      measure: "cacheReadTokens",
+      capabilityClass: "exact",
+      points: [{ bucketStart: "2026-07-05T00:00:00.000Z", value: 800, n: 8 }],
+    }),
+    metricsSeries({
+      measure: "cacheWriteTokens",
+      capabilityClass: "exact",
+      points: [{ bucketStart: "2026-07-05T00:00:00.000Z", value: 100, n: 8 }],
+    }),
+    metricsSeries({
+      measure: "cacheHitRate",
+      points: [{ bucketStart: "2026-07-05T00:00:00.000Z", value: 0.8, n: 8 }],
+    }),
+  ]);
+
+let cacheFixture: () => RunMetricsResponse = DEFAULT_CACHE_FIXTURE;
+
+/** Every run in the window predates migration v59: the API answers with NO cache series and lists
+ *  the three measures as unavailable. */
+function installUnmeasuredCache() {
+  cacheFixture = () =>
+    runMetricsResponse([], ["cacheReadTokens", "cacheWriteTokens", "cacheHitRate"]);
+}
+
 /** Dispatch `getRunMetrics` fixtures by (bucket, groupBy, measures) — the unique fingerprint of
  *  each of `useTestingMetrics`'s 8 parallel calls (see `use-testing-dashboard-data.ts`). */
 function installNonEmptyMetrics() {
@@ -215,6 +247,11 @@ function installNonEmptyMetrics() {
           points: [{ bucketStart: "2026-07-05T00:00:00.000Z", value: 500, n: 8 }],
         }),
       ]);
+    }
+    // RM-33 WP 3.3 — the cache panel's own request (a separate call: `cacheHitRate` is a rate, the
+    // other two are tokens).
+    if (m === "cacheHitRate,cacheReadTokens,cacheWriteTokens") {
+      return cacheFixture();
     }
     if (m === "costUsd") {
       return runMetricsResponse([
@@ -317,6 +354,7 @@ function renderTab(initialEntries: string[] = ["/dashboard?tab=testing"], range 
 
 afterEach(() => {
   vi.clearAllMocks();
+  cacheFixture = DEFAULT_CACHE_FIXTURE;
 });
 
 describe("TestingTab — loading / error / empty states", () => {
@@ -378,6 +416,7 @@ describe("TestingTab — all 8 panels render from fixtures", () => {
     expect(screen.getByText("Guardrail stops by reason")).toBeInTheDocument();
     expect(screen.getByText("Duration (p50 / p95)")).toBeInTheDocument();
     expect(screen.getByText("Tokens by capability class")).toBeInTheDocument();
+    expect(screen.getByText("Prompt cache")).toBeInTheDocument();
     expect(screen.getByText("Cost by basis")).toBeInTheDocument();
     expect(screen.getByText("Score trend")).toBeInTheDocument();
     expect(screen.getByText("Leaderboards")).toBeInTheDocument();
@@ -392,6 +431,35 @@ describe("TestingTab — all 8 panels render from fixtures", () => {
     // Fixture uses a single "exact" class per direction — assert the label renders and no
     // "total"/"blended" wording is ever introduced by the panel.
     expect(screen.queryByText(/\bblended\b/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("TestingTab — the prompt-cache panel (RM-33 WP 3.3)", () => {
+  test("the three cache measures are genuinely REQUESTED, and in their own call (not folded into the tokens one)", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab();
+
+    await waitFor(() => expect(screen.getByText("Prompt cache")).toBeInTheDocument());
+    const measureSets = getRunMetricsMock.mock.calls.map((call) => (call[0].measures as string[]).slice().sort().join(","));
+    expect(measureSets).toContain("cacheHitRate,cacheReadTokens,cacheWriteTokens");
+    // A `rate` measure must never share a series bag with `tokens` measures (the same-unit rule).
+    expect(measureSets).toContain("tokensIn,tokensOut");
+    expect(measureSets.some((m) => m.includes("cacheHitRate") && m.includes("tokensIn"))).toBe(false);
+  });
+
+  test("a window whose runs all predate cache measurement shows 'not measured' — never a 0% line", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    installUnmeasuredCache();
+    renderTab();
+
+    // The rest of the tab still has data — this is the exact case where an empty chart would read
+    // as "no runs" and a 0% line would read as "caching broke".
+    await waitFor(() => expect(screen.getByText("Prompt cache")).toBeInTheDocument());
+    expect(screen.getByText("Cache split not measured")).toBeInTheDocument();
+    expect(screen.getByText("Tokens by capability class")).toBeInTheDocument();
+    expect(screen.queryByText("No runs in this window")).not.toBeInTheDocument();
   });
 });
 

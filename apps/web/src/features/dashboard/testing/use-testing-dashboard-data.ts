@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type {
   MetricsBucket,
+  RunMetricsMeasure,
   RunMetricsSeries,
   RunSummary,
   ScanMetricsSeries,
@@ -61,6 +62,12 @@ export type TestingMetricsData = {
   guardrail: RunMetricsSeries[];
   duration: RunMetricsSeries[];
   tokens: RunMetricsSeries[];
+  /** RM-33 WP 3.3 — `cacheReadTokens`/`cacheWriteTokens` (capability-split) + `cacheHitRate`. */
+  cache: RunMetricsSeries[];
+  /** The cache request's `unavailableMeasures`. Carried all the way to the panel because "the API
+   *  could not measure this" is a DIFFERENT state from "the series is empty", and collapsing the two
+   *  is what produces a 0% cache-hit line that reads as a caching regression (D-CT6). */
+  cacheUnavailable: RunMetricsMeasure[];
   cost: RunMetricsSeries[];
   score: RunMetricsSeries[];
   failingTests: RunMetricsSeries[];
@@ -74,6 +81,8 @@ const EMPTY_METRICS_DATA: TestingMetricsData = {
   guardrail: [],
   duration: [],
   tokens: [],
+  cache: [],
+  cacheUnavailable: [],
   cost: [],
   score: [],
   failingTests: [],
@@ -99,7 +108,7 @@ export type UseTestingMetricsResult = {
 };
 
 /**
- * Fires every `GET /api/metrics/{runs,scans}` call the Testing dashboard's 8 panels + KPI header
+ * Fires every `GET /api/metrics/{runs,scans}` call the Testing dashboard's 9 panels + KPI header
  * need for the current `controls`, in parallel. A `controls` change re-fires the whole batch; an
  * in-flight batch is aborted if `controls` changes again before it resolves (last-write-wins, no
  * stale-response overwrite — mirrors `AnalyticsPanel`'s report-fetch cancellation guard).
@@ -137,6 +146,13 @@ export function useTestingMetrics(controls: TestingDashboardControls): UseTestin
         signal,
       ),
       getRunMetrics({ filter, ...window, bucket, measures: ["tokensIn", "tokensOut"] }, signal),
+      // RM-33 WP 3.3 — a SEPARATE call on purpose, not three more measures on the tokens request:
+      // `cacheHitRate` is a `rate` and the other two are `tokens`, and folding them into one series
+      // bag invites a blended axis. `costUsd` and `meanScore` are already requested this way.
+      getRunMetrics(
+        { filter, ...window, bucket, measures: ["cacheReadTokens", "cacheWriteTokens", "cacheHitRate"] },
+        signal,
+      ),
       getRunMetrics({ filter, ...window, bucket, measures: ["costUsd"] }, signal),
       getRunMetrics({ filter, ...window, bucket, measures: ["meanScore"] }, signal),
       getRunMetrics(
@@ -156,6 +172,7 @@ export function useTestingMetrics(controls: TestingDashboardControls): UseTestin
           guardrail,
           duration,
           tokens,
+          cache,
           cost,
           score,
           failingTests,
@@ -169,6 +186,8 @@ export function useTestingMetrics(controls: TestingDashboardControls): UseTestin
             guardrail: guardrail.series,
             duration: duration.series,
             tokens: tokens.series,
+            cache: cache.series,
+            cacheUnavailable: cache.unavailableMeasures,
             cost: cost.series,
             score: score.series,
             failingTests: failingTests.series,

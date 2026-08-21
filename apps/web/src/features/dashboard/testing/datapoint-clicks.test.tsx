@@ -144,6 +144,7 @@ vi.mock("@elabs-ai/components-charts", async () => {
   };
 });
 
+import { CachePanel } from "./CachePanel";
 import { CostPanel } from "./CostPanel";
 import { DurationPanel } from "./DurationPanel";
 import { GuardrailStopsPanel } from "./GuardrailStopsPanel";
@@ -204,6 +205,13 @@ const SCORE_SERIES: RunMetricsSeries[] = [runSeries({ measure: "meanScore", poin
 const TOKENS_SERIES: RunMetricsSeries[] = [
   runSeries({ measure: "tokensIn", capabilityClass: "exact", points: pts([1000, 1400]) }),
   runSeries({ measure: "tokensOut", capabilityClass: "estimated", points: pts([500, 620]) }),
+];
+
+// RM-33 WP 3.3 — read + write + the hit-rate line, all on ONE chart.
+const CACHE_SERIES: RunMetricsSeries[] = [
+  runSeries({ measure: "cacheReadTokens", capabilityClass: "exact", points: pts([900, 1200]) }),
+  runSeries({ measure: "cacheWriteTokens", capabilityClass: "exact", points: pts([60, 80]) }),
+  runSeries({ measure: "cacheHitRate", points: pts([0.7, 0.85]) }),
 ];
 
 const COST_SERIES: RunMetricsSeries[] = [
@@ -392,6 +400,67 @@ describe("Dashboard panels — the CHART is the click surface (onDatapointClick 
 
     clickDatapoint("dp:estimated:1"); // the Output chart — same target, no class dimension invented
     expect(onDrill.mock.calls[1]![0]).toEqual(BUCKET_B_FILTER);
+  });
+
+  test("CachePanel: a cache bar scopes to its BUCKET — the capability class never enters the filter", () => {
+    const onDrill = vi.fn();
+    render(
+      <CachePanel
+        series={CACHE_SERIES}
+        unavailableMeasures={[]}
+        controls={CONTROLS}
+        bucket="day"
+        onDrill={onDrill}
+      />,
+    );
+    expect(typeof captured.charts[0]?.handler).toBe("function");
+
+    clickDatapoint("dp:read:exact:1");
+    expect(onDrill.mock.calls[0]![0]).toEqual(BUCKET_B_FILTER);
+    expect(onDrill.mock.calls[0]![0].dateFrom).toBe(BUCKET_B);
+    expect(onDrill.mock.calls[0]![0].capabilityClass).toBeUndefined();
+  });
+
+  test("CachePanel: the read bar, the write bar and the hit-rate point in one bucket resolve to the SAME target", () => {
+    const onDrill = vi.fn();
+    render(
+      <CachePanel
+        series={CACHE_SERIES}
+        unavailableMeasures={[]}
+        controls={CONTROLS}
+        bucket="day"
+        onDrill={onDrill}
+      />,
+    );
+    clickDatapoint("dp:read:exact:1");
+    clickDatapoint("dp:write:exact:1");
+    clickDatapoint("dp:cacheHitRatePercent:1");
+    expect(onDrill.mock.calls[1]![0]).toEqual(onDrill.mock.calls[0]![0]);
+    expect(onDrill.mock.calls[2]![0]).toEqual(onDrill.mock.calls[0]![0]);
+  });
+
+  test("CachePanel: each target's accessible name says WHICH half and what it costs, not the raw dataKey", () => {
+    render(
+      <CachePanel
+        series={CACHE_SERIES}
+        unavailableMeasures={[]}
+        controls={CONTROLS}
+        bucket="day"
+        onDrill={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("dp:read:exact:1")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("Cache read (~0.1× rate)"),
+    );
+    expect(screen.getByTestId("dp:write:exact:1")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("Cache write (1.25× rate)"),
+    );
+    expect(screen.getByTestId("dp:cacheHitRatePercent:1")).toHaveAttribute(
+      "aria-label",
+      expect.stringContaining("Cache hit rate"),
+    );
   });
 
   test("CostPanel: a cost-basis bar scopes to its bucket", () => {

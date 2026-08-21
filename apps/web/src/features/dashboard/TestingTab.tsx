@@ -6,6 +6,7 @@ import type { RunFilter } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../components/InlineError";
 import { TabEmptyState } from "../../components/TabEmptyState";
 import type { DashboardRange } from "./dashboard-range";
+import { CachePanel } from "./testing/CachePanel";
 import { CostPanel } from "./testing/CostPanel";
 import { CustomChartsSection } from "./testing/CustomChartsSection";
 import {
@@ -136,6 +137,7 @@ export function TestingTab({ range }: { range: DashboardRange }) {
     data.guardrail.length > 0 ||
     data.duration.length > 0 ||
     data.tokens.length > 0 ||
+    data.cache.length > 0 ||
     data.cost.length > 0 ||
     data.score.length > 0 ||
     data.scans.length > 0;
@@ -191,6 +193,13 @@ export function TestingTab({ range }: { range: DashboardRange }) {
                 <GuardrailStopsPanel series={data.guardrail} controls={controls} onDrill={onDrill} />
                 <DurationPanel series={data.duration} controls={controls} bucket={bucket} onDrill={onDrill} />
                 <TokensPanel series={data.tokens} controls={controls} bucket={bucket} onDrill={onDrill} />
+                <CachePanel
+                  series={data.cache}
+                  unavailableMeasures={data.cacheUnavailable}
+                  controls={controls}
+                  bucket={bucket}
+                  onDrill={onDrill}
+                />
                 <CostPanel series={data.cost} controls={controls} bucket={bucket} onDrill={onDrill} />
                 <ScoreTrendPanel series={data.score} controls={controls} bucket={bucket} onDrill={onDrill} />
               </PanelGrid>
@@ -228,7 +237,7 @@ function TestingDashboardSkeleton() {
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 7 }).map((_, i) => (
           <Skeleton key={i} className="h-72 w-full" />
         ))}
       </div>

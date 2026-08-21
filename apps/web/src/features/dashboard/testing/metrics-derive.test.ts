@@ -8,6 +8,7 @@ import type {
 } from "@mcp-token-footprint/shared";
 import { describe, expect, test } from "vitest";
 import {
+  buildCacheResult,
   buildCapabilityClassSeries,
   buildCostResult,
   buildDurationRows,
@@ -21,6 +22,7 @@ import {
   buildScoreTrendRows,
   buildTestingKpis,
   buildTokensResult,
+  CACHE_HIT_RATE_KEY,
   humanize,
   humanizeMeasure,
   pivotToRows,
@@ -284,6 +286,100 @@ describe("buildCapabilityClassSeries / buildTokensResult — D-OB14 no-blend gua
     expect(b1?.estimated).toBeUndefined(); // NOT 0
     expect(b2?.estimated).toBe(50);
     expect(b2?.exact).toBeUndefined(); // NOT 0
+  });
+});
+
+describe("buildCacheResult — RM-33: read and write never merge, and absence is never zero", () => {
+  const B1 = "2026-07-01T00:00:00.000Z";
+  const B2 = "2026-07-02T00:00:00.000Z";
+
+  test("read and write stay SEPARATE keyed series, each labelled with what it costs", () => {
+    const input: RunMetricsSeries[] = [
+      series({ measure: "cacheReadTokens", capabilityClass: "exact", points: [{ bucketStart: B1, value: 800, n: 4 }] }),
+      series({ measure: "cacheWriteTokens", capabilityClass: "exact", points: [{ bucketStart: B1, value: 100, n: 4 }] }),
+    ];
+    const result = buildCacheResult(input);
+
+    expect(result.entries.map((e) => e.key)).toEqual(["read:exact", "write:exact"]);
+    expect(result.entries.map((e) => e.label)).toEqual([
+      "Cache read (~0.1× rate)",
+      "Cache write (1.25× rate)",
+    ]);
+    expect(result.entries.map((e) => e.total)).toEqual([800, 100]);
+    // The forbidden figure: one "cached" number that adds a 0.1x discount to a 1.25x premium.
+    expect(result.entries.some((e) => e.total === 900)).toBe(false);
+    expect(result.rows[0]?.["read:exact"]).toBe(800);
+    expect(result.rows[0]?.["write:exact"]).toBe(100);
+    expect(result.hasTokens).toBe(true);
+    expect(result.hasData).toBe(true);
+  });
+
+  test("the hit rate becomes a PERCENTAGE on its own key — never mixed onto a token key", () => {
+    const input: RunMetricsSeries[] = [
+      series({ measure: "cacheReadTokens", capabilityClass: "exact", points: [{ bucketStart: B1, value: 700, n: 2 }] }),
+      series({ measure: "cacheHitRate", points: [{ bucketStart: B1, value: 0.7, n: 2 }] }),
+    ];
+    const result = buildCacheResult(input);
+    expect(result.hasHitRate).toBe(true);
+    expect(result.rows[0]?.[CACHE_HIT_RATE_KEY]).toBeCloseTo(70);
+    expect(result.entries.some((e) => e.key === CACHE_HIT_RATE_KEY)).toBe(false);
+  });
+
+  test("a bucket the API omitted from the rate series leaves the key OFF the row — the line breaks, it does not dip to 0%", () => {
+    const input: RunMetricsSeries[] = [
+      series({
+        measure: "cacheReadTokens",
+        capabilityClass: "exact",
+        points: [
+          { bucketStart: B1, value: 500, n: 2 },
+          { bucketStart: B2, value: 600, n: 2 },
+        ],
+      }),
+      // Only B1 has a known hit rate.
+      series({ measure: "cacheHitRate", points: [{ bucketStart: B1, value: 0.5, n: 2 }] }),
+    ];
+    const result = buildCacheResult(input);
+    const b2 = result.rows.find((r) => r.bucketStart === B2) as Record<string, unknown>;
+    expect(b2?.[CACHE_HIT_RATE_KEY]).toBeUndefined(); // NOT 0
+    expect(b2?.["read:exact"]).toBe(600);
+  });
+
+  test("a bucket with no WRITE leaves that key off too — an unwritten cache is not a zero-token write", () => {
+    const input: RunMetricsSeries[] = [
+      series({
+        measure: "cacheReadTokens",
+        capabilityClass: "exact",
+        points: [
+          { bucketStart: B1, value: 500, n: 2 },
+          { bucketStart: B2, value: 600, n: 2 },
+        ],
+      }),
+      series({ measure: "cacheWriteTokens", capabilityClass: "exact", points: [{ bucketStart: B1, value: 40, n: 2 }] }),
+    ];
+    const result = buildCacheResult(input);
+    const b2 = result.rows.find((r) => r.bucketStart === B2) as Record<string, unknown>;
+    expect(b2?.["write:exact"]).toBeUndefined(); // NOT 0
+  });
+
+  test("two capability classes stay separate AND get their class named in the label (D-OB14)", () => {
+    const input: RunMetricsSeries[] = [
+      series({ measure: "cacheReadTokens", capabilityClass: "exact", points: [{ bucketStart: B1, value: 900, n: 3 }] }),
+      series({ measure: "cacheReadTokens", capabilityClass: "none", points: [{ bucketStart: B1, value: 120, n: 1 }] }),
+    ];
+    const result = buildCacheResult(input);
+    expect(result.entries.map((e) => e.key)).toEqual(["read:exact", "read:none"]);
+    for (const entry of result.entries) expect(entry.label).toMatch(/·/);
+    expect(result.entries[0]?.label).toContain("Cache read (~0.1× rate)");
+  });
+
+  test("no cache series at all ⇒ no data (the panel decides between 'nothing here' and 'not measured')", () => {
+    const result = buildCacheResult([
+      series({ measure: "tokensIn", capabilityClass: "exact", points: [{ bucketStart: B1, value: 10, n: 1 }] }),
+    ]);
+    expect(result.hasData).toBe(false);
+    expect(result.hasTokens).toBe(false);
+    expect(result.hasHitRate).toBe(false);
+    expect(result.rows).toEqual([]);
   });
 });
 
