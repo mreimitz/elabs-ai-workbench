@@ -306,3 +306,35 @@ describe("RunBar — run-level feedback header (WP 2.5, D-OB15)", () => {
     );
   });
 });
+
+// ── RM-36 WP 2.1 (audit finding P1-6) — the CLASS-LEVEL half of the responsive guard ─────────────
+//
+// HONEST SCOPE: this asserts the class recipe, NOT pixels. jsdom runs no layout engine at all —
+// `getBoundingClientRect()` returns zeros here — so nothing in `pnpm test` can observe that a
+// control has left the viewport. The LAYOUT-REAL check is `e2e/responsive-actions.spec.ts`
+// (Chromium, real viewports, real `getBoundingClientRect()`), and that is what actually proved both
+// the defect and the fix. This block is only the fast tripwire that catches someone re-introducing
+// the exact classes the fix removed, without waiting for `pnpm test:e2e`.
+describe("RunBar responsive recipe (class-level, NOT layout)", () => {
+  test("the bar wraps instead of pinning a fixed height, so an over-wide row cannot be clipped", () => {
+    const { container } = renderBar({ isReplay: true, runId: "run-1" });
+    const bar = container.querySelector("header");
+    expect(bar).not.toBeNull();
+    const classes = (bar?.className ?? "").split(/\s+/);
+    expect(classes).toContain("flex-wrap");
+    expect(classes).toContain("min-h-12");
+    // A FIXED height is what made the overflow unclippable-but-unreachable; it must not come back.
+    expect(classes).not.toContain("h-12");
+  });
+
+  test("the action cluster wraps internally and is not shrink-0", () => {
+    const { container } = renderBar({ isReplay: true, runId: "run-1" });
+    const cluster = container.querySelector("header > div.ml-auto");
+    expect(cluster).not.toBeNull();
+    const classes = (cluster?.className ?? "").split(/\s+/);
+    expect(classes).toContain("flex-wrap");
+    expect(classes).toContain("justify-end");
+    // `shrink-0` prevented the cluster from ever narrowing, so its internal wrap could never fire.
+    expect(classes).not.toContain("shrink-0");
+  });
+});
