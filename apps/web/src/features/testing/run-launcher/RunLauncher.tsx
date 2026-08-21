@@ -77,6 +77,7 @@ import { SelectField } from "../../../components/SelectField";
 import { BoundedNumber } from "../../../components/form";
 import { KpiStat } from "../../../components/KpiStat";
 import { getCredentialHealth } from "../credential-health";
+import { TurnBasisNote } from "../turn-basis";
 
 /**
  * Run launcher — the ONE "Run" entry, reworked as a WIDE three-step wizard (Testing IA WP 3.3 +
@@ -1464,10 +1465,10 @@ function CostPreview({
           <TooltipContent className="max-w-72">
             <p className="text-pretty">
               A rough forecast, not a quote. It multiplies each environment's tool-definition
-              footprint (re-sent every agent turn) by an assumed 1–8 turns, the selected
-              repetitions, and the model's list price. Actual spend depends on how many turns the
-              agent takes and prompt caching. Unpriced or local models are excluded from the dollar
-              range.
+              footprint (re-sent every agent turn) by the number of turns the agent is expected to
+              take, the selected repetitions, and the model's list price. Actual spend depends on
+              how many turns it really takes and on prompt caching. Unpriced or local models are
+              excluded from the dollar range.
             </p>
           </TooltipContent>
         </Tooltip>
@@ -1500,6 +1501,10 @@ function CostPreview({
             ) : null}{" "}
             <span className="text-muted-foreground">(estimate)</span>
           </Text>
+
+          {/* RM-34 WP 1.3 (D-ET5) — where the turn model behind that band came from. Absent on any
+              response predating the measurement, in which case this renders nothing at all. */}
+          <TurnBasisNote estimate={estimate} className="text-pretty" />
 
           {estimate.unpricedEnvironmentCount > 0 ? (
             <Text variant="meta" tone="muted" className="text-pretty">

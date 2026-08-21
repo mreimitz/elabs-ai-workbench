@@ -103,6 +103,103 @@ describe("SuiteDetail — Run routes through a confirm (T11)", () => {
     );
   });
 
+  // --- RM-34 WP 1.3 (D-ET5) — the confirm says where the band's turn model came from -----------
+
+  test("the confirm names the turn basis and sample size when the estimate carries one", async () => {
+    vi.mocked(api.getSuite).mockResolvedValue(NO_CAP_SUITE);
+    vi.mocked(api.estimateRunPlan).mockResolvedValue({
+      ...ESTIMATE,
+      environments: [
+        {
+          environmentId: "scn-1",
+          name: "BARC-Benchmark-Sonnet",
+          model: "claude-sonnet-4",
+          priced: true,
+          footprintTokens: 2000,
+          hasCostCap: false,
+          tokens: { low: 1000, mid: 1500, high: 2000 },
+          costUsd: { low: 0.1, mid: 0.15, high: 0.2 },
+          turnProfile: {
+            basis: "environment",
+            sampleSize: 79,
+            turns: { low: 5, mid: 9, high: 20 },
+            outputTokensPerTurn: 1036,
+          },
+        },
+      ],
+    });
+    renderDetail();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Run" }));
+    await screen.findByRole("heading", { name: "Run Regression suite?" });
+
+    const note = await screen.findByText(/past runs on this environment\./);
+    expect(note.textContent).toBe("Turn count from 79 past runs on this environment.");
+  });
+
+  test("a plan mixing a measured environment with an unmeasured one reports the ASSUMPTION", async () => {
+    vi.mocked(api.getSuite).mockResolvedValue(NO_CAP_SUITE);
+    vi.mocked(api.estimateRunPlan).mockResolvedValue({
+      ...ESTIMATE,
+      environmentCount: 2,
+      environments: [
+        {
+          environmentId: "scn-1",
+          name: "Measured",
+          model: "claude-sonnet-4",
+          priced: true,
+          footprintTokens: 2000,
+          hasCostCap: false,
+          tokens: { low: 1000, mid: 1500, high: 2000 },
+          costUsd: { low: 0.1, mid: 0.15, high: 0.2 },
+          turnProfile: {
+            basis: "pair",
+            sampleSize: 51,
+            turns: { low: 5, mid: 9, high: 19 },
+            outputTokensPerTurn: 1036,
+          },
+        },
+        {
+          environmentId: "scn-2",
+          name: "Brand new",
+          model: "claude-sonnet-4",
+          priced: true,
+          footprintTokens: 2000,
+          hasCostCap: false,
+          tokens: { low: 1000, mid: 1500, high: 2000 },
+          costUsd: { low: 0.1, mid: 0.15, high: 0.2 },
+          turnProfile: {
+            basis: "default",
+            sampleSize: 0,
+            turns: { low: 1, mid: 3, high: 8 },
+            outputTokensPerTurn: 350,
+          },
+        },
+      ],
+    });
+    renderDetail();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Run" }));
+    await screen.findByRole("heading", { name: "Run Regression suite?" });
+
+    expect(
+      await screen.findByText("Turn count is an assumption — no past runs to measure."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/51 past runs/)).not.toBeInTheDocument();
+  });
+
+  test("with no turnProfile on the wire the confirm reads exactly as it does today", async () => {
+    vi.mocked(api.getSuite).mockResolvedValue(NO_CAP_SUITE);
+    vi.mocked(api.estimateRunPlan).mockResolvedValue(ESTIMATE);
+    renderDetail();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Run" }));
+    await screen.findByRole("heading", { name: "Run Regression suite?" });
+    await waitFor(() => expect(api.estimateRunPlan).toHaveBeenCalled());
+
+    expect(screen.queryByText(/Turn count/)).not.toBeInTheDocument();
+  });
+
   test("confirming the dialog is what actually calls runSuite", async () => {
     vi.mocked(api.getSuite).mockResolvedValue(NO_CAP_SUITE);
     vi.mocked(api.estimateRunPlan).mockResolvedValue(ESTIMATE);
