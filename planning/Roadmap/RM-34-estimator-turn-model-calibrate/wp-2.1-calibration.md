@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 2.1 — re-measure the band live against recorded runs"
 description: "Phase 3 of item.md. Ledger: STATUS.md. The evidence WP: calls the live endpoint against real recorded runs and records how close the calibrated band now lands."
 tags: ["roadmap", "RM-34"]
-timestamp: "2026-08-21T14:15:00Z"
+timestamp: "2026-08-21T16:35:00Z"
 status: "final"
 ---
 # WP 2.1 — re-measure the band live against recorded runs
@@ -42,8 +42,53 @@ RM-33 practice; a read-only copy in the session scratchpad):
 4. Record, per run: does the token band **bracket** the actual? Does the dollar band? By what factor
    is the midpoint off? Compare each figure against what the **pre-WP-1.2 estimator** produced for
    the same input, so the improvement is a measured delta and not a claim.
-5. Confirm the D-ET1 fallback on a genuinely empty case — an environment with no completed runs still
-   returns a usable band, labelled `default`.
+5. Confirm the D-ET1 fallback. **Note what the orchestrator already found**: on the owner's database
+   `basis: "default"` is now UNREACHABLE, because the `global` level always holds 122 completed runs
+   — an environment with no runs of its own correctly answers `global`, not `default`. That is D-ET2
+   working. So this check needs an **empty `runs` table** (a scratch database), not an unused
+   environment. Confirm both: unused environment ⇒ `global`, empty database ⇒ `default` with the
+   original 1 / 3 / 8 band and `sampleSize: 0`.
+
+## What the orchestrator already measured (your baseline — reproduce it, do not trust it)
+
+Live against the built API on an isolated copy of the owner's database, 2026-08-21, after WP 1.2 and
+WP 1.3 merged. All three measured bases answer:
+
+| Basis | n | turns low/mid/high | output tokens/turn |
+| --- | --- | --- | --- |
+| `pair` (BARC-Benchmark-Sonnet × its 51-run test) | 51 | 5 / 9 / 16 | 595 |
+| `environment` (same environment, two tests selected ⇒ escalated) | 79 | 5 / 8 / 16 | 869 |
+| `global` | 122 | 4 / 6 / 16 | 823 |
+
+For that `pair` selection at one repetition the endpoint returns tokens **325,764 / 586,303 /
+1,042,247** and cost **$0.675 – $3.241**. Those 51 real runs actually span **103,372 – 1,099,077**
+gross tokens (mean 432,508) and **$0.114 – $0.876** (mean **$0.453**), at a mean of **10.0** turns.
+
+**So the token band now lands well** — its high end (1,042,247) sits within 5% of the real maximum
+(1,099,077), and the measured mid of 9 turns is within one turn of the observed mean of 10.
+
+## The finding you must investigate first
+
+**The dollar band's LOW end is now above the typical run's actual cost** — $0.675 against a $0.453
+mean — and this is a direct consequence of the turn fix colliding with an RM-33 design choice.
+
+RM-33 WP 2.1 deliberately moved the dollar band onto the CACHING axis: both ends are evaluated at
+the same `turns.high`, so `low` means "this many turns, cached" and `high` means "this many turns,
+uncached". That was sound when `turns.high` was **8**, which sat *below* this pair's real mean of 10.
+Now `turns.high` is the measured **p90 of 16**, so the dollar floor is a p90 figure — the cheapest
+pricing of the busiest plausible run, which is not a floor an operator would read it as.
+
+Note the same change makes the low end an *excellent* predictor of a long cached run: the reference
+run `4LnBMey0w53EnDRNG__TH` took 19 turns and billed **$0.7985**, and $0.675 at 16 turns scales to
+almost exactly that. The band is not wrong — it is answering a different question than the label
+implies.
+
+**Decide and record, do not silently fix.** Your options, and this is a genuine judgement call:
+(a) leave it and fix the LABEL, since the band is honest about caching and the token band already
+carries the turn spread; (b) evaluate the dollar `low` at `turns.low`/`turns.mid` — which reopens
+RM-33's D-CT2 reasoning and would break its `no cachedInPer1M ⇒ low === high` acceptance, so it is
+**not** yours to change here; (c) surface both dimensions. Write up which you recommend and why, and
+if it needs code, it becomes its own work package.
 
 Then write the results into `STATUS.md`'s WP 2.1 entry as the evidence, and:
 
@@ -73,7 +118,11 @@ Then write the results into `STATUS.md`'s WP 2.1 entry as the evidence, and:
       ($0.798 billed; the old band $0.4198–$1.5912 at an 8-turn ceiling against 19 actual turns).
 - [ ] The sample-contamination question answered explicitly for each run (excluded, or included and
       what that means).
-- [ ] The empty-history fallback confirmed live, reporting `default`.
+- [ ] The fallback confirmed live BOTH ways: unused environment ⇒ `global`, empty `runs`
+      table ⇒ `default` with the 1 / 3 / 8 band and `sampleSize: 0`.
+- [ ] The dollar-band-floor finding above investigated, with a recommendation recorded.
+- [ ] A real measured basis line seen in a BROWSER, in both themes — WP 1.3's own walk used
+      injected values because WP 1.2 had not merged yet, so this is still unseen.
 - [ ] Findings recorded in `STATUS.md`, including any way the estimator is still wrong.
 - [ ] `README.md` capability table + `CHANGELOG.md` updated from observed figures, in the tick commit.
 - [ ] `user-guide/DC-08-testing-console/` records the delivery, and its RM-33 *Known gaps*

@@ -3,7 +3,7 @@ type: "Roadmap Item"
 title: "Estimator turn model — calibrate the run-plan preview against measured run history"
 description: "Replace the run-plan estimator's fixed 1/3/8-turn and flat 350-output-tokens-per-turn assumptions with a band measured from the app's OWN completed runs, keyed narrowest-first (environment+test, then environment, then global) with the static constants as the only fallback, and make the estimate declare which basis it used."
 tags: ["roadmap", "RM-34"]
-timestamp: "2026-08-21T14:05:00Z"
+timestamp: "2026-08-21T16:35:00Z"
 status: "active"
 ---
 
@@ -20,7 +20,7 @@ RM-33 WP 2.1 fixed the estimator's PRICING and left its TOKEN model untouched; t
 ## Milestones
 
 - [x] Phase 1 — measure: shared turn-profile contract + a completed-runs-only percentile query over runs.turns and output-tokens-per-turn
-- [ ] Phase 2 — consume: the pure estimator takes a measured profile per environment, keeps maxTurns clamping, and reports its turn basis on the wire
+- [x] Phase 2 — consume: the pure estimator takes a measured profile per environment, keeps maxTurns clamping, and reports its turn basis on the wire
 - [ ] Phase 3 — surface + verify: launcher and suite preview show the basis and sample size; the band is re-measured live against recorded runs
 
 ## Linked research
