@@ -755,7 +755,6 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
               version={version}
               files={files}
               isHeadVersion={isHeadVersion}
-              onVersionSaved={(id) => void handleDesignSaved(id)}
               onOpenFlow={() => requestTabChange("design")}
             />
           )}

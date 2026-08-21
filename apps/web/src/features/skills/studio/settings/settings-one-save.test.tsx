@@ -313,6 +313,33 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
     expect(body.content).toContain("Body line.");
   });
 
+  test("a FRONTMATTER-ONLY change is a real, reviewable, saveable change", async () => {
+    // The case with no canvas op and no text edit at all. It is the one that breaks quietly: the
+    // dirty chip, the save dialog's pending list and its `canSave` gate are three separate places
+    // that each have to count the settings layer, and an op in the batch masks all three.
+    renderStudio();
+    const panel = await screen.findByTestId("studio-settings");
+
+    fireEvent.click(within(panel).getByTestId("settings-bind-server"));
+    fireEvent.click(await screen.findByRole("button", { name: "Bind" }));
+
+    const cluster = await screen.findByTestId("design-save-cluster");
+    await waitFor(() => expect(cluster.textContent).toMatch(/1 unsaved change/));
+
+    fireEvent.click(within(cluster).getByRole("button", { name: /Save as v5/ }));
+    const saveDialog = await screen.findByRole("dialog");
+    // It is ITEMIZED, not just counted — an author reviews what they are about to save.
+    expect(within(saveDialog).getByText(/Bind the server “files”/)).toBeTruthy();
+
+    const confirm = within(saveDialog).getByRole("button", { name: /Save as v5/ });
+    expect((confirm as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(confirm);
+
+    await waitFor(() => expect(saveDraftPosts()).toHaveLength(1));
+    const body = saveDraftPosts()[0]?.body as { content: string };
+    expect(body.content).toContain("  - files");
+  });
+
   test("staging then undoing a bind leaves the draft clean — no version to save", async () => {
     renderStudio();
     const panel = await screen.findByTestId("studio-settings");

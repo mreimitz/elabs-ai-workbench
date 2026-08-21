@@ -18,12 +18,9 @@ import {
   Descriptions,
   DescriptionsItem,
   MetricCard,
-  Spinner,
   StatePanel,
-  TagInput,
   Text,
   cn,
-  toast,
 } from "@elabs-ai/components-ui";
 import { MessageResponse } from "@elabs-ai/components-ai";
 import {
@@ -40,8 +37,7 @@ import { SegmentedBar } from "../../components/TokenViz";
 import { getErrorMessage } from "../../lib/errors";
 import { formatBytes, formatNumber } from "../../lib/format";
 import { SkillBindingsPanel } from "./SkillBindingsPanel";
-import { getSkillFile, getSkillTriggers, postSkillEdits } from "./skills-inspector-api";
-import { notifyError } from "../../lib/notify";
+import { getSkillFile, getSkillTriggers } from "./skills-inspector-api";
 
 // O5 — document-scale prose for the rendered SKILL.md (the @elabs-ai/components-ai `MessageResponse` renderer emits
 // real HTML tags). Unlike the chat renderer this PRESERVES heading hierarchy so the doc reads like a
@@ -93,21 +89,11 @@ export type SkillOverviewProps = {
    */
   isHeadVersion: boolean;
   /**
-   * Skill IDE WP 6.1 — fired after a keyword edit in the Triggers panel lands a NEW immutable version
-   * (via `set_keywords` through the edits route), so the inspector can refresh + select it.
-   */
-  onVersionSaved?: (newVersionId: string) => void;
-  /**
    * Skill IDE WP 6.1 — deep-link a `/command` entry point into its Design-tab flow. Absent ⇒ the
    * commands render as static rows (no dead control).
    */
   onOpenFlow?: (flowId: string) => void;
 };
-
-/** Are two keyword lists identical in order + membership? (drives the Save-enabled state.) */
-function sameKeywords(a: string[], b: string[]): boolean {
-  return a.length === b.length && a.every((value, i) => value === b[i]);
-}
 
 /**
  * Overview tab (WP 1.7): the rendered SKILL.md is the primary content, alongside the parsed
@@ -120,7 +106,6 @@ export function SkillOverview({
   version,
   files,
   isHeadVersion,
-  onVersionSaved,
   onOpenFlow,
 }: SkillOverviewProps) {
   const skillMdPath = useMemo(() => files.find((f) => f.isSkillMd)?.path, [files]);
@@ -448,7 +433,10 @@ export function SkillOverview({
               blockedReason={null}
               readOnly
               editInStudioTo={`/skills/${skillId}/studio?rail=settings`}
-              onVersionSaved={(id) => onVersionSaved?.(id)}
+              // Required by the panel's signature but unreachable in `readOnly` mode: this tab has
+              // no save path at all any more, so a callback here would be dead wiring pretending
+              // otherwise.
+              onVersionSaved={() => {}}
             />
           </CardContent>
         </BentoGridItem>
