@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T00:20:00Z"
+timestamp: "2026-08-22T00:45:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -256,7 +256,10 @@ met and — where the box touches code — the gate
       Discard/Save bar (7.4's job) in place, because removing them before their replacements exist
       would strand the only way to edit a skill's keywords and files. **Nobody has used the Studio** —
       its 61.1%-of-viewport claim is a headless-Chromium measurement, it was never driven against a
-      bound MCP server, and no save was ever completed
+      bound MCP server, and no save was ever completed.
+      **IN FLIGHT (batch 2, 2026-08-21) — WP 7.3** (`wp/roadmap-cleanup/rm30-7.3`): the settings panel
+      + the one draft store, which also pays back 7.1's inherited line (Overview's "Save as new
+      version" goes) and re-points WP 7.3a's D-UX18 immediate-save deviation at the draft store
 - [ ] WP 3.4 — **RM-03 WP 2.3**: autonomy dial + hard budgets + steering + live HITL
       approval-gating + MCP elicitation. One box, two BLOCKING MUSTs (elicitation transport
       R-MCP4, the approval/HITL path). Unblocks RM-03's 18-box walk.
@@ -312,7 +315,12 @@ met and — where the box touches code — the gate
       ledger's own note had not expected; that note was corrected rather than left standing.
       **Neither was walked in a browser** — no two-theme look, no keyboard pass, no live notification,
       and AM-OB1's create-view→copy-URL→paste-in-a-fresh-tab flow is pinned only against a stubbed
-      API. Recorded in RM-17's ledger as owner-acceptance, not glossed
+      API. Recorded in RM-17's ledger as owner-acceptance, not glossed.
+      **IN FLIGHT (batch 2, 2026-08-21) — 2 more**: `AM-OB11` (typed GitHub Actions
+      `workflow_dispatch` action beside the generic webhook, `wp/roadmap-cleanup/am-ob11`, briefed
+      onto the **encrypted `github-account` token** per the ledger's own correction, not `api_tokens`)
+      and `AM-OB12` (share-of-verdict metrics, `wp/roadmap-cleanup/am-ob12`, verify-at-pickup).
+      Neither may take a migration — v61 is spent
 - [ ] WP 3.8 — **RM-14 Phases 2–4** (10 WPs): scene spec layout engine + connector router +
       renderer (2.1–2.4), explain mode (3.1–3.3), assistant compose tools (4.1–4.3). Largest
       remaining build. **The risk to weigh:** 24 illustration components exist and nothing composes
