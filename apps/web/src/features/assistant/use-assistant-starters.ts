@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AssistantStarter } from "@mcp-token-footprint/shared";
 import { getAssistantStarters } from "../../lib/api";
+import { useFeatureEnabled } from "../feature-flags/feature-flags-context";
 
 /** The subset of `AssistantContextEnvelope` a starters fetch needs — kept as loose primitive fields
  *  (not the envelope type itself) so a caller can pass values pulled straight off `useAssistant()`'s
@@ -11,8 +12,9 @@ export type AssistantStartersQuery = {
   entityId?: string;
   tab?: string;
   route?: string;
-  /** Settings › Features — when false the hook does not fetch at all and reports zero starters (the
-   *  Assistant feature is switched off, so `/api/assistant/*` answers 403). Defaults to true. */
+  /** Extra caller-side gate ANDed with the feature flag — pass false to suppress the fetch for a
+   *  reason of the caller's own. The Settings › Features switch is NOT this: it is read by the hook
+   *  itself (see below), so no caller can gate the dock's fetch on the wrong feature. Defaults to true. */
   enabled?: boolean;
 };
 
@@ -33,12 +35,18 @@ export function useAssistantStarters(query: AssistantStartersQuery): {
   loading: boolean;
 } {
   const { entityKind, entityId, tab, route, enabled = true } = query;
+  // Settings › Features — the App-assistant DOCK's own switch (`app_assistant`), read HERE rather
+  // than passed in, so a caller cannot gate this fetch on the full-page workspace's unrelated
+  // `assistant` flag (which is exactly how turning the workspace off used to take the dock with it).
+  // While it is off `/api/assistant/*` answers 403, so the fetch is skipped entirely.
+  const featureEnabled = useFeatureEnabled("app_assistant");
+  const shouldFetch = enabled && featureEnabled;
   const [starters, setStarters] = useState<AssistantStarter[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
-    if (!enabled) {
+    if (!shouldFetch) {
       setStarters([]);
       setLoading(false);
       return;
@@ -57,7 +65,7 @@ export function useAssistantStarters(query: AssistantStartersQuery): {
     return () => {
       active = false;
     };
-  }, [entityKind, entityId, tab, route, enabled]);
+  }, [entityKind, entityId, tab, route, shouldFetch]);
 
   return { starters, loading };
 }

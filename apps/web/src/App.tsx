@@ -41,7 +41,6 @@ import { ConfirmDialog } from "./components/dialogs";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useAssistant } from "./features/assistant/assistant-context";
 import { FeatureGate } from "./features/feature-flags/FeatureGate";
-import { useFeatureEnabled } from "./features/feature-flags/feature-flags-context";
 import { CommandPalette } from "./features/command-palette/CommandPalette";
 import { useAssistantStarters } from "./features/assistant/use-assistant-starters";
 import {
@@ -290,10 +289,13 @@ export function App() {
   const navigate = useNavigate();
   const rawLocation = useLocation();
   const assistant = useAssistant();
-  // Settings › Features — the Assistant on/off switch. Off means: no starter fetch (the endpoint
-  // answers 403), no dock, and every `/assistant/*` route renders the "turned off" panel instead
-  // (see the `FeatureGate` wrappers in the route table below).
-  const assistantEnabled = useFeatureEnabled("assistant");
+  // NOTE — deliberately NO feature-flag read here. The App-assistant dock is gated by its own
+  // `app_assistant` flag at the two sites that OWN it: `AppShell` (the toggle, the split column and
+  // the mobile Sheet) and `useAssistantStarters` (the `/api/assistant/starters` fetch). Reading a
+  // flag here as well is how the dock got wired to the WORKSPACE's `assistant` flag by mistake —
+  // turning the full-page Assistant off then took the unrelated dock with it. Two features, two
+  // switches, and each one read only where it is enforced. The workspace's flag still gates its own
+  // `/assistant/*` routes, via the `FeatureGate feature="assistant"` wrappers in the route table.
   // The collapsed dock toggle's hint pill: how many suggested interactions (session starters) the
   // current page has. Fetched here (not in the dock, which is unmounted while collapsed) off the same
   // envelope primitives the dock's own empty state uses; best-effort by construction (see the hook).
@@ -302,7 +304,6 @@ export function App() {
     entityId: assistant.currentEnvelope.entityId,
     tab: assistant.currentEnvelope.tab,
     route: assistant.currentEnvelope.route,
-    enabled: assistantEnabled,
   });
 
   // ── Settings modal over the current view ─────────────────────────────────────────────────────
@@ -1216,7 +1217,7 @@ export function App() {
             themePreference={themePreference}
             onThemePreferenceChange={setThemePreference}
             onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-            dockAvailable={assistant.authConfigured && assistantEnabled}
+            dockAvailable={assistant.authConfigured}
             dockOpen={assistant.isOpen}
             onDockOpenChange={(open) =>
               open ? assistant.openAssistant() : assistant.closeAssistant()
