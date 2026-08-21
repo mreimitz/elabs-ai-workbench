@@ -6,6 +6,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { z } from "zod";
+import {
+  ANSWER_VALIDATION_VERDICTS,
+  INSIGHT_SURPLUS_VERDICTS,
+  ROOT_CAUSE_BUCKETS,
+  RUN_METRICS_MEASURES,
+} from "./constants.js";
 import { runFilterSchema } from "./schemas.js";
 import {
   hasRunQueryParams,
@@ -62,6 +68,12 @@ test("serialize → parse → identical object (round-trip)", () => {
     dateTo: "2026-07-16T00:00:00.000Z",
     feedback: { key: "helpful", hasScore: true },
     hasError: false,
+    // RM-17 Phase 6 (AM-OB12) — the auto-rating dimensions ride the SAME byte-stable codec, so a
+    // verdict-filtered feed/chart URL is shareable exactly like every other filter.
+    answerVerdict: ["unanswered", "partial"],
+    insightVerdict: ["noise"],
+    errorBucket: ["skill", "mcp_server"],
+    errorFixTarget: ["skill"],
   };
   const round = parseRunFilter(serializeRunFilter(filter));
   assert.deepStrictEqual(round, runFilterSchema.parse(filter));
@@ -348,6 +360,72 @@ test("pinned / derived / feedback — the conservative no-match branch on a cand
   assert.equal(matchesRunFilter(candidate(), { feedback: {} }), true); // empty feedback = no constraint
 });
 
+// ── Auto-rating dimensions (RM-17 Phase 6, AM-OB12) ──────────────────────────────────────────────
+
+test("answerVerdict / insightVerdict — a verdict the latest rating carries matches; another does not", () => {
+  const rated = candidate({ answerVerdicts: ["unanswered"], insightVerdicts: ["noise"] });
+  assert.equal(matchesRunFilter(rated, { answerVerdict: ["unanswered"] }), true);
+  assert.equal(matchesRunFilter(rated, { answerVerdict: ["unanswered", "partial"] }), true);
+  assert.equal(matchesRunFilter(rated, { answerVerdict: ["answered"] }), false);
+  assert.equal(matchesRunFilter(rated, { insightVerdict: ["noise"] }), true);
+  assert.equal(matchesRunFilter(rated, { insightVerdict: ["valuable", "none"] }), false);
+  // An EMPTY array is "no constraint", exactly like every other array field.
+  assert.equal(matchesRunFilter(rated, { answerVerdict: [] }), true);
+});
+
+test("errorBucket / errorFixTarget — ANY finding in the latest rating may carry the value", () => {
+  const rated = candidate({
+    errorBuckets: ["mcp_server", "test_setup"],
+    errorFixTargets: ["mcp_server", "none"],
+  });
+  assert.equal(matchesRunFilter(rated, { errorBucket: ["test_setup"] }), true);
+  assert.equal(matchesRunFilter(rated, { errorBucket: ["skill"] }), false);
+  assert.equal(matchesRunFilter(rated, { errorBucket: ["skill", "mcp_server"] }), true);
+  assert.equal(matchesRunFilter(rated, { errorFixTarget: ["none"] }), true);
+  assert.equal(matchesRunFilter(rated, { errorFixTarget: ["skill"] }), false);
+});
+
+test("an UNRATED run satisfies NO rating filter — absent is not a value (the AM-OB10 bug class)", () => {
+  // This is the degenerate case that matters for a share: if an unrated run could satisfy a verdict
+  // filter, every never-rated run would silently join the numerator and a quality metric would read
+  // healthy (or catastrophic) purely from missing data. Absent → excluded, in EVERY direction.
+  const unrated = candidate();
+  for (const filter of [
+    { answerVerdict: ["answered"] },
+    { answerVerdict: ["unanswered"] },
+    { answerVerdict: ["answered", "partial", "unanswered"] },
+    { insightVerdict: ["none"] },
+    { insightVerdict: ["none", "valuable", "noise"] },
+    { errorBucket: ["skill", "mcp_server", "model_behavior", "test_setup", "provider_infra"] },
+    { errorFixTarget: ["skill", "mcp_server", "none"] },
+  ] satisfies RunFilter[]) {
+    assert.equal(matchesRunFilter(unrated, filter), false, JSON.stringify(filter));
+  }
+  // A rating that produced NO findings is likewise not a match for any bucket — an empty inventory
+  // is a clean run, not a run in some default bucket.
+  const cleanRun = candidate({ errorBuckets: [], errorFixTargets: [] });
+  assert.equal(matchesRunFilter(cleanRun, { errorBucket: ["skill"] }), false);
+  assert.equal(matchesRunFilter(cleanRun, { errorFixTarget: ["none"] }), false);
+  // …and imposing no rating constraint still matches it (the filter narrows, it never excludes by
+  // default the way `derived` does).
+  assert.equal(matchesRunFilter(unrated, {}), true);
+});
+
+test("the three verdicts partition the rated population — no verdict is treated as a boolean false", () => {
+  // Guards the non-goal: `partial` must never be collapsed into `unanswered` (or any "not answered"
+  // bucket). Each verdict matches ONLY itself.
+  const verdicts = ["answered", "partial", "unanswered"] as const;
+  for (const held of verdicts) {
+    for (const asked of verdicts) {
+      assert.equal(
+        matchesRunFilter(candidate({ answerVerdicts: [held] }), { answerVerdict: [asked] }),
+        held === asked,
+        `${held} vs ${asked}`,
+      );
+    }
+  }
+});
+
 test("combined AND semantics: all present fields must hold", () => {
   const c = candidate({ status: "completed", providerKind: "anthropic", costUsd: 1.2 });
   assert.equal(
@@ -360,4 +438,57 @@ test("combined AND semantics: all present fields must hold", () => {
 
 test("empty filter matches everything", () => {
   assert.equal(matchesRunFilter(candidate(), {}), true);
+});
+
+// ── AM-OB12's central non-goal, as a test rather than a convention ───────────────────────────────
+//
+// The amendment asked for "boolean grade/rating fields as share-true metrics". The shipped rating
+// model has NO such booleans (the verdicts are three-valued) and no hallucination flag, so the item
+// was reframed: make the verdicts FILTERABLE and let a ratio measure's numerator filter express the
+// share. That reframe only holds while nobody quietly adds the bespoke measure back — an
+// `unansweredRate` beside `errorRate` would be the fourteenth hardcoded share, and the next one
+// would need a fifteenth. Pinning the vocabulary here makes adding one a DELIBERATE act with a red
+// test in front of it, not an afternoon's convenience.
+//
+// This lives beside the RunFilter tests on purpose: the filter fields and this list are the two
+// halves of the same decision. If you are AM-OB4 (WP 6.4) adding the `"ratio"` measure, adding it to
+// this list is correct and expected — that is the mechanism this test protects.
+test("RUN_METRICS_MEASURES is unchanged — AM-OB12 added FILTERS, not a bespoke share measure", () => {
+  assert.deepStrictEqual(
+    [...RUN_METRICS_MEASURES],
+    [
+      "count",
+      "errorRate",
+      "guardrailRate",
+      "p50DurationMs",
+      "p95DurationMs",
+      "tokensIn",
+      "tokensOut",
+      "costUsd",
+      "meanScore",
+      "feedbackRate",
+      "cacheReadTokens",
+      "cacheWriteTokens",
+      "cacheHitRate",
+    ],
+    "a measure was added or removed — see this test's comment before updating the expected list",
+  );
+  // Belt and braces: no measure may be named after a rating verdict/bucket, whatever the list length
+  // grows to. A share of a verdict is a ratio with a numerator FILTER, never its own measure name.
+  const forbidden = [
+    ...ANSWER_VALIDATION_VERDICTS,
+    ...INSIGHT_SURPLUS_VERDICTS,
+    ...ROOT_CAUSE_BUCKETS,
+    "verdict",
+    "hallucinat",
+  ];
+  for (const measure of RUN_METRICS_MEASURES) {
+    const lower = measure.toLowerCase();
+    for (const token of forbidden) {
+      assert.ok(
+        !lower.includes(token.toLowerCase()),
+        `measure "${measure}" is named after the rating vocabulary token "${token}" — express it as a ratio's numerator filter instead`,
+      );
+    }
+  }
 });
