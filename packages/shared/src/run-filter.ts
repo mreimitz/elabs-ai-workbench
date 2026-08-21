@@ -7,12 +7,18 @@
 // is pure contract logic. The two paths are kept in agreement by a cross-check test in the API.
 
 import { RUN_FILTER_ALIAS_KEYS, RUN_FILTER_PARAM } from "./constants.js";
-import { runFilterSchema, runSortDirectionSchema, runSortFieldSchema } from "./schemas.js";
+import {
+  runFilterSchema,
+  runMetricsRatioConfigSchema,
+  runSortDirectionSchema,
+  runSortFieldSchema,
+} from "./schemas.js";
 import type {
   RunCandidateScore,
   RunFeedbackFilter,
   RunFilter,
   RunFilterCandidate,
+  RunMetricsRatioConfig,
   RunPhase,
   RunSort,
   RunSortDirection,
@@ -73,6 +79,33 @@ export function parseRunFilter(raw: string): RunFilter {
     throw new RunFilterError("`filter` must be a JSON object");
   }
   return runFilterSchema.parse(json);
+}
+
+// ── The `ratio=` param (RM-17 Phase 6, AM-OB4) ───────────────────────────────────────────────────
+// `GET /api/metrics/runs` is a GET with no body and `filter=` is ALREADY a JSON blob, so the ratio
+// config rides as a SECOND JSON param rather than forcing the endpoint to POST — four callers (the
+// dashboard, the chart composer, the watch engine and the scheduled digest) share that GET, and
+// converting it would be a breaking change to all of them for no gain.
+
+/** Serialize a {@link RunMetricsRatioConfig} to the canonical `ratio=` JSON — schema-normalized and
+ *  key-sorted, so it round-trips byte-stably exactly like `serializeRunFilter`. */
+export function serializeRunMetricsRatio(ratio: RunMetricsRatioConfig): string {
+  return JSON.stringify(sortKeys(runMetricsRatioConfigSchema.parse(ratio)));
+}
+
+/** Parse the canonical `ratio=` JSON string. Malformed/non-object JSON is a {@link RunFilterError}
+ *  (→400); an invalid field inside is a ZodError (→400 with detail). */
+export function parseRunMetricsRatio(raw: string): RunMetricsRatioConfig {
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    throw new RunFilterError("`ratio` is not valid JSON");
+  }
+  if (json === null || typeof json !== "object" || Array.isArray(json)) {
+    throw new RunFilterError("`ratio` must be a JSON object");
+  }
+  return runMetricsRatioConfigSchema.parse(json);
 }
 
 function toStringArray(value: unknown): string[] {
@@ -216,6 +249,10 @@ function matchesFeedback(candidate: RunFilterCandidate, feedback: RunFeedbackFil
     return false;
   }
   if (feedback.hasScore === true && !(candidate.hasFeedbackScore ?? false)) return false;
+  // AM-OB4 — "carries ANY feedback row". A candidate with no `feedbackKeys` at all is conservatively
+  // NOT a match (absent is not a value), mirroring the SQL `EXISTS (… run_feedback …)`. Note a
+  // note-only row still has a `key`, so this is not a synonym for `hasScore`.
+  if (feedback.any === true && (candidate.feedbackKeys ?? []).length === 0) return false;
   return true;
 }
 

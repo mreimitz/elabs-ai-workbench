@@ -159,7 +159,7 @@ import {
 // (the generative-UI catalog node, and — crew nesting WP0.1 / D-CN5 — the self-referencing agent
 // report). `import type` is erased at build and introduces no runtime cycle (types.ts does not import
 // schemas.ts).
-import type { HubAgentReport, HubGenUiNode } from "./types.js";
+import type { HubAgentReport, HubGenUiNode, RunFilter } from "./types.js";
 
 export const tokenProfileSchema = z.enum(TOKEN_PROFILES).default(DEFAULT_TOKEN_PROFILE);
 
@@ -1063,6 +1063,9 @@ export const runFeedbackFilterSchema = z
   .object({
     key: z.string().min(1).optional(),
     hasScore: z.boolean().optional(),
+    // RM-17 Phase 6 (AM-OB4) — "carries at least one feedback row, of any key". The numerator the
+    // `feedbackRate` named ratio is built from; see {@link RunFeedbackFilter.any}.
+    any: z.boolean().optional(),
   })
   .strict();
 
@@ -1122,6 +1125,47 @@ export const runSortSchema = z.object({
   field: runSortFieldSchema,
   direction: runSortDirectionSchema,
 });
+
+// --- Observability — the ratio measure (planning/Roadmap/RM-17-observability/, Phase 6 AM-OB4) -----
+// `{ numerator, denominator? }`, each side a full `RunFilter`. Declared HERE (beside `runFilterSchema`,
+// which it is made of) rather than down in the metrics block, because THREE surfaces consume it and
+// two of them — the watch-rule window config and the dashboard chart config — are declared earlier in
+// this file than the metrics query params are.
+export const runMetricsRatioConfigSchema = z
+  .object({
+    numerator: runFilterSchema,
+    denominator: runFilterSchema.optional(),
+  })
+  .strict();
+
+/**
+ * The one coherence rule for the `ratio` measure, shared by the chart config and the watch window so
+ * a 400 from one and a 400 from the other can never disagree about what a valid ratio request is:
+ *
+ *  • `ratio` selected ⇒ a config is REQUIRED. Without it there is nothing to divide, and the service
+ *    would have to answer `unavailableMeasures` — a saved chart that renders nothing forever.
+ *  • a config present ⇒ `ratio` MUST be selected. This direction matters less at read time but a lot
+ *    at edit time: it stops a chart quietly carrying a numerator it no longer plots, which the next
+ *    person would read as the meaning of the chart.
+ *  • neither side may carry `q`. The metrics service has NO full-text path (the route already rejects
+ *    `q` on the query's own filter), so accepting it here would silently answer a different question.
+ */
+export function ratioConfigIssue(
+  measures: readonly string[],
+  ratio: { numerator: RunFilter; denominator?: RunFilter } | undefined,
+): string | null {
+  const wantsRatio = measures.includes("ratio");
+  if (wantsRatio && ratio === undefined) {
+    return 'the "ratio" measure needs a `ratio` config naming its numerator filter';
+  }
+  if (!wantsRatio && ratio !== undefined) {
+    return 'a `ratio` config was supplied but "ratio" is not among the selected measures';
+  }
+  if (ratio?.numerator.q !== undefined || ratio?.denominator?.q !== undefined) {
+    return "a ratio filter cannot use `q` (full-text search is not part of the metrics aggregation)";
+  }
+  return null;
+}
 
 // --- Observability — human feedback (planning/Roadmap/RM-17-observability/, WP1.5, D-OB15) ---------------------
 // The zod validator for `POST /api/runs/:id/feedback` — an UPSERT keyed on (run, step, key,
@@ -1360,6 +1404,8 @@ const watchMinIntervalSchema = z
 export const watchWindowConfigSchema = z
   .object({
     measure: z.enum(RUN_METRICS_MEASURES),
+    // RM-17 Phase 6 (AM-OB4) — required exactly when `measure` is "ratio" (see `ratioConfigIssue`).
+    ratio: runMetricsRatioConfigSchema.optional(),
     grader: z.string().trim().min(1).optional(),
     groupBy: z.enum(RUN_METRICS_GROUP_BY).optional(),
     bucket: z.enum(METRICS_BUCKETS),
@@ -1375,6 +1421,12 @@ export const watchWindowConfigSchema = z
     const check = validateWatchThresholds(config);
     if (!check.ok) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["warnThreshold"], message: check.message });
+    }
+    // AM-OB4 — the SAME rule the chart config runs, so an editor's inline message, a chart 400 and a
+    // rule 400 all say the same thing about a half-configured ratio.
+    const ratioIssue = ratioConfigIssue([config.measure], config.ratio);
+    if (ratioIssue !== null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ratio"], message: ratioIssue });
     }
   });
 const watchWindowSchema = watchWindowConfigSchema.optional();
@@ -3124,6 +3176,11 @@ const dashboardChartRunsConfigSchema = z
     groupBy: runMetricsGroupBySchema.optional(),
     bucket: metricsBucketSchema,
     chartType: dashboardChartTypeSchema,
+    // RM-17 Phase 6 (AM-OB4) — required exactly when `measures` contains "ratio". The rule is
+    // refined on the UNION below, not here: `z.discriminatedUnion` only accepts ZodObject options,
+    // and an object-level `.superRefine` would make this a ZodEffects and fail to compile into it
+    // (the same constraint the AM-OB11 action union documents).
+    ratio: runMetricsRatioConfigSchema.optional(),
   })
   .strict();
 
@@ -3141,10 +3198,17 @@ const dashboardChartScansConfigSchema = z
   })
   .strict();
 
-export const dashboardChartConfigSchema = z.discriminatedUnion("source", [
-  dashboardChartRunsConfigSchema,
-  dashboardChartScansConfigSchema,
-]);
+export const dashboardChartConfigSchema = z
+  .discriminatedUnion("source", [dashboardChartRunsConfigSchema, dashboardChartScansConfigSchema])
+  // AM-OB4 — the ratio coherence rule, refined on the UNION (see the `ratio` field's note above).
+  // A `scans` chart has no `ratio` key at all, so `.strict()` on that option already rejects one.
+  .superRefine((config, ctx) => {
+    if (config.source !== "runs") return;
+    const issue = ratioConfigIssue(config.measures, config.ratio);
+    if (issue !== null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ratio"], message: issue });
+    }
+  });
 
 export const dashboardChartInputSchema = z
   .object({
