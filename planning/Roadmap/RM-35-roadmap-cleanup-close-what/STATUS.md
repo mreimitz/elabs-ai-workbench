@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T22:40:00Z"
+timestamp: "2026-08-21T23:40:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -292,11 +292,20 @@ met and — where the box touches code — the gate
       its true residual instead of rebuilding. Two may need a migration (AM-OB2, AM-OB6); one at a
       time. **If RM-17 should retire before this is worked, split Phase 6 to its own RM item** —
       recorded as the sanctioned alternative on lock day.
-      **IN FLIGHT 2026-08-21 — 2 of the 13**: `AM-OB1` (filter/view state in the URL,
-      `wp/roadmap-cleanup/am-ob1`) and `AM-OB10` (watch-rule WARNING/NO_DATA/PAUSED +
-      renotification, `wp/roadmap-cleanup/am-ob10`), each a worktree agent, both briefed to honour
-      *verify-at-pickup* by measuring the built residual before building. AM-OB10 holds the one
-      migration slot
+      **2 of the 13 landed 2026-08-21 — 11 open** (this box stays open until Phase 6 is worked or
+      split). `AM-OB1` (merged `17c93ba`) and `AM-OB10` (merged `c81e1d9`), each built by a worktree
+      agent briefed to honour *verify-at-pickup* first, each validated by the orchestrator with its
+      own mutation probe before the merge, gate green on `main` after both.
+      **Both pickups paid for themselves, in opposite directions.** AM-OB1 shrank by more than half —
+      the `RunFilter` was ALREADY in the URL; what was actually lost on reload was the applied saved
+      view, the sort, the grouping, the type facet and the column preference — so it needed no wire
+      change and no migration. AM-OB10 did **not** shrink: all four parts were unbuilt, and one was a
+      **live alerting defect** — an empty window read as "not breached", so a bench that went silent
+      while a rule was firing was recorded as *recovered*. It took migration **v61**, which the
+      ledger's own note had not expected; that note was corrected rather than left standing.
+      **Neither was walked in a browser** — no two-theme look, no keyboard pass, no live notification,
+      and AM-OB1's create-view→copy-URL→paste-in-a-fresh-tab flow is pinned only against a stubbed
+      API. Recorded in RM-17's ledger as owner-acceptance, not glossed
 - [ ] WP 3.8 — **RM-14 Phases 2–4** (10 WPs): scene spec layout engine + connector router +
       renderer (2.1–2.4), explain mode (3.1–3.3), assistant compose tools (4.1–4.3). Largest
       remaining build. **The risk to weigh:** 24 illustration components exist and nothing composes
