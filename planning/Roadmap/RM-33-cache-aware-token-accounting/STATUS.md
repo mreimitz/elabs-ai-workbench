@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T18:40:00Z"
+timestamp: "2026-08-21T19:05:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -357,8 +357,24 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
 
 ## Phase 4 — Record
 
-- [ ] WP 4.1 — README capability row + CHANGELOG + `/new-docu` user-guide subject
-      · spec: [`wp-4.1-record.md`](./wp-4.1-record.md) · depends on every box above
+- [x] WP 4.1 — README + CHANGELOG + the user-guide subject — done 2026-08-21 ·
+      spec: [`wp-4.1-record.md`](./wp-4.1-record.md).
+      **`README.md` §5** gained a section on reading the token numbers, **`CHANGELOG.md`** an
+      "Unreleased — you can see what prompt caching is doing" entry, **`CLAUDE.md`** the capability row,
+      and **`planning/user-guide/DC-08-testing-console/09-testing.md`** a guide section covering why
+      Tokens ↑ dwarfs Context, the read-vs-write table with both rates, and why "not measured" is not
+      zero. The delivery increments in `DC-08` and `DC-11` are written by `complete-roadmap`, not by
+      hand.
+      **Every factual claim on the front page is one I verified myself, not one taken from a WP
+      description** (the §11 rule): *369,841 sent / 91,912 context / "96.2% from cache"* — read off the
+      running app in both themes; *51.9M reads vs 6.9M writes* — read off the dashboard panel over a
+      141-run window; *141 of 163 runs recovered, 6 merged-only left NULL* — measured by running
+      migration v59 against a copy of the real database; *$0.798 actual vs $3.00 predicted vs
+      $0.744–$2.917 now* — from the run's persisted row and the WP 2.1 fixture, whose arithmetic was
+      re-derived by hand to the cent; *24 tools · 3,183 tokens against a 3,500 budget* — from
+      `pnpm mcp:self-scan` re-run by the orchestrator.
+      **Deliberately NOT claimed:** the README says nothing about the run-plan estimate having been
+      checked visually, because it has not been.
 
 ## Owner-acceptance (not tickable by an agent)
 

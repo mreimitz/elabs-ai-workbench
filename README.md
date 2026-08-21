@@ -125,6 +125,23 @@ jump), and a per-turn context-window chart. Runs are fully persisted, so any run
 
 ![The run console: a real agent session — 13 tool calls across 14 turns, a live KPI rail, hotspots, and a per-turn context chart.](docs/screenshots/run-console.png)
 
+**Every token figure says how much of it was prompt cache.** An agent re-sends its whole context on
+every turn, so "Tokens ↑" runs into the hundreds of thousands while the conversation itself is a
+fraction of that — on a real 7-turn session the rail reads **369,841 sent** against a **91,912-token**
+conversation, and now adds *"96.2% from cache"* to explain the gap. Hover any token count for the
+breakdown; the Analytics tab stacks it per turn.
+
+Cache **reads** and cache **writes** are never merged into one "cached" number, because they run in
+opposite directions: a read is billed at roughly a tenth of the normal rate, a write at 1.25× — *more*
+than an uncached token. A single figure makes a premium look like a saving. The same split reaches the
+runs feed, the suite rollups, the Testing dashboard (as a **Prompt cache** panel you can chart and
+alert on), the JSON and Markdown exports, the compare workspace, and the MCP surface.
+
+Where a run genuinely can't be measured — it predates the split, or its provider reported one merged
+total — the app says **"not measured"** rather than showing a zero. A 0% cache-hit line is
+indistinguishable from caching that has stopped working, which is the one thing this must never
+imply. Cost has always been priced correctly per tier; what changed is that you can now see it.
+
 ### 6 · Automatic run rating
 
 Every terminal run is graded automatically — **answer validation** (did the final answer address the

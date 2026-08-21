@@ -3,7 +3,7 @@ type: "Guide Page"
 title: "9. Testing console \u2014 run a real session"
 description: "Scanning tells you what a server costs to load. The Testing console goes further: it drives"
 tags: ["documentation", "DC-08"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T19:00:00Z"
 status: "current"
 ---
 # 9. Testing console — run a real session
@@ -122,6 +122,45 @@ used against the model's limit, and total duration — plus charts of **cost per
 growth per turn** so you can see where the budget went.
 
 ![The Analytics tab: cached share, peak context, duration, and per-turn cost and context-growth charts.](../DC-23-product-overview/images/11-run-analytics.png)
+
+### Reading the token numbers — and why they look so large
+
+The first thing most people notice is that **Tokens ↑** is enormous next to **Context**. On a real
+seven-turn session the rail reads *369,841 sent* against a *91,912-token* conversation. Neither number
+is wrong — they measure different things:
+
+- **Context** is a snapshot: how big the conversation is *right now*.
+- **Tokens ↑** is a running total: an agent re-sends its whole context on every turn, so a
+  91,912-token conversation across seven turns sends several hundred thousand tokens in total.
+
+What keeps that from being ruinously expensive is **prompt caching**. Re-sent context is usually
+served from the provider's cache, and the rail says so: *"sent · 96.2% from cache"*. Hover any token
+figure for the full breakdown, or open **Analytics → Tokens** for the per-turn stack.
+
+#### Reads and writes are not the same thing
+
+The app never shows a single "cached" number, because caching has two halves that pull in opposite
+directions:
+
+| | What it is | What it costs |
+| --- | --- | --- |
+| **Cache read** | context served from cache instead of re-processed | **~0.1×** the normal input rate — a large discount |
+| **Cache write** | context being *put into* the cache | **1.25×** the normal input rate — a **premium** |
+
+A write costs *more* than an uncached token. It pays for itself on the next turn that reads it, but a
+combined figure would make an expensive turn look like a cheap one — so reads and writes are always
+labelled separately, with their rates, wherever they appear.
+
+#### "Not measured" is not zero
+
+Some runs can't answer this. A session recorded before the app measured the split, or one whose
+provider reported only a merged total, shows **"not measured"** rather than a zero. That distinction
+matters: a 0% cache-hit rate looks exactly like caching that has broken, and you would go looking for
+a problem that isn't there.
+
+The same split appears in the runs feed (as an optional **Cache hit** column), suite rollups, exports,
+the compare workspace, and the Testing dashboard's **Prompt cache** panel — where you can also chart
+it over time or set a watch rule on it.
 
 ### Report — automatic quality rating
 

@@ -5,6 +5,41 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — you can see what prompt caching is doing
+
+A run console could report **Tokens ↑ 958,457** while, two tabs away, a chart showed a single turn as
+45,938 cached against 1 uncached — and nothing between those two screens connected them. The counting
+was never wrong: cost has always priced a cache read at ~0.1× and a cache write at 1.25×, which is why
+a run billed $0.80 where the raw token count suggested $3.00. What was missing was any way to see it.
+Exactly three screens in the whole app mentioned cache, and the run console was not one of them.
+
+**Cache reads and cache writes are now never merged into one number.** They point in opposite
+directions — a read is a ~90% discount, a write costs 25% *more* than an uncached token — so a single
+"cached" figure makes a premium look like a saving. They are separated, and each is labelled with what
+it costs, in the run console's tiles and tooltips, the Trace and Steps views, the Analytics tab (three
+stacked series, not two), the runs feed, the suite rollups, the reports, the compare workspace, and
+the workbench MCP surface.
+
+**The Testing dashboard gained a Prompt cache panel** — read volume against write volume, plus a
+hit-rate line — and three new measures (`cacheReadTokens`, `cacheWriteTokens`, `cacheHitRate`) that
+the custom chart composer and the watch-rule editor pick up automatically, so you can chart cache
+behaviour over time or alert on it degrading.
+
+**The launch cost preview stopped ignoring caching.** It charged every input token at full list rate
+and re-charged the re-sent context on every turn; against a real run billed $0.798 it predicted $3.00.
+It now returns a band whose low end assumes caching works and whose high end is the old arithmetic
+unchanged — $0.744–$2.917 for that run.
+
+**Where the split cannot be known, the app says so.** A run that predates the measurement, or whose
+provider reported one merged total, reads **"not measured"** — never a zero. A 0% cache-hit line is
+indistinguishable from caching that has stopped working. Migration **v59** recovered the split for
+**141 of 163** existing runs from per-step data already on disk; the rest are marked unknown rather
+than written off or silently zeroed.
+
+Plan and evidence: [`planning/Roadmap/RM-33-cache-aware-token-accounting/`](./planning/Roadmap/RM-33-cache-aware-token-accounting/)
+(ledger: [`STATUS.md`](./planning/Roadmap/RM-33-cache-aware-token-accounting/STATUS.md), decisions
+D-CT1–D-CT6).
+
 ## Unreleased — the app can draw itself
 
 **Update (2026-08-21): the cast is now twenty-three, not three.** The catalogue covers most of what
