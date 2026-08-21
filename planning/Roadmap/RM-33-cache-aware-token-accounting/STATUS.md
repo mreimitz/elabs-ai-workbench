@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T15:10:00Z"
+timestamp: "2026-08-21T15:35:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -148,6 +148,7 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
 
 - [ ] WP 2.1 — cache-aware run-plan cost preview (range: cached prefix ↔ no caching)
       · spec: [`wp-2.1-estimate.md`](./wp-2.1-estimate.md) · depends on WP 1.1
+      · **status: in progress** (`wp/cache-tokens/2.1`, agent `estimate`)
 - [x] WP 2.2 — `cacheReadTokens` / `cacheWriteTokens` / `cacheHitRate` observability measures
       — done 2026-08-21 · spec: [`wp-2.2-metrics.md`](./wp-2.2-metrics.md).
       Three measures added to `RUN_METRICS_MEASURES`; the two token ones joined
@@ -246,7 +247,8 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
       is the Est. cost tile, which this WP does not touch.
 
 - [ ] WP 3.3 — the Testing dashboard's built-in cache panel · **split out of WP 3.1, not dropped**
-      · depends on WP 2.2
+      · spec: [`wp-3.3-dashboard.md`](./wp-3.3-dashboard.md) · depends on WP 2.2
+      · **status: in progress** (`wp/cache-tokens/3.3`, agent `dashboard`)
       WP 3.1's spec included a dashboard cache-hit-rate chart; it is NOT built, so its box stays open
       rather than being ticked inside a WP that did not deliver it.
       **What already works without it:** `RUN_METRICS_MEASURES` is the single source for BOTH the
