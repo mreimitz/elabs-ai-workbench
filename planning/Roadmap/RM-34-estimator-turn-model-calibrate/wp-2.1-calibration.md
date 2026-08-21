@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 2.1 — re-measure the band live against recorded runs"
 description: "Phase 3 of item.md. Ledger: STATUS.md. The evidence WP: calls the live endpoint against real recorded runs and records how close the calibrated band now lands."
 tags: ["roadmap", "RM-34"]
-timestamp: "2026-08-21T13:25:00Z"
+timestamp: "2026-08-21T14:15:00Z"
 status: "final"
 ---
 # WP 2.1 — re-measure the band live against recorded runs
@@ -50,9 +50,13 @@ Then write the results into `STATUS.md`'s WP 2.1 entry as the evidence, and:
 - Update `README.md`'s capability table and add a `CHANGELOG.md` entry, per the repo's
   "front page follows the work" rule — **in the same commit as the tick**, and only from figures
   actually observed here.
-- Record the delivery in a `planning/user-guide/DC-NN-*/` subject (create with `/new-docu` if the
-  right subject does not exist). The estimate preview is user-facing behaviour whose meaning changed:
-  the number now depends on the operator's own run history, which is worth a paragraph they can read.
+- Record the delivery in **`planning/user-guide/DC-08-testing-console/`** — the orchestrator checked,
+  and that subject already owns the launcher and its cost preview. Its *Known gaps* section for RM-33
+  literally names this defect ("the estimator's turn ceiling is 8 where the reference run took 19 …
+  a candidate for its own item"), so this item's increment closes a gap that subject already records.
+  **Do not create a new subject.** The estimate preview is user-facing behaviour whose meaning
+  changed — the number now depends on the operator's own run history — which is worth a paragraph
+  they can read.
 
 ## Out of scope
 
@@ -72,7 +76,8 @@ Then write the results into `STATUS.md`'s WP 2.1 entry as the evidence, and:
 - [ ] The empty-history fallback confirmed live, reporting `default`.
 - [ ] Findings recorded in `STATUS.md`, including any way the estimator is still wrong.
 - [ ] `README.md` capability table + `CHANGELOG.md` updated from observed figures, in the tick commit.
-- [ ] A `user-guide/DC-NN-*/` subject records the delivery.
+- [ ] `user-guide/DC-08-testing-console/` records the delivery, and its RM-33 *Known gaps*
+      entry naming this defect is reconciled with what actually shipped.
 - [ ] Gate green: `pnpm typecheck && pnpm test && pnpm build && pnpm lint`, and `pnpm okf:validate`
       clean after the bundle edits.
 
