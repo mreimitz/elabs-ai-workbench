@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T17:25:00Z"
+timestamp: "2026-08-21T18:40:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -315,10 +315,45 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
       **Scope when picked up:** request the three measures alongside `tokensIn`/`tokensOut` in
       `use-testing-dashboard-data.ts`, extend `buildTokensResult`, and render the unavailable state —
       never a 0% line — when the API reports the measures in `unavailableMeasures`.
-- [ ] WP 3.2 — reports, compare export, workbench MCP run summary
-      · spec: [`wp-3.2-exports.md`](./wp-3.2-exports.md) · depends on WP 1.2
-      · **status: in progress** (`wp/cache-tokens/3.2`, agent `exports`) — run SOLO: it touches the
-      shared wire files, the API reports, the web compare workspace and the MCP mount at once.
+- [x] WP 3.2 — reports, compare export, workbench MCP run summary — done 2026-08-21 ·
+      `wp/cache-tokens/3.2` · spec: [`wp-3.2-exports.md`](./wp-3.2-exports.md).
+      The split now reaches every machine-readable exit: the run report's JSON `statistics` and
+      Markdown §3, the per-step cumulative KPIs (which is what lets the Step log's economics chips
+      decompose a per-step delta instead of showing a cache-blind number), the suite-run report's cells
+      and aggregates, the compare workspace + its export, and the workbench MCP `compactRun`.
+      **`RunReportStatistics` finally has a shared type + zod schema.** It was an API-local object
+      literal with neither, hand-mirrored in `analytics-derive.ts`; that mirror is deleted in favour of
+      the shared import — `architecture.md` requires a wire shape to be declared in `packages/shared`,
+      and this one never was.
+      **Compare exposes read and write as SEPARATE metrics pointing in opposite directions** (read
+      higher-better, write lower-better). One merged "cached" row would have to pick a direction and be
+      wrong half the time.
+      **An old lie corrected along the way:** a compare metric that NO run could measure rendered as
+      *"0 for all runs — no difference to compare"* — a measured tie. It now says it was not measured.
+      This touches every metric, but only in the all-null case, which no pre-RM-33 metric could reach.
+      **A merged run's cost breakdown carries an explicit FLOOR caveat**, because the pricing function
+      prices the whole merged slice as a read — so the figure is a lower bound and the report says so
+      rather than letting it read as a measurement. A `cachedTokens: 0` run gets no caveat at all: a
+      reported zero is an answer, and adding doubt there would invent it.
+      **Validated by the orchestrator:** scope checked (nothing in the dashboard or the already-merged
+      console files); the two touched pre-existing test files verified to gain **null fixtures only**,
+      no assertion weakened; full gate re-run on the MERGED result — typecheck clean · shared **255** ·
+      illustrations **794** · cli **87** · api **3621** · web **3767 passed / 5 skipped** · build ·
+      lint; and **two teeth broken by hand** — attributing a merged figure to "Cache read" in the
+      report (red) and neutralising compare's unknown-is-not-zero guard so an unmeasured run reports a
+      real 0% (2 red) — each restored.
+      **The agent corrected the spec, and it was right.** This spec said the MCP mount measured 2,749
+      against a 3,000-token budget. Both changed on `main` in `bf16c8c` after the spec was written:
+      the mount is **3,183** and the budget **3,500**. Verified independently against that commit and
+      the `WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET` constant. **`pnpm mcp:self-scan` re-run by the
+      orchestrator: 24 tools · 3,183 definition tokens · within budget · exit 0.** This WP adds **zero**
+      definition tokens — `compactRun` changes a tool's RESULT, never its description or input schema.
+      **Not verified:** nothing was run against the running app and no screenshots were taken, so the
+      Step-log chip tooltip and the compare Δ rows have no two-theme or keyboard evidence — the
+      `sr-only` text is asserted in jsdom only. The `DeltaMatrix` table was deliberately NOT given
+      cache columns (the spec asked for metric accessors, which feed `DeltaBarPanel`; the matrix's
+      columns are hand-written). `fleet-report.ts` was left alone — its aggregates are shaped
+      differently, so the figures did not "fall out for free" as the spec's condition required.
 
 ## Phase 4 — Record
 
