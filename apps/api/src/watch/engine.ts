@@ -17,17 +17,26 @@
 
 import crypto from "node:crypto";
 import {
+  isWatchRulePaused,
   matchesRunFilter,
+  resolveNoDataPolicy,
   WATCH_CATCHUP_MAX_WINDOWS,
+  WATCH_MARKER_PAUSED,
+  WATCH_MARKER_RATE_LIMITED,
+  WATCH_MARKER_WINDOW_NO_DATA,
   WATCH_PREVIEW_DEFAULT_WINDOWS,
+  watchWindowState,
+  watchWindowStateFires,
   type MetricsBucket,
   type RunFilter,
   type RunFilterCandidate,
   type WatchRule,
   type WatchWindowConfig,
   type WatchWindowDuration,
+  type WatchWindowLevel,
   type WatchWindowPreview,
   type WatchWindowPreviewPoint,
+  type WatchWindowState,
 } from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../db/database.js";
 import { computeRunMetrics } from "../observability/metrics.js";
@@ -53,11 +62,12 @@ export class WatchEngine {
    * (called once from the choke point). FULLY GUARDED: an exception anywhere is caught + swallowed so
    * the post-terminal review chain (and thus run completion) is never affected — rules are observers.
    */
-  async onRunSettled(runId: string): Promise<void> {
+  async onRunSettled(runId: string, nowMs: number = Date.now()): Promise<void> {
     try {
       const candidate = this.runs.buildFilterCandidate(runId);
       if (!candidate) return; // run vanished between settle + here — nothing to observe
 
+      const at = new Date(nowMs).toISOString();
       const run = toRunView(runId, candidate);
       const rules = this.rules.listEnabledByTrigger("on_terminal");
       for (const rule of rules) {
@@ -66,17 +76,59 @@ export class WatchEngine {
 
           if (!sampleDecision(rule.id, runId, rule.sample)) {
             // Matched but sampled OUT — record the decision so the sample is auditable + reproducible.
-            this.rules.recordEvent(rule.id, runId, "sampled_out", {
-              ok: true,
-              detail: `sampled out (rate ${rule.sample})`,
-            });
+            this.rules.recordEvent(
+              rule.id,
+              runId,
+              "sampled_out",
+              { ok: true, detail: `sampled out (rate ${rule.sample})` },
+              at,
+            );
             continue;
+          }
+
+          // AM-OB10 — PAUSED. The rule still matched and still gets an audit row; it just does not
+          // DISPATCH. That is the whole difference from `enabled: false`, which never reaches here:
+          // when the pause expires the operator can read back exactly what went by while it was
+          // quiet, and the rule was never blind.
+          if (isWatchRulePaused(rule, nowMs)) {
+            this.rules.recordEvent(
+              rule.id,
+              runId,
+              WATCH_MARKER_PAUSED,
+              { ok: true, detail: `paused until ${rule.pausedUntil} — actions suppressed` },
+              at,
+            );
+            continue;
+          }
+
+          // AM-OB10 — the minimum interval between dispatches. WITHOUT this an `on_terminal` rule had
+          // NO suppression at all: a broken environment producing 50 failing runs produced 50
+          // notifications. The baseline is the last time an ACTION row was written for this rule —
+          // the audit IS the state, exactly as the windowed cooldown re-seeds from it (no new column,
+          // nothing in memory to lose on restart).
+          const minIntervalMs = (rule.minIntervalMinutes ?? 0) * 60_000;
+          if (minIntervalMs > 0) {
+            const lastActionAt = this.rules.getLastActionAt(rule.id);
+            const lastMs = lastActionAt !== null ? Date.parse(lastActionAt) : Number.NaN;
+            if (Number.isFinite(lastMs) && nowMs - lastMs < minIntervalMs) {
+              this.rules.recordEvent(
+                rule.id,
+                runId,
+                WATCH_MARKER_RATE_LIMITED,
+                {
+                  ok: true,
+                  detail: `rate limited — last dispatch ${lastActionAt}, minimum interval ${rule.minIntervalMinutes} min`,
+                },
+                at,
+              );
+              continue;
+            }
           }
 
           // Execute the rule's actions in their FIXED stored order; each is isolated + audited.
           for (const action of rule.actions) {
             const result = await executeWatchAction(action, { runId, run }, this.services);
-            this.rules.recordEvent(rule.id, runId, action.type, result);
+            this.rules.recordEvent(rule.id, runId, action.type, result, at);
           }
         } catch (error) {
           // A rule-level failure (e.g. a faulty candidate/predicate path) is isolated + audited; the
@@ -202,8 +254,16 @@ export function enumerateWindowEnds(
   return { ends: ends.slice(ends.length - maxCount), truncated: true };
 }
 
-/** One window's aggregate, read from the metrics service (never recomputed). */
-type WindowValue = { value: number | null; n: number; breached: boolean };
+/**
+ * One window's aggregate, read from the metrics service (never recomputed).
+ *
+ * AM-OB10 replaced the old `breached: boolean` with a three-way {@link WatchWindowState}. That is
+ * the whole bug fix: the boolean had NO way to say "the window contained nothing", so an empty
+ * window returned `breached:false` and the state machine took the NOT-BREACHED branch — recording
+ * `window_recover` and re-arming. A bench that went silent while a rule was firing was reported as
+ * RECOVERED. `no_data` is now its own outcome and the per-rule policy decides what it means.
+ */
+type WindowValue = { value: number | null; n: number; state: WatchWindowState };
 
 /**
  * Evaluate windowed rules against a trailing, grid-aligned window series (WP4.2). Owns:
@@ -260,27 +320,72 @@ export class WatchWindowEvaluator {
 
     const late = opts.boot && lastEndMs !== null; // completed while we were away
     const cooldownMs = config.cooldownMinutes * 60_000;
+    const noDataPolicy = resolveNoDataPolicy(config); // AM-OB10 — absent = `hold`
+    // AM-OB10 — a PAUSED rule still evaluates and still records its window state; only the action
+    // DISPATCH is suppressed. A rule that stopped evaluating while paused would come back armed and
+    // blind, which is exactly the failure mode `enabled: false` already covers.
+    const paused = isWatchRulePaused(rule, nowMs);
 
     const seed = this.rules.getWindowState(rule.id);
     let armed = seed.armed;
     let lastFiredMs = seed.lastFiredAt ? Date.parse(seed.lastFiredAt) : null;
     if (lastFiredMs !== null && Number.isNaN(lastFiredMs)) lastFiredMs = null;
+    let lastFiredLevel: WatchWindowLevel | undefined = seed.lastFiredLevel;
 
     for (const endMs of ends) {
       const startMs = endMs - width;
       const startIso = new Date(startMs).toISOString();
       const endIso = new Date(endMs).toISOString();
-      const { value, breached } = this.computeWindowValue(rule.filter, config, startMs, endMs);
+      const { value, state } = this.computeWindowValue(rule.filter, config, startMs, endMs);
+      const level: WatchWindowLevel | undefined =
+        state === "warn" || state === "alert" ? state : undefined;
 
-      if (breached) {
+      // ── NO DATA under the DEFAULT `hold` policy: neither fire nor recover. ───────────────────
+      // The rule keeps whatever state it was in. A marker is written ONLY when we are actually
+      // WITHHOLDING a recovery (the rule is currently firing) — a healthy window already writes
+      // nothing at all, and an idle bench must not accrue one audit row per empty hour.
+      if (state === "no_data" && noDataPolicy === "hold") {
+        if (!armed) {
+          this.rules.recordEvent(
+            rule.id,
+            undefined,
+            WATCH_MARKER_WINDOW_NO_DATA,
+            {
+              ok: true,
+              detail: "no runs in window — holding the fired state (no-data policy: hold)",
+              windowStart: startIso,
+              windowEnd: endIso,
+              noData: true,
+            },
+            endIso,
+          );
+        }
+        continue; // `armed` / `lastFiredMs` deliberately untouched
+      }
+
+      if (watchWindowStateFires(state, noDataPolicy)) {
         const cooldownElapsed = lastFiredMs !== null && endMs - lastFiredMs >= cooldownMs;
-        if (armed || cooldownElapsed) {
-          await this.fireWindow(rule, config, { startIso, endIso, value, late });
+        // AM-OB10 — an ESCALATION (last fire was `warn`, this one is `alert`) is genuinely NEW
+        // information, so it is not swallowed by a cooldown that was armed for the warning.
+        const escalated = level === "alert" && lastFiredLevel === "warn";
+        if (armed || cooldownElapsed || escalated) {
+          await this.fireWindow(rule, config, {
+            startIso,
+            endIso,
+            value,
+            late,
+            level,
+            noData: state === "no_data",
+            suppressed: paused,
+          });
           armed = false;
           lastFiredMs = endMs;
+          lastFiredLevel = level;
         }
         // else: continuously breached within cooldown → suppress (stay quiet, remain disarmed).
       } else {
+        // Below every threshold — or an empty window under the EXPLICIT `ok` opt-in, which is the
+        // pre-AM-OB10 behaviour kept as a deliberate choice rather than an accident.
         if (!armed) {
           this.rules.recordEvent(
             rule.id,
@@ -288,15 +393,20 @@ export class WatchWindowEvaluator {
             "window_recover",
             {
               ok: true,
-              detail: "recovered (below threshold)",
+              detail:
+                state === "no_data"
+                  ? "no runs in window — treated as recovered (no-data policy: ok)"
+                  : "recovered (below threshold)",
               windowStart: startIso,
               windowEnd: endIso,
               ...(value !== null ? { value } : {}),
+              ...(state === "no_data" ? { noData: true } : {}),
             },
             endIso,
           );
         }
         armed = true; // recovery re-arms — the next breach fires immediately (ignores cooldown)
+        lastFiredLevel = undefined;
       }
     }
 
@@ -328,18 +438,23 @@ export class WatchWindowEvaluator {
     const n = nWindows > 0 ? nWindows : WATCH_PREVIEW_DEFAULT_WINDOWS;
     const width = WINDOW_MS[config.window];
     const completedEnd = floorToWindowGrid(nowMs, config.window);
+    const noDataPolicy = resolveNoDataPolicy(config);
     const windows: WatchWindowPreviewPoint[] = [];
     for (let i = n - 1; i >= 0; i--) {
       const endMs = completedEnd - i * width;
       if (endMs < width) continue; // skip pre-epoch windows (defensive)
       const startMs = endMs - width;
-      const { value, n: backing, breached } = this.computeWindowValue(filter, config, startMs, endMs);
+      const { value, n: backing, state } = this.computeWindowValue(filter, config, startMs, endMs);
       windows.push({
         windowStart: new Date(startMs).toISOString(),
         windowEnd: new Date(endMs).toISOString(),
         value,
         n: backing,
-        wouldHaveFired: breached,
+        // AM-OB10 — the preview now answers with the SAME three-way outcome the evaluator uses, so
+        // the pre-save check an operator consults cannot show a healthy-looking gap where nothing
+        // ran. `wouldHaveFired` reads the no-data policy too (arm/cooldown state is not replayed).
+        wouldHaveFired: watchWindowStateFires(state, noDataPolicy),
+        state,
       });
     }
     return { window: config, bucket: metricsBucketForWindow(config.window), windows };
@@ -350,24 +465,57 @@ export class WatchWindowEvaluator {
   private async fireWindow(
     rule: WatchRule,
     config: WatchWindowConfig,
-    w: { startIso: string; endIso: string; value: number | null; late: boolean },
+    w: {
+      startIso: string;
+      endIso: string;
+      value: number | null;
+      late: boolean;
+      /** AM-OB10 — which threshold was crossed; absent on a single-threshold or no-data fire. */
+      level?: WatchWindowLevel;
+      /** AM-OB10 — the window was EMPTY and the rule's no-data policy is `notify`. */
+      noData?: boolean;
+      /** AM-OB10 — the rule is PAUSED: still record the marker (state must advance), dispatch nothing. */
+      suppressed?: boolean;
+    },
   ): Promise<void> {
+    const crossed = w.level === "warn" ? config.warnThreshold : config.threshold;
+    const detail = w.noData
+      ? `no runs in window over ${config.window} (no-data policy: notify)${w.late ? " (late)" : ""}`
+      : `${config.measure} ${config.op} ${crossed ?? config.threshold} over ${config.window}` +
+        `${w.level === "warn" ? " [warning]" : ""}${w.late ? " (late)" : ""}`;
+    // The marker is written even when PAUSED — it is the persisted state the machine re-seeds from,
+    // and dropping it would make a paused rule come back armed as if nothing had happened.
     this.rules.recordEvent(
       rule.id,
       undefined,
       "window_fire",
       {
         ok: true,
-        detail:
-          `${config.measure} ${config.op} ${config.threshold} over ${config.window}` +
-          `${w.late ? " (late)" : ""}`,
+        detail,
         windowStart: w.startIso,
         windowEnd: w.endIso,
         ...(w.value !== null ? { value: w.value } : {}),
         late: w.late,
+        ...(w.level !== undefined ? { level: w.level } : {}),
+        ...(w.noData ? { noData: true } : {}),
       },
       w.endIso,
     );
+    if (w.suppressed) {
+      this.rules.recordEvent(
+        rule.id,
+        undefined,
+        WATCH_MARKER_PAUSED,
+        {
+          ok: true,
+          detail: `paused until ${rule.pausedUntil} — actions suppressed`,
+          windowStart: w.startIso,
+          windowEnd: w.endIso,
+        },
+        w.endIso,
+      );
+      return;
+    }
     const windowView: WatchWindowSummaryView = {
       ruleId: rule.id,
       ruleName: rule.name,
@@ -379,6 +527,9 @@ export class WatchWindowEvaluator {
       windowEnd: w.endIso,
       value: w.value,
       late: w.late,
+      ...(config.warnThreshold !== undefined ? { warnThreshold: config.warnThreshold } : {}),
+      ...(w.level !== undefined ? { level: w.level } : {}),
+      ...(w.noData ? { noData: true } : {}),
     };
     for (const action of rule.actions) {
       const result = await executeWatchWindowAction(action, { window: windowView }, this.services);
@@ -389,8 +540,12 @@ export class WatchWindowEvaluator {
   /**
    * ONE window's aggregate — DELEGATED to `computeRunMetrics` (the derived-once invariant). The window
    * is grid-aligned so it collapses to a single metrics bucket → one point per series; we read the
-   * breach-direction extreme across any groups/capability classes. No backing data → value null,
-   * n 0, never breached (never fabricate a crossing from emptiness).
+   * breach-direction extreme across any groups/capability classes.
+   *
+   * AM-OB10 — NO BACKING DATA is now reported as the distinct `no_data` state rather than collapsed
+   * into "not breached". `computeRunMetrics` deliberately does not zero-fill empty buckets
+   * (`observability/metrics.ts`, doctrine), so an empty window returns NO series at all; the fix
+   * belongs here in the evaluator, not in the metrics service.
    */
   private computeWindowValue(
     filter: RunFilter,
@@ -417,13 +572,12 @@ export class WatchWindowEvaluator {
     for (const s of res.series) {
       for (const p of s.points) points.push({ value: p.value, n: p.n });
     }
-    if (points.length === 0) return { value: null, n: 0, breached: false };
+    if (points.length === 0) return { value: null, n: 0, state: "no_data" };
 
     let rep = points[0] as { value: number; n: number };
     for (const p of points) {
       if (config.op === ">=" ? p.value > rep.value : p.value < rep.value) rep = p;
     }
-    const breached = config.op === ">=" ? rep.value >= config.threshold : rep.value <= config.threshold;
-    return { value: rep.value, n: rep.n, breached };
+    return { value: rep.value, n: rep.n, state: watchWindowState(rep.value, rep.n, config) };
   }
 }

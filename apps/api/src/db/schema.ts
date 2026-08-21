@@ -860,6 +860,8 @@ CREATE TABLE IF NOT EXISTS watch_rules (
   window_json       TEXT,             -- WP4.2 windowed threshold config JSON; NULL for on_terminal
   actions_json      TEXT NOT NULL,
   last_evaluated_at TEXT,             -- WP4.2 — end (grid boundary) of the last window the scheduler evaluated; NULL until first eval
+  paused_until         TEXT,          -- AM-OB10 (v61) — paused until this instant; NULL = not paused. PAUSED != DISABLED: a paused rule still evaluates + records state, it only suppresses action dispatch, and the pause expires on its own (no sweep)
+  min_interval_minutes INTEGER,       -- AM-OB10 (v61) — minimum minutes between action dispatches for an on_terminal rule; NULL = no limit (the windowed analogue is window_json.cooldownMinutes)
   created_at        TEXT NOT NULL,
   updated_at        TEXT NOT NULL
 );

@@ -1970,6 +1970,41 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
       `);
     },
   },
+  {
+    // v61 — RM-17 Phase 6 (AM-OB10): two ADDITIVE NULLABLE columns on `watch_rules`.
+    //
+    //   `paused_until`         — PAUSED is not DISABLED. `enabled = 0` means "I do not want this
+    //                            rule"; a pause means "I know, stop telling me until <time>". It is a
+    //                            TIMESTAMP rather than a boolean on purpose: an expired pause resolves
+    //                            to active on read, so there is no sweep, no scheduled job, and no way
+    //                            for a rule to get stuck silent. A paused rule STILL evaluates and
+    //                            still records its window state — only action dispatch is suppressed,
+    //                            so it never comes back armed and blind.
+    //   `min_interval_minutes` — the `on_terminal` analogue of a windowed rule's `cooldownMinutes`,
+    //                            which had no counterpart at all: a broken environment producing 50
+    //                            failing runs produced 50 notifications.
+    //
+    // Both NULLABLE, both meaning "not set" — an existing rule reads back byte-identically and keeps
+    // behaving exactly as it did (no pause, no rate limit). The AM-OB10 dual thresholds and the
+    // no-data policy need NO schema change at all: they ride inside the existing `window_json` blob,
+    // and the new `window_no_data` audit marker rides on `watch_rule_events.action`, which is
+    // deliberately not CHECK-constrained (see `schema.ts`).
+    //
+    // Guarded on the table existing, for MINIMAL migration-test fixtures stamped below LATEST that
+    // never created it (the v19/v24/v27/v29/v30/v32/v33/v36/v37/v59 pattern). The columns are also
+    // appended to the END of the `schema.ts` baseline list, so a FRESH DB (whose applyMigrations
+    // no-ops every step) and an UPGRADED DB land the same shape. Bumps LATEST_SCHEMA_VERSION
+    // (auto-derived below) to 61.
+    version: 61,
+    up: (db) => {
+      const tableExists = (name: string): boolean =>
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name) !==
+        undefined;
+      if (!tableExists("watch_rules")) return;
+      ensureColumn(db, "watch_rules", "paused_until", "TEXT");
+      ensureColumn(db, "watch_rules", "min_interval_minutes", "INTEGER");
+    },
+  },
 ];
 
 /** The baseline schema version: the current full schema (schema.ts + every migration step above). */
