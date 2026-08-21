@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T03:20:00Z"
+timestamp: "2026-08-22T09:20:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -178,8 +178,12 @@ met and — where the box touches code — the gate
       the two gates in `examples/github-actions/` **have never executed**. Push `main` (WP 0.1) so
       `mcp-self-scan.yml` runs, or execute the examples in a throwaway repo with a service token
 - [ ] WP 2.5 — retire every item its sitting cleared (`/complete-roadmap` per item, DC subject
-      named). **Blocked:** RM-01 has no documentation subject — run `/new-docu` for an Advisor
-      subject, or fold it into DC-11, before retiring it
+      named). **The prerequisite is CLEARED 2026-08-22:** the owner chose a dedicated subject over
+      folding Advisor into DC-11, and **`DC-25-advisor`** now exists (`/advisor`, the seven evidenced
+      rules, `GET /api/advisor/report`, the fleet exports; explicitly scoping OUT the scan, testing,
+      observability and security subjects it reads from). RM-01 can be retired into it the moment its
+      sitting clears it. **This box still waits on Wave 2** — there is nothing to retire until a
+      sitting actually clears an item
 
 ## Wave 3 — the remaining engineering, in value order
 - [ ] WP 3.1 — **RM-26 WP 4.4** end-to-end verification: a real run through the built Docker
@@ -273,32 +277,17 @@ met and — where the box touches code — the gate
       **Still open: 7.7 · 7.8 · 7.9** (7.8 needs a short design doc and owner approval BEFORE build).
       **Nobody has still ever used any of this.** Three Studio WPs deep, no browser has been opened,
       no save has been completed against a live API, and it has never met a bound MCP server
-- [ ] WP 3.4 — **RM-03 WP 2.3**: autonomy dial + hard budgets + steering + live HITL
-      approval-gating + MCP elicitation. One box, two BLOCKING MUSTs (elicitation transport
-      R-MCP4, the approval/HITL path). Unblocks RM-03's 18-box walk.
-      **⚠️ DETERMINED 2026-08-21 — THIS IS ALREADY BUILT. Do not dispatch it as engineering.** The
-      contradiction WP 0.4 flagged is resolved against the code, and the code wins. Every artefact
-      the ledger line claims exists on `main`:
-      • the four additive `HubEvent` members — `approval_requested` / `approval_responded` /
-        `elicitation_requested` / `elicitation_responded` (`packages/shared/src/constants.ts:1701–1704`),
-        plus hub-fixes WP 2.5's board-mirror pair `agent_approval_requested`/`_responded` (`:1684`);
-      • all four routes — `POST /api/hub/sessions/:id/approvals` (`apps/api/src/hub/routes.ts:1818`),
-        `POST …/:id/elicitation` (`:1833`), `PATCH …/:id/autonomy` (`:1884`) and
-        `POST /api/hub/missions/:id/agents/:agentSessionId/steer` (`:1891`);
-      • the turn-engine HITL seam as its **own module**, `apps/api/src/hub/hitl.ts`, alongside
-        `turn-engine.ts`, `session-service.ts` and `tools/approval-policy.ts`;
-      • the UI — `AutonomyModeSelect.tsx`, `AssistantPermissionCard.tsx`, `MissionApprovalQueue.tsx`
-        (the ledger's prose names them `AutonomyDial`/`ApprovalCard`/`ElicitationPanel`, which is why
-        a name-based search finds nothing — **the components were renamed, not dropped**).
-      **So RM-03 has NO engineering left.** Its WP 2.3 box is `[ ]` while its own text reads
-      *"✅ DONE 2026-07-18 · wp/assistant-hub/2.3 (integrated @ bb89591) … GAP-A/GAP-B CLOSED"*, with
-      only a live MCP `elicitation/create` round-trip against a real eliciting server outstanding —
-      which is **owner-acceptance, and is already carried as check B10 in
-      [`RM-18/owner-acceptance-consolidated.md`](../RM-18-platform/owner-acceptance-consolidated.md)**.
-      **Recommended: drop this WP and tick RM-03's WP 2.3 box as a ledger correction**, which moves
-      RM-03 from "engineering left" to "owner-acceptance only" and puts its 18-box walk in reach.
-      **Deliberately NOT ticked here:** a source-grep is weaker evidence than the gate that originally
-      proved it, and it is another item's ledger — the owner's call, exactly as WP 0.4 left it
+- [x] WP 3.4 — **RM-03 WP 2.3** — **done 2026-08-22 · dropped as engineering and closed as the ledger
+      correction it always was, on the owner's explicit decision.** WP 0.4 found the contradiction and
+      deliberately left it; this session verified every artefact against `main` and the owner said
+      tick it. RM-03's WP 2.3 box is now `[x]` (open boxes 19 → 18) with the full re-verification
+      written onto the line: the four additive `HubEvent` members, all four routes, the turn-engine
+      HITL seam as its own `apps/api/src/hub/hitl.ts`, and the UI as `AutonomyModeSelect` /
+      `AssistantPermissionCard` / `MissionApprovalQueue` — **renamed, not dropped**, which is why the
+      ledger's own prose names find nothing by search. **RM-03 now has NO engineering left**; the live
+      MCP `elicitation/create` round-trip is owner-acceptance and is already carried as check B10 in
+      the consolidated file. **Not re-verified by a gate run** — a source walk is weaker evidence than
+      the gate that originally proved it, and the line says so.
 - [x] WP 3.6 — **RM-17 WP 3.5** agent-graph lens over a run — **done 2026-08-21 · already shipped;
       this box was a bookkeeping lag, not work.** RM-17's own ledger ticked it (`wp/observability/3.5`,
       six commits, merged `5c365ec`), and the orchestrator verified that independently rather than

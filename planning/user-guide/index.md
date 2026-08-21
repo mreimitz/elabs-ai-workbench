@@ -26,3 +26,4 @@
 * [Packaging & deployment](DC-22-packaging-and-deployment/) - Browse packaging & deployment.
 * [Product overview](DC-23-product-overview/) - Browse product overview.
 * [Security posture](DC-24-security-posture/) - Browse security posture.
+* [Advisor — evidenced recommendations](DC-25-advisor/) - Browse advisor — evidenced recommendations.
