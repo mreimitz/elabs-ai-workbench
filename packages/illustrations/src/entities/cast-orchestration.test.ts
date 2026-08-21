@@ -32,6 +32,7 @@ describe("the orchestration cast (WP 1.3)", () => {
         "diff-compare",
         "environment",
         "orchestrator",
+        "owner",
         "suite",
       ],
     );

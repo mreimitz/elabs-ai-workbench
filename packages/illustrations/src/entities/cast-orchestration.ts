@@ -20,6 +20,7 @@ export * from "./Database.js";
 export * from "./DiffCompare.js";
 export * from "./Environment.js";
 export * from "./Orchestrator.js";
+export * from "./Owner.js";
 export * from "./Suite.js";
 
 import { Assistant, assistantMeta } from "./Assistant.js";
@@ -29,6 +30,7 @@ import { Database, databaseMeta } from "./Database.js";
 import { DiffCompare, diffCompareMeta } from "./DiffCompare.js";
 import { Environment, environmentMeta } from "./Environment.js";
 import { Orchestrator, orchestratorMeta } from "./Orchestrator.js";
+import { Owner, ownerMeta } from "./Owner.js";
 import { Suite, suiteMeta } from "./Suite.js";
 import type { IllustrationCastMember } from "./cast-member.js";
 
@@ -41,4 +43,5 @@ export const ILLUSTRATION_ORCHESTRATION_CAST: readonly IllustrationCastMember[] 
   { meta: databaseMeta, component: Database },
   { meta: credentialsVaultMeta, component: CredentialsVault },
   { meta: assistantMeta, component: Assistant },
+  { meta: ownerMeta, component: Owner },
 ];

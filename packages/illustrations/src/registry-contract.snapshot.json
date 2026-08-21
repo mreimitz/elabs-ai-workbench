@@ -1,0 +1,609 @@
+{
+  "about": "The scene-visible contract of every registry entry, guarded by registry-contract.test.ts. Losing or renaming an id/port/variant/state/size here without moving REGISTRY_VERSION fails the gate; adding one is quiet. Regenerate with ILLUS_UPDATE_REGISTRY_SNAPSHOT=1. See CHANGELOG.md.",
+  "registryVersion": "0.1.0",
+  "entries": [
+    {
+      "id": "agent",
+      "ports": [
+        "bottom",
+        "context-in",
+        "result-out",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "assistant",
+      "ports": [
+        "answer-out",
+        "ask-in",
+        "bottom",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [
+        "dock",
+        "hub"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "collection",
+      "ports": [
+        "bottom",
+        "hold",
+        "left",
+        "right",
+        "sync",
+        "top"
+      ],
+      "variants": [
+        "git-bound",
+        "local"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "credentials-vault",
+      "ports": [
+        "bottom",
+        "issue",
+        "left",
+        "revoke",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "database",
+      "ports": [
+        "bottom",
+        "left",
+        "read",
+        "right",
+        "top",
+        "write"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "diff-compare",
+      "ports": [
+        "bottom",
+        "delta-out",
+        "left",
+        "left-in",
+        "right",
+        "right-in",
+        "top"
+      ],
+      "variants": [
+        "baseline",
+        "two-way"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "environment",
+      "ports": [
+        "bind",
+        "bottom",
+        "host",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "feedback-report",
+      "ports": [
+        "bottom",
+        "in",
+        "left",
+        "out",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "file",
+      "ports": [
+        "attach",
+        "bottom",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [
+        "single",
+        "stack"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "mcp-server",
+      "ports": [
+        "bottom",
+        "bus",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [
+        "stdio",
+        "streamable-http"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "model",
+      "ports": [
+        "bottom",
+        "context-in",
+        "left",
+        "right",
+        "tokens-out",
+        "top"
+      ],
+      "variants": [
+        "hosted",
+        "local"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "ports": [
+        "bottom",
+        "dispatch",
+        "left",
+        "queue-in",
+        "report-out",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "owner",
+      "ports": [
+        "bottom",
+        "intent-out",
+        "left",
+        "report-in",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "prompt",
+      "ports": [
+        "bottom",
+        "emit",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [
+        "system",
+        "user"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "prompt-template",
+      "ports": [
+        "bottom",
+        "emit",
+        "fill-in",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "provider",
+      "ports": [
+        "bottom",
+        "left",
+        "right",
+        "serves",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "resource",
+      "ports": [
+        "bottom",
+        "left",
+        "read-out",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "run",
+      "ports": [
+        "bottom",
+        "enter",
+        "exit",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [
+        "repeated",
+        "single"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "scan",
+      "ports": [
+        "bottom",
+        "left",
+        "result-out",
+        "right",
+        "subject-under",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "skill",
+      "ports": [
+        "bottom",
+        "left",
+        "right",
+        "top",
+        "version-out"
+      ],
+      "variants": [
+        "plain",
+        "versioned"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "suite",
+      "ports": [
+        "bottom",
+        "collect",
+        "dispatch",
+        "left",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "token-meter",
+      "ports": [
+        "bottom",
+        "left",
+        "measure-in",
+        "right",
+        "top"
+      ],
+      "variants": [
+        "budget",
+        "spend"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "tool",
+      "ports": [
+        "bottom",
+        "invoke-in",
+        "left",
+        "plug",
+        "result-out",
+        "right",
+        "top"
+      ],
+      "variants": [],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    },
+    {
+      "id": "validator",
+      "ports": [
+        "bottom",
+        "left",
+        "right",
+        "subject-in",
+        "top",
+        "verdict-out"
+      ],
+      "variants": [
+        "grader",
+        "guardrail"
+      ],
+      "states": [
+        "active",
+        "dimmed",
+        "error",
+        "highlight",
+        "idle"
+      ],
+      "sizes": [
+        "l",
+        "m",
+        "s"
+      ]
+    }
+  ]
+}
