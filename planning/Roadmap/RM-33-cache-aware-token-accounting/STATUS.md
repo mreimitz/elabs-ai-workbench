@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T16:00:00Z"
+timestamp: "2026-08-21T17:20:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -146,9 +146,37 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
 
 ## Phase 2 — Derived numbers
 
-- [ ] WP 2.1 — cache-aware run-plan cost preview (range: cached prefix ↔ no caching)
-      · spec: [`wp-2.1-estimate.md`](./wp-2.1-estimate.md) · depends on WP 1.1
-      · **status: in progress** (`wp/cache-tokens/2.1`, agent `estimate`)
+- [x] WP 2.1 — cache-aware run-plan cost preview (range: cached prefix ↔ no caching)
+      — done 2026-08-21 · `wp/cache-tokens/2.1` · spec: [`wp-2.1-estimate.md`](./wp-2.1-estimate.md).
+      The launcher's dollar preview charged every input token at full list rate and re-charged the
+      re-sent prefix on every turn. Measured against the owner's run `4LnBMey0w53EnDRNG__TH` —
+      958,457 gross input tokens, actually billed **$0.798** — it predicted **$3.00**, ~3.8×. It now
+      reads **$0.744–$2.917**.
+      **The dollar band's dimension changed, deliberately: it spreads on CACHING, not on turns.**
+      Low models the re-sent prefix as one cache write (1.25×) plus reads (~0.1×); high is the old
+      full-rate arithmetic, unchanged to the cent. Both ends sit at the same (high) turn count so they
+      are comparable, and the turn spread stays on the TOKEN band where it always was. This was forced
+      by the spec's own acceptance #2 (`no cachedInPer1M ⇒ low === high`) — a turn spread can never
+      collapse. **Checked before merging:** the only consumer (`SuiteDetail.tsx:554`) renders the band
+      as an unlabelled `low–high (estimate)` beside the token range, so no caller was relying on the
+      turn reading.
+      `low`/`high` are **min/max, not "cached is cheaper"**: on a one-turn plan the whole prefix is a
+      1.25× write with no read to offset it, so caching genuinely costs more and the old number becomes
+      the LOWER bound. The band brackets both rather than asserting an order the arithmetic does not
+      always produce. `computeCostBreakdownForPrice` was extracted so the estimator cannot re-enter
+      `resolvePrice` behind its service's back — D-CT5 is tighter than before.
+      **Validated by the orchestrator, not taken on report:** diff reviewed; gate re-run in the
+      worktree (typecheck clean · api **3601** pass / 0 fail · build · lint); and **two teeth broken by
+      hand** — adding a second cost formula to `estimate.ts` (only the D-CT5 source-grep test caught
+      it, which is exactly why that test exists) and restoring the service's price narrowing that
+      caused the original defect (only the route-level test caught it) — each confirmed red, then
+      restored. The acceptance fixture's arithmetic was **re-derived independently**:
+      66,883×3 + 832,540×0.3 + 59,034×3.75 + 8,447×15, /1e6 = **$0.7984935**, the persisted cost
+      exactly — which also cross-checks WP 1.1's pricing formula against a real bill.
+      **Not verified:** nothing visual — this WP adds no UI, and the band was checked numerically
+      against a recorded run. The estimator's turn ceiling (8) and flat 350-tokens/turn output model
+      mean it can never reproduce a 19-turn run's totals; the fixture matches gross INPUT exactly and
+      absorbs the rest in a stated 10% tolerance. Re-modelling turns was explicitly out of scope.
 - [x] WP 2.2 — `cacheReadTokens` / `cacheWriteTokens` / `cacheHitRate` observability measures
       — done 2026-08-21 · spec: [`wp-2.2-metrics.md`](./wp-2.2-metrics.md).
       Three measures added to `RUN_METRICS_MEASURES`; the two token ones joined
@@ -246,9 +274,37 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
       the count is identical before and after this WP (verified by stashing the file), and the cause
       is the Est. cost tile, which this WP does not touch.
 
-- [ ] WP 3.3 — the Testing dashboard's built-in cache panel · **split out of WP 3.1, not dropped**
-      · spec: [`wp-3.3-dashboard.md`](./wp-3.3-dashboard.md) · depends on WP 2.2
-      · **status: in progress** (`wp/cache-tokens/3.3`, agent `dashboard`)
+- [x] WP 3.3 — the Testing dashboard's built-in cache panel — done 2026-08-21 ·
+      `wp/cache-tokens/3.3` · spec: [`wp-3.3-dashboard.md`](./wp-3.3-dashboard.md).
+      A **Prompt cache** panel beside Tokens: grouped bars for cache reads (~0.1×) against writes
+      (1.25×), each labelled with what it costs, plus a hit-rate line on its own right-hand % axis. No
+      combined "cached" figure anywhere, so a premium can never read as a saving. A bar drills into the
+      runs feed scoped to that bucket's window; the capability class stays out of the filter (the
+      `TokensPanel` precedent — it is an accounting facet, not a `RunFilter` dimension).
+      **The load-bearing case, verified on REAL data rather than a fixture:** the owner's database has
+      a genuine pre-v59 window, and over it the API returns all three measures in `unavailableMeasures`
+      while `count` still emits points. The panel renders **"Cache split not measured"** with copy that
+      says why — *"Shown as unmeasured rather than as a zero, because a zero here would look exactly
+      like caching that had stopped working."* Never a 0% line, never a bare empty chart.
+      **Validated by the orchestrator:** scope checked (nothing outside `apps/web/src/features/dashboard/`);
+      full gate re-run on the MERGED result (typecheck clean · shared **250** · illustrations **582** ·
+      cli **87** · api **3601** · web **3752 passed / 5 skipped** · build · lint); **two teeth broken by
+      hand** — ignoring `unavailableMeasures` (4 red) and merging the write series into the read key
+      (4 red) — each confirmed and restored; and the panel **re-screenshotted independently in both
+      themes** against the running app on an isolated DB copy, showing 51,879,269 read vs 6,909,927
+      write over a 141-run window, plus the not-measured state over the legacy window.
+      **Two judgement calls recorded:** the tooltip reads `n/a` for an absent value where `TokensPanel`
+      uses `?? 0` (here absent means "nobody measured"; a *reported* zero still reads `0`); and the
+      legend deliberately carries no window-wide hit-rate number, because the API's per-bucket `n` is a
+      run count, not the gross-token denominator, so weighting by it would be indefensible arithmetic.
+      **Not verified:** no human keyboard-focus walk of this panel (a datapoint was activated by real
+      `focus()` + Enter and the drill fired, but the focus ring was not inspected), and no rendered
+      hover tooltip — the dashboard suite's chart stub no-ops `ChartTooltip`, so `cacheTooltipRows` is
+      proven by unit test only.
+      **An orchestrator note, not a defect:** on the dashboard's DEFAULT 7-day range the owner's data
+      has zero runs, so the whole Testing tab shows "No runs in this window" and no panel renders at
+      all. That is correct behaviour; it is recorded here because it made the first verification pass
+      look like a missing panel until the range was widened.
       WP 3.1's spec included a dashboard cache-hit-rate chart; it is NOT built, so its box stays open
       rather than being ticked inside a WP that did not deliver it.
       **What already works without it:** `RUN_METRICS_MEASURES` is the single source for BOTH the
