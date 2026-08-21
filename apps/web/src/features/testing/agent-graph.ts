@@ -143,6 +143,12 @@ const NO_FIGURES: StepFigures = { tokensIn: 0, tokensOut: 0, costUsd: null };
  *  - Without them (a live run, or a run recorded before per-step snapshots) tokens fall back to the
  *    provider-reported `usageActual`, which is exactly what the console's own from-steps KPI
  *    derivation sums, and cost is reported UNKNOWN (`null`) rather than guessed at.
+ *
+ * One deliberate divergence, inherited from WP3.2 and shared with the Steps lens: a `judge_call`
+ * step's figures come from grade-service's SEPARATE judge ledger, which never moves the run's own
+ * `tokensIn`/`tokensOut`/`costUsd`. So on a run that was auto-rated, the judge nodes' chips sit ON
+ * TOP of the rail's totals rather than inside them — the same reading the step log already gives,
+ * and the honest one: that spend happened, and the rail was never counting it.
  */
 function figuresFor(
   step: RunStep,

@@ -555,7 +555,7 @@ describe("RunConsole — the agent-graph lens (Observability WP3.5)", () => {
     } as RunStep;
   }
 
-  function renderGraphConsole(initialEntry = "/") {
+  function renderGraphConsole(initialEntry = "/", opts: { replay?: boolean } = {}) {
     // Each call owns a WP3.1 `tool_io` child. That matters twice over: it exercises the projection's
     // attach-child-to-its-parent rule, and it puts `StepLog` on its TREE branch — the flat DataTable
     // branch virtualizes its rows, which jsdom cannot lay out, so it renders no rows to assert on
@@ -579,8 +579,11 @@ describe("RunConsole — the agent-graph lens (Observability WP3.5)", () => {
       }),
     ];
     streamOverride = {
-      status: "running",
-      ratingState: null,
+      // A replayed run is a TERMINAL one — the console then reads its steps through the as-of-k slice
+      // instead of the live stream, which is the second half of "works live and in replay".
+      status: opts.replay ? "completed" : "running",
+      ...(opts.replay ? { outcome: "completed" as const } : {}),
+      ratingState: opts.replay ? ("rated" as const) : null,
       phase: null,
       queuePosition: null,
       phaseDeadlineAt: null,
@@ -603,7 +606,7 @@ describe("RunConsole — the agent-graph lens (Observability WP3.5)", () => {
               test: makeTest(),
               scenario: makeScenario(),
               mode: "automated",
-              replay: false,
+              replay: opts.replay === true,
             }}
             providerLabel="Anthropic"
             capabilities={ENGINE_CAPS}
@@ -680,6 +683,17 @@ describe("RunConsole — the agent-graph lens (Observability WP3.5)", () => {
     const lens = within(screen.getByTestId("run-console-steps-lens"));
     expect(lens.getAllByTitle("search_docs").length).toBeGreaterThan(0);
     expect(lens.getAllByTitle("fetch_page").length).toBeGreaterThan(0);
+  });
+
+  test("the cross-link behaves identically on a REPLAYED (terminal) run, not just a live one", () => {
+    const { container } = renderGraphConsole("/?lens=graph", { replay: true });
+    fireEvent.click(container.querySelector('.react-flow__node[data-id="tool:fetch_page"]')!);
+    const params = new URLSearchParams(screen.getByTestId("url-probe").textContent ?? "");
+    expect(params.get("lens")).toBe("steps");
+    expect(params.get("focus")).toBe("tool:fetch_page");
+    const lens = within(screen.getByTestId("run-console-steps-lens"));
+    expect(lens.getAllByTitle("fetch_page").length).toBeGreaterThan(0);
+    expect(lens.queryByTitle("search_docs")).not.toBeInTheDocument();
   });
 });
 
