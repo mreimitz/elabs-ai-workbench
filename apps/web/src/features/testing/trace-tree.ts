@@ -1,6 +1,7 @@
 import type { RunStep, RunStepType, TokenUsageActual } from "@mcp-token-footprint/shared";
 import { safeJson } from "../../lib/format";
 import { firstProfileTokens } from "./StepLog";
+import { unwrapToolResult } from "./tool-call-view";
 import {
   toolAnchorValue,
   toolCallIdOfStep,
@@ -460,8 +461,19 @@ function readArgs(step: RunStep): unknown {
   return undefined;
 }
 
-/** The redacted result text for a tool_result — the MCP `content[].text` when present, else the JSON. */
-function resultDetail(
+/**
+ * The redacted result detail for a `tool_result` leaf.
+ *
+ * Unwrapping is delegated to {@link unwrapToolResult} — the SAME function the conversation pane's
+ * `ToolCallCard` uses — so the Trace leaf and the chat card can never disagree about what a tool
+ * "returned". That matters because an MCP result is `{ content: [{ type: "text", text }] }` whose
+ * text is usually a MINIFIED JSON document: rendering that verbatim (as this did) puts the whole
+ * payload on one unhighlighted line, while the chat card two tabs away shows it indented.
+ *
+ * A string survivor is prose → `markdown`, verbatim. Anything else is re-serialized with
+ * `safeJson`'s indentation → `json`.
+ */
+export function resultDetail(
   result: RunStep | undefined,
 ): { value: string; isError: boolean; language: "json" | "markdown" } | null {
   if (!result) return null;
@@ -469,22 +481,12 @@ function resultDetail(
   const p = result.payload;
   if (p && typeof p === "object") {
     const r = (p as { result?: unknown }).result;
-    if (r && typeof r === "object") {
-      const rr = r as { content?: unknown; isError?: unknown };
-      if (Array.isArray(rr.content)) {
-        const text = rr.content
-          .map((c) =>
-            c && typeof c === "object" && typeof (c as { text?: unknown }).text === "string"
-              ? (c as { text: string }).text
-              : "",
-          )
-          .filter((t) => t.length > 0)
-          .join("\n")
-          .trim();
-        if (text.length > 0)
-          return { value: text, isError: isError || rr.isError === true, language: "markdown" };
-      }
-      return { value: safeJson(r), isError, language: "json" };
+    if (r !== undefined && r !== null) {
+      const mcpError = (r as { isError?: unknown }).isError === true;
+      const unwrapped = unwrapToolResult(r);
+      if (typeof unwrapped === "string")
+        return { value: unwrapped, isError: isError || mcpError, language: "markdown" };
+      return { value: safeJson(unwrapped), isError: isError || mcpError, language: "json" };
     }
     if ("error" in p)
       return {

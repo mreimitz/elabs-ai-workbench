@@ -79,7 +79,6 @@ const ALLOWLIST: ReadonlySet<string> = new Set([
   "features/testing/AddSkillModal.tsx",
   "features/testing/ExpandableTable.tsx",
   "features/testing/ForkDialog.tsx",
-  "features/testing/TraceLeafDetail.tsx",
   "features/testing/collections/CollectionEditor.tsx",
   "features/testing/collections/CollectionsView.tsx",
   "features/testing/collections/ImportInsightBenchDialog.tsx",

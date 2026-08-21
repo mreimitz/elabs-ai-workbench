@@ -1,32 +1,20 @@
 import { useState } from "react";
-import {
-  Badge,
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  Text,
-} from "@elabs-ai/components-ui";
-import { CodeEditor } from "@elabs-ai/components-editor";
-import { READ_ONLY_OPTIONS } from "../../lib/monaco";
+import { Button, Text } from "@elabs-ai/components-ui";
 import { Maximize2 } from "lucide-react";
 import { CodeSnippet } from "./CodeSnippet";
-import { PacketTabs } from "./PacketInspector";
+import { PayloadDialog } from "./PayloadDialog";
 import { useTraceStep } from "./trace-context";
 
 /**
  * The detail surface for a Trace **leaf** (Arguments / Result / Request / Reasoning / Response /
- * Prompt). It renders as a compact, **scrollable** read-only preview (the `<pre>`-in-`ScrollArea`
- * `CodeSnippet`) with a header row carrying the label and an **Expand** button in the top-right
- * corner. Expanding opens a near-fullscreen `Dialog`: the **whole** payload on the left in the
- * read-only Monaco `CodeEditor` (`@elabs-ai/components-editor`), and on the right the SAME detail panel
- * (`PacketTabs`) the right-side inspector Sheet shows — resolved from the leaf's backing `RunStep`.
+ * Prompt). It renders as a compact, **scrollable** read-only preview (`CodeSnippet`) with a header
+ * row carrying the label and an **Expand** button in the top-right corner. Expanding opens the
+ * shared `PayloadDialog` — the whole payload in Monaco, plus the inspector's `PacketTabs` for the
+ * leaf's backing `RunStep` (resolved here from the Trace step context).
  *
  * SECURITY (`mcp-and-security.md`): the payload is UNTRUSTED, already-redacted tool/LLM output. It is
- * shown read-only as text only (Monaco `readOnly`, no `eval`, no `dangerouslySetInnerHTML`); we make
- * no attempt to un-redact.
+ * shown read-only as text only (no `eval`, no `dangerouslySetInnerHTML`); we make no attempt to
+ * un-redact.
  */
 
 export function TraceLeafDetail({
@@ -71,48 +59,22 @@ export function TraceLeafDetail({
       </div>
 
       {/* Compact, scrollable inline preview — the full content opens in the modal. */}
-      <CodeSnippet value={value} ariaLabel={ariaLabel ?? heading} maxHeightClassName="max-h-56" />
+      <CodeSnippet
+        value={value}
+        language={language}
+        ariaLabel={ariaLabel ?? heading}
+        maxHeightClassName="max-h-56"
+      />
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent size="full" className="flex min-h-0 flex-col gap-0 p-0">
-          <DialogHeader className="shrink-0 border-b border-border px-5 py-3 text-left">
-            <DialogTitle className="flex min-w-0 flex-wrap items-center gap-2">
-              <span className="min-w-0 truncate">{heading}</span>
-              {isError ? (
-                <Badge variant="destructive" className="font-normal">
-                  error
-                </Badge>
-              ) : null}
-            </DialogTitle>
-            <DialogDescription>
-              The full payload (read-only, already redacted). The detail panel mirrors the
-              inspector.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex min-h-0 flex-1">
-            {/* Left — the whole payload in Monaco. The flex-1/min-h-0 parent gives `height="100%"`
-                a bounded box to lay out into (Monaco `automaticLayout`). */}
-            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              <CodeEditor
-                value={value}
-                language={language}
-                readOnly
-                height="100%"
-                ariaLabel={`${heading} (full)`}
-                options={READ_ONLY_OPTIONS}
-              />
-            </div>
-
-            {/* Right — the same detail panel the inspector Sheet shows, for the backing step. */}
-            {step ? (
-              <div className="flex w-[24rem] shrink-0 flex-col overflow-y-auto border-l border-border p-4">
-                <PacketTabs step={step} />
-              </div>
-            ) : null}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PayloadDialog
+        open={open}
+        onOpenChange={setOpen}
+        heading={heading}
+        value={value}
+        language={language}
+        isError={isError}
+        step={step}
+      />
     </div>
   );
 }

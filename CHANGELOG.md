@@ -33,6 +33,36 @@ renders flat and says so, rather than implying a structure it never had. Cost is
 Built on the design system's existing flow canvas: no new dependency, no schema change, no wire
 change, no migration.
 
+## Unreleased — you can tell the grader it was wrong
+
+Every run is graded automatically, and until now there was no way to say the grade was wrong. Each
+grade card — run console and suite matrix cell alike — now carries a thumbs-up / thumbs-down and an
+optional note.
+
+**A verdict never touches the grade.** `run_grades` stays append-only (AR6): the score, status,
+method, judge reasoning and grading version are byte-identical before and after you disagree, and
+suite aggregates and analytics computed from them are byte-identical too. Three tests assert this,
+each paired with a check that the verdict really landed so none can pass vacuously — and they were
+deliberately broken and watched to fail before being trusted. A human opinion cannot be averaged
+into a machine score by accident.
+
+The runs you have judged become a **calibration set**, derived rather than flagged: a run joins the
+moment one of its grades carries a verdict, so there is no `is_calibration` column to drift out of
+sync. Export it as JSON or Markdown. The export deliberately omits credentials, judge reasoning,
+transcripts and tool arguments, which makes "no secrets" a property of its shape; the cost is that
+the export alone is not a full audit, and drill-down stays in the app.
+
+Settings shows verdict counts and **not** an agreement percentage — a ratio over a few verdicts
+spanning mixed grading versions would read as a score of your judge long before it earned one.
+Measuring agreement, and guarding a judge change against the calibration set, is the next work
+package.
+
+Migration **v60** adds one table and one index. No new dependency, no new route.
+
+**Not verified:** the new control has not been looked at in a browser, in either theme, or driven by
+keyboard — and nobody has judged whether a per-cell thumb row is tolerable at real suite-matrix
+width.
+
 ## Unreleased — the app can be handed to someone who has no repository
 
 `docker compose up --build` needs the source tree, so anyone outside this repository could not run

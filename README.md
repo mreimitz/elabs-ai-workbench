@@ -174,6 +174,23 @@ no new data is stored, and a replayed run draws the identical graph.
 
 ### 6 · Automatic run rating
 
+**You can now tell the grader when it is wrong.** Every grade card — in the run console and in a
+suite matrix cell — carries a thumbs-up / thumbs-down and an optional note. Your verdicts are
+**append-only and never touch the grade**: the score, its status, the method and the judge's own
+reasoning are byte-identical before and after you disagree, and the suite aggregates and analytics
+built on them do not move either. That separation is asserted by tests that fail if anyone later
+makes a verdict change a score, so a human opinion can never be quietly averaged into a machine one.
+
+The runs you have judged form a **calibration set** — derived, not a flag you maintain: a run joins
+it the moment one of its grades carries a verdict. Export it as JSON or Markdown from Settings. The
+export is deliberately narrow — no credentials, no judge reasoning, no transcripts, no tool
+arguments — so "contains no secrets" is a property of its shape rather than of what happens to be in
+it today. Settings shows verdict counts and deliberately *not* an agreement percentage: a ratio over
+a handful of verdicts would read as a score of your judge long before it had earned one. Measuring
+that agreement honestly is the next work package.
+
+
+
 Every terminal run is graded automatically — **answer validation** (did the final answer address the
 prompt, with cited evidence), **insight surplus** (was the extra content valuable or just padding),
 and **error forensics** (root-cause buckets and fix targets) — using a Claude-CLI-first judge chain

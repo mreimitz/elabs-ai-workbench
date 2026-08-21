@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Status } from "@elabs-ai/components-ui";
 import {
   Badge,
@@ -10,10 +11,12 @@ import {
   cn,
 } from "@elabs-ai/components-ui";
 import { ToolInput, ToolOutput } from "@elabs-ai/components-ai";
-import { ChevronRight, ExternalLink, GitBranch, Wrench } from "lucide-react";
-import { formatDuration, formatNumber } from "../../lib/format";
+import { ChevronRight, ExternalLink, GitBranch, Maximize2, Wrench } from "lucide-react";
+import { formatDuration, formatNumber, safeJson } from "../../lib/format";
 import { detectAssets } from "./asset-detect";
 import { AssetGallery } from "./AssetGallery";
+import { IconButton } from "../../components/IconButton";
+import { PayloadDialog } from "./PayloadDialog";
 import { mcpErrorText, summarizeArgs, unwrapToolResult } from "./tool-call-view";
 import type { TimelineToolCall } from "./use-run-stream";
 
@@ -29,6 +32,11 @@ import type { TimelineToolCall } from "./use-run-stream";
  * (`{ content: [{ type: "text", text }], structuredContent?, isError }`) shows its meaningful
  * payload — `structuredContent` when present, else the text parts with JSON-in-string pretty-parsed
  * — never the escaped wire frame. The raw step stays reachable via Inspect (packet log).
+ *
+ * Both technical blocks are CLAMPED (a huge result must not swallow the transcript), so each carries
+ * an **Expand** button into the shared `PayloadDialog` — the same full-payload modal the Trace leaf
+ * opens, with the backing step's `PacketTabs` beside it. Without it a clamped block was a dead end:
+ * the only ways on were Inspect (a different, re-serialized view) or the Trace tab.
  *
  * The two run steps that back this — the engine `tool_call` (args) and its `tool_result` — arrive
  * separately from `apps/api/src/testing/engine.ts`; `buildTimeline` pairs them into the
@@ -69,6 +77,21 @@ export function ToolCallCard({
   // Managed image assets (paths-only in the text) stay VISIBLE below the collapsed row — a produced
   // artifact is the headline (UI §D2), never hidden behind the technical disclosure.
   const assets = detectAssets(call.result);
+  // Which technical block, if any, is open in the shared full-payload modal.
+  const [expanded, setExpanded] = useState<"parameters" | "result" | null>(null);
+  const expandedPayload =
+    expanded === "parameters"
+      ? { heading: "Parameters", ...asPayload(args), step: call.call, isError: false }
+      : expanded === "result" && result
+        ? {
+            heading: "Result",
+            ...(result.errorText !== undefined
+              ? { value: result.errorText, language: "markdown" as const }
+              : asPayload(result.output)),
+            step: call.result ?? call.call,
+            isError: result.errorText !== undefined,
+          }
+        : null;
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
@@ -135,21 +158,45 @@ export function ToolCallCard({
               </Text>
             ) : null}
             {hasArgs ? (
-              <ToolInput
-                input={args}
-                className="min-w-0 max-h-60 overflow-x-auto overflow-y-auto"
-              />
+              /* `relative` so the Expand affordance can sit over the block's own header row —
+                 `ToolInput` renders its "PARAMETERS" caption itself and takes no action slot. */
+              <div className="relative min-w-0">
+                <ToolInput
+                  input={args}
+                  className="min-w-0 max-h-60 overflow-x-auto overflow-y-auto"
+                />
+                <IconButton
+                  label="Expand parameters"
+                  size="icon-sm"
+                  variant="ghost"
+                  className="absolute right-1 top-0"
+                  onClick={() => setExpanded("parameters")}
+                >
+                  <Maximize2 aria-hidden />
+                </IconButton>
+              </div>
             ) : (
               <Text variant="meta" tone="muted">
                 Arguments are redacted for this step.
               </Text>
             )}
             {result ? (
-              <ToolOutput
-                output={result.output}
-                errorText={result.errorText}
-                className="min-w-0 max-h-80 overflow-y-auto"
-              />
+              <div className="relative min-w-0">
+                <ToolOutput
+                  output={result.output}
+                  errorText={result.errorText}
+                  className="min-w-0 max-h-80 overflow-y-auto"
+                />
+                <IconButton
+                  label="Expand result"
+                  size="icon-sm"
+                  variant="ghost"
+                  className="absolute right-1 top-0"
+                  onClick={() => setExpanded("result")}
+                >
+                  <Maximize2 aria-hidden />
+                </IconButton>
+              </div>
             ) : (
               <Text variant="meta" tone="muted">
                 Awaiting result…
@@ -175,9 +222,30 @@ export function ToolCallCard({
           </div>
         </CollapsibleContent>
       </Collapsible>
+      {expandedPayload ? (
+        <PayloadDialog
+          open
+          onOpenChange={(next) => (next ? undefined : setExpanded(null))}
+          heading={expandedPayload.heading}
+          value={expandedPayload.value}
+          language={expandedPayload.language}
+          isError={expandedPayload.isError}
+          step={expandedPayload.step}
+        />
+      ) : null}
       {assets.length > 0 ? <AssetGallery serverId={call.serverId} paths={assets} /> : null}
     </div>
   );
+}
+
+/**
+ * The already-unwrapped payload as editor text: a string is prose (verbatim `markdown`), anything
+ * else is a document (`safeJson`-indented `json`). Mirrors what `ToolInput`/`ToolOutput` render, so
+ * the modal shows the same thing the clamped block does — just all of it.
+ */
+function asPayload(value: unknown): { value: string; language: "json" | "markdown" } {
+  if (typeof value === "string") return { value, language: "markdown" };
+  return { value: safeJson(value), language: "json" };
 }
 
 /**

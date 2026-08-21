@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Benchmarks \u2014 work-package status ledger \u00b7 PRIORITY: HIGH (parallel with Skill IDE)"
 description: "Living state for the Benchmarks plan, read and updated by /next-wp benchmarks. A box is"
 tags: ["roadmap", "RM-07"]
-timestamp: "2026-08-21T21:50:00Z"
+timestamp: "2026-08-21T22:50:00Z"
 status: "active"
 ---
 # Benchmarks — work-package status ledger · **PRIORITY: HIGH (parallel with Skill IDE)**
@@ -55,7 +55,41 @@ ticked **only** when that WP's Acceptance is met and the gate
 > retire on its owner walk alone*). The owner chose **build**, so this phase stays inside RM-07 and
 > RM-07 does **not** retire until it is done. Specs for both WPs already exist in
 > [`phase-6-judge-calibration.md`](./phase-6-judge-calibration.md).
-- [ ] WP 6.1 — grade feedback + calibration set (spec: `phase-6-judge-calibration.md`) — _status: in progress (agent A · `wp/benchmarks/6.1`, dispatched 2026-08-21 via `RM-35` D-3)_
+- [x] WP 6.1 — grade feedback + calibration set — **done 2026-08-21 · `wp/benchmarks/6.1` (merged)**
+      · spec: [`phase-6-judge-calibration.md`](./phase-6-judge-calibration.md). Migration **v60**
+      (`grade_feedback` + one covering index; DDL byte-identical to the `schema.ts` baseline so a
+      fresh DB and a migrated DB agree). New surface: `POST /api/grades/:gradeId/feedback`,
+      `GET /api/runs/:runId/grade-feedback`, `GET /api/calibration/{json,markdown}`; a
+      `GradeFeedbackControl` on the run-console Grade panel **and** the suite-matrix cells; counts in
+      Settings. **No new route, so `ASSISTANT_ROUTE_MANIFEST` is untouched; no new dependency.**
+      **AR6 is enforced, not merely respected — and the orchestrator re-proved it independently.**
+      Three assertions guard it (a full `run_grades` row snapshot byte-identical across every write
+      path; `GET /api/runs/:id/grades` returning the same document; suite **aggregates + analytics**
+      byte-identical with and without feedback), each paired with a check that the verdict really
+      landed so none can pass vacuously. The orchestrator injected
+      `UPDATE run_grades SET score = 0.123` into `GradeFeedbackRepository.append()` and watched
+      **exactly those three go red (11 pass / 3 fail)**, then restored the file and confirmed a clean
+      tree. The implementing agent had separately probed both sides (API and a web `graded`-flag
+      mutation) and restored both.
+      **Design decisions it had to make that the spec did not settle:** append-only means re-clicking
+      the same thumb is a **no-op** (no "un-say"; a duplicate row would inflate the denominator WP 6.2
+      divides by), switching thumbs appends; the calibration set is **derived, not a stored flag** (a
+      run is in it exactly when one of its grades carries a verdict — no `is_calibration` column to
+      drift); the export is **deliberately narrow** (no `judgeProviderId`, no judge `reasoning`, no
+      transcript, no tool arguments), which makes "no secrets" a property of its **shape** rather than
+      of today's fixtures, at the cost that the export alone is not a full audit — drill-down stays
+      in-app by `runId`/`gradeId`; Settings shows **counts, not an agreement percentage**, because a
+      ratio over a few verdicts across mixed grading versions would read as a judge score long before
+      it earned one (that is WP 6.2's job).
+      **Not verified — stated plainly, not buried:** **both themes and keyboard focus were NOT
+      checked**; no browser was opened, and no theme or keyboard claim is made. Nor was the
+      suite-matrix cell judged at real matrix width — whether a per-cell thumb row is visually
+      tolerable there is a call someone has to make on screen. Both are owner-acceptance items.
+      **One security note for the owner:** `POST /api/grades/:gradeId/feedback` falls through to the
+      coarse `requiredScopesForMethod`, so a remote **token-authenticated** caller needs an *execute*
+      scope to record a verdict. That is semantically odd — recording a verdict launches nothing — but
+      it **fails closed**, and relaxing it means editing the security-critical
+      `API_TOKEN_ROUTE_SCOPES` table, which was correctly left alone.
 - [ ] WP 6.2 — agreement analytics + judge-change re-grade guard
 
 ## Decision log

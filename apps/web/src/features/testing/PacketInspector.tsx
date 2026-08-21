@@ -38,6 +38,7 @@ import { formatBytes, formatNumber, safeJson } from "../../lib/format";
 import { deriveStatusView } from "../../lib/status";
 import { firstProfileTokens, stepBrandStatus, stepTypeMeta, tokensDown, tokensUp } from "./StepLog";
 import { notifyError } from "../../lib/notify";
+import { unwrapToolResult } from "./tool-call-view";
 
 /**
  * The packet inspector (WP 3.6, UI §5 / doc 12 §3.5): a right-side `Sheet` over the monitoring pane
@@ -283,8 +284,11 @@ function ResponseTab({ step }: { step: RunStep }) {
 
       {result !== null ? (
         <CodeSnippet
-          label={result.isError ? "Error result" : "Result (structured)"}
+          label={
+            result.isError ? "Error result" : result.unwrapped ? "Result" : "Result (structured)"
+          }
           value={result.value}
+          language={result.language}
           ariaLabel="Tool result"
           maxHeightClassName="max-h-96"
         />
@@ -488,12 +492,32 @@ function toolArgs(step: RunStep): string | null {
   return null;
 }
 
-/** The tool result/error (`{ result }` | `{ error }`), with an error flag, or null. */
-function toolResult(step: RunStep): { value: string; isError: boolean } | null {
+/**
+ * The tool result/error (`{ result }` | `{ error }`), with an error flag, or null.
+ *
+ * An MCP `tools/call` answers with `{ content: [{ type: "text", text }] }` (or `structuredContent`),
+ * and that text is very often a **minified JSON document**. Serializing the envelope wholesale left
+ * the payload double-encoded — a `\"`-escaped one-liner nested inside a pretty-printed wrapper, which
+ * is what the operator actually had to read. Unwrapping is delegated to {@link unwrapToolResult},
+ * the SAME function the conversation pane's `ToolCallCard` and the Trace leaf use, so the three
+ * surfaces cannot disagree about what a tool returned. `unwrapped` is false when there was nothing
+ * to unwrap (it returns its input unchanged) — the label then still says "structured".
+ */
+function toolResult(
+  step: RunStep,
+): { value: string; isError: boolean; language: "json" | "markdown"; unwrapped: boolean } | null {
   const obj = asObject(step.payload);
   if (!obj) return null;
-  if ("result" in obj) return { value: safeJson(obj.result), isError: step.status === "error" };
-  if ("error" in obj) return { value: String(obj.error), isError: true };
+  if ("result" in obj) {
+    const isError = step.status === "error";
+    const raw = obj.result;
+    const value = unwrapToolResult(raw);
+    const unwrapped = value !== raw;
+    if (typeof value === "string") return { value, isError, language: "markdown", unwrapped };
+    return { value: safeJson(value), isError, language: "json", unwrapped };
+  }
+  if ("error" in obj)
+    return { value: String(obj.error), isError: true, language: "markdown", unwrapped: true };
   return null;
 }
 
