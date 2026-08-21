@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-21T23:30:00Z"
+timestamp: "2026-08-22T01:30:00Z"
 status: "active"
 ---
 
@@ -298,12 +298,102 @@ had one open box before the lock and now has fourteen.
       **No `README.md` capability entry**, deliberately: the front page has never described watch
       rules, so this WP made nothing there false. `CHANGELOG.md` carries it
       (*"a silent bench no longer reads as good news"*)
-- [ ] AM-OB11 — typed GitHub Actions `workflow_dispatch` rule action beside the built generic
-      webhook, so "regression detected → CI re-runs the suite" closes with no new infra ·
-      **sequence after RM-08 service tokens (done)** — reuse `api_tokens`, do not invent a second
-      token store
-- [ ] AM-OB12 — boolean grade/rating fields as share-true windowed metrics (e.g. hallucination-flag
-      rate), mirroring the numeric aggregations · _verify-at-pickup against the built measure set_
+- [x] AM-OB11 — typed GitHub Actions `workflow_dispatch` rule action — **done 2026-08-21 ·
+      `wp/roadmap-cleanup/am-ob11` (`61138c6` · `492707b` · `e39fea5` · `6611ccf`, merged) · 17 files ·
+      no migration, no new dependency, `apps/api/src/db/**` a zero-line diff.**
+      The generic webhook stays the base primitive; this is a typed action beside it, wired into
+      **both** action switches (`executeWatchAction` and `executeWatchWindowAction`) and injected
+      through `WatchActionServices`, so no real GitHub call can happen in a test — proved at runtime
+      by replacing global `fetch` with a thrower, not just by a source walk.
+      **The credential decision (acceptance #7), recorded here as the WP required:** the shipped
+      **`github-account`** service — an encrypted token in the `app_settings` KV, decrypted
+      in-process only, one `Authorization` header, never returned, logged, or persisted into an
+      audit row. No second store, no migration. The ledger's own earlier correction was right:
+      `api_tokens` holds a one-way SHA-256 digest and cannot present an outbound PAT.
+      **On scope, recorded with its uncertainty intact:** the device flow requests `repo`, and
+      GitHub's REST documentation for *Create a workflow dispatch event* says a classic OAuth/PAT
+      credential needs `repo` — so on paper it suffices and no re-authorisation is needed. **That was
+      never verified against a live call** (no network, no repository, no connected account here).
+      The builder built for being wrong: an insufficient scope yields a **403** reading *"the
+      connected GitHub account is not allowed to run Actions on that repository"* rather than a
+      silent no-op. **If the owner's live walk shows a 403 on a repo they can otherwise push to, the
+      scope claim is the first thing to doubt.**
+      **Security teeth, re-probed by the orchestrator rather than taken on report:** making the
+      failure path append GitHub's own response body turns **2 tests red** — the no-credential/
+      no-input-value assertion and the body-free-reason assertion. GitHub's error body is
+      deliberately ignored because it can quote the request (input values included) back, and that
+      string is persisted into an audit row and rendered in the notification centre. The builder's
+      own table adds nine more, including one deliberate *probe-meaningfulness* check (dropping the
+      `Authorization` header goes red, which proves the token genuinely reaches the request and the
+      redaction assertions are real).
+      **A lesson worth keeping:** a probe into `packages/shared/src` proves nothing until
+      `pnpm --filter shared build` runs — the API suite imports the built `dist`. The builder hit
+      this as a false negative, and so did the orchestrator on AM-OB12 the same day.
+      Gate green on `main` after the merge: shared 269 · illustrations 834 · cli 87 · api **3700** ·
+      web **365 files / 4023** · build · lint. 15 new API tests, 11 new web tests.
+      **Two fixes outside the brief, both defensible:** `FormErrorAlert` was extracted so the
+      **Actions** section renders save errors at all — only the active section is mounted, so an
+      Actions-step failure previously set a message and displayed nothing, which also means the
+      pre-existing *"Enable at least one action"* and bad-webhook-URL messages became visible for the
+      first time; and the account lookup gained a loading state, because telling an operator they
+      have no GitHub account while the answer is still in flight is a lie they might act on.
+      **Not verified:** **no real GitHub call was ever made** — the endpoint, the 204-on-success
+      contract, the 401/403/404/422 semantics and the `repo` scope claim all rest on documentation.
+      No browser was opened: no two-theme look, no keyboard pass. The Radix tooltip is untested
+      (jsdom does not open it) — the visible reason and its `aria-describedby` are asserted, the
+      hover is not. And the slot's disabled→enabled transition remounts the checkbox, so a keyboard
+      user focused there at that instant would lose focus — observed by reasoning, not in a browser,
+      and not fixed.
+      **Follow-up left unbuilt, on purpose:** the account status already carries granted scopes, so
+      the editor could warn up front when `repo` is missing — skipped because the scope→endpoint
+      mapping is unconfirmed here and a wrong warning is worse than none
+- [ ] AM-OB12 — boolean grade/rating fields as share-true windowed metrics · **HALF BUILT and
+      MERGED 2026-08-21 · `wp/roadmap-cleanup/am-ob12` (6 commits, merged) · the box stays OPEN.**
+      **What landed: the rating dimensions became filter dimensions.** `RunFilter` gains four array
+      fields over the **frozen RM-06 vocabularies** — `answerVerdict` · `insightVerdict` ·
+      `errorBucket` · `errorFixTarget` — with no boolean invented and no three-valued verdict
+      flattened (a test enumerates the 3×3 matrix so `partial` matches only `partial`). Two rules
+      hold identically in the pure predicate and **both** SQL translations: **latest wins** (only the
+      `MAX(created_at)` row per run+grader, so a superseded re-rate never matches) and **absent is
+      not a value** (an unrated run matches no verdict — asking for *every* member of a vocabulary
+      still returns only the rated runs, which is the AM-OB10 bug class caught before it shipped).
+      The four clauses live in ONE new module both `buildRunFilterWhere` copies import; the wider
+      duplication stays AM-OB4's problem rather than becoming a third copy.
+      **What did NOT land, and why the box is open: the share measure itself.** WP 6.11 has a **hard
+      dependency on AM-OB4** (the ratio measure), which is unbuilt, and its own non-goals forbid a
+      fourteenth bespoke measure — so acceptance #3 (a ratio with a verdict numerator; zero
+      denominator omitted, never `0`) is **blocked**, and #4 (a windowed rule thresholding it) is
+      **untested**: a rule can already threshold `count` over a verdict-filtered window with no
+      change to `watch/**`, but that path was fenced off this round and never exercised.
+      **Two findings worth carrying forward.** (1) **SQLite's `json_*` functions throw on malformed
+      input rather than returning NULL**, so one bad `evidence_json` row would 500 the *whole runs
+      feed*, not merely miss a match — every extraction is wrapped in `CASE` (the one construct
+      SQLite guarantees evaluates in order; a bare `AND` may be reordered by the planner),
+      `json_each` is fed `'[]'` for anything that is not a valid JSON array, and each member is
+      guarded by `je.type = 'object'`. (2) A **real SQL/predicate divergence** surfaced while
+      probing: `json_each` over a JSON *object* walks that object's members, so
+      `{"nested":{"bucket":"skill"}}` matched in SQL while the predicate refused it — fixed in
+      `0512a7e`, and found by a harder fixture rather than by reasoning.
+      **Teeth: ten probes, all red** — and two were false negatives first, both instructive. A probe
+      into `packages/shared` proves nothing until `pnpm --filter shared build` runs; and the
+      latest-wins SQL appears **twice** in `buildFilterCandidate`, so the first probe hit the
+      pre-existing *score* copy, which turned out to be pinned by nothing — the fixture is the only
+      one in the repo that re-grades a run with a different score, so the cross-check grew score
+      bounds (`7ed9dcb`) and closed a pre-existing gap as a side effect. The orchestrator re-probed
+      independently: making an absent candidate array count as a match turns 2 shared tests red.
+      **Performance measured, no index taken:** 50k runs · 150k grades, isolated — unfiltered p95
+      65 ms, `answerVerdict` 74 ms, `errorBucket` 83 ms, composed 101 ms, all against a 500 ms
+      budget, riding `idx_run_grades_run` which predates this WP.
+      ⚠️ **A pre-existing perf case is one bad scheduling slice from a red gate**: it flaked at p95
+      486.5 ms against its 500 ms budget because `pnpm test` runs api and web in parallel and that
+      case measures ~5× its isolated time under contention. The new case therefore asserts a **ratio
+      against a same-process baseline** and logs the absolute — honest, but it would **not** catch an
+      absolute regression that slowed the unfiltered query equally.
+      **Not verified:** no browser (the four chips reuse the existing multi-select recipe and add no
+      new markup or colour, but nothing was looked at); nothing ran against real data — every
+      verdict, bucket and fix target in every fixture was hand-written, and these filters have never
+      met a rating a real grader produced. **To close this box: build AM-OB4, then add the ratio
+      measure and re-check #3 and #4**
 - [ ] AM-OB13 — per-run/suite-run manual "send to webhook" (ids + report link) to an
       admin-configured endpoint, reusing WP 4.3's webhook config + signing · day-scale
 - [ ] AM-OB14 — per-bucket distribution bars on the issue list · _verify-at-pickup: the

@@ -216,7 +216,9 @@ per-cell issue counts, and is honest about the concerns that still need a human 
 
 Every run and suite-run in one searchable, filterable feed with running totals (tokens, cost, failure
 rate). Suite-runs expand into their member sessions; drill into any one to open its console. Runs can
-be compared, reviewed, and turned into repeatable suites.
+be compared, reviewed, and turned into repeatable suites. You can also filter by what the automatic
+rating concluded — did the answer address the prompt, was the extra insight valuable or noise, which
+failure bucket and fix target the error forensics named.
 
 The feed's whole state — the filter, the applied saved view, the grouping, the sort, the visible
 columns — lives in the address bar, so any arrangement you can reach is a link you can paste to

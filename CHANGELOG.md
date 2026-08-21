@@ -71,6 +71,23 @@ pass turned out to be two blockquote rules around quoted text and one that encod
 compare view. Changing them would have been the regression.
 
 
+## Unreleased — a rule can start a CI run, and the feed can ask about ratings
+
+Two additions around the parts of the bench that watch it for you.
+
+**A watch rule can now trigger a GitHub Actions workflow directly.** Until now a rule could call a
+generic webhook and you built the rest yourself; "a regression appeared, so re-run the suite in CI"
+now closes with nothing new to host. It uses the GitHub account you already connected in Settings —
+there is no second place to put a token — and it never puts the token, the target URL or your
+workflow inputs into a stored result, an error message or the notification centre. When GitHub
+refuses, you get a sentence saying which of the four likely causes it was, rather than its raw reply.
+
+**The runs feed can filter on what the automatic rating concluded** — whether the answer actually
+addressed the prompt, whether the extra insight was valuable or noise, and which failure bucket and
+fix target the error forensics landed on. Two rules make these honest: a re-rated run is judged by
+its *latest* rating only, and a run that was never rated matches *no* verdict rather than quietly
+counting as a negative one.
+
 ## Unreleased — skills get a workbench instead of a panel
 
 Editing a skill used to happen inside the inspector — the same page you read a skill on, with the
