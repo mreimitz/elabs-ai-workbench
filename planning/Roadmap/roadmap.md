@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-21T15:42:04Z"
+timestamp: "2026-08-21T18:13:35Z"
 status: "active"
 ---
 
@@ -22,7 +22,6 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-08-ci](RM-08-ci/item.md) — CI & headless automation — tokens, CLI, assertions and the workbench MCP server · `active`
 * [RM-09-claude-subscription](RM-09-claude-subscription/item.md) — Claude subscription as a run model · `active`
 * [RM-10-crew-nesting](RM-10-crew-nesting/item.md) — Hierarchical crews — runtime-recursive crew composition · `active`
-* [RM-12-findings](RM-12-findings/item.md) — UI audit and remediation programme (2026-06) · `archived`
 * [RM-14-illustrations](RM-14-illustrations/item.md) — Illustration design system — theme-token-driven blueprint illustrations · `planned`
 * [RM-16-model-identity](RM-16-model-identity/item.md) — Model identity — a model choice means the model and the credential · `active`
 * [RM-17-observability](RM-17-observability/item.md) — Observability — fleet monitoring, search and issues · `active`
@@ -35,7 +34,6 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-26-testing](RM-26-testing/item.md) — Testing — the agent run engine and console · `active`
 * [RM-27-testing-ia](RM-27-testing-ia/item.md) — Testing IA consolidation — Collections as the test home · `active`
 * [RM-30-ux-overhaul](RM-30-ux-overhaul/item.md) — UX Overhaul — one shell, one grammar, every view · `active`
-* [RM-31-mvp-footprint-analyzer](RM-31-mvp-footprint-analyzer/item.md) — Startup-footprint MVP and the expanded target · `archived`
 * [RM-32-overview-detail](RM-32-overview-detail/item.md) — Overview → Detail restructure (Servers · Skills · Collections) · `planned`
 * [RM-34-estimator-turn-model-calibrate](RM-34-estimator-turn-model-calibrate/item.md) — Estimator turn model — calibrate the run-plan preview against measured run history · `active`
 * [RM-35-roadmap-cleanup-close-what](RM-35-roadmap-cleanup-close-what/item.md) — Roadmap cleanup — close what is already started · `active`
@@ -44,12 +42,14 @@ This concept is the live project-level index of roadmap items and research topic
 
 * [RM-04-assistant-hub-ux](completed/RM-04-assistant-hub-ux/item.md) — Assistant Hub UX — rebuild onto the app shell grammar · `done`
 * [RM-11-dashboard-bento](completed/RM-11-dashboard-bento/item.md) — Dashboard bento — the homepage Overview · `done`
+* [RM-12-findings](completed/RM-12-findings/item.md) — UI audit and remediation programme (2026-06) · `done`
 * [RM-13-hub-fixes](completed/RM-13-hub-fixes/item.md) — Assistant Hub defect-fix workstream · `done`
 * [RM-15-interface-craft](completed/RM-15-interface-craft/item.md) — Interface Craft — write the six rules that were never written · `done`
 * [RM-19-release](completed/RM-19-release/item.md) — Release & delivery — the offline hand-off bundle · `done`
 * [RM-21-server-types](completed/RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `done`
 * [RM-28-toolbar-reach](completed/RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `done`
 * [RM-29-unified-sessions](completed/RM-29-unified-sessions/item.md) — Unified Sessions — one session experience across every run backend · `done`
+* [RM-31-mvp-footprint-analyzer](completed/RM-31-mvp-footprint-analyzer/item.md) — Startup-footprint MVP and the expanded target · `done`
 * [RM-33-cache-aware-token-accounting](completed/RM-33-cache-aware-token-accounting/item.md) — Cache-aware token accounting & display · `done`
 
 ## Research Topics
@@ -90,7 +90,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [DC-20-user-interface](../user-guide/DC-20-user-interface/doc.md) — The application shell & interface standards · `current`
 * [DC-21-architecture](../user-guide/DC-21-architecture/doc.md) — Architecture & data model · `draft`
 * [DC-22-packaging-and-deployment](../user-guide/DC-22-packaging-and-deployment/doc.md) — Packaging & deployment · `current`
-* [DC-23-product-overview](../user-guide/DC-23-product-overview/doc.md) — Product overview · `draft`
+* [DC-23-product-overview](../user-guide/DC-23-product-overview/doc.md) — Product overview · `current`
 * [DC-24-security-posture](../user-guide/DC-24-security-posture/doc.md) — Security posture · `draft`
 
 ## Now / Next / Later

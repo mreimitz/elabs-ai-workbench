@@ -659,7 +659,7 @@ Documentation-and-process pass reconciling the docs to what the code actually is
   refreshed Acceptance Criteria.
 - **roadmap:** `00-product-brief.md` non-goals trimmed to auth/cloud (removed conversation replay,
   LLM proxy mode, provider token adapters — now delivered/in-scope); `ROADMAP.md`,
-  `planning/user-guide/DC-21-architecture/01-architecture.md`, `planning/Roadmap/RM-31-mvp-footprint-analyzer/02-implementation-plan.md` marked historical with a
+  `planning/user-guide/DC-21-architecture/01-architecture.md`, `planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/02-implementation-plan.md` marked historical with a
   "current state" pointer to CLAUDE.md + the STATUS ledgers.
 - **Single source of truth:** stated in CLAUDE.md that `planning/Roadmap/*/STATUS.md` ledgers are
   authoritative for in-flight status; other docs link rather than restate.

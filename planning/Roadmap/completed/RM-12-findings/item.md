@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "UI audit and remediation programme (2026-06)"
 description: "Record the enterprise-grade UI/UX evaluation of the shipped footprint analyzer and drive its prioritized remediation, hardening and cross-server compare follow-ups."
 tags: ["roadmap", "RM-12"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "archived"
+timestamp: "2026-08-21T18:13:35Z"
+status: "done"
 ---
 
 # UI audit and remediation programme (2026-06)
@@ -19,9 +19,9 @@ The first full audit of the running app produced findings that outlived any sing
 
 ## Milestones
 
-- [ ] Record the audit findings and the prioritized fix plan.
-- [ ] Execute the remediation and hardening passes.
-- [ ] Close the resource, prompt and compare follow-ups.
+- [x] Record the audit findings and the prioritized fix plan.
+- [x] Execute the remediation and hardening passes.
+- [x] Close the resource, prompt and compare follow-ups.
 
 ## Linked research
 

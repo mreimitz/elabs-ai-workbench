@@ -3,7 +3,7 @@ type: "Research Topic"
 title: "Unified Run Sessions"
 description: "Work out why a run session looks and behaves differently depending on which backend executed it, and define one session contract that covers the API engine, the CLI subscription engine and the vendor assistant wrapper."
 tags: ["research", "RS-03"]
-timestamp: "2026-08-20T14:03:37Z"
+timestamp: "2026-08-21T18:13:35Z"
 status: "done"
 ---
 
@@ -60,7 +60,7 @@ on which backend ran it, and (2) *longer runs get stopped*.
 
 ## Relationship to existing docs
 
-- Builds on the foundation from [`roadmap/findings/08-runs-session-rework.md`](../../Roadmap/RM-12-findings/08-runs-session-rework.md)
+- Builds on the foundation from [`roadmap/findings/08-runs-session-rework.md`](../../Roadmap/completed/RM-12-findings/08-runs-session-rework.md)
   (unified `RunEvent` vocabulary, `RunManager` choke point, turn-indexed timeline) — that work is
   the reason the remaining divergence is *policy*, not wire format.
 - Completes, rather than replaces, the D-CS3 (subscription "renders identically") and D-QA

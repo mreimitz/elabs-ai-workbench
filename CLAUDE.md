@@ -18,8 +18,8 @@ talks to MCP servers over **stdio** and **streamable HTTP**.
 ### North star (the target — this is what we are building toward)
 
 > Treat this section as authoritative when planning work. It intentionally supersedes the
-> narrower "non-goals" framing in the original `planning/Roadmap/RM-31-mvp-footprint-analyzer/00-product-brief.md`; the roadmap docs
-> have been reconciled — see [`planning/Roadmap/RM-31-mvp-footprint-analyzer/08-expanded-target.md`](./planning/Roadmap/RM-31-mvp-footprint-analyzer/08-expanded-target.md).
+> narrower "non-goals" framing in the original `planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/00-product-brief.md`; the roadmap docs
+> have been reconciled — see [`planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/08-expanded-target.md`](./planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/08-expanded-target.md).
 
 > **Single source of truth for in-flight status:** the `planning/Roadmap/*/STATUS.md` ledgers (currently
 > [`planning/Roadmap/RM-01-advisor/STATUS.md`](./planning/Roadmap/RM-01-advisor/STATUS.md),
@@ -51,7 +51,7 @@ talks to MCP servers over **stdio** and **streamable HTTP**.
 > in-progress / done / owner-pending. This table and every other doc **link** to them rather than
 > restate per-WP state, so status lives in exactly one place. The older narrative roadmap docs
 > (`ROADMAP.md`, and the MVP-era planning docs now filed under
-> [`planning/Roadmap/RM-31-mvp-footprint-analyzer/`](./planning/Roadmap/RM-31-mvp-footprint-analyzer/))
+> [`planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/`](./planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/))
 > are **historical** — see the pointer at the top of each.
 
 1. **Connect to multiple MCP servers** and extract *all* details (`initialize`, `tools/list`,

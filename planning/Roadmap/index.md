@@ -16,7 +16,6 @@
 * [CI & headless automation — tokens, CLI, assertions and the workbench MCP server](RM-08-ci/) - Browse ci & headless automation — tokens, cli, assertions and the workbench mcp server.
 * [Claude subscription as a run model](RM-09-claude-subscription/) - Browse claude subscription as a run model.
 * [Hierarchical crews — runtime-recursive crew composition](RM-10-crew-nesting/) - Browse hierarchical crews — runtime-recursive crew composition.
-* [UI audit and remediation programme (2026-06)](RM-12-findings/) - Browse ui audit and remediation programme (2026-06).
 * [Illustration design system — theme-token-driven blueprint illustrations](RM-14-illustrations/) - Browse illustration design system — theme-token-driven blueprint illustrations.
 * [Model identity — a model choice means the model and the credential](RM-16-model-identity/) - Browse model identity — a model choice means the model and the credential.
 * [Observability — fleet monitoring, search and issues](RM-17-observability/) - Browse observability — fleet monitoring, search and issues.
@@ -29,7 +28,6 @@
 * [Testing — the agent run engine and console](RM-26-testing/) - Browse testing — the agent run engine and console.
 * [Testing IA consolidation — Collections as the test home](RM-27-testing-ia/) - Browse testing ia consolidation — collections as the test home.
 * [UX Overhaul — one shell, one grammar, every view](RM-30-ux-overhaul/) - Browse ux overhaul — one shell, one grammar, every view.
-* [Startup-footprint MVP and the expanded target](RM-31-mvp-footprint-analyzer/) - Browse startup-footprint mvp and the expanded target.
 * [Overview → Detail restructure (Servers · Skills · Collections)](RM-32-overview-detail/) - Browse overview → detail restructure (servers · skills · collections).
 * [Estimator turn model — calibrate the run-plan preview against measured run history](RM-34-estimator-turn-model-calibrate/) - Browse estimator turn model — calibrate the run-plan preview against measured run history.
 * [Roadmap cleanup — close what is already started](RM-35-roadmap-cleanup-close-what/) - Browse roadmap cleanup — close what is already started.

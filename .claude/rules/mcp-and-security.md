@@ -48,4 +48,4 @@ When adding `tools/call` execution: run it **in the API**, accept user-supplied 
 validated against the tool's input schema, and treat tool output as untrusted — never echo
 secrets back, never log full argument payloads that may contain user secrets, and measure token
 cost without persisting sensitive request bodies in cleartext. See
-`../../planning/Roadmap/RM-31-mvp-footprint-analyzer/08-expanded-target.md`.
+`../../planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/08-expanded-target.md`.

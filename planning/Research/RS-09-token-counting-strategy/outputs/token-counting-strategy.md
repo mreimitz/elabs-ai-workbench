@@ -3,16 +3,17 @@ type: "Research Output"
 title: "04 Token Counting Strategy"
 description: "Phase 1 counts only the normalized MCP tool definition payload loaded during discovery. The"
 tags: ["research", "RS-09"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T18:13:22Z"
 status: "final"
 ---
+
 # 04 Token Counting Strategy
 
 ## Scope
 
 Phase 1 counts only the normalized MCP tool **definition** payload loaded during discovery. The
 expanded target adds **runtime** call accounting (request + response tokens of a `tools/call`)
-reusing the same `TokenCounter` interface — see [`08-expanded-target.md`](../../../Roadmap/RM-31-mvp-footprint-analyzer/08-expanded-target.md).
+reusing the same `TokenCounter` interface — see [`08-expanded-target.md`](../../../Roadmap/completed/RM-31-mvp-footprint-analyzer/08-expanded-target.md).
 
 ## Interface
 

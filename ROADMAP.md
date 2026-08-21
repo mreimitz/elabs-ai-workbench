@@ -9,7 +9,7 @@
 >
 > The narrative phase plan this file used to carry described the original startup-footprint MVP and
 > presented much of what has since shipped as future work. It is preserved as a historical record in
-> [`planning/Roadmap/RM-31-mvp-footprint-analyzer/`](./planning/Roadmap/RM-31-mvp-footprint-analyzer/).
+> [`planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/`](./planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/).
 >
 > The lifecycle every piece of work follows — planned as an `RM` item, built against its ledger,
 > recorded in a `DC` subject, retired with `complete-roadmap` — is **§11 of

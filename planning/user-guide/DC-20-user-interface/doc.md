@@ -3,7 +3,7 @@ type: "Documentation"
 title: "The application shell & interface standards"
 description: "The one shell, one grammar and one set of interface standards every view in the workbench is built from."
 tags: ["documentation", "DC-20"]
-timestamp: "2026-08-20T14:04:08Z"
+timestamp: "2026-08-21T18:13:35Z"
 status: "current"
 ---
 
@@ -41,6 +41,20 @@ Completed 2026-08-20. Roadmap item: [RM-04](/Roadmap/completed/RM-04-assistant-h
 
 - `apps/web/src/features/hub/`
 - `e2e/smoke.spec.ts`
+
+### RM-12 — UI audit and remediation programme (2026-06)
+
+Completed 2026-08-21. Roadmap item: [RM-12](/Roadmap/completed/RM-12-findings/item.md).
+
+**Shipped:** The first full enterprise-grade UI/UX audit of the running app (2026-06-20) and the remediation programme it drove: the prioritized fix plan, the Servers deep-dive redesign, the remediation wave, the hardening wave, the cross-server/tool-level compare follow-ups and the resource/prompt footprint work. Its three status documents (05, 06, 07) are marked final and record what shipped in each wave.
+
+**Planned vs delivered:** This item is a historical record. It never had a STATUS.md ledger, so it was retired with --no-ledger — the sanctioned path for a ledger-less item, not a waiver past an open box. Its findings outlived it: they became the basis of the later UI programmes (RM-28 toolbar-reach, RM-30 ux-overhaul, RM-32 overview-detail), which carry their own ledgers and their own acceptance. The audit itself was conducted against the pre-v4 design system, when the kit shipped six themes; the app now ships exactly two (light, dark), so every theme name and count in these documents is preserved as observed and is NOT current.
+
+**Known gaps:** Nothing was re-verified for this retirement, and nothing here was re-walked in a browser. The audit's own screenshots and measurements are from 2026-06-20 against a UI that has since been rebuilt twice; treat the documents as provenance for why later work exists, not as a description of today's interface.
+
+**Where the code lives:**
+
+- `apps/web/src/features, apps/web/src/components`
 
 ### RM-15 — Interface Craft — write the six rules that were never written
 

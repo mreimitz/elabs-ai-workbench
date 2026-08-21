@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T21:45:00Z"
+timestamp: "2026-08-21T22:35:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -274,11 +274,17 @@ met and — where the box touches code — the gate
       RM-03 from "engineering left" to "owner-acceptance only" and puts its 18-box walk in reach.
       **Deliberately NOT ticked here:** a source-grep is weaker evidence than the gate that originally
       proved it, and it is another item's ledger — the owner's call, exactly as WP 0.4 left it
-- [ ] WP 3.6 — **RM-17 WP 3.5** agent-graph lens over a run — a third console lens (node-link
-      graph, aggregated ×N / expanded modes, node chips from the WP 3.2 economics, click-through
-      to the step log). 1 WP, spec written, deps built, **locked and ready to dispatch** via
-      `/next-wp observability`. ⚠️ chart-touching: needs a faithful-stub test, because the panel
-      suites mock `@elabs-ai/components-charts` as no-ops and a chart-prop bug passes the gate silently
+- [x] WP 3.6 — **RM-17 WP 3.5** agent-graph lens over a run — **done 2026-08-21 · already shipped;
+      this box was a bookkeeping lag, not work.** RM-17's own ledger ticked it (`wp/observability/3.5`,
+      six commits, merged `5c365ec`), and the orchestrator verified that independently rather than
+      taking the tick on faith: `git merge-base --is-ancestor 5c365ec main` passes, the five source
+      files exist on `main` (`AgentGraphLens.tsx` · `AgentGraphNode.tsx` · `agent-graph.ts` + two
+      test files), and their suites run green here — **47 tests, 2 files, 0 failures**.
+      **The ⚠️ chart-touching warning turned out not to apply:** the lens is built on
+      `@elabs-ai/components-flow`'s canvas, not `@elabs-ai/components-charts`, so the no-op chart mock
+      that silences prop bugs in the panel suites is not in this path at all.
+      **Not verified here:** the two-theme + keyboard walk of the lens. That is owner-acceptance, it
+      is carried as such in RM-17's own ledger, and no browser was opened for it
 - [ ] WP 3.7 — **RM-17 Phase 6**, the thirteen locked Langfuse follow-ups. Six are marked
       _verify-at-pickup_ — the surface shipped before the amendment was written, so shrink each to
       its true residual instead of rebuilding. Two may need a migration (AM-OB2, AM-OB6); one at a
@@ -318,8 +324,28 @@ met and — where the box touches code — the gate
       recipient, `run.ps1` was never syntax-checked (no PowerShell on this host) or run on Windows —
       the platform most recipients use — and `--publish` has never been exercised. All of that is
       written verbatim into the DC-22 increment's *Known gaps* and into the `CLAUDE.md` row.
-- [ ] WP 4.4 — **RM-12** and **RM-31**: both `archived` but still filed as live work. Retire with
-      `--no-ledger`, or leave archived if the provenance is worth the clutter
+- [x] WP 4.4 — **RM-12** and **RM-31** — **done 2026-08-21 · both retired.**
+      `RM-31` → `Roadmap/completed/RM-31-mvp-footprint-analyzer` (increment in **DC-23**,
+      3 milestones ticked) and `RM-12` → `Roadmap/completed/RM-12-findings` (increment in **DC-20**,
+      3 milestones ticked); both `--no-ledger`, which is correct and **not** a waiver past an open
+      box — neither item ever had a `STATUS.md` (bundle rule §5), confirmed by `ls` before running.
+      **Retiring them is honest, and that was checked rather than assumed:** each item's milestones
+      describe work that actually happened. RM-31's MVP shipped and its `08-expanded-target.md` is
+      the origin of today's north star; RM-12's three wave-status documents (`05-remediation-status`,
+      `06-hardening-status`, `07-cross-server-compare-status`) all carry `status: "final"` and carry
+      **zero open boxes** between them.
+      **Stale references applied in the working tree only** — `CLAUDE.md`, `ROADMAP.md`,
+      `CHANGELOG.md`, `.claude/rules/architecture.md`, `.claude/rules/mcp-and-security.md` and the
+      new DC-23 increment's own gap sentence; the generator re-pointed the two bundle links itself.
+      `check-references` for **both** tags now reports nothing outside `.claude/worktrees/` (those
+      are three in-flight agent checkouts that branched before the move — re-check after their
+      branches merge). `pnpm okf:validate` **PASS** on both conformance layers.
+      **No `README.md`/`CHANGELOG.md` capability entry was written**, deliberately: nothing the app
+      does changed — this is bundle bookkeeping, and the front-page rule governs shipped behaviour.
+      **Recorded as a gap in both increments:** nothing was re-verified. RM-12's audit is from
+      2026-06-20 against a UI since rebuilt twice and a design system that then shipped six themes
+      against today's two, so it reads as provenance for why the later UI items exist — not as a
+      description of the interface
 
 ## Decision log
 _Entries: date · decision · rationale._

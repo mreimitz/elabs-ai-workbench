@@ -66,5 +66,5 @@ routes stay thin. Keep that layering.
 ## When extending toward the target
 
 Tool execution, runtime token measurement, and cross-server / tool-level comparison (see
-`../../planning/Roadmap/RM-31-mvp-footprint-analyzer/08-expanded-target.md`) follow the same rules: new types in `shared`, logic in the
+`../../planning/Roadmap/completed/RM-31-mvp-footprint-analyzer/08-expanded-target.md`) follow the same rules: new types in `shared`, logic in the
 API behind the runtime boundary, thin routes, and the UI consuming redacted/typed responses.
