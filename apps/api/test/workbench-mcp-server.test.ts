@@ -144,7 +144,12 @@ function inertWriteDeps() {
       tests: { listIdsByCollection: refuse, list: refuse },
     },
     tests: { list: refuse },
-    estimate: { scenarios: { list: refuse }, tests: { list: refuse }, scans: { getLatestForServer: refuse } },
+    estimate: {
+      scenarios: { list: refuse },
+      tests: { list: refuse },
+      scans: { getLatestForServer: refuse },
+      runs: { measureTurnProfiles: refuse },
+    },
   } as unknown as Pick<
     Parameters<typeof registerWorkbenchMcpRoutes>[1],
     "scanService" | "suiteOrchestrator" | "runPlans" | "estimate"

@@ -150,6 +150,7 @@ function refusingWriteDeps(): Pick<
       scenarios: { list: refuse },
       tests: { list: refuse },
       scans: { getLatestForServer: refuse },
+      runs: { measureTurnProfiles: refuse },
     } as unknown as WorkbenchMcpDeps["estimate"],
   };
 }

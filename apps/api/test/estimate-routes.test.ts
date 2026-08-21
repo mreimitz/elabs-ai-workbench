@@ -9,6 +9,7 @@ import { schemaSql } from "../src/db/schema.js";
 import { registerEstimateRoutes } from "../src/estimate/routes.js";
 import { resetPricingResolver } from "../src/providers/pricing.js";
 import { ScanRepository } from "../src/scans/repository.js";
+import { RunRepository } from "../src/testing/run-repository.js";
 import { ScenarioRepository } from "../src/testing/scenario-repository.js";
 import { ScenarioService } from "../src/testing/scenario-service.js";
 import { TestRepository } from "../src/testing/test-repository.js";
@@ -85,7 +86,9 @@ async function makeHarness(model = CACHING_MODEL): Promise<Harness> {
     const typed = error as Error & { statusCode?: number };
     return reply.code(typed.statusCode ?? 500).send({ error: error.message });
   });
-  await registerEstimateRoutes(app, { scenarios, tests, scans });
+  // RM-34 WP 1.2 — the real repository over the same in-memory DB. This harness seeds no runs, so
+  // every environment resolves to `basis: "default"` — which is exactly the pre-RM-34 arithmetic.
+  await registerEstimateRoutes(app, { scenarios, tests, scans, runs: new RunRepository(db) });
   await app.listen({ port: 0, host: "127.0.0.1" });
   apps.push(app);
 

@@ -1484,10 +1484,12 @@ await registerAdvisorRoutes(server, {
   skills,
 });
 // UX overhaul WP 3.5 (G7, D-UX12) — advisory run-plan cost preview (reads footprints + pricing; no key).
+// RM-34 WP 1.2 — plus completed-run history, so the turn band is measured rather than assumed.
 await registerEstimateRoutes(server, {
   scenarios: scenarioService,
   tests: testService,
   scans,
+  runs: runRepository,
 });
 await registerCompatibilityRoutes(server, scans);
 await registerRunCompatibilityRoutes(server, runRepository, scenarioService);
@@ -1571,6 +1573,7 @@ registerWorkbenchMcpRoutes(server, {
     scenarios: scenarioService,
     tests: testService,
     scans,
+    runs: runRepository,
   },
 });
 await registerOAuthRoutes(server, oauthService);

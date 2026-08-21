@@ -9,6 +9,18 @@
 // spread by RUN_PLAN_ESTIMATE_TURNS_{LOW,MID,HIGH}, clamped by a scenario's `maxTurns` guardrail
 // when it is tighter than the high assumption.
 //
+// RM-34 WP 1.2 — that turn band is no longer a guess when history can answer instead. The service
+// measures the environment's own completed runs and hands the result in as `turnProfile`; this file
+// prefers it over the three constants, and takes the per-turn OUTPUT figure from the same profile
+// (D-ET4 — measuring turns while still assuming 350 output tokens a turn would be internally
+// inconsistent). Nothing about the resolution happens here: which basis won is the service's
+// decision, and D-ET8 keeps this file free of anything that could look it up. Two properties are
+// load-bearing and each has a test:
+//   * with NO profile the arithmetic is byte-identical to the pre-RM-34 output — D-ET1's fallback is
+//     the constants, and a fresh install must still see the preview it always saw;
+//   * `maxTurns` clamps LAST, applied to whichever band was chosen (D-ET6). A scenario guardrail is a
+//     hard operator constraint, and a measured p90 above it is not evidence the run will exceed it.
+//
 // RM-33 WP 2.1 — the DOLLAR band no longer spreads on turns; it spreads on **prompt caching**.
 // Before this WP every input token was charged at the full rate and the re-sent prefix was re-charged
 // in full on every turn, which over-stated a real cached run by ~3.8x (measured: run
@@ -28,6 +40,7 @@ import {
   type EstimateRange,
   type RunPlanEstimate,
   type RunPlanEstimateEnvironment,
+  type RunPlanTurnProfile,
   type TokenUsageActual,
 } from "@mcp-token-footprint/shared";
 import { computeCostBreakdownForPrice } from "../providers/pricing.js";
@@ -63,31 +76,79 @@ export type EstimateEnvInput = {
   pricing: EnvPricing;
   /** The scenario's `guardrails.maxTurns`, if set — clamps the high (and possibly mid/low) turn count. */
   maxTurns?: number;
+  /**
+   * RM-34 WP 1.2 — the turn model measured from this environment's own completed runs, already
+   * resolved to ONE basis by the service (D-ET2/D-ET8). Absent ⇒ the D-ET1 static constants, which
+   * is what a fresh install, a brand-new environment and a never-run test all still get.
+   *
+   * Pre-clamp by contract: `maxTurns` is applied to it here, not before it arrives.
+   */
+  turnProfile?: RunPlanTurnProfile;
 };
 
 /** One test, reduced to the only thing the estimate needs: its rough user-prompt token count. */
 export type EstimateTestInput = { promptTokens: number };
 
-/** Clamp the three turn assumptions by an optional per-scenario `maxTurns` cap. Keeps low ≤ mid ≤ high. */
-function turnBand(maxTurns?: number): EstimateRange {
-  const cap = maxTurns && maxTurns > 0 ? maxTurns : RUN_PLAN_ESTIMATE_TURNS_HIGH;
+/**
+ * RM-34 WP 1.2 (D-ET1) — the turn model when history has nothing to say: the three static constants,
+ * reported as an honest `basis: "default"` with `sampleSize: 0` rather than left off the wire. "No
+ * profile" and "a profile that measured nothing" must be the same visible answer, because the
+ * launcher's whole reason for showing a basis is that an operator can tell a measured band from a
+ * guessed one — and a silently-missing field reads as neither.
+ *
+ * Exported so the service resolves against exactly this object instead of re-deriving the constants
+ * (two spellings of "the default" is one too many).
+ */
+export const DEFAULT_TURN_PROFILE: RunPlanTurnProfile = {
+  basis: "default",
+  sampleSize: 0,
+  turns: {
+    low: RUN_PLAN_ESTIMATE_TURNS_LOW,
+    mid: RUN_PLAN_ESTIMATE_TURNS_MID,
+    high: RUN_PLAN_ESTIMATE_TURNS_HIGH,
+  },
+  outputTokensPerTurn: RUN_PLAN_ESTIMATE_OUTPUT_TOKENS_PER_TURN,
+};
+
+/** The turn model this environment is estimated on — measured when the service found one, else D-ET1's constants. */
+function turnProfileFor(env: EstimateEnvInput): RunPlanTurnProfile {
+  return env.turnProfile ?? DEFAULT_TURN_PROFILE;
+}
+
+/**
+ * The turn band actually used, with `maxTurns` clamped LAST over whichever band was chosen (D-ET6).
+ *
+ * The order matters and is the point of the WP: clamping first, then choosing, would silently hold a
+ * measured p90 of 16 down to the old ceiling of 8 and revert RM-34 to a rename. Note the no-cap case
+ * is `Infinity`, not `RUN_PLAN_ESTIMATE_TURNS_HIGH` — that constant is the DEFAULT's own high end,
+ * never a ceiling on a measured one, and reusing it as the cap would put the 8 back by the side door.
+ * `Math.min` is monotone, so `low ≤ mid ≤ high` survives any cap.
+ */
+function turnBand(env: EstimateEnvInput): EstimateRange {
+  const base = turnProfileFor(env).turns;
+  const cap = env.maxTurns && env.maxTurns > 0 ? env.maxTurns : Number.POSITIVE_INFINITY;
   return {
-    low: Math.min(RUN_PLAN_ESTIMATE_TURNS_LOW, cap),
-    mid: Math.min(RUN_PLAN_ESTIMATE_TURNS_MID, cap),
-    high: Math.min(RUN_PLAN_ESTIMATE_TURNS_HIGH, cap),
+    low: Math.min(base.low, cap),
+    mid: Math.min(base.mid, cap),
+    high: Math.min(base.high, cap),
   };
 }
 
 /**
  * Rough tokens for ONE run (one test × one environment) at a given turn count. The system prompt +
  * tool-definition footprint are re-sent every turn; the user prompt is sent once; the agent emits
- * ~OUTPUT_TOKENS_PER_TURN per turn. Deliberately ignores conversation growth and attachments (noted
- * as an estimate in the UI).
+ * {@link turnProfileFor}'s `outputTokensPerTurn` per turn — measured from this environment's own
+ * completed runs when there are enough of them, else the D-ET1 constant. Deliberately ignores
+ * conversation growth and attachments (noted as an estimate in the UI).
+ *
+ * Its input term is duplicated, deliberately and byte-identically, in {@link runUsage}: that function
+ * re-PRICES exactly the tokens this one COUNTS. Change the arithmetic in one and you must change it
+ * in the other, or the launcher will show a dollar figure for a token figure it never displayed.
  */
 function runTokens(env: EstimateEnvInput, test: EstimateTestInput, turns: number): number {
   const perTurnPrefix = env.footprintTokens + env.systemPromptTokens;
   const input = turns * perTurnPrefix + test.promptTokens;
-  const output = turns * RUN_PLAN_ESTIMATE_OUTPUT_TOKENS_PER_TURN;
+  const output = turns * turnProfileFor(env).outputTokensPerTurn;
   return Math.round(input + output);
 }
 
@@ -123,7 +184,7 @@ function runUsage(
 ): TokenUsageActual {
   const perTurnPrefix = env.footprintTokens + env.systemPromptTokens;
   const inputTokens = turns * perTurnPrefix + test.promptTokens;
-  const outputTokens = turns * RUN_PLAN_ESTIMATE_OUTPUT_TOKENS_PER_TURN;
+  const outputTokens = turns * turnProfileFor(env).outputTokensPerTurn;
   if (!cached) return { inputTokens, outputTokens };
   return {
     inputTokens,
@@ -174,7 +235,7 @@ export function estimateRunPlan(
   const environmentCount = environments.length;
 
   const envEstimates: RunPlanEstimateEnvironment[] = environments.map((env) => {
-    const turns = turnBand(env.maxTurns);
+    const turns = turnBand(env);
     // Tokens for this environment across all tests × reps.
     let tokens = ZERO_RANGE;
     // RM-33 WP 2.1 — dollars are accumulated as the TWO caching ends, both at `turns.high`, not as a
@@ -241,6 +302,10 @@ export function estimateRunPlan(
       },
       ...(priced ? { costUsd: cost } : {}),
       cachingAssumed,
+      // RM-34 WP 1.2 (D-ET5) — the turn model behind `tokens`, reported PRE-CLAMP. The clamp is a
+      // property of the scenario's guardrail, not of the measurement, and conflating them would make
+      // "this environment usually takes 16 turns, capped at 5" unreadable as "it takes 5".
+      turnProfile: turnProfileFor(env),
     };
   });
 

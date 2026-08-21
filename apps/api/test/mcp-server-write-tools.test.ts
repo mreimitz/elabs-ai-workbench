@@ -239,7 +239,7 @@ async function makeHarness(): Promise<Harness> {
       collections: new CollectionService(collectionRepository),
       tests,
     },
-    estimate: { scenarios, tests, scans },
+    estimate: { scenarios, tests, scans, runs },
   };
   registerWorkbenchMcpRoutes(app, deps);
 
