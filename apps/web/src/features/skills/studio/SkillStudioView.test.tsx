@@ -64,12 +64,13 @@ const makeVersion = (id: string, seq: number): SkillVersion => ({
 const VERSIONS = [makeVersion("ver-2", 2), makeVersion("ver-1", 1)];
 
 const FILES: SkillFileNode[] = [
-  { path: "SKILL.md", isSkillMd: true, isBinary: false, sizeBytes: 64, tokenTotal: 20 },
+  { path: "SKILL.md", isSkillMd: true, isBinary: false, size: 64, kind: "skill_md", tokenTotal: 20 },
   {
     path: "references/api.md",
     isSkillMd: false,
     isBinary: false,
-    sizeBytes: 32,
+    size: 32,
+    kind: "reference",
     tokenTotal: 5,
   },
 ];
