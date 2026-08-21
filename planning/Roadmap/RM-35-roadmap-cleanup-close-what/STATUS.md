@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T23:40:00Z"
+timestamp: "2026-08-22T00:20:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -248,8 +248,15 @@ met and — where the box touches code — the gate
       dependency chain `7.1 ∥ 7.2 → 7.3 → (7.4 ∥ 7.6) → 7.5`; round 2's 7.7–7.9 revise the same
       surface so they land after. Owner-directed rework of a surface the owner has already
       rejected; unblocks RM-30's 61 done WPs.
-      **IN FLIGHT 2026-08-21 — WP 7.1 only** (`wp/roadmap-cleanup/rm30-7.1`, worktree agent).
-      7.2 is already done and 7.3/7.4 depend on 7.1, so this batch is one WP wide, not three
+      **WP 7.1 landed 2026-08-21** (`wp/roadmap-cleanup/rm30-7.1`, merged; gate green on `main`) — the
+      batch was one WP wide, not three: 7.2 was already done and 7.3/7.4 both depend on 7.1.
+      **Still open: 7.3 · 7.4 · 7.7 · 7.8 · 7.9**, so this box stays open. Two of those now carry an
+      inherited one-line deletion, recorded in RM-30's ledger rather than hidden: the Studio shell
+      deliberately left Overview's "Save as new version" (7.3's job) and the Inspector Files
+      Discard/Save bar (7.4's job) in place, because removing them before their replacements exist
+      would strand the only way to edit a skill's keywords and files. **Nobody has used the Studio** —
+      its 61.1%-of-viewport claim is a headless-Chromium measurement, it was never driven against a
+      bound MCP server, and no save was ever completed
 - [ ] WP 3.4 — **RM-03 WP 2.3**: autonomy dial + hard budgets + steering + live HITL
       approval-gating + MCP elicitation. One box, two BLOCKING MUSTs (elicitation transport
       R-MCP4, the approval/HITL path). Unblocks RM-03's 18-box walk.

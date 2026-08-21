@@ -114,6 +114,11 @@ triggers and command entry points, and a **security surface** (script files and 
 references, file and byte totals). Skills can be attached to test scenarios — exposed to the agent
 read-only and metered, **never executed**.
 
+Editing a skill happens in the **Studio** — a full-screen workbench at `/skills/<id>/studio` with the
+flow canvas, the source, or both side by side in the middle, the files/tools/settings rails you want
+folded away when you don't, and one problems strip along the bottom. The inspector is now purely a
+place to read a skill; the Studio is where you change it.
+
 ![The skill inspector: frontmatter, an L1/L2/L3 token footprint totalling 1,760, the trigger configuration, and a security surface.](docs/screenshots/skill-inspector.png)
 
 ### 5 · The testing console — real agent sessions

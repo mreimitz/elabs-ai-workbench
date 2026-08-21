@@ -46,6 +46,22 @@ another library's class names, which breaks silently on the next upgrade. The ga
 for the design-system owner instead.
 
 
+## Unreleased — skills get a workbench instead of a panel
+
+Editing a skill used to happen inside the inspector — the same page you read a skill on, with the
+canvas squeezed into whatever room a detail panel left it, and save controls scattered across tabs
+that had nothing to do with each other. There was no single place that meant "I am working on this
+skill".
+
+There is now: a full-screen **Studio** at `/skills/<id>/studio`. The middle is the work — flow,
+source, or both side by side — and it keeps at least 60% of the window even with both side rails
+open, more when you fold them. The rails hold files, tools and settings; the strip along the bottom
+holds problems; the toolbar across the top holds the view switch, the unsaved marker and one save
+action, and it never scrolls away. Leaving with unsaved edits still asks first.
+
+The inspector goes back to being somewhere you read a skill: its Design tab is now a preview with a
+link into the Studio, and the save cluster that used to sit in its header is gone.
+
 ## Unreleased — a silent bench no longer reads as good news
 
 A watch rule that fires on a window — "error rate above 10% in the last hour" — decided, on every
