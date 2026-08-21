@@ -1,6 +1,9 @@
 import { nanoid } from "nanoid";
 import {
   isSettledRatingState,
+  RUN_PLAN_TURN_PERCENTILE_HIGH,
+  RUN_PLAN_TURN_PERCENTILE_LOW,
+  RUN_PLAN_TURN_PERCENTILE_MID,
   sessionCapabilitiesSchema,
   type AssertionResult,
   type CompareRow,
@@ -20,6 +23,7 @@ import {
   type RunOutcome,
   type RunPhase,
   type RunPinResult,
+  type RunPlanTurnProfile,
   type RunPruneResult,
   type RunRetentionPolicy,
   type RunSort,
@@ -1102,6 +1106,68 @@ export class RunRepository implements RunPersistenceSink {
   }
 
   /**
+   * RM-34 WP 1.1 — measure the TURN MODEL behind the run-plan preview from the app's own history.
+   *
+   * The estimator has always spread its band on three constants nobody measured (1 / 3 / 8 turns,
+   * 350 output tokens a turn). Everything needed to replace them with observation is already in this
+   * table — `turns`, `tokens_out`, `status`, `scenario_id`, `test_id` — and nothing reads it for that
+   * purpose. This method is that read, and only that read: it returns SAMPLES, never a decision. Which
+   * level wins (D-ET2 — the narrowest that clears `RUN_PLAN_TURN_PROFILE_MIN_SAMPLES`) and how a
+   * scenario's `maxTurns` clamps it (D-ET6) belong to the estimate service, not to SQL.
+   *
+   * Three properties are load-bearing, and each is pinned by a test:
+   *
+   *  - **Completed runs only (D-ET3).** A `stopped`/`aborted`/`error` run's turn count measures the
+   *    interruption, not the task. Measured on the owner's database the six `stopped` runs average
+   *    17.7 turns and the 22 `error` runs 4.5 — noise in both directions, which is worse than a wide
+   *    band: it is a wrong band.
+   *  - **`turns > 0`.** {@link RunTurnSample.outputTokensPerTurn} divides by the summed turns, and
+   *    `runs.turns` defaults to `0` with nothing constraining it, so a completed zero-turn row would
+   *    be a division by zero rather than a measurement.
+   *  - **One pass.** The estimator asks about a whole plan's worth of (environment, test) pairs at
+   *    once, and the widest level needs every completed run anyway; a `SELECT` per pair inside a loop
+   *    would be N+2 queries for an answer that is one scan of three narrow columns.
+   */
+  measureTurnProfiles(keys: ReadonlyArray<RunTurnProfileKey>): RunTurnProfileSamples {
+    const wantedPairs = new Set(keys.map((key) => turnProfilePairKey(key)));
+    const wantedEnvironments = new Set(keys.map((key) => key.environmentId));
+
+    const rows = this.db
+      .prepare(
+        `SELECT scenario_id, test_id, turns, tokens_out
+           FROM runs
+          WHERE status = 'completed' AND turns > 0`,
+      )
+      .all() as Array<{
+      scenario_id: string;
+      test_id: string;
+      turns: number;
+      tokens_out: number;
+    }>;
+
+    const pairs = new Map<string, TurnAccumulator>();
+    const environments = new Map<string, TurnAccumulator>();
+    const everything: TurnAccumulator = { turns: [], totalTurns: 0, totalOutputTokens: 0 };
+
+    for (const row of rows) {
+      const pairKey = turnProfilePairKey({ environmentId: row.scenario_id, testId: row.test_id });
+      // Only the levels the caller asked about are accumulated — the widest sample is every completed
+      // run by definition, but a pair/environment nobody selected is not part of this answer.
+      if (wantedPairs.has(pairKey)) accumulateTurns(turnAccumulator(pairs, pairKey), row);
+      if (wantedEnvironments.has(row.scenario_id)) {
+        accumulateTurns(turnAccumulator(environments, row.scenario_id), row);
+      }
+      accumulateTurns(everything, row);
+    }
+
+    return {
+      pair: finalizeTurnSamples(pairs),
+      environment: finalizeTurnSamples(environments),
+      global: everything.turns.length > 0 ? finalizeTurnSample(everything) : null,
+    };
+  }
+
+  /**
    * On API restart, any `runs` still marked `running` have lost their in-memory session (the process is
    * gone), so mark them `aborted`. Returns the number of rows reconciled. Wired in `index.ts` next to
    * the repo construction. The partial record stays openable read-only.
@@ -1301,6 +1367,99 @@ export type ListRunsFilter = {
    *  value is ignored (treated as unbounded). */
   limit?: number;
 };
+
+// ── RM-34 WP 1.1 — the measured turn model ────────────────────────────────────────────────────────
+// The sample side of {@link RunRepository.measureTurnProfiles}: what was observed, at each of the
+// three D-ET2 levels, with no policy applied. The estimate service picks a level and stamps a basis;
+// nothing here decides anything.
+
+/** One (environment, test) selection the caller wants measured. */
+export type RunTurnProfileKey = { environmentId: string; testId: string };
+
+/**
+ * What completed history says about one level. Deliberately shaped as a {@link RunPlanTurnProfile}
+ * MINUS its `basis`: the caller's whole remaining job is to name where the sample came from, so the
+ * two shapes cannot drift apart.
+ */
+export type RunTurnSample = Omit<RunPlanTurnProfile, "basis">;
+
+/**
+ * All three levels from one pass. `pair` is keyed `environmentId + "\u0000" + testId` (a NUL
+ * separator, because an id may not contain one and a `:` or `-` could); `environment` is keyed by
+ * environment id; `global` is every completed run, or `null` when the app has no usable history at
+ * all — a fresh install, where the D-ET1 constants are the honest answer.
+ */
+export type RunTurnProfileSamples = {
+  pair: Map<string, RunTurnSample>;
+  environment: Map<string, RunTurnSample>;
+  global: RunTurnSample | null;
+};
+
+/** Running totals for one level while the single pass walks the rows. */
+type TurnAccumulator = {
+  /** Every observed turn count, unsorted until finalize — the percentiles are read off the sample. */
+  turns: number[];
+  totalTurns: number;
+  totalOutputTokens: number;
+};
+
+/** The `pair` map's key. NUL-separated so no id can forge another pair's key by containing it. */
+export function turnProfilePairKey(key: RunTurnProfileKey): string {
+  return `${key.environmentId}\u0000${key.testId}`;
+}
+
+function turnAccumulator(map: Map<string, TurnAccumulator>, key: string): TurnAccumulator {
+  const existing = map.get(key);
+  if (existing) return existing;
+  const created: TurnAccumulator = { turns: [], totalTurns: 0, totalOutputTokens: 0 };
+  map.set(key, created);
+  return created;
+}
+
+function accumulateTurns(acc: TurnAccumulator, row: { turns: number; tokens_out: number }): void {
+  acc.turns.push(row.turns);
+  acc.totalTurns += row.turns;
+  acc.totalOutputTokens += row.tokens_out;
+}
+
+/**
+ * NEAREST-RANK percentile on an ASCENDING sample: rank = ceil(p x n), clamped to [1, n], and the
+ * value at that rank is returned unchanged.
+ *
+ * Deliberately not interpolated. Every end this produces is a turn count some run actually took; an
+ * interpolated p90 of `15.7` is a number no run ever produced, and the launcher renders these as
+ * turn counts, not as statistics. At n = 3 the three ranks are 1 / 2 / 3, so a barely-qualifying
+ * level (the D-ET2 floor) reports its own min / median / max — honest for a three-run sample.
+ */
+function nearestRankPercentile(ascending: number[], percentile: number): number {
+  const n = ascending.length;
+  // An empty sample has no honest percentile; only a level that observed at least one run is ever
+  // finalized, so this is a broken caller rather than a missing measurement.
+  if (n === 0) throw new Error("nearestRankPercentile: empty sample");
+  const rank = Math.min(n, Math.max(1, Math.ceil(percentile * n)));
+  return ascending[rank - 1] as number;
+}
+
+function finalizeTurnSample(acc: TurnAccumulator): RunTurnSample {
+  const ascending = [...acc.turns].sort((a, b) => a - b);
+  return {
+    sampleSize: ascending.length,
+    turns: {
+      low: nearestRankPercentile(ascending, RUN_PLAN_TURN_PERCENTILE_LOW),
+      mid: nearestRankPercentile(ascending, RUN_PLAN_TURN_PERCENTILE_MID),
+      high: nearestRankPercentile(ascending, RUN_PLAN_TURN_PERCENTILE_HIGH),
+    },
+    // D-ET4 — the RATIO OF SUMS, not the mean of the per-run ratios. The two differ whenever runs
+    // have different lengths, and the estimator multiplies output by a turn count, so the figure it
+    // needs is "tokens per turn across the sample" — a 20-turn run must weigh twenty times a 1-turn
+    // one, which a mean of ratios would flatten to equal say.
+    outputTokensPerTurn: acc.totalOutputTokens / acc.totalTurns,
+  };
+}
+
+function finalizeTurnSamples(map: Map<string, TurnAccumulator>): Map<string, RunTurnSample> {
+  return new Map([...map].map(([key, acc]) => [key, finalizeTurnSample(acc)]));
+}
 
 // ── Observability — RunFilter → SQL translation (WP1.1, D-OB1) ────────────────────────────────────
 // A pure builder of a parameterized WHERE for {@link RunRepository.queryRuns}. Every VALUE is bound
