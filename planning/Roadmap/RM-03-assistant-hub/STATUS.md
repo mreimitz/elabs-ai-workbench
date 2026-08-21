@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "assistant-hub \u2014 work-package status ledger"
 description: "Living state for the assistant-hub plan (README \u00b7"
 tags: ["roadmap", "RM-03"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T18:00:00Z"
 status: "active"
 ---
 # assistant-hub — work-package status ledger
@@ -389,23 +389,32 @@ template, validation loop). It expands kickoff-prompt.md; the plan docs stay aut
 
 ---
 
-### Original WP1.R findings (historical — resolved above; Wave-1 close WAS gated on these)
+### Original WP1.R findings (historical — ALL RESOLVED; retained for provenance)
 
-**Bounded fixes the orchestrator is driving now (Batch B10-fix):**
-- [ ] **BUG-4 (MEDIUM · WP1.7 `orchestrator.ts`)** — total-cost budget cap is INERT when
+> Every finding below is closed; each line carries a pointer to where. They are kept as the record of
+> what Wave-1's close was gated on, not as open work. Ticked 2026-08-21 by `RM-35` WP 0.4 — the boxes
+> were bookkeeping, and an unticked box under a heading reading "resolved above" blocks
+> `/complete-roadmap` while representing nothing to build.
+
+**Bounded fixes (Batch B10-fix) — all merged:**
+- [x] **BUG-4 (MEDIUM · WP1.7 `orchestrator.ts`)** — resolved 2026-07-18 (`45924bc`, branch `1.fix-api`); WP1.R's `INV4` repro un-skipped and passing. See *Blockers* above.
+      _Original finding:_ total-cost budget cap is INERT when
       `maxParallel ≥ agent-count` (common case): all agents launch in wave 1, the `cursor < spawned.length`
       guard never re-fires → cap never trips, `partial` never marked. Fix: check cumulative cost before
       EACH launch (incl. wave 1) + on completion; un-skip WP1.R's `INV4` repro as the guard.
-- [ ] **GAP-E (BLOCKING-showcase · web)** — mission is read-only: `lib/api.ts` has no mission fns, nothing
+- [x] **GAP-E (BLOCKING-showcase · web)** — resolved 2026-07-18 (`45924bc`, branch `1.fix-web`): mission client fns added and propose/approve/stop wired. See *Blockers* above.
+      _Original finding:_ mission is read-only: `lib/api.ts` has no mission fns, nothing
       calls `POST /sessions/:id/mission` / approve / stop; `MissionHandlers` unwired in `Composer`/
       `AssistantView`. Fix: add mission client fns + wire propose/approve/stop so a user can run a mission.
-- [ ] **LOW-a11y (web `SessionRail.tsx:108`)** — raw `<button>` (no `brand-ui-allow`) → use `@elabs-ai/components-ui`
+- [x] **LOW-a11y (web `SessionRail.tsx:108`) + LOW-cite (WP1.7 `synthesis.ts`)** — both resolved 2026-07-18 (`45924bc`); WP1.R's `INV2` repro un-skipped and passing. See *Blockers* above.
+      _Original finding:_ raw `<button>` (no `brand-ui-allow`) → use `@elabs-ai/components-ui`
       `Button`/`SidebarMenuButton`. **LOW-cite (WP1.7 `synthesis.ts`)** — deterministic-fallback path leaves
       an agent's malformed raw `[n]` un-remapped → possible wrong-agent attribution (every `[n]` still
       resolves). Un-skip WP1.R's `INV2` repro.
 
-**OWNER DECISION REQUIRED (plan-scope gap — escalated 2026-07-17):**
-- [ ] **GAP-A + GAP-B (BLOCKING MUSTs, shared root)** — elicitation transport (R-MCP4) + approval/HITL
+**Plan-scope gap escalated 2026-07-17 — owner decided 2026-07-18:**
+- [x] **GAP-A + GAP-B (BLOCKING MUSTs, shared root)** — owner chose option (a) on 2026-07-18: folded into **WP 2.3** and delivered the same day (`wp/assistant-hub/2.3`, integrated @ `bb89591`) — 4 additive `HubEvent`s, the turn-engine HITL seam, decision/elicitation/autonomy/steer routes, live `ApprovalCard`/`ElicitationPanel`/`AutonomyDial`. **GAP-A/GAP-B CLOSED.** The live MCP `elicitation/create` round-trip against a real eliciting server remains an *owner-acceptance* item, not an open finding.
+      _Original finding:_ elicitation transport (R-MCP4) + approval/HITL
       emission (R-UX1 approval state, R-MCP3) are non-functional at runtime: **no Wave-1 WP owned the
       turn-engine human-in-the-loop interception** (it fell between WP1.1 engine + WP1.4 cards). The UI
       cards + WP0.5 approval-policy exist but can't be driven live (engine auto-executes; no

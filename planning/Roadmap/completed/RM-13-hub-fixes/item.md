@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Assistant Hub defect-fix workstream"
 description: "Fix the six verified root causes from the Assistant Hub diagnosis: callable and honestly scoped MCP tools in every hub session, real tool-using mission subagents with inherited grants, live transcripts and real costs."
 tags: ["roadmap", "RM-13"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "active"
+timestamp: "2026-08-21T15:32:17Z"
+status: "done"
 ---
 
 # Assistant Hub defect-fix workstream
@@ -19,10 +19,10 @@ The Hub shipped with mission subagents that could not actually use tools, so mis
 
 ## Milestones
 
-- [ ] Diagnose and lock the root causes.
-- [ ] Fix tool callability and scoping.
-- [ ] Make mission subagents real sessions.
-- [ ] Verify transcripts and cost attribution.
+- [x] Diagnose and lock the root causes.
+- [x] Fix tool callability and scoping.
+- [x] Make mission subagents real sessions.
+- [x] Verify transcripts and cost attribution.
 
 ## Linked research
 

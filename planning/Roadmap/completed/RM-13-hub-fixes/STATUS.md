@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "hub-fixes \u2014 work-package status ledger"
 description: "Living state for the hub-fixes plan (README \u00b7 conventions \u00b7"
 tags: ["roadmap", "RM-13"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T18:05:00Z"
 status: "active"
 ---
 # hub-fixes — work-package status ledger
@@ -21,11 +21,17 @@ before the affected WP starts; note any change here.**
 **Evidence base: [`analysis.md`](./analysis.md) (RC1…RC7), verified against the working tree and the
 live instance (session `oNiw1PCAmxc5_ietGD_0h`) on 2026-07-19.**
 
-## Gates — check before any implementation batch
+## Gates — per-batch process checks (prose, not work)
 
-- [ ] Working tree clean enough for worktrees (`git status`; commit/stash strays) — checked at each batch.
-- [ ] No other workstream is editing `apps/api/src/hub/**` or `apps/web/src/features/hub/**` concurrently (assistant-hub and assistant-hub-ux are COMPLETE; if anything new started, exchange STATUS links first).
-- Owner-op note: WP 0.1 changes `docker-compose.yml`; the owner recreates the container to apply it.
+These were **entry conditions re-checked before each implementation batch**, not deliverables. All 21
+work packages are done, so there is no further batch to gate. Recorded here as prose on 2026-08-21 by
+`RM-35` WP 0.3: as checkboxes they blocked `/complete-roadmap` while representing nothing to build.
+
+- **Working tree clean enough for worktrees** (`git status`; commit/stash strays) — was checked at each
+  batch.
+- **No other workstream editing `apps/api/src/hub/**` or `apps/web/src/features/hub/**` concurrently** —
+  assistant-hub and assistant-hub-ux were COMPLETE throughout; nothing new started against those paths.
+- **Owner-op note:** WP 0.1 changes `docker-compose.yml`; the owner recreates the container to apply it.
 
 ## Phase 0 — same-day mitigation
 - [x] WP 0.1 — eager-mode mitigation + scoped-session runbook — done 2026-07-19 · wp/hub-fixes/0.1 (gate green; owner-op: recreate container to apply, live scoped-the vendor proof → owner-acceptance)

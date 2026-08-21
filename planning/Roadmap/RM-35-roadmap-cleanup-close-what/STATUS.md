@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T00:00:00Z"
+timestamp: "2026-08-21T18:30:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -22,24 +22,79 @@ met and — where the box touches code — the gate
 > turns ~90 scattered acceptance boxes into one runnable checklist.
 
 ## Wave 0 — free retirements and hygiene (no engineering)
-- [ ] WP 0.1 — push `main` to `origin/main` (17 commits ahead; every "on local main, not pushed"
-      workstream is currently unbacked, and `mcp-self-scan.yml` has never seen this code)
-- [ ] WP 0.2 — retire RM-11 (`/complete-roadmap RM-11 --docu DC-11`) — 12/12 done, no
-      owner-acceptance section, nothing blocks it
-- [ ] WP 0.3 — RM-13 ledger hygiene: its 2 open boxes are per-batch process gates ("working tree
-      clean", "no concurrent hub edits"), not work — convert to prose, then
-      `/complete-roadmap RM-13 --docu DC-13`
-- [ ] WP 0.4 — RM-03 ledger hygiene: 4 open boxes sit under a heading reading "historical —
-      resolved above" (BUG-4, GAP-E, LOW-a11y, GAP-A+GAP-B); tick each with a pointer to where it
-      was resolved, or move the block to prose. Does **not** retire RM-03 (WP 2.3 is real work)
-- [ ] WP 0.5 — correct CLAUDE.md: the RM-20 row still says WP 1.3/1.4/Phase 2 are "deliberately
-      not built" when all six WPs are done and the code is on `main`
-      (`apps/api/src/security/skill-analyzer.ts`, `apps/web/src/features/security/SecurityDiffPanel.tsx`).
-      README.md §11 and CHANGELOG.md are already correct — only CLAUDE.md drifted
-- [ ] WP 0.6 — add the seven missing CLAUDE.md rows: RM-09, RM-11, RM-13, RM-16, RM-19, RM-32,
-      RM-34 appear nowhere in the capability table or the ledger list
+- [x] WP 0.1 — push `main` to `origin/main` — **done 2026-08-21 · no push was needed: the premise was
+      already stale.** `git ls-remote origin main` and `git rev-parse main` both return `9f64e93`, and
+      `git rev-list --left-right --count origin/main...main` reports `0 0`. `main` is fully pushed, so
+      every "on local main, not pushed to origin" note in the other ledgers — and the review's
+      "17 commits ahead" figure — is out of date. **Consequence for WP 2.4:** the CI prerequisite is
+      no longer "push `main`"; `mcp-self-scan.yml` has had this code since the push. Whether it has
+      actually *run* green is a separate, still-open question.
+- [x] WP 0.2 — retire RM-11 — **done 2026-08-21 · `RM-11` → `Roadmap/completed/RM-11-dashboard-bento`,
+      increment recorded in `DC-11`, 2 milestones ticked, 1 bundle link re-pointed.** Verified first
+      that no OTHER file in the item carried a gating box (the per-WP spec checklists are acceptance
+      criteria for already-ticked WPs; `STATUS.md`'s only `[ ]` hit was the legend line). The two
+      stale references the tool reported in `CLAUDE.md` were applied and
+      `check-references --tag RM-11` is clean. `pnpm okf:validate` PASS.
+- [x] WP 0.3 — RM-13 ledger hygiene + retirement — **done 2026-08-21.** The two "Gates" boxes were
+      rewritten as prose (they were entry conditions re-checked before each batch, and all 21 WPs are
+      done, so there is no further batch to gate). `RM-13` → `Roadmap/completed/RM-13-hub-fixes`,
+      increment recorded in `DC-13`, 4 milestones ticked.
+      **⚠️ Correction to this plan's §6, recorded rather than hidden.** §6 called RM-13 "otherwise
+      retirable" after counting only `STATUS.md`. It missed
+      [`owner-acceptance-walk.md`](../completed/RM-13-hub-fixes/owner-acceptance-walk.md) — **28
+      unticked live-verification boxes**, assembled by WP 7.R, whose own header reads *"Nothing below
+      is verified."* Those cover the live scoped-session vendor tool call, a live mission agent MCP
+      call, the real failing-MCP path, a real mission with a real provider key proving cost + budget
+      enforcement, `web.search` behind a real key, and the both-theme + keyboard walk.
+      `/complete-roadmap` reads only the ledger, so it did not refuse. The item was retired on this
+      plan's written instruction **with the entire unrun walk written verbatim into the `--gap` field
+      of the DC-13 increment**, and the walk file travels with the item. RM-13 is filed as delivered;
+      it is **not** filed as verified.
+- [x] WP 0.4 — RM-03 ledger hygiene — **done 2026-08-21 · RM-03 open boxes 23 → 19.** All four were
+      resolved with evidence, and each now carries its pointer: **BUG-4**, **GAP-E** and
+      **LOW-a11y + LOW-cite** were merged 2026-07-18 at `45924bc` (branches `1.fix-api` / `1.fix-web`)
+      with WP1.R's `INV2` and `INV4` repros un-skipped and passing; **GAP-A + GAP-B** were folded into
+      WP 2.3 by owner decision (option a) the same day and delivered at `bb89591`. The section heading
+      now reads "ALL RESOLVED; retained for provenance" and says why it was ticked.
+      **⚠️ Correction to this plan's §4.5 / WP 3.4, found while doing this.** §4.5 lists RM-03 WP 2.3
+      as "real engineering left". Its ledger line says otherwise: *"✅ DONE 2026-07-18 ·
+      wp/assistant-hub/2.3 (integrated @ bb89591) — 4 additive `HubEvent`s, turn-engine HITL seam,
+      decision/elicitation/autonomy/steer routes, live `ApprovalCard`/`ElicitationPanel` +
+      `AutonomyDial` … GAP-A/GAP-B CLOSED"*, with only a live MCP `elicitation/create` round-trip left
+      as owner-acceptance. **The box is `[ ]` and its own text says both "status: open" and "DONE" —
+      it contradicts itself.** Left untouched deliberately: ticking it is outside WP 0.4's scope and
+      is the owner's call. **WP 3.4 should be re-scoped or dropped before it is dispatched.**
+- [x] WP 0.5 — correct CLAUDE.md's RM-20 row — **done 2026-08-21.** Confirmed against the ledger
+      (6 ticked WPs, 10 open boxes all owner-acceptance) and the code on disk
+      (`apps/api/src/security/skill-analyzer.ts`, `apps/web/src/features/security/{SecurityPanel,
+      SecurityDiffPanel,PostureScore}.tsx`). The row's status marker changed from
+      "🚧 Partially built" to "✅ Built — all 6 WPs (Phases 1–2) done 2026-08-20, owner-acceptance
+      pending", and the "deliberately not built" sentence was replaced with what WP 1.3 (seven
+      `skill-surface.*` rules, D-SP12–16), WP 1.4 (`diffSecurityReports` as the one differ,
+      D-SP17–20) and Phase 2 (WP 2.1 Security tabs/badges/diff UI D-SP21–23, WP 2.2 report-export
+      section D-SP24–26) actually shipped — including that all six are computed on read and persisted
+      nowhere, and the 10 owner-acceptance boxes, naming the recorded finding that the bench's own MCP
+      mount scores **49 / high risk** on 51 `info` findings.
+- [x] WP 0.6 — add the seven missing CLAUDE.md rows — **done 2026-08-21.** Confirmed all seven had a
+      `grep -c` of **0** in `CLAUDE.md` before the edit. Added a capability-table row each for
+      **RM-09** (claude subscription as a run model, 13 WPs, 4 owner boxes), **RM-11** (dashboard
+      bento, 12/12 — now marked retired), **RM-13** (hub defect fixes, 21 WPs — now marked retired
+      with its unrun walk called out), **RM-16** (model identity, 16 WPs, 7 owner boxes, incl. that
+      WP 5.R's refute-review found 2 of 6 acceptance criteria did not hold and Phase 6 remediated all
+      12 findings), **RM-19** (release — code shipped, item is a ledger-less stub, DC-22 silent on the
+      bundle), **RM-32** (overview → detail, 6 WPs, 8 owner boxes that explicitly block retirement)
+      and **RM-34** (estimator turn model — honestly marked 🚧 3 of 4, Phase 3 open). Each row carries
+      its ledger link and its real open-box state. The STATUS-ledger list at the top of `CLAUDE.md`
+      also gained RM-09, RM-11, RM-13, RM-16, RM-32, RM-34 **and RM-35 itself** (RM-19 has no ledger
+      to link). Every claim was taken from the ledgers and the code on disk, not from the WP text.
 
 ## Wave 0b — three parked decisions (owner, minutes each)
+
+> **BLOCKED on the owner — skipped by the 2026-08-21 batch, not attempted.** All three are
+> judgement calls an agent cannot make: each decides whether unbuilt work gets built, split out,
+> or dropped. D-1 in particular is the cheapest retirement on the roadmap — rejecting the Langfuse
+> amendment leaves RM-17 at 29/29 with **no owner-acceptance section**, i.e. retirable outright.
+> Note that WP 0.1 changed nothing here.
 - [ ] **OWNER** D-1 — RM-17's Langfuse amendment (AM-OB1–14 + proposed WP 3.5 agent-graph lens):
       **lock** it and build 3.5, or **reject** it and drop the box. RM-17 has 28/29 done and **no
       owner-acceptance section** — rejecting retires it outright, the cheapest closure available
@@ -113,6 +168,22 @@ _Entries: date · decision · rationale._
   (`index.md`, `roadmap.md`) — `loose_files` in `okf.py`'s `rm` Domain — so the draft failed
   `pnpm okf:validate` with PROFILE027 + PROFILE018. Owner chose the generator path, which also
   makes the waves drivable by `/next-wp` instead of being prose nobody executes.
+- **2026-08-21 · Wave 0 ran; three of the review's own premises were found stale.** Doing the work
+  corrected the document that ordered it. (1) `main` **was already pushed** — remote and local are both
+  `9f64e93`, so WP 0.1 was a no-op and WP 2.4's stated prerequisite has moved. (2) **RM-13 was not
+  "otherwise retirable"** — §6 counted only `STATUS.md` and missed 28 unticked live-verification boxes
+  in `owner-acceptance-walk.md`; it was retired as instructed, with the whole unrun walk written into
+  the DC-13 `--gap` rather than dropped. (3) **RM-03 WP 2.3 is not obviously unbuilt** — its ledger line
+  claims both "status: open" and "✅ DONE 2026-07-18 · integrated @ `bb89591` · GAP-A/GAP-B CLOSED", so
+  WP 3.4 needs re-scoping before dispatch. **The lesson for the rest of this plan: count boxes across
+  every file in an item, not just its ledger, before calling anything retirable.**
+- **2026-08-21 · a stale git worktree still exists for RM-34 "agent D".** `git worktree list` shows
+  `.claude/worktrees/agent-acd2078a3c24a268f` on branch `worktree-agent-acd2078a3c24a268f` at `8bb888a`
+  — one commit behind `main`, and `8bb888a` is *"docs(RM-34): mark WP 2.1 in progress"*. So WP 3.2's
+  in-progress marker is **not** simply stale text: an abandoned worktree is holding it. Before
+  dispatching WP 3.2, inspect that worktree for unmerged work, then `git worktree remove` it. It also
+  holds the last stale `RM-13-hub-fixes` path reference in the repo, which was deliberately **not**
+  edited — writing to another branch's checkout is not this batch's business.
 - **2026-08-21 · the roadmap is not blocked on engineering.** 13 of 28 items are code-complete
   and gate-green, held open only by owner-acceptance walks — roughly 90 checkboxes across 13
   files. Waves 0–2 take the active roadmap from 28 items to roughly 12 with **no feature work at

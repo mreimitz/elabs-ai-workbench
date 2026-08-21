@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-21T14:54:17Z"
+timestamp: "2026-08-21T15:32:17Z"
 status: "active"
 ---
 
@@ -22,9 +22,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-08-ci](RM-08-ci/item.md) — CI & headless automation — tokens, CLI, assertions and the workbench MCP server · `active`
 * [RM-09-claude-subscription](RM-09-claude-subscription/item.md) — Claude subscription as a run model · `active`
 * [RM-10-crew-nesting](RM-10-crew-nesting/item.md) — Hierarchical crews — runtime-recursive crew composition · `active`
-* [RM-11-dashboard-bento](RM-11-dashboard-bento/item.md) — Dashboard bento — the homepage Overview · `active`
 * [RM-12-findings](RM-12-findings/item.md) — UI audit and remediation programme (2026-06) · `archived`
-* [RM-13-hub-fixes](RM-13-hub-fixes/item.md) — Assistant Hub defect-fix workstream · `active`
 * [RM-14-illustrations](RM-14-illustrations/item.md) — Illustration design system — theme-token-driven blueprint illustrations · `planned`
 * [RM-16-model-identity](RM-16-model-identity/item.md) — Model identity — a model choice means the model and the credential · `active`
 * [RM-17-observability](RM-17-observability/item.md) — Observability — fleet monitoring, search and issues · `active`
@@ -46,6 +44,8 @@ This concept is the live project-level index of roadmap items and research topic
 ## Completed Roadmap Items
 
 * [RM-04-assistant-hub-ux](completed/RM-04-assistant-hub-ux/item.md) — Assistant Hub UX — rebuild onto the app shell grammar · `done`
+* [RM-11-dashboard-bento](completed/RM-11-dashboard-bento/item.md) — Dashboard bento — the homepage Overview · `done`
+* [RM-13-hub-fixes](completed/RM-13-hub-fixes/item.md) — Assistant Hub defect-fix workstream · `done`
 * [RM-15-interface-craft](completed/RM-15-interface-craft/item.md) — Interface Craft — write the six rules that were never written · `done`
 * [RM-21-server-types](completed/RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `done`
 * [RM-28-toolbar-reach](completed/RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `done`

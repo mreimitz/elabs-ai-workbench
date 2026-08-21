@@ -16,9 +16,7 @@
 * [CI & headless automation — tokens, CLI, assertions and the workbench MCP server](RM-08-ci/) - Browse ci & headless automation — tokens, cli, assertions and the workbench mcp server.
 * [Claude subscription as a run model](RM-09-claude-subscription/) - Browse claude subscription as a run model.
 * [Hierarchical crews — runtime-recursive crew composition](RM-10-crew-nesting/) - Browse hierarchical crews — runtime-recursive crew composition.
-* [Dashboard bento — the homepage Overview](RM-11-dashboard-bento/) - Browse dashboard bento — the homepage overview.
 * [UI audit and remediation programme (2026-06)](RM-12-findings/) - Browse ui audit and remediation programme (2026-06).
-* [Assistant Hub defect-fix workstream](RM-13-hub-fixes/) - Browse assistant hub defect-fix workstream.
 * [Illustration design system — theme-token-driven blueprint illustrations](RM-14-illustrations/) - Browse illustration design system — theme-token-driven blueprint illustrations.
 * [Model identity — a model choice means the model and the credential](RM-16-model-identity/) - Browse model identity — a model choice means the model and the credential.
 * [Observability — fleet monitoring, search and issues](RM-17-observability/) - Browse observability — fleet monitoring, search and issues.

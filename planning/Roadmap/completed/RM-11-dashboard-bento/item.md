@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Dashboard bento — the homepage Overview"
 description: "Rebuild the dashboard landing surface on the bento grid, using the metric-card delta and visual props, chart datapoint clicks and the full twelve-colour chart ramp the app already owns but never switched on."
 tags: ["roadmap", "RM-11"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "active"
+timestamp: "2026-08-21T15:31:35Z"
+status: "done"
 ---
 
 # Dashboard bento — the homepage Overview
@@ -19,8 +19,8 @@ The homepage was not under-built, it was switched off: four capabilities already
 
 ## Milestones
 
-- [ ] Phase 1 — the grid and the list tiles.
-- [ ] Phase 2 — the scan tiles and drill-through.
+- [x] Phase 1 — the grid and the list tiles.
+- [x] Phase 2 — the scan tiles and drill-through.
 
 ## Linked research
 

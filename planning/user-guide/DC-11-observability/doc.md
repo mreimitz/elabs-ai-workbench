@@ -3,7 +3,7 @@ type: "Documentation"
 title: "Observability"
 description: "How the workbench monitors its own fleet of runs: metrics over time, search, watch rules and issues."
 tags: ["documentation", "DC-11"]
-timestamp: "2026-08-21T11:54:11Z"
+timestamp: "2026-08-21T15:31:35Z"
 status: "current"
 ---
 
@@ -25,6 +25,20 @@ How the workbench monitors its own fleet of runs: metrics over time, search, wat
 - `apps/web/src/features/observability/`
 
 ## Delivered increments
+
+### RM-11 — Dashboard bento — the homepage Overview
+
+Completed 2026-08-21. Roadmap item: [RM-11](/Roadmap/completed/RM-11-dashboard-bento/item.md).
+
+**Shipped:** The dashboard landing surface rebuilt on the bento grid across 12 work packages (Phases 0-2). Phase 0 switched on four capabilities the design system already shipped and the app never used: the chart series ramp now cycles all twelve --chart-* tokens instead of five, chart onDatapointClick drill-through is enabled and the stale workaround retired, and metric tiles carry trend + sparkline with one featured tile. Phase 1 made Overview the default tab: a hero footprint chart, KPI tiles, and attention/movers/advisor list tiles, all derived client-side by use-overview-data with NO new API endpoint, inside a BentoGrid shell. Phase 2 answered owner feedback: scan-inventory tiles (Servers, Tools scanned, Resources, Prompts) with both tables as bento tiles, ONE page-level toolbar in the correct order with a shared timeline and Scans merged in (spotlight removed), the fleet footprint plotting every server held at its last successful scan rather than only recently-scanned ones, and footprint lines differentiated by STROKE pattern rather than colour alone (D-DB4).
+
+**Planned vs delivered:** Phase 1 needed an unplanned close-out work package (WP 1.5) for three defects a real browser found that jsdom could not. Phase 2 did not exist in the original plan at all; it was added on 2026-08-20 in response to owner feedback on the shipped Phase 1 surface, and contributed four of the twelve work packages.
+
+**Known gaps:** The item carries no owner-acceptance section, so no live both-theme or keyboard walk of the Overview tab was ever recorded as a gated item. The surface was exercised in a browser during the WP 1.5 close-out and during the Phase 2 owner-feedback round, but there is no signed checklist for it.
+
+**Where the code lives:**
+
+- `apps/web/src/features/dashboard/overview/ (OverviewTab.tsx, use-overview-data.ts) and apps/web/src/features/dashboard/ (DashboardView.tsx, DashboardRangeControl.tsx, dashboard-range.ts)`
 
 ### RM-33 — Cache-aware token accounting & display
 

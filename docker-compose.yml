@@ -35,7 +35,7 @@ services:
       # reaches the app on the published host port. Left unset, every OAuth sign-in would come back
       # to a port nothing is listening on.
       OAUTH_REDIRECT_URL: http://127.0.0.1:8081/api/oauth/callback
-      # Temporary mitigation (planning/Roadmap/RM-13-hub-fixes/ WP 0.1, analysis.md RC1): the code default
+      # Temporary mitigation (planning/Roadmap/completed/RM-13-hub-fixes/ WP 0.1, analysis.md RC1): the code default
       # ("deferred") never promotes any MCP tool to callable, so no MCP tool is ever usable in a
       # hub session. Force "eager" until WP 1.1 flips the code default to "auto" — then remove this
       # override. Eager loads full tool definitions for every granted server, so scope sessions to
