@@ -12,6 +12,7 @@ import {
   toWatchRuleInput,
   toWatchRulePatch,
   validateActions,
+  windowForWire,
 } from "./rule-form";
 
 describe("bucketForWindow", () => {
@@ -362,5 +363,67 @@ describe("workflow_dispatch form state (AM-OB11)", () => {
     const state = emptyActionFormState();
     state.workflow_dispatch = { enabled: true, ...target, inputs: [] };
     expect(validateActions(state)).toEqual({ ok: true });
+  });
+});
+
+// == AM-OB4 -- `windowForWire`, the one projection Save AND the preview both use ====================
+
+describe("windowForWire", () => {
+  const base = {
+    bucket: "week" as const, // deliberately WRONG for the duration below -- it must be re-derived
+    window: "1h" as const,
+    op: ">=" as const,
+    threshold: 0.5,
+    cooldownMinutes: 0,
+  };
+
+  test("re-derives the bucket from the duration rather than trusting the draft", () => {
+    expect(windowForWire({ ...base, measure: "errorRate" }).bucket).toBe("hour");
+  });
+
+  test("carries the ratio when the measure IS a ratio", () => {
+    const ratio = { numerator: { hasError: true } };
+    expect(windowForWire({ ...base, measure: "ratio", ratio }).ratio).toEqual(ratio);
+  });
+
+  test("DROPS a stale ratio draft when the measure is not a ratio", () => {
+    // The editor deliberately keeps the draft so an accidental measure toggle does not discard a
+    // numerator the operator just built -- but the wire refuses a config the rule does not evaluate,
+    // and a reader would take a stale numerator for the rule's meaning.
+    const projected = windowForWire({
+      ...base,
+      measure: "errorRate",
+      ratio: { numerator: { hasError: true } },
+    });
+    expect("ratio" in projected).toBe(false);
+  });
+
+  test("a `ratio` measure with NO draft stays absent rather than gaining an empty one", () => {
+    const projected = windowForWire({ ...base, measure: "ratio" });
+    expect("ratio" in projected).toBe(false);
+  });
+});
+
+describe("toWatchRuleInput / toWatchRulePatch -- the ratio rides the same projection", () => {
+  test("a windowed ratio rule sends its numerator; a non-ratio one sends none", () => {
+    const state = emptyRuleFormState();
+    state.name = "Share";
+    state.trigger = "windowed";
+    state.actions.notify.enabled = true;
+    state.window = {
+      ...state.window,
+      measure: "ratio",
+      ratio: { numerator: { outcome: ["stopped_guardrail"] } },
+    };
+    expect(toWatchRuleInput(state).window?.ratio).toEqual({
+      numerator: { outcome: ["stopped_guardrail"] },
+    });
+    expect(toWatchRulePatch(state, true).window?.ratio).toEqual({
+      numerator: { outcome: ["stopped_guardrail"] },
+    });
+
+    const swapped = { ...state, window: { ...state.window, measure: "errorRate" as const } };
+    expect(toWatchRuleInput(swapped).window).not.toHaveProperty("ratio");
+    expect(toWatchRulePatch(swapped, true).window).not.toHaveProperty("ratio");
   });
 });

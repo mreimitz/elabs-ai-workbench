@@ -61,6 +61,7 @@ import {
   toWatchRuleInput,
   toWatchRulePatch,
   validateActions,
+  windowForWire,
 } from "./rule-form";
 import { useRunFilterOptions } from "./use-run-filter-options";
 import { WindowPreviewStrip } from "./WindowPreviewStrip";
@@ -174,7 +175,10 @@ export function RuleEditorDialog({
     try {
       const result = await previewWatchWindow({
         filter: state.filter,
-        window: { ...state.window, bucket: bucketForWindow(state.window.window) },
+        // AM-OB4 — the SAME projection Save uses (`windowForWire`), so the preview cannot 400 on a
+        // stale ratio draft that Save would have dropped, and cannot preview a window Save would not
+        // have sent.
+        window: windowForWire(state.window),
       });
       setPreview(result);
       setPreviewedSignature(signatureAtRequest);
@@ -209,6 +213,19 @@ export function RuleEditorDialog({
       const thresholds = validateWatchThresholds(state.window);
       if (!thresholds.ok) {
         setFormError(thresholds.message);
+        setActiveSectionId("trigger");
+        return;
+      }
+      // AM-OB4 — an empty numerator is schema-VALID (an unconstrained RunFilter) and would save as a
+      // rule whose share is 100% in every window, i.e. one that fires forever. The wire cannot catch
+      // that, so the editor does.
+      if (
+        state.window.measure === "ratio" &&
+        Object.keys(state.window.ratio?.numerator ?? {}).length === 0
+      ) {
+        setFormError(
+          "Add at least one condition to the share's numerator — an empty one matches every run.",
+        );
         setActiveSectionId("trigger");
         return;
       }
@@ -459,7 +476,7 @@ function TriggerSection({
           </FieldRow>
         </DialogSection>
       ) : (
-        <WindowConfigSection state={state} onChange={onChange} />
+        <WindowConfigSection state={state} onChange={onChange} options={options} />
       )}
     </div>
   );
@@ -475,9 +492,12 @@ const NO_DATA_POLICY_LABELS: Record<(typeof WATCH_NO_DATA_POLICIES)[number], str
 function WindowConfigSection({
   state,
   onChange,
+  options,
 }: {
   state: RuleFormState;
   onChange: (next: RuleFormState) => void;
+  /** AM-OB4 — passed through for the `ratio` measure's numerator/denominator filter bars. */
+  options: RunFilterOptionData;
 }) {
   const window = state.window;
   const patchWindow = (partial: Partial<RuleFormState["window"]>) =>
@@ -497,7 +517,7 @@ function WindowConfigSection({
             <SelectContent>
               {RUN_METRICS_MEASURES.map((measure) => (
                 <SelectItem key={measure} value={measure}>
-                  {measure}
+                  {measure === "ratio" ? "ratio (a share you define)" : measure}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -628,22 +648,116 @@ function WindowConfigSection({
           />
         </FieldRow>
 
-        <FieldRow id="window-grader" label="Grader (optional)">
-          <Input
-            id="window-grader"
-            value={window.grader ?? ""}
-            placeholder="Scope to one grader…"
-            spellCheck={false}
-            autoComplete="off"
-            onChange={(event) => patchWindow({ grader: event.target.value.trim() || undefined })}
-          />
+        {/* AM-OB4 — the label and help now say what this field DOES. It narrows which runs count to
+            those this grader graded; it does not choose whose score `meanScore` averages (that is
+            always the primary grader). The old "Scope to one grader…" implied the opposite. */}
+        <FieldRow id="window-grader" label="Only runs graded by (optional)">
+          <div className="flex flex-col gap-1">
+            <Input
+              id="window-grader"
+              value={window.grader ?? ""}
+              placeholder="e.g. outcome_judge…"
+              spellCheck={false}
+              autoComplete="off"
+              onChange={(event) => patchWindow({ grader: event.target.value.trim() || undefined })}
+            />
+            <Text variant="meta" tone="muted" className="text-pretty">
+              Narrows which runs count. It does not change whose score meanScore averages — that is
+              always the primary grader.
+            </Text>
+          </div>
         </FieldRow>
       </div>
+
+      {window.measure === "ratio" ? (
+        <RatioFields state={state} onChange={onChange} options={options} />
+      ) : null}
+
       <Text variant="meta" tone="muted">
         Metrics bucket: <span className="tabular-nums">{bucketForWindow(window.window)}</span> (derived
         from the trailing window).
       </Text>
     </DialogSection>
+  );
+}
+
+/**
+ * AM-OB4 — the `ratio` measure's two filters inside a windowed rule, on the SAME `RunFilterBar` the
+ * rule's own filter uses. Worded as the question the operator is asking, not as arithmetic.
+ *
+ * The empty-window note is not decoration: a share whose base is empty produces NO point, so the rule
+ * reports `no_data` and its no-data policy decides what that means. Before AM-OB10 an empty window
+ * was recorded as a recovery, and a rule on a share is exactly where that would bite again.
+ */
+function RatioFields({
+  state,
+  onChange,
+  options,
+}: {
+  state: RuleFormState;
+  onChange: (next: RuleFormState) => void;
+  options: RunFilterOptionData;
+}) {
+  const ratio = state.window.ratio ?? { numerator: {} };
+  const setRatio = (next: NonNullable<RuleFormState["window"]["ratio"]>) =>
+    onChange({ ...state, window: { ...state.window, ratio: next } });
+  const hasDenominator = ratio.denominator !== undefined;
+  const numeratorEmpty = Object.keys(ratio.numerator).length === 0;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1.5">
+        <Label id="window-ratio-numerator-label">Count the runs that match…</Label>
+        <div aria-labelledby="window-ratio-numerator-label">
+          <RunFilterBar
+            filter={ratio.numerator}
+            onChange={(numerator) => setRatio({ ...ratio, numerator })}
+            options={options}
+          />
+        </div>
+        {numeratorEmpty ? (
+          <Text variant="meta" tone="muted">
+            Add at least one condition — an empty numerator matches every run, so the share would
+            always be 100%.
+          </Text>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="window-ratio-denominator">…out of a narrower base</Label>
+          <Switch
+            id="window-ratio-denominator"
+            checked={hasDenominator}
+            onCheckedChange={(checked) => {
+              if (checked) setRatio({ ...ratio, denominator: {} });
+              else setRatio({ numerator: ratio.numerator });
+            }}
+          />
+        </div>
+        {hasDenominator ? (
+          <div aria-labelledby="window-ratio-denominator-label">
+            <span id="window-ratio-denominator-label" className="sr-only">
+              Base filter for the share
+            </span>
+            <RunFilterBar
+              filter={ratio.denominator ?? {}}
+              onChange={(denominator) => setRatio({ ...ratio, denominator })}
+              options={options}
+            />
+          </div>
+        ) : (
+          <Text variant="meta" tone="muted">
+            Off — the base is this rule's own filter above.
+          </Text>
+        )}
+      </div>
+
+      <Text variant="meta" tone="muted" className="text-pretty">
+        A window whose base is empty produces no value at all, so the rule reports “no runs” and your
+        no-data setting above decides what happens — it is never treated as a healthy 0%.
+      </Text>
+    </div>
   );
 }
 
