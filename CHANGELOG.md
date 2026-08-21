@@ -5,6 +5,23 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — a tool result reads the same wherever you open it
+
+Most MCP servers answer a tool call by handing back a single block of text, and that text is almost
+always a JSON document with every space squeezed out of it. The conversation pane already knew this
+and unpacked it; the **Trace** tab and the **packet inspector** did not. The same result therefore
+read three different ways depending on which tab you were standing in — indented and highlighted in
+chat, one unbroken line in Trace, and in the inspector a `\"`-escaped string buried inside a tidy
+wrapper that was tidy around the wrong thing.
+
+All three now unpack a result through one shared step, so they cannot disagree about what a tool
+returned. A JSON payload is indented and highlighted; prose stays prose, untouched.
+
+Both technical blocks on a tool call in chat — **Parameters** and **Result** — also gained the
+**Expand** button they were missing. Each opens the same full-payload window the Trace tab opens,
+with the step's own detail panel beside it. Previously a clamped block was a dead end: you could
+scroll inside a small box, or leave for another tab.
+
 ## Unreleased — a run finally shows its shape
 
 The run console could tell you everything about a session except the one thing you ask first: what
