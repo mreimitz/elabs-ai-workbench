@@ -657,7 +657,8 @@ const CANDIDATES: Record<string, RunFilterCandidate> = {
 };
 
 test("SQL translation agrees with matchesRunFilter for every seeded run", () => {
-  const runs = seed(createDatabase());
+  const db = createDatabase();
+  const runs = seed(db);
   const filters: RunFilter[] = [
     {},
     { status: ["completed"] },
@@ -695,6 +696,9 @@ test("SQL translation agrees with matchesRunFilter for every seeded run", () => 
     { feedback: { key: "verdict" } },
     { feedback: { key: "notes", hasScore: true } },
     { feedback: {} },
+    // AM-OB4 — "carries ANY feedback row", the field `feedbackRate`'s numerator is built from.
+    { feedback: { any: true } },
+    { feedback: { any: true }, status: ["completed"] },
   ];
   for (const filter of filters) {
     const sqlIds = ids(runs.queryRuns(filter));
@@ -703,6 +707,18 @@ test("SQL translation agrees with matchesRunFilter for every seeded run", () => 
       .map(([id]) => id)
       .sort();
     assert.deepEqual(sqlIds, predicateIds, `disagreement for ${JSON.stringify(filter)}`);
+
+    // AM-OB4 (acceptance #6) — run the SAME table through `computeRunMetrics`. Before the two
+    // `buildRunFilterWhere` copies were consolidated, this table only ever exercised the repository:
+    // the metrics header CLAIMED both translations were pinned to `matchesRunFilter`, and the claim
+    // was false. There is one builder now, so what this actually pins is that the metrics service
+    // still COMPOSES it — a `computeRunMetrics` that stopped calling it, or applied its own extra
+    // predicate, would show up here as a count that no longer matches the feed.
+    assert.equal(
+      metricsRunCount(db, filter),
+      sqlIds.length,
+      `metrics service vs repository SQL for ${JSON.stringify(filter)}`,
+    );
   }
 });
 
@@ -1139,4 +1155,205 @@ test("GET /api/runs returns 400 for a malformed / invalid filter", async () => {
   const badSort = await app.inject({ method: "GET", url: "/api/runs?sort=bogus" });
   assert.equal(badSort.statusCode, 400);
   await app.close();
+});
+
+// ── The NULL-safe boolean branches (RM-17 Phase 6, AM-OB4) ───────────────────────────────────────
+//
+// A SEPARATE fixture from `seed()`, following `seedRatings()`'s precedent: folding these runs into
+// the shared graph would silently move a dozen existing hand-counted expectations, which is a fixture
+// change wearing a passing test's clothes.
+//
+// This exists because of a MUTATION result, not a reading. `hasError` translates to
+// `(status = 'error' OR COALESCE(outcome, '') = 'error')`, and deleting the SECOND half of that —
+// the whole reason the clause is NULL-safe — left the 35-case cross-check GREEN. Every run in the
+// shared fixture either has `status: 'error'` or no error at all, so the outcome branch was never
+// observed. The same blind spot covers `needsAttention`'s `COALESCE(seen, 0)`.
+//
+// Cross-checked THREE ways, like the rating table: the repository SQL · the pure predicate over the
+// repository's OWN materialized candidate · the metrics service. One builder serves all of them now,
+// so what this pins is that each consumer still composes it faithfully.
+
+const EDGE_NOW = "2026-08-05T00:00:00.000Z";
+
+/**
+ * Four runs, each the ONLY witness to one branch:
+ *   e1  completed + outcome 'error'   → hasError via the OUTCOME half alone
+ *   e2  status 'error' + outcome NULL → hasError via the STATUS half alone
+ *   e3  completed + outcome 'completed', UNSEEN → needsAttention via `seen = 0`
+ *   e4  completed + outcome NULL, seen → neither; the NULL-outcome run that a non-NULL-safe
+ *       `NOT (...)` would silently DROP from `hasError: false`
+ */
+function seedBooleanEdges(): { runs: RunRepository; db: AppDatabase } {
+  const db = createDatabase();
+  db.prepare(
+    `INSERT INTO provider_credentials (id, kind, label, created_at, updated_at) VALUES ('prov-e','anthropic','Claude',@now,@now)`,
+  ).run({ now: EDGE_NOW });
+  db.prepare(
+    `INSERT INTO scenarios (id, name, provider_id, model, created_at, updated_at) VALUES ('scn-e','E','prov-e','claude-sonnet-4',@now,@now)`,
+  ).run({ now: EDGE_NOW });
+  db.prepare(
+    `INSERT INTO tests (id, name, user_prompt, created_at, updated_at) VALUES ('t-e','TE','go',@now,@now)`,
+  ).run({ now: EDGE_NOW });
+
+  const insert = db.prepare(
+    `INSERT INTO runs (id, test_id, scenario_id, mode, status, outcome, seen, started_at,
+                       cost_usd, tokens_in, tokens_out, active_duration_ms)
+     VALUES (@id, 't-e', 'scn-e', 'automated', @status, @outcome, @seen, @startedAt, 0, 0, 0, 1000)`,
+  );
+  const rows: Array<[string, string, string | null, number]> = [
+    ["e1", "completed", "error", 1],
+    ["e2", "error", null, 1],
+    ["e3", "completed", "completed", 0],
+    ["e4", "completed", null, 1],
+  ];
+  rows.forEach(([id, status, outcome, seen], i) => {
+    insert.run({ id, status, outcome, seen, startedAt: `2026-08-05T0${i + 1}:00:00.000Z` });
+  });
+  return { runs: new RunRepository(db), db };
+}
+
+const EDGE_FILTERS: RunFilter[] = [
+  {},
+  { hasError: true },
+  { hasError: false },
+  { needsAttention: true },
+  { needsAttention: false },
+  { hasError: true, status: ["completed"] },
+  { hasError: false, seen: true },
+];
+
+test("boolean-branch filters: the SQL, the predicate and the metrics service all agree", () => {
+  const { runs, db } = seedBooleanEdges();
+  const allIds = ids(runs.queryRuns({}));
+  assert.deepEqual(allIds, ["e1", "e2", "e3", "e4"]);
+
+  for (const filter of EDGE_FILTERS) {
+    const sqlIds = ids(runs.queryRuns(filter));
+    const predicateIds = allIds
+      .filter((id) => {
+        const candidate = runs.buildFilterCandidate(id);
+        assert.ok(candidate, `no candidate for ${id}`);
+        return matchesRunFilter(candidate, filter);
+      })
+      .sort();
+    assert.deepEqual(sqlIds, predicateIds, `SQL vs predicate for ${JSON.stringify(filter)}`);
+    assert.equal(
+      metricsRunCount(db, filter),
+      sqlIds.length,
+      `metrics service vs repository SQL for ${JSON.stringify(filter)}`,
+    );
+  }
+});
+
+test("boolean-branch filters: hand-counted, so an agreeing PAIR of bugs still fails", () => {
+  const { runs } = seedBooleanEdges();
+  // e1 matches through the OUTCOME half ONLY (its status is `completed`) — the branch a mutation
+  // deleted without anything going red before this fixture existed.
+  assert.deepEqual(ids(runs.queryRuns({ hasError: true })), ["e1", "e2"]);
+  assert.deepEqual(ids(runs.queryRuns({ hasError: true, status: ["completed"] })), ["e1"]);
+  // …and the exact complement, INCLUDING the NULL-outcome run. Without COALESCE, SQL's three-valued
+  // logic makes `NOT (false OR NULL)` = NULL, and e4 would silently vanish from `hasError: false`.
+  assert.deepEqual(ids(runs.queryRuns({ hasError: false })), ["e3", "e4"]);
+  // needsAttention over the same graph: only the unseen, not-running run.
+  assert.deepEqual(ids(runs.queryRuns({ needsAttention: true })), ["e3"]);
+  assert.deepEqual(ids(runs.queryRuns({ needsAttention: false })), ["e1", "e2", "e4"]);
+});
+
+// ── AM-OB12 acceptance #3, closed by AM-OB4 ──────────────────────────────────────────────────────
+//
+// AM-OB12 made the auto-rating verdicts FILTERABLE and stopped there, on purpose: its own non-goals
+// forbid a fourteenth bespoke measure, so "what share of runs came back `unanswered`" had nothing to
+// compute it with until the ratio existed. These tests are that acceptance criterion — a ratio whose
+// NUMERATOR names a verdict IS the share metric, with no new measure and no new vocabulary.
+
+test("AM-OB12 #3 — a verdict numerator computes the share, hand-counted over the rating fixture", () => {
+  const { runs, db } = seedRatings();
+  // Eight runs, all inside one UTC day. Exactly one has a latest `unanswered` verdict (rr2 — rr1 is
+  // `answered`, and the other six are unrated, malformed, wrong-shaped or outside the vocabulary).
+  assert.equal(ids(runs.queryRuns({})).length, 8);
+  assert.deepEqual(ids(runs.queryRuns({ answerVerdict: ["unanswered"] })), ["rr2"]);
+
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: { numerator: { answerVerdict: ["unanswered"] } },
+  });
+  const points = res.series.filter((s) => s.measure === "ratio").flatMap((s) => s.points);
+  assert.deepEqual(
+    points.map((p) => [p.value, p.n]),
+    [[1 / 8, 8]],
+  );
+
+  // The narrower question the explicit denominator exists for: "of the runs we actually RATED, what
+  // share came back unanswered" — 1 of 2, not 1 of 8. An unrated run is not a passing run, and this
+  // is the distinction that stops a rating backlog from reading as improving quality.
+  const ofRated = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: {
+      denominator: { answerVerdict: ["answered", "partial", "unanswered"] },
+      numerator: { answerVerdict: ["unanswered"] },
+    },
+  });
+  assert.deepEqual(
+    ofRated.series.filter((s) => s.measure === "ratio").flatMap((s) => s.points).map((p) => [p.value, p.n]),
+    [[1 / 2, 2]],
+  );
+
+  // An error-forensics bucket share works the same way — rr2 and rr5 carry findings; rr2's include
+  // `mcp_server`.
+  const bucketShare = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: {
+      denominator: { errorBucket: ["skill", "mcp_server", "model_behavior", "test_setup", "provider_infra"] },
+      numerator: { errorBucket: ["mcp_server"] },
+    },
+  });
+  assert.deepEqual(
+    bucketShare.series.filter((s) => s.measure === "ratio").flatMap((s) => s.points).map((p) => [p.value, p.n]),
+    [[1 / 2, 2]],
+  );
+});
+
+test("AM-OB12 #3 — a verdict share with NO qualifying runs is OMITTED, never 0", () => {
+  const { db } = seedRatings();
+  // No run in the fixture has a `partial` answer verdict, so a denominator of `partial` runs is
+  // empty. "0% of the partial runs were X" is not a fact about anything.
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: {
+      denominator: { answerVerdict: ["partial"] },
+      numerator: { insightVerdict: ["noise"] },
+    },
+  });
+  assert.deepEqual(res.series.filter((s) => s.measure === "ratio"), []);
+  assert.equal(res.series.flatMap((s) => s.points).filter((p) => p.n === 0).length, 0);
+});
+
+test("AM-OB12 #6 — a verdict-numerator ratio leaves meanScore and run_grades byte-identical", () => {
+  const { db } = seedRatings();
+  const gradesBefore = db.prepare("SELECT * FROM run_grades ORDER BY id").all();
+  const meanBefore = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["meanScore"] });
+
+  const withShare = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["meanScore", "ratio"],
+    ratio: { numerator: { answerVerdict: ["unanswered"] } },
+  });
+
+  // The share is a READ of what the graders persisted; computing it neither writes a grade nor
+  // changes what `meanScore` selects (`PRIMARY_GRADER_PRIORITY` excludes the three base graders, so
+  // the base ratings are invisible to it — asserted, not assumed).
+  assert.deepEqual(db.prepare("SELECT * FROM run_grades ORDER BY id").all(), gradesBefore);
+  assert.deepEqual(
+    withShare.series.filter((s) => s.measure === "meanScore"),
+    meanBefore.series.filter((s) => s.measure === "meanScore"),
+  );
 });

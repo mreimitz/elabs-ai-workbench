@@ -14,10 +14,12 @@
 //    30-day / day-bucket / grouped query stays well under the 500 ms budget — see metrics-perf.test.ts,
 //    which also times a SQL-offset percentile for comparison). Nearest-rank is deterministic (no
 //    interpolation), so repeated calls are identical.
-//  • The RunFilter → SQL translation below MIRRORS the run-repository's private `buildRunFilterWhere`
-//    (WP1.1) exactly. It is REPLICATED here (not imported) because the WP1.2 boundary forbids modifying
-//    the runs repo, and `shared` deliberately holds no SQL. Both translations are anchored to the SAME
-//    shared `matchesRunFilter` predicate by cross-check tests, so they cannot silently drift.
+//  • The RunFilter → SQL translation is IMPORTED from `run-filter-sql.ts` (RM-17 Phase 6, AM-OB4).
+//    It used to be a byte-identical REPLICA of the run-repository's private builder, and the header
+//    here claimed both were pinned to the shared `matchesRunFilter` predicate — only one of them was
+//    (the cross-check exercised `queryRuns`), so the charts could drift from the feed unnoticed.
+//    There is now ONE builder, and `runs-filter.test.ts` runs its whole cross-check table through
+//    `computeRunMetrics` as well as the repository.
 //  • Score selection REUSES the exported `PRIMARY_GRADER_PRIORITY` from the suites orchestrator and
 //    replicates its tiny `pickOutcomeScore` (latest-per-grader → first priority grader with a graded
 //    score). `meanScore` therefore equals the suite-analytics mean-grade selection on the same fixture
@@ -38,167 +40,17 @@ import type {
   SessionCostBasis,
   SessionTokenAccounting,
 } from "@mcp-token-footprint/shared";
-import { CAPABILITY_SPLIT_MEASURES, METRICS_TIMEZONE } from "@mcp-token-footprint/shared";
+import type { RunMetricsRatioConfig } from "@mcp-token-footprint/shared";
+import {
+  CAPABILITY_SPLIT_MEASURES,
+  METRICS_TIMEZONE,
+  RUN_METRICS_NAMED_RATIOS,
+} from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../db/database.js";
 import { capabilitiesForProviderKind } from "../testing/session-capabilities.js";
 import { PRIMARY_GRADER_PRIORITY } from "../suites/orchestrator.js";
-import { ratingFindingClause, ratingVerdictClause } from "./rating-filter-sql.js";
+import { buildRunFilterWhere, inheritDerived } from "./run-filter-sql.js";
 
-// ── RunFilter → parameterized WHERE (mirror of run-repository's private builder — see header) ──────
-
-function buildRunFilterWhere(filter: RunFilter): {
-  clauses: string[];
-  params: Record<string, string | number>;
-} {
-  const clauses: string[] = [];
-  const params: Record<string, string | number> = {};
-  let seq = 0;
-  const bind = (value: string | number): string => {
-    const name = `p${seq++}`;
-    params[name] = value;
-    return `@${name}`;
-  };
-  const bindList = (values: readonly (string | number)[]): string =>
-    values.map((value) => bind(value)).join(", ");
-  const nonEmpty = (values?: readonly string[]): values is string[] =>
-    Array.isArray(values) && values.length > 0;
-
-  if (nonEmpty(filter.status)) clauses.push(`status IN (${bindList(filter.status)})`);
-  if (nonEmpty(filter.outcome)) clauses.push(`outcome IN (${bindList(filter.outcome)})`);
-  if (nonEmpty(filter.stopReasonCode)) {
-    clauses.push(`stop_reason_code IN (${bindList(filter.stopReasonCode)})`);
-  }
-  if (nonEmpty(filter.phase)) clauses.push(`phase IN (${bindList(filter.phase)})`);
-  if (filter.seen !== undefined) clauses.push(`seen = ${bind(filter.seen ? 1 : 0)}`);
-  if (nonEmpty(filter.scenarioId)) clauses.push(`scenario_id IN (${bindList(filter.scenarioId)})`);
-  if (nonEmpty(filter.testId)) clauses.push(`test_id IN (${bindList(filter.testId)})`);
-  if (filter.suiteRunId !== undefined) clauses.push(`suite_run_id = ${bind(filter.suiteRunId)}`);
-  if (filter.interactiveOnly === true) clauses.push("mode = 'interactive'");
-  // "Needs attention" as a filter (owner-requested) — REPLICATED from run-repository's
-  // `buildRunFilterWhere` EXACTLY (mirrors the shared `runNeedsAttention` predicate). NULL-safe via
-  // COALESCE so the negation is exact; kept in agreement by the SQL-vs-predicate cross-check test.
-  if (filter.needsAttention !== undefined) {
-    const predicate =
-      "((status = 'running' AND COALESCE(phase, '') = 'waiting_input') OR (COALESCE(seen, 0) = 0 AND status <> 'running'))";
-    clauses.push(filter.needsAttention ? predicate : `NOT ${predicate}`);
-  }
-  if (filter.hasError !== undefined) {
-    const predicate = "(status = 'error' OR COALESCE(outcome, '') = 'error')";
-    clauses.push(filter.hasError ? predicate : `NOT ${predicate}`);
-  }
-  if (filter.costUsdGte !== undefined) clauses.push(`cost_usd >= ${bind(filter.costUsdGte)}`);
-  if (filter.costUsdLte !== undefined) clauses.push(`cost_usd <= ${bind(filter.costUsdLte)}`);
-  if (filter.tokensGte !== undefined) {
-    clauses.push(`(tokens_in + tokens_out) >= ${bind(filter.tokensGte)}`);
-  }
-  if (filter.tokensLte !== undefined) {
-    clauses.push(`(tokens_in + tokens_out) <= ${bind(filter.tokensLte)}`);
-  }
-  if (filter.durationMsGte !== undefined) {
-    clauses.push(`COALESCE(active_duration_ms, total_duration_ms) >= ${bind(filter.durationMsGte)}`);
-  }
-  if (filter.durationMsLte !== undefined) {
-    clauses.push(`COALESCE(active_duration_ms, total_duration_ms) <= ${bind(filter.durationMsLte)}`);
-  }
-  if (filter.dateFrom !== undefined) clauses.push(`started_at >= ${bind(filter.dateFrom)}`);
-  if (filter.dateTo !== undefined) clauses.push(`started_at <= ${bind(filter.dateTo)}`);
-
-  if (nonEmpty(filter.providerKind)) {
-    clauses.push(
-      `scenario_id IN (SELECT s.id FROM scenarios s JOIN provider_credentials pc ON pc.id = s.provider_id WHERE pc.kind IN (${bindList(
-        filter.providerKind,
-      )}))`,
-    );
-  }
-  if (nonEmpty(filter.model)) {
-    clauses.push(
-      `scenario_id IN (SELECT id FROM scenarios WHERE model IN (${bindList(filter.model)}))`,
-    );
-  }
-  if (nonEmpty(filter.serverId)) {
-    clauses.push(
-      `EXISTS (SELECT 1 FROM scenario_servers ss WHERE ss.scenario_id = runs.scenario_id AND ss.server_id IN (${bindList(
-        filter.serverId,
-      )}))`,
-    );
-  }
-  if (nonEmpty(filter.skillId)) {
-    clauses.push(
-      `EXISTS (SELECT 1 FROM run_skills rk WHERE rk.run_id = runs.id AND rk.skill_id IN (${bindList(
-        filter.skillId,
-      )}))`,
-    );
-  }
-  if (filter.suiteId !== undefined) {
-    clauses.push(
-      `suite_run_id IN (SELECT id FROM suite_runs WHERE suite_id = ${bind(filter.suiteId)})`,
-    );
-  }
-  if (filter.collectionId !== undefined) {
-    const collectionParam = bind(filter.collectionId);
-    clauses.push(
-      `(test_id IN (SELECT id FROM tests WHERE collection_id = ${collectionParam}) OR ` +
-        `suite_run_id IN (SELECT sr.id FROM suite_runs sr JOIN suites su ON su.id = sr.suite_id WHERE su.collection_id = ${collectionParam}))`,
-    );
-  }
-
-  if (
-    filter.scoreGte !== undefined ||
-    filter.scoreLte !== undefined ||
-    filter.grader !== undefined
-  ) {
-    const parts = ["g.run_id = runs.id", "g.score IS NOT NULL"];
-    if (filter.grader !== undefined) parts.push(`g.grader_id = ${bind(filter.grader)}`);
-    if (filter.scoreGte !== undefined) parts.push(`g.score >= ${bind(filter.scoreGte)}`);
-    if (filter.scoreLte !== undefined) parts.push(`g.score <= ${bind(filter.scoreLte)}`);
-    parts.push(
-      "g.created_at = (SELECT MAX(g2.created_at) FROM run_grades g2 WHERE g2.run_id = g.run_id AND g2.grader_id = g.grader_id)",
-    );
-    clauses.push(`EXISTS (SELECT 1 FROM run_grades g WHERE ${parts.join(" AND ")})`);
-  }
-
-  // Retention classes (WP1.6) — `runs.pinned` is now a REAL column (mirrors run-repository's
-  // `buildRunFilterWhere` `seen` clause exactly). Kept in agreement by the cross-check test.
-  if (filter.pinned !== undefined) clauses.push(`pinned = ${bind(filter.pinned ? 1 : 0)}`);
-
-  // Human feedback (WP1.5) — `run_feedback` is now a REAL table (mirrors run-repository's
-  // `buildRunFilterWhere` EXACTLY — kept in agreement by the cross-check test). An EMPTY
-  // `feedback: {}` imposes NO constraint; `key`/`hasScore:true` narrow via a correlated EXISTS.
-  if (filter.feedback !== undefined) {
-    const parts = ["f.run_id = runs.id"];
-    if (filter.feedback.key !== undefined) parts.push(`f.key = ${bind(filter.feedback.key)}`);
-    if (filter.feedback.hasScore === true) parts.push("f.score IS NOT NULL");
-    if (parts.length > 1) {
-      clauses.push(`EXISTS (SELECT 1 FROM run_feedback f WHERE ${parts.join(" AND ")})`);
-    }
-  }
-
-  // Fork lineage (WP3.3, D-OB18) — `runs.derived_from_run_id` is now a REAL column. DEFAULT EXCLUDE:
-  // `derived:true` keeps only forked runs, absent/`false` excludes them. Mirrors run-repository's
-  // `buildRunFilterWhere` + the pure `matchesRunFilter` predicate EXACTLY — kept in agreement by the
-  // cross-check test.
-  if (filter.derived === true) clauses.push("derived_from_run_id IS NOT NULL");
-  else clauses.push("derived_from_run_id IS NULL");
-
-  // Auto-rating dimensions (RM-17 Phase 6, AM-OB12) — the ONE definition lives in
-  // `rating-filter-sql.ts` and is imported by BOTH `buildRunFilterWhere` copies, so these four
-  // clauses cannot drift the way the rest of this replica can. AR6: a read of what the graders
-  // already persisted, never a write or a reinterpretation.
-  if (nonEmpty(filter.answerVerdict)) {
-    clauses.push(ratingVerdictClause("answer_validation", filter.answerVerdict, bind, bindList));
-  }
-  if (nonEmpty(filter.insightVerdict)) {
-    clauses.push(ratingVerdictClause("insight_surplus", filter.insightVerdict, bind, bindList));
-  }
-  if (nonEmpty(filter.errorBucket)) {
-    clauses.push(ratingFindingClause("bucket", filter.errorBucket, bind, bindList));
-  }
-  if (nonEmpty(filter.errorFixTarget)) {
-    clauses.push(ratingFindingClause("fixTarget", filter.errorFixTarget, bind, bindList));
-  }
-
-  return { clauses, params };
-}
 
 // ── UTC bucketing (timezone-safe — METRICS_TIMEZONE) ──────────────────────────────────────────────
 
@@ -275,7 +127,96 @@ export type RunMetricsParams = {
   bucket: MetricsBucket;
   groupBy?: RunMetricsGroupBy;
   measures: RunMetricsMeasure[];
+  /** RM-17 Phase 6 (AM-OB4) — the `"ratio"` measure's numerator/denominator. Absent while `"ratio"`
+   *  is requested ⇒ the measure is reported in `unavailableMeasures`, never computed as a default. */
+  ratio?: RunMetricsRatioConfig;
 };
+
+// ── The ratio measure (RM-17 Phase 6, AM-OB4) ────────────────────────────────────────────────────
+//
+// A ratio is `matching(numerator) ÷ matching(denominator)` per (group, bucket). The design constraint
+// that shapes everything below: it must NOT become a second SQL query. So each side's `RunFilter` is
+// translated by the SAME `buildRunFilterWhere` the query's own filter uses, and the resulting clause
+// list is PROJECTED AS A COLUMN onto the one `SELECT … FROM runs` that already runs — `(a AND b) AS
+// __num_ratio` beside `id`, `started_at`, … Every row is therefore scanned exactly once and arrives
+// carrying its own membership answer, which is also why the numerator can name a dimension
+// `RunRowForMetrics` does not hold (a skill, a server, a verdict, a feedback row): the SQL knows how
+// to reach those, a materialized row does not.
+//
+// `"ratio"` takes its config from the caller. A NAMED ratio takes it from the frozen
+// `RUN_METRICS_NAMED_RATIOS` table, so a well-known share (`feedbackRate`) keeps a stable measure
+// name while sharing this exact implementation rather than getting a branch of its own.
+
+/** The ratio configs this query must compute, keyed by the measure that reports each. */
+function ratiosForQuery(params: RunMetricsParams): Map<RunMetricsMeasure, RunMetricsRatioConfig> {
+  const out = new Map<RunMetricsMeasure, RunMetricsRatioConfig>();
+  for (const measure of params.measures) {
+    if (measure === "ratio") {
+      // A caller ratio with no config is UNAVAILABLE, never a default — see `unavailableMeasures`.
+      if (params.ratio !== undefined) out.set(measure, params.ratio);
+      continue;
+    }
+    const named = (RUN_METRICS_NAMED_RATIOS as Record<string, RunMetricsRatioConfig | undefined>)[
+      measure
+    ];
+    if (named !== undefined) out.set(measure, named);
+  }
+  return out;
+}
+
+/** The projected-column alias a measure's numerator/denominator membership arrives under. Prefixed so
+ *  it can never collide with a real `runs` column name. */
+function ratioColumns(measure: RunMetricsMeasure): { num: string; den: string } {
+  return { num: `__ratio_num_${measure}`, den: `__ratio_den_${measure}` };
+}
+
+/**
+ * One ratio's two membership columns, as SQL text + the bound params they need.
+ *
+ * Both sides are ANDed onto the rows the query's own WHERE already selected, so the numerator is
+ * `denominator ∧ numerator` and the value is in `[0, 1]` by construction. `inheritDerived` carries
+ * the query filter's fork policy onto a side that does not mention forks (see its doc — without it a
+ * `derived: true` chart's numerator would be an impossible intersection reading as a flat 0%).
+ */
+export function buildRatioProjection(
+  measure: RunMetricsMeasure,
+  config: RunMetricsRatioConfig,
+  queryFilter: RunFilter,
+  prefix: string,
+): { select: string[]; params: Record<string, string | number> } {
+  const params: Record<string, string | number> = {};
+  const alias = ratioColumns(measure);
+
+  // Rebind each side's `@pN` names under a per-measure prefix — two sides (and two ratios) would
+  // otherwise both start at `@p0` and silently overwrite each other's values in one param bag.
+  const rename = (
+    built: { clauses: string[]; params: Record<string, string | number> },
+    tag: string,
+  ): string => {
+    let sql = built.clauses.join(" AND ");
+    // Longest name first, so `@p1` never rewrites the head of `@p10`.
+    for (const name of Object.keys(built.params).sort((a, b) => b.length - a.length)) {
+      const renamed = `${prefix}${tag}${name}`;
+      sql = sql.split(`@${name}`).join(`@${renamed}`);
+      params[renamed] = built.params[name] as string | number;
+    }
+    return sql.length > 0 ? `(${sql})` : "1";
+  };
+
+  const denFilter = inheritDerived(queryFilter, config.denominator ?? {});
+  const numFilter = inheritDerived(queryFilter, config.numerator);
+  const denSql = rename(buildRunFilterWhere(denFilter), "d");
+  const numSql = rename(buildRunFilterWhere(numFilter), "n");
+
+  return {
+    select: [
+      `(${denSql}) AS ${alias.den}`,
+      // The numerator is the INTERSECTION — a share can never exceed its own denominator.
+      `(${denSql} AND ${numSql}) AS ${alias.num}`,
+    ],
+    params,
+  };
+}
 
 type RunRowForMetrics = {
   id: string;
@@ -298,6 +239,10 @@ type RunRowForMetrics = {
   test_id: string;
   suite_run_id: string | null;
   stop_reason_code: string | null;
+  // AM-OB4 — the ratio membership columns projected onto this same row (`__ratio_num_<measure>` /
+  // `__ratio_den_<measure>`, SQLite booleans: 0/1). Indexed, not named, because which of them exist
+  // depends on the requested measures.
+  [ratioColumn: string]: string | number | null;
 };
 
 /** Per-(group, bucket) accumulator built in ONE pass over the filtered run rows. */
@@ -317,6 +262,10 @@ type BucketAcc = {
   // 12-run numerator by a 40-run denominator.
   cache: Map<SessionTokenAccounting, { readSum: number; writeSum: number; grossIn: number; n: number }>;
   cost: Map<SessionCostBasis, { sum: number; n: number }>;
+  // AM-OB4 — one { num, den } pair per ratio measure this query computes, folded in the SAME pass as
+  // everything above from the membership columns projected onto each row. `den` is its OWN count, not
+  // `acc.count`, because a ratio's denominator may narrow further than the query's filter.
+  ratios: Map<RunMetricsMeasure, { num: number; den: number }>;
 };
 
 function newBucketAcc(): BucketAcc {
@@ -331,6 +280,7 @@ function newBucketAcc(): BucketAcc {
     tokens: new Map(),
     cache: new Map(),
     cost: new Map(),
+    ratios: new Map(),
   };
 }
 
@@ -358,12 +308,23 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
   const measures = params.measures;
   const wantMeanScore = measures.includes("meanScore");
 
+  // AM-OB4 — each ratio contributes two PROJECTED COLUMNS to the query that is already running, never
+  // a second statement. `ri` numbers the ratios so two of them cannot collide on a bound param name.
+  const ratios = ratiosForQuery(params);
+  const ratioSelect: string[] = [];
+  let ratioIndex = 0;
+  for (const [measure, config] of ratios) {
+    const projection = buildRatioProjection(measure, config, params.filter, `__r${ratioIndex++}`);
+    ratioSelect.push(...projection.select);
+    Object.assign(bind, projection.params);
+  }
+
   const rows = db
     .prepare(
       `SELECT id, started_at, status, outcome, active_duration_ms, total_duration_ms,
               tokens_in, tokens_out, cache_read_tokens, cache_write_tokens,
               cost_usd, turns, capabilities_json, scenario_id, test_id,
-              suite_run_id, stop_reason_code
+              suite_run_id, stop_reason_code${ratioSelect.length > 0 ? `,\n              ${ratioSelect.join(",\n              ")}` : ""}
          FROM runs ${where}`,
     )
     .all(bind) as RunRowForMetrics[];
@@ -529,6 +490,14 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
       ct.sum += row.cost_usd;
       ct.n += 1;
       acc.cost.set(cap.costBasis, ct);
+      // AM-OB4 — fold the projected membership answers. Same pass, same row, no second query.
+      for (const measure of ratios.keys()) {
+        const alias = ratioColumns(measure);
+        const rt = acc.ratios.get(measure) ?? { num: 0, den: 0 };
+        if (row[alias.den] === 1) rt.den += 1;
+        if (row[alias.num] === 1) rt.num += 1;
+        acc.ratios.set(measure, rt);
+      }
     }
   }
 
@@ -548,10 +517,12 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
           (m) => m === "cacheReadTokens" || m === "cacheWriteTokens" || m === "cacheHitRate",
         )
       : [];
-  const unavailableMeasures = [
-    ...measures.filter((m) => m === "feedbackRate"),
-    ...cacheMeasuresUnavailable,
-  ];
+  // AM-OB4 — `"ratio"` asked for with no config is UNAVAILABLE, not zero and not silence. There is
+  // nothing to divide, and inventing a default numerator would answer a question nobody asked.
+  // (`feedbackRate` used to sit here permanently; it is now a real named ratio.)
+  const ratioUnavailable =
+    measures.includes("ratio") && !ratios.has("ratio") ? (["ratio"] as RunMetricsMeasure[]) : [];
+  const unavailableMeasures = [...ratioUnavailable, ...cacheMeasuresUnavailable];
 
   return {
     bucket: params.bucket,
@@ -561,6 +532,7 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
     groupBy: params.groupBy ?? null,
     measures,
     unavailableMeasures,
+    ...(params.ratio !== undefined ? { ratio: params.ratio } : {}),
     series,
   };
 }
@@ -582,8 +554,6 @@ function buildRunSeries(
     const buckets = byGroup.get(group) as Map<string, BucketAcc>;
     const bucketStarts = [...buckets.keys()].sort();
     for (const measure of measures) {
-      if (measure === "feedbackRate") continue; // no backing store yet (→ unavailableMeasures)
-
       if (!(CAPABILITY_SPLIT_MEASURES as readonly string[]).includes(measure)) {
         const points: { bucketStart: string; value: number; n: number }[] = [];
         let durationFallback = false;
@@ -664,6 +634,17 @@ function scalarPoint(
       }
       if (n === 0 || grossIn === 0) return null;
       return { bucketStart, value: readSum / grossIn, n };
+    }
+    // AM-OB4 — every ratio measure (the caller's `"ratio"` and every named one, e.g. `feedbackRate`)
+    // lands here. THE RULE THIS WHOLE MEASURE RESTS ON: a ZERO DENOMINATOR is UNKNOWN, so the bucket
+    // is OMITTED. A 0% error rate and "nothing ran in this window" are different facts and one of
+    // them is a crisis — plotted as `0` they are the same pixel. `n` is the DENOMINATOR count, not
+    // `acc.count`, so a chart tooltip reports what the share was actually taken over.
+    case "ratio":
+    case "feedbackRate": {
+      const rt = acc.ratios.get(measure);
+      if (rt === undefined || rt.den === 0) return null;
+      return { bucketStart, value: rt.num / rt.den, n: rt.den };
     }
     default:
       return null;

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type {
   GithubAccountStatus,
   WatchRule,
+  WatchWindowConfig,
   WatchWindowPreview,
 } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
@@ -480,5 +481,99 @@ describe("RuleEditorDialog — workflow_dispatch (AM-OB11)", () => {
     // Unlike a webhook URL, nothing here is write-only — there is no secret to withhold.
     expect(screen.getByDisplayValue("suite_id")).toBeInTheDocument();
     expect(screen.getByDisplayValue("s-42")).toBeInTheDocument();
+  });
+});
+
+// ══ AM-OB4 — a windowed rule on a share the operator defines ══════════════════════════════════════
+
+/** A saved windowed rule that thresholds "what share of runs failed". The window is declared on its
+ *  own (not inline) because `WatchRule.window` is OPTIONAL, and spreading an optional makes every
+ *  field optional — which the variant rules below need to override. */
+const RATIO_WINDOW: WatchWindowConfig = {
+  measure: "ratio",
+  ratio: { numerator: { hasError: true } },
+  bucket: "hour",
+  window: "1h",
+  op: ">=",
+  threshold: 0.3,
+  cooldownMinutes: 60,
+};
+
+const RATIO_RULE: WatchRule = {
+  id: "rule-ratio",
+  name: "Failure share",
+  enabled: true,
+  trigger: "windowed",
+  filter: {},
+  window: RATIO_WINDOW,
+  actions: [{ type: "pin" }],
+  createdAt: "2026-01-01T00:00:00Z",
+  updatedAt: "2026-01-01T00:00:00Z",
+};
+
+describe("RuleEditorDialog — the ratio measure", () => {
+  test("the numerator editor appears only for the `ratio` measure, and pre-fills from a saved rule", async () => {
+    renderEditor({ mode: "edit", rule: RATIO_RULE });
+    expect(await screen.findByText("Count the runs that match…")).toBeInTheDocument();
+    // Off by default: the base is the rule's own filter.
+    expect(screen.getByRole("switch", { name: "…out of a narrower base" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    // The empty-window note is present, because a share is exactly where the AM-OB10 failure mode
+    // (an empty window read as a healthy recovery) would bite again.
+    expect(screen.getByText(/never treated as a healthy 0%/i)).toBeInTheDocument();
+  });
+
+  test("a non-ratio windowed rule shows no numerator editor at all", async () => {
+    renderEditor({
+      mode: "edit",
+      rule: { ...RATIO_RULE, window: { ...RATIO_WINDOW, measure: "errorRate", ratio: undefined } },
+    });
+    await screen.findByLabelText("Measure");
+    expect(screen.queryByText("Count the runs that match…")).not.toBeInTheDocument();
+  });
+
+  test("saving a ratio rule with an EMPTY numerator is refused before the request", async () => {
+    mockPreview.mockResolvedValue(samplePreview(false));
+    renderEditor({
+      mode: "edit",
+      rule: { ...RATIO_RULE, window: { ...RATIO_WINDOW, ratio: { numerator: {} } } },
+    });
+    await screen.findByText("Count the runs that match…");
+
+    // A windowed rule cannot be saved until its preview has run (conventions §11), so the guard sits
+    // BEHIND that gate — reach it the way an operator would.
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Run preview" }));
+    await waitFor(() => expect(mockPreview).toHaveBeenCalled());
+    fireEvent.click(await screen.findByRole("button", { name: "Save changes" }));
+
+    // An unconstrained RunFilter is schema-VALID, so the wire would accept a rule whose share is 100%
+    // in every window — one that fires forever. The editor is the only place that can catch it.
+    expect(
+      await screen.findByText(/Add at least one condition to the share's numerator/i),
+    ).toBeInTheDocument();
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  test("the grader field says what it DOES — narrows the run set, does not pick whose score is meaned", async () => {
+    renderEditor({ mode: "edit", rule: RATIO_RULE });
+    // AM-OB4 corrected an overstatement that lived in three places (the wire type, the engine comment
+    // and this label): `grader` never chose which grader's score `meanScore` averages.
+    expect(await screen.findByLabelText("Only runs graded by (optional)")).toBeInTheDocument();
+    expect(screen.getByText(/does not change whose score meanScore averages/i)).toBeInTheDocument();
+  });
+
+  test("the preview sends the SAME projected window Save would send", async () => {
+    mockPreview.mockResolvedValue(samplePreview(false));
+    renderEditor({ mode: "edit", rule: RATIO_RULE });
+    fireEvent.click(await screen.findByRole("button", { name: "Preview" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Run preview/i }));
+
+    await waitFor(() => expect(mockPreview).toHaveBeenCalled());
+    const sent = mockPreview.mock.calls.at(-1)?.[0];
+    expect(sent?.window.measure).toBe("ratio");
+    expect(sent?.window.ratio).toEqual({ numerator: { hasError: true } });
   });
 });

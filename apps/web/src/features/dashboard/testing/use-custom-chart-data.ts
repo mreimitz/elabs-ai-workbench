@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import type { DashboardChartConfig, RunFilter, RunMetricsMeasure } from "@mcp-token-footprint/shared";
-import { DASHBOARD_CHART_SCAN_MEASURE_UNITS, RUN_METRICS_MEASURE_UNITS } from "@mcp-token-footprint/shared";
+import {
+  DASHBOARD_CHART_SCAN_MEASURE_UNITS,
+  ratioConfigIssue,
+  RUN_METRICS_MEASURE_UNITS,
+} from "@mcp-token-footprint/shared";
 import { getRunMetrics, getScanMetrics } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 import {
@@ -117,11 +121,26 @@ export function useCustomChartData(
       setState({ loading: false, error: null, unit: unitFor(config), ...EMPTY });
       return;
     }
+    // AM-OB4 — the same DRAFT guard for a ratio the operator has selected but not yet configured.
+    // The wire rejects that pair (both directions), and a preview is not the place to learn it.
+    if (config.source === "runs" && ratioConfigIssue(config.measures, config.ratio) !== null) {
+      setState({ loading: false, error: null, unit: unitFor(config), ...EMPTY });
+      return;
+    }
 
     if (config.source === "runs") {
       const filter: RunFilter = composeChartRunFilterForControls(controls, config.filter);
       getRunMetrics(
-        { filter, bucket: config.bucket, groupBy: config.groupBy, measures: config.measures },
+        {
+          filter,
+          bucket: config.bucket,
+          groupBy: config.groupBy,
+          measures: config.measures,
+          // The ratio's own filters are chart-local and are NOT composed with the dashboard's global
+          // bar: they narrow the population the composed `filter` already selected, so folding the
+          // global bar in a second time would be a no-op at best and a double-narrowing at worst.
+          ...(config.ratio !== undefined ? { ratio: config.ratio } : {}),
+        },
         controller.signal,
       )
         .then((response) => {

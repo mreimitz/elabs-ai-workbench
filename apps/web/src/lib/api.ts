@@ -47,6 +47,7 @@ import type {
   NotificationReadAllResult,
   RunFilter,
   RunMetricsGroupBy,
+  RunMetricsRatioConfig,
   RunMetricsMeasure,
   RunMetricsResponse,
   RunFeedback,
@@ -118,7 +119,7 @@ import type {
   // (a DIFFERENT shape — the run-EXPORT payload from `/api/reports/run/:id/json`).
   RunReport as RunRatingReport,
 } from "@mcp-token-footprint/shared";
-import { serializeRunFilter } from "@mcp-token-footprint/shared";
+import { serializeRunFilter, serializeRunMetricsRatio } from "@mcp-token-footprint/shared";
 import type { RunReport } from "../features/testing/analytics-derive";
 
 /**
@@ -1553,6 +1554,10 @@ export type RunMetricsQuery = {
   bucket: MetricsBucket;
   groupBy?: RunMetricsGroupBy;
   measures: RunMetricsMeasure[];
+  /** RM-17 Phase 6 (AM-OB4) — the `ratio` measure's numerator/denominator, serialized through the
+   *  shared `serializeRunMetricsRatio` codec for the same reason `filter` is: byte-for-byte
+   *  agreement with what the API parses. */
+  ratio?: RunMetricsRatioConfig;
 };
 
 /** Time-bucketed, group-able run aggregates (`GET /api/metrics/runs`) — the Testing dashboard's
@@ -1569,6 +1574,7 @@ export function getRunMetrics(
   if (query.groupBy) params.set("groupBy", query.groupBy);
   if (query.from !== undefined) params.set("from", query.from);
   if (query.to !== undefined) params.set("to", query.to);
+  if (query.ratio !== undefined) params.set("ratio", serializeRunMetricsRatio(query.ratio));
   return apiGet<RunMetricsResponse>(`/api/metrics/runs?${params.toString()}`, signal);
 }
 

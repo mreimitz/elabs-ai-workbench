@@ -418,8 +418,6 @@ export const RUN_METRICS_GROUP_BY = [
 
 // `GET /api/metrics/runs?measures=…`. `p*DurationMs` are over the ACTIVE duration (activeDurationMs ??
 // totalDurationMs, D-US3) — a series that fell back to totalDurationMs is MARKED (`durationFallback`).
-// `feedbackRate` has NO backing store until
-// WP1.5 — requesting it lists it in `unavailableMeasures` and emits no series (never a fake 0).
 export const RUN_METRICS_MEASURES = [
   "count",
   "errorRate",
@@ -430,6 +428,9 @@ export const RUN_METRICS_MEASURES = [
   "tokensOut",
   "costUsd",
   "meanScore",
+  // RM-17 Phase 6 (AM-OB4) — LIVE as of the ratio machinery. A NAMED RATIO (numerator: runs carrying
+  // any human feedback; denominator: the query's own filter), not a fourteenth bespoke branch — see
+  // `RUN_METRICS_NAMED_RATIOS` below. It was a declared-but-inert name from WP1.2 until then.
   "feedbackRate",
   // RM-33 (planning/Roadmap/RM-33-cache-aware-token-accounting/, WP 2.2) — the prompt-cache composition of
   // `tokensIn`, which stays GROSS. Before these, cached tokens could not be charted at all: the only
@@ -439,6 +440,13 @@ export const RUN_METRICS_MEASURES = [
   "cacheReadTokens",
   "cacheWriteTokens",
   "cacheHitRate",
+  // RM-17 Phase 6 (AM-OB4) — THE generic share measure: numerator ÷ denominator, each side carrying
+  // its OWN `RunFilter` (`RunMetricsRatioConfig`). Before it, the only shares an operator could chart
+  // were the four someone thought of in advance; afterwards "what fraction of runs on this server used
+  // a skill" / "what share came back `unanswered`" is a filter, not a code change. Deliberately the
+  // LAST word on shares: a fifteenth `<something>Rate` beside these is the smell this measure exists
+  // to remove (pinned by `run-filter.test.ts`'s vocabulary test).
+  "ratio",
 ] as const;
 
 // D-OB14 (chart honesty) — the token/cost measures whose values must NEVER be blended across capability
@@ -507,7 +515,29 @@ export const RUN_METRICS_MEASURE_UNITS: Record<(typeof RUN_METRICS_MEASURES)[num
   cacheReadTokens: "tokens",
   cacheWriteTokens: "tokens",
   cacheHitRate: "rate",
+  ratio: "rate",
 };
+
+// --- Observability — the ratio measure (planning/Roadmap/RM-17-observability/, Phase 6 AM-OB4) -----
+// A measure that is `matching(numerator) ÷ matching(denominator)` per bucket, with each side named by
+// its OWN `RunFilter`. Two kinds exist and they share ONE implementation:
+//
+//  • `"ratio"` — the CALLER supplies the config (`?ratio=` / `DashboardChartRunsConfig.ratio` /
+//    `WatchWindowConfig.ratio`). Requesting `ratio` without one is reported in `unavailableMeasures`,
+//    never computed as some default.
+//  • a NAMED ratio — a measure whose config is FIXED here, so a well-known share keeps a stable name
+//    on the wire and in a saved chart. `feedbackRate` is the only one, and it is deliberately the
+//    FIRST instance of the generic machinery rather than a branch beside it.
+//
+// Both obey the same honesty rule as `cacheHitRate`: a bucket whose DENOMINATOR is 0 is OMITTED from
+// the series, never plotted as `0`. "0% of runs errored" and "nothing ran" are different facts and one
+// of them is a crisis.
+export const RUN_METRICS_NAMED_RATIOS = {
+  // "What share of runs got a human verdict?" — the numerator is `feedback.any`, i.e. AT LEAST ONE
+  // `run_feedback` row (of any key, scored or note-only). The denominator is the query's own filter.
+  // D-OB15/AR6 holds: this counts feedback, it never becomes or touches a grade.
+  feedbackRate: { numerator: { feedback: { any: true } } },
+} as const;
 
 // The UNIT each `source: "scans"` measure belongs to — same-unit constraint, mirrors
 // RUN_METRICS_MEASURE_UNITS above.

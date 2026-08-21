@@ -2113,6 +2113,19 @@ export type RunSort = { field: RunSortField; direction: RunSortDirection };
 export type RunFeedbackFilter = {
   key?: string;
   hasScore?: boolean;
+  /**
+   * RM-17 Phase 6 (AM-OB4) — `true` matches a run carrying AT LEAST ONE feedback row, of any key,
+   * scored or note-only. `false`/absent impose no constraint (the field NARROWS, like every other
+   * optional one; there is deliberately no "has no feedback" form — `false` would then mean two
+   * different things depending on whether it was written or defaulted).
+   *
+   * It exists because "runs with human feedback" was NOT expressible in the grammar: `key` needs a
+   * key you already know and an empty `{}` constrains nothing — so `feedbackRate` had no numerator
+   * to be built from. It is the one field the {@link RUN_METRICS_NAMED_RATIOS} `feedbackRate` config
+   * names, which is why it is part of the grammar rather than a hidden special case in the metrics
+   * service.
+   */
+  any?: boolean;
 };
 
 /**
@@ -2498,14 +2511,27 @@ export type WatchWindowState = (typeof WATCH_WINDOW_STATES)[number];
  * on grid-ALIGNED completed windows by the in-process scheduler. The measure math DELEGATES to the WP1.2
  * metrics service (`computeRunMetrics`) — this is NOT a second aggregation path. `bucket` is the metrics
  * bucket the window collapses to (derived from `window` by the evaluator, echoed here for transparency);
- * `grader` scopes scoring to one grader (folded into the effective RunFilter). `cooldownMinutes` dedupes
+ * `grader` NARROWS THE RUN SET to runs graded by that grader (folded into the effective RunFilter — it
+ * does not choose which grader's score is meaned; see the field's own doc). `cooldownMinutes` dedupes
  * re-fires while continuously breached (recovery re-arms). Fields present are ANDed with the rule's
  * `filter`.
  */
 export type WatchWindowConfig = {
   /** The metric to threshold — the SINGLE-SOURCE RUN_METRICS_MEASURES vocabulary. */
   measure: RunMetricsMeasure;
-  /** Optional grader id scoping which runs count toward the score (folded into `filter.grader`). */
+  /**
+   * RM-17 Phase 6 (AM-OB4) — the `ratio` measure's numerator/denominator, so a rule can threshold an
+   * arbitrary share ("alert when more than 20% of runs on this environment come back `unanswered`").
+   * Required exactly when `measure` is `"ratio"`, rejected otherwise — same zod rule as a chart's.
+   */
+  ratio?: RunMetricsRatioConfig;
+  /**
+   * Optional grader id. It is folded into the effective `filter.grader`, which NARROWS THE RUN SET to
+   * runs carrying a (latest) grade from that grader — it does **not** select which grader's score
+   * `meanScore` averages. `meanScore` always picks via `PRIMARY_GRADER_PRIORITY`, and there is no
+   * parameter that changes that. Setting `grader` to a non-primary grader therefore restricts *which
+   * runs count* while still averaging the primary grader's score on each of them.
+   */
   grader?: string;
   /** Optional dimension to evaluate per-group; the window BREACHES if ANY group crosses the threshold. */
   groupBy?: RunMetricsGroupBy;
@@ -5092,6 +5118,44 @@ export type RunMetricsGroupBy = (typeof RUN_METRICS_GROUP_BY)[number];
 /** A `GET /api/metrics/runs?measures=` measure ({@link RUN_METRICS_MEASURES}). */
 export type RunMetricsMeasure = (typeof RUN_METRICS_MEASURES)[number];
 
+/**
+ * RM-17 Phase 6 (AM-OB4) — the `ratio` measure's configuration: a share expressed as
+ * `matching(numerator) ÷ matching(denominator)`, each side named by its OWN {@link RunFilter}.
+ *
+ * ── What the two sides mean, exactly ─────────────────────────────────────────────────────────────
+ * Both sides NARROW the population the query already selected; neither can widen it. Concretely, for
+ * a query whose own filter is `Q` over window `W`:
+ *
+ *   denominator count = |{ run : Q ∧ W ∧ denominator }|
+ *   numerator   count = |{ run : Q ∧ W ∧ denominator ∧ numerator }|
+ *
+ * so the value is always in `[0, 1]` by construction — a numerator that "escapes" its denominator is
+ * not expressible, which is what keeps a share from reading above 100%.
+ *
+ * `denominator` is optional and defaults to "no further narrowing", i.e. the query's own filter — the
+ * common case ("what fraction of THESE runs errored") stays one filter. Supply it for the narrower
+ * question: denominator `{ hasError: true }` + numerator `{ outcome: ["stopped_guardrail"] }` reads
+ * "of the failures, what share were guardrail stops", while the chart's own filter stays broad.
+ *
+ * ── Two rules a reader should not have to discover ───────────────────────────────────────────────
+ *  1. A bucket whose DENOMINATOR is 0 is OMITTED from the series — never `0`. See
+ *     {@link RUN_METRICS_NAMED_RATIOS}.
+ *  2. `derived` (the fork default-exclude) is INHERITED from the query's own filter when a side does
+ *     not set it. Every other absent field means "no constraint"; `derived` is the one field where
+ *     absent means `false`, so a numerator that never mentions forks would otherwise silently
+ *     contradict a `derived: true` chart and read as a flat zero.
+ *
+ * `q` (full-text) is NOT part of a ratio side — the metrics service has no FTS path, and silently
+ * dropping it would make the numerator a different question than the one asked. A side carrying `q`
+ * is rejected, exactly as the query's own filter already is.
+ */
+export type RunMetricsRatioConfig = {
+  /** The share's TOP: which of the denominator's runs count. */
+  numerator: RunFilter;
+  /** The share's BOTTOM. Absent = the query's own filter, unnarrowed. */
+  denominator?: RunFilter;
+};
+
 /** One bucket's aggregate value for a run-metrics series. Empty buckets are OMITTED (never zero-filled). */
 export type RunMetricsPoint = {
   /** ISO-8601 UTC bucket START (`hour`/`day`/`week` floor). */
@@ -5136,11 +5200,16 @@ export type RunMetricsResponse = {
   /** The echoed requested measures. */
   measures: RunMetricsMeasure[];
   /**
-   * Requested measures with no backing computation yet (currently only `feedbackRate`) — the
-   * `run_feedback` table itself exists as of WP1.5, but this measure isn't wired into the metrics
-   * aggregation yet.
+   * Requested measures the service could NOT compute for this query — the honest third answer beside
+   * "a series" and "an empty series". Today: `ratio` asked for with no {@link RunMetricsRatioConfig}
+   * (RM-17 Phase 6, AM-OB4), and the cache measures over a window in which not one run has a known
+   * cache split (RM-33, D-CT6). `feedbackRate` was here from WP1.2 until AM-OB4 implemented it as a
+   * named ratio; it is now a real series.
    */
   unavailableMeasures: RunMetricsMeasure[];
+  /** RM-17 Phase 6 (AM-OB4) — the echoed ratio configuration. OPTIONAL, not nullable: a response
+   *  built before this field existed stays a valid `RunMetricsResponse` (additive-fields-only rule). */
+  ratio?: RunMetricsRatioConfig;
   series: RunMetricsSeries[];
 };
 
@@ -5215,6 +5284,13 @@ export type DashboardChartRunsConfig = {
   groupBy?: RunMetricsGroupBy;
   bucket: MetricsBucket;
   chartType: DashboardChartType;
+  /**
+   * RM-17 Phase 6 (AM-OB4) — the `ratio` measure's numerator/denominator. Required exactly when
+   * `measures` contains `"ratio"`, and rejected otherwise (both directions are zod-enforced, so a
+   * stored chart can never be a `ratio` with nothing to divide, nor carry a stale config the chart
+   * no longer plots).
+   */
+  ratio?: RunMetricsRatioConfig;
 };
 
 /** A `source: "scans"` chart queries `GET /api/metrics/scans` UNMODIFIED — `computeScanMetrics` is

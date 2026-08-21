@@ -227,3 +227,141 @@ describe("ChartComposerDialog — invalid config surfaces zod detail inline", ()
     expect(await screen.findByText("config.measures: Mixed units")).toBeInTheDocument();
   });
 });
+
+// ══ AM-OB4 — the ratio ("Custom share") editor ════════════════════════════════════════════════════
+//
+// The measure is generic, so the editor has to make it concrete: two `RunFilterBar`s worded as the
+// question the operator is asking, and a config that only reaches the wire when it is actually
+// plotted. These tests drive the real controls; the chart itself is a no-op stub in this suite (see
+// the `@elabs-ai/components-charts` mock at the top), so nothing here claims anything about how the
+// preview LOOKS — only about what it requests.
+
+/** A saved chart plotting "what share of runs failed", with the base left as the chart's own filter. */
+const RATIO_CHART: DashboardChart = {
+  ...EXISTING_CHART,
+  name: "Failure share",
+  config: {
+    source: "runs",
+    measures: ["ratio"],
+    filter: {},
+    bucket: "day",
+    chartType: "line",
+    ratio: { numerator: { hasError: true } },
+  },
+};
+
+describe("ChartComposerDialog — the ratio measure's numerator editor", () => {
+  test("the numerator editor appears only while `ratio` is selected, and keeps its draft across a deselect", () => {
+    renderDialog();
+    // Not offered until the measure is picked — a filter bar for a measure you are not plotting is
+    // just a confusing extra filter.
+    expect(screen.queryByText("Count the runs that match…")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Custom share" }));
+    expect(screen.getByText("Count the runs that match…")).toBeInTheDocument();
+    // The empty-numerator warning is present up front, because an empty one reads 100% forever.
+    expect(screen.getByText(/an empty numerator matches every run/i)).toBeInTheDocument();
+
+    // Deselecting hides the editor…
+    fireEvent.click(screen.getByRole("button", { name: "Custom share" }));
+    expect(screen.queryByText("Count the runs that match…")).not.toBeInTheDocument();
+    // …and reselecting brings it back.
+    fireEvent.click(screen.getByRole("button", { name: "Custom share" }));
+    expect(screen.getByText("Count the runs that match…")).toBeInTheDocument();
+  });
+
+  test("`ratio` is a rate: it may share a chart with the other rates, not with a token count", () => {
+    renderDialog();
+    fireEvent.click(screen.getByRole("button", { name: "Custom share" }));
+    expect(screen.getByRole("button", { name: "Error rate" })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "Tokens in" })).toBeDisabled();
+  });
+
+  test("saving with an EMPTY numerator is refused in the editor, before the request", async () => {
+    renderDialog();
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Empty share" } });
+    fireEvent.click(screen.getByRole("button", { name: "Custom share" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create chart" }));
+
+    // An unconstrained RunFilter is schema-VALID, so the API would accept this and store a chart that
+    // reads 100% in every bucket forever. The editor is the only place that can catch it.
+    expect(
+      await screen.findByText(/Add at least one condition to the share's numerator/i),
+    ).toBeInTheDocument();
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  test("a saved ratio pre-fills the editor, and re-saves with the denominator still OMITTED", async () => {
+    mockUpdate.mockResolvedValueOnce(RATIO_CHART);
+    renderDialog({ mode: "edit", chart: RATIO_CHART });
+
+    expect(screen.getByRole("button", { name: "Custom share" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Count the runs that match…")).toBeInTheDocument();
+    // Off by default — the base is the chart's own filter, which is the common case.
+    expect(screen.getByRole("switch", { name: "…out of a narrower base" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(screen.getByText(/the base is this chart's own filter/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Renamed share" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+    const config = mockUpdate.mock.calls[0]?.[1]?.config as
+      | { ratio?: { numerator: unknown; denominator?: unknown } }
+      | undefined;
+    expect(config?.ratio?.numerator).toEqual({ hasError: true });
+    // OMITTED, not `{}` — an empty denominator object and "no denominator" would both mean "the
+    // chart's own filter", and carrying one implies a narrowing that is not there.
+    expect(config?.ratio && "denominator" in config.ratio).toBe(false);
+  });
+
+  test("turning the base switch ON puts a denominator on the wire", async () => {
+    mockUpdate.mockResolvedValueOnce(RATIO_CHART);
+    renderDialog({ mode: "edit", chart: RATIO_CHART });
+
+    fireEvent.click(screen.getByRole("switch", { name: "…out of a narrower base" }));
+    expect(screen.queryByText(/the base is this chart's own filter/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+    const config = mockUpdate.mock.calls[0]?.[1]?.config as
+      | { ratio?: { denominator?: unknown } }
+      | undefined;
+    expect(config?.ratio && "denominator" in config.ratio).toBe(true);
+  });
+
+  test("a chart that stops plotting `ratio` does not carry its stale config to the wire", async () => {
+    mockUpdate.mockResolvedValueOnce(RATIO_CHART);
+    renderDialog({ mode: "edit", chart: RATIO_CHART });
+
+    // Swap the measure. The editor keeps the numerator draft (so an accidental toggle does not
+    // discard work) but the SAVED config must not carry a numerator the chart no longer divides by —
+    // the wire refuses that pair, and a reader would take it for the chart's meaning.
+    fireEvent.click(screen.getByRole("button", { name: "Custom share" }));
+    fireEvent.click(screen.getByRole("button", { name: "Error rate" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(mockUpdate).toHaveBeenCalledTimes(1));
+    const config = mockUpdate.mock.calls[0]?.[1]?.config as
+      | { measures: string[]; ratio?: unknown }
+      | undefined;
+    expect(config?.measures).toEqual(["errorRate"]);
+    expect(config && "ratio" in config).toBe(false);
+  });
+
+  test("the preview carries the ratio to GET /api/metrics/runs rather than silently dropping it", async () => {
+    mockGetRunMetrics.mockResolvedValue(EMPTY_RUN_METRICS);
+    renderDialog({ mode: "edit", chart: RATIO_CHART });
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+    await waitFor(() => expect(mockGetRunMetrics).toHaveBeenCalled());
+    const query = mockGetRunMetrics.mock.calls.at(-1)?.[0];
+    expect(query?.measures).toEqual(["ratio"]);
+    // The ratio's own filters are chart-local: they are NOT composed with the dashboard's global bar
+    // (the composed `filter` already selected the population they narrow).
+    expect(query?.ratio).toEqual({ numerator: { hasError: true } });
+    expect(query?.filter.dateFrom).toBe(`${CONTROLS.from}T00:00:00.000Z`);
+  });
+});

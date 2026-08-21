@@ -29,6 +29,7 @@ import {
   watchWindowStateFires,
   type MetricsBucket,
   type RunFilter,
+  type RunMetricsRatioConfig,
   type RunFilterCandidate,
   type WatchRule,
   type WatchWindowConfig,
@@ -212,6 +213,16 @@ export function metricsBucketForWindow(window: WatchWindowDuration): MetricsBuck
     case "7d":
       return "week";
   }
+}
+
+/** AM-OB4 — drop `q` from both sides of a ratio config, mirroring the rule's own filter. The wire
+ *  rejects a `q` here, so this is belt-and-braces against a hand-edited stored rule; it exists so an
+ *  FTS term can never be silently ignored while the threshold still fires on a wider population. */
+function stripRatioQ(ratio: RunMetricsRatioConfig): RunMetricsRatioConfig {
+  const { q: _omitNumQ, ...numerator } = ratio.numerator;
+  if (ratio.denominator === undefined) return { numerator };
+  const { q: _omitDenQ, ...denominator } = ratio.denominator;
+  return { numerator, denominator };
 }
 
 /**
@@ -554,7 +565,13 @@ export class WatchWindowEvaluator {
     endMs: number,
   ): WindowValue {
     // Effective filter: strip `q` (FTS is not part of the metrics aggregation — never a silent
-    // half-apply) and fold the config's grader into `filter.grader` (scopes scoring to that grader).
+    // half-apply) and fold the config's grader into `filter.grader`.
+    //
+    // What `grader` ACTUALLY does, corrected here by AM-OB4 because the old comment said otherwise:
+    // it NARROWS THE RUN SET to runs carrying a (latest) grade from that grader. It does NOT select
+    // which grader's score `meanScore` averages — that selection is `PRIMARY_GRADER_PRIORITY` in
+    // `metrics.ts` and no parameter changes it, so a rule naming a non-primary grader restricts
+    // *which runs count* while still averaging the primary grader's score on each of them.
     const { q: _omitQ, ...withoutQ } = filter;
     const effectiveFilter: RunFilter = { ...withoutQ };
     if (config.grader !== undefined) effectiveFilter.grader = config.grader;
@@ -566,6 +583,10 @@ export class WatchWindowEvaluator {
       bucket: metricsBucketForWindow(config.window),
       ...(config.groupBy !== undefined ? { groupBy: config.groupBy } : {}),
       measures: [config.measure],
+      // AM-OB4 — a windowed rule can threshold an arbitrary share. Both sides get the same `q` strip
+      // for the same reason: the metrics service has no FTS path, so a `q` here would be dropped
+      // rather than applied, and a threshold over a silently-widened population is worse than an error.
+      ...(config.ratio !== undefined ? { ratio: stripRatioQ(config.ratio) } : {}),
     });
 
     const points: { value: number; n: number }[] = [];

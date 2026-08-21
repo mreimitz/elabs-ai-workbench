@@ -157,3 +157,67 @@ describe("useCustomChartData — scans source", () => {
     expect(getScanMetrics.mock.calls[0]?.[0]?.serverId).toBe("srv-only-this-one");
   });
 });
+
+// ══ AM-OB4 — the ratio measure through the shared fetch hook ══════════════════════════════════════
+
+describe("useCustomChartData — the ratio measure", () => {
+  test("passes the ratio config through to GET /api/metrics/runs", async () => {
+    getRunMetrics.mockResolvedValue({ ...EMPTY_RUN_RESPONSE, measures: ["ratio"], series: [] });
+    const config: DashboardChartConfig = {
+      source: "runs",
+      measures: ["ratio"],
+      filter: {},
+      bucket: "day",
+      chartType: "line",
+      ratio: { numerator: { hasError: true }, denominator: { status: ["completed", "error"] } },
+    };
+    renderHook(() => useCustomChartData(config, CONTROLS));
+    await waitFor(() => expect(getRunMetrics).toHaveBeenCalled());
+    const query = getRunMetrics.mock.calls[0]?.[0];
+    expect(query.measures).toEqual(["ratio"]);
+    // Verbatim — the ratio's sides are chart-local and are NOT composed with the dashboard's global
+    // bar, which the composed `query.filter` already applied to the population they narrow.
+    expect(query.ratio).toEqual({
+      numerator: { hasError: true },
+      denominator: { status: ["completed", "error"] },
+    });
+  });
+
+  test("a HALF-CONFIGURED ratio fires no request at all — an honest empty state, not a 400", async () => {
+    // The composer calls this hook with the LIVE form state, so a config the wire would refuse can
+    // exist for as long as the operator is mid-edit. Firing it would show them a server error for
+    // something they have not finished typing.
+    const noConfig: DashboardChartConfig = {
+      source: "runs",
+      measures: ["ratio"],
+      filter: {},
+      bucket: "day",
+      chartType: "line",
+    };
+    const { result } = renderHook(() => useCustomChartData(noConfig, CONTROLS));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(getRunMetrics).not.toHaveBeenCalled();
+    expect(result.current.error).toBeNull();
+    expect(result.current.hasData).toBe(false);
+
+    // …and the other direction: a config the chart does not plot.
+    const strayConfig: DashboardChartConfig = {
+      source: "runs",
+      measures: ["errorRate"],
+      filter: {},
+      bucket: "day",
+      chartType: "line",
+      ratio: { numerator: { hasError: true } },
+    };
+    const stray = renderHook(() => useCustomChartData(strayConfig, CONTROLS));
+    await waitFor(() => expect(stray.result.current.loading).toBe(false));
+    expect(getRunMetrics).not.toHaveBeenCalled();
+  });
+
+  test("a chart with no ratio still sends no `ratio` param", async () => {
+    getRunMetrics.mockResolvedValue(EMPTY_RUN_RESPONSE);
+    renderHook(() => useCustomChartData(RUNS_CONFIG, CONTROLS));
+    await waitFor(() => expect(getRunMetrics).toHaveBeenCalled());
+    expect(getRunMetrics.mock.calls[0]?.[0]).not.toHaveProperty("ratio");
+  });
+});

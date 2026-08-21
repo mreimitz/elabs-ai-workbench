@@ -31,6 +31,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Switch,
   Text,
   ToggleGroup,
   ToggleGroupItem,
@@ -116,6 +117,13 @@ export function ChartComposerDialog({
       setActiveSectionId("configure");
       return;
     }
+    // AM-OB4 — an empty numerator is schema-VALID (an unconstrained RunFilter) and would save happily
+    // as a chart that reads 100% forever. The wire cannot catch it, so the editor does.
+    if (usesRatio(state) && Object.keys(state.ratioNumerator).length === 0) {
+      setFormError("Add at least one condition to the share's numerator — an empty one matches every run.");
+      setActiveSectionId("configure");
+      return;
+    }
     setSaving(true);
     try {
       const input = toDashboardChartInput(state);
@@ -186,6 +194,14 @@ type ChartFormState = {
   groupBy: RunMetricsGroupBy | undefined;
   filter: RunFilter;
   serverId: string | undefined;
+  /** AM-OB4 — the `ratio` measure's two filters. Kept as a DRAFT that survives deselecting `ratio`
+   *  (so an accidental toggle does not throw away a numerator the operator just built), and only
+   *  sent when `ratio` is actually selected — the wire refuses a config the chart does not plot. */
+  ratioNumerator: RunFilter;
+  ratioDenominator: RunFilter;
+  /** Whether the operator opted into an explicit denominator. `false` means "the chart's own filter",
+   *  which is the common case and is expressed on the wire by OMITTING `denominator`. */
+  ratioHasDenominator: boolean;
 };
 
 function emptyFormState(): ChartFormState {
@@ -199,7 +215,16 @@ function emptyFormState(): ChartFormState {
     groupBy: undefined,
     filter: {},
     serverId: undefined,
+    ratioNumerator: {},
+    ratioDenominator: {},
+    ratioHasDenominator: false,
   };
+}
+
+/** Whether this form state plots a ratio — the one place the "is the ratio editor live" question is
+ *  answered, so the editor, the draft-to-wire projection and the submit guard cannot disagree. */
+function usesRatio(state: ChartFormState): boolean {
+  return state.source === "runs" && state.runsMeasures.includes("ratio");
 }
 
 function chartToFormState(chart: DashboardChart): ChartFormState {
@@ -215,6 +240,9 @@ function chartToFormState(chart: DashboardChart): ChartFormState {
       runsMeasures: config.measures,
       groupBy: config.groupBy,
       filter: config.filter,
+      ratioNumerator: config.ratio?.numerator ?? {},
+      ratioDenominator: config.ratio?.denominator ?? {},
+      ratioHasDenominator: config.ratio?.denominator !== undefined,
     };
   }
   return {
@@ -237,6 +265,17 @@ function toDashboardChartConfig(state: ChartFormState): DashboardChartConfig {
       groupBy: state.groupBy,
       bucket: state.bucket,
       chartType: state.chartType,
+      // AM-OB4 — sent ONLY when `ratio` is plotted. The draft below survives a deselect so an
+      // accidental toggle does not discard a numerator, but a chart never carries a config it does
+      // not use (the wire refuses that, and a reader would take it for the chart's meaning).
+      ...(usesRatio(state)
+        ? {
+            ratio: {
+              numerator: state.ratioNumerator,
+              ...(state.ratioHasDenominator ? { denominator: state.ratioDenominator } : {}),
+            },
+          }
+        : {}),
     };
   }
   return {
@@ -404,7 +443,89 @@ function ConfigureSection({
           <RunFilterBar filter={state.filter} onChange={(filter) => patch({ filter })} options={options} />
         </DialogSection>
       ) : null}
+
+      {usesRatio(state) ? <RatioSection state={state} onChange={onChange} options={options} /> : null}
     </div>
+  );
+}
+
+/**
+ * AM-OB4 — the `ratio` measure's two filters, reusing the SAME `RunFilterBar` as the chart's own
+ * filter rather than a second filter UI, so a numerator can say anything a filter can say.
+ *
+ * The wording is doing real work here. "Of these runs, count the ones that…" and "…out of" name what
+ * each side means in the order an operator reads the number, because `numerator`/`denominator` is
+ * precise and tells you nothing about which one narrows what.
+ */
+function RatioSection({
+  state,
+  onChange,
+  options,
+}: {
+  state: ChartFormState;
+  onChange: (next: ChartFormState) => void;
+  options: RunFilterOptionData;
+}) {
+  const patch = (partial: Partial<ChartFormState>) => onChange({ ...state, ...partial });
+  const numeratorEmpty = Object.keys(state.ratioNumerator).length === 0;
+
+  return (
+    <DialogSection
+      title="Share"
+      description="A ratio is one measure: how many runs match the numerator, out of how many match the base."
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5">
+          <Label id="ratio-numerator-label">Count the runs that match…</Label>
+          <div aria-labelledby="ratio-numerator-label">
+            <RunFilterBar
+              filter={state.ratioNumerator}
+              onChange={(ratioNumerator) => patch({ ratioNumerator })}
+              options={options}
+            />
+          </div>
+          {numeratorEmpty ? (
+            <Text variant="meta" tone="muted">
+              Add at least one condition — an empty numerator matches every run, so the share would
+              always be 100%.
+            </Text>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <Label htmlFor="ratio-has-denominator">…out of a narrower base</Label>
+            <Switch
+              id="ratio-has-denominator"
+              checked={state.ratioHasDenominator}
+              onCheckedChange={(checked) => patch({ ratioHasDenominator: checked })}
+            />
+          </div>
+          {state.ratioHasDenominator ? (
+            <div aria-labelledby="ratio-denominator-label">
+              <span id="ratio-denominator-label" className="sr-only">
+                Base filter for the share
+              </span>
+              <RunFilterBar
+                filter={state.ratioDenominator}
+                onChange={(ratioDenominator) => patch({ ratioDenominator })}
+                options={options}
+              />
+            </div>
+          ) : (
+            <Text variant="meta" tone="muted">
+              Off — the base is this chart's own filter. Turn it on to ask a narrower question, e.g.
+              “of the runs that failed, what share were guardrail stops”.
+            </Text>
+          )}
+        </div>
+
+        <Text variant="meta" tone="muted" className="text-pretty">
+          A time bucket with nothing in its base is left out of the chart entirely — a 0% line and “no
+          runs happened” are different things.
+        </Text>
+      </div>
+    </DialogSection>
   );
 }
 

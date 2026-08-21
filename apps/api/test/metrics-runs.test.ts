@@ -12,10 +12,11 @@ import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import Database from "better-sqlite3";
 import type { RunFilter, RunMetricsResponse, RunMetricsSeries } from "@mcp-token-footprint/shared";
+import { RUN_METRICS_NAMED_RATIOS } from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
 import { GradeRepository } from "../src/grading/grade-repository.js";
-import { computeRunMetrics } from "../src/observability/metrics.js";
+import { buildRatioProjection, computeRunMetrics } from "../src/observability/metrics.js";
 import { collectChildData } from "../src/suites/orchestrator.js";
 import { RunRepository } from "../src/testing/run-repository.js";
 import {
@@ -399,9 +400,9 @@ test("RunFilter composes with the metrics window (status + providerKind + date)"
   assert.equal(windowed.to, "2026-07-02T23:59:59.999Z");
 });
 
-// ── Empty slices OMITTED, feedbackRate unavailable ────────────────────────────────────────────────
+// ── Empty slices OMITTED ──────────────────────────────────────────────────────────────────────────
 
-test("empty slices are omitted (never zero-filled); feedbackRate is unavailable (no series)", () => {
+test("empty slices are omitted (never zero-filled); feedbackRate is a real series now", () => {
   const db = createDatabase();
   seedMixed(db);
   const res = computeRunMetrics(db, {
@@ -411,9 +412,17 @@ test("empty slices are omitted (never zero-filled); feedbackRate is unavailable 
   });
   // No grades seeded → meanScore has NO points anywhere (omitted, not 0-filled).
   assert.equal(res.series.filter((s) => s.measure === "meanScore").length, 0);
-  // feedbackRate has no backing store → listed in unavailableMeasures, emits no series.
-  assert.deepEqual(res.unavailableMeasures, ["feedbackRate"]);
-  assert.equal(res.series.filter((s) => s.measure === "feedbackRate").length, 0);
+  // AM-OB4 — `feedbackRate` is no longer permanently unavailable: it is a NAMED RATIO computed by the
+  // same machinery as `ratio`. Nothing here has feedback, so every bucket's numerator is 0 while the
+  // denominator is not — and a 0-of-N share IS a real measurement, so the points EXIST and read 0.
+  // (Contrast the zero-DENOMINATOR case, which is omitted — pinned by its own test below.)
+  assert.deepEqual(res.unavailableMeasures, []);
+  const feedbackSeries = res.series.filter((s) => s.measure === "feedbackRate");
+  assert.equal(feedbackSeries.length, 1);
+  for (const point of (feedbackSeries[0] as RunMetricsSeries).points) {
+    assert.equal(point.value, 0);
+    assert.ok(point.n > 0, "n is the DENOMINATOR count, so a real 0% share still reports its base");
+  }
 });
 
 // ── Acceptance #3 — meanScore equals the suite-analytics selection ────────────────────────────────
@@ -678,5 +687,450 @@ test("AM-OB12 — a rating verdict narrows the metrics query, and an unrated run
   assert.equal(
     computeRunMetrics(db, { filter: { answerVerdict: ["partial"] }, bucket: "day", measures: ["count"] }).series.length,
     0,
+  );
+});
+
+// ══ AM-OB4 — the ratio measure ════════════════════════════════════════════════════════════════════
+//
+// A ratio is `matching(numerator) ÷ matching(denominator)` per bucket, each side named by its own
+// RunFilter. The fixture below is deliberately hand-countable: every expectation in this block is a
+// fraction written out as `x / y` with the runs named, so an agreeing PAIR of bugs (a wrong
+// numerator AND a wrong denominator that happen to cancel) still fails.
+
+/** The MIXED fixture's runs per UTC day, and which of them are errors — the hand count every
+ *  expectation below is written against, so a fixture change breaks loudly rather than silently
+ *  moving an expected share.
+ *
+ *   2026-07-01  rA1 (completed) · rO1 (ERROR)                       → 2 runs, 1 error
+ *   2026-07-02  rA2 (guardrail) · rS1 (completed) · rQ1 (completed) → 3 runs, 0 errors
+ *   2026-07-03  rLegacy (completed) · rNoDur (completed)            → 2 runs, 0 errors
+ */
+const DAY_1 = "2026-07-01T00:00:00.000Z";
+const DAY_2 = "2026-07-02T00:00:00.000Z";
+const DAY_3 = "2026-07-03T00:00:00.000Z";
+
+test("ratio: value is (numerator ∩ denominator) ÷ denominator, hand-counted per bucket", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    // "What share of runs errored?" — the error rate, expressed as a filter instead of a branch.
+    ratio: { numerator: { hasError: true } },
+  });
+
+  const s = series(res, "ratio", null, null);
+  assert.deepEqual(pointMap(s), {
+    [DAY_1]: 1 / 2, // rO1 of { rA1, rO1 }
+    [DAY_2]: 0 / 3, // none of { rA2, rS1, rQ1 } — a real 0% share, NOT an omitted bucket
+    [DAY_3]: 0 / 2, // none of { rLegacy, rNoDur }
+  });
+  // `n` is the DENOMINATOR count, so a tooltip can say what the share was taken over.
+  assert.deepEqual(
+    Object.fromEntries(s.points.map((p) => [p.bucketStart, p.n])),
+    { [DAY_1]: 2, [DAY_2]: 3, [DAY_3]: 2 },
+  );
+
+  // The whole point of the measure: it reproduces the hardcoded `errorRate` exactly, which is the
+  // evidence that the four bespoke shares did not need to be bespoke.
+  const builtin = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["errorRate"] });
+  assert.deepEqual(pointMap(series(builtin, "errorRate", null, null)), pointMap(s));
+});
+
+test("ratio: an explicit denominator NARROWS the base — 'of the failures, what share were X'", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio", "count"],
+    // Denominator: the runs that did not simply complete. Numerator: of those, the guardrail stops.
+    ratio: {
+      denominator: { outcome: ["error", "stopped_guardrail"] },
+      numerator: { outcome: ["stopped_guardrail"] },
+    },
+  });
+
+  const s = series(res, "ratio", null, null);
+  // Day 1: denominator { rO1 }, numerator {} → 0/1. Day 2: denominator { rA2 }, numerator { rA2 } →
+  // 1/1. Day 3: denominator EMPTY → the bucket is OMITTED (see the zero-denominator test below).
+  assert.deepEqual(pointMap(s), { [DAY_1]: 0, [DAY_2]: 1 });
+  assert.deepEqual(
+    Object.fromEntries(s.points.map((p) => [p.bucketStart, p.n])),
+    { [DAY_1]: 1, [DAY_2]: 1 },
+    "n follows the NARROWED denominator, not the query's own run count",
+  );
+  // …while `count` in the same response still reports the whole filtered population. The denominator
+  // narrows the ratio only; it is not a second query filter.
+  assert.deepEqual(pointMap(series(res, "count", null, null)), {
+    [DAY_1]: 2,
+    [DAY_2]: 3,
+    [DAY_3]: 2,
+  });
+});
+
+test("ratio: a ZERO DENOMINATOR omits the bucket — never 0, in any shape", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    // Nothing in the fixture is a fork, so EVERY bucket's denominator is 0.
+    ratio: { denominator: { derived: true }, numerator: {} },
+  });
+
+  // The measure produces no series at all rather than three 0-valued points. This is the invariant
+  // the whole measure rests on: "0% of runs errored" and "nothing ran" are different facts, and one
+  // of them is a crisis — plotted as `0` they are the same pixel.
+  assert.deepEqual(res.series.filter((s) => s.measure === "ratio"), []);
+
+  // And the same for ONE empty bucket among non-empty ones (day 3 has no non-completed run).
+  const partial = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: {
+      denominator: { outcome: ["error", "stopped_guardrail"] },
+      numerator: { outcome: ["stopped_guardrail"] },
+    },
+  });
+  const points = series(partial, "ratio", null, null).points;
+  assert.deepEqual(points.map((p) => p.bucketStart), [DAY_1, DAY_2]);
+  for (const p of points) {
+    assert.ok(p.n > 0, "a point only exists when its denominator did");
+  }
+  // Belt and braces against the specific regression: no point anywhere may carry n === 0, whatever
+  // its value.
+  assert.equal(
+    partial.series.flatMap((s) => s.points).filter((p) => p.n === 0).length,
+    0,
+    "a zero-denominator bucket must be ABSENT, not present with n = 0",
+  );
+});
+
+test("ratio: the numerator is INTERSECTED with the denominator — a share can never exceed 1", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    // A numerator that deliberately "escapes": completed runs, against a denominator of failures.
+    ratio: {
+      denominator: { outcome: ["error", "stopped_guardrail"] },
+      numerator: { outcome: ["completed"] },
+    },
+  });
+  for (const p of series(res, "ratio", null, null).points) {
+    assert.ok(p.value >= 0 && p.value <= 1, `share out of range: ${p.value}`);
+    assert.equal(p.value, 0, "a completed run is not in the failures denominator, so it cannot count");
+  }
+});
+
+test("ratio: a numerator may name a dimension the scanned run row does not carry", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  // The skill-attach share — `run_skills` is a JOIN, not a column on `runs`, so this is the case that
+  // rules out evaluating the numerator against the materialized row in JS.
+  db.prepare(
+    "INSERT INTO run_skills (run_id, skill_id, skill_version_id) VALUES (?, ?, ?)",
+  ).run("rA1", "sk-1", "skv-1");
+
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: { numerator: { skillId: ["sk-1"] } },
+  });
+  assert.deepEqual(pointMap(series(res, "ratio", null, null)), {
+    [DAY_1]: 1 / 2, // rA1 of { rA1, rO1 }
+    [DAY_2]: 0,
+    [DAY_3]: 0,
+  });
+});
+
+test("ratio: `derived` is INHERITED by a side that does not mention forks", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  // One fork of rA1, on day 1, that errored.
+  db.prepare(
+    `INSERT INTO runs (id, test_id, scenario_id, mode, status, outcome, started_at, tokens_in,
+                       tokens_out, cost_usd, turns, derived_from_run_id)
+     VALUES ('rFork', 't-1', 'scn-ant', 'automated', 'error', 'error', '2026-07-01T11:00:00.000Z',
+             0, 0, 0, 0, 'rA1')`,
+  ).run();
+
+  const res = computeRunMetrics(db, {
+    filter: { derived: true }, // charting ONLY forks
+    bucket: "day",
+    measures: ["ratio", "count"],
+    ratio: { numerator: { hasError: true } }, // says nothing about forks
+  });
+
+  // WITHOUT the inheritance rule the numerator would emit `derived_from_run_id IS NULL`, intersect
+  // the query's `IS NOT NULL` to nothing, and report a confident 0% — the exact failure mode this
+  // workstream keeps finding: a plausible number that means "the query was impossible".
+  assert.deepEqual(pointMap(series(res, "count", null, null)), { [DAY_1]: 1 });
+  assert.deepEqual(pointMap(series(res, "ratio", null, null)), { [DAY_1]: 1 });
+});
+
+test("ratio: composes with groupBy — one share per group, each with its own denominator", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    groupBy: "environment",
+    measures: ["ratio"],
+    ratio: { numerator: { hasError: true } },
+  });
+  // scn-oai has exactly one run (rO1, day 1) and it errored; scn-ant's day-1 run did not.
+  assert.deepEqual(pointMap(series(res, "ratio", "scn-oai", null)), { [DAY_1]: 1 });
+  assert.deepEqual(pointMap(series(res, "ratio", "scn-ant", null)), {
+    [DAY_1]: 0,
+    [DAY_2]: 0,
+    [DAY_3]: 0,
+  });
+});
+
+test("ratio: requested with NO config is unavailable — never a fabricated default", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  const res = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["ratio", "count"] });
+  assert.deepEqual(res.unavailableMeasures, ["ratio"]);
+  assert.deepEqual(res.series.filter((s) => s.measure === "ratio"), []);
+  // The rest of the response is unaffected — one unanswerable measure does not poison the others.
+  assert.equal(series(res, "count", null, null).points.length, 3);
+});
+
+test("ratio: two ratios can never share a bound param name, whatever they bind", () => {
+  // A prefix collision does NOT throw — the second projection's values simply overwrite the first's
+  // in one param bag, and the query answers with the wrong numbers. There is no observable pair to
+  // catch it end-to-end today (`feedbackRate`'s numerator binds nothing), so the invariant is pinned
+  // where it actually lives: two projections must produce DISJOINT param names.
+  const a = buildRatioProjection(
+    "ratio",
+    { numerator: { outcome: ["completed"] }, denominator: { status: ["completed"] } },
+    {},
+    "__r0",
+  );
+  const b = buildRatioProjection(
+    "feedbackRate",
+    { numerator: { outcome: ["error"] }, denominator: { status: ["error"] } },
+    {},
+    "__r1",
+  );
+  const shared = Object.keys(a.params).filter((k) => k in b.params);
+  assert.deepEqual(shared, [], "two ratios bound the same param name — one would overwrite the other");
+  // Each side of ONE ratio is also disjoint from the other: the numerator and denominator both start
+  // their own `@pN` sequence, so only the per-side tag keeps them apart.
+  const numeratorNames = Object.keys(a.params).filter((k) => k.startsWith("__r0n"));
+  const denominatorNames = Object.keys(a.params).filter((k) => k.startsWith("__r0d"));
+  assert.ok(numeratorNames.length > 0 && denominatorNames.length > 0);
+  assert.equal(new Set([...numeratorNames, ...denominatorNames]).size, Object.keys(a.params).length);
+});
+
+test("ratio: two ratio-bearing measures in one query keep their own bound params", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  seedFeedback(db, [{ runId: "rA1", key: "verdict", score: 1 }]);
+  // `feedbackRate` (a NAMED ratio) and `ratio` (the caller's) are computed in the same statement, so
+  // their `@pN` placeholders would collide if they were not prefixed per measure. A collision here
+  // does not throw — it silently answers with the OTHER measure's values, which is why this asserts
+  // two different, hand-counted results rather than merely that the query ran.
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio", "feedbackRate"],
+    ratio: { numerator: { outcome: ["completed"] } },
+  });
+  assert.deepEqual(pointMap(series(res, "ratio", null, null)), {
+    [DAY_1]: 1 / 2, // rA1 completed, rO1 errored
+    [DAY_2]: 2 / 3, // rS1 + rQ1 completed, rA2 guardrail-stopped
+    [DAY_3]: 2 / 2,
+  });
+  assert.deepEqual(pointMap(series(res, "feedbackRate", null, null)), {
+    [DAY_1]: 1 / 2, // only rA1 carries feedback
+    [DAY_2]: 0,
+    [DAY_3]: 0,
+  });
+});
+
+// ── feedbackRate — the first NAMED ratio (acceptance #4) ─────────────────────────────────────────
+
+/** Seed `run_feedback` rows. `score: null` is a NOTE-ONLY row, which still counts as feedback. */
+function seedFeedback(
+  db: AppDatabase,
+  rows: { runId: string; key: string; score: number | null; comment?: string }[],
+): void {
+  const stmt = db.prepare(
+    `INSERT INTO run_feedback (id, run_id, step_id, key, score, comment, source, created_at)
+     VALUES (@id, @runId, NULL, @key, @score, @comment, 'human', @now)`,
+  );
+  rows.forEach((r, i) => {
+    stmt.run({
+      id: `fb-${i}`,
+      runId: r.runId,
+      key: r.key,
+      score: r.score,
+      comment: r.comment ?? null,
+      now: NOW,
+    });
+  });
+}
+
+test("feedbackRate returns real values over seeded run_feedback, and is no longer unavailable", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  seedFeedback(db, [
+    { runId: "rA1", key: "verdict", score: 1 },
+    // TWO rows on ONE run — a run contributes ONCE to the numerator, not once per feedback row.
+    { runId: "rS1", key: "verdict", score: -1 },
+    { runId: "rS1", key: "quality", score: 0.5 },
+    // A NOTE-ONLY row (no score) on a run with nothing else. `feedbackRate` counts human ATTENTION,
+    // not scored attention, so this run IS in the numerator — and it is the only run that
+    // distinguishes `feedback.any` from `feedback.hasScore`, which is what makes the contrast
+    // assertion below meaningful rather than decorative.
+    { runId: "rQ1", key: "notes", score: null, comment: "looked fine" },
+  ]);
+
+  const res = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["feedbackRate"] });
+  assert.deepEqual(res.unavailableMeasures, []);
+  assert.deepEqual(pointMap(series(res, "feedbackRate", null, null)), {
+    [DAY_1]: 1 / 2, // rA1 of { rA1, rO1 }
+    [DAY_2]: 2 / 3, // rS1 (twice-fed-back, counted once) + rQ1 (note-only), of three runs
+    [DAY_3]: 0 / 2,
+  });
+
+  // The contrast that pins the MEANING: a `hasScore` numerator excludes the note-only run, so if
+  // `feedbackRate` were ever redefined as "scored feedback" this expectation and the one above would
+  // swap places rather than both staying true.
+  const scoredOnly = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    ratio: { numerator: { feedback: { hasScore: true } } },
+  });
+  assert.deepEqual(pointMap(series(scoredOnly, "ratio", null, null)), {
+    [DAY_1]: 1 / 2,
+    [DAY_2]: 1 / 3, // rS1 only — rQ1's note carries no score
+    [DAY_3]: 0 / 2,
+  });
+});
+
+test("feedbackRate is EXACTLY the named ratio — not a second implementation that agrees today", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  seedFeedback(db, [{ runId: "rA1", key: "verdict", score: 1 }]);
+
+  const named = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["feedbackRate"] });
+  const explicit = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["ratio"],
+    // The literal config `RUN_METRICS_NAMED_RATIOS.feedbackRate` holds.
+    ratio: RUN_METRICS_NAMED_RATIOS.feedbackRate,
+  });
+  assert.deepEqual(
+    pointMap(series(named, "feedbackRate", null, null)),
+    pointMap(series(explicit, "ratio", null, null)),
+  );
+});
+
+// ── AR6 / D-OB15 (acceptance #5) ─────────────────────────────────────────────────────────────────
+
+test("AR6/D-OB15: a feedback ratio is its OWN lens — meanScore, run_grades and the suite aggregate are untouched", () => {
+  const db = createDatabase();
+  baseGraph(db);
+  insertRuns(db, [
+    { id: "g1", scenarioId: "scn-ant", testId: "t-1", status: "completed", outcome: "completed", startedAt: "2026-07-01T09:00:00.000Z" },
+    { id: "g2", scenarioId: "scn-ant", testId: "t-1", status: "completed", outcome: "completed", startedAt: "2026-07-01T10:00:00.000Z" },
+  ]);
+  const grade = db.prepare(
+    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, grading_version, created_at)
+     VALUES (@id, @runId, 'outcome_judge', 'llm', 'graded', @score, 'm', 1, @createdAt)`,
+  );
+  grade.run({ id: "ar6-1", runId: "g1", score: 0.9, createdAt: "2026-07-01T11:00:00.000Z" });
+  grade.run({ id: "ar6-2", runId: "g2", score: 0.1, createdAt: "2026-07-01T11:00:00.000Z" });
+
+  const gradeRowsBefore = db.prepare("SELECT * FROM run_grades ORDER BY id").all();
+  const meanBefore = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["meanScore"] });
+  const runRepo = new RunRepository(db);
+  const gradeRepo = new GradeRepository(db);
+  const suiteBefore = collectChildData(runRepo, gradeRepo, ["g1", "g2"]);
+
+  // Now add human feedback — on the LOW-scoring run, so a leak into the grade path would move the
+  // mean rather than merely exist.
+  seedFeedback(db, [{ runId: "g2", key: "verdict", score: 1 }]);
+
+  const withFeedback = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["meanScore", "feedbackRate", "ratio"],
+    ratio: { numerator: { feedback: { any: true } } },
+  });
+
+  // 1. The feedback lens reports what it should: 1 of 2 runs carries feedback.
+  assert.deepEqual(pointMap(series(withFeedback, "feedbackRate", null, null)), { [DAY_1]: 1 / 2 });
+  assert.deepEqual(pointMap(series(withFeedback, "ratio", null, null)), { [DAY_1]: 1 / 2 });
+
+  // 2. `meanScore` is byte-identical to before the feedback existed — (0.9 + 0.1) / 2.
+  assert.deepEqual(
+    pointMap(series(withFeedback, "meanScore", null, null)),
+    pointMap(series(meanBefore, "meanScore", null, null)),
+  );
+  assert.deepEqual(pointMap(series(withFeedback, "meanScore", null, null)), { [DAY_1]: 0.5 });
+
+  // 3. Not one `run_grades` row moved. Human feedback is not a grade and never becomes one.
+  assert.deepEqual(db.prepare("SELECT * FROM run_grades ORDER BY id").all(), gradeRowsBefore);
+
+  // 4. The suite aggregate the orchestrator computes over the same runs is unchanged.
+  assert.deepEqual(collectChildData(runRepo, gradeRepo, ["g1", "g2"]), suiteBefore);
+});
+
+// ── Acceptance #3 — the numerator is computed in the SAME row scan ────────────────────────────────
+
+test("a ratio adds NO second query: computeRunMetrics still prepares exactly the statements it did", () => {
+  const db = createDatabase();
+  seedMixed(db);
+  seedFeedback(db, [{ runId: "rA1", key: "verdict", score: 1 }]);
+
+  // Count `prepare` calls rather than reading the source: a source-walk cannot tell a real second
+  // pass from a string that merely contains "SELECT", and every one of these clauses contains
+  // several (the correlated subqueries the filter grammar is built from).
+  const prepared: string[] = [];
+  const realPrepare = db.prepare.bind(db);
+  (db as unknown as { prepare: typeof db.prepare }).prepare = ((sql: string) => {
+    prepared.push(sql);
+    return realPrepare(sql);
+  }) as typeof db.prepare;
+
+  const baseline = ["count"] as const;
+  computeRunMetrics(db, { filter: {}, bucket: "day", measures: [...baseline] });
+  const withoutRatio = prepared.length;
+
+  prepared.length = 0;
+  computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: [...baseline, "ratio", "feedbackRate"],
+    ratio: { numerator: { hasError: true }, denominator: { outcome: ["completed", "error"] } },
+  });
+  const withRatio = prepared.length;
+
+  assert.equal(
+    withRatio,
+    withoutRatio,
+    `two ratios added ${withRatio - withoutRatio} statement(s); they must ride the existing row scan`,
+  );
+  // …and the membership columns really are on THAT statement, not smuggled onto another one.
+  const runsScan = prepared.find((sql) => sql.includes("FROM runs"));
+  assert.ok(runsScan, "the runs scan is still one statement");
+  assert.ok(runsScan.includes("__ratio_num_ratio"), "the caller ratio projects onto the runs scan");
+  assert.ok(
+    runsScan.includes("__ratio_num_feedbackRate"),
+    "the named ratio projects onto the same scan",
   );
 });

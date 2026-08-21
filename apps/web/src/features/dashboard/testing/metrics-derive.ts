@@ -602,6 +602,9 @@ export type GenericChartResult = { rows: PivotedRow[]; series: GenericChartSerie
  *  thing (so a mid-word capital doesn't survive as its own Title-Cased word), then reuses
  *  {@link humanize} to capitalize only the leading letter. */
 export function humanizeMeasure(measure: string): string {
+  // AM-OB4 — `ratio` would humanize to "Ratio", which names the arithmetic rather than the question.
+  // "Custom share" says both that it is a proportion and that the operator defines it.
+  if (measure === "ratio") return "Custom share";
   const spaced = measure.replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
   return humanize(spaced.replace(/_/g, " "));
 }

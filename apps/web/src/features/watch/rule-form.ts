@@ -307,9 +307,28 @@ export function toWatchRuleInput(state: RuleFormState): WatchRuleInput {
     input.minIntervalMinutes = state.minIntervalMinutes;
   }
   if (state.trigger === "windowed") {
-    input.window = { ...state.window, bucket: bucketForWindow(state.window.window) };
+    input.window = windowForWire(state.window);
   }
   return input;
+}
+
+/**
+ * AM-OB4 — project the editor's window draft onto the wire.
+ *
+ * Two normalizations, both because the draft outlives the choice that made it relevant: the bucket is
+ * DERIVED from the duration (never a second, drift-prone picker), and the `ratio` config is dropped
+ * unless the measure is actually `"ratio"`. That second one matters — the editor deliberately keeps a
+ * numerator draft when the operator flips to another measure, so an accidental toggle does not
+ * discard work, but the wire refuses a config the rule does not evaluate (and a reader would take a
+ * stale numerator for the rule's meaning).
+ */
+export function windowForWire(window: WatchWindowConfig): WatchWindowConfig {
+  const { ratio, ...rest } = window;
+  return {
+    ...rest,
+    bucket: bucketForWindow(window.window),
+    ...(window.measure === "ratio" && ratio !== undefined ? { ratio } : {}),
+  };
 }
 
 /**
@@ -333,7 +352,7 @@ export function toWatchRulePatch(state: RuleFormState, actionsTouched: boolean):
   // windowed analogue is `window.cooldownMinutes`).
   patch.minIntervalMinutes = state.trigger === "on_terminal" ? state.minIntervalMinutes : 0;
   if (state.trigger === "windowed") {
-    patch.window = { ...state.window, bucket: bucketForWindow(state.window.window) };
+    patch.window = windowForWire(state.window);
   }
   if (actionsTouched) patch.actions = actionsFormToInput(state.actions);
   return patch;
