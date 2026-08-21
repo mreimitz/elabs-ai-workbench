@@ -467,7 +467,12 @@ test("report embed=summary: cells carry tokens/cost; no embedded run detail; mar
     "summary embed renders an honest pointer instead of member logs",
   );
   assert.doesNotMatch(md, /### Run r1/, "no member run report is embedded for embed=summary");
-  assert.match(md, /\| Tokens \| Cost \|/, "the cell table now carries real tokens + cost columns");
+  // RM-33 WP 3.2 inserted the two cache columns between Tokens and Cost.
+  assert.match(
+    md,
+    /\| Tokens \| Cache read \| Cache write \| Cost \|/,
+    "the cell table carries real tokens + the cache split + cost columns",
+  );
 });
 
 // ── (6) Report — embed=full embeds each member's real run report (steps) + grades ──────────────────
@@ -564,4 +569,151 @@ test("suiteRunReportQuerySchema defaults embed to summary and rejects an unknown
   assert.equal(suiteRunReportQuerySchema.parse({}).embed, "summary");
   assert.equal(suiteRunReportQuerySchema.parse({ embed: "full" }).embed, "full");
   assert.throws(() => suiteRunReportQuerySchema.parse({ embed: "everything" }));
+});
+
+// ── RM-33 WP 3.2 — the cache split across the matrix ───────────────────────────────────────────────
+//
+// A suite run is where "how much of this fleet's spend was cache" is actually decided, so the export
+// carries the split per cell AND as an aggregate. The aggregate is ALL-OR-NOTHING (WP 1.2): one
+// member that cannot answer makes the whole figure unknown, because a partial sum understates the
+// matrix while looking complete. Read and write are never merged (D-CT2) — a read is a ~0.1x
+// discount, a write a 1.25x premium, and one combined bar would render the premium as a saving.
+
+/** Write the migration-59 cache columns onto an already-seeded child run. */
+function setChildCache(
+  d: Deps,
+  runId: string,
+  cache: { cached: number; read: number | null; write: number | null },
+): void {
+  d.db
+    .prepare(
+      `UPDATE runs SET cached_tokens = @cached, cache_read_tokens = @read, cache_write_tokens = @write
+       WHERE id = @id`,
+    )
+    .run({ id: runId, cached: cache.cached, read: cache.read, write: cache.write });
+}
+
+test("report cells carry the cache split, and a member that cannot answer reads — not 0", () => {
+  const db = openFresh();
+  const d = deps(db);
+  seedParents(db);
+  const sr = seedSuiteRun(db, d.suites, PLAIN);
+  const base = {
+    testId: "t1",
+    scenarioId: "scn-a",
+    status: "completed" as RunStatus,
+    turns: 1,
+    toolCalls: 0,
+    tokensIn: 1000,
+    tokensOut: 100,
+    costUsd: 0.01,
+    score: 0.8,
+  };
+  seedChild(d, sr, { ...base, runId: "known", repetition: 1 });
+  seedChild(d, sr, { ...base, runId: "unknown", repetition: 2 });
+  setChildCache(d, "known", { cached: 900, read: 800, write: 100 });
+  // "unknown" keeps NULL cache columns — a pre-migration-59 / merged-only run.
+
+  const suiteRun = d.suiteRuns.getRun(sr);
+  const data = collectSuiteRunReportData(reportDeps(d), suiteRun);
+  const known = data.cells.find((c) => c.runId === "known");
+  const unknown = data.cells.find((c) => c.runId === "unknown");
+  assert.equal(known?.cacheReadTokens, 800);
+  assert.equal(known?.cacheWriteTokens, 100);
+  assert.equal(unknown?.cacheReadTokens, undefined, "unknowable ⇒ absent, never a fabricated 0");
+  assert.equal(unknown?.tokensIn, 1000, "D-CT1 — the gross figure is untouched either way");
+
+  const md = createSuiteRunMarkdownReport(suiteRun, data);
+  assert.match(md, /\| 1100 \| 800 \| 100 \| \$0\.0100 \|/, "the known member prints its split");
+  assert.match(md, /\| 1100 \| — \| — \| \$0\.0100 \|/, "the unknown member prints an em dash");
+});
+
+test("the aggregates line prints the split when known and says WHY when it is not", () => {
+  const db = openFresh();
+  const d = deps(db);
+  seedParents(db);
+  const sr = seedSuiteRun(db, d.suites, PLAIN);
+  seedChild(d, sr, {
+    runId: "r1",
+    testId: "t1",
+    scenarioId: "scn-a",
+    repetition: 1,
+    status: "completed",
+    turns: 1,
+    toolCalls: 0,
+    tokensIn: 1000,
+    tokensOut: 100,
+    costUsd: 0.01,
+    score: 0.8,
+  });
+
+  const withSplit = {
+    ...d.suiteRuns.getRun(sr),
+    aggregates: {
+      cellsTotal: 1,
+      cellsCompleted: 1,
+      meanGrade: 0.8,
+      gradeStdDev: 0,
+      passRateAt05: 1,
+      totalTokens: 1100,
+      cacheReadTokens: 800,
+      cacheWriteTokens: 100,
+      execCostUsd: 0.01,
+      judgeCostUsd: 0,
+    },
+  };
+  const data = collectSuiteRunReportData(reportDeps(d), withSplit);
+  const md = createSuiteRunMarkdownReport(withSplit, data);
+  assert.match(md, /- Cache read: 800 \(billed ~0\.1x input — a discount\)/);
+  assert.match(md, /- Cache write: 100 \(billed 1\.25x input — a premium, not a saving\)/);
+
+  // Drop the split — one unknown member is enough for WP 1.2's roll-up to leave it out entirely.
+  const noSplit = {
+    ...withSplit,
+    aggregates: {
+      ...withSplit.aggregates,
+      cacheReadTokens: undefined,
+      cacheWriteTokens: undefined,
+    },
+  };
+  const mdNoSplit = createSuiteRunMarkdownReport(
+    noSplit,
+    collectSuiteRunReportData(reportDeps(d), noSplit),
+  );
+  assert.match(mdNoSplit, /- Cache read \/ write: not measured across this matrix/);
+  assert.doesNotMatch(mdNoSplit, /- Cache read: 0/, "never a 0 that looks like 'caching stopped'");
+});
+
+test("an embedded member report carries the SAME cost breakdown as its standalone export", () => {
+  const db = openFresh();
+  const d = deps(db);
+  seedParents(db);
+  const sr = seedSuiteRun(db, d.suites, PLAIN);
+  seedChild(d, sr, {
+    runId: "r1",
+    testId: "t1",
+    scenarioId: "scn-a",
+    repetition: 1,
+    status: "completed",
+    turns: 1,
+    toolCalls: 0,
+    tokensIn: 1000,
+    tokensOut: 100,
+    costUsd: 0.01,
+    score: 0.8,
+  });
+  seedStep(d, "r1");
+  setChildCache(d, "r1", { cached: 900, read: 800, write: 100 });
+
+  const suiteRun = d.suiteRuns.getRun(sr);
+  const data = collectSuiteRunReportData(reportDeps(d), suiteRun, undefined, "full");
+  const detail = data.cells.find((c) => c.runId === "r1")?.detail;
+  assert.ok(detail, "embed=full embeds the member's own run report");
+  assert.equal(detail.statistics.cacheReadTokens, 800);
+  assert.equal(detail.statistics.cacheWriteTokens, 100);
+  assert.ok(
+    detail.statistics.costBreakdown,
+    "the embedded report goes through the same enrichment builder as GET /api/reports/run/:id/json",
+  );
+  assert.equal(detail.statistics.costBreakdown.split, "exact");
 });

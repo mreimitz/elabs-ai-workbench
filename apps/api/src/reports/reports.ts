@@ -4,12 +4,14 @@ import type {
   ContextSegment,
   ContextSnapshot,
   CostBasis,
+  CostBreakdown,
   ErrorFinding,
   GuardrailConfig,
   ModelParams,
   RunDetail,
   RunGrade,
   RunReport,
+  RunReportStatistics,
   RunStep,
   ScanDetail,
   Scenario,
@@ -17,8 +19,13 @@ import type {
   TestAttachment,
   Test,
   TokenProfileRef,
+  TokenUsageActual,
 } from "@mcp-token-footprint/shared";
-import { CONTEXT_SEGMENTS, MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
+import {
+  CONTEXT_SEGMENTS,
+  MODEL_CONTEXT_LIMITS,
+  usageSplitKind,
+} from "@mcp-token-footprint/shared";
 import { buildRunKpiByStep, type RunKpis } from "./run-kpi-by-step.js";
 // RM-20 WP 2.2 — the ONE posture-section derivation. Both scan exports call it; neither renders the
 // section itself. The import is one-directional on purpose: `security-section.ts` reaches only for
@@ -152,6 +159,19 @@ export function escapeText(value: string): string {
 export type RunReportEnrichment = {
   test: Test;
   scenario: Scenario;
+  /**
+   * RM-33 WP 3.2 — the four terms behind the run's cost, so a reader can see WHY a 958k-token run
+   * billed $0.80 rather than $3.00.
+   *
+   * It arrives through the enrichment rather than being computed here ON PURPOSE: pricing a model
+   * goes through `resolvePrice`, which may consult the pricing-editor table in the database, and
+   * these two builders are PURE by contract (see the module header). The impure assembly layer
+   * (`./run-report-assembly.ts` — the one place that already fetches the run, the test and the
+   * environment) computes it with `computeCostBreakdown`, the app's single cost formula (D-CT5).
+   *
+   * OPTIONAL and ADDITIVE: a caller that omits it gets exactly the document it got before this WP.
+   */
+  costBreakdown?: CostBreakdown;
 };
 
 /** Bound a (already-redacted) string blob so a report stays readable; appends a truncation marker. */
@@ -173,8 +193,6 @@ export function createRunJsonReport(
   const { test, scenario } = enrich;
   const limit = MODEL_CONTEXT_LIMITS[scenario.model];
   const kpiByStep = buildRunKpiByStep(run);
-  const peak = peakContextSnapshot(run.steps);
-  const endState = endStateContextTotal(run.steps);
 
   // Key insertion order is insights-first (rating → summary/config → statistics → the raw dump last)
   // so the serialized document reads top-down like the Markdown export. Every key keeps its existing
@@ -208,25 +226,9 @@ export function createRunJsonReport(
       effectiveProfiles: effectiveProfiles(scenario, test),
       allowedServers: scenario.allowedServers,
     },
-    // Statistics overview.
-    statistics: {
-      turns: run.turns,
-      toolCalls: run.toolCalls,
-      tokensIn: run.tokensIn,
-      tokensOut: run.tokensOut,
-      cachedTokens: sumCachedTokens(run.steps),
-      peakContextTokens: run.peakContextTokens,
-      contextLimit: limit ?? null,
-      endStateContextTokens: endState,
-      estimatedCostUsd: run.costUsd,
-      // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.2, D-CS4/D-CS8) — a machine-readable
-      // marker for HOW `estimatedCostUsd` was derived, mirroring {@link RunSummary.costBasis}. Present
-      // ONLY for a `claude_subscription` run (`"subscription_reference"` — a shadow reference estimate,
-      // marginal cost $0, never a billed charge); absent for every ordinary run, so this report stays
-      // byte-identical to before this WP.
-      ...(run.costBasis ? { costBasis: run.costBasis } : {}),
-      peakContextSegments: peak?.segments ?? null,
-    },
+    // Statistics overview — the ONE derivation, shared with Markdown §3 so the two exports can never
+    // disagree about the same run.
+    statistics: buildRunStatistics(run, enrich, limit),
     // Per-step cumulative KPI snapshot keyed by step id (the figure steps don't carry: cost).
     stepKpis: Object.fromEntries(kpiByStep),
     // Full embedded run (steps + events) — the raw source of truth for the session log, LAST (appendix).
@@ -253,7 +255,7 @@ export function createRunMarkdownReport(
   // Insights first, raw session log last: rating → summary → statistics → setup (reference) → steps.
   renderRating(lines, rating);
   renderSummary(lines, run, test, scenario, limit);
-  renderStatistics(lines, run, limit);
+  renderStatistics(lines, run, enrich, limit);
   renderSessionHeader(lines, run, test, scenario, limit);
   renderSteps(lines, run, scenario, kpiByStep);
 
@@ -365,26 +367,73 @@ function renderSessionHeader(
 
 // ── Section 3 — Statistics overview ─────────────────────────────────────────────────────────────────
 
-function renderStatistics(lines: string[], run: RunDetail, limit: number | undefined): void {
+/**
+ * The ONE `statistics` derivation. Both exports call it, so §3 of the Markdown and the JSON block can
+ * never disagree about the same run — which they could before, since each recomputed its own figures.
+ *
+ * RM-33 WP 3.2 adds the cache split and the {@link CostBreakdown} beside the existing merged
+ * `cachedTokens`, each OMITTED when it cannot be known (D-CT6). `cachedTokens` itself keeps its
+ * pre-RM-33 derivation (`sumCachedTokens`) so an existing consumer's number does not move.
+ */
+export function buildRunStatistics(
+  run: RunDetail,
+  enrich: RunReportEnrichment,
+  limit: number | undefined,
+): RunReportStatistics {
   const peak = peakContextSnapshot(run.steps);
   const endState = endStateContextTotal(run.steps);
-  const cachedTokens = sumCachedTokens(run.steps);
+  const usage = aggregateRunUsage(run);
+  return {
+    turns: run.turns,
+    toolCalls: run.toolCalls,
+    tokensIn: run.tokensIn,
+    tokensOut: run.tokensOut,
+    cachedTokens: sumCachedTokens(run.steps),
+    // RM-33 (D-CT2/D-CT6) — the two halves of the merged figure above. Absent means the run cannot
+    // answer read-vs-write, which is a different statement from "there was no cache".
+    ...(usage.cacheReadTokens === undefined ? {} : { cacheReadTokens: usage.cacheReadTokens }),
+    ...(usage.cacheWriteTokens === undefined ? {} : { cacheWriteTokens: usage.cacheWriteTokens }),
+    peakContextTokens: run.peakContextTokens,
+    contextLimit: limit ?? null,
+    ...(endState === undefined ? {} : { endStateContextTokens: endState }),
+    estimatedCostUsd: run.costUsd,
+    // Claude subscription (planning/Roadmap/RM-09-claude-subscription/, WP 3.2, D-CS4/D-CS8) — a machine-readable
+    // marker for HOW `estimatedCostUsd` was derived, mirroring {@link RunSummary.costBasis}. Present
+    // ONLY for a `claude_subscription` run (`"subscription_reference"` — a shadow reference estimate,
+    // marginal cost $0, never a billed charge); absent for every ordinary run, so this report stays
+    // byte-identical to before this WP.
+    ...(run.costBasis ? { costBasis: run.costBasis } : {}),
+    ...(enrich.costBreakdown ? { costBreakdown: enrich.costBreakdown } : {}),
+    peakContextSegments: peak?.segments ?? null,
+  };
+}
+
+function renderStatistics(
+  lines: string[],
+  run: RunDetail,
+  enrich: RunReportEnrichment,
+  limit: number | undefined,
+): void {
+  const peak = peakContextSnapshot(run.steps);
+  const stats = buildRunStatistics(run, enrich, limit);
   const subscriptionReference = isSubscriptionCostBasis(run.costBasis);
 
   lines.push(
     "## 3. Statistics",
     "",
-    `- Turns: ${run.turns}`,
-    `- Tool calls: ${run.toolCalls}`,
-    `- Tokens in: ${run.tokensIn}`,
-    `- Tokens out: ${run.tokensOut}`,
-    `- Cached tokens: ${cachedTokens}`,
-    `- Peak context: ${formatPeakContext(run.peakContextTokens, limit)}`,
-    `- End-state context: ${endState === undefined ? "n/a" : `${endState} tokens`}`,
+    `- Turns: ${stats.turns}`,
+    `- Tool calls: ${stats.toolCalls}`,
+    `- Tokens in: ${stats.tokensIn}`,
+    `- Tokens out: ${stats.tokensOut}`,
+    `- Cached tokens: ${stats.cachedTokens}`,
+    ...renderCacheSplitLines(stats),
+    `- Peak context: ${formatPeakContext(stats.peakContextTokens, limit)}`,
+    `- End-state context: ${stats.endStateContextTokens === undefined ? "n/a" : `${stats.endStateContextTokens} tokens`}`,
     // Cost is provider-priced and approximate — always label it estimated. A `claude_subscription`
     // run's cost is additionally flagged "subscription reference" (WP 3.2, D-CS4) — the footnote right
     // below spells out the full accuracy story.
-    `- Estimated cost: $${run.costUsd.toFixed(4)} (estimated)${subscriptionReference ? " · subscription reference" : ""}`,
+    `- Estimated cost: $${stats.estimatedCostUsd.toFixed(4)} (estimated)${subscriptionReference ? " · subscription reference" : ""}`,
+    ...renderCostBreakdownLines(stats.costBreakdown),
     "",
   );
 
@@ -400,6 +449,61 @@ function renderStatistics(lines: string[], run: RunDetail, limit: number | undef
     }
   }
   lines.push("");
+}
+
+// ── RM-33 WP 3.2 — the cache lines of §3 ───────────────────────────────────────────────────────────
+// The wording is the one this workstream settled on and uses everywhere (console, dashboard): a cache
+// READ is billed "~0.1x" — a discount — and a cache WRITE is billed "1.25x" — a PREMIUM. They are
+// never merged into one "cached" figure in a NEW surface (D-CT2), because a single number that mixes
+// them reads as a saving when it may be an extra charge.
+
+/** Cache read / cache write beside the merged `Cached tokens` line, or an honest caveat instead. */
+function renderCacheSplitLines(stats: RunReportStatistics): string[] {
+  if (stats.cacheReadTokens !== undefined || stats.cacheWriteTokens !== undefined) {
+    return [
+      `- Cache read: ${stats.cacheReadTokens ?? 0} (billed ~0.1x input — a discount)`,
+      `- Cache write: ${stats.cacheWriteTokens ?? 0} (billed 1.25x input — a premium, not a saving)`,
+    ];
+  }
+  // Nothing to split: a run that reported no cache at all says so by its `0`, and adding a caveat
+  // there would invent doubt. A run that reported a MERGED figure genuinely cannot answer, and must
+  // say so rather than let the reader assume the whole slice was a discount.
+  if (stats.cachedTokens <= 0) return [];
+  return [
+    "- Cache read/write split: unavailable for this run — the whole cached slice above is priced as a cache read",
+  ];
+}
+
+/** The four terms behind the cost, plus the signed cache effect (which can be a PREMIUM). */
+function renderCostBreakdownLines(breakdown: CostBreakdown | undefined): string[] {
+  if (!breakdown) return [];
+  if (!breakdown.priced) {
+    return ["- Cost breakdown: n/a (no price on file for this model — the cost above is $0 because"
+      + " it could not be priced, not because the run was free)"];
+  }
+  const lines = [
+    `- Cost breakdown: uncached input $${breakdown.uncachedUsd.toFixed(4)} · cache read` +
+      ` $${breakdown.cacheReadUsd.toFixed(4)} · cache write $${breakdown.cacheWriteUsd.toFixed(4)} ·` +
+      ` output $${breakdown.outputUsd.toFixed(4)} = $${breakdown.totalUsd.toFixed(4)}`,
+  ];
+  // Signed on purpose (D-CT5): a write-heavy run genuinely cost MORE than the same tokens uncached,
+  // and rendering that as "saved -$0.02" would be a lie dressed as a saving.
+  lines.push(
+    breakdown.savedVsUncachedUsd >= 0
+      ? `- Cache effect: saved $${breakdown.savedVsUncachedUsd.toFixed(4)} versus billing every input token at the full rate`
+      : `- Cache effect: cost $${Math.abs(breakdown.savedVsUncachedUsd).toFixed(4)} MORE than billing every input token at the full rate (cache writes are a 1.25x premium)`,
+  );
+  // A merged record has one number and no way to tell a discount from a premium, so the two lines
+  // above are a FLOOR, not a measurement — the pricing function prices the whole slice as a read
+  // because that is the only safe reading of a merged figure. Say so; do not let it read as precise.
+  if (breakdown.split === "merged") {
+    lines.push(
+      "- Cost breakdown caveat: this run reported only a merged cached figure, so the whole cached" +
+        " slice above is priced as a cache read. Any part of it that was actually a cache write cost" +
+        " 1.25x input, so the real bill was at least this much and possibly higher.",
+    );
+  }
+  return lines;
 }
 
 // ── Claude subscription accuracy footnote (WP 3.2, D-CS4/D-CS8) ────────────────────────────────────
@@ -643,9 +747,16 @@ function formatStepStats(step: RunStep): string {
   const parts: string[] = [];
   parts.push(`tok↑ ${formatCell(stepTokensUp(step))}`);
   parts.push(`tok↓ ${formatCell(stepTokensDown(step))}`);
-  const cached = step.usageActual?.cachedInputTokens;
+  const usage = step.usageActual;
+  const cached = usage?.cachedInputTokens;
   if (cached !== undefined && cached > 0) parts.push(`cached ${cached}`);
-  const reasoning = step.usageActual?.reasoningTokens;
+  // RM-33 WP 3.2 — when this turn reported the split, name the halves right after the merged figure.
+  // A merged-only turn is left alone: it has one number and cannot honestly be decomposed (D-CT2).
+  if (usage && usageSplitKind(usage) === "exact") {
+    parts.push(`cache read ${usage.cacheReadTokens ?? 0}`);
+    parts.push(`cache write ${usage.cacheWriteTokens ?? 0}`);
+  }
+  const reasoning = usage?.reasoningTokens;
   if (reasoning !== undefined && reasoning > 0) parts.push(`reasoning ${reasoning}`);
   return parts.join(", ");
 }
@@ -742,6 +853,50 @@ function formatPeakContext(peakTokens: number, limit: number | undefined): strin
 /** Sum provider-actual cached input tokens across all steps. */
 function sumCachedTokens(steps: RunStep[]): number {
   return steps.reduce((sum, step) => sum + (step.usageActual?.cachedInputTokens ?? 0), 0);
+}
+
+/**
+ * RM-33 WP 3.2 — the run's provider-actual usage as ONE {@link TokenUsageActual} record, so the cost
+ * breakdown and the cache lines are read from a single derivation instead of three.
+ *
+ * Gross `inputTokens`/`outputTokens` come from the run SUMMARY, which is never redacted (the same
+ * reason `withSummaryTotals` exists). The cache composition prefers the migration-59 run columns —
+ * the authoritative end-state figures — and falls back to summing the per-step `usageActual`, which
+ * is where the split lives for a run recorded before those columns existed.
+ *
+ * Only an EXACT per-step split contributes to the halves (D-CT2): a turn that reported one merged
+ * figure leaves them unknowable, and counting it as a READ would show a possible 1.25x cache-write
+ * premium as a 0.1x discount. A field nobody can answer is OMITTED, never zeroed (D-CT6).
+ */
+export function aggregateRunUsage(run: RunDetail): TokenUsageActual {
+  let cachedFromSteps = 0;
+  let readFromSteps = 0;
+  let writeFromSteps = 0;
+  let sawAnyCache = false;
+  let sawExactSplit = false;
+  for (const step of run.steps) {
+    const usage = step.usageActual;
+    if (!usage) continue;
+    const kind = usageSplitKind(usage);
+    if (kind === "none") continue;
+    sawAnyCache = true;
+    cachedFromSteps += usage.cachedInputTokens ?? 0;
+    if (kind === "exact") {
+      sawExactSplit = true;
+      readFromSteps += usage.cacheReadTokens ?? 0;
+      writeFromSteps += usage.cacheWriteTokens ?? 0;
+    }
+  }
+  const cachedInputTokens = run.cachedTokens ?? (sawAnyCache ? cachedFromSteps : undefined);
+  const cacheReadTokens = run.cacheReadTokens ?? (sawExactSplit ? readFromSteps : undefined);
+  const cacheWriteTokens = run.cacheWriteTokens ?? (sawExactSplit ? writeFromSteps : undefined);
+  return {
+    inputTokens: run.tokensIn,
+    outputTokens: run.tokensOut,
+    ...(cachedInputTokens === undefined ? {} : { cachedInputTokens }),
+    ...(cacheReadTokens === undefined ? {} : { cacheReadTokens }),
+    ...(cacheWriteTokens === undefined ? {} : { cacheWriteTokens }),
+  };
 }
 
 /** Tokens IN for a step: provider-actual input when present, else the primary profile lens. */

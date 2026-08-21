@@ -147,6 +147,13 @@ function compactRun(
     peakContextTokens: detail.peakContextTokens,
     tokensIn: detail.tokensIn,
     tokensOut: detail.tokensOut,
+    // RM-33 (D-CT1/D-CT2) — `tokensIn` above is unchanged and still GROSS (cache slice included).
+    // These say how much of it was served from cache at ~0.1x (a discount) versus written to cache at
+    // 1.25x (a premium), so an agent reading this summary can reconcile the token count with the cost
+    // beside it. `undefined` for a run that cannot answer, and `JSON.stringify` drops the key — absent
+    // means UNKNOWN, never zero (D-CT6). The per-step `usageActual` already crossed whole.
+    cacheReadTokens: detail.cacheReadTokens,
+    cacheWriteTokens: detail.cacheWriteTokens,
     costUsd: detail.costUsd,
     assertionResults: detail.assertionResults,
     suiteRunId: detail.suiteRunId,

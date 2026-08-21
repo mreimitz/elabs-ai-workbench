@@ -1,7 +1,13 @@
-import type { Scenario, Test } from "@mcp-token-footprint/shared";
+import type { RunDetail, Scenario, Test } from "@mcp-token-footprint/shared";
 import type { RunReportService } from "../grading/run-report.js";
+import { computeCostBreakdown } from "../providers/pricing.js";
 import type { RunRepository } from "../testing/run-repository.js";
-import { createRunJsonReport, createRunMarkdownReport } from "./reports.js";
+import {
+  aggregateRunUsage,
+  createRunJsonReport,
+  createRunMarkdownReport,
+  type RunReportEnrichment,
+} from "./reports.js";
 
 /**
  * Run-report assembly — the four-step "fetch the run, resolve its test + environment, compose its
@@ -25,12 +31,44 @@ export type RunReportSources = {
   runReports: Pick<RunReportService, "compose">;
 };
 
+/**
+ * RM-33 WP 3.2 — the ONE place a run report's {@link RunReportEnrichment} is built, so the HTTP
+ * export, the workbench MCP `run_report` tool and the suite-run report's embedded member reports all
+ * carry the same cost decomposition.
+ *
+ * It lives here, not in the (pure) report builders, because pricing a model goes through
+ * `resolvePrice`, which may consult the pricing-editor table in the database. `computeCostBreakdown`
+ * is the app's SINGLE cost formula (D-CT5) — never write a second one — and it is entered with the
+ * run's own aggregated usage, so the four terms decompose the tokens this run actually billed.
+ *
+ * A caveat worth stating rather than hiding: `statistics.estimatedCostUsd` is the run's PERSISTED
+ * cost, accumulated turn by turn while it executed (and per-step with whatever model that step used).
+ * The breakdown re-prices the same tokens at the price on file NOW, against the environment's model.
+ * For an ordinary single-model run at unchanged prices they agree; if the price was edited since, or
+ * the run spanned models, the persisted figure is the authoritative one.
+ */
+export function buildRunReportEnrichment(
+  run: RunDetail,
+  test: Test,
+  scenario: Scenario,
+): RunReportEnrichment {
+  return {
+    test,
+    scenario,
+    costBreakdown: computeCostBreakdown(scenario.model, aggregateRunUsage(run)),
+  };
+}
+
 /** Fetch + enrich + compose, once. Throws the repositories' own 404 for an unknown run. */
 function assemble(sources: RunReportSources, runId: string) {
   const run = sources.runs.getRun(runId);
   const test = sources.tests.get(run.testId);
   const scenario = sources.scenarios.get(run.scenarioId);
-  return { run, enrich: { test, scenario }, rating: sources.runReports.compose(runId) } as const;
+  return {
+    run,
+    enrich: buildRunReportEnrichment(run, test, scenario),
+    rating: sources.runReports.compose(runId),
+  } as const;
 }
 
 /** The run's JSON export document. */

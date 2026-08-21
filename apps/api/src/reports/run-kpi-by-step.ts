@@ -1,4 +1,10 @@
-import type { RunDetail, RunEvent } from "@mcp-token-footprint/shared";
+import type {
+  RunDetail,
+  RunEvent,
+  RunReportStepKpi,
+  TokenUsageActual,
+} from "@mcp-token-footprint/shared";
+import { usageSplitKind } from "@mcp-token-footprint/shared";
 
 // ── Per-step cumulative KPI snapshots (ported from the web replay path) ─────────────────────────────
 // The C4 session-log report stamps EACH step with the cumulative KPIs in effect at that point (turns /
@@ -10,15 +16,80 @@ import type { RunDetail, RunEvent } from "@mcp-token-footprint/shared";
 // logic is duplicated here behind a pure, unit-testable surface rather than re-imported across the wire
 // boundary. Keep this in lockstep with the web copy if either changes.
 
-/** Cumulative run KPIs in effect at a given point, mirroring the web `RunKpis` shape. */
-export type RunKpis = {
-  turns: number;
-  toolCalls: number;
-  tokensIn: number;
-  tokensOut: number;
-  contextTokens: number;
-  costUsd: number;
+/**
+ * Cumulative run KPIs in effect at a given point, mirroring the web `RunKpis` shape.
+ *
+ * RM-33 WP 3.2 — this is now the SHARED {@link RunReportStepKpi} rather than a local literal: it is
+ * the exact payload the run export serializes under `stepKpis`, so it belongs to the wire contract
+ * and both ends import one definition.
+ */
+export type RunKpis = RunReportStepKpi;
+
+/**
+ * RM-33 WP 3.2 — the running cache composition, accumulated from the per-step `usageActual` while
+ * the event log is walked.
+ *
+ * The `kpi` events of any run recorded before RM-33 carry NO cache fields, and those are the events
+ * a finished run is replayed from — so without this the report's per-step snapshots would stay
+ * cache-blind for almost every run in an existing database, even though the steps beside them have
+ * always carried the full `TokenUsageActual`. Same fallback the console takes
+ * (`RunConsole.tsx`'s `withCacheFromSteps`), applied per step rather than once at the end.
+ *
+ * Only an EXACT split contributes to the two halves: a turn that reported one merged figure leaves
+ * them unknowable, and summing it as a "read" would present a possible 1.25x cache-WRITE premium as
+ * a 0.1x cache-READ discount (D-CT2/D-CT6).
+ */
+type CacheAccumulator = {
+  cachedTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  sawAnyCache: boolean;
+  sawExactSplit: boolean;
 };
+
+function newCacheAccumulator(): CacheAccumulator {
+  return {
+    cachedTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
+    sawAnyCache: false,
+    sawExactSplit: false,
+  };
+}
+
+function accumulateUsage(acc: CacheAccumulator, usage: TokenUsageActual | undefined): void {
+  if (!usage) return;
+  const kind = usageSplitKind(usage);
+  if (kind === "none") return;
+  acc.sawAnyCache = true;
+  acc.cachedTokens += finiteNumber(usage.cachedInputTokens);
+  if (kind === "exact") {
+    acc.sawExactSplit = true;
+    acc.cacheReadTokens += finiteNumber(usage.cacheReadTokens);
+    acc.cacheWriteTokens += finiteNumber(usage.cacheWriteTokens);
+  }
+}
+
+/**
+ * The cache trio for one snapshot: the `kpi` event's own values when it carries them, otherwise the
+ * step-derived running totals. Each field is OMITTED when neither source knows it — absent means
+ * UNKNOWN, never zero (D-CT6).
+ */
+function cacheFields(
+  event: Extract<RunEvent, { type: "kpi" }> | undefined,
+  acc: CacheAccumulator,
+): Pick<RunKpis, "cachedTokens" | "cacheReadTokens" | "cacheWriteTokens"> {
+  const cachedTokens = event?.cachedTokens ?? (acc.sawAnyCache ? acc.cachedTokens : undefined);
+  const cacheReadTokens =
+    event?.cacheReadTokens ?? (acc.sawExactSplit ? acc.cacheReadTokens : undefined);
+  const cacheWriteTokens =
+    event?.cacheWriteTokens ?? (acc.sawExactSplit ? acc.cacheWriteTokens : undefined);
+  return {
+    ...(cachedTokens === undefined ? {} : { cachedTokens }),
+    ...(cacheReadTokens === undefined ? {} : { cacheReadTokens }),
+    ...(cacheWriteTokens === undefined ? {} : { cacheWriteTokens }),
+  };
+}
 
 /**
  * Coerce a persisted numeric field to a finite number. The replay path rebuilds KPIs from the
@@ -44,12 +115,16 @@ export function kpiSnapshotsByStepId(events: RunEvent[]): Map<string, RunKpis> {
   let running: RunKpis | null = null;
   // Step ids still awaiting the `kpi` that the engine emits right after them.
   let pendingIds: string[] = [];
+  // RM-33 — the cache composition summed from the steps as they go past, the fallback for a run whose
+  // persisted `kpi` events predate RM-33 and therefore carry no cache fields at all.
+  const cache = newCacheAccumulator();
 
   for (const event of events) {
     if (event.type === "step") {
+      accumulateUsage(cache, event.step.usageActual);
       // A step inherits the latest-known cumulative kpi immediately (correct for tool_call steps and
       // a safe lower bound for llm steps until their trailing kpi lands and overwrites it below).
-      if (running) byId.set(event.step.id, running);
+      if (running) byId.set(event.step.id, { ...running, ...cacheFields(undefined, cache) });
       pendingIds.push(event.step.id);
     } else if (event.type === "kpi") {
       running = {
@@ -59,6 +134,7 @@ export function kpiSnapshotsByStepId(events: RunEvent[]): Map<string, RunKpis> {
         tokensOut: finiteNumber(event.tokensOut),
         contextTokens: finiteNumber(event.contextTokens),
         costUsd: finiteNumber(event.costUsd),
+        ...cacheFields(event, cache),
       };
       // This kpi is the post-state of the steps emitted since the previous kpi — stamp them with it.
       for (const id of pendingIds) byId.set(id, running);
@@ -86,6 +162,13 @@ export function withSummaryTotals(
     step.index > latest.index ? step : latest,
   );
   const prev = map.get(lastStep.id);
+  // RM-33 — the same recovery, applied to the cache trio: `runs.cache_read_tokens` /
+  // `cache_write_tokens` are the migration-59 columns, the authoritative end-state figures. A run
+  // whose columns are NULL (unknowable — e.g. a legacy merged-only run) keeps whatever the step walk
+  // could derive, and both being unknown leaves the field ABSENT rather than zero (D-CT6).
+  const cachedTokens = detail.cachedTokens ?? prev?.cachedTokens;
+  const cacheReadTokens = detail.cacheReadTokens ?? prev?.cacheReadTokens;
+  const cacheWriteTokens = detail.cacheWriteTokens ?? prev?.cacheWriteTokens;
   map.set(lastStep.id, {
     turns: detail.turns,
     toolCalls: detail.toolCalls,
@@ -93,6 +176,9 @@ export function withSummaryTotals(
     tokensOut: detail.tokensOut,
     contextTokens: prev?.contextTokens ?? detail.peakContextTokens,
     costUsd: detail.costUsd,
+    ...(cachedTokens === undefined ? {} : { cachedTokens }),
+    ...(cacheReadTokens === undefined ? {} : { cacheReadTokens }),
+    ...(cacheWriteTokens === undefined ? {} : { cacheWriteTokens }),
   });
   return map;
 }
