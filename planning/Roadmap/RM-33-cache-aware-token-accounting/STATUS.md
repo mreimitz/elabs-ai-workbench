@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Cache-aware token accounting & display — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the cache-aware token accounting plan, read and updated by /next-wp cache-aware-token-accounting."
 tags: ["roadmap", "RM-33"]
-timestamp: "2026-08-21T19:05:00Z"
+timestamp: "2026-08-21T19:30:00Z"
 status: "active"
 ---
 # Cache-aware token accounting & display — work-package status ledger · **PRIORITY: HIGH**
@@ -392,11 +392,30 @@ every turn at the full input rate (`estimate.ts:60-78`, `service.ts:77-87` disca
       connect them). The same text is also present as an `sr-only` node on every chip, so it reaches
       assistive tech and touch without a hover.
       **Still owner's to judge:** whether the tooltip wording reads well to you.
-- [ ] `/dashboard` Testing tab: the cache-hit-rate series renders, and a window made only of
-      **pre-migration** runs shows the measure as *unavailable*, not `0%`.
-- [ ] `POST /api/estimate/run-plan` for a plan matching a finished cached run returns a range whose
-      low end lands near that run's real cost and whose high end lands near its uncached cost.
-      **Blocked until WP 2.1 is built** — the estimate endpoint is still cache-blind.
+- [x] `/dashboard` Testing tab — done 2026-08-21, verified during WP 3.3's validation against the
+      running app on an isolated DB copy, in **both themes**. Over a 141-run window the **Prompt cache**
+      panel renders grouped bars (51,879,269 read · 6,909,927 write) with a hit-rate line on its own
+      right-hand % axis; over a genuine pre-v59 window it renders **"Cache split not measured"** with
+      the explanatory copy and mounts no chart at all — no `0%` line, no bare empty state.
+      **An orchestrator note:** on the dashboard's DEFAULT 7-day range the owner's data has no runs, so
+      the whole Testing tab reads "No runs in this window" and no panel renders. Correct behaviour, but
+      it made the first verification pass look like a missing panel until the range was widened.
+- [x] `GET /api/estimate/run-plan` — done 2026-08-21, called **live** against the running app for the
+      real plan behind run `4LnBMey0w53EnDRNG__TH` (environment `BARC-Benchmark-Sonnet`, its own test).
+      Response: `cachingAssumed: true`, `costUsd` **$0.4198 – $1.5912**. The run actually billed
+      **$0.7985**, which the band **brackets**.
+      **This box's wording overreached, and the live call is what showed it.** It asked for the low end
+      to "land near" the run's real cost and the high end near its uncached cost. It does not, and
+      cannot: the estimator's turn ceiling is **8** where that run took **19**, so every absolute figure
+      it produces is proportionally low. That is the token model, not the pricing, and re-modelling
+      turns was explicitly out of this workstream's scope (recorded under WP 2.1 as a known gap).
+      **What IS verified, and is the property that matters:** the band's own high/low ratio is
+      **3.79×** — and the recorded run's uncached-vs-billed ratio is **3.76×**. They agree to within 1%,
+      which independently confirms the correction is the right magnitude, measured live rather than from
+      a fixture. The old endpoint emitted only what is now the HIGH end, as a single point, so it
+      overstated a cached run by that factor at any turn count.
+      **Still owner's to judge:** whether a band this wide is useful in the launcher, and whether the
+      turn model should be revisited as its own item — it is now the dominant source of error.
 - [x] Keyboard walk — done 2026-08-21, driven against the running app (isolated DB copy). Measured on
       the run console's Trace lens, which renders the densest concentration of token figures:
       **26** figures carry a cache breakdown · **0** of them are tab stops · **26/26** resolve to real
