@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T12:20:00Z"
+timestamp: "2026-08-21T13:40:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -491,14 +491,31 @@ and an explicit "Not verified:" tail.
       fills it (the container is most convincing at `l` holding a smaller occupant). No greyscale or
       print check. The dark rendering was confirmed **legible**, not compared against WP 0.2's
       recorded lighting-flip reference.
-- [ ] WP 1.4 — Contribution kit (scaffold script, checklist, registry changelog +
-      `REGISTRY_VERSION`, scaffold-only Nth-component proof) — **no spec yet · the last open box in
-      Phase 1**. Two things must be settled before it is written: (1) the catalog now holds **23**
-      components, so the plan's "21st component proof" and `CLAUDE.md` §1's "~17 remaining" are both
-      wrong — the proof is the **24th**; (2) **`REGISTRY_VERSION` is still `0.1.0` and two documents
-      disagree about whether it should be** — D-IL12 says a new component bumps it, the shared
-      constant's own doc comment says adding a component is additive and leaves it alone. WP 1.1
-      followed the constant, because bumping means editing `packages/shared`. **Owner decision.**
+- [ ] WP 1.4 — Contribution kit (scaffold script, checklist, registry changelog + the
+      `REGISTRY_VERSION` guard, scaffold-only **24th**-component proof) — spec:
+      [`wp-1.4-contribution-kit.md`](./wp-1.4-contribution-kit.md) · **the last open box in Phase 1**
+      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
+      `92099c0`, branch `wp/illustrations/1.4`).
+      **Both blockers settled 2026-08-21, owner-delegated ("do as you think its best"), recorded as
+      dated amendments at the end of D-IL12 in [`decisions.md`](./decisions.md) rather than made
+      silently in code:**
+      (1) **`REGISTRY_VERSION` does NOT bump when a component is added.** D-IL12's clause
+      contradicted the constant's own contract in `packages/shared/src/illustration-registry.ts`, and
+      the constant wins — D-IL9 makes the version a *flag-don't-break compatibility marker* stamped
+      into authored scenes, and adding an entity cannot invalidate a scene that could not have
+      referenced it. A version bumping on every addition would flag every stored scene after every
+      work package for a provably harmless change, which is how a flag becomes noise (the same way
+      `counting_version` would be ruined by bumping when a new server is registered). It stays
+      **`0.1.0`**; all 23 entries stay `since: "0.1.0"`, which is correct and must not be "fixed";
+      the growth record becomes a **changelog**. The version moves only when an existing entry's
+      scene-visible contract **breaks** — a port/variant/state/size removed or renamed.
+      (2) **The catalog is 23, not 20** (3 pilots + 5 + 7 + 8), so `02-plan.md`'s "21st component
+      proof" is the **24th**. Corrected in the plan; `CLAUDE.md` §1 was corrected at the WP 1.2/1.3
+      tick.
+      **The teeth this WP owes, and why they are the point:** today **nothing** would notice a
+      breaking entry change shipped without a bump — the rule is a doc comment. The spec requires a
+      checked-in scene-visible-contract snapshot plus **three** break-proofs, including the one most
+      guards get wrong: adding a port must leave the guard **quiet**.
 
 ## Phase 2 — Scene engine
 
