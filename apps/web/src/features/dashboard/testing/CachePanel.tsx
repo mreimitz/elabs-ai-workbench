@@ -164,7 +164,7 @@ export function CachePanel({
 /**
  * The tooltip rows for one bucket. Exported for its own unit test: the mocked chart package every
  * other dashboard suite uses renders `ChartTooltip` as a no-op, so the one rule that matters most
- * here — an ABSENT value reads "n/a", never "0" — is unreachable through the rendered panel.
+ * here (an ABSENT value reads "n/a", never "0") is unreachable through the rendered panel.
  *
  * This deliberately diverges from `TokensPanel`'s `?? 0`: there, an absent bucket means "no runs of
  * that class"; here it means "nobody measured", and on THIS panel a fabricated zero is the specific
