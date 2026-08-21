@@ -120,6 +120,11 @@ function harness(): Harness {
     promoteRunToTest: () => "unused",
     runGrader: async () => undefined,
     resolveWebhookUrl: (ref) => webhookUrls.get(ref),
+    // AM-OB11 — no rule in this suite carries a `workflow_dispatch` action, so reaching the GitHub
+    // sender here would be a bug. See `watch-github-dispatch.test.ts` for that action's own suite.
+    dispatchWorkflow: async () => {
+      throw new Error("dispatchWorkflow must not be called");
+    },
     notify: (req) => {
       notifications.push(req);
     },

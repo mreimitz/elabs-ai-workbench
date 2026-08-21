@@ -129,6 +129,9 @@ import type { ProviderKindBilling } from "./constants.js";
 // security-posture contract, rather than a second description of it here. That module imports only
 // `zod`, so this direction of the dependency is the only one and there is no cycle.
 import type { SecurityPostureSection } from "./security-posture.js";
+// RM-17 Phase 6 (AM-OB11) — the `workflow_dispatch` watch action's target shape. That module imports
+// nothing from here, so this direction is the only one and there is no cycle.
+import type { WatchWorkflowDispatchTarget } from "./watch-workflow-dispatch.js";
 
 export type TransportType = (typeof TRANSPORT_TYPES)[number];
 
@@ -2450,7 +2453,11 @@ export type WatchAction =
   | { type: "add_to_collection"; collectionId: string }
   | { type: "promote_to_test"; collectionId: string }
   | { type: "run_grader"; graderId: string }
-  | { type: "webhook"; secretRef: string; template?: string };
+  | { type: "webhook"; secretRef: string; template?: string }
+  // AM-OB11 — the typed GitHub Actions dispatch. It carries NO credential and NO secret handle: the
+  // token is the app-wide connected GitHub account, read server-side at dispatch time only. The
+  // target's bounds + the single URL builder live in `watch-workflow-dispatch.ts`.
+  | ({ type: "workflow_dispatch" } & WatchWorkflowDispatchTarget);
 
 /**
  * The action set as ACCEPTED on the wire (create/update). Identical to {@link WatchAction} EXCEPT the
@@ -2463,7 +2470,9 @@ export type WatchActionInput =
   | { type: "add_to_collection"; collectionId: string }
   | { type: "promote_to_test"; collectionId: string }
   | { type: "run_grader"; graderId: string }
-  | { type: "webhook"; url: string; template?: string };
+  | { type: "webhook"; url: string; template?: string }
+  // AM-OB11 — identical on the wire and in storage: there is nothing secret to swap for a handle.
+  | ({ type: "workflow_dispatch" } & WatchWorkflowDispatchTarget);
 
 /** A trailing-window width for a windowed rule ({@link WATCH_WINDOW_DURATIONS}). Each aligns to a UTC
  *  grid so a completed window maps to exactly ONE metrics bucket (WP4.2). */

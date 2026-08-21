@@ -118,6 +118,11 @@ function makeHarness(fetchImpl?: typeof fetch) {
       grades.push(`${runId}:${graderId}`);
     },
     resolveWebhookUrl: (ref) => watchRepo.resolveWebhookUrl(ref),
+    // AM-OB11 — no rule in this suite carries a `workflow_dispatch` action, so reaching the GitHub
+    // sender here would be a bug. See `watch-github-dispatch.test.ts` for that action's own suite.
+    dispatchWorkflow: async () => {
+      throw new Error("dispatchWorkflow must not be called");
+    },
     ...(fetchImpl ? { fetchImpl } : {}),
   };
   const engine = new WatchEngine(watchRepo, runRepo, services);

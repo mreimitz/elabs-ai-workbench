@@ -188,6 +188,7 @@ import { registerWatchRoutes } from "./watch/routes.js";
 import { WatchScheduler } from "./watch/scheduler.js";
 import { registerWatchTestFireRoute } from "./watch/webhook.js";
 import type { WatchActionServices } from "./watch/actions.js";
+import { dispatchGithubWorkflow } from "./watch/github-dispatch.js";
 import { toErrorMessage } from "./utils/errors.js";
 
 const server = Fastify({ logger: true });
@@ -1144,6 +1145,12 @@ const watchActionServices: WatchActionServices = {
     await gradeService.gradeRun(runId, { graderIds: [graderId as GraderId] });
   },
   resolveWebhookUrl: (secretRef) => watchRuleRepository.resolveWebhookUrl(secretRef),
+  // AM-OB11 — the typed GitHub Actions dispatch. The credential is the app-wide connected GitHub
+  // account (`github-account/service.ts`, an encrypted token in the `app_settings` KV) — deliberately
+  // NOT a second token store, and deliberately not `api_tokens`, whose SHA-256 digest cannot be read
+  // back to present outbound. `githubAccount` is declared further down this file; the reference is
+  // inside a closure, so it is only read when an action actually fires.
+  dispatchWorkflow: (target) => dispatchGithubWorkflow(target, { token: () => githubAccount.token() }),
   notify: notifySink,
 };
 const watchEngine = new WatchEngine(watchRuleRepository, runRepository, watchActionServices);

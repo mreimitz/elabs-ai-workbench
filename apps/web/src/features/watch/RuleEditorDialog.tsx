@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { Collection, WatchRule, WatchWindowPreview } from "@mcp-token-footprint/shared";
+import type {
+  Collection,
+  GithubAccountStatus,
+  WatchRule,
+  WatchWindowPreview,
+} from "@mcp-token-footprint/shared";
 import {
   GRADER_IDS,
   RUN_METRICS_GROUP_BY,
@@ -27,13 +32,24 @@ import {
   Switch,
   Text,
   Textarea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
   toast,
 } from "@elabs-ai/components-ui";
 import { WideDialog, DialogSection, type WideDialogSection } from "../../components/dialogs";
 import { FieldRow } from "../../components/FieldRow";
-import { SegmentedField } from "../../components/form";
+import { KeyValueEditor, SegmentedField } from "../../components/form";
 import { RunFilterBar, type RunFilterOptionData } from "../testing/runs/RunFilterBar";
-import { ApiError, createWatchRule, listCollections, previewWatchWindow, updateWatchRule } from "../../lib/api";
+import {
+  ApiError,
+  createWatchRule,
+  getGithubAccount,
+  listCollections,
+  previewWatchWindow,
+  updateWatchRule,
+} from "../../lib/api";
 import { getErrorMessage } from "../../lib/errors";
 import {
   type ActionFormState,
@@ -81,6 +97,12 @@ export function RuleEditorDialog({
   const [formError, setFormError] = useState<string | null>(null);
   const [issues, setIssues] = useState<{ path: (string | number)[]; message: string }[] | null>(null);
   const [collections, setCollections] = useState<Collection[]>([]);
+  /** AM-OB11 — the redacted GitHub account status (identity + scopes, NEVER the token). `null` until
+   *  the lookup settles. `githubChecked` separates "still looking" from "looked, and there is none":
+   *  the workflow-dispatch slot is disabled in both, but it must not accuse the operator of having
+   *  no account while the answer is still in flight. */
+  const [githubAccount, setGithubAccount] = useState<GithubAccountStatus | null>(null);
+  const [githubChecked, setGithubChecked] = useState(false);
 
   const [preview, setPreview] = useState<WatchWindowPreview | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -110,10 +132,26 @@ export function RuleEditorDialog({
     setPreviewedSignature(null);
     setSaving(false);
     let alive = true;
+    setGithubAccount(null);
+    setGithubChecked(false);
     listCollections()
       .then((list) => alive && setCollections(list))
       .catch(() => {
         // Best-effort — the collection pickers just show no options.
+      });
+    // AM-OB11 — the workflow-dispatch action rides the app-wide connected GitHub account, so the
+    // editor asks whether one exists. Best-effort: a failure leaves `githubAccount` null, which the
+    // slot reads as "not connected" and says so, rather than offering an action that cannot run.
+    getGithubAccount()
+      .then((status) => {
+        if (!alive) return;
+        setGithubAccount(status);
+        setGithubChecked(true);
+      })
+      .catch(() => {
+        // Best-effort. A failed lookup settles as "no account": the slot stays disabled and says so,
+        // which is the safe reading — offering an action that cannot run would be worse.
+        if (alive) setGithubChecked(true);
       });
     return () => {
       alive = false;
@@ -242,6 +280,10 @@ export function RuleEditorDialog({
         <ActionsSection
           actions={state.actions}
           collections={collections}
+          githubAccount={githubAccount}
+          githubChecked={githubChecked}
+          formError={formError}
+          issues={issues}
           onChange={(actions) => {
             setActionsTouched(true);
             setState((current) => ({ ...current, actions }));
@@ -275,6 +317,42 @@ export function RuleEditorDialog({
   );
 }
 
+/**
+ * The one save-error surface, rendered by whichever section `handleSave` sent the operator to.
+ *
+ * It used to live only inside `TriggerSection`, which meant an ACTIONS-step failure ("Enable at
+ * least one action", a bad webhook URL, and now a bad workflow-dispatch target) set the message,
+ * switched to the Actions step — and showed nothing, because only the active section is mounted.
+ * AM-OB11 needs its target error to be visible where the operator typed it, so the alert became a
+ * shared part both sections render.
+ */
+function FormErrorAlert({
+  formError,
+  issues,
+}: {
+  formError: string | null;
+  issues: { path: (string | number)[]; message: string }[] | null;
+}) {
+  if (!formError) return null;
+  return (
+    <Alert variant="destructive">
+      <AlertDescription>
+        {formError}
+        {issues && issues.length > 0 ? (
+          <ul className="mt-1.5 list-inside list-disc">
+            {issues.map((issue, index) => (
+              <li key={index}>
+                {issue.path.length > 0 ? `${issue.path.join(".")}: ` : ""}
+                {issue.message}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </AlertDescription>
+    </Alert>
+  );
+}
+
 function TriggerSection({
   state,
   onChange,
@@ -292,23 +370,7 @@ function TriggerSection({
 
   return (
     <div className="flex flex-col gap-5">
-      {formError ? (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {formError}
-            {issues && issues.length > 0 ? (
-              <ul className="mt-1.5 list-inside list-disc">
-                {issues.map((issue, index) => (
-                  <li key={index}>
-                    {issue.path.length > 0 ? `${issue.path.join(".")}: ` : ""}
-                    {issue.message}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </AlertDescription>
-        </Alert>
-      ) : null}
+      <FormErrorAlert formError={formError} issues={issues} />
 
       <DialogSection title="Identity">
         <FieldRow id="rule-name" label="Name">
@@ -588,17 +650,35 @@ function WindowConfigSection({
 function ActionsSection({
   actions,
   collections,
+  githubAccount,
+  githubChecked,
+  formError,
+  issues,
   onChange,
 }: {
   actions: ActionFormState;
   collections: Collection[];
+  githubAccount: GithubAccountStatus | null;
+  githubChecked: boolean;
+  formError: string | null;
+  issues: { path: (string | number)[]; message: string }[] | null;
   onChange: (next: ActionFormState) => void;
 }) {
   const patch = <K extends keyof ActionFormState>(key: K, value: ActionFormState[K]) =>
     onChange({ ...actions, [key]: value });
 
+  // AM-OB11 — why the workflow-dispatch slot is unavailable, if it is. The two states are kept
+  // apart deliberately: telling an operator they have no GitHub account while the lookup is still
+  // in flight would be a lie they might act on.
+  const githubReason = githubAccount?.connected
+    ? null
+    : githubChecked
+      ? "No GitHub account is connected. Connect one in Settings → GitHub account, then reopen this rule."
+      : "Checking your connected GitHub account…";
+
   return (
     <div className="flex flex-col gap-4">
+      <FormErrorAlert formError={formError} issues={issues} />
       <ActionRow
         id="action-notify"
         title="Notify"
@@ -746,15 +826,122 @@ function ActionsSection({
           </FieldRow>
         </div>
       </ActionRow>
+
+      <ActionRow
+        id="action-workflow-dispatch"
+        title="Run a GitHub Actions workflow"
+        // The one action on this list that STARTS WORK and SPENDS MONEY outside this app. Say so
+        // here, where the operator ticks the box — not in a footnote.
+        description="Starts a CI run on GitHub and spends Actions minutes. Uses your connected GitHub account; no credential is stored on the rule."
+        enabled={actions.workflow_dispatch.enabled}
+        disabled={githubReason !== null}
+        disabledReason={githubReason}
+        onEnabledChange={(enabled) =>
+          patch("workflow_dispatch", { ...actions.workflow_dispatch, enabled })
+        }
+      >
+        <div className="flex flex-col gap-3">
+          <Alert variant="info">
+            <AlertDescription>
+              Dispatched as{" "}
+              <span className="font-medium">{githubAccount?.login ?? "your connected account"}</span>
+              . The workflow must already declare a{" "}
+              <code className="font-mono">workflow_dispatch</code> trigger, and GitHub
+              rejects any input it does not declare — so only the inputs below are sent.
+            </AlertDescription>
+          </Alert>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FieldRow id="workflow-owner" label="Owner">
+              <Input
+                id="workflow-owner"
+                value={actions.workflow_dispatch.owner}
+                placeholder="acme-labs…"
+                spellCheck={false}
+                autoComplete="off"
+                onChange={(event) =>
+                  patch("workflow_dispatch", {
+                    ...actions.workflow_dispatch,
+                    owner: event.target.value,
+                  })
+                }
+              />
+            </FieldRow>
+            <FieldRow id="workflow-repo" label="Repository">
+              <Input
+                id="workflow-repo"
+                value={actions.workflow_dispatch.repo}
+                placeholder="workbench…"
+                spellCheck={false}
+                autoComplete="off"
+                onChange={(event) =>
+                  patch("workflow_dispatch", {
+                    ...actions.workflow_dispatch,
+                    repo: event.target.value,
+                  })
+                }
+              />
+            </FieldRow>
+            <FieldRow id="workflow-file" label="Workflow file or id">
+              <Input
+                id="workflow-file"
+                value={actions.workflow_dispatch.workflow}
+                placeholder="nightly.yml…"
+                spellCheck={false}
+                autoComplete="off"
+                onChange={(event) =>
+                  patch("workflow_dispatch", {
+                    ...actions.workflow_dispatch,
+                    workflow: event.target.value,
+                  })
+                }
+              />
+            </FieldRow>
+            <FieldRow id="workflow-ref" label="Ref (branch or tag)">
+              <Input
+                id="workflow-ref"
+                value={actions.workflow_dispatch.ref}
+                placeholder="main…"
+                spellCheck={false}
+                autoComplete="off"
+                onChange={(event) =>
+                  patch("workflow_dispatch", { ...actions.workflow_dispatch, ref: event.target.value })
+                }
+              />
+            </FieldRow>
+          </div>
+          <FieldRow id="workflow-inputs" label="Workflow inputs (optional)" wide>
+            <KeyValueEditor
+              aria-label="Workflow inputs"
+              value={actions.workflow_dispatch.inputs}
+              keyPlaceholder="input_name"
+              valuePlaceholder="value…"
+              addLabel="Add input"
+              onChange={(inputs) =>
+                patch("workflow_dispatch", { ...actions.workflow_dispatch, inputs })
+              }
+            />
+          </FieldRow>
+        </div>
+      </ActionRow>
     </div>
   );
 }
 
+/**
+ * One action slot. AM-OB11 adds an optional UNAVAILABLE state: when `disabled` with a
+ * `disabledReason`, the checkbox is disabled, the reason is shown BOTH in a hover/focus tooltip and
+ * as visible text, and it is wired to the checkbox's `aria-describedby` — so it reaches assistive
+ * tech even while the tooltip is closed. This mirrors `IconButton`'s D-TB5 discipline (one reason,
+ * reachable without a mouse); the Radix trigger is a wrapper `<span>` rather than the disabled
+ * control, because a disabled control swallows hover.
+ */
 function ActionRow({
   id,
   title,
   description,
   enabled,
+  disabled = false,
+  disabledReason = null,
   onEnabledChange,
   children,
 }: {
@@ -762,18 +949,43 @@ function ActionRow({
   title: string;
   description: string;
   enabled: boolean;
+  disabled?: boolean;
+  disabledReason?: string | null;
   onEnabledChange: (enabled: boolean) => void;
   children?: ReactNode;
 }) {
+  const reasonId = `${id}-reason`;
+  const showReason = disabled && disabledReason !== null;
+
+  const control = (
+    <Checkbox
+      id={id}
+      checked={enabled && !disabled}
+      disabled={disabled}
+      aria-label={title}
+      aria-describedby={showReason ? reasonId : undefined}
+      onCheckedChange={(checked) => onEnabledChange(checked === true)}
+    />
+  );
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border p-3">
-      <label htmlFor={id} className="flex cursor-pointer items-start gap-2.5">
-        <Checkbox
-          id={id}
-          checked={enabled}
-          aria-label={title}
-          onCheckedChange={(checked) => onEnabledChange(checked === true)}
-        />
+      <label htmlFor={id} className={cn("flex items-start gap-2.5", !disabled && "cursor-pointer")}>
+        {showReason ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {/* The wrapper is the actual Radix trigger: a disabled Checkbox carries
+                  pointer-events-none, so hover falls through to the span. Unlike `IconButton` — whose
+                  reason is `sr-only` and therefore needs a focusable wrapper — this reason is VISIBLE
+                  below and wired to the control's `aria-describedby`, so the span deliberately adds
+                  NO tab stop. The tooltip is the mouse convenience; the visible text is the truth. */}
+              <span className="inline-flex">{control}</span>
+            </TooltipTrigger>
+            <TooltipContent>{disabledReason}</TooltipContent>
+          </Tooltip>
+        ) : (
+          control
+        )}
         <span className="flex flex-col gap-0.5">
           <Text className="font-medium">{title}</Text>
           <Text variant="meta" tone="muted">
@@ -781,7 +993,14 @@ function ActionRow({
           </Text>
         </span>
       </label>
-      {enabled && children ? <div className="ps-6">{children}</div> : null}
+      {showReason ? (
+        // Visible as well as tooltip-only: the reason is the difference between "this app is broken"
+        // and "you have one thing to go and do", so it must not depend on hovering.
+        <Alert variant="warning">
+          <AlertDescription id={reasonId}>{disabledReason}</AlertDescription>
+        </Alert>
+      ) : null}
+      {enabled && !disabled && children ? <div className="ps-6">{children}</div> : null}
     </div>
   );
 }

@@ -59,6 +59,9 @@ const ACTION_LABELS: Record<WatchAction["type"], string> = {
   promote_to_test: "Promote to test",
   run_grader: "Run grader",
   webhook: "Webhook",
+  // AM-OB11 — named for what it DOES rather than for GitHub's API verb, so a rule list row reads as
+  // "Notify, GitHub Actions" and an operator can see at a glance that this rule starts CI work.
+  workflow_dispatch: "GitHub Actions",
 };
 
 export function actionTypeLabel(type: WatchAction["type"]): string {
