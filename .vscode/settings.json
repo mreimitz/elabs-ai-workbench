@@ -1,0 +1,28 @@
+{
+  // Transient git worktrees (/next-wp runner + harness sub-agent isolation) live INSIDE the
+  // workspace folder. They are gitignored, but .gitignore does not stop the TypeScript language
+  // server or the file watcher from walking them — so a deleted worktree leaves ghost errors in
+  // the Problems panel ("File ... matched by include pattern 'src'" against a path that no longer
+  // exists). Excluding them here keeps every worktree out of the editor's program entirely.
+  "files.exclude": {
+    "**/.worktrees": true,
+    "**/.claude/worktrees": true
+  },
+  "search.exclude": {
+    "**/.worktrees": true,
+    "**/.claude/worktrees": true,
+    "**/dist": true,
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/.worktrees/**": true,
+    "**/.claude/worktrees/**": true,
+    "**/dist/**": true,
+    "**/node_modules/**": true,
+    "**/data/**": true
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.tsserver.watchOptions": {
+    "excludeDirectories": ["**/.worktrees", "**/.claude/worktrees", "**/node_modules"]
+  }
+}
