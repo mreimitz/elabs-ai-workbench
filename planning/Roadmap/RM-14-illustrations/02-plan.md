@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "Illustrations \u2014 phased plan (work packages)"
 description: "Locked decisions: decisions.md (D-IL1\u2013D-IL17). Live state"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T13:10:00Z"
 status: "final"
 ---
 # Illustrations — phased plan (work packages)
@@ -49,7 +49,11 @@ parallel worktrees (entities are independent files) · 2.x sequential · 3.x/4.x
 - **WP 1.4 — Contribution kit.** `scripts/new-component.mjs` scaffold (component + registry
   entry + contract test), the illustration checklist in `packages/illustrations/README.md`,
   registry changelog + `REGISTRY_VERSION` discipline, gallery auto-pickup proven by adding a
-  21st component via the scaffold alone.
+  **24th** component via the scaffold alone. (Corrected 2026-08-21: 3 pilots + 5 + 7 + 8 = **23**
+  after Phase 1, so the proof is the 24th, not the 21st. And per the dated amendment in
+  [`decisions.md`](./decisions.md), the "`REGISTRY_VERSION` discipline" is a **changelog** plus a
+  test that catches a BREAKING entry change shipped without a bump — adding a component does not
+  bump the number.)
 
 ## Phase 2 — Scene engine (declarative composition)
 

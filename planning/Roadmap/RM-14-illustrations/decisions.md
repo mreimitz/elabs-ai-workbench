@@ -3,7 +3,7 @@ type: "Decision"
 title: "Illustrations \u2014 locked decisions (D-IL1 \u2026 D-IL17)"
 description: "These are settled. An agent picking up a WP builds within them; changing one requires an"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T13:10:00Z"
 status: "accepted"
 ---
 # Illustrations — locked decisions (D-IL1 … D-IL17)
@@ -84,6 +84,47 @@ New component = registry entry + scaffold (`new <Name>`) + primitives-only const
 the illustration checklist (footprint · ports · 5 states · both themes · accent budget ·
 screen-aligned label · `<title>/<desc>`) + co-located contract test + `REGISTRY_VERSION`
 bump. New primitives go into `primitives/`, never inlined into one entity.
+
+> **Amendment, 2026-08-21 — `REGISTRY_VERSION` does NOT bump when a component is added.**
+> D-IL12 above lists a "`REGISTRY_VERSION` bump" as part of shipping a new component. That
+> contradicts the constant's own contract in
+> `packages/shared/src/illustration-registry.ts` (repository root, outside this bundle)
+> — *"Bumped when an ENTRY's contract moves in a way that could change how an existing scene
+> renders … ADDING a component, a variant or a port is additive and leaves this alone."* Phase 1
+> surfaced the contradiction (WPs 1.1–1.3 shipped 20 components and, correctly, bumped nothing).
+>
+> **The constant's rule wins, and D-IL12's clause is struck.** The reason is what the version is
+> *for*: D-IL9 makes it a **flag-don't-break compatibility marker** stamped into every authored
+> scene, the same job `TOKEN_COUNTING_VERSION` does for a scan. Adding an entity **cannot**
+> invalidate an authored scene — no scene can reference an id that did not exist when it was
+> written. A version that bumped on every addition would flag every stored scene after every work
+> package for a change provably incapable of affecting it, and a flag that fires on non-events is a
+> flag people learn to ignore. That is exactly how `counting_version` would be ruined if it moved
+> whenever a new server was registered.
+>
+> So, concretely:
+> - **Bump** when an existing entry's scene-visible contract moves — an id or port **renamed or
+>   removed**, a variant/state/size **dropped**, a footprint **re-sized**. Those can break a scene
+>   that already resolves against them.
+> - **Do not bump** for anything additive (a new component, variant, port or state) or cosmetic
+>   (title, description, keywords, tier).
+> - `since` on an entry records the version the entity was **born under**, which is what makes the
+>   useful question answerable: *a scene stamped version V can resolve any entity whose
+>   `since <= V`.* All 23 of today's entries are legitimately `since: "0.1.0"`.
+> - **The growth record moves to the registry CHANGELOG, not the number.** WP 1.4 owns it, and owes
+>   the rule **teeth** — today nothing would notice a breaking entry change shipped without a bump.
+>   A checked-in snapshot of each entry's scene-visible contract, compared on every run, turns this
+>   amendment from a paragraph into a red test.
+>
+> `REGISTRY_VERSION` therefore stays **`0.1.0`** after Phase 1. Owner-delegated decision
+> (2026-08-21, "do as you think best"), recorded here rather than made silently in code.
+
+> **Amendment, 2026-08-21 — the Phase 1 catalog is 23 components, not 20.**
+> [`02-plan.md`](./02-plan.md) WP 1.4 asks for a "scaffold-only **21st** component proof", and
+> `CLAUDE.md` §1 described "the remaining ~17 entities". Both were arithmetic slips: WPs 1.1–1.3
+> add **5 + 7 + 8 = 20** entities to the **3** Phase 0 pilots, so the catalog holds **23** and the
+> scaffold proof is the **24th** component. Corrected in `02-plan.md`; `CLAUDE.md` §1 was corrected
+> when WPs 1.2/1.3 were ticked. Owner-delegated (2026-08-21).
 
 ### D-IL13 — Assistant integration follows the assistant workstream's rules
 Tools live in `apps/api/src/assistant/tools/` on the in-process MCP server;
