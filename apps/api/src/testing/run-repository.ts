@@ -171,6 +171,17 @@ export class RunRepository implements RunPersistenceSink {
       if (typeof cached === "number") {
         cursor.cachedTokens = (cursor.cachedTokens ?? 0) + cached;
       }
+      // RM-33 — the split, accumulated separately. Each half is tracked on its own presence so a
+      // provider that reports only reads (OpenAI: writes are free and unreported) records a real read
+      // total and leaves the write side UNKNOWN rather than claiming it was zero.
+      const cacheRead = event.step.usageActual?.cacheReadTokens;
+      if (typeof cacheRead === "number") {
+        cursor.cacheReadTokens = (cursor.cacheReadTokens ?? 0) + cacheRead;
+      }
+      const cacheWrite = event.step.usageActual?.cacheWriteTokens;
+      if (typeof cacheWrite === "number") {
+        cursor.cacheWriteTokens = (cursor.cacheWriteTokens ?? 0) + cacheWrite;
+      }
     } else if (event.type === "kpi") {
       cursor.kpi = event;
       // The kpi rail also surfaces the live context total — fold it into the peak.
@@ -349,6 +360,8 @@ export class RunRepository implements RunPersistenceSink {
            tokens_in = @tokensIn,
            tokens_out = @tokensOut,
            cached_tokens = @cachedTokens,
+           cache_read_tokens = @cacheReadTokens,
+           cache_write_tokens = @cacheWriteTokens,
            cost_usd = @costUsd,
            cost_basis = @costBasis
          WHERE id = @runId`,
@@ -378,6 +391,12 @@ export class RunRepository implements RunPersistenceSink {
         tokensIn: kpi?.tokensIn ?? 0,
         tokensOut: kpi?.tokensOut ?? 0,
         cachedTokens: cursor.cachedTokens ?? 0,
+        // RM-33 (D-CT3) — prefer the kpi event (it now carries the split), fall back to the per-step
+        // re-accumulation, and write a real NULL when NEITHER saw a cache slice. `?? null`, never
+        // `?? 0`: a zero here would tell the metrics layer this run demonstrably had no cache, which
+        // is a different and stronger claim than "this backend never told us".
+        cacheReadTokens: kpi?.cacheReadTokens ?? cursor.cacheReadTokens ?? null,
+        cacheWriteTokens: kpi?.cacheWriteTokens ?? cursor.cacheWriteTokens ?? null,
         costUsd: kpi?.costUsd ?? 0,
         // Claude subscription (WP 3.1, D-CS4/D-CS8) — persist the run's cost BASIS from the terminal
         // kpi (the same event `cost_usd` is derived from) so the Runs feed + Compare, which read the
@@ -1208,6 +1227,14 @@ type RunCursor = {
   peakContextTokens?: number;
   cachedTokens?: number;
   /**
+   * RM-33 (D-CT3) — the read/write halves, re-accumulated from the steps for the same reason
+   * `cachedTokens` is: a run can terminate before any `kpi` event lands, and the steps are the only
+   * place the split is guaranteed to exist. `undefined` (not 0) when no step reported a cache slice,
+   * so finalize can write a genuine SQL NULL — "unknown", never a fabricated zero.
+   */
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+  /**
    * Observability (WP3.1, D-OB17) — maps each persisted step's EMITTED id (`RunStep.id`) to its
    * PERSISTED `run_steps.id`, so a later child's emitted `parentStepId` resolves to the real parent row.
    * Only earlier-in-emission-order steps are present, which is exactly the "earlier step of the same
@@ -1576,6 +1603,15 @@ function toRunSummary(row: RunRow): RunSummary {
     tokensIn: row.tokens_in,
     tokensOut: row.tokens_out,
     costUsd: row.cost_usd,
+    // RM-33 (D-CT1/D-CT2) — the cache composition of `tokensIn`, which stays GROSS above. Before this,
+    // `runs.cached_tokens` was written on every finalize and then mapped NOWHERE: the column existed,
+    // the number was correct, and no consumer could ever see it. `cached_tokens` is NOT NULL so it is
+    // always sent; the two halves are nullable and a NULL means UNKNOWN (a run persisted before
+    // migration v59 with no usage-bearing steps to backfill from), so they are dropped rather than
+    // coalesced to 0 — a consumer must be able to tell "no cache" from "we don't know" (D-CT6).
+    cachedTokens: row.cached_tokens,
+    ...(row.cache_read_tokens === null ? {} : { cacheReadTokens: row.cache_read_tokens }),
+    ...(row.cache_write_tokens === null ? {} : { cacheWriteTokens: row.cache_write_tokens }),
     // B7 / Testing IA — the suite run this run belongs to (denormalized reference, NOT an FK) plus its
     // 1-based repetition ordinal. Present ONLY for suite-matrix members so the unified Runs feed can
     // nest members under their suite-run summary row. Additive/optional: NULL columns → fields absent.

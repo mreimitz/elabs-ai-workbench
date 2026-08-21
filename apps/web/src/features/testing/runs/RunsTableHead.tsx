@@ -73,6 +73,15 @@ export function RunsTableHead({
       {show("turns") ? <ColHead label="Turns" columnKey="turns" numeric sort={sort} /> : null}
       {show("tools") ? <ColHead label="Tools" columnKey="tools" numeric sort={sort} /> : null}
       {show("tokens") ? <ColHead label="Tokens" columnKey="tokens" numeric sort={sort} /> : null}
+      {/* RM-33 — a PLAIN head, not a `ColHead`: `cacheHitRate` is derived per row from the wire
+          fields and the runs repository has no sort expression for it, so `SortKey` (correctly) has
+          no such member. Rendering a sort control that silently does nothing would be worse than
+          rendering none. */}
+      {show("cacheHitRate") ? (
+        <TableHead className={cn(stickyHeadClass("card"), "whitespace-nowrap", "text-right")}>
+          Cache hit
+        </TableHead>
+      ) : null}
       {show("cost") ? <ColHead label="Cost" columnKey="cost" numeric sort={sort} /> : null}
       {showGrade ? <ColHead label="Grade" columnKey="grade" sort={sort} /> : null}
       {show("started") ? <ColHead label="Started" columnKey="started" sort={sort} /> : null}

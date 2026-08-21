@@ -1,4 +1,9 @@
-import { GENERATED_MODEL_PRICING, type TokenUsageActual } from "@mcp-token-footprint/shared";
+import {
+  type CostBreakdown,
+  GENERATED_MODEL_PRICING,
+  type TokenUsageActual,
+  usageSplitKind,
+} from "@mcp-token-footprint/shared";
 
 /**
  * WP 1.5 / Phase 5 — best-effort model pricing for the **spend-cap guardrail** and the run cost KPI.
@@ -207,13 +212,40 @@ export function isModelPriced(model: string, opts?: PricingResolveOptions): bool
   return resolvePrice(model, opts) !== undefined;
 }
 
-export function estimateCost(
+/**
+ * RM-33 (D-CT5) — the SINGLE cost formula in the app. {@link estimateCost} is a thin caller of this,
+ * so the headline number and its breakdown can never disagree; a test pins that identity.
+ *
+ * The arithmetic is unchanged from the pre-RM-33 `estimateCost` — this function is an extraction, not
+ * a re-derivation. What it adds is the per-term decomposition and two things a single float cannot
+ * say: whether we could price the model at all (`priced`), and whether the cached slice was reported
+ * as a read/write split or as one merged number (`split`).
+ *
+ * `savedVsUncachedUsd` is deliberately signed. Cache READS are a ~0.1x discount, but cache WRITES are
+ * a 1.25x premium, so a write-heavy record genuinely costs MORE than the same tokens uncached and this
+ * value comes back negative. Any surface that renders it as "savings" must honour the sign.
+ */
+export function computeCostBreakdown(
   model: string,
   usage: TokenUsageActual,
   opts?: PricingResolveOptions,
-): number {
+): CostBreakdown {
   const pricing = resolvePrice(model, opts);
-  if (!pricing) return 0;
+  const split = usageSplitKind(usage);
+  if (!pricing) {
+    // Unpriced: every term is 0 because we CANNOT price it, not because it is free. `priced: false`
+    // is what lets a caller (the spend-cap guardrail) tell those two apart — see {@link isModelPriced}.
+    return {
+      uncachedUsd: 0,
+      cacheReadUsd: 0,
+      cacheWriteUsd: 0,
+      outputUsd: 0,
+      totalUsd: 0,
+      savedVsUncachedUsd: 0,
+      priced: false,
+      split,
+    };
+  }
 
   const hasSplit = usage.cacheReadTokens !== undefined || usage.cacheWriteTokens !== undefined;
   const cacheRead = hasSplit ? (usage.cacheReadTokens ?? 0) : (usage.cachedInputTokens ?? 0);
@@ -225,12 +257,34 @@ export function estimateCost(
   // code-table / seed entry — which never carries one — prices byte-identically).
   const writeRate = pricing.cacheWritePer1M ?? pricing.inPer1M * CACHE_WRITE_MULTIPLIER;
 
-  return (
-    (uncached / 1e6) * pricing.inPer1M +
-    (cacheRead / 1e6) * readRate +
-    (cacheWrite / 1e6) * writeRate +
-    (usage.outputTokens / 1e6) * pricing.outPer1M
-  );
+  const uncachedUsd = (uncached / 1e6) * pricing.inPer1M;
+  const cacheReadUsd = (cacheRead / 1e6) * readRate;
+  const cacheWriteUsd = (cacheWrite / 1e6) * writeRate;
+  const outputUsd = (usage.outputTokens / 1e6) * pricing.outPer1M;
+  const totalUsd = uncachedUsd + cacheReadUsd + cacheWriteUsd + outputUsd;
+
+  // The counterfactual: the SAME gross input, every token at the full rate. `inputTokens` is already
+  // gross (it includes the cached slice — D-CT1), so this needs no re-summing of the three terms.
+  const uncachedCounterfactualUsd = (usage.inputTokens / 1e6) * pricing.inPer1M + outputUsd;
+
+  return {
+    uncachedUsd,
+    cacheReadUsd,
+    cacheWriteUsd,
+    outputUsd,
+    totalUsd,
+    savedVsUncachedUsd: uncachedCounterfactualUsd - totalUsd,
+    priced: true,
+    split,
+  };
+}
+
+export function estimateCost(
+  model: string,
+  usage: TokenUsageActual,
+  opts?: PricingResolveOptions,
+): number {
+  return computeCostBreakdown(model, usage, opts).totalUsd;
 }
 
 // --- Seed rows for the DB pricing table (Observability WP2.6) ------------------------------------

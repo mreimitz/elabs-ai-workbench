@@ -1,4 +1,4 @@
-import type { RunStep } from "@mcp-token-footprint/shared";
+import type { RunStep, TokenUsageActual } from "@mcp-token-footprint/shared";
 import { runDurationMs } from "./analytics-derive";
 import type { TimelineItem } from "./use-run-stream";
 
@@ -24,6 +24,8 @@ export type TurnSummary = {
   durationMs: number | null;
   tokensIn: number;
   tokensOut: number;
+  /** RM-33 — the usage record `tokensIn` decomposes; absent when the turn reported none. */
+  usage?: TokenUsageActual;
   toolCalls: number;
   /** The turn's closing `llm_response` step id — the feedback-control scope + the cross-console link. */
   stepId: string | null;
@@ -62,6 +64,8 @@ export function deriveTurnSummaries(timeline: TimelineItem[], steps: RunStep[]):
       durationMs: runDurationMs(turnSteps),
       tokensIn: item.usageActual?.inputTokens ?? 0,
       tokensOut: item.usageActual?.outputTokens ?? 0,
+      // RM-33 — the record `tokensIn` decomposes, so the row's ↑ figure can explain itself.
+      ...(item.usageActual ? { usage: item.usageActual } : {}),
       toolCalls: item.toolCalls.length,
       stepId: item.stepId ?? null,
     });

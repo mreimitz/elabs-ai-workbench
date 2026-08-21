@@ -309,3 +309,78 @@ describe("KpiRail — ZERO new `providerKind` conditionals (grep-proof, D-US4)",
     expect(code).not.toMatch(/providerKind/);
   });
 });
+
+// ── RM-33 WP 3.1 — the cache composition on the KPI rail ────────────────────────────────────────
+//
+// The defect this closes, in the owner's own words: a run console reporting **Tokens ↑ 958,457**
+// while the Analytics tab, two clicks away, showed a single turn as 45,938 cached / 1 uncached — and
+// nothing between the two screens said so. `tokensIn` is unchanged (D-CT1); what changes is that the
+// rail now explains it.
+
+describe("KpiRail — cache composition (RM-33)", () => {
+  test("the Tokens ↑ description states the cache share when the split is known", () => {
+    renderRail({
+      capabilities: ENGINE_CAPS,
+      kpis: kpis({
+        tokensIn: 1000,
+        cachedTokens: 900,
+        cacheReadTokens: 800,
+        cacheWriteTokens: 100,
+      }),
+    });
+    expect(screen.getByText(/80\.0% from cache/)).toBeInTheDocument();
+  });
+
+  test("the gross figure is UNCHANGED — the rail decomposes, it never nets off", () => {
+    renderRail({
+      capabilities: ENGINE_CAPS,
+      kpis: kpis({ tokensIn: 1000, cachedTokens: 900, cacheReadTokens: 900, cacheWriteTokens: 0 }),
+    });
+    // 1,000, not the 100 a "helpful" subtraction would show. (The figure and its ↑ affix are separate
+    // text nodes inside one span, so match the container rather than an exact node.)
+    expect(screen.getByText((_, el) => el?.textContent === "1,000↑")).toBeInTheDocument();
+  });
+
+  test("a run whose split is unknown reads EXACTLY as it did before RM-33", () => {
+    // The majority case for historical runs. No sub-line, no tooltip, no fabricated 0%.
+    renderRail({ capabilities: ENGINE_CAPS, kpis: kpis({ tokensIn: 1000 }) });
+    expect(screen.getByText("sent (provider-actual)")).toBeInTheDocument();
+    expect(screen.queryByText(/from cache/)).not.toBeInTheDocument();
+  });
+
+  test("a merged-only run gets no invented hit rate", () => {
+    // Six runs in a real database carry this shape. Attributing the merged figure to `read` would
+    // present a possible 1.25× premium as a 0.1× discount.
+    renderRail({
+      capabilities: ENGINE_CAPS,
+      kpis: kpis({ tokensIn: 1000, cachedTokens: 900 }),
+    });
+    expect(screen.queryByText(/from cache/)).not.toBeInTheDocument();
+    expect(screen.getByText("sent (provider-actual)")).toBeInTheDocument();
+  });
+
+  test("the relationship note answers WHY Tokens ↑ dwarfs Context", () => {
+    const note = figureRelationshipNote({
+      showContext: true,
+      showTokens: true,
+      showCost: true,
+      cacheHitRate: 0.968,
+    });
+    expect(note).toMatch(/counted gross/);
+    expect(note).toMatch(/96\.8% of what was sent was served from cache/);
+    // The pre-existing clauses survive — this extends the note, it does not replace it.
+    expect(note).toMatch(/current conversation size/);
+  });
+
+  test("the relationship note is byte-identical to before when the split is unknown", () => {
+    const withUnknown = figureRelationshipNote({
+      showContext: true,
+      showTokens: true,
+      showCost: true,
+      cacheHitRate: null,
+    });
+    const legacy = figureRelationshipNote({ showContext: true, showTokens: true, showCost: true });
+    expect(withUnknown).toBe(legacy);
+    expect(withUnknown).not.toMatch(/cache/);
+  });
+});

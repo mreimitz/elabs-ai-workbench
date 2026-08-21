@@ -355,10 +355,10 @@ test("migration v34 — a fresh DB carries run_views (schema.ts baseline)", () =
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    58,
-    "LATEST_SCHEMA_VERSION auto-derived to 58 (v34 = run_views; v35 = runs.pinned; v36 = run_feedback; v37 = run_steps hierarchy; v38 = watch_rules; v39 = watch_rules.last_evaluated_at; v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1)",
+    59,
+    "LATEST_SCHEMA_VERSION auto-derived to 59 (v34 = run_views; v35 = runs.pinned; v36 = run_feedback; v37 = run_steps hierarchy; v38 = watch_rules; v39 = watch_rules.last_evaluated_at; v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
+  assert.equal(db.pragma("user_version", { simple: true }), 59, "fresh DB stamped at 59");
   assert.ok(tableExists(db, "run_views"), "fresh DB has the run_views table");
 
   // The table is immediately usable (INSERT + case-insensitive UNIQUE name).
@@ -414,5 +414,5 @@ test("migration v34 — a pre-v34 (v33) DB gains run_views; neighboring rows sur
 
   // Idempotent: re-running is a no-op and leaves the version unchanged.
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v34 is a no-op");
-  assert.equal(db.pragma("user_version", { simple: true }), 58, "version unchanged after the re-run");
+  assert.equal(db.pragma("user_version", { simple: true }), 59, "version unchanged after the re-run");
 });

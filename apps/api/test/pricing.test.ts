@@ -4,8 +4,10 @@ import {
   ASSISTANT_DEFAULT_MODEL_ROSTER,
   MODEL_CONTEXT_LIMITS,
   ROSTER_GAP_MODEL_CONTEXT_LIMITS,
+  type TokenUsageActual,
 } from "@mcp-token-footprint/shared";
 import {
+  computeCostBreakdown,
   estimateCost,
   isModelPriced,
   MODEL_PRICING,
@@ -190,4 +192,156 @@ test("D-MI11 — the two roster-gap maps agree: every gap-priced id has a window
         "it is refused and estimateCost() returns 0. Add it to ROSTER_GAP_MODEL_PRICING too.",
     );
   }
+});
+
+// ── RM-33 WP 1.1 (D-CT5) — one pricing code path ────────────────────────────────────────────────
+//
+// `estimateCost` is now a thin caller of `computeCostBreakdown`. The whole point of the extraction is
+// that the headline cost and its breakdown can never disagree — so THIS is the tooth. If someone
+// later "optimizes" estimateCost back into its own arithmetic, or adds a term to one and not the
+// other, these go red.
+
+const BREAKDOWN_CASES: Array<{ label: string; model: string; usage: TokenUsageActual }> = [
+  {
+    label: "exact split (read + write)",
+    model: MODEL,
+    usage: {
+      inputTokens: 100_000,
+      outputTokens: 2_000,
+      cachedInputTokens: 90_000,
+      cacheReadTokens: 80_000,
+      cacheWriteTokens: 10_000,
+    },
+  },
+  {
+    label: "read-only split",
+    model: MODEL,
+    usage: { inputTokens: 50_000, outputTokens: 500, cacheReadTokens: 49_999 },
+  },
+  {
+    label: "write-heavy split (a PREMIUM, not a discount)",
+    model: MODEL,
+    usage: { inputTokens: 40_000, outputTokens: 100, cacheWriteTokens: 40_000 },
+  },
+  {
+    label: "merged legacy record (priced entirely as cache-read)",
+    model: MODEL,
+    usage: { inputTokens: 30_000, outputTokens: 300, cachedInputTokens: 25_000 },
+  },
+  { label: "no cache at all", model: MODEL, usage: { inputTokens: 1_000, outputTokens: 200 } },
+  { label: "zero input", model: MODEL, usage: { inputTokens: 0, outputTokens: 0 } },
+  {
+    label: "unpriced model",
+    model: "totally-made-up-model-id",
+    usage: { inputTokens: 10_000, outputTokens: 100, cacheReadTokens: 9_000 },
+  },
+  {
+    label: "explicitly zero-priced local model",
+    model: ZERO_PRICE_MODELS[0] as string,
+    usage: { inputTokens: 10_000, outputTokens: 100, cacheReadTokens: 9_000 },
+  },
+];
+
+test("D-CT5 — computeCostBreakdown().totalUsd IS estimateCost(), for every record shape", () => {
+  for (const { label, model, usage } of BREAKDOWN_CASES) {
+    const breakdown = computeCostBreakdown(model, usage);
+    assert.equal(
+      breakdown.totalUsd,
+      estimateCost(model, usage),
+      `${label}: the breakdown total and the headline cost diverged — there are now two cost formulas`,
+    );
+    assert.equal(
+      breakdown.uncachedUsd + breakdown.cacheReadUsd + breakdown.cacheWriteUsd + breakdown.outputUsd,
+      breakdown.totalUsd,
+      `${label}: the four terms do not re-sum to the total`,
+    );
+  }
+});
+
+test("D-CT5 — the breakdown reports the split fidelity it priced under", () => {
+  assert.equal(
+    computeCostBreakdown(MODEL, {
+      inputTokens: 100,
+      outputTokens: 0,
+      cacheReadTokens: 50,
+    }).split,
+    "exact",
+  );
+  assert.equal(
+    computeCostBreakdown(MODEL, {
+      inputTokens: 100,
+      outputTokens: 0,
+      cachedInputTokens: 50,
+    }).split,
+    "merged",
+  );
+  assert.equal(computeCostBreakdown(MODEL, { inputTokens: 100, outputTokens: 0 }).split, "none");
+});
+
+test("D-CT5 — `priced` separates 'cannot price it' from 'genuinely free'", () => {
+  const usage: TokenUsageActual = { inputTokens: 10_000, outputTokens: 100 };
+  const unknown = computeCostBreakdown("totally-made-up-model-id", usage);
+  assert.equal(unknown.totalUsd, 0);
+  assert.equal(unknown.priced, false, "an unpriced model must not look like a free one");
+
+  const free = computeCostBreakdown(ZERO_PRICE_MODELS[0] as string, usage);
+  assert.equal(free.totalUsd, 0);
+  assert.equal(free.priced, true, "an explicitly zero-priced local model IS priced");
+  // ...and both agree with the standalone signal the spend cap reads.
+  assert.equal(unknown.priced, isModelPriced("totally-made-up-model-id"));
+  assert.equal(free.priced, isModelPriced(ZERO_PRICE_MODELS[0] as string));
+});
+
+test("D-CT2 — savedVsUncachedUsd is POSITIVE when cache reads dominate", () => {
+  const b = computeCostBreakdown(MODEL, {
+    inputTokens: 100_000,
+    outputTokens: 1_000,
+    cacheReadTokens: 99_000,
+  });
+  assert.ok(
+    b.savedVsUncachedUsd > 0,
+    `cache reads are a ~0.1x discount, so this must be a real saving (got ${b.savedVsUncachedUsd})`,
+  );
+});
+
+test("D-CT2 — savedVsUncachedUsd goes NEGATIVE when cache writes dominate", () => {
+  // The whole reason the field is signed. A cache WRITE costs 1.25x the input rate, so a turn that
+  // only writes the cache genuinely spent MORE than the same tokens uncached. A surface that renders
+  // this as "savings" without the sign is presenting a premium as a discount — and the merged
+  // "cached tokens" number every pre-RM-33 screen showed did exactly that.
+  const b = computeCostBreakdown(MODEL, {
+    inputTokens: 100_000,
+    outputTokens: 0,
+    cacheWriteTokens: 100_000,
+  });
+  assert.ok(
+    b.savedVsUncachedUsd < 0,
+    `a fully cache-WRITE turn costs more than uncached (got ${b.savedVsUncachedUsd})`,
+  );
+  // And the magnitude is exactly the 0.25x premium on the whole input.
+  assert.ok(
+    Math.abs(b.savedVsUncachedUsd + (100_000 / 1e6) * p.inPer1M * (CACHE_WRITE_MULTIPLIER - 1)) <
+      1e-9,
+  );
+});
+
+test("D-CT2 — a merged record is priced as READ, and says so", () => {
+  // The only safe reading of one merged number: attribute it all to the cheap side is WRONG for cost
+  // (it under-reports), attributing it to the expensive side is wrong the other way. The app keeps
+  // the historical read assumption — but `split: "merged"` is what lets a surface refuse to imply a
+  // precision it does not have.
+  const merged = computeCostBreakdown(MODEL, {
+    inputTokens: 100_000,
+    outputTokens: 0,
+    cachedInputTokens: 100_000,
+  });
+  const asRead = computeCostBreakdown(MODEL, {
+    inputTokens: 100_000,
+    outputTokens: 0,
+    cacheReadTokens: 100_000,
+  });
+  assert.equal(merged.totalUsd, asRead.totalUsd);
+  assert.equal(merged.cacheWriteUsd, 0);
+  assert.equal(merged.split, "merged");
+  assert.equal(asRead.split, "exact");
 });

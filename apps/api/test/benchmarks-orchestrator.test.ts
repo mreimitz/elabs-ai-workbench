@@ -538,3 +538,85 @@ test("deleting a suite run KEEPS its child runs (linkage cleared), removes only 
     assert.equal(row.repetition, null, "repetition cleared");
   }
 });
+
+// ── RM-33 WP 1.2 (D-CT2/D-CT6) — the cache split rolls up ALL-OR-NOTHING ────────────────────────
+//
+// A suite is exactly where an operator compares totals across runs, so a partial sum is worse than no
+// sum: it looks complete while silently omitting whatever it could not read. `totalTokens` (which has
+// no unknown state — every run row has NOT NULL tokens_in/out) is untouched by any of this.
+
+test("RM-33 — suite cache totals sum when every member's split is known", () => {
+  const aggregates = computeSuiteAggregates(
+    [
+      {
+        runId: "r1",
+        status: "completed",
+        tokensIn: 1000,
+        tokensOut: 100,
+        costUsd: 0.1,
+        cacheReadTokens: 800,
+        cacheWriteTokens: 100,
+        outcomeScore: 0.9,
+        judgeCostUsd: 0.01,
+      },
+      {
+        runId: "r2",
+        status: "completed",
+        tokensIn: 500,
+        tokensOut: 50,
+        costUsd: 0.05,
+        cacheReadTokens: 400,
+        cacheWriteTokens: 0,
+        outcomeScore: 0.8,
+        judgeCostUsd: 0.01,
+      },
+    ],
+    2,
+  );
+  assert.equal(aggregates.cacheReadTokens, 1200);
+  assert.equal(aggregates.cacheWriteTokens, 100);
+  assert.equal(aggregates.totalTokens, 1650, "totalTokens is untouched by the split (D-CT1)");
+});
+
+test("RM-33 — ONE member with an unknown split makes the suite cache total unknown, not partial", () => {
+  // The failure mode this prevents: summing only the members that reported would render, say,
+  // "1,200 cached" for a matrix whose second member was never measured — a number that reads as the
+  // whole matrix and is not. `undefined` forces the surface to say it cannot answer.
+  const aggregates = computeSuiteAggregates(
+    [
+      {
+        runId: "r1",
+        status: "completed",
+        tokensIn: 1000,
+        tokensOut: 100,
+        costUsd: 0.1,
+        cacheReadTokens: 800,
+        cacheWriteTokens: 100,
+        outcomeScore: 0.9,
+        judgeCostUsd: 0.01,
+      },
+      // A run persisted before migration v59 with nothing to backfill from.
+      {
+        runId: "r2-legacy",
+        status: "completed",
+        tokensIn: 500,
+        tokensOut: 50,
+        costUsd: 0.05,
+        outcomeScore: 0.8,
+        judgeCostUsd: 0.01,
+      },
+    ],
+    2,
+  );
+  assert.equal(aggregates.cacheReadTokens, undefined, "unknown, NOT the 800 it could have summed");
+  assert.equal(aggregates.cacheWriteTokens, undefined);
+  assert.equal(aggregates.totalTokens, 1650, "…while totalTokens still answers, as it always could");
+});
+
+test("RM-33 — an empty matrix reports a real zero, not unknown", () => {
+  // Nothing ran, so nothing was cached. That is knowable, and `every()` over an empty list gives it
+  // to us for free — but it is worth pinning, because the vacuous-truth branch is easy to break.
+  const aggregates = computeSuiteAggregates([], 0);
+  assert.equal(aggregates.cacheReadTokens, 0);
+  assert.equal(aggregates.cacheWriteTokens, 0);
+});

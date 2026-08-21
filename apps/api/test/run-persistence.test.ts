@@ -88,7 +88,7 @@ function stubSession(): McpSession {
 }
 
 const USAGE = {
-  inputTokens: { total: 137, noCache: 137, cacheRead: 11, cacheWrite: 0 },
+  inputTokens: { total: 137, noCache: 119, cacheRead: 11, cacheWrite: 7 },
   outputTokens: { total: 23, text: 23, reasoning: 0 },
 } as const;
 
@@ -156,6 +156,8 @@ function hooksFor(accounting: AccountingSink): AccountingHooks {
         peakContextTokens: k.peakContextTokens,
       };
     },
+    // RM-33 — the cache composition of the final kpi, delegated to the sink (one omit-when-absent rule).
+    cacheKpiFields: () => accounting.cacheKpiFields(),
   };
 }
 
@@ -465,4 +467,139 @@ test("costBasis: a subscription run's kpi basis is persisted + surfaced by summa
     "compareRuns surfaces the subscription marker",
   );
   assert.equal(compareById.get("run-api")?.costBasis, undefined);
+});
+
+// ── RM-33 WP 1.2 (D-CT1/D-CT2/D-CT3) — the cache split survives to the run row AND onto the wire ──
+//
+// `runs.cached_tokens` has existed since the run engine shipped. It was written on every finalize and
+// then mapped NOWHERE: the column was correct and no consumer could ever read it. This closes that,
+// and adds the two halves the merged column cannot express.
+
+test("RM-33 — a finalized run persists the cache split and exposes it on RunSummary", async () => {
+  const db = createDatabase();
+  seedParents(db, "test-1", "scn-1");
+  const runId = "run-cache-split";
+
+  const repo = await driveRun(db, runId, "test-1", "scn-1", { key: "x" });
+  const detail = repo.getRun(runId);
+
+  // Two provider round-trips at USAGE each.
+  assert.equal(detail.cacheReadTokens, USAGE.inputTokens.cacheRead * 2, "cache reads reached the row");
+  assert.equal(
+    detail.cacheWriteTokens,
+    USAGE.inputTokens.cacheWrite * 2,
+    "cache writes reached the row — and are NOT merged into the read half",
+  );
+  assert.equal(
+    detail.cachedTokens,
+    (USAGE.inputTokens.cacheRead + USAGE.inputTokens.cacheWrite) * 2,
+    "the merged legacy figure is finally readable too — it was write-only before RM-33",
+  );
+
+  // D-CT1 — `tokensIn` is unchanged and still GROSS: the split is a DECOMPOSITION of it, never an
+  // addition to it. If a future change ever "helpfully" subtracts the cached slice, this goes red.
+  assert.equal(detail.tokensIn, USAGE.inputTokens.total * 2, "tokensIn stays the gross provider total");
+  assert.ok(
+    (detail.cacheReadTokens ?? 0) + (detail.cacheWriteTokens ?? 0) < detail.tokensIn,
+    "the cache slice is a strict subset of tokensIn for this fixture",
+  );
+
+  // And the row itself carries real integers, not NULLs.
+  const row = db
+    .prepare("SELECT cache_read_tokens AS r, cache_write_tokens AS w FROM runs WHERE id = ?")
+    .get(runId) as { r: number | null; w: number | null };
+  assert.deepEqual(row, { r: USAGE.inputTokens.cacheRead * 2, w: USAGE.inputTokens.cacheWrite * 2 });
+});
+
+test("RM-33 — a run whose provider reports no split reads back as UNKNOWN, not zero", async () => {
+  // D-CT3/D-CT6 at the persistence boundary. A `0` here would be a claim we cannot support: it would
+  // tell the metrics layer this run demonstrably had no cache, and drag every cache-hit-rate average
+  // that includes it toward zero. NULL says "nobody told us", and the metrics layer excludes it.
+  const db = createDatabase();
+  seedParents(db, "test-2", "scn-2");
+  const runId = "run-cache-unknown";
+
+  const repo = new RunRepository(db);
+  repo.createRun(runId, { testId: "test-2", scenarioId: "scn-2", mode: "automated" });
+  const manager = new RunManager(repo); // the fan-out → persistence sink wiring (WP 1.6)
+  manager.create(runId);
+
+  // A kpi with NO cache keys at all — exactly what the omit-when-absent emit produces for a backend
+  // that reports no cache detail — followed by a terminal status.
+  manager.emit(runId, {
+    type: "kpi",
+    turns: 1,
+    toolCalls: 0,
+    tokensIn: 100,
+    tokensOut: 10,
+    contextTokens: 100,
+    costUsd: 0.001,
+  });
+  manager.emit(runId, { type: "status", status: "completed", outcome: "completed" });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const row = db
+    .prepare("SELECT cache_read_tokens AS r, cache_write_tokens AS w FROM runs WHERE id = ?")
+    .get(runId) as { r: number | null; w: number | null };
+  assert.deepEqual(row, { r: null, w: null }, "SQL NULL, never 0");
+
+  const detail = repo.getRun(runId);
+  assert.equal(detail.cacheReadTokens, undefined, "absent on the wire, never 0");
+  assert.equal(detail.cacheWriteTokens, undefined);
+  assert.equal(detail.tokensIn, 100, "…while the gross totals are unaffected");
+});
+
+test("RM-33 — a MERGED-ONLY run keeps its merged figure and leaves the split UNKNOWN", async () => {
+  // The shape real data exposed: 6 runs in a 163-run database whose steps carry `cachedInputTokens`
+  // and neither half, persisted by an extractor that predates the split. They hold 107k–1.2M tokens of
+  // genuine cache. Writing 0/0 for them — which the first cut of this WP did — asserts "this run had
+  // no cache" about a run that plainly did, and mislabels its economics too, since a cache READ is a
+  // 0.1x discount and a cache WRITE a 1.25x premium. The merged number survives; the split does not
+  // get invented.
+  const db = createDatabase();
+  seedParents(db, "test-3", "scn-3");
+  const runId = "run-cache-merged";
+
+  const repo = new RunRepository(db);
+  repo.createRun(runId, { testId: "test-3", scenarioId: "scn-3", mode: "automated" });
+  const manager = new RunManager(repo);
+  manager.create(runId);
+
+  // A persisted step in the historical shape: merged only.
+  manager.emit(runId, {
+    type: "step",
+    step: {
+      id: "s:acct:0",
+      index: 0,
+      type: "llm_response",
+      label: "turn 1",
+      status: "ok",
+      profileTokens: {},
+      usageActual: { inputTokens: 107138, outputTokens: 300, cachedInputTokens: 107133 },
+      payload: {},
+    },
+  });
+  // …and the kpi an older/replaying emitter produces for it: merged present, halves absent.
+  manager.emit(runId, {
+    type: "kpi",
+    turns: 1,
+    toolCalls: 0,
+    tokensIn: 107138,
+    tokensOut: 300,
+    contextTokens: 107138,
+    costUsd: 0.02,
+    cachedTokens: 107133,
+  });
+  manager.emit(runId, { type: "status", status: "completed", outcome: "completed" });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  const detail = repo.getRun(runId);
+  assert.equal(detail.cachedTokens, 107133, "the merged figure survives — it is real information");
+  assert.equal(detail.cacheReadTokens, undefined, "the split is UNKNOWN, not zero");
+  assert.equal(detail.cacheWriteTokens, undefined);
+
+  const row = db
+    .prepare("SELECT cache_read_tokens AS r, cache_write_tokens AS w FROM runs WHERE id = ?")
+    .get(runId) as { r: number | null; w: number | null };
+  assert.deepEqual(row, { r: null, w: null }, "SQL NULL on the row too");
 });

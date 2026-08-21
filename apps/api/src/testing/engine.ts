@@ -282,6 +282,13 @@ export type AccountingHooks = {
    * can no longer diverge from the context chart's columns. Wired from `accounting.runKpis`.
    */
   getRunKpis(): RunKpiTotals;
+  /**
+   * RM-33 (D-CT6) — the cache-composition fields for a `kpi` event, or `{}` when this run has seen no
+   * cache slice. Optional on the seam so a test double that predates RM-33 still satisfies it; the
+   * real sink (`AccountingSink.cacheKpiFields`) owns the omit-when-absent rule so this final kpi and
+   * the sink's per-turn ones cannot disagree.
+   */
+  cacheKpiFields?(): { cachedTokens?: number; cacheReadTokens?: number; cacheWriteTokens?: number };
 };
 
 /** How the loop ended, mapped to the shared status/outcome contract. */
@@ -907,6 +914,10 @@ export async function runAgentLoop(
     tokensOut: kpiTokensOut,
     contextTokens: kpiContextTokens,
     costUsd: kpiCostUsd,
+    // RM-33 — the cache composition of `tokensIn` (which stays GROSS above). This is the FINAL kpi,
+    // the one `RunRepository.finalize` persists the run row from, so without it the split would reach
+    // the live console and then be dropped on the way to the database.
+    ...(cfg.accounting?.cacheKpiFields?.() ?? {}),
   });
 
   /**

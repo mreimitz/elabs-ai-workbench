@@ -1121,6 +1121,13 @@ export type SuiteAggregates = {
   gradeStdDev: number | null;
   passRateAt05: number | null;
   totalTokens: number;
+  /**
+   * RM-33 (D-CT2) — cache composition rolled up across the matrix. `totalTokens` is unchanged.
+   * `undefined` when ANY member run's split is unknown: a partial sum would understate the fleet,
+   * so the aggregate says "unknown" rather than a number that looks complete.
+   */
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
   execCostUsd: number;
   judgeCostUsd: number;
   failureBuckets?: FailureBucket[]; // WP 3.5 (derived, opt-in)
@@ -1369,6 +1376,50 @@ export type TokenUsageActual = {
   reasoningTokens?: number;
 };
 
+/**
+ * RM-33 (D-CT2) — how faithfully a {@link TokenUsageActual} can answer "how much of the input was a
+ * cache READ, and how much was a cache WRITE".
+ *
+ *  - `"exact"`  — the provider reported the split; read and write can be priced and shown separately.
+ *  - `"merged"` — only the merged {@link TokenUsageActual.cachedInputTokens} survived (a legacy row,
+ *    or a backend that reports one number). The whole cached slice is priced as a READ, because that
+ *    is the only safe reading of a merged figure — and a surface MUST say the split is unavailable
+ *    rather than imply the precision it does not have.
+ *  - `"none"`   — no cache slice at all.
+ */
+export type CostBreakdownSplit = "exact" | "merged" | "none";
+
+/**
+ * RM-33 (D-CT5) — the four terms behind a single `costUsd`, plus the number that makes caching
+ * legible. Produced by the API's `computeCostBreakdown`, which {@link CostBreakdownSplit} governs;
+ * `estimateCost` is a thin caller of it, so there is exactly ONE cost formula in the app.
+ */
+export type CostBreakdown = {
+  /** Input tokens billed at the full rate (`inPer1M`). */
+  uncachedUsd: number;
+  /** Cache-read tokens billed at `cachedInPer1M` (~0.1x input — a discount). */
+  cacheReadUsd: number;
+  /** Cache-write tokens billed at `cacheWritePer1M` (default 1.25x input — a PREMIUM). */
+  cacheWriteUsd: number;
+  outputUsd: number;
+  /** The sum of the four terms. Identical to `estimateCost(...)` for the same inputs, by construction. */
+  totalUsd: number;
+  /**
+   * What the SAME tokens would have cost with every input token at the full rate, minus `totalUsd`.
+   * **This can be NEGATIVE** — a cache write costs more than an uncached token, so a write-heavy
+   * turn genuinely spent extra. A surface that renders this as "savings" without honouring the sign
+   * is lying about a premium.
+   */
+  savedVsUncachedUsd: number;
+  /**
+   * `false` ONLY when the model has no pricing entry at all — i.e. every USD field is `0` because we
+   * cannot price it, not because it is free. Mirrors `isModelPriced`; an explicit zero-price local
+   * model is `true`.
+   */
+  priced: boolean;
+  split: CostBreakdownSplit;
+};
+
 export type ContextSnapshot = {
   total: number;
   limit: number;
@@ -1577,6 +1628,12 @@ export type RunEvent =
         // Optional/additive: absent (or `"api_exact"`) means the ordinary, exactly-billed `costUsd`
         // every consumer before this field already assumes.
         costBasis?: CostBasis;
+        // RM-33 (D-CT1/D-CT2) — the cache composition of `tokensIn`, which stays GROSS and
+        // cache-inclusive. OMITTED entirely when the run has seen no cache slice, so a non-caching
+        // backend's event stays byte-identical to the pre-RM-33 shape. See {@link RunSummary}.
+        cachedTokens?: number;
+        cacheReadTokens?: number;
+        cacheWriteTokens?: number;
       }
     // `authRequired`/`serverIds` are set (additive/optional) when a run fails terminally because one
     // or more allow-listed OAuth servers need interactive reauth — the console offers reauth + restart.
@@ -1658,6 +1715,19 @@ export type RunSummary = {
   tokensIn: number;
   tokensOut: number;
   costUsd: number;
+  /**
+   * RM-33 (D-CT1/D-CT2) — the prompt-cache composition of `tokensIn`. **`tokensIn` is unchanged**:
+   * it stays the provider-billed GROSS input and still INCLUDES the cached slice. These are added
+   * ALONGSIDE it, never subtracted from it.
+   *   - `cachedTokens`     — cache read + cache write, MERGED (the legacy figure; `runs.cached_tokens`).
+   *   - `cacheReadTokens`  — served from cache, billed at ~0.1x input (a discount).
+   *   - `cacheWriteTokens` — written to cache, billed at 1.25x input (a PREMIUM, not a saving).
+   * All optional/additive: a run persisted before RM-33 migration 59, or a backend that reports no
+   * cache slice, carries none of them — and absent means UNKNOWN, never zero (D-CT3/D-CT6).
+   */
+  cachedTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
   /**
    * WP 5.1 — per-assertion results, present only when the run's test declared `assertions` AND the run
    * completed with resolved skills (evaluated from the trace alignment on completion; D4: read-only,
@@ -2556,6 +2626,9 @@ export type RunReport = {
     | "peakContextTokens"
     | "tokensIn"
     | "tokensOut"
+    | "cachedTokens"
+    | "cacheReadTokens"
+    | "cacheWriteTokens"
     | "costUsd"
     | "durationMs"
   >;

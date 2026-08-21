@@ -332,7 +332,18 @@ CREATE TABLE IF NOT EXISTS runs (
   -- = \`derived_from_run_id IS NULL\` in \`buildRunFilterWhere\` / metrics.ts and \`matchesRunFilter\` in shared);
   -- a derived run is NEVER a suite member and is hidden from the runs feed unless \`derived:true\`.
   derived_from_run_id TEXT,
-  fork_step_id TEXT
+  fork_step_id TEXT,
+  -- RM-33 (planning/Roadmap/RM-33-cache-aware-token-accounting/, WP 1.2, D-CT3) — the read/write halves of
+  -- \`cached_tokens\` above, which merges a ~0.1x cache-read DISCOUNT with a 1.25x cache-write PREMIUM
+  -- into one number that reads as savings either way.
+  -- BOTH NULLABLE ON PURPOSE: NULL means "this run predates the split", a state the metrics layer must
+  -- be able to EXCLUDE from a bucket rather than average as a fabricated zero (D-CT6). Migration v59
+  -- adds them on an existing DB and backfills both from \`run_steps.usage_actual_json\`, which has always
+  -- carried the full TokenUsageActual. Appended LAST to mirror v59's \`ensureColumn\` append order (an
+  -- upgraded DB gets them here), so \`PRAGMA table_info(runs)\` is identical on both paths — the classic
+  -- v-N drift bug, and it is test-pinned.
+  cache_read_tokens INTEGER,
+  cache_write_tokens INTEGER
 );
 
 -- Benchmarks (WP 3.1, B7) — suites. A suite is a first-class entity (ordered test membership +

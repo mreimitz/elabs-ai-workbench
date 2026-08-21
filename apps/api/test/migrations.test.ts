@@ -452,15 +452,15 @@ test("migration v18 — pre-v18 DB gains skill_versions.intent_log_json (additiv
 // v21 (assistant_settings), v22 (suite_run_reports), v23 (provider_credentials server link), and v24
 // (scenarios.answers_mode — both later reverted by v56).
 
-test("migration v20 — a fresh DB stamps LATEST (58) and carries the 3 assistant tables", () => {
+test("migration v20 — a fresh DB stamps LATEST (59) and carries the 3 assistant tables", () => {
   const db = openFresh();
 
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    58,
-    "LATEST_SCHEMA_VERSION auto-derived to 58 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1)",
+    59,
+    "LATEST_SCHEMA_VERSION auto-derived to 59 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
+  assert.equal(db.pragma("user_version", { simple: true }), 59, "fresh DB stamped at 59");
   for (const table of ["assistant_credentials", "assistant_threads", "assistant_events"]) {
     assert.ok(tableExists(db, table), `fresh DB has ${table}`);
   }
@@ -551,8 +551,8 @@ test("migration v43 — a pre-v43 (v42) DB gains digest_reports; idempotent, imm
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    58,
-    "stamped to LATEST (58) after v43…v58",
+    59,
+    "stamped to LATEST (59) after v43…v59",
   );
   assert.ok(
     tableExists(db, "digest_reports"),
@@ -609,8 +609,8 @@ test("migration v44 — a pre-v44 (v43) DB gains model_pricing seeded from the c
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    58,
-    "stamped to LATEST (58) after v44…v58",
+    59,
+    "stamped to LATEST (59) after v44…v59",
   );
   assert.ok(tableExists(db, "model_pricing"), "v44 created model_pricing on the existing (v43) DB");
   assert.ok(indexExists(db, "idx_model_pricing_match"), "v44 added idx_model_pricing_match");
@@ -2477,7 +2477,7 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
 
 test("migration v55 — a fresh DB carries hub_sessions/hub_agents.provider_credential_id (schema.ts baseline)", () => {
   const db = openFresh();
-  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
+  assert.equal(db.pragma("user_version", { simple: true }), 59, "fresh DB stamped at 59");
   assert.ok(
     columnExists(db, "hub_sessions", "provider_credential_id"),
     "the baseline DDL carries hub_sessions.provider_credential_id (a fresh DB SKIPS every migration)",
@@ -2532,7 +2532,7 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
   assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    58, "and latest is 58");
+    59, "and latest is 59");
   assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
   assert.ok(columnExists(db, "hub_sessions", "provider_credential_id"), "hub_sessions gained it");
   assert.ok(columnExists(db, "hub_agents", "provider_credential_id"), "hub_agents gained it");
@@ -2661,10 +2661,10 @@ test("migration v57 — stale notification/digest deep links are rewritten to ro
 // A2's two paths: a FRESH DB boots from schema.ts with `api_tokens` present (every migration no-ops
 // and the version is stamped), and a DB stamped at 57 gains the table in place with its data intact.
 
-test("migration v58 — a fresh DB carries api_tokens from the schema.ts baseline and stamps 58", () => {
+test("migration v58 — a fresh DB carries api_tokens from the schema.ts baseline and stamps LATEST", () => {
   const db = openFresh();
-  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
-  assert.equal(LATEST_SCHEMA_VERSION, 58, "LATEST_SCHEMA_VERSION auto-derived to 58");
+  assert.equal(db.pragma("user_version", { simple: true }), 59, "fresh DB stamped at 59");
+  assert.equal(LATEST_SCHEMA_VERSION, 59, "LATEST_SCHEMA_VERSION auto-derived to 59");
   assert.ok(tableExists(db, "api_tokens"), "the baseline DDL carries api_tokens");
   assert.deepEqual(columns(db, "api_tokens"), [
     "id",
@@ -2740,4 +2740,175 @@ test("migration v58 — a pre-v58 (v57) DB gains api_tokens with its other data 
     LATEST_SCHEMA_VERSION,
     "version unchanged after the re-run",
   );
+});
+
+// ── RM-33 WP 1.2 (D-CT3) — the prompt-cache split on the run row ────────────────────────────────
+//
+// The interesting part of v59 is not the two columns, it is the backfill and the deliberate NULL.
+// Every step's full TokenUsageActual — cache halves included — has always been persisted in
+// `run_steps.usage_actual_json`, so historical runs are RECOVERABLE rather than written off. And a
+// run with nothing to recover from must stay NULL, because the metrics layer has to be able to tell
+// "this run had no cache" from "this run predates the split" (D-CT6). A `NOT NULL DEFAULT 0` would
+// have collapsed those two into one number and quietly dragged every historical average toward zero.
+
+test("migration v59 — a fresh DB carries runs.cache_read_tokens/cache_write_tokens (schema.ts baseline)", () => {
+  const db = openFresh();
+  assert.ok(columnExists(db, "runs", "cache_read_tokens"), "fresh DB has cache_read_tokens");
+  assert.ok(columnExists(db, "runs", "cache_write_tokens"), "fresh DB has cache_write_tokens");
+  assert.equal(db.pragma("user_version", { simple: true }), 59, "fresh DB stamped at 59");
+});
+
+test("migration v59 — the backfill recovers the split from run_steps, and leaves the unknowable NULL", () => {
+  // A v58-stamped DB = the current baseline minus this migration's two columns.
+  const db = track(new Database(":memory:") as unknown as AppDatabase);
+  db.pragma("foreign_keys = ON");
+  db.exec(schemaSql);
+  db.exec("ALTER TABLE runs DROP COLUMN cache_read_tokens;");
+  db.exec("ALTER TABLE runs DROP COLUMN cache_write_tokens;");
+  db.pragma("user_version = 58");
+  assert.ok(
+    !columnExists(db, "runs", "cache_read_tokens"),
+    "sanity: the v58 fixture genuinely lacks the split columns",
+  );
+
+  // Real test/scenario/provider parents, so the migration's post-run FK integrity check stays clean.
+  db.prepare(
+    `INSERT INTO provider_credentials (id, kind, label, base_url, api_key_encrypted, created_at, updated_at)
+     VALUES ('pc-v59', 'anthropic', 'P', NULL, 'enc', @now, @now)`,
+  ).run({ now: NOW });
+  db.prepare(
+    `INSERT INTO scenarios (id, name, provider_id, model, created_at, updated_at)
+     VALUES ('sc-v59', 'S', 'pc-v59', 'claude-sonnet-4-6', @now, @now)`,
+  ).run({ now: NOW });
+  db.prepare(
+    `INSERT INTO tests (id, name, user_prompt, created_at, updated_at)
+     VALUES ('t-v59', 'T', 'hi', @now, @now)`,
+  ).run({ now: NOW });
+
+  const insertRun = db.prepare(
+    `INSERT INTO runs (id, test_id, scenario_id, mode, status, started_at)
+     VALUES (@id, 't-v59', 'sc-v59', 'automated', 'completed', @now)`,
+  );
+  const insertStep = db.prepare(
+    `INSERT INTO run_steps (id, run_id, idx, type, label, status, profile_tokens_json, payload_json, usage_actual_json)
+     VALUES (@id, @runId, @idx, 'llm_response', 'turn', 'ok', '{}', '{}', @usage)`,
+  );
+
+  // (a) A cached run across two turns: 800+300 read, 100+0 write.
+  insertRun.run({ id: "run-cached", now: NOW });
+  insertStep.run({
+    id: "s-c1",
+    runId: "run-cached",
+    idx: 0,
+    usage: JSON.stringify({
+      inputTokens: 1000,
+      outputTokens: 50,
+      cachedInputTokens: 900,
+      cacheReadTokens: 800,
+      cacheWriteTokens: 100,
+    }),
+  });
+  insertStep.run({
+    id: "s-c2",
+    runId: "run-cached",
+    idx: 1,
+    usage: JSON.stringify({
+      inputTokens: 400,
+      outputTokens: 20,
+      cachedInputTokens: 300,
+      cacheReadTokens: 300,
+    }),
+  });
+
+  // (b) A run whose steps carry usage but NO cache keys — genuinely no cache, so 0 is the truth.
+  insertRun.run({ id: "run-nocache", now: NOW });
+  insertStep.run({
+    id: "s-n1",
+    runId: "run-nocache",
+    idx: 0,
+    usage: JSON.stringify({ inputTokens: 500, outputTokens: 25 }),
+  });
+
+  // (b2) A MERGED-ONLY run: its steps report `cachedInputTokens` but neither half. This case was found
+  // by running the migration against a copy of a real 163-run database, where SIX runs carrying
+  // 107k–1.2M tokens of genuine cache landed here. Summing the (absent) split keys would have written
+  // 0/0 and asserted "this run had no cache" about a run that plainly did — so the split must stay
+  // NULL while `cached_tokens` keeps the merged figure.
+  insertRun.run({ id: "run-merged", now: NOW });
+  insertStep.run({
+    id: "s-m1",
+    runId: "run-merged",
+    idx: 0,
+    usage: JSON.stringify({ inputTokens: 107138, outputTokens: 300, cachedInputTokens: 107133 }),
+  });
+
+  // (c) A run with no usage-bearing step at all — genuinely UNKNOWN, so it must stay NULL.
+  insertRun.run({ id: "run-unknown", now: NOW });
+  db.prepare(
+    `INSERT INTO run_steps (id, run_id, idx, type, label, status, profile_tokens_json, payload_json)
+     VALUES ('s-u1', 'run-unknown', 0, 'tool_call', 'read_file', 'ok', '{}', '{}')`,
+  ).run();
+
+  // (d) A run with no steps whatsoever — also unknown.
+  insertRun.run({ id: "run-empty", now: NOW });
+
+  applyMigrations(db);
+
+  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
+  assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
+
+  const read = (id: string) =>
+    db
+      .prepare("SELECT cache_read_tokens AS r, cache_write_tokens AS w FROM runs WHERE id = ?")
+      .get(id) as { r: number | null; w: number | null };
+
+  assert.deepEqual(read("run-cached"), { r: 1100, w: 100 }, "(a) recovered from the persisted steps");
+  assert.deepEqual(read("run-nocache"), { r: 0, w: 0 }, "(b) usage but no cache keys is a real zero");
+  assert.deepEqual(
+    read("run-merged"),
+    { r: null, w: null },
+    "(b2) a merged-only run's SPLIT is unknowable — 0/0 here would deny cache that demonstrably happened",
+  );
+  assert.equal(
+    (db.prepare("SELECT cached_tokens AS c FROM runs WHERE id = 'run-merged'").get() as { c: number })
+      .c,
+    0,
+    "…and the merged column is untouched by this migration (the run engine owns it)",
+  );
+  assert.deepEqual(
+    read("run-unknown"),
+    { r: null, w: null },
+    "(c) no usage-bearing step ⇒ UNKNOWN, and NULL is the only honest value — a 0 here would tell the " +
+      "metrics layer this run demonstrably had no cache",
+  );
+  assert.deepEqual(read("run-empty"), { r: null, w: null }, "(d) a run with no steps is also unknown");
+
+  // The upgraded table must be shaped exactly like the fresh-DB one — the classic v-N drift bug.
+  assert.deepEqual(tableShape(db, "runs"), tableShape(openFresh(), "runs"));
+
+  assert.doesNotThrow(() => applyMigrations(db), "re-applying v59 is a no-op");
+  assert.deepEqual(read("run-cached"), { r: 1100, w: 100 }, "…and does not double the backfill");
+});
+
+test("migration v59 — an upgrade with `runs` but no `run_steps` adds the columns without aborting", () => {
+  // A migration must not assume a sibling table exists: an unguarded `UPDATE … FROM run_steps` would
+  // abort the ENTIRE migration transaction with "no such table", taking every later step with it.
+  const db = track(new Database(":memory:") as unknown as AppDatabase);
+  db.exec(`
+    CREATE TABLE runs (
+      id TEXT PRIMARY KEY, test_id TEXT, scenario_id TEXT, mode TEXT, status TEXT, started_at TEXT
+    );
+  `);
+  db.pragma("user_version = 58");
+  db.prepare(
+    `INSERT INTO runs (id, test_id, scenario_id, mode, status, started_at)
+     VALUES ('run-orphan', 't', 's', 'automated', 'completed', @now)`,
+  ).run({ now: NOW });
+
+  assert.doesNotThrow(() => applyMigrations(db), "v59 survives a DB with no run_steps");
+  assert.ok(columnExists(db, "runs", "cache_read_tokens"), "the columns were still added");
+  const row = db
+    .prepare("SELECT cache_read_tokens AS r FROM runs WHERE id = 'run-orphan'")
+    .get() as { r: number | null };
+  assert.equal(row.r, null, "with nothing to backfill from, the value stays unknown");
 });

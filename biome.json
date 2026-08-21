@@ -9,6 +9,7 @@
       "**/.wp-evidence/**",
       "**/data-wt/**",
       "**/*.timestamp-*.mjs",
+      "**/*.sh",
       "**/playwright-report/**",
       "**/test-results/**",
       ".claude/worktrees/**",

@@ -1494,6 +1494,9 @@ export class RunService {
           peakContextTokens: k.peakContextTokens,
         };
       },
+      // RM-33 — the cache composition of the final kpi. Delegated to the sink so the omit-when-absent
+      // rule lives in exactly one place (see `AccountingSink.cacheKpiFields`).
+      cacheKpiFields: () => accounting.cacheKpiFields(),
     };
 
     return {

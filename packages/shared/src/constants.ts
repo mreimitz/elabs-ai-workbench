@@ -431,6 +431,14 @@ export const RUN_METRICS_MEASURES = [
   "costUsd",
   "meanScore",
   "feedbackRate",
+  // RM-33 (planning/Roadmap/RM-33-cache-aware-token-accounting/, WP 2.2) — the prompt-cache composition of
+  // `tokensIn`, which stays GROSS. Before these, cached tokens could not be charted at all: the only
+  // cache-aware surface in the app was a single per-run chart, so "is our cache hit rate degrading"
+  // was an unanswerable question. Backed by the nullable v59 `runs` columns — a run whose split is
+  // UNKNOWN is EXCLUDED from a bucket, never counted as zero (D-CT6).
+  "cacheReadTokens",
+  "cacheWriteTokens",
+  "cacheHitRate",
 ] as const;
 
 // D-OB14 (chart honesty) — the token/cost measures whose values must NEVER be blended across capability
@@ -438,7 +446,16 @@ export const RUN_METRICS_MEASURES = [
 // `costBasis` class for costUsd). The
 // capability class is read from the run's persisted `capabilities_json` (a legacy run with none falls
 // back to the STATIC per-kind manifest — never a `providerKind === …` fork in the aggregation).
-export const CAPABILITY_SPLIT_MEASURES = ["tokensIn", "tokensOut", "costUsd"] as const;
+export const CAPABILITY_SPLIT_MEASURES = [
+  "tokensIn",
+  "tokensOut",
+  "costUsd",
+  // RM-33 — token measures in the same `tokens` capability class as tokensIn/tokensOut, so D-OB14's
+  // no-blending rule applies to them identically. `cacheHitRate` is deliberately NOT here: it is a
+  // ratio, and follows the `errorRate` precedent of a single unlabelled series.
+  "cacheReadTokens",
+  "cacheWriteTokens",
+] as const;
 
 // --- Observability — custom chart composer (planning/Roadmap/RM-17-observability/, WP2.7, D-OB22) --------------
 // User-defined charts on the Testing dashboard (`dashboard_charts`, migration v45): measure(s) +
@@ -487,6 +504,9 @@ export const RUN_METRICS_MEASURE_UNITS: Record<(typeof RUN_METRICS_MEASURES)[num
   costUsd: "usd",
   meanScore: "score",
   feedbackRate: "rate",
+  cacheReadTokens: "tokens",
+  cacheWriteTokens: "tokens",
+  cacheHitRate: "rate",
 };
 
 // The UNIT each `source: "scans"` measure belongs to — same-unit constraint, mirrors

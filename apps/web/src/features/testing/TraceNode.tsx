@@ -12,6 +12,7 @@ import {
 } from "@elabs-ai/components-ui";
 import { ChevronRight, MessageSquare } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
+import { TokenAmount } from "../../components/TokenAmount";
 import { formatClock, formatCostUsd, formatDuration, formatNumber } from "../../lib/format";
 import { stepTypeMeta } from "./StepLog";
 import { TraceLeafDetail } from "./TraceLeafDetail";
@@ -238,13 +239,15 @@ function KpiChips({ kpi, className }: { kpi: TraceKpi; className?: string }) {
   return (
     <span className={cn("flex items-center gap-1.5", className)}>
       {kpi.tokensIn ? (
-        <Badge variant="secondary" className="font-normal tabular-nums">
-          {formatNumber(kpi.tokensIn)}↑
+        <Badge variant="secondary" className="font-normal">
+          {/* RM-33 — the ↑ figure stays GROSS (D-CT1); the tooltip explains why it dwarfs the cost
+              chip beside it, which is already cache-discounted. */}
+          <TokenAmount value={kpi.tokensIn} direction="in" usage={kpi.usage} />
         </Badge>
       ) : null}
       {kpi.tokensOut ? (
-        <Badge variant="secondary" className="font-normal tabular-nums">
-          {formatNumber(kpi.tokensOut)}↓
+        <Badge variant="secondary" className="font-normal">
+          <TokenAmount value={kpi.tokensOut} direction="out" />
         </Badge>
       ) : null}
       {!kpi.tokensIn && !kpi.tokensOut && kpi.tokens ? (

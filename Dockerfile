@@ -16,7 +16,9 @@ RUN apt-get update \
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
+COPY apps/cli/package.json apps/cli/package.json
 COPY packages/shared/package.json packages/shared/package.json
+COPY packages/illustrations/package.json packages/illustrations/package.json
 # pnpm.patchedDependencies (root package.json) points at patches/node-pty@1.1.0.patch — a fix for
 # an upstream node-pty packaging bug (published prebuilds ship spawn-helper without the executable
 # bit, so PTY spawn fails at runtime with "posix_spawnp failed" even though install succeeds
@@ -40,7 +42,9 @@ RUN apt-get update \
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
 COPY apps/web/package.json apps/web/package.json
 COPY apps/api/package.json apps/api/package.json
+COPY apps/cli/package.json apps/cli/package.json
 COPY packages/shared/package.json packages/shared/package.json
+COPY packages/illustrations/package.json packages/illustrations/package.json
 # See the `deps` stage above for why patches/ must be copied before `pnpm install`.
 COPY patches ./patches
 

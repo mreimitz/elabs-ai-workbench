@@ -112,6 +112,14 @@ export type ChildRunData = {
   tokensIn: number;
   tokensOut: number;
   costUsd: number;
+  /**
+   * RM-33 (D-CT2) — this run's cache split, or `undefined` when the run's split is UNKNOWN (persisted
+   * before migration v59 with nothing to backfill from). The distinction matters at roll-up: one
+   * unknown member makes the whole matrix total unknowable, and a sum that quietly skipped it would
+   * look complete while understating the fleet.
+   */
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
   /** The run's primary-grader outcome score (0–1), or null when no grader produced a graded score. */
   outcomeScore: number | null;
   /** Σ `judge_cost_usd` over ALL of this run's grade rows (the true cumulative judge spend). */
@@ -156,6 +164,12 @@ export function collectChildData(
       tokensIn: summary.tokensIn,
       tokensOut: summary.tokensOut,
       costUsd: summary.costUsd,
+      ...(summary.cacheReadTokens === undefined
+        ? {}
+        : { cacheReadTokens: summary.cacheReadTokens }),
+      ...(summary.cacheWriteTokens === undefined
+        ? {}
+        : { cacheWriteTokens: summary.cacheWriteTokens }),
       outcomeScore: pickOutcomeScore(latestByGrader),
       judgeCostUsd: allGrades.reduce((sum, grade) => sum + grade.judgeCostUsd, 0),
     });
@@ -192,12 +206,28 @@ export function computeSuiteAggregates(
   const execCostUsd = children.reduce((sum, child) => sum + child.costUsd, 0);
   const judgeCostUsd = children.reduce((sum, child) => sum + child.judgeCostUsd, 0);
 
+  // RM-33 (D-CT2/D-CT6) — ALL-OR-NOTHING on purpose. If even one member's split is unknown, the matrix
+  // total is unknown: summing only the members that reported would produce a number that LOOKS like the
+  // whole matrix while silently omitting part of it, and a suite is exactly where an operator compares
+  // totals across runs. `undefined` forces the surface to say so. An empty matrix reduces to 0, which
+  // is correct — nothing ran, so nothing was cached.
+  const splitKnown = children.every(
+    (child) => child.cacheReadTokens !== undefined && child.cacheWriteTokens !== undefined,
+  );
+  const cacheTotals = splitKnown
+    ? {
+        cacheReadTokens: children.reduce((sum, child) => sum + (child.cacheReadTokens ?? 0), 0),
+        cacheWriteTokens: children.reduce((sum, child) => sum + (child.cacheWriteTokens ?? 0), 0),
+      }
+    : {};
+
   return {
     cellsTotal,
     cellsCompleted,
     meanGrade,
     gradeStdDev,
     passRateAt05,
+    ...cacheTotals,
     totalTokens,
     execCostUsd,
     judgeCostUsd,

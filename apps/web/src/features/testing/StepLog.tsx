@@ -32,6 +32,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { col } from "../../lib/table";
+import { TokenAmount } from "../../components/TokenAmount";
 import { formatCostUsd, formatDuration, formatNumber, safeJson } from "../../lib/format";
 import { deriveStatusView } from "../../lib/status";
 import { dedupeToolSteps } from "./dedupe-tool-steps";
@@ -365,6 +366,10 @@ export function StepLog({
         header: "Tokens ↑",
         numeric: true,
         value: (row) => tokensUp(row),
+        // RM-33 — `value` stays the raw number so sorting/filtering are untouched; only the rendered
+        // cell gains the breakdown. `usage` is undefined for an estimator-lens row, which renders
+        // exactly as before.
+        cell: (row) => <TokenAmount value={tokensUp(row)} usage={row.usageActual} />,
       }),
       col<RunStep>({
         id: "tokensDown",

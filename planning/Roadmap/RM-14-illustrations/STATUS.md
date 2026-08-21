@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T07:40:00Z"
+timestamp: "2026-08-21T08:40:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -285,13 +285,36 @@ and an explicit "Not verified:" tail.
 
 ## Phase 1 — Entity library v1 + contribution kit
 
-- [ ] WP 1.1 — Runtime cast (`model`, `provider`, `validator`, `run`, `prompt`)
+> **BLOCKED on the Phase 0 owner-acceptance box below** (2026-08-21). The ledger's own rule — *"A
+> new phase must not open while a prior phase's owner-acceptance items are unresolved"* — holds this
+> whole phase shut until the gallery walk is ticked. Nothing here is dispatchable before then.
+>
+> **Specs written 2026-08-21** for 1.1–1.3, so dispatch is immediate once the box ticks. WP 1.4 is
+> still one paragraph in [`02-plan.md`](./02-plan.md) and needs a spec before it can run.
+>
+> **Wave order corrected (a `/next-wp` file-overlap finding, not an owner change).**
+> `02-plan.md` says "1.x in parallel worktrees (entities are independent files)". The entity files
+> are independent; **`src/registry.ts` and `src/entities/index.ts` are not**, and three branches
+> appending to the same two files is the collision the runner forbids. WP 1.1 therefore lands a
+> **cast-module seam** first (per-WP `cast-*.ts` modules that `registry.ts` concatenates), after
+> which 1.2 ∥ 1.3 share no file at all. Waves: **1.1 → {1.2 ∥ 1.3} → 1.4**.
+>
+> **Arithmetic discrepancy for the owner, flagged not silently fixed:** `02-plan.md` lists
+> 5 + 7 + 8 = **20** new entities, which with the three pilots is a **23**-component catalog — so WP
+> 1.4's "21st component proof" and `CLAUDE.md` §1's "remaining ~17 entities" are both off. Wants
+> correcting before WP 1.4 is written.
+
+- [ ] WP 1.1 — Runtime cast (`model`, `provider`, `validator`, `run`, `prompt`) + the cast-module
+      seam — spec: [`wp-1.1-runtime-cast.md`](./wp-1.1-runtime-cast.md) · **runs solo, first**
 - [ ] WP 1.2 — Assets & knowledge cast (`tool`, `resource`, `prompt-template`, `file`,
-      `feedback-report`, `scan`, `token-meter`)
+      `feedback-report`, `scan`, `token-meter`) — spec:
+      [`wp-1.2-assets-cast.md`](./wp-1.2-assets-cast.md) · depends on 1.1 · parallel with 1.3
 - [ ] WP 1.3 — Orchestration cast (`suite`, `collection`, `orchestrator`, `diff-compare`,
-      `environment`, `database`, `credentials-vault`, `assistant`)
+      `environment`, `database`, `credentials-vault`, `assistant`) — spec:
+      [`wp-1.3-orchestration-cast.md`](./wp-1.3-orchestration-cast.md) · depends on 1.1 · parallel
+      with 1.2
 - [ ] WP 1.4 — Contribution kit (scaffold script, checklist, registry changelog +
-      `REGISTRY_VERSION`, scaffold-only 21st component proof)
+      `REGISTRY_VERSION`, scaffold-only Nth-component proof) — **no spec yet**
 
 ## Phase 2 — Scene engine
 
@@ -319,9 +342,25 @@ and an explicit "Not verified:" tail.
 
 > A new phase must not open while a prior phase's owner-acceptance items are unresolved.
 
-- [ ] Phase 0 (WP 0.3) — gallery walk @ localhost:8080: all pilot entities read correctly in
-      **both** themes (switch in Settings), ports overlay sane, keyboard focus visible —
-      accepted: ____
+- [x] Phase 0 (WP 0.3) — gallery walk: all pilot entities read correctly in **both** themes
+      (switch in Settings), ports overlay sane, keyboard focus visible —
+      **accepted by the owner 2026-08-21.** Walked at **`http://localhost:8081/illustrations`**, the
+      `docker compose` container, **not** the `localhost:8080` this line originally named — 8080 was
+      held by a dev server running since Aug 19 15:34 (stale, pre-dating every illustrations WP), and
+      8081 is the port `docker-compose.yml` publishes. The orchestrator verified mechanically before
+      the walk that the container serves the gallery (`GET /illustrations` → 200) and that all **18**
+      `--illus-*` custom properties reach the served stylesheet — closing the exact
+      black-rectangle trap WP 0.3's done-line documents. The visual judgement is the owner's and was
+      given; the orchestrator did not re-look.
+      **Two defects on `main` were found and fixed while standing this instance up, neither caused by
+      RM-14:** (1) `docker compose up --build` **failed outright** — the Dockerfile's `deps` and
+      `prod-deps` stages copy workspace manifests by hand and had never learned about `apps/cli`
+      (RM-08 Phase 1) or `packages/illustrations` (RM-14 WP 0.1), so the in-container `pnpm build`
+      died with `Cannot find module '@mcp-token-footprint/shared'` in `apps/cli`. Four `COPY` lines.
+      The image had been unbuildable since `apps/cli` landed and nothing caught it, because **no gate
+      builds the image** — worth its own roadmap item. (2) `pnpm lint` was **red on `main` with 507
+      errors**, all parse noise from `.vscode/free-web-port.sh` (added by HEAD commit `bb0767e`),
+      which Biome was reading as JSON; `"**/*.sh"` added to `files.ignore`.
 - [ ] Phase 2 (WP 2.4) — the rebuilt Agentic Loop scene: one shared MCP+Skill hub clearly
       read/write/publish-connected to steps 1/4/5; both themes; exported SVG opens standalone —
       accepted: ____

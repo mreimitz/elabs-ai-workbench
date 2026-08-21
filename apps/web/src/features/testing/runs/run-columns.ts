@@ -19,6 +19,10 @@ export const RUN_TABLE_COLUMNS = [
   "turns",
   "tools",
   "tokens",
+  // RM-33 — the cache-read share of this run's GROSS input. Opt-in and hidden by default, exactly as
+  // `tokens` is: it answers a specific question ("which runs are re-paying for context they already
+  // sent?") rather than one every operator needs on every row.
+  "cacheHitRate",
   "cost",
   "started",
   "duration",
@@ -52,6 +56,7 @@ export const RUN_TABLE_COLUMN_LABELS: Record<RunTableColumnKey, string> = {
   turns: "Turns",
   tools: "Tools",
   tokens: "Tokens",
+  cacheHitRate: "Cache hit",
   cost: "Cost",
   started: "Started",
   duration: "Duration",

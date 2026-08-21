@@ -224,6 +224,10 @@ export type RunRow = {
   tokens_in: number;
   tokens_out: number;
   cached_tokens: number;
+  // RM-33 (D-CT3) — NULL means "unknown" (a run persisted before migration v59 with no usage-bearing
+  // steps to backfill from), NEVER "zero cache". Consumers must branch on null, not coalesce it.
+  cache_read_tokens: number | null;
+  cache_write_tokens: number | null;
   cost_usd: number;
   error_message: string | null;
   // WP 5.1 — JSON array of AssertionResult (validation-gate assertions evaluated from the trace

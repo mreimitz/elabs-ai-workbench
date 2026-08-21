@@ -1863,6 +1863,76 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
       `);
     },
   },
+  {
+    // RM-33 WP 1.2 (D-CT3) — the prompt-cache split on the run row. `runs.cached_tokens` has existed
+    // since the run engine shipped, but it merges cache READS (a ~0.1x discount) with cache WRITES (a
+    // 1.25x premium) into one number that reads as savings either way — and it was never even mapped
+    // onto the wire. These two columns carry the halves.
+    //
+    // BOTH ARE NULLABLE ON PURPOSE. A `NOT NULL DEFAULT 0` would make "this run had no cache"
+    // indistinguishable from "this run predates the split", which is precisely the ambiguity this
+    // workstream exists to remove: the metrics layer must be able to EXCLUDE an unknown run from a
+    // bucket rather than drag its average toward a fabricated zero (D-CT6).
+    //
+    // The backfill is real, not cosmetic: every step's full `TokenUsageActual` — cache halves included
+    // — has always been persisted in `run_steps.usage_actual_json`, so historical runs can be recovered
+    // exactly rather than written off. A run with no usage-bearing step stays NULL (genuinely unknown);
+    // a run whose steps carry usage but no cache keys backfills to 0 (genuinely no cache). Additive
+    // columns only — no table rebuild, no FK exposure. Bumps LATEST_SCHEMA_VERSION to 59.
+    version: 59,
+    up: (db) => {
+      // Guard on the tables actually existing, the same way v29/v35/v42 do. A migration must not
+      // assume a sibling table: an upgrade path can reach this step with `runs` present and
+      // `run_steps` not yet created, and an unguarded `UPDATE … FROM run_steps` would abort the whole
+      // transaction with "no such table".
+      const tableExists = (name: string): boolean =>
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name) !==
+        undefined;
+      if (!tableExists("runs")) return;
+      ensureColumn(db, "runs", "cache_read_tokens", "INTEGER");
+      ensureColumn(db, "runs", "cache_write_tokens", "INTEGER");
+      if (!tableExists("run_steps")) return; // columns added; nothing to backfill FROM
+      // The backfill is a THREE-way decision, not two. Verified against a copy of a real 163-run
+      // database, where the middle case is 6 runs carrying 107k–1.2M tokens of genuine cache:
+      //
+      //   1. some step reported a split key        → sum the halves (141 runs recovered exactly)
+      //   2. no split, but a merged `cachedInputTokens` > 0
+      //                                            → the split is genuinely UNKNOWABLE → leave NULL,
+      //                                              and `cached_tokens` keeps carrying the merged
+      //                                              figure. Writing 0/0 here would assert "this run
+      //                                              had no cache" about a run that demonstrably did.
+      //   3. usage steps that never mention cache  → a real 0 (we know: nothing was cached)
+      //
+      // Case 2 is the whole reason this is not a one-line SUM. It is also why `NOT EXISTS` below tests
+      // for a merged-only step rather than simply checking whether the sums came out zero — a run can
+      // legitimately sum to zero under case 3.
+      db.exec(`
+        UPDATE runs SET
+          cache_read_tokens = (
+            SELECT SUM(COALESCE(json_extract(s.usage_actual_json, '$.cacheReadTokens'), 0))
+            FROM run_steps s
+            WHERE s.run_id = runs.id AND s.usage_actual_json IS NOT NULL
+          ),
+          cache_write_tokens = (
+            SELECT SUM(COALESCE(json_extract(s.usage_actual_json, '$.cacheWriteTokens'), 0))
+            FROM run_steps s
+            WHERE s.run_id = runs.id AND s.usage_actual_json IS NOT NULL
+          )
+        WHERE cache_read_tokens IS NULL
+          AND EXISTS (
+            SELECT 1 FROM run_steps s
+            WHERE s.run_id = runs.id AND s.usage_actual_json IS NOT NULL
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM run_steps s
+            WHERE s.run_id = runs.id
+              AND COALESCE(json_extract(s.usage_actual_json, '$.cachedInputTokens'), 0) > 0
+              AND json_extract(s.usage_actual_json, '$.cacheReadTokens') IS NULL
+              AND json_extract(s.usage_actual_json, '$.cacheWriteTokens') IS NULL
+          );
+      `);
+    },
+  },
 ];
 
 /** The baseline schema version: the current full schema (schema.ts + every migration step above). */

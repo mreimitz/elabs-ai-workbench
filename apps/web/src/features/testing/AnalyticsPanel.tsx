@@ -271,7 +271,13 @@ function OverviewTab({
         <MetricCard
           label="Cached"
           value={formatPercent(kpis.cachedPercent)}
-          description={`${formatNumber(kpis.cachedTokens)} of input`}
+          // RM-33 (D-CT2) — name the halves when we know them. "900 of input" says nothing about
+          // whether that was a 0.1x discount or a 1.25x premium; "800 read · 100 written" does.
+          description={
+            kpis.cacheReadTokens === null
+              ? `${formatNumber(kpis.cachedTokens)} of input`
+              : `${formatNumber(kpis.cacheReadTokens)} read · ${formatNumber(kpis.cacheWriteTokens ?? 0)} written`
+          }
         />
         <MetricCard
           label="Tool errors"
@@ -445,7 +451,15 @@ function TokensTab({ stream }: { stream: RunStreamState }) {
           )}
         </ChartPanel>
 
-        <ChartPanel title="Cached vs uncached" subtitle="Per-turn input tokens served from cache">
+        {/* RM-33 (D-CT2) — THREE series, not two. The old "Cached vs uncached" bar merged cache READS
+            (~0.1x the input rate — a discount) with cache WRITES (1.25x — a premium) into one block
+            that read as savings whichever it was. `mergedCache` is its own series so a turn whose
+            provider reported only a merged figure is labelled as such instead of being attributed to
+            the cheap side. */}
+        <ChartPanel
+          title="Input token composition"
+          subtitle="Per-turn: uncached, served from cache, and written to cache"
+        >
           {cachedRows.length > 0 ? (
             <div className="h-56 w-full">
               <BarChart
@@ -454,33 +468,24 @@ function TokensTab({ stream }: { stream: RunStreamState }) {
                 stacked
                 aspectRatio="auto"
                 className="h-full w-full"
-                accessibleLabel="Per-turn cached vs uncached input tokens"
+                accessibleLabel="Per-turn input token composition: uncached, cache read, cache write"
               >
                 <Grid horizontal />
-                <Bar dataKey="cached" fill="var(--chart-1)" />
                 <Bar dataKey="uncached" fill="var(--chart-3)" />
+                <Bar dataKey="cacheRead" fill="var(--chart-1)" />
+                <Bar dataKey="cacheWrite" fill="var(--chart-5)" />
+                <Bar dataKey="mergedCache" fill="var(--chart-8)" />
                 <BarXAxis maxLabels={8} />
                 <ChartTooltip
                   showDatePill={false}
-                  rows={(point) => [
-                    {
-                      color: "var(--chart-1)",
-                      label: "Cached",
-                      value: formatNumber(toNumber(point.cached)),
-                    },
-                    {
-                      color: "var(--chart-3)",
-                      label: "Uncached",
-                      value: formatNumber(toNumber(point.uncached)),
-                    },
-                  ]}
+                  rows={(point) => cachedTooltipRows(point)}
                 />
               </BarChart>
             </div>
           ) : (
             <EmptyState
               title="No provider usage yet"
-              description="Cached-token breakdown needs provider-actual usage on a settled turn."
+              description="The token composition needs provider-actual usage on a settled turn."
             />
           )}
         </ChartPanel>
@@ -1097,6 +1102,43 @@ function SegmentLegend() {
 }
 
 // ── Small formatters ──────────────────────────────────────────────────────────────────────────
+
+/**
+ * RM-33 — the tooltip rows for one bar of the input-composition chart. Only the series that actually
+ * apply to this turn are listed: a `null` `cacheRead` means the split was never reported, and showing
+ * it as "0" would claim there were no cache hits when the truth is that nobody said.
+ */
+function cachedTooltipRows(point: Record<string, unknown>) {
+  const rows = [
+    {
+      color: "var(--chart-3)",
+      label: "Uncached",
+      value: formatNumber(toNumber(point.uncached)),
+    },
+  ];
+  if (point.mergedCache !== null && point.mergedCache !== undefined) {
+    rows.push({
+      color: "var(--chart-8)",
+      label: "Cached (split unavailable)",
+      value: formatNumber(toNumber(point.mergedCache)),
+    });
+    return rows;
+  }
+  rows.push({
+    color: "var(--chart-1)",
+    label: "Cache read (~0.1× rate)",
+    value: formatNumber(toNumber(point.cacheRead)),
+  });
+  // Listed only when it happened — and named a premium, since it costs MORE than an uncached token.
+  if (toNumber(point.cacheWrite) > 0) {
+    rows.push({
+      color: "var(--chart-5)",
+      label: "Cache write (1.25× rate)",
+      value: formatNumber(toNumber(point.cacheWrite)),
+    });
+  }
+  return rows;
+}
 
 function toNumber(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;

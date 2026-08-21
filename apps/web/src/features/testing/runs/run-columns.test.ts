@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   ALL_RUN_TABLE_COLUMNS,
   DEFAULT_RUN_COLUMNS_PREFERENCE,
+  RUN_TABLE_COLUMN_LABELS,
   RUN_TABLE_COLUMNS,
   SESSION_COLUMNS_PREFERENCE,
   SESSION_ONLY_COLUMNS,
@@ -72,7 +73,10 @@ describe("toVisibleColumnSet", () => {
  * console's Runs tab, are byte-unchanged) but is still a recognized/round-trippable column key.
  */
 describe("Sessions lens columns (WP 2.4)", () => {
-  test("the general RUN_TABLE_COLUMNS (base 9) is unchanged by the session-only addition", () => {
+  test("the general RUN_TABLE_COLUMNS is unchanged by the session-only addition", () => {
+    // RM-33 added `cacheHitRate` to this general vocabulary (hidden by default, like `tokens`), so
+    // the base set is 10. It is deliberately NOT in the session-only vocabulary: a run's cache
+    // composition is a property of any run, not of a session-shaped one.
     expect(RUN_TABLE_COLUMNS).toEqual([
       "type",
       "environment",
@@ -80,10 +84,19 @@ describe("Sessions lens columns (WP 2.4)", () => {
       "turns",
       "tools",
       "tokens",
+      "cacheHitRate",
       "cost",
       "started",
       "duration",
     ]);
+  });
+
+  test("RM-33 — `cacheHitRate` is toggleable but NOT default-visible", () => {
+    // It answers a specific question ("which runs re-pay for context they already sent?"), so it
+    // earns a place in the chooser, not a place in every operator's default triage row.
+    expect(RUN_TABLE_COLUMNS).toContain("cacheHitRate");
+    expect(DEFAULT_RUN_COLUMNS_PREFERENCE.visible).not.toContain("cacheHitRate");
+    expect(RUN_TABLE_COLUMN_LABELS.cacheHitRate).toBe("Cache hit");
   });
 
   test("DEFAULT_RUN_COLUMNS_PREFERENCE leads with the triage set (design-remediation T8) and holds NO session-only column", () => {

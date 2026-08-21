@@ -4,7 +4,11 @@ import type {
   RunOutcome,
   RunStep,
 } from "@mcp-token-footprint/shared";
-import { CONTEXT_SEGMENTS } from "@mcp-token-footprint/shared";
+import {
+  CONTEXT_SEGMENTS,
+  usageInputSlices,
+  usageSplitKind,
+} from "@mcp-token-footprint/shared";
 import type { RunStreamState } from "./use-run-stream";
 
 /**
@@ -79,6 +83,13 @@ export type OverviewKpis = {
   cachedTokens: number;
   /** Cached input tokens as a % of all input tokens (0 when no input tokens). */
   cachedPercent: number;
+  /**
+   * RM-33 (D-CT2) — the read/write halves of `cachedTokens`, summed across the run's settled turns.
+   * `null` when NO turn reported the split: the halves are then unknowable, and a 0 would state that
+   * nothing was read and nothing written — a claim the data does not support.
+   */
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
   estimatedCostUsd: number;
   turns: number;
   toolCalls: number;
@@ -101,6 +112,33 @@ export function countToolErrors(steps: RunStep[]): number {
 /** Sum provider-actual cached input tokens across the run's `llm_response` steps. */
 export function sumCachedTokens(steps: RunStep[]): number {
   return steps.reduce((sum, s) => sum + toFiniteNumber(s.usageActual?.cachedInputTokens), 0);
+}
+
+/**
+ * RM-33 — sum the cache READ/WRITE halves across the run's settled turns.
+ *
+ * Both come back `null` unless at least one step reported an EXACT split. A run whose steps carry
+ * only a merged `cachedInputTokens` (the historical shape — 6 runs in a real 163-run database) must
+ * not be summarised as "0 read, 0 written": the split is unknowable, and stating zero would present a
+ * possible 1.25x cache-WRITE premium as though no premium had been paid.
+ */
+function sumCacheSplit(steps: RunStep[]): {
+  cacheReadTokens: number | null;
+  cacheWriteTokens: number | null;
+} {
+  let read = 0;
+  let write = 0;
+  let anyExact = false;
+  for (const step of steps) {
+    const usage = step.usageActual;
+    if (!usage || usageSplitKind(usage) !== "exact") continue;
+    anyExact = true;
+    read += toFiniteNumber(usage.cacheReadTokens);
+    write += toFiniteNumber(usage.cacheWriteTokens);
+  }
+  return anyExact
+    ? { cacheReadTokens: read, cacheWriteTokens: write }
+    : { cacheReadTokens: null, cacheWriteTokens: null };
 }
 
 /** Sum provider-actual input tokens across the run's `llm_response` steps. */
@@ -147,6 +185,7 @@ export function deriveOverviewKpis(stream: RunStreamState, report: RunReport | n
   const tokensOut = stats?.tokensOut ?? stream.kpis?.tokensOut ?? sumActualOutputTokens(steps);
   const cachedTokens = stats?.cachedTokens ?? sumCachedTokens(steps);
   const cachedPercent = tokensIn > 0 ? (cachedTokens / tokensIn) * 100 : 0;
+  const { cacheReadTokens, cacheWriteTokens } = sumCacheSplit(steps);
 
   const peakContextTokens =
     stats?.peakContextTokens ??
@@ -162,6 +201,8 @@ export function deriveOverviewKpis(stream: RunStreamState, report: RunReport | n
     tokensOut,
     cachedTokens,
     cachedPercent,
+    cacheReadTokens,
+    cacheWriteTokens,
     estimatedCostUsd: stats?.estimatedCostUsd ?? stream.kpis?.costUsd ?? 0,
     turns: stats?.turns ?? stream.kpis?.turns ?? 0,
     toolCalls: stats?.toolCalls ?? stream.kpis?.toolCalls ?? 0,
@@ -244,10 +285,29 @@ export function deriveContextSegmentRows(steps: RunStep[]): ContextSegmentRow[] 
   return rows;
 }
 
-/** One row of cached-vs-uncached input tokens per turn (from provider-actual usage). */
-export type CachedTokenRow = { turn: string; cached: number; uncached: number };
+/**
+ * One row of the per-turn input-token composition (RM-33).
+ *
+ * THREE series, not two (D-CT2). The pre-RM-33 chart stacked `cached` against `uncached`, which read
+ * as "the green part was cheap" — but a cache WRITE is billed at **1.25×** the input rate while a
+ * cache READ is billed at ~**0.1×**. Merging a premium and a discount into one bar is how an
+ * expensive turn gets displayed as a saving.
+ *
+ * `cacheWrite` is `null` on a turn whose provider reported only a merged figure: that turn's split is
+ * unknowable, so its whole cached slice stays in `cacheRead`… which would be a guess. It does not.
+ * Instead `mergedCache` carries it and `cacheRead`/`cacheWrite` are both `null`, so a chart can render
+ * the merged bar in a distinct, explicitly-labelled series rather than silently mis-attributing it.
+ */
+export type CachedTokenRow = {
+  turn: string;
+  uncached: number;
+  cacheRead: number | null;
+  cacheWrite: number | null;
+  /** Set ONLY when the read/write split is unavailable for this turn; null otherwise. */
+  mergedCache: number | null;
+};
 
-/** Per-turn cached-vs-uncached input tokens (from each `llm_response` step's `usageActual`). */
+/** Per-turn input-token composition (from each `llm_response` step's `usageActual`). */
 export function deriveCachedTokenRows(steps: RunStep[]): CachedTokenRow[] {
   const rows: CachedTokenRow[] = [];
   let turn = 0;
@@ -255,9 +315,32 @@ export function deriveCachedTokenRows(steps: RunStep[]): CachedTokenRow[] {
     if (step.type !== "llm_response" || !step.usageActual) continue;
     turn += 1;
     const turnOrdinal = typeof step.turnIndex === "number" ? step.turnIndex + 1 : turn;
-    const input = toFiniteNumber(step.usageActual.inputTokens);
-    const cached = Math.min(input, toFiniteNumber(step.usageActual.cachedInputTokens));
-    rows.push({ turn: `Turn ${turnOrdinal}`, cached, uncached: Math.max(0, input - cached) });
+    const usage = step.usageActual;
+    const input = toFiniteNumber(usage.inputTokens);
+    const label = `Turn ${turnOrdinal}`;
+
+    if (usageSplitKind(usage) === "merged") {
+      const merged = Math.min(input, toFiniteNumber(usage.cachedInputTokens));
+      rows.push({
+        turn: label,
+        uncached: Math.max(0, input - merged),
+        cacheRead: null,
+        cacheWrite: null,
+        mergedCache: merged,
+      });
+      continue;
+    }
+
+    // `usageInputSlices` clamps a provider reporting more cache than input, and re-sums to the gross
+    // `inputTokens` (D-CT1) so the stacked bar's height is the real send, not a derived one.
+    const slices = usageInputSlices(usage);
+    rows.push({
+      turn: label,
+      uncached: slices?.uncached ?? input,
+      cacheRead: slices?.cacheRead ?? 0,
+      cacheWrite: slices?.cacheWrite ?? 0,
+      mergedCache: null,
+    });
   }
   return rows;
 }

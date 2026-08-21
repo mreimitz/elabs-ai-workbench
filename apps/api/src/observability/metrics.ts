@@ -268,6 +268,11 @@ type RunRowForMetrics = {
   total_duration_ms: number | null;
   tokens_in: number;
   tokens_out: number;
+  // RM-33 (D-CT3) — NULL = this run's cache split is UNKNOWN (persisted before v59 with nothing to
+  // backfill from, or reported as a merged figure only). Such a run is EXCLUDED from the cache
+  // measures' buckets rather than counted as a zero — see `cache` in {@link BucketAcc}.
+  cache_read_tokens: number | null;
+  cache_write_tokens: number | null;
   cost_usd: number;
   turns: number;
   capabilities_json: string | null;
@@ -287,6 +292,12 @@ type BucketAcc = {
   scoreSum: number;
   scoreN: number;
   tokens: Map<SessionTokenAccounting, { inSum: number; outSum: number; n: number }>;
+  // RM-33 — a SEPARATE accumulator from `tokens`, with its own `n`. It must be separate: a bucket can
+  // hold 40 runs whose gross tokens are all known and only 12 whose cache split is, and folding the
+  // two would either drop 28 runs from `tokensIn` or invent a zero split for them. `grossIn` is the
+  // gross input of the SAME 12 runs, so `cacheHitRate` divides like-for-like instead of dividing a
+  // 12-run numerator by a 40-run denominator.
+  cache: Map<SessionTokenAccounting, { readSum: number; writeSum: number; grossIn: number; n: number }>;
   cost: Map<SessionCostBasis, { sum: number; n: number }>;
 };
 
@@ -300,6 +311,7 @@ function newBucketAcc(): BucketAcc {
     scoreSum: 0,
     scoreN: 0,
     tokens: new Map(),
+    cache: new Map(),
     cost: new Map(),
   };
 }
@@ -331,7 +343,8 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
   const rows = db
     .prepare(
       `SELECT id, started_at, status, outcome, active_duration_ms, total_duration_ms,
-              tokens_in, tokens_out, cost_usd, turns, capabilities_json, scenario_id, test_id,
+              tokens_in, tokens_out, cache_read_tokens, cache_write_tokens,
+              cost_usd, turns, capabilities_json, scenario_id, test_id,
               suite_run_id, stop_reason_code
          FROM runs ${where}`,
     )
@@ -484,6 +497,16 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
       tk.outSum += row.tokens_out;
       tk.n += 1;
       acc.tokens.set(cap.tokens, tk);
+      // RM-33 (D-CT6) — only a run whose split is actually KNOWN contributes. A NULL row is skipped
+      // entirely, so it neither adds a fake zero to the sums nor inflates the hit-rate denominator.
+      if (row.cache_read_tokens !== null && row.cache_write_tokens !== null) {
+        const ck = acc.cache.get(cap.tokens) ?? { readSum: 0, writeSum: 0, grossIn: 0, n: 0 };
+        ck.readSum += row.cache_read_tokens;
+        ck.writeSum += row.cache_write_tokens;
+        ck.grossIn += row.tokens_in;
+        ck.n += 1;
+        acc.cache.set(cap.tokens, ck);
+      }
       const ct = acc.cost.get(cap.costBasis) ?? { sum: 0, n: 0 };
       ct.sum += row.cost_usd;
       ct.n += 1;
@@ -492,7 +515,25 @@ export function computeRunMetrics(db: AppDatabase, params: RunMetricsParams): Ru
   }
 
   const series = buildRunSeries(byGroup, measures);
-  const unavailableMeasures = measures.filter((m) => m === "feedbackRate");
+
+  // RM-33 (D-CT6) — a cache measure is UNAVAILABLE, not zero, when the window holds runs but not one
+  // of them has a known split (e.g. an operator scrolled back to before migration v59). Silently
+  // returning no series would render as an empty chart that reads like "no runs"; returning zeros
+  // would read like "caching stopped working". `unavailableMeasures` is the existing, honest third
+  // answer — the same one `feedbackRate` has always used — and the chart already knows how to say it.
+  const anyCacheKnown = rows.some(
+    (r) => r.cache_read_tokens !== null && r.cache_write_tokens !== null,
+  );
+  const cacheMeasuresUnavailable =
+    rows.length > 0 && !anyCacheKnown
+      ? measures.filter(
+          (m) => m === "cacheReadTokens" || m === "cacheWriteTokens" || m === "cacheHitRate",
+        )
+      : [];
+  const unavailableMeasures = [
+    ...measures.filter((m) => m === "feedbackRate"),
+    ...cacheMeasuresUnavailable,
+  ];
 
   return {
     bucket: params.bucket,
@@ -590,6 +631,22 @@ function scalarPoint(
     case "meanScore":
       if (acc.scoreN === 0) return null; // no graded run in this bucket — omit (never a 0)
       return { bucketStart, value: acc.scoreSum / acc.scoreN, n: acc.scoreN };
+    case "cacheHitRate": {
+      // RM-33 — cache READS over the gross input of the runs whose split we actually know. Writes are
+      // excluded from the numerator on purpose: a write is a 1.25x PREMIUM, so counting it as a "hit"
+      // would make an expensive turn look like a saving. No run with a known split, or none with any
+      // input, ⇒ omit the bucket (never a 0% line that reads as "caching stopped working").
+      let readSum = 0;
+      let grossIn = 0;
+      let n = 0;
+      for (const c of acc.cache.values()) {
+        readSum += c.readSum;
+        grossIn += c.grossIn;
+        n += c.n;
+      }
+      if (n === 0 || grossIn === 0) return null;
+      return { bucketStart, value: readSum / grossIn, n };
+    }
     default:
       return null;
   }
@@ -602,6 +659,10 @@ function splitPoints(measure: RunMetricsMeasure, acc: BucketAcc): [string, numbe
     for (const [cls, t] of acc.tokens) out.push([cls, t.inSum, t.n]);
   } else if (measure === "tokensOut") {
     for (const [cls, t] of acc.tokens) out.push([cls, t.outSum, t.n]);
+  } else if (measure === "cacheReadTokens") {
+    for (const [cls, c] of acc.cache) out.push([cls, c.readSum, c.n]);
+  } else if (measure === "cacheWriteTokens") {
+    for (const [cls, c] of acc.cache) out.push([cls, c.writeSum, c.n]);
   } else if (measure === "costUsd") {
     for (const [cls, c] of acc.cost) out.push([cls, c.sum, c.n]);
   }

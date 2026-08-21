@@ -180,6 +180,8 @@ function hooksFor(accounting: AccountingSink): AccountingHooks {
         peakContextTokens: k.peakContextTokens,
       };
     },
+    // RM-33 — the cache composition of the final kpi, delegated to the sink (one omit-when-absent rule).
+    cacheKpiFields: () => accounting.cacheKpiFields(),
   };
 }
 
@@ -487,5 +489,134 @@ test("a forced context-limit error yields outcome context_overflow and does not 
     manager.isActive(runId),
     false,
     "the run manager cleaned up after the settled rating",
+  );
+});
+
+// ── RM-33 WP 1.2 (D-CT1/D-CT2/D-CT6) — the cache split on the rolled-up `kpi` event ─────────────
+//
+// Before this, the sink accumulated `cachedTokens` internally and the emit dropped it, so the ONE
+// event the console KPI rail and the run row are both built from could not say how much of its
+// `tokensIn` was cache. The RunRepository worked around it by re-summing the steps; nothing on the
+// wire could.
+
+test("RM-33 — the kpi event carries the cache split, and tokensIn stays GROSS", async () => {
+  const { manager, events } = collect();
+  const runId = "run-kpi-cache";
+  manager.create(runId);
+  manager.subscribe(runId, (e) => events.push(e));
+
+  const sessions = new Map<string, McpSession>([["srv", stubSession()]]);
+  const allowed: AllowedTool[] = [{ serverId: "srv", def: defFor("alpha") }];
+  const accounting = new AccountingSink(ctxFor(runId, allowed), (e) => manager.emit(runId, e));
+  const tools = buildTools(allowed, sessions, createAccountingStepSink(manager, runId, accounting));
+
+  const model = mockToolThenAnswer({ id: "c1", name: "alpha", input: { key: "x" } });
+  await runAgentLoop(
+    runId,
+    baseConfig({ model, tools, accounting: hooksFor(accounting) }),
+    (e) => manager.emit(runId, e),
+  );
+
+  const lastKpi = [...events]
+    .reverse()
+    .find((e): e is Extract<RunEvent, { type: "kpi" }> => e.type === "kpi");
+  assert.ok(lastKpi);
+
+  // D-CT1 — the split is ADDITIVE. `tokensIn` is untouched: still the provider-billed gross total,
+  // cached slice included. Nothing was subtracted from it to make room for the new fields.
+  assert.equal(lastKpi.tokensIn, USAGE.inputTokens.total * 2, "tokensIn is unchanged and gross");
+
+  assert.equal(lastKpi.cacheReadTokens, USAGE.inputTokens.cacheRead * 2, "cache reads summed");
+  assert.equal(lastKpi.cacheWriteTokens, USAGE.inputTokens.cacheWrite * 2, "cache writes summed");
+  assert.equal(
+    lastKpi.cachedTokens,
+    (USAGE.inputTokens.cacheRead + USAGE.inputTokens.cacheWrite) * 2,
+    "the merged figure is still the sum of the two halves",
+  );
+  // The split can never exceed the gross it decomposes.
+  assert.ok(
+    (lastKpi.cacheReadTokens ?? 0) + (lastKpi.cacheWriteTokens ?? 0) <= lastKpi.tokensIn,
+    "the cache slice is a SUBSET of tokensIn, never an addition to it",
+  );
+});
+
+test("RM-33 — a run with no cache slice emits the pre-RM-33 kpi event VERBATIM", async () => {
+  // D-CT6's other half. "Additive" has to mean it: a backend that never reports cache must not start
+  // emitting three new keys, because a consumer cannot tell a `cacheReadTokens: 0` that means "no
+  // cache happened" from one that means "this backend does not report cache". Absence is the signal.
+  const { manager, events } = collect();
+  const runId = "run-kpi-nocache";
+  manager.create(runId);
+  manager.subscribe(runId, (e) => events.push(e));
+
+  // A provider that reports NO cache detail at all — not one that reports a zero. The distinction is
+  // the whole point: `cacheRead: 0` is the provider SAYING "nothing was cached", which is real
+  // information and does get emitted. Silence is different, and must stay silent on the wire.
+  const noCacheUsage = {
+    inputTokens: { total: 137, noCache: 137 },
+    outputTokens: { total: 23, text: 23 },
+  } as const;
+  const model = new MockLanguageModelV3({
+    doStream: async () =>
+      streamOf([
+        { type: "stream-start", warnings: [] },
+        { type: "text-start", id: "t1" },
+        { type: "text-delta", id: "t1", delta: "Answer." },
+        { type: "text-end", id: "t1" },
+        {
+          type: "finish",
+          finishReason: { unified: "stop", raw: "end_turn" },
+          usage: noCacheUsage as unknown as LanguageModelUsage,
+        },
+      ]),
+  });
+
+  const sessions = new Map<string, McpSession>([["srv", stubSession()]]);
+  const allowed: AllowedTool[] = [{ serverId: "srv", def: defFor("alpha") }];
+  const accounting = new AccountingSink(ctxFor(runId, allowed), (e) => manager.emit(runId, e));
+  const tools = buildTools(allowed, sessions, noopSink);
+  await runAgentLoop(
+    runId,
+    baseConfig({ model, tools, accounting: hooksFor(accounting) }),
+    (e) => manager.emit(runId, e),
+  );
+
+  const lastKpi = [...events]
+    .reverse()
+    .find((e): e is Extract<RunEvent, { type: "kpi" }> => e.type === "kpi");
+  assert.ok(lastKpi);
+  assert.equal(lastKpi.tokensIn, noCacheUsage.inputTokens.total);
+  assert.ok(!("cachedTokens" in lastKpi), "no cachedTokens key at all");
+  assert.ok(!("cacheReadTokens" in lastKpi), "no cacheReadTokens key at all");
+  assert.ok(!("cacheWriteTokens" in lastKpi), "no cacheWriteTokens key at all");
+});
+
+test("RM-33 — a provider that reports no cache at all yields no cache fields", async () => {
+  // Scope note, so this test is not read as more than it is: the CURRENT extractor derives
+  // `cachedInputTokens` by summing the two halves, so it can never produce a merged-only record. The
+  // merged-only shape is HISTORICAL — 6 runs in a real 163-run database carry it, persisted by an
+  // older extractor — and it reaches the run row through REPLAY of those persisted steps, not through
+  // this sink. The guard for it therefore lives in `RunRepository.finalize` and migration v59, and is
+  // tested there (run-persistence.test.ts, migrations.test.ts case b2). What this test pins is the
+  // simpler live invariant: silence in, silence out.
+  const { manager, events } = collect();
+  const runId = "run-kpi-silent";
+  manager.create(runId);
+  manager.subscribe(runId, (e) => events.push(e));
+
+  const accounting = new AccountingSink(ctxFor(runId, []), (e) => manager.emit(runId, e));
+  await accounting.llmStep({
+    requestMessages: [],
+    responseContent: [{ type: "text", text: "hi" }],
+    usage: { inputTokens: 1000, outputTokens: 20 } as unknown as LanguageModelUsage,
+    providerMetadata: undefined,
+    requestBody: undefined,
+    text: "hi",
+  });
+
+  assert.deepEqual(
+    accounting.cacheKpiFields(),
+    {},
+    "no cache reported at all ⇒ no keys (the pre-RM-33 event shape, byte-for-byte)",
   );
 });

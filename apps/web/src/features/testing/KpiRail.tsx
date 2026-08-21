@@ -5,6 +5,11 @@ import type {
   SessionCapabilities,
 } from "@mcp-token-footprint/shared";
 import {
+  cacheHitRate,
+  usageInputSlices,
+  type TokenUsageActual,
+} from "@mcp-token-footprint/shared";
+import {
   Context,
   ContextContent,
   ContextContentBody,
@@ -36,7 +41,11 @@ import {
   TrendingUp,
   Wrench,
 } from "lucide-react";
-import { formatCostUsd, formatDuration, formatNumber } from "../../lib/format";
+import { formatCostUsd, formatDuration, formatNumber, formatPercent } from "../../lib/format";
+import { TokenAmount, type TokenAmountProps } from "../../components/TokenAmount";
+
+/** The usage shape `TokenAmount` reads — named here so the rail's derivation stays typed. */
+type TokenAmountUsage = NonNullable<TokenAmountProps["usage"]>;
 import { SubscriptionCostMarker } from "../../components/SubscriptionCostMarker";
 import type { RunKpis } from "./use-run-stream";
 import { derivePerStepEconomics, type StepCumulativeKpi } from "./analytics-derive";
@@ -122,6 +131,21 @@ export function KpiRail({
 
   const tokensIn = kpis?.tokensIn ?? 0;
   const tokensOut = kpis?.tokensOut ?? 0;
+
+  // RM-33 (D-CT1/D-CT6) — the cache composition of `tokensIn`, shaped as the usage record
+  // `TokenAmount` reads. Built ONLY when the run actually reported cache: absent fields mean the split
+  // is unknown, and a `{ inputTokens, cachedInputTokens: 0 }` stand-in would silently assert "0%
+  // cached" on every run whose backend simply never mentions caching.
+  const tokenUsage: TokenAmountUsage | undefined =
+    kpis && kpis.cachedTokens !== undefined
+      ? {
+          inputTokens: kpis.tokensIn,
+          cachedInputTokens: kpis.cachedTokens,
+          ...(kpis.cacheReadTokens === undefined ? {} : { cacheReadTokens: kpis.cacheReadTokens }),
+          ...(kpis.cacheWriteTokens === undefined ? {} : { cacheWriteTokens: kpis.cacheWriteTokens }),
+        }
+      : undefined;
+  const hitRate = tokenUsage ? cacheHitRate(tokenUsage as TokenUsageActual) : null;
   const toolCalls = kpis?.toolCalls ?? 0;
   const turns = kpis?.turns ?? 0;
   const costUsd = kpis?.costUsd ?? 0;
@@ -177,7 +201,12 @@ export function KpiRail({
   // contradiction against any aggregate shown elsewhere (e.g. a runs-list total). State it: only
   // the tiles actually visible are mentioned, so a kind that hides Context never gets a clause about
   // it.
-  const relationshipNote = figureRelationshipNote({ showContext, showTokens, showCost });
+  const relationshipNote = figureRelationshipNote({
+    showContext,
+    showTokens,
+    showCost,
+    cacheHitRate: hitRate,
+  });
 
   return (
     <section aria-label="Run KPIs">
@@ -202,6 +231,7 @@ export function KpiRail({
                   tokensIn={tokensIn}
                   tokensOut={tokensOut}
                   costUsd={costUsd}
+                  usage={tokenUsage}
                 />
               ) : (
                 <span className="tabular-nums">{contextDescription}</span>
@@ -240,14 +270,20 @@ export function KpiRail({
               className="min-w-0"
               icon={<ArrowUp aria-hidden />}
               label="Tokens ↑"
-              value={<span className="tabular-nums">{formatNumber(tokensIn)}</span>}
-              description={`sent (${tokenFidelityLabel})`}
+              value={<TokenAmount value={tokensIn} usage={tokenUsage} direction="in" />}
+              // RM-33 — the answer to "why is this number so large". `hitRate` is null when the split
+              // is unknown, and then the description reads exactly as it did before.
+              description={
+                hitRate === null
+                  ? `sent (${tokenFidelityLabel})`
+                  : `sent · ${formatPercent(hitRate * 100)} from cache`
+              }
             />
             <MetricCard
               className="min-w-0"
               icon={<ArrowDown aria-hidden />}
               label="Tokens ↓"
-              value={<span className="tabular-nums">{formatNumber(tokensOut)}</span>}
+              value={<TokenAmount value={tokensOut} direction="out" />}
               description={`received (${tokenFidelityLabel})`}
             />
           </>
@@ -292,10 +328,20 @@ export function figureRelationshipNote(opts: {
   showContext: boolean;
   showTokens: boolean;
   showCost: boolean;
+  /** RM-33 — the run's cache-read share, when known. `null`/absent leaves the note as it was. */
+  cacheHitRate?: number | null;
 }): string | null {
   const clauses: string[] = [];
   if (opts.showTokens) {
-    clauses.push("Tokens ↑/↓ are cumulative sends/receives across this run's turns so far");
+    // RM-33 — the most direct answer to "why is Tokens ↑ 958,457 when Context is 28,461?". The
+    // cumulative-vs-snapshot clause below explains the shape of the gap; this explains its SIZE, and
+    // that the figure is GROSS (D-CT1) rather than net of cache.
+    clauses.push(
+      opts.cacheHitRate === null || opts.cacheHitRate === undefined
+        ? "Tokens ↑/↓ are cumulative sends/receives across this run's turns so far"
+        : `Tokens ↑/↓ are cumulative sends/receives across this run's turns so far, counted gross — ` +
+          `${formatPercent(opts.cacheHitRate * 100)} of what was sent was served from cache and billed at a fraction of the rate`,
+    );
   }
   if (opts.showContext) {
     clauses.push(
@@ -306,6 +352,20 @@ export function figureRelationshipNote(opts: {
     clauses.push("Est. cost is this run's own estimate, not a fleet total");
   }
   return clauses.length > 0 ? `${clauses.join("; ")}.` : null;
+}
+
+/** One indented `label … value` line inside the context popover's cache breakdown (RM-33). */
+function BreakdownRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <Text variant="caption" tone="muted" as="span">
+        {label}
+      </Text>
+      <Text variant="caption" tone="muted" as="span" className="tabular-nums">
+        {formatNumber(value)}
+      </Text>
+    </div>
+  );
 }
 
 /** Per-kind icon + short label for the hotspots strip. */
@@ -397,6 +457,7 @@ function ContextBreakdown({
   tokensIn,
   tokensOut,
   costUsd,
+  usage,
 }: {
   usedTokens: number;
   maxTokens: number;
@@ -405,8 +466,14 @@ function ContextBreakdown({
   tokensIn: number;
   tokensOut: number;
   costUsd: number;
+  /** RM-33 — the cache composition of `tokensIn`; absent when this run's split is unknown. */
+  usage?: TokenAmountUsage;
 }) {
   const [open, setOpen] = useState(false);
+  // RM-33 — the three mutually exclusive slices of `tokensIn`, or null when we cannot decompose it.
+  // The popover is where an operator goes to reconcile the rail's figures, so this is exactly the
+  // place the gross number gets broken down rather than merely hinted at.
+  const slices = usage ? usageInputSlices(usage as TokenUsageActual) : null;
   return (
     <Context open={open} onOpenChange={setOpen} usedTokens={usedTokens} maxTokens={maxTokens}>
       <ContextTrigger>
@@ -431,12 +498,28 @@ function ContextBreakdown({
         <ContextContentBody className="space-y-2 p-3">
           <div className="flex items-center justify-between gap-3">
             <Text variant="caption" tone="muted" as="span">
-              Tokens ↑ (sent)
+              Tokens ↑ (sent, gross)
             </Text>
             <Text variant="caption" as="span" className="tabular-nums">
               {formatNumber(tokensIn)}
             </Text>
           </div>
+          {slices ? (
+            <div className="space-y-1 border-border border-l pl-3">
+              <BreakdownRow label="Uncached" value={slices.uncached} />
+              <BreakdownRow label="Cache read (~0.1× rate)" value={slices.cacheRead} />
+              {/* A cache WRITE is 1.25× — shown separately and named a premium, because the merged
+                  "cached" number this replaces made a write look like a saving. */}
+              {slices.cacheWrite > 0 ? (
+                <BreakdownRow label="Cache write (1.25× rate)" value={slices.cacheWrite} />
+              ) : null}
+            </div>
+          ) : usage ? (
+            <Text variant="caption" tone="muted" as="p" className="border-border border-l pl-3">
+              {formatNumber(usage.cachedInputTokens ?? 0)} cached — read/write split unavailable for
+              this run.
+            </Text>
+          ) : null}
           <div className="flex items-center justify-between gap-3">
             <Text variant="caption" tone="muted" as="span">
               Tokens ↓ (received)

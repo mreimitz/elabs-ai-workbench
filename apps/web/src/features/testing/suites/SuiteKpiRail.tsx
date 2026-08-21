@@ -83,7 +83,14 @@ export function SuiteKpiRail({ aggregates, costCapUsd }: SuiteKpiRailProps) {
           icon={<Hash aria-hidden />}
           label="Tokens"
           value={<span className="tabular-nums">{formatNumber(totalTokens)}</span>}
-          description="across the matrix"
+          // RM-33 (D-CT2/D-CT6) — the roll-up is ALL-OR-NOTHING: `cacheReadTokens` is absent the
+          // moment ANY member's split is unknown, because a partial sum would look like the whole
+          // matrix while silently omitting members. Absent ⇒ the description reads as it always did.
+          description={
+            aggregates?.cacheReadTokens === undefined
+              ? "across the matrix"
+              : `across the matrix · ${formatNumber(aggregates.cacheReadTokens)} from cache`
+          }
         />
         <MetricCard
           className="min-w-0"

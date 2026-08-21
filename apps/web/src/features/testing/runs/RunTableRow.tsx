@@ -20,8 +20,11 @@ import {
   formatDateTime,
   formatDuration,
   formatNumber,
+  formatPercent,
   formatRelativeTime,
 } from "../../../lib/format";
+import { TokenAmount } from "../../../components/TokenAmount";
+import { cacheHitRate, type TokenUsageActual } from "@mcp-token-footprint/shared";
 import { IconButton } from "../../../components/IconButton";
 import { StatusBadge } from "../../../components/StatusBadge";
 import {
@@ -105,6 +108,18 @@ export function RunTableRow({
 }) {
   const show = (key: RunTableColumnKey) => visible === undefined || visible.has(key);
   const tokens = run.tokensIn + run.tokensOut;
+  // RM-33 — the run's cache composition, shaped as the usage record `TokenAmount` reads. Built ONLY
+  // when the split reached the wire; `undefined` means unknown and the cell renders as it always has.
+  const tokenUsage =
+    run.cachedTokens === undefined
+      ? undefined
+      : {
+          inputTokens: run.tokensIn,
+          cachedInputTokens: run.cachedTokens,
+          ...(run.cacheReadTokens === undefined ? {} : { cacheReadTokens: run.cacheReadTokens }),
+          ...(run.cacheWriteTokens === undefined ? {} : { cacheWriteTokens: run.cacheWriteTokens }),
+        };
+  const hitRate = tokenUsage ? cacheHitRate(tokenUsage as TokenUsageActual) : null;
   const checkboxId = `runs-row-${run.id}`;
   const name = testName ?? "Unknown test";
   // AR11 — review-aware: a terminal run still being rated reads "Reviewing…" (from the persisted
@@ -246,7 +261,17 @@ export function RunTableRow({
           <TableCell className="text-right tabular-nums">{formatNumber(run.toolCalls)}</TableCell>
         ) : null}
         {show("tokens") ? (
-          <TableCell className="text-right tabular-nums">{formatNumber(tokens)}</TableCell>
+          <TableCell className="text-right">
+            {/* The total stays gross (D-CT1); the ↑ half of it carries the breakdown. */}
+            <TokenAmount value={tokens} usage={tokenUsage} direction="in" />
+          </TableCell>
+        ) : null}
+        {show("cacheHitRate") ? (
+          <TableCell className="text-right tabular-nums">
+            {/* An em dash, never "0%": a run whose split is unknown has not been measured, and a zero
+                would read as a cache that stopped working. */}
+            {hitRate === null ? "—" : formatPercent(hitRate * 100)}
+          </TableCell>
         ) : null}
         {show("cost") ? (
           <TableCell className="text-right tabular-nums">

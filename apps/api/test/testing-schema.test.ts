@@ -137,6 +137,11 @@ const EXPECTED_COLUMNS: Record<string, string[]> = {
     // run records the parent it was forked FROM and the step it was forked AT.
     "derived_from_run_id",
     "fork_step_id",
+    // RM-33 (planning/Roadmap/RM-33-cache-aware-token-accounting/, WP 1.2, v59) — the read/write halves of
+    // `cached_tokens`. Nullable: NULL means the split is UNKNOWN (a run persisted before v59), never
+    // "no cache" — the metrics layer excludes an unknown run rather than averaging a fabricated zero.
+    "cache_read_tokens",
+    "cache_write_tokens",
   ],
   run_steps: [
     "id",
@@ -434,6 +439,10 @@ test("inserts and reads back one row per new table respecting FK ordering", () =
     // (non-forked) run reads them back NULL.
     derived_from_run_id: null,
     fork_step_id: null,
+    // RM-33 (WP 1.2, v59) — an inserted run that declared no cache reads them back NULL = "unknown",
+    // which is the honest default: nothing has told us about this run's cache either way yet.
+    cache_read_tokens: null,
+    cache_write_tokens: null,
   });
 
   // run_steps (references runs)

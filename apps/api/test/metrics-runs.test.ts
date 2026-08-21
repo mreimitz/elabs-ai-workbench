@@ -62,6 +62,9 @@ type RunSeed = {
   activeDurationMs?: number | null;
   totalDurationMs?: number | null;
   capabilitiesJson?: string | null;
+  // RM-33 — `undefined` seeds SQL NULL (the split is unknown, e.g. a run persisted before v59).
+  cacheReadTokens?: number | null;
+  cacheWriteTokens?: number | null;
 };
 
 function baseGraph(db: AppDatabase): void {
@@ -105,10 +108,12 @@ function insertRuns(db: AppDatabase, runs: RunSeed[]): void {
   const stmt = db.prepare(
     `INSERT INTO runs (
        id, test_id, scenario_id, mode, status, outcome, started_at, tokens_in, tokens_out,
-       cost_usd, turns, active_duration_ms, total_duration_ms, capabilities_json
+       cost_usd, turns, active_duration_ms, total_duration_ms, capabilities_json,
+       cache_read_tokens, cache_write_tokens
      ) VALUES (
        @id, @testId, @scenarioId, 'automated', @status, @outcome, @startedAt, @tokensIn, @tokensOut,
-       @costUsd, @turns, @activeDurationMs, @totalDurationMs, @capabilitiesJson
+       @costUsd, @turns, @activeDurationMs, @totalDurationMs, @capabilitiesJson,
+       @cacheReadTokens, @cacheWriteTokens
      )`,
   );
   for (const r of runs) {
@@ -126,6 +131,8 @@ function insertRuns(db: AppDatabase, runs: RunSeed[]): void {
       activeDurationMs: r.activeDurationMs === undefined ? null : r.activeDurationMs,
       totalDurationMs: r.totalDurationMs === undefined ? null : r.totalDurationMs,
       capabilitiesJson: r.capabilitiesJson === undefined ? ENGINE_CAPS : r.capabilitiesJson,
+      cacheReadTokens: r.cacheReadTokens ?? null,
+      cacheWriteTokens: r.cacheWriteTokens ?? null,
     });
   }
 }
@@ -470,4 +477,166 @@ test("repeated identical calls return byte-identical results (no cache, recomput
   assert.deepEqual(a, b);
   // And the JSON serialization is stable (series/points deterministically ordered).
   assert.equal(JSON.stringify(a), JSON.stringify(b));
+});
+
+// ── RM-33 WP 2.2 (D-CT6) — the cache measures, and what they do with an UNKNOWN split ────────────
+//
+// Before this, cached tokens could not be charted at all, so "is our cache hit rate degrading" was
+// unanswerable. The hard part is not the sums; it is that a run whose split is unknown must be
+// EXCLUDED, because a zero-filled bucket reads as "caching stopped working" and a silently dropped
+// one reads as "no runs happened".
+
+test("RM-33 — cache measures split by capability class and sum only KNOWN runs", () => {
+  const db = createDatabase();
+  baseGraph(db);
+  insertRuns(db, [
+    {
+      id: "r-known-1",
+      scenarioId: "scn-ant",
+      testId: "t-1",
+      status: "completed",
+      startedAt: "2026-06-01T01:00:00.000Z",
+      tokensIn: 1000,
+      tokensOut: 100,
+      cacheReadTokens: 800,
+      cacheWriteTokens: 100,
+    },
+    {
+      id: "r-known-2",
+      scenarioId: "scn-ant",
+      testId: "t-1",
+      status: "completed",
+      startedAt: "2026-06-01T01:30:00.000Z",
+      tokensIn: 1000,
+      tokensOut: 100,
+      cacheReadTokens: 600,
+      cacheWriteTokens: 0,
+    },
+    // Same bucket, but its split predates v59. It contributes to tokensIn and to NOTHING cache-shaped.
+    {
+      id: "r-unknown",
+      scenarioId: "scn-ant",
+      testId: "t-1",
+      status: "completed",
+      startedAt: "2026-06-01T01:45:00.000Z",
+      tokensIn: 5000,
+      tokensOut: 500,
+    },
+  ]);
+
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["tokensIn", "cacheReadTokens", "cacheWriteTokens", "cacheHitRate"],
+  });
+
+  const read = res.series.find((s) => s.measure === "cacheReadTokens") as RunMetricsSeries;
+  const write = res.series.find((s) => s.measure === "cacheWriteTokens") as RunMetricsSeries;
+  assert.equal(read.points[0]?.value, 1400, "800 + 600 — the unknown run adds nothing");
+  assert.equal(write.points[0]?.value, 100);
+  assert.equal(read.points[0]?.n, 2, "n counts the runs that could actually answer, not all 3");
+  assert.equal(read.capabilityClass, "exact", "token measures stay capability-split (D-OB14)");
+
+  // D-CT1 — `tokensIn` is untouched and still counts all three runs.
+  const tokensIn = res.series.find((s) => s.measure === "tokensIn") as RunMetricsSeries;
+  assert.equal(tokensIn.points[0]?.value, 7000, "tokensIn still sums every run, unknown split or not");
+  assert.equal(tokensIn.points[0]?.n, 3);
+
+  // The hit rate divides like-for-like: 1400 reads over the 2000 gross input of the SAME two runs.
+  // If it used the 7000 gross of all three, it would read 20% instead of 70% — an invented collapse.
+  const hit = res.series.find((s) => s.measure === "cacheHitRate") as RunMetricsSeries;
+  assert.equal(hit.capabilityClass, null, "a ratio is a single unlabelled series (errorRate precedent)");
+  assert.equal(hit.points[0]?.value, 0.7);
+});
+
+test("RM-33 — a window of runs with NO known split reports the measures unavailable, not 0", () => {
+  const db = createDatabase();
+  baseGraph(db);
+  insertRuns(db, [
+    {
+      id: "r-legacy-1",
+      scenarioId: "scn-ant",
+      testId: "t-1",
+      status: "completed",
+      startedAt: "2026-06-01T01:00:00.000Z",
+      tokensIn: 1000,
+      tokensOut: 100,
+    },
+    {
+      id: "r-legacy-2",
+      scenarioId: "scn-ant",
+      testId: "t-1",
+      status: "completed",
+      startedAt: "2026-06-01T02:00:00.000Z",
+      tokensIn: 2000,
+      tokensOut: 200,
+    },
+  ]);
+
+  const res = computeRunMetrics(db, {
+    filter: {},
+    bucket: "day",
+    measures: ["tokensIn", "cacheReadTokens", "cacheHitRate"],
+  });
+
+  assert.deepEqual(
+    [...res.unavailableMeasures].sort(),
+    ["cacheHitRate", "cacheReadTokens"],
+    "the honest third answer — neither an empty chart nor a 0% line",
+  );
+  assert.equal(
+    res.series.filter((s) => s.measure.startsWith("cache")).length,
+    0,
+    "and no cache series is emitted at all",
+  );
+  assert.ok(
+    res.series.some((s) => s.measure === "tokensIn"),
+    "…while the measures that CAN answer still do",
+  );
+});
+
+test("RM-33 — a bucket whose only cache-known runs have zero input omits the hit rate", () => {
+  // Guard on the division: `readSum / grossIn` with grossIn 0 is NaN, which would serialize as null
+  // and render as a broken point rather than an absent one.
+  const db = createDatabase();
+  baseGraph(db);
+  insertRuns(db, [
+    {
+      id: "r-empty",
+      scenarioId: "scn-ant",
+      testId: "t-1",
+      status: "completed",
+      startedAt: "2026-06-01T01:00:00.000Z",
+      tokensIn: 0,
+      tokensOut: 0,
+      cacheReadTokens: 0,
+      cacheWriteTokens: 0,
+    },
+  ]);
+  const res = computeRunMetrics(db, { filter: {}, bucket: "day", measures: ["cacheHitRate"] });
+  assert.equal(res.series.length, 0, "no point, rather than a NaN one");
+});
+
+test("RM-33 — repeated calls with the cache measures stay byte-identical", () => {
+  const db = createDatabase();
+  baseGraph(db);
+  insertRuns(db, [
+    {
+      id: "r-det",
+      scenarioId: "scn-ant",
+      testId: "t-1",
+      status: "completed",
+      startedAt: "2026-06-01T01:00:00.000Z",
+      tokensIn: 1000,
+      tokensOut: 100,
+      cacheReadTokens: 900,
+      cacheWriteTokens: 50,
+    },
+  ]);
+  const params = {
+    filter: {},
+    bucket: "day" as const,
+    measures: ["cacheReadTokens", "cacheWriteTokens", "cacheHitRate"] as RunMetricsResponse["measures"],
+  };
+  assert.deepEqual(computeRunMetrics(db, params), computeRunMetrics(db, params));
 });

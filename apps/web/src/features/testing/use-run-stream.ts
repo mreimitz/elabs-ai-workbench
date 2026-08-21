@@ -30,6 +30,15 @@ export type RunKpis = {
    * "est. · subscription". Absent (or `"api_exact"`) for every ordinary API-metered run.
    */
   costBasis?: CostBasis;
+  /**
+   * RM-33 (D-CT1/D-CT2) — the prompt-cache composition of `tokensIn`, which stays GROSS above.
+   * ABSENT means the split is UNKNOWN for this run (a backend that reports no cache, or a run
+   * persisted before migration v59) — never "there was no cache" (D-CT6). The KPI rail renders the
+   * sub-line and the tooltip only when they are present.
+   */
+  cachedTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
 };
 
 /** The streaming-text channels accumulated from `delta` events (the in-flight assistant turn). */
@@ -636,6 +645,13 @@ function reduce(state: RunStreamState, event: RunEvent): RunStreamState {
           // KPI rail marks a subscription run's shadow-priced cost "est. · subscription". Persisted
           // `kpi` events keep this field (it isn't secret-named), so replayed runs surface it too.
           ...(event.costBasis ? { costBasis: event.costBasis } : {}),
+          // RM-33 — carry the cache composition through. Spread conditionally so a backend that
+          // reports no cache leaves them absent, which every consumer reads as "unknown", not "zero".
+          ...(event.cachedTokens === undefined ? {} : { cachedTokens: event.cachedTokens }),
+          ...(event.cacheReadTokens === undefined ? {} : { cacheReadTokens: event.cacheReadTokens }),
+          ...(event.cacheWriteTokens === undefined
+            ? {}
+            : { cacheWriteTokens: event.cacheWriteTokens }),
         },
       };
     case "error":

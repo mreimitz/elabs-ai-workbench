@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowRight, ListOrdered, Loader2 } from "lucide-react";
 import { formatDuration, formatNumber } from "../../lib/format";
 import { FeedbackControl } from "./FeedbackControl";
 import { HighlightMatch } from "./SearchHighlight";
+import { TokenAmount } from "../../components/TokenAmount";
 import { deriveTurnSummaries, type TurnSummary } from "./turn-summary";
 import { useTurnFeedback } from "./use-turn-feedback";
 import type { TimelineItem } from "./use-run-stream";
@@ -145,13 +146,13 @@ function TurnCard({
             </Text>
           ) : null}
           {row.tokensIn > 0 ? (
-            <Text as="span" variant="meta" tone="muted" className="tabular-nums">
-              {formatNumber(row.tokensIn)}↑
+            <Text as="span" variant="meta" tone="muted">
+              <TokenAmount value={row.tokensIn} direction="in" usage={row.usage} />
             </Text>
           ) : null}
           {row.tokensOut > 0 ? (
-            <Text as="span" variant="meta" tone="muted" className="tabular-nums">
-              {formatNumber(row.tokensOut)}↓
+            <Text as="span" variant="meta" tone="muted">
+              <TokenAmount value={row.tokensOut} direction="out" />
             </Text>
           ) : null}
           {row.toolCalls > 0 ? (

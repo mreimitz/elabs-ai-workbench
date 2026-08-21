@@ -1,4 +1,4 @@
-import type { RunStep, RunStepType } from "@mcp-token-footprint/shared";
+import type { RunStep, RunStepType, TokenUsageActual } from "@mcp-token-footprint/shared";
 import { safeJson } from "../../lib/format";
 import { firstProfileTokens } from "./StepLog";
 import {
@@ -43,6 +43,13 @@ export type TraceNodeKind = "turn" | "user" | "assistant" | "event-llm" | "event
 export type TraceKpi = {
   tokensIn?: number;
   tokensOut?: number;
+  /**
+   * RM-33 — the usage record `tokensIn` decomposes, when the turn carries one. A Trace row shows a
+   * cache-INCLUSIVE token count next to a cache-DISCOUNTED cost (`costUsd` flows from `estimateCost`,
+   * which prices reads at ~0.1x and writes at 1.25x), so the two do not reconcile at list rate and a
+   * reader has no way to see why. This is what makes them reconcilable.
+   */
+  usage?: TokenUsageActual;
   /** A single token figure (e.g. a tool result's size) when in/out don't apply. */
   tokens?: number;
   durationMs?: number;
@@ -217,6 +224,8 @@ function assistantNode(
   const kpi: TraceKpi = {};
   if (turn.usageActual?.inputTokens) kpi.tokensIn = turn.usageActual.inputTokens;
   if (turn.usageActual?.outputTokens) kpi.tokensOut = turn.usageActual.outputTokens;
+  // RM-33 — carry the record itself so the chip can explain its own number.
+  if (turn.usageActual) kpi.usage = turn.usageActual;
   if (durationMs !== undefined) kpi.durationMs = durationMs;
   if (llmStep?.startedAt) kpi.timestamp = llmStep.startedAt;
 
@@ -298,6 +307,8 @@ function llmEventNode(
   const kpi: TraceKpi = {};
   if (turn.usageActual?.inputTokens) kpi.tokensIn = turn.usageActual.inputTokens;
   if (turn.usageActual?.outputTokens) kpi.tokensOut = turn.usageActual.outputTokens;
+  // RM-33 — carry the record itself so the chip can explain its own number.
+  if (turn.usageActual) kpi.usage = turn.usageActual;
   if (durationMs !== undefined) kpi.durationMs = durationMs;
   if (llmStep?.startedAt) kpi.timestamp = llmStep.startedAt;
 
@@ -413,6 +424,8 @@ function turnKpi(
   const kpi: TraceKpi = {};
   if (turn.usageActual?.inputTokens) kpi.tokensIn = turn.usageActual.inputTokens;
   if (turn.usageActual?.outputTokens) kpi.tokensOut = turn.usageActual.outputTokens;
+  // RM-33 — carry the record itself so the chip can explain its own number.
+  if (turn.usageActual) kpi.usage = turn.usageActual;
   if (durationMs !== undefined) kpi.durationMs = durationMs;
   if (typeof costUsd === "number") kpi.costUsd = costUsd;
   if (firstStart) kpi.timestamp = firstStart;

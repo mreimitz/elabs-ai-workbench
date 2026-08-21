@@ -9,7 +9,7 @@ import type {
   TokenUsageActual,
   ToolLoadingMode,
 } from "@mcp-token-footprint/shared";
-import { MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
+import { MODEL_CONTEXT_LIMITS, usageSplitKind } from "@mcp-token-footprint/shared";
 import type { LanguageModelUsage, ModelMessage, ProviderMetadata } from "ai";
 import { estimateCost } from "../providers/pricing.js";
 import { getTokenCounter } from "../token-counting/profiles.js";
@@ -56,6 +56,10 @@ export type RunKpis = {
   tokensIn: number;
   tokensOut: number;
   cachedTokens: number;
+  // RM-33 (D-CT2) — the read/write halves of `cachedTokens`. A cache READ is a ~0.1x discount and a
+  // cache WRITE a 1.25x premium, so the merged figure above cannot answer "did caching help".
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
   reasoningTokens: number;
   peakContextTokens: number;
   /** WP 1.5 — cumulative estimated spend in USD (Σ per-step provider-actual tokens × pricing). */
@@ -99,6 +103,8 @@ export type SessionStats = {
     inputTokens: number;
     outputTokens: number;
     cachedTokens: number;
+    cacheReadTokens: number;
+    cacheWriteTokens: number;
     reasoningTokens: number;
   };
   /** Session token rate (input+output tokens per wall-clock minute) (SESSION_RATE_LIMIT_THROUGHPUT). */
@@ -293,10 +299,22 @@ export class AccountingSink {
     tokensIn: 0,
     tokensOut: 0,
     cachedTokens: 0,
+    cacheReadTokens: 0,
+    cacheWriteTokens: 0,
     reasoningTokens: 0,
     peakContextTokens: 0,
     costUsd: 0,
   };
+
+  // RM-33 (D-CT6) — TWO flags, because "did this run cache" and "can we say how" are different
+  // questions and conflating them is how a run that demonstrably cached ends up reported as 0.
+  //   `sawCacheSlice`  — any step reported a cache figure at all (merged or split).
+  //   `sawExactSplit`  — any step reported the read/write SPLIT specifically.
+  // A provider that reports only a merged `cachedInputTokens` (or a legacy replayed step) sets the
+  // first and not the second: `cachedTokens` is emitted, the two halves are OMITTED, and every
+  // downstream surface correctly reads the split as UNKNOWN rather than as zero.
+  private sawCacheSlice = false;
+  private sawExactSplit = false;
 
   // Rolling context segments. `system` + `tool_defs` are fixed per run; `history` grows as turns and
   // tool results accumulate; `output` is the current generation. Tokens are measured under the run's
@@ -446,6 +464,11 @@ export class AccountingSink {
     this.kpis.tokensIn += actual.inputTokens;
     this.kpis.tokensOut += actual.outputTokens;
     this.kpis.cachedTokens += actual.cachedInputTokens ?? 0;
+    this.kpis.cacheReadTokens += actual.cacheReadTokens ?? 0;
+    this.kpis.cacheWriteTokens += actual.cacheWriteTokens ?? 0;
+    const splitKind = usageSplitKind(actual);
+    if (splitKind !== "none") this.sawCacheSlice = true;
+    if (splitKind === "exact") this.sawExactSplit = true;
     this.kpis.reasoningTokens += actual.reasoningTokens ?? 0;
     this.kpis.peakContextTokens = Math.max(this.kpis.peakContextTokens, total);
     this.kpis.costUsd += stepCostUsd;
@@ -536,6 +559,8 @@ export class AccountingSink {
         inputTokens: this.kpis.tokensIn,
         outputTokens: this.kpis.tokensOut,
         cachedTokens: this.kpis.cachedTokens,
+        cacheReadTokens: this.kpis.cacheReadTokens,
+        cacheWriteTokens: this.kpis.cacheWriteTokens,
         reasoningTokens: this.kpis.reasoningTokens,
       },
       tokensPerMinute,
@@ -583,7 +608,40 @@ export class AccountingSink {
       contextTokens,
       // WP 1.5 — real estimated spend (provider-actual tokens × pricing), no longer hardcoded 0.
       costUsd: this.kpis.costUsd,
+      // RM-33 (D-CT1/D-CT2) — the cache composition of `tokensIn`, which stays GROSS above.
+      ...this.cacheKpiFields(),
     });
+  }
+
+  /**
+   * RM-33 (D-CT6) — the cache fields for a `kpi` event, or `{}` when this run has never seen a cache
+   * slice. There are TWO kpi emitters (this sink's per-turn one and the engine's final one, which
+   * reads {@link getRunKpis}), and they must agree byte-for-byte — so the omit-when-absent rule lives
+   * here once rather than being re-implemented at each site.
+   *
+   * Why omit rather than send zeros: "additive" has to mean it. A backend that does not report cache
+   * must keep emitting the pre-RM-33 event shape, because a consumer cannot tell a `cacheReadTokens:
+   * 0` meaning "no cache happened" from one meaning "this backend never tells us".
+   */
+  cacheKpiFields(): {
+    cachedTokens?: number;
+    cacheReadTokens?: number;
+    cacheWriteTokens?: number;
+  } {
+    if (!this.sawCacheSlice) return {};
+    return {
+      cachedTokens: this.kpis.cachedTokens,
+      // Only when the split was actually reported. Emitting `cacheReadTokens: 0` for a merged-only
+      // run would turn "we cannot tell" into "there were no reads" — and since a cache READ is a 0.1x
+      // discount while a cache WRITE is a 1.25x premium, that mislabels the run's economics as well
+      // as its tokens.
+      ...(this.sawExactSplit
+        ? {
+            cacheReadTokens: this.kpis.cacheReadTokens,
+            cacheWriteTokens: this.kpis.cacheWriteTokens,
+          }
+        : {}),
+    };
   }
 
   private async countToolDefs(counter: TokenCounter): Promise<number> {

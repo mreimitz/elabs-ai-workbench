@@ -540,6 +540,26 @@ export const runBaseRatingSchema = z.object({
 });
 
 /**
+ * RM-33 (D-CT5) — the four terms behind one `costUsd`, plus `savedVsUncachedUsd`. Mirrors
+ * {@link CostBreakdown}. `.strict()` on purpose: this shape is produced by exactly one function
+ * (`computeCostBreakdown`), so an unexpected key means a caller hand-rolled it — which is the thing
+ * D-CT5 exists to prevent. Note `savedVsUncachedUsd` is a plain `z.number()`, NOT `.nonnegative()`:
+ * a cache write costs 1.25x, so a write-heavy record legitimately "saves" a negative amount.
+ */
+export const costBreakdownSchema = z
+  .object({
+    uncachedUsd: z.number(),
+    cacheReadUsd: z.number(),
+    cacheWriteUsd: z.number(),
+    outputUsd: z.number(),
+    totalUsd: z.number(),
+    savedVsUncachedUsd: z.number(),
+    priced: z.boolean(),
+    split: z.enum(["exact", "merged", "none"]),
+  })
+  .strict();
+
+/**
  * The composed, on-demand run rating + grading surface (AR1) — `GET /api/runs/:id/report`. `kpis`
  * mirrors the `Pick<RunSummary, …>` in types.ts; `judgeProvenance` mirrors the
  * `Pick<RunGrade, 'judgeProviderId' | 'judgeModel'>` there.
@@ -557,6 +577,10 @@ export const runReportSchema = z.object({
     peakContextTokens: z.number().int().nonnegative(),
     tokensIn: z.number().int().nonnegative(),
     tokensOut: z.number().int().nonnegative(),
+    // RM-33 — absent means UNKNOWN (a pre-migration run), never zero.
+    cachedTokens: z.number().int().nonnegative().optional(),
+    cacheReadTokens: z.number().int().nonnegative().optional(),
+    cacheWriteTokens: z.number().int().nonnegative().optional(),
     costUsd: z.number(),
     durationMs: z.number().int().nonnegative().optional(),
   }),
@@ -2711,6 +2735,11 @@ export const runEventSchema = z
         contextTokens: z.number(),
         costUsd: z.number(),
         costBasis: z.enum(["api_exact", "subscription_reference"]).optional(),
+        // RM-33 — the cache composition of `tokensIn` (which stays gross). Omitted when the run has
+        // seen no cache slice, so a non-caching backend's event is unchanged.
+        cachedTokens: z.number().optional(),
+        cacheReadTokens: z.number().optional(),
+        cacheWriteTokens: z.number().optional(),
       })
       .passthrough(),
     z.object({
@@ -2766,6 +2795,9 @@ const suiteAggregatesEventSchema = z
     gradeStdDev: z.number().nullable(),
     passRateAt05: z.number().nullable(),
     totalTokens: z.number(),
+    // RM-33 — absent when ANY member run's split is unknown (a partial sum would understate).
+    cacheReadTokens: z.number().optional(),
+    cacheWriteTokens: z.number().optional(),
     execCostUsd: z.number(),
     judgeCostUsd: z.number(),
   })

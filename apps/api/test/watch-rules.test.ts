@@ -363,10 +363,10 @@ test("migration v38 — a fresh DB carries the watch tables + tests.draft; LATES
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    58,
-    "LATEST_SCHEMA_VERSION auto-derived to 58 (v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1)",
+    59,
+    "LATEST_SCHEMA_VERSION auto-derived to 59 (v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 58, "fresh DB stamped at 58");
+  assert.equal(db.pragma("user_version", { simple: true }), 59, "fresh DB stamped at 59");
   for (const t of ["watch_rules", "watch_rule_events", "watch_secrets"]) {
     assert.ok(tableExists(db, t), `fresh DB has ${t}`);
   }
@@ -400,7 +400,7 @@ test("migration v38 — a pre-v38 (v37) DB gains the watch tables + tests.draft;
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    "stamped to LATEST (58) after v38+v39+v40+v41+v42+v43+v44+v45+v46",
+    "stamped to LATEST (59) after v38+v39+v40+v41+v42+v43+v44+v45+v46",
   );
   for (const t of ["watch_rules", "watch_rule_events", "watch_secrets"]) {
     assert.ok(tableExists(db, t), `v38 created ${t}`);

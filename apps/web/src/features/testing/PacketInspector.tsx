@@ -383,14 +383,26 @@ function ActualUsageTable({ actual, lensRows }: { actual: TokenUsageActual; lens
         Provider-actual
       </Text>
       <Descriptions columns={2} layout="horizontal">
-        <DescriptionsItem label="Input" numeric>
+        {/* GROSS (D-CT1) — the cache rows below are a DECOMPOSITION of this number, not additions
+            to it. Labelling it plainly stops "Input 1,000 + Cache read 800" reading as 1,800. */}
+        <DescriptionsItem label="Input (gross)" numeric>
           {formatNumber(actual.inputTokens)}
         </DescriptionsItem>
         <DescriptionsItem label="Output" numeric>
           {formatNumber(actual.outputTokens)}
         </DescriptionsItem>
-        <DescriptionsItem label="Cached input" numeric>
-          {actual.cachedInputTokens === undefined ? "—" : formatNumber(actual.cachedInputTokens)}
+        {/* RM-33 (D-CT2) — the halves, each named with what it actually costs. "Cached input: 900"
+            said nothing about whether that 900 was a ~0.1x discount or a 1.25x premium; this does.
+            An em dash means UNREPORTED, never zero. */}
+        <DescriptionsItem label="Cache read (~0.1× rate)" numeric>
+          {actual.cacheReadTokens === undefined
+            ? actual.cachedInputTokens === undefined
+              ? "—"
+              : `${formatNumber(actual.cachedInputTokens)} (split n/a)`
+            : formatNumber(actual.cacheReadTokens)}
+        </DescriptionsItem>
+        <DescriptionsItem label="Cache write (1.25× rate)" numeric>
+          {actual.cacheWriteTokens === undefined ? "—" : formatNumber(actual.cacheWriteTokens)}
         </DescriptionsItem>
         <DescriptionsItem label="Reasoning" numeric>
           {actual.reasoningTokens === undefined ? "—" : formatNumber(actual.reasoningTokens)}
