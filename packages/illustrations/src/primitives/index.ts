@@ -10,6 +10,11 @@ export { FIGURE_PROPORTIONS, IsoFigure, figureBoxes, figureHeightUnits } from ".
 export { GlyphFrame, resolveGlyphFace } from "./GlyphFrame.js";
 export { IsoHousing, isoExtrude } from "./IsoHousing.js";
 export {
+  IsoSheetStack,
+  SHEET_STACK_GAP_FRACTION,
+  sheetStackBoxes,
+} from "./IsoSheetStack.js";
+export {
   IsoPlatform,
   PLATFORM_MAX_TIERS,
   PLATFORM_TIER_HEIGHTS,
@@ -34,6 +39,11 @@ export type { GlyphFace, GlyphFrameProps } from "./GlyphFrame.js";
 export type { FigureBoxes, IsoFigureProps } from "./IsoFigure.js";
 export type { IsoHousingProps } from "./IsoHousing.js";
 export type { IsoPlatformProps } from "./IsoPlatform.js";
+export type {
+  IsoSheetStackProps,
+  SheetStackGeometry,
+  SheetStackOptions,
+} from "./IsoSheetStack.js";
 export type { PaperStageProps } from "./PaperStage.js";
 export type { PrincipleCardProps } from "./PrincipleCard.js";
 export type { StationHeaderProps } from "./StationHeader.js";

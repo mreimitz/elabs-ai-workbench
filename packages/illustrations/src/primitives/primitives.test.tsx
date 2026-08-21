@@ -17,6 +17,7 @@ import { GlyphFrame } from "./GlyphFrame.js";
 import { FIGURE_PROPORTIONS, IsoFigure, figureBoxes, figureHeightUnits } from "./IsoFigure.js";
 import { IsoHousing, isoExtrude } from "./IsoHousing.js";
 import { IsoPlatform, PLATFORM_MAX_TIERS, platformHeight } from "./IsoPlatform.js";
+import { IsoSheetStack, SHEET_STACK_GAP_FRACTION, sheetStackBoxes } from "./IsoSheetStack.js";
 import { PaperStage } from "./PaperStage.js";
 import { PrincipleCard, principleCardHeight } from "./PrincipleCard.js";
 import { StationHeader } from "./StationHeader.js";
@@ -38,6 +39,10 @@ const EVERY_PRIMITIVE: readonly (readonly [string, () => ReactElement])[] = [
   ],
   ["ConstructionGhost", () => <ConstructionGhost width={6} depth={6} />],
   ["IsoFigure", () => <IsoFigure footprint={6} floor={1.2} />],
+  [
+    "IsoSheetStack",
+    () => <IsoSheetStack box={{ cx: 0, cy: 0, w: 3, d: 3, z0: 1.2, h: 1 }} sheets={3} />,
+  ],
   ["CalibrationCube", () => <CalibrationCube />],
   [
     "StationHeader",
@@ -167,6 +172,70 @@ describe("IsoPlatform — the quantized plinth", () => {
       .map((pair) => Number(pair.split(",")[0]));
     assert.equal(Math.max(...top), 83.138);
     assert.equal(Math.min(...top), -83.138);
+  });
+});
+
+describe("IsoSheetStack — a slab divided, never a slab grown (WP 1.2)", () => {
+  const SLAB = { cx: 0, cy: 0, w: 3, d: 3, z0: 1.2, h: 1 } as const;
+
+  it("keeps a laminated slab EXACTLY as tall as a single sheet — the D-IL7 invariant", () => {
+    // The reason the primitive exists. `heightUnits` is what every port anchor is measured against,
+    // so if dividing a slab made it taller, switching `skill` from `plain` to `versioned` (or `file`
+    // from `single` to `stack`) would move a connector in a scene.
+    for (const count of [1, 2, 3, 4, 9]) {
+      const { sheets } = sheetStackBoxes(SLAB, count);
+      const top = sheets[sheets.length - 1];
+      assert.ok(top);
+      assert.equal(sheets[0]?.z0, SLAB.z0);
+      assert.equal(Number((top.z0 + top.h).toFixed(9)), SLAB.z0 + SLAB.h);
+    }
+  });
+
+  it("spends exactly the declared share of the height on air between sheets", () => {
+    const { sheets } = sheetStackBoxes(SLAB, 3);
+    const ink = sheets.reduce((total, sheet) => total + sheet.h, 0);
+    assert.equal(Number((ink / SLAB.h).toFixed(9)), 1 - SHEET_STACK_GAP_FRACTION);
+  });
+
+  it("laminates flush by default and fans on request, without changing the height either way", () => {
+    for (const sheet of sheetStackBoxes(SLAB, 3).sheets) {
+      assert.equal(sheet.cx, 0);
+      assert.equal(sheet.cy, 0);
+    }
+    const fanned = sheetStackBoxes(SLAB, 3, { staggerFraction: 0.1 });
+    assert.deepEqual(
+      fanned.sheets.map((sheet) => sheet.cx),
+      [0, 0.30000000000000004, 0.6000000000000001],
+    );
+    assert.deepEqual(
+      fanned.sheets.map((sheet) => sheet.h),
+      sheetStackBoxes(SLAB, 3).sheets.map((sheet) => sheet.h),
+    );
+  });
+
+  it("reports the TOP sheet, so a caller never re-derives where its glyph goes", () => {
+    const { sheets, top } = sheetStackBoxes(SLAB, 4, { staggerFraction: 0.1 });
+    assert.deepEqual(top, sheets[sheets.length - 1]);
+  });
+
+  it("clamps a nonsense count rather than throwing — a scene always draws (D-IL16)", () => {
+    assert.equal(sheetStackBoxes(SLAB, 0).sheets.length, 1);
+    assert.equal(sheetStackBoxes(SLAB, -3).sheets.length, 1);
+  });
+
+  it("gives the bottom sheet the silhouette weight and the rest the interior one", () => {
+    const markup = render(<IsoSheetStack box={SLAB} sheets={3} />);
+    assert.deepEqual(attributeValues(markup, "stroke-width"), [
+      String(ILLUS_STROKE_INK),
+      String(ILLUS_STROKE_INK),
+      String(ILLUS_STROKE_INK),
+      "1.5",
+      "1.5",
+      "1.5",
+      "1.5",
+      "1.5",
+      "1.5",
+    ]);
   });
 });
 

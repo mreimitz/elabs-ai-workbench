@@ -33,14 +33,28 @@ describe("registry v0.1 — the catalog", () => {
   });
 
   it("publishes exactly the cast the four modules declare, and nothing else", () => {
+    // WP 1.2 FINDING, recorded where it bites. This literal is a hand-written census of the whole
+    // catalog, so it is the ONE place WP 1.1's seam does not hold: "adding an entity touches its own
+    // file and its own cast module, and nothing else" is true of `registry.ts` and
+    // `entities/index.ts` and false of this list, which every parallel work package must extend.
+    // WP 1.2 and WP 1.3 collide here by construction. The fix is to split the census per cast module
+    // and keep each half beside the module it censuses; that is a change to a shipped WP 1.1 test
+    // and is left as a finding rather than made unilaterally mid-parallel-run.
     assert.deepEqual(ILLUSTRATION_REGISTRY.map((entry) => entry.id).sort(), [
       "agent",
+      "feedback-report",
+      "file",
       "mcp-server",
       "model",
       "prompt",
+      "prompt-template",
       "provider",
+      "resource",
       "run",
+      "scan",
       "skill",
+      "token-meter",
+      "tool",
       "validator",
     ]);
   });
