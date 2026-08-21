@@ -208,6 +208,28 @@ findings and evidence — in both JSON and Markdown, in a fixed shape you can gr
 failed still exports: its posture section says `Not analysed: … — unmeasured, not clean` rather than
 failing the download or quietly reading as a clean bill of health.
 
+### 12 · Illustrations — the asset repository
+
+`/illustrations` is a catalog of the app's own isometric illustrations, and the drawings on it are
+**live components**, not exported images: an MCP server, a skill and an LLM agent, drawn in whatever
+theme the app is currently wearing. Switch the theme and the whole page repaints, because not one of
+them names a colour — every fill and stroke is a token bound to the theme by a single mapping file.
+
+Opening one shows it at every **state** (idle, active, highlight, dimmed, error), at all three
+**footprints** framed against one box so the scale difference is the real one, at each of its
+**variants** (a server drawn as stdio or as streamable-HTTP), facing upstream and downstream, and its
+catalog entry — ports, keywords, tier, registry version. A **port overlay** toggle marks the named
+attachment points a future scene would connect.
+
+A second tab shows the drawing vocabulary the entities are composed from: the paper stage, the
+platform and housing solids, the glyph frame, the construction ghost, the six connector kinds and
+the calibration cube.
+
+This is the foundation, not the finished system. There is **no scene composition yet** — the
+declarative scene spec, the step-by-step explainers, and describing a workflow to the assistant and
+getting a diagram back are all still planned. Route only, no nav item: reach it by typing the address
+(the breadcrumb's Home is the way back out).
+
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](planning/user-guide/DC-01-getting-started/00-guide-map.md) for the full picture.
 

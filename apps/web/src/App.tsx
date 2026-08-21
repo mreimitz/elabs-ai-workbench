@@ -105,6 +105,17 @@ const AdvisorView = lazy(() =>
 const DashboardView = lazy(() =>
   import("./features/dashboard/DashboardView").then((m) => ({ default: m.DashboardView })),
 );
+// Illustrations (planning/Roadmap/RM-14-illustrations/, WP 0.3) — the asset repository at
+// `/illustrations`: every catalogued illustration drawn LIVE in the current theme, plus the WP 0.2
+// primitives sheet. Lazy like every other leaf: the package is only pulled when the route is
+// visited. Two registries must know about this route — `ASSISTANT_ROUTE_MANIFEST` (gated by the
+// `assistant-route-operability` test) and `PAGESHELL_EXACT_ROUTES` below (NOT gated in this
+// direction — a missing entry mounts the page padded-and-scrolling with nothing going red).
+const IllustrationsGallery = lazy(() =>
+  import("./features/illustrations/IllustrationsGallery").then((m) => ({
+    default: m.IllustrationsGallery,
+  })),
+);
 // Assistant Hub (D-AH2) — the new full-page, multi-model, multi-agent assistant at `/assistant`.
 // WP 0.4 ships the nav + shell scaffold only; the turn engine/conversation lands in later `hub` WPs.
 const AssistantView = lazy(() =>
@@ -219,6 +230,7 @@ export const PAGESHELL_EXACT_ROUTES = new Set<string>([
   "/dashboard", // WP 2.1 (home root — no breadcrumb, consistent with other top-level roots)
   "/testing/compatibility", // WP 2.9
   "/advisor", // advisor WP 1.3 (recommendation cards, centered reading surface)
+  "/illustrations", // RM-14 WP 0.3 — the illustration asset repository (full-bleed catalog grid)
   "/scans", // WP 2.3 (master-detail, in-view split)
   "/compare/scans", // WP 2.3
   "/skills", // RM-32 WP 2.2 — the registry OVERVIEW (grouped grid ⇄ table); no rail
@@ -606,7 +618,11 @@ export function App() {
       } catch (error) {
         if (!active) return;
         setSelectedServerLatestScan(null);
-        pushToast("danger", "Couldn’t load the latest scan.", `${getErrorMessage(error)} Try again.`);
+        pushToast(
+          "danger",
+          "Couldn’t load the latest scan.",
+          `${getErrorMessage(error)} Try again.`,
+        );
       }
     }
 
@@ -1032,10 +1048,7 @@ export function App() {
     // above — land on the suites list, not on Collections. The leaf is the suite name (published by
     // `SuiteDetail` via `RouteCrumbProvider`), falling back to "Suite" while it loads.
     if (suiteDetailMatch) {
-      return [
-        { label: "Suites", to: "/testing/suites" },
-        { label: routeCrumb ?? "Suite" },
-      ];
+      return [{ label: "Suites", to: "/testing/suites" }, { label: routeCrumb ?? "Suite" }];
     }
     // RM-32 D-OD5 — the collection LEAF is the switcher `CollectionDetail` contributes through the
     // breadcrumb slot; App owns only the parent crumb back to the overview.
@@ -1062,6 +1075,12 @@ export function App() {
     }
     if (location.pathname === "/advisor") {
       return [{ label: "MCP" }, { label: "Advisor" }];
+    }
+    // RM-14 WP 0.3 — the illustration gallery has no sidebar section of its own (it deliberately
+    // adds no nav item; where an asset repository belongs in the IA is an owner decision), so its
+    // crumb roots at Home the way the unlabeled-group routes above do, which is also its way back.
+    if (location.pathname === "/illustrations") {
+      return [{ label: "Home", to: "/dashboard" }, { label: "Illustrations" }];
     }
     // Depth-1 list roots also root at their section so the top bar always carries a breadcrumb (S16).
     if (location.pathname === "/testing/runs") {
@@ -1181,7 +1200,12 @@ export function App() {
       <McpAuthContextProvider api={mcpAuth.api}>
         {/* Polite route announcer (design-remediation T5, item 3): always-mounted visually-hidden
             live region; its text changes on navigation so a screen reader announces the new page. */}
-        <div className="sr-only" aria-live="polite" aria-atomic="true" data-testid="route-announcer">
+        <div
+          className="sr-only"
+          aria-live="polite"
+          aria-atomic="true"
+          data-testid="route-announcer"
+        >
           {routeAnnouncement}
         </div>
         <RouteCrumbProvider onChange={setRouteCrumb}>
@@ -1429,6 +1453,11 @@ export function App() {
                 so a report is bookmarkable/shareable, and the bare route renders the FLEET report,
                 i.e. something useful with zero query params (D-TB10). */}
                 <Route path="/advisor" element={<AdvisorView />} />
+                {/* Illustrations (planning/Roadmap/RM-14-illustrations/ WP 0.3) — the asset repository. A real
+                place, not a task, so it is a route (D-TB10); a cold load with zero query params
+                renders the whole catalog, and drilling into one component opens a dialog rather
+                than a second route (see `IllustrationDetail`'s docstring for why). */}
+                <Route path="/illustrations" element={<IllustrationsGallery />} />
                 {/* Bare `/testing` parent → the testing home (Collections), not the dashboard catch-all
                 (WP 0.3 / C1). Collections is the test home per the IA nav order. */}
                 <Route path="/testing" element={<Navigate to="/testing/collections" replace />} />

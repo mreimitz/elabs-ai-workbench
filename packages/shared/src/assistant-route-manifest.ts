@@ -64,7 +64,13 @@ export const ASSISTANT_ROUTE_MANIFEST: readonly AssistantRouteManifestEntry[] = 
   { pattern: "/testing/runs/review", surface: "redirect" }, // → /testing/review
 
   // ── Entity-pinned (the URL names one entity → the surface IS that entity kind) ──────────────────────
-  { pattern: "/servers/:serverId", surface: "server", pin: "server", addressable: true, view: "server" },
+  {
+    pattern: "/servers/:serverId",
+    surface: "server",
+    pin: "server",
+    addressable: true,
+    view: "server",
+  },
   { pattern: "/scans/:scanId", surface: "scan", pin: "scan", addressable: true, view: "scan" },
   { pattern: "/skills/:skillId", surface: "skill", pin: "skill", addressable: true, view: "skill" },
   { pattern: "/testing/runs/:runId", surface: "run", pin: "run", addressable: true, view: "run" },
@@ -179,6 +185,16 @@ export const ASSISTANT_ROUTE_MANIFEST: readonly AssistantRouteManifestEntry[] = 
     surface: "global",
     exempt:
       "Advisor report route; the subject is a URL QUERY (?scope=&id=), not a path param, so there is no single entity to pin. The operable per-entity surface is /servers/:serverId (which hosts the inline advisor panel); a dedicated `advisor` starter surface needs advisor-aware assistant read tools, out of advisor WP 1.3's scope.",
+  },
+  {
+    // Illustrations (planning/Roadmap/RM-14-illustrations/ WP 0.3) — the asset-repository gallery. The catalog is a
+    // package-level constant, not app data, so there is no entity for the dock to operate and no
+    // per-entity read tool to key a surface off. The exemption is deliberately provisional and names
+    // the WP that retires it.
+    pattern: "/illustrations",
+    surface: "global",
+    exempt:
+      "Asset-repository catalog; the operable illustration surface arrives with the `illustration` addressable view and the illustrations_* tools in RM-14 WP 4.1.",
   },
   { pattern: "*", surface: "global", exempt: "404 catch-all." },
 
