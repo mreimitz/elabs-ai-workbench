@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T08:40:00Z"
+timestamp: "2026-08-21T08:55:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -306,6 +306,9 @@ and an explicit "Not verified:" tail.
 
 - [ ] WP 1.1 — Runtime cast (`model`, `provider`, `validator`, `run`, `prompt`) + the cast-module
       seam — spec: [`wp-1.1-runtime-cast.md`](./wp-1.1-runtime-cast.md) · **runs solo, first**
+      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
+      `cb93a6f`, branch `wp/illustrations/1.1`; not ticked until the orchestrator re-runs the gate
+      and verifies every Acceptance item plus the three teeth)
 - [ ] WP 1.2 — Assets & knowledge cast (`tool`, `resource`, `prompt-template`, `file`,
       `feedback-report`, `scan`, `token-meter`) — spec:
       [`wp-1.2-assets-cast.md`](./wp-1.2-assets-cast.md) · depends on 1.1 · parallel with 1.3
