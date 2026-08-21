@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UI/UX audit remediation — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the RM-36 audit-remediation plan, read and updated by /next-wp RM-36."
 tags: ["roadmap", "RM-36"]
-timestamp: "2026-08-21T18:35:00Z"
+timestamp: "2026-08-21T19:02:58Z"
 status: "active"
 ---
 
@@ -43,15 +43,15 @@ or record explicitly that they remain unmeasured.
 
 ### Phase 1 — the defects that are errors or rule violations
 
-- [ ] **WP 1.1** — `/advisor`: move the 139-name tool list out of the card's prose into a
+- [ ] **WP 1.1** *(in progress · wp/ui-audit/1.1)* — `/advisor`: move the 139-name tool list out of the card's prose into a
       disclosure, and fix the 55 WCAG 2.5.8 evidence-chip target failures.
       Spec: [`wp-1.1-advisor.md`](./wp-1.1-advisor.md) · findings P1-1, P1-2
-- [ ] **WP 1.2** — `PaperStage`: instance-unique SVG pattern ids, ending the live grid
+- [ ] **WP 1.2** *(in progress · wp/ui-audit/1.2)* — `PaperStage`: instance-unique SVG pattern ids, ending the live grid
       mis-registration in the illustration detail dialog.
       Spec: [`wp-1.2-paperstage-ids.md`](./wp-1.2-paperstage-ids.md) · finding P1-3
-- [ ] **WP 1.3** — run console: remove the `<p>`-inside-`<p>` React error from the KPI cost tile.
+- [ ] **WP 1.3** *(in progress · wp/ui-audit/1.3)* — run console: remove the `<p>`-inside-`<p>` React error from the KPI cost tile.
       Spec: [`wp-1.3-kpirail-nested-p.md`](./wp-1.3-kpirail-nested-p.md) · finding P1-4
-- [ ] **WP 1.4** — markdown table toolbar: raise the D-TB5 violation upstream and record the
+- [ ] **WP 1.4** *(in progress · wp/ui-audit/1.4)* — markdown table toolbar: raise the D-TB5 violation upstream and record the
       exception; do **not** patch around it locally.
       Spec: [`wp-1.4-markdown-toolbar.md`](./wp-1.4-markdown-toolbar.md) · finding P1-5
 

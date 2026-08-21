@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-21T22:55:00Z"
+timestamp: "2026-08-21T23:30:00Z"
 status: "active"
 ---
 
@@ -138,8 +138,11 @@ had one open box before the lock and now has fourteen.
 > 1. **AM-OB2 needs NO migration.** `run_feedback` already carries
 >    `key TEXT NOT NULL DEFAULT 'verdict'` and a free-text `comment TEXT`
 >    (`apps/api/src/db/schema.ts`), so a corrected answer persists today with no schema change.
->    The header note below listing it as migration-bearing was wrong — **AM-OB6 is now the only
->    migration-bearing item in this phase.**
+>    The header note below listing it as migration-bearing was wrong.
+>    **Superseded 2026-08-21 by AM-OB10's build**, which took a migration this note did not expect
+>    (**v61**, two additive nullable `watch_rules` columns for PAUSED and the minimum interval — the
+>    dual thresholds and the no-data policy needed none, they ride inside the existing `window_json`).
+>    So AM-OB6 is no longer "the only" migration-bearing item; it is the only **remaining** one.
 > 2. **AM-OB10 is a LIVE DEFECT, not an enhancement.** `apps/api/src/watch/engine.ts` returns
 >    `breached: false` for an empty window, and the not-breached branch records `window_recover`
 >    with detail *"recovered (below threshold)"* and re-arms. **A bench that goes silent while a
@@ -237,9 +240,64 @@ had one open box before the lock and now has fourteen.
 - [ ] AM-OB8 — nested Gantt gains "scale bars by" tokens/cost (not just time) + per-span cache
       segment stacks · depends AM-OB6's usage types for the segments · must degrade gracefully
       when economics aren't computed · ⚠ chart
-- [ ] AM-OB10 — watch-rule threshold/state semantics: WARNING below ALERT, explicit **NO_DATA**
-      (a bench where no runs happened IS signal) and PAUSED states, renotification interval for
-      sustained conditions · _verify-at-pickup against the built engine_
+- [x] AM-OB10 — watch-rule threshold/state semantics — **done 2026-08-21 ·
+      `wp/roadmap-cleanup/am-ob10` (`c389536` · `271601f` · `56d234b` · `24ee266`, merged) ·
+      37 files · migration **v61** CLAIMED.**
+      **The verify-at-pickup pass confirmed the scoping verdict: NOT BUILT on all four points, and
+      one was worse than missing.** `computeWindowValue` returned `breached:false` for an EMPTY
+      window (`engine.ts:420`), which sent the state machine down the not-breached branch — writing
+      `window_recover` *"recovered (below threshold)"* and re-arming. **A bench that went silent
+      while a rule was firing was reported as recovered.** Severity lived only on the `notify`
+      action as a fixed config value, so two notify actions on one rule shared one threshold and the
+      fixed-slot editor could not express two anyway; `enabled` was the only lifecycle flag
+      (`snooze|mute|paused` had zero hits across watch + notifications); and `on_terminal` rules had
+      **no suppression at all** — 50 failing runs sent 50 notifications, the deterministic sample
+      hash being the only rate control. Nothing shrank; the residual was all four parts.
+      Built: `packages/shared/src/watch-state.ts`, the ONE pure definition of level resolution,
+      no-data resolution, the pause check, severity demotion and warn-vs-alert validation — the API
+      evaluator, the zod `superRefine` and the web editor all call it, so they cannot drift. The
+      evaluator's `WindowValue` carries a three-way `WatchWindowState` instead of a boolean, with a
+      `no_data` branch (default **hold**: neither fire nor recover, and the marker is written **only**
+      when a recovery is being withheld, so an idle bench does not accrue an audit row an hour), a
+      level-aware fire with warn→alert escalation, a pause branch that records state but dispatches
+      nothing, and an on-terminal minimum-interval gate seeded from the audit log (no new column, no
+      in-memory state to lose on restart). `getLastActionAt` uses `MAX(at)` rather than an ordered
+      `LIMIT 1` — action rows written in the same millisecond share an `at` and nanoid ids are not
+      chronological. `getWindowState` also returns `lastFiredLevel`, parsed off the persisted fire
+      result, so escalation survives a restart.
+      **Migration v61** — `paused_until TEXT` + `min_interval_minutes INTEGER` on `watch_rules`, both
+      **additive and nullable**, in the `schema.ts` baseline *and* the v61 up so a fresh and an
+      upgraded DB land the same shape; guarded on the table existing, for minimal fixtures stamped
+      below LATEST. The orchestrator re-checked the claim against `database.ts` (head was v60,
+      RM-07 WP 6.1's `grade_feedback`) before merging.
+      **The teeth were verified by the orchestrator, not taken on report.** The headline probe:
+      making the engine's empty-window branch (`engine.ts:575`) return a healthy state again turns
+      **4 tests red**, the recovery-bug test among them; disabling `isWatchRulePaused` turns 2 red.
+      Both reverted. Worth recording for whoever probes this next — the no-data verdict is decided in
+      **two** places (the shared helper AND the engine's own zero-points early return), so mutating
+      only the shared helper leaves the API suite green and reddens the shared suite instead.
+      Gate green on `main` after the merge: shared 269 · illustrations 833 · cli 87 · api **3678** ·
+      web **359 files / 3925** · build · lint. New tests: 15 API, 9 shared, 13 web.
+      **Deliberate behaviour change:** an empty window no longer produces `window_recover` under the
+      default policy. Everything else is byte-identical — the audit detail string for a
+      single-threshold fire is character-for-character what it was (pinned by a regex test), and the
+      only wire addition is an additive `level: "alert"` field, which changes no severity.
+      **Two owner glances.** A `warn` crossing **demotes** the notify action's configured severity
+      one step (`critical`→`warning`→`info`) rather than introducing a second severity vocabulary,
+      per the spec's own non-goal; and a warn→alert escalation **re-fires through an active
+      cooldown**, which is beyond the letter of the acceptance criteria — the builder judged a
+      warning that silently swallows the following alert to be the worse trap.
+      **Not verified:** no browser was opened. The pause chip, the Resume action, the two threshold
+      fields and their inline error, the no-data picker and the preview strip's gap are proved by
+      jsdom only — **no two-theme look, no keyboard pass**. No live webhook or notification was ever
+      sent. The v61 migration ran only against in-memory fixtures; the owner's real
+      `data/app.sqlite` was never opened. And the preview strip's no-data gap is unit-logic only:
+      `WatchRulesView.test.tsx` mocks `@elabs-ai/components-charts` as no-ops (the recorded gate
+      blind spot), so the one line feeding `Bar` is not visually pinned — this item is not on the
+      amendment's chart-touching list, but the blind spot still covers that line.
+      **No `README.md` capability entry**, deliberately: the front page has never described watch
+      rules, so this WP made nothing there false. `CHANGELOG.md` carries it
+      (*"a silent bench no longer reads as good news"*)
 - [ ] AM-OB11 — typed GitHub Actions `workflow_dispatch` rule action beside the built generic
       webhook, so "regression detected → CI re-runs the suite" closes with no new infra ·
       **sequence after RM-08 service tokens (done)** — reuse `api_tokens`, do not invent a second

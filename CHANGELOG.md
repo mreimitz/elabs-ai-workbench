@@ -5,6 +5,32 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — a silent bench no longer reads as good news
+
+A watch rule that fires on a window — "error rate above 10% in the last hour" — decided, on every
+tick, whether the window was over the line. It had exactly two answers: over, or not over. An hour in
+which **nothing ran at all** had no way to say so, so it was counted as "not over", and the rule
+announced that the problem had **recovered**. A bench that fell over hard enough to stop producing
+runs reported itself healthy.
+
+An empty window is now its own answer, and you choose what it means: hold the current state (the
+default — neither recover nor re-announce), alert on it, or ignore it. A held window is written into
+the rule's history, so when you come back you can see the silence rather than infer it.
+
+Three other things watch rules were missing:
+
+- **A warning level below alert.** One rule can now carry both, and a warning that later crosses the
+  alert line still gets through even if the rule is inside its quiet period — a warning that
+  swallowed the alert behind it would be worse than no warning at all.
+- **Pause, which is not the same as off.** Off means you don't want the rule. Pause means you already
+  know, stop telling you until a set time. A paused rule keeps watching and keeps recording; it just
+  doesn't notify — so it never comes back armed and blind. It expires by itself.
+- **A minimum interval between alerts for per-run rules.** A broken environment producing fifty
+  failing runs used to produce fifty notifications; these rules had no rate control of any kind.
+
+Existing rules are unchanged: no thresholds move, no severities change, and a rule with none of the
+new settings behaves exactly as it did.
+
 ## Unreleased — the runs feed is a link again
 
 The runs feed could already be filtered, searched, grouped, sorted, re-columned and saved as a named
