@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T13:40:00Z"
+timestamp: "2026-08-21T15:10:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -491,31 +491,67 @@ and an explicit "Not verified:" tail.
       fills it (the container is most convincing at `l` holding a smaller occupant). No greyscale or
       print check. The dark rendering was confirmed **legible**, not compared against WP 0.2's
       recorded lighting-flip reference.
-- [ ] WP 1.4 — Contribution kit (scaffold script, checklist, registry changelog + the
-      `REGISTRY_VERSION` guard, scaffold-only **24th**-component proof) — spec:
-      [`wp-1.4-contribution-kit.md`](./wp-1.4-contribution-kit.md) · **the last open box in Phase 1**
-      · **status: in progress** (dispatched 2026-08-21 to a worktree sub-agent off `main` @
-      `92099c0`, branch `wp/illustrations/1.4`).
-      **Both blockers settled 2026-08-21, owner-delegated ("do as you think its best"), recorded as
-      dated amendments at the end of D-IL12 in [`decisions.md`](./decisions.md) rather than made
-      silently in code:**
-      (1) **`REGISTRY_VERSION` does NOT bump when a component is added.** D-IL12's clause
-      contradicted the constant's own contract in `packages/shared/src/illustration-registry.ts`, and
-      the constant wins — D-IL9 makes the version a *flag-don't-break compatibility marker* stamped
-      into authored scenes, and adding an entity cannot invalidate a scene that could not have
-      referenced it. A version bumping on every addition would flag every stored scene after every
-      work package for a provably harmless change, which is how a flag becomes noise (the same way
-      `counting_version` would be ruined by bumping when a new server is registered). It stays
-      **`0.1.0`**; all 23 entries stay `since: "0.1.0"`, which is correct and must not be "fixed";
-      the growth record becomes a **changelog**. The version moves only when an existing entry's
-      scene-visible contract **breaks** — a port/variant/state/size removed or renamed.
-      (2) **The catalog is 23, not 20** (3 pilots + 5 + 7 + 8), so `02-plan.md`'s "21st component
-      proof" is the **24th**. Corrected in the plan; `CLAUDE.md` §1 was corrected at the WP 1.2/1.3
-      tick.
-      **The teeth this WP owes, and why they are the point:** today **nothing** would notice a
-      breaking entry change shipped without a bump — the rule is a doc comment. The spec requires a
-      checked-in scene-visible-contract snapshot plus **three** break-proofs, including the one most
-      guards get wrong: adding a port must leave the guard **quiet**.
+- [x] WP 1.4 — Contribution kit (scaffold, checklist, registry changelog + the `REGISTRY_VERSION`
+      guard, scaffold-only **24th**-component proof) — done 2026-08-21 · `wp/illustrations/1.4`
+      (1 commit, rebased onto `main` @ `52f3f66` after another session moved it 7 commits), merged
+      **--no-ff** as `9d8f139` · spec: [`wp-1.4-contribution-kit.md`](./wp-1.4-contribution-kit.md).
+      **This tick closes Phase 1.**
+      **Shipped:** `scripts/new-component.mjs` (transactional scaffold), `README.md` (the D-IL12
+      checklist + "the five things Phase 1 learned the hard way"), `CHANGELOG.md` (the growth record,
+      seeded with all 23 prior entities grouped by cast/WP), the **version guard**
+      (`registry-contract.ts` + `.test.ts` + a checked-in `registry-contract.snapshot.json` holding
+      **24** entries and only the scene-visible fields `id`/`ports`/`variants`/`states`/`sizes`), and
+      the **24th component** `owner/user`. 10 files, **+2050**, all inside `packages/illustrations`.
+      **Gate — re-run by the orchestrator after rebasing onto current `main`, path pinned:**
+      typecheck all Done · shared **260** · illustrations **833** (794 before) · cli **87** · api
+      **3633** · web **351 files / 3767 passed / 5 skipped** · build Done · lint clean (**1741**).
+      **The version guard verified by the orchestrator in ALL THREE directions** — this is the WP's
+      whole point, since before it the rule was a doc comment nothing enforced:
+      (1) renaming `mcp-server`'s `bus` port with **no** bump → fails with
+      `"mcp-server" lost port "bus"` · `The snapshot was taken at 0.1.0; the registry still says
+      0.1.0` · `REGISTRY_VERSION must move in packages/shared/src/illustration-registry.ts`;
+      (2) the same rename **with** `0.1.0 → 0.2.0` → the guard goes **quiet** (the two remaining
+      failures are unrelated collateral — WP 1.2's `tool`↔`mcp-server` joint test, which is pinned to
+      that port name, and `registry.test.ts`'s `0.1.0` literal — **the orchestrator checked the
+      failing test names rather than reading `# fail 2` as a guard failure**);
+      (3) **adding** a brand-new `replica-out` port to `database` with no bump → **833/833, silent**.
+      That third case is the half most guards get wrong, and it is the case the D-IL12 amendment
+      turns on.
+      **Scaffold verified by the orchestrator by running it:** duplicate id, unknown cast and
+      non-PascalCase each **exit 1** with a message that explains the rule, and **write nothing** (the
+      tree stayed clean); a valid run **exits 0** and writes exactly five things — the entity, its
+      contract test, its cast module, that module's census and the changelog line — and **never**
+      `registry.ts` or `entities/index.ts`, so the WP 1.1 seam holds under the tool that is supposed
+      to respect it.
+      **Both themes verified by the orchestrator BY LOOKING at the CONTAINER**, not a dev server:
+      `http://localhost:8081/illustrations` reports **24 illustrations**, the theme was flipped
+      through the app's **own** top-bar control (`data-theme` read `light` before and `dark` after),
+      and all 24 read correctly in both. The implementing agent's screenshots were not on disk when
+      the orchestrator looked, so the visual claim is the orchestrator's own, taken against the
+      rebuilt image.
+      **`REGISTRY_VERSION` ships at `0.1.0`** and all **24** entries are `since: "0.1.0"` — correct
+      per the 2026-08-21 amendment, and deliberately not "fixed". `packages/shared` untouched.
+      **The agent changed the drawing twice because it looked**, and recorded both attempts in
+      `Owner.tsx`'s header rather than dropping them: the console was tall enough to bury the figure,
+      and "the owner is the one face with no visor" did not survive rendering (the head became an
+      anonymous cube); a shoulder yoke was tried and was worse (it occluded the head).
+      **A DEFECT FOUND WHILE VERIFYING THIS WP, BELONGING TO `RM-08-ci`, NOT TO RM-14 — recorded
+      here because this is where it was found.** The Dockerized app at `http://localhost:8081` answers
+      **401 `authentication_required`** to its own browser's API calls: every page shows *"Couldn't
+      refresh the app data. This request needs a service token."* Diagnosed, not guessed — the
+      container logs the peer as **`remoteAddress: "172.25.0.1"`**, the Docker bridge gateway. The
+      D-C2 guard decides loopback **from the socket peer, never from a header** (correct, and a test
+      pins `trustProxy` off), but inside a container the peer is *never* loopback, so **every**
+      browser request is classified remote and refused. `API_AUTH_REQUIRED` is not set; it does not
+      need to be. **The documented deploy target — `docker compose up --build` → `localhost:8081` —
+      is therefore unusable for anything that reads data.** `/illustrations` is unaffected only
+      because the gallery reads no API data, which is why the Phase 0 owner walk did not surface it.
+      **Not fixed here:** it is security-critical code in another workstream (D-C2 / D-MCP7), the fix
+      is an owner decision, and RM-14 must not reach into it.
+      **Not verified:** no keyboard-only or screen-reader walk of the 24-card grid. No contrast
+      measured — "reads in both themes" means looked at. The `l` footprint and the port overlay were
+      not re-checked at 24. `packages/illustrations/scripts/` remains outside the package tsconfig
+      and so is still not typechecked (unchanged since WP 0.2).
 
 ## Phase 2 — Scene engine
 

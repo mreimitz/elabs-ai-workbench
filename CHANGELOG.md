@@ -42,6 +42,15 @@ D-CT1–D-CT6).
 
 ## Unreleased — the app can draw itself
 
+**Update (2026-08-21, later): twenty-four, and adding the next one is a recipe.** A scaffold
+(`node packages/illustrations/scripts/new-component.mjs <Name> --cast <cast>`) now writes a new
+drawing's file, its test, its catalogue entry and its changelog line in one go, so nobody has to
+copy whichever neighbour they happened to open — and the twenty-fourth, an **owner/user**, was made
+that way as the proof. The catalogue also gained a guard with teeth: a checked-in record of what
+each drawing *promises* (its name, its connection points, its variants, states and sizes) now fails
+the build if an existing promise is **broken** without the catalogue's version moving — and stays
+quiet when something is merely **added**, which is the case such checks usually get wrong.
+
 **Update (2026-08-21): the cast is now twenty-three, not three.** The catalogue covers most of what
 the app actually deals with — a **model**, a **provider** (a blank nameplate, never a vendor logo),
 a **validator**, a **run**, a **prompt**; a **tool**, a **resource**, a **prompt template**, a
