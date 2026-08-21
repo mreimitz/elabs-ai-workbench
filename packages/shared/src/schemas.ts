@@ -1093,6 +1093,15 @@ export const runFilterSchema = z
     feedback: runFeedbackFilterSchema.optional(),
     q: z.string().min(1).optional(),
     hasError: z.boolean().optional(),
+    // Auto-rating dimensions (RM-17 Phase 6, AM-OB12) — the FROZEN RM-06 vocabularies, reused
+    // verbatim. Array fields in the same style as `status`/`outcome`/`stopReasonCode`; still
+    // `.strict()`, so a misspelt key (or an invented `hallucinated` boolean) is a 400, not a
+    // silently ignored filter. See the {@link RunFilter} doc for the latest-wins / absent-is-not-a-
+    // value semantics both SQL translations and `matchesRunFilter` implement.
+    answerVerdict: z.array(z.enum(ANSWER_VALIDATION_VERDICTS)).optional(),
+    insightVerdict: z.array(z.enum(INSIGHT_SURPLUS_VERDICTS)).optional(),
+    errorBucket: z.array(z.enum(ROOT_CAUSE_BUCKETS)).optional(),
+    errorFixTarget: z.array(z.enum(FIX_TARGETS)).optional(),
   })
   .strict();
 

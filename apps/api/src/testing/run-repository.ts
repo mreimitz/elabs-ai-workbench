@@ -1,14 +1,22 @@
 import { nanoid } from "nanoid";
 import {
+  ANSWER_VALIDATION_VERDICTS,
+  BASE_RATING_GRADER_IDS,
+  FIX_TARGETS,
+  INSIGHT_SURPLUS_VERDICTS,
   isSettledRatingState,
+  ROOT_CAUSE_BUCKETS,
   RUN_PLAN_TURN_PERCENTILE_HIGH,
   RUN_PLAN_TURN_PERCENTILE_LOW,
   RUN_PLAN_TURN_PERCENTILE_MID,
   sessionCapabilitiesSchema,
+  type AnswerValidationVerdict,
   type AssertionResult,
   type CompareRow,
   type ContextSnapshot,
   type CostBasis,
+  type FixTarget,
+  type InsightSurplusVerdict,
   type ProviderKind,
   type RatingState,
   type RunCandidateScore,
@@ -25,6 +33,7 @@ import {
   type RunPinResult,
   type RunPlanTurnProfile,
   type RunPruneResult,
+  type RootCauseBucket,
   type RunRetentionPolicy,
   type RunSort,
   type RunSortField,
@@ -42,6 +51,7 @@ import {
 import type { AppDatabase } from "../db/database.js";
 import type { RunEventRow, RunRow, RunSkillRow, RunStepRow } from "../db/rows.js";
 import { fetchRunFeedbackSummaries } from "../observability/feedback.js";
+import { ratingFindingClause, ratingVerdictClause } from "../observability/rating-filter-sql.js";
 import { buildFtsMatch, fetchSnippets, RunSearchIndex } from "../observability/search.js";
 import { httpError } from "../utils/errors.js";
 import { parseJsonObject, stableStringify } from "../utils/json.js";
@@ -995,6 +1005,45 @@ export class RunRepository implements RunPersistenceSink {
       scores.push({ grader: g.grader_id, score: g.score });
     }
 
+    // Auto-rating dimensions (RM-17 Phase 6, AM-OB12) — the verdicts on the run's LATEST row per base
+    // grader, read out of `evidence_json`. Mirrors `ratingVerdictClause`/`ratingFindingClause`: same
+    // MAX(created_at) restriction, same "unparseable evidence contributes nothing" rule, and every
+    // row TIED on `created_at` contributes (which is exactly why these are arrays — the SQL EXISTS
+    // would match any tied row, so keeping only one here would make the two disagree on a tie).
+    const latestRatingRows = this.db
+      .prepare(
+        `SELECT g.grader_id AS grader_id, g.evidence_json AS evidence_json
+           FROM run_grades g
+          WHERE g.run_id = ? AND g.grader_id IN (?, ?, ?)
+            AND g.created_at = (SELECT MAX(g2.created_at) FROM run_grades g2
+                                 WHERE g2.run_id = g.run_id AND g2.grader_id = g.grader_id)`,
+      )
+      .all(runId, ...BASE_RATING_GRADER_IDS) as Array<{
+      grader_id: string;
+      evidence_json: string | null;
+    }>;
+    const answerVerdicts: AnswerValidationVerdict[] = [];
+    const insightVerdicts: InsightSurplusVerdict[] = [];
+    const errorBuckets: RootCauseBucket[] = [];
+    const errorFixTargets: FixTarget[] = [];
+    for (const row of latestRatingRows) {
+      const evidence = parseJsonObject<unknown>(row.evidence_json, null);
+      if (row.grader_id === "answer_validation") {
+        const verdict = readVerdict(evidence, ANSWER_VALIDATION_VERDICTS);
+        if (verdict && !answerVerdicts.includes(verdict)) answerVerdicts.push(verdict);
+      } else if (row.grader_id === "insight_surplus") {
+        const verdict = readVerdict(evidence, INSIGHT_SURPLUS_VERDICTS);
+        if (verdict && !insightVerdicts.includes(verdict)) insightVerdicts.push(verdict);
+      } else if (row.grader_id === "error_forensics" && Array.isArray(evidence)) {
+        for (const finding of evidence) {
+          const bucket = readMember(finding, "bucket", ROOT_CAUSE_BUCKETS);
+          if (bucket && !errorBuckets.includes(bucket)) errorBuckets.push(bucket);
+          const fixTarget = readMember(finding, "fixTarget", FIX_TARGETS);
+          if (fixTarget && !errorFixTargets.includes(fixTarget)) errorFixTargets.push(fixTarget);
+        }
+      }
+    }
+
     // Human feedback keys (run- OR step-level) + whether any carries a score — mirrors the SQL EXISTS.
     const feedbackKeys = (
       this.db
@@ -1036,6 +1085,10 @@ export class RunRepository implements RunPersistenceSink {
       scores,
       feedbackKeys,
       hasFeedbackScore,
+      answerVerdicts,
+      insightVerdicts,
+      errorBuckets,
+      errorFixTargets,
       pinned: summary.pinned ?? false,
       // Observability (WP3.3, D-OB18) — fork lineage as a boolean facet (mirrors the SQL translation's
       // `derived_from_run_id IS [NOT] NULL`); the shared `matchesRunFilter` default-excludes it.
@@ -1487,6 +1540,30 @@ function buildRunOrderBy(sort?: RunSort): string {
   return `ORDER BY ${column} ${direction}, started_at DESC`;
 }
 
+// ── Auto-rating evidence readers (RM-17 Phase 6, AM-OB12) ────────────────────────────────────────
+// The predicate-side counterparts of `rating-filter-sql.ts`'s two SQL clauses: pull the verdict /
+// finding members out of a parsed `evidence_json` and keep ONLY values in the frozen RM-06
+// vocabulary. Anything else — a null, a scalar, an object without the key, a value from a future
+// vocabulary this build does not know — contributes NOTHING, which is what makes an unreadable
+// rating behave exactly like an absent one on both sides of the cross-check.
+
+/** The single-object graders' `verdict`, when it is a member of `allowed`. */
+function readVerdict<T extends string>(evidence: unknown, allowed: readonly T[]): T | undefined {
+  return readMember(evidence, "verdict", allowed);
+}
+
+/** One string member of an evidence object, when it is a member of `allowed`. */
+function readMember<T extends string>(
+  value: unknown,
+  key: string,
+  allowed: readonly T[],
+): T | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  const raw = (value as Record<string, unknown>)[key];
+  if (typeof raw !== "string") return undefined;
+  return (allowed as readonly string[]).includes(raw) ? (raw as T) : undefined;
+}
+
 function buildRunFilterWhere(filter: RunFilter): {
   clauses: string[];
   params: Record<string, string | number>;
@@ -1646,6 +1723,25 @@ function buildRunFilterWhere(filter: RunFilter): {
   // by the SQL-vs-predicate cross-check test.
   if (filter.derived === true) clauses.push("derived_from_run_id IS NOT NULL");
   else clauses.push("derived_from_run_id IS NULL");
+
+  // ── Auto-rating dimensions (RM-17 Phase 6, AM-OB12) ──
+  // The base graders persist their verdicts inside `run_grades.evidence_json`; these clauses READ
+  // them (AR6 — nothing here writes or reinterprets a grade). Mirrors the REPLICATED copy in
+  // observability/metrics.ts and the pure `matchesRunFilter` predicate EXACTLY — kept in agreement
+  // by the SQL-vs-predicate cross-check test. See {@link ratingVerdictClause} for the JSON-safety
+  // and latest-wins rules both copies implement.
+  if (nonEmpty(filter.answerVerdict)) {
+    clauses.push(ratingVerdictClause("answer_validation", filter.answerVerdict, bind, bindList));
+  }
+  if (nonEmpty(filter.insightVerdict)) {
+    clauses.push(ratingVerdictClause("insight_surplus", filter.insightVerdict, bind, bindList));
+  }
+  if (nonEmpty(filter.errorBucket)) {
+    clauses.push(ratingFindingClause("bucket", filter.errorBucket, bind, bindList));
+  }
+  if (nonEmpty(filter.errorFixTarget)) {
+    clauses.push(ratingFindingClause("fixTarget", filter.errorFixTarget, bind, bindList));
+  }
 
   return { clauses, params };
 }

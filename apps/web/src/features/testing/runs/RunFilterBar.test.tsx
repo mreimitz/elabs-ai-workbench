@@ -3,6 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 import { EMPTY_RUN_FILTER_OPTIONS, RunFilterBar } from "./RunFilterBar";
+import { parseFilterFromSearchParams, writeFilterToSearchParams } from "./run-filter-url";
 
 // jsdom omits matchMedia — Radix (Popover/DropdownMenu/Select) reads it. (ResizeObserver is already
 // polyfilled globally in vitest.setup.ts.)
@@ -209,5 +210,90 @@ describe("RunFilterBar — the needsAttention field (owner-requested)", () => {
     const { onChange } = renderBar({ needsAttention: true, pinned: true });
     fireEvent.click(screen.getByRole("button", { name: "Remove Needs attention filter" }));
     expect(onChange).toHaveBeenCalledWith({ needsAttention: undefined, pinned: true });
+  });
+});
+
+// RM-17 Phase 6 (AM-OB12) — the auto-rating dimensions. The verdicts RM-06's always-on base graders
+// record were reachable from a run's Report tab and nowhere else: they could not narrow the feed, and
+// therefore could not be a chart's numerator either. These four chips are the reach.
+describe("RunFilterBar — the auto-rating dimensions (AM-OB12)", () => {
+  test("all four are offered in + Filter, under their own Rating group", async () => {
+    renderBar({});
+    openViaKeyboard(screen.getByRole("button", { name: "Filter" }));
+    for (const label of ["Answer", "Insight", "Root cause", "Fix target"]) {
+      expect(await screen.findByRole("menuitem", { name: label })).toBeInTheDocument();
+    }
+    expect(screen.getByText("Rating")).toBeInTheDocument();
+  });
+
+  test("an active verdict filter renders a labeled, removable chip with its values spelled out", () => {
+    renderBar({ answerVerdict: ["unanswered", "partial"] });
+    expect(screen.getByText("Answer")).toBeInTheDocument();
+    expect(screen.getByText("Unanswered, Partial")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove Answer filter" })).toBeInTheDocument();
+  });
+
+  test("the id-shaped vocabularies get readable labels, not title-cased ids", () => {
+    renderBar({ errorBucket: ["mcp_server", "provider_infra"], errorFixTarget: ["none"] });
+    expect(screen.getByText("MCP server, Provider infra")).toBeInTheDocument();
+    expect(screen.getByText("No actionable fix")).toBeInTheDocument();
+    // The raw ids must not leak into the chip.
+    expect(screen.queryByText(/mcp_server/)).not.toBeInTheDocument();
+  });
+
+  test("checking a verdict option sets the field on RunFilter", async () => {
+    const { onChange } = renderBar({});
+    openViaKeyboard(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Answer" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Unanswered" }));
+    expect(onChange).toHaveBeenCalledWith({ answerVerdict: ["unanswered"] });
+  });
+
+  test("checking a root-cause option sets errorBucket with the underlying id", async () => {
+    const { onChange } = renderBar({});
+    openViaKeyboard(screen.getByRole("button", { name: "Filter" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Root cause" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "MCP server" }));
+    expect(onChange).toHaveBeenCalledWith({ errorBucket: ["mcp_server"] });
+  });
+
+  test("removing a rating chip clears JUST that field", () => {
+    const { onChange } = renderBar({ insightVerdict: ["noise"], pinned: true });
+    fireEvent.click(screen.getByRole("button", { name: "Remove Insight filter" }));
+    expect(onChange).toHaveBeenCalledWith({ insightVerdict: undefined, pinned: true });
+  });
+
+  test("the four are offered separately from Score — a verdict is not an expectation grade (AR6)", async () => {
+    // `Score` filters the expectation graders' 0–1 scores; these filter the base-rating verdicts,
+    // which AR6 keeps out of `meanGrade`/`passRateAt05` entirely. Two groups, deliberately.
+    renderBar({});
+    openViaKeyboard(screen.getByRole("button", { name: "Filter" }));
+    expect(await screen.findByRole("menuitem", { name: "Score" })).toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: "Answer" })).toBeInTheDocument();
+  });
+
+  test("a rating filter round-trips through the feed's ?filter= param unchanged", () => {
+    // The chips are only useful if the resulting URL is shareable. This goes through the SAME codec
+    // the feed uses, so a byte-stability regression here shows up as a failing round-trip rather
+    // than as a link that silently drops the verdict.
+    const filter: RunFilter = {
+      answerVerdict: ["unanswered"],
+      insightVerdict: ["noise", "valuable"],
+      errorBucket: ["skill", "mcp_server"],
+      errorFixTarget: ["skill"],
+      status: ["completed"],
+    };
+    const params = writeFilterToSearchParams(new URLSearchParams(), filter);
+    expect(parseFilterFromSearchParams(params)).toEqual(filter);
+    // …and byte-stable regardless of key order, so two people building the same filter share the
+    // same link.
+    const reordered = writeFilterToSearchParams(new URLSearchParams(), {
+      status: ["completed"],
+      errorFixTarget: ["skill"],
+      errorBucket: ["skill", "mcp_server"],
+      insightVerdict: ["noise", "valuable"],
+      answerVerdict: ["unanswered"],
+    });
+    expect(reordered.toString()).toBe(params.toString());
   });
 });

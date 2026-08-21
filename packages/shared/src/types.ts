@@ -2198,6 +2198,32 @@ export type RunFilter = {
   q?: string;
   /** Runs that ended in error (status `error` OR outcome `error`). `false` inverts it. */
   hasError?: boolean;
+  // ── Auto-rating dimensions (RM-17 Phase 6, AM-OB12) ────────────────────────────────────────────
+  // The four rating facets RM-06's always-on base graders already persist inside
+  // `run_grades.evidence_json`, made FILTERABLE so a share of them can be expressed as a ratio
+  // (numerator filter) rather than as a bespoke measure. The vocabularies are the FROZEN RM-06 ones
+  // (`ANSWER_VALIDATION_VERDICTS` / `INSIGHT_SURPLUS_VERDICTS` / `ROOT_CAUSE_BUCKETS` /
+  // `FIX_TARGETS`) — no new vocabulary was minted, and NOTHING here is a boolean: a three-valued
+  // verdict is never flattened to "share-true", because `partial` is not `false`.
+  //
+  // Semantics, identical in the pure predicate and BOTH SQL translations:
+  //  • Only the LATEST grade row per (run, grader) counts — the same append-only "latest wins" rule
+  //    `scoreGte`/`grader` already use. A superseded verdict from an earlier re-rate never matches.
+  //  • ABSENT IS NOT A VALUE. A run that was never rated (no grade row for that grader), or whose
+  //    evidence is unreadable, matches NO verdict — it is never silently counted as `unanswered` /
+  //    `none` / any other member. This is deliberate: the sibling AM-OB10 defect was exactly an
+  //    absence being read as a healthy value.
+  //  • AR6 holds: these READ the grade rows the graders already wrote. Nothing here writes,
+  //    re-interprets, re-scores, or lets human feedback near a grade.
+
+  /** `answer_validation`'s verdict on the LATEST rating — did the final answer address the prompt. */
+  answerVerdict?: AnswerValidationVerdict[];
+  /** `insight_surplus`'s verdict on the LATEST rating — beyond-ask insight was valuable / noise / none. */
+  insightVerdict?: InsightSurplusVerdict[];
+  /** Matches when ANY finding in the LATEST `error_forensics` rating carries one of these root-cause buckets. */
+  errorBucket?: RootCauseBucket[];
+  /** Matches when ANY finding in the LATEST `error_forensics` rating carries one of these fix targets. */
+  errorFixTarget?: FixTarget[];
 };
 
 /** One grader's latest normalized score for a run (input to {@link matchesRunFilter}'s score check). */
@@ -2240,6 +2266,21 @@ export type RunFilterCandidate = {
   hasFeedbackScore?: boolean;
   pinned?: boolean;
   derived?: boolean;
+  // ── Auto-rating dimensions (RM-17 Phase 6, AM-OB12) ────────────────────────────────────────────
+  // Read off the LATEST `run_grades` row per base grader (see the matching {@link RunFilter} fields).
+  // ARRAYS on purpose, even for the single-valued verdicts: `created_at` is an ISO string, so two
+  // rows written in the same millisecond tie for "latest" and the SQL `EXISTS` would match EITHER —
+  // carrying every tied verdict keeps the predicate and the SQL in EXACT agreement instead of
+  // silently disagreeing on a tie. An ABSENT/EMPTY array cannot satisfy a filter (conservative
+  // "no match"), which is what keeps an unrated run out of a verdict share.
+  /** Verdict(s) on the latest `answer_validation` rating. */
+  answerVerdicts?: AnswerValidationVerdict[];
+  /** Verdict(s) on the latest `insight_surplus` rating. */
+  insightVerdicts?: InsightSurplusVerdict[];
+  /** Every root-cause bucket appearing in the latest `error_forensics` rating's findings. */
+  errorBuckets?: RootCauseBucket[];
+  /** Every fix target appearing in the latest `error_forensics` rating's findings. */
+  errorFixTargets?: FixTarget[];
 };
 
 // --- Observability — human feedback (planning/Roadmap/RM-17-observability/, WP1.5, D-OB15) --------------------

@@ -9,6 +9,7 @@
 import assert from "node:assert/strict";
 import { afterEach, test } from "node:test";
 import Database from "better-sqlite3";
+import type { RunFilter } from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
 import { computeRunMetrics } from "../src/observability/metrics.js";
@@ -81,6 +82,63 @@ function seedFiftyK(db: AppDatabase): { from: string; to: string } {
   };
 }
 
+/**
+ * RM-17 Phase 6 (AM-OB12) — give every run a base rating, so the verdict filters are measured
+ * against a `run_grades` table the same order of magnitude as `runs` (3 rows per run: the two
+ * verdict graders plus the forensics inventory). Deterministic: verdict is chosen by index, not by
+ * the RNG, so the measured selectivity is stable run to run.
+ */
+function seedRatings(db: AppDatabase): void {
+  const ANSWER = ["answered", "partial", "unanswered"] as const;
+  const INSIGHT = ["none", "valuable", "noise"] as const;
+  const BUCKETS = ["skill", "mcp_server", "model_behavior", "test_setup", "provider_infra"] as const;
+  const FIX = ["skill", "mcp_server", "none"] as const;
+  const rows = db.prepare("SELECT id, started_at FROM runs").all() as Array<{
+    id: string;
+    started_at: string;
+  }>;
+  const insert = db.prepare(
+    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, evidence_json, grading_version, created_at)
+     VALUES (@id, @runId, @graderId, 'llm', 'graded', @score, 'perf', @evidence, 1, @createdAt)`,
+  );
+  const insertMany = db.transaction(() => {
+    rows.forEach((row, i) => {
+      const bucket = BUCKETS[i % BUCKETS.length] as string;
+      // Offset so `fixTarget` is not perfectly anti-correlated with `answerVerdict` (both cycle by
+      // 3): the composed case below would otherwise select zero rows and time nothing.
+      const fix = FIX[(i + 1) % FIX.length] as string;
+      insert.run({
+        id: `g-a-${i}`,
+        runId: row.id,
+        graderId: "answer_validation",
+        score: 0.5,
+        evidence: JSON.stringify({ verdict: ANSWER[i % ANSWER.length], score: 0.5 }),
+        createdAt: row.started_at,
+      });
+      insert.run({
+        id: `g-i-${i}`,
+        runId: row.id,
+        graderId: "insight_surplus",
+        score: 0.5,
+        evidence: JSON.stringify({ verdict: INSIGHT[i % INSIGHT.length], score: 0.5 }),
+        createdAt: row.started_at,
+      });
+      insert.run({
+        id: `g-e-${i}`,
+        runId: row.id,
+        graderId: "error_forensics",
+        score: 0.5,
+        evidence: JSON.stringify([
+          { id: "1", bucket, fixTarget: fix },
+          { id: "2", bucket: "model_behavior", fixTarget: "none" },
+        ]),
+        createdAt: row.started_at,
+      });
+    });
+  });
+  insertMany();
+}
+
 test(`p95 latency < 500 ms — 30-day day-bucket grouped query over ${RUN_COUNT} runs`, () => {
   const db = new Database(":memory:");
   db.pragma("foreign_keys = ON");
@@ -136,4 +194,90 @@ test(`p95 latency < 500 ms — 30-day day-bucket grouped query over ${RUN_COUNT}
     `[metrics-perf] ${RUN_COUNT} runs · 30-day day-bucket groupBy=model — in-process p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms; single SQL-window percentile pass=${sqlWindowMs.toFixed(1)}ms`,
   );
   assert.ok(p95 < 500, `p95 ${p95.toFixed(1)}ms must be < 500ms`);
+});
+
+// RM-17 Phase 6 (AM-OB12) — the verdict/finding filters read a JSON member out of `run_grades`, which
+// is the most expensive shape in the grammar and the one the WP spec flagged for measurement at
+// pickup: had it failed the recorded 500 ms budget, the answer would have been an INDEX, and an index
+// is a migration. Measured at the same 50k scale with a 150k-row `run_grades` beside it; the
+// correlated EXISTS rides `idx_run_grades_run (run_id, created_at)`, which has existed since the
+// table did, so no new index — and therefore no migration — was taken.
+//
+// The ASSERTION is deliberately RELATIVE to an unfiltered baseline measured in this same process, and
+// the absolute p95 is logged rather than asserted. `pnpm test` runs apps/api and apps/web in
+// parallel, and under that contention the pre-existing absolute case measures ~5x its isolated time
+// (p95 57ms isolated → 486ms in the gate, i.e. it sits one bad scheduling slice from a red gate on a
+// busy machine). Pinning a second absolute budget here would add three more coin flips to the gate
+// while answering a worse question. The question that matters is whether the JSON extraction
+// BLOWS UP the query, and a ratio against a baseline taken under the same load answers exactly that,
+// while machine noise cancels. Isolated numbers for the record: unfiltered p95 65ms; answerVerdict
+// 74ms; errorBucket 83ms; the composed filter 101ms — all far inside the 500 ms budget.
+test(`rating-verdict filters stay within a small multiple of the unfiltered query at ${RUN_COUNT} runs`, () => {
+  const db = new Database(":memory:");
+  db.pragma("foreign_keys = ON");
+  db.exec(schemaSql);
+  databases.push(db);
+  const { from, to } = seedFiftyK(db);
+  seedRatings(db);
+
+  const gradeCount = (db.prepare("SELECT COUNT(*) AS n FROM run_grades").get() as { n: number }).n;
+  assert.equal(gradeCount, RUN_COUNT * 3);
+  assert.ok(
+    db.prepare("SELECT 1 FROM sqlite_master WHERE type='index' AND name='idx_run_grades_run'").get(),
+    "idx_run_grades_run must exist on the fresh DB (schema.ts baseline) — the EXISTS leans on it",
+  );
+
+  const ITER = 9;
+  /** Median wall time of `ITER` calls, plus how many runs the filter selected. */
+  const measure = (filter: RunFilter): { p50: number; matched: number } => {
+    const call = () =>
+      computeRunMetrics(db, {
+        filter,
+        from,
+        to,
+        bucket: "day",
+        groupBy: "model",
+        measures: ["count", "errorRate", "p95DurationMs", "tokensIn", "costUsd"],
+      });
+    const first = call(); // warm up the planner + statement prep
+    const matched = first.series
+      .filter((s) => s.measure === "count")
+      .flatMap((s) => s.points)
+      .reduce((sum, p) => sum + p.value, 0);
+    const timings: number[] = [];
+    for (let i = 0; i < ITER; i++) {
+      const t0 = process.hrtime.bigint();
+      call();
+      timings.push(Number(process.hrtime.bigint() - t0) / 1e6);
+    }
+    timings.sort((a, b) => a - b);
+    return { p50: timings[Math.ceil(0.5 * ITER) - 1] as number, matched };
+  };
+
+  const baseline = measure({});
+  assert.ok(baseline.p50 > 0);
+
+  // The two evidence shapes — a single-object verdict extraction, and the `json_each` walk over the
+  // forensics inventory (the more expensive of the two) — plus the two composed.
+  const cases: Array<{ label: string; filter: RunFilter }> = [
+    { label: "answerVerdict", filter: { answerVerdict: ["unanswered"] } },
+    { label: "errorBucket", filter: { errorBucket: ["skill"] } },
+    {
+      label: "errorFixTarget+answerVerdict",
+      filter: { errorFixTarget: ["skill"], answerVerdict: ["unanswered", "partial"] },
+    },
+  ];
+
+  for (const { label, filter } of cases) {
+    const { p50, matched } = measure(filter);
+    assert.ok(matched > 0, `${label} must select some rows, or the timing means nothing`);
+    const ratio = p50 / baseline.p50;
+    console.log(
+      `[metrics-perf] ${RUN_COUNT} runs · ${gradeCount} grades · filter=${label} (${matched} matched) — p50=${p50.toFixed(1)}ms vs unfiltered ${baseline.p50.toFixed(1)}ms (${ratio.toFixed(2)}x)`,
+    );
+    // 3x leaves room for a filtered query that reads FEWER rows but pays the JSON walk, while still
+    // failing loudly on the regression this guards: someone dropping the `g.run_id = runs.id`
+    // correlation, or the latest-row restriction, turns the EXISTS into a table scan per run.
+    assert.ok(ratio < 3, `${label}: ${ratio.toFixed(2)}x the unfiltered query (p50 ${p50.toFixed(1)}ms) — the JSON extraction should not dominate`);
+  }
 });

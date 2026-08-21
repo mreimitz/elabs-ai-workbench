@@ -254,7 +254,9 @@ export function runNeedsAttention(run: {
  * filter imposes NO constraint in this pure predicate (a watch rule matches on its other fields; the
  * feed's FTS join is where `q` actually filters). Duration is the ACTIVE duration (activeDurationMs ?? totalDurationMs, D-US3);
  * `pinned` (WP1.6) and `feedback` (WP1.5) are LIVE; `derived` remains forward-compatible (see their
- * {@link RunFilter} docs).
+ * {@link RunFilter} docs). The auto-rating dimensions (AM-OB12 — `answerVerdict`/`insightVerdict`/
+ * `errorBucket`/`errorFixTarget`) are LIVE and read the caller-supplied latest-rating arrays; an
+ * unrated run supplies none and therefore matches none.
  */
 export function matchesRunFilter(candidate: RunFilterCandidate, filter: RunFilter): boolean {
   if (filter.status && filter.status.length > 0 && !filter.status.includes(candidate.status)) {
@@ -375,6 +377,38 @@ export function matchesRunFilter(candidate: RunFilterCandidate, filter: RunFilte
   if (filter.hasError !== undefined) {
     const hasError = candidate.status === "error" || candidate.outcome === "error";
     if (hasError !== filter.hasError) return false;
+  }
+  // Auto-rating dimensions (RM-17 Phase 6, AM-OB12) — `intersects` already encodes the rule that
+  // matters here: an ABSENT or EMPTY candidate array cannot satisfy the filter. So an UNRATED run
+  // never lands in a verdict-filtered set, and therefore never inflates a share's numerator; it is
+  // excluded outright rather than being read as some default verdict.
+  if (
+    filter.answerVerdict &&
+    filter.answerVerdict.length > 0 &&
+    !intersects(candidate.answerVerdicts, filter.answerVerdict)
+  ) {
+    return false;
+  }
+  if (
+    filter.insightVerdict &&
+    filter.insightVerdict.length > 0 &&
+    !intersects(candidate.insightVerdicts, filter.insightVerdict)
+  ) {
+    return false;
+  }
+  if (
+    filter.errorBucket &&
+    filter.errorBucket.length > 0 &&
+    !intersects(candidate.errorBuckets, filter.errorBucket)
+  ) {
+    return false;
+  }
+  if (
+    filter.errorFixTarget &&
+    filter.errorFixTarget.length > 0 &&
+    !intersects(candidate.errorFixTargets, filter.errorFixTarget)
+  ) {
+    return false;
   }
   return true;
 }
