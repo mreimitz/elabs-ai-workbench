@@ -15,16 +15,21 @@
 // FACELESS (D-IL17): the direction marks name the `top` face outright, so asking a run to face
 // downstream leaves it exactly where it is. Which way the work flows is the CONNECTORS' job, and a
 // track that silently re-pointed itself would contradict them.
+//
+// WP 1.3 MOVED THE TRACK ITSELF into `primitives/IsoTrack.tsx`, and this file was refactored onto
+// it. `suite` is "a rack of run tracks", so the lane, its proportions and its direction marks are a
+// shape TWO entities draw, and D-IL12 is explicit that such a shape goes in `primitives/` rather
+// than being copied. Nothing about the drawing changed: the proportions are the same numbers, the
+// weight rule is the same rule, and the rendered markup is byte-identical to what this file emitted
+// before the extraction.
 
 import type { IllustrationRegistryEntry, IllustrationSize } from "@mcp-token-footprint/shared";
 import type { ReactElement } from "react";
-import { type IsoBox, faceExtent, fmt, footprintUnits } from "../iso-math.js";
-import { ILLUS_STROKE_DETAIL_FINE } from "../line-system.js";
+import { type IsoBox, footprintUnits } from "../iso-math.js";
 import { ConstructionGhost } from "../primitives/ConstructionGhost.js";
 import { EntityRoot } from "../primitives/EntityRoot.js";
-import { GlyphFrame } from "../primitives/GlyphFrame.js";
-import { IsoHousing } from "../primitives/IsoHousing.js";
 import { IsoPlatform, platformHeight } from "../primitives/IsoPlatform.js";
+import { TRACK_LANE, IsoTrack, TrackMarks, trackLaneBox } from "../primitives/IsoTrack.js";
 import type { EntityComponentProps } from "./entity-props.js";
 
 /**
@@ -67,26 +72,15 @@ function resolveVariant(variant: string | undefined): RunVariant {
 const PLATFORM_TIERS = 1;
 const FLOOR = platformHeight(PLATFORM_TIERS);
 
-// Fractions of the footprint, so S/M/L are one drawing at three scales.
-const LANE_LENGTH = 0.84;
-const LANE_DEPTH = 0.3;
-const LANE_HEIGHT = 0.13;
 /** How far a repeated run's two lanes sit either side of the centre line, in fractions. */
 const LANE_SPREAD = 0.21;
 
 function laneBox(footprint: number, cy: number): IsoBox {
-  return {
-    cx: 0,
-    cy,
-    w: footprint * LANE_LENGTH,
-    d: footprint * LANE_DEPTH,
-    z0: FLOOR,
-    h: footprint * LANE_HEIGHT,
-  };
+  return trackLaneBox(footprint, { cy, z0: FLOOR });
 }
 
 export function runHeightUnits(size: IllustrationSize): number {
-  return FLOOR + footprintUnits(size) * LANE_HEIGHT;
+  return FLOOR + footprintUnits(size) * TRACK_LANE.height;
 }
 
 export function Run({
@@ -123,18 +117,14 @@ export function Run({
       <ConstructionGhost width={footprint} depth={footprint} />
       <IsoPlatform tiers={PLATFORM_TIERS} footprint={size} />
       {centres.map((cy, lane) => (
-        <IsoHousing
+        <IsoTrack
           key={`lane-${cy}`}
-          width={footprint * LANE_LENGTH}
-          depth={footprint * LANE_DEPTH}
-          height={footprint * LANE_HEIGHT}
-          cy={cy}
-          z0={FLOOR}
+          box={laneBox(footprint, cy)}
           weight={lane === 0 ? "ink" : "detail"}
         />
       ))}
       {centres.map((cy, lane) => (
-        <DirectionMarks
+        <TrackMarks
           key={`marks-${cy}`}
           box={laneBox(footprint, cy)}
           // Exactly one lit chevron in the whole entity, on the leading lane (D-IL6). A repeated run
@@ -148,58 +138,3 @@ export function Run({
 
 Run.illusLayer = "structure" as const;
 Run.entityHeightUnits = runHeightUnits;
-
-/**
- * Three chevrons along the lane's TOP face, pointing the way the work travels, plus the two sleeper
- * rules that make it read as track rather than as a plank. The leading chevron is the entity's
- * accent moment when `accent` is given; without it every mark is ink-muted hardware.
- *
- * A chevron is a `<polygon>` — a shape element, not a `<path>` — because WP 0.3's contract test
- * forbids an entity authoring a path of its own, and a chevron does not need one.
- */
-function DirectionMarks({ box, accent }: { box: IsoBox; accent?: string }): ReactElement {
-  const { width, height } = faceExtent(box, "top");
-  const inset = Math.min(width, height) * 0.16;
-  const chevrons = [0, 1, 2];
-  const chevronWidth = (width - inset * 2) / (chevrons.length + 1.2);
-  const chevronHeight = (height - inset * 2) * 0.52;
-  const top = inset + (height - inset * 2 - chevronHeight) / 2;
-  const step = (width - inset * 2 - chevronWidth) / (chevrons.length - 1);
-  const thickness = Math.max(1.6, chevronHeight * 0.34);
-
-  return (
-    <GlyphFrame face="top" box={box}>
-      {(["near", "far"] as const).map((rule) => (
-        <line
-          key={`sleeper-${rule}`}
-          x1={fmt(inset)}
-          y1={fmt(rule === "near" ? inset * 0.7 : height - inset * 0.7)}
-          x2={fmt(width - inset)}
-          y2={fmt(rule === "near" ? inset * 0.7 : height - inset * 0.7)}
-          strokeWidth={ILLUS_STROKE_DETAIL_FINE}
-          style={{ stroke: "var(--illus-ink-muted)" }}
-        />
-      ))}
-      {chevrons.map((chevron) => {
-        const x = inset + chevron * step;
-        return (
-          <polygon
-            key={`chevron-${chevron}`}
-            data-illus-mark="direction"
-            points={[
-              [x, top],
-              [x + chevronWidth, top + chevronHeight / 2],
-              [x, top + chevronHeight],
-              [x + thickness, top + chevronHeight / 2],
-            ]
-              .map(([px, py]) => `${fmt(px as number)},${fmt(py as number)}`)
-              .join(" ")}
-            style={{
-              fill: accent !== undefined && chevron === 0 ? accent : "var(--illus-ink-muted)",
-            }}
-          />
-        );
-      })}
-    </GlyphFrame>
-  );
-}

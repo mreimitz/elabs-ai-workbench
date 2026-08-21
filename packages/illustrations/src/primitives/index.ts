@@ -21,6 +21,7 @@ export {
   PLATFORM_TIER_INSET,
   platformHeight,
 } from "./IsoPlatform.js";
+export { TRACK_LANE, IsoTrack, TrackMarks, trackLaneBox } from "./IsoTrack.js";
 export { PaperStage } from "./PaperStage.js";
 export { PrincipleCard, principleCardHeight } from "./PrincipleCard.js";
 export { StationHeader } from "./StationHeader.js";
@@ -38,6 +39,7 @@ export type { EntityMeta, EntityRootProps } from "./EntityRoot.js";
 export type { GlyphFace, GlyphFrameProps } from "./GlyphFrame.js";
 export type { FigureBoxes, IsoFigureProps } from "./IsoFigure.js";
 export type { IsoHousingProps } from "./IsoHousing.js";
+export type { IsoTrackProps, TrackLaneOptions, TrackMarksProps } from "./IsoTrack.js";
 export type { IsoPlatformProps } from "./IsoPlatform.js";
 export type {
   IsoSheetStackProps,
