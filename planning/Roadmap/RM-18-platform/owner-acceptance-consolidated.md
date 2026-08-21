@@ -33,6 +33,10 @@ This file is the one place to work them.
   sitting (RM-08 spans three); each item's header says where the rest of it went, so nothing is lost.
 - **Extra, non-credential setup** (a scanned MCP server, a GitHub PAT, a deliberately broken server)
   is called out per check as `Setup:`. Shared fixtures are in *Before any sitting*, below.
+- **Do not count the checkboxes here and expect 192.** Two blocks (**B10** and **B12 §6**) keep their
+  own walk file's structure and group several source boxes under one line, because splitting them
+  would break a script that reads as one pass. The per-item counts in the section headers and the
+  *Tally* are the source-box numbers; those are what map onto the ledgers.
 - **Read the two "corrections" appendices before Sitting A.** Several ledger boxes were written
   against a UI that has since moved; a handful are currently **impossible to run** because the
   surface they name is parked. Those are marked ⛔ inline, so no sitting is spent hunting for a tab
@@ -802,7 +806,7 @@ provider key (**B8**), 6 need a real pipeline (**Sitting D**), which also takes 
 
 ---
 
-## B8 · RM-08 — CI, the suite-run check (1 of 13)
+## B8 · RM-08 — CI, the suite-run check (1 check)
 
 `Ledger: planning/Roadmap/RM-08-ci/STATUS.md › "Owner acceptance (owner-only)"`
 
