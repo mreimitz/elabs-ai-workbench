@@ -1,18 +1,24 @@
 ---
 type: "Work Package Spec"
 title: "WP-3.5 \u2014 Agent graph lens over a run"
-description: "Status: PROPOSED (amendment AM-OB9, 2026-08-18) \u2014 pending owner lock. Not part of the"
+description: "Status: LOCKED 2026-08-21 (D-OB29) and READY TO DISPATCH. Not part of the original 27-WP plan; dependencies WP-3.1 and WP-3.2 are built."
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T15:20:00Z"
 status: "final"
 ---
 # WP-3.5 — Agent graph lens over a run
 
-> **Status: PROPOSED (amendment AM-OB9, 2026-08-18) — pending owner lock.** Not part of the
-> original 27-WP plan. Its dependencies **WP-3.1 (step hierarchy) and WP-3.2 (per-step
-> economics) are built** (ledger 2026-07-17), so this WP is **implementable immediately** on
-> owner lock. Evidence: `research/langfuse-landscape/01-gap-analysis.md` §G4,
+> **Status: LOCKED by the owner 2026-08-21 (D-OB29) — READY TO DISPATCH.** Not part of the
+> original 27-WP plan; it arrived as amendment item AM-OB9 and was promoted into Phase 3 on
+> lock, because unlike the other thirteen amendment items it already had this written spec.
+> Its dependencies **WP-3.1 (step hierarchy) and WP-3.2 (per-step economics) are built**
+> (ledger 2026-07-17), so there is no gate left to clear — run `/next-wp observability`.
+> Evidence: `research/langfuse-landscape/01-gap-analysis.md` §G4,
 > `03-charts-viz-inventory.md` §1/§Mapping.
+>
+> ⚠️ **This WP renders a graph, so it inherits the recorded gate blind spot** (ledger
+> 2026-07-17): panel suites mock `@elabs-ai/components-charts` as no-ops, so chart-prop bugs pass the
+> gate. Ship a faithful-stub test per the `time-axis-charts.test.tsx` pattern.
 
 ## Goal
 

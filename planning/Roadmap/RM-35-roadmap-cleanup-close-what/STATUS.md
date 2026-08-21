@@ -98,9 +98,16 @@ met and — where the box touches code — the gate
 > or dropped. D-1 in particular is the cheapest retirement on the roadmap — rejecting the Langfuse
 > amendment leaves RM-17 at 29/29 with **no owner-acceptance section**, i.e. retirable outright.
 > Note that WP 0.1 changed nothing here.
-- [ ] **OWNER** D-1 — RM-17's Langfuse amendment (AM-OB1–14 + proposed WP 3.5 agent-graph lens):
-      **lock** it and build 3.5, or **reject** it and drop the box. RM-17 has 28/29 done and **no
-      owner-acceptance section** — rejecting retires it outright, the cheapest closure available
+- [x] **OWNER** D-1 — RM-17's Langfuse amendment — **LOCKED 2026-08-21 · D-OB29**. Owner chose
+      lock over reject, with the trade stated: rejecting would have retired RM-17 outright
+      (28/29 done, no checkbox owner-acceptance section); locking re-opens it with **14 boxes**.
+      Recorded in [`../RM-17-observability/STATUS.md`](../RM-17-observability/STATUS.md) — the
+      amendment's fourteen items are held as **Phase 6 work packages, not renumbered into
+      D-OB29+ decisions** (a `D-OB` number is a constraint to keep honouring; these are things to
+      build, each individually droppable), and **AM-OB9 was promoted into Phase 3 as WP 3.5**,
+      ready to dispatch with both dependencies built. RM-17's completion banner was corrected so
+      it no longer reads as the whole workstream. **Consequence for this plan: RM-17 moves out of
+      Wave 0b and into Wave 3 — see WP 3.6.**
 - [ ] **OWNER** D-2 — RM-06 Phase 5 (3 WPs, cross-links): build, or split to a new RM item so
       RM-06 can retire on its owner walk alone
 - [ ] **OWNER** D-3 — RM-07 Phase 6 (2 WPs, judge calibration): build, or split to a new RM item
@@ -212,7 +219,17 @@ met and — where the box touches code — the gate
       RM-03 from "engineering left" to "owner-acceptance only" and puts its 18-box walk in reach.
       **Deliberately NOT ticked here:** a source-grep is weaker evidence than the gate that originally
       proved it, and it is another item's ledger — the owner's call, exactly as WP 0.4 left it
-- [ ] WP 3.5 — **RM-14 Phases 2–4** (10 WPs): scene spec layout engine + connector router +
+- [ ] WP 3.6 — **RM-17 WP 3.5** agent-graph lens over a run — a third console lens (node-link
+      graph, aggregated ×N / expanded modes, node chips from the WP 3.2 economics, click-through
+      to the step log). 1 WP, spec written, deps built, **locked and ready to dispatch** via
+      `/next-wp observability`. ⚠️ chart-touching: needs a faithful-stub test, because the panel
+      suites mock `@elabs-ai/components-charts` as no-ops and a chart-prop bug passes the gate silently
+- [ ] WP 3.7 — **RM-17 Phase 6**, the thirteen locked Langfuse follow-ups. Six are marked
+      _verify-at-pickup_ — the surface shipped before the amendment was written, so shrink each to
+      its true residual instead of rebuilding. Two may need a migration (AM-OB2, AM-OB6); one at a
+      time. **If RM-17 should retire before this is worked, split Phase 6 to its own RM item** —
+      recorded as the sanctioned alternative on lock day
+- [ ] WP 3.8 — **RM-14 Phases 2–4** (10 WPs): scene spec layout engine + connector router +
       renderer (2.1–2.4), explain mode (3.1–3.3), assistant compose tools (4.1–4.3). Largest
       remaining build. **The risk to weigh:** 24 illustration components exist and nothing composes
       them — Phase 1 delivered breadth, Phase 2 is the load-bearing part

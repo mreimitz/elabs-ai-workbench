@@ -40,6 +40,11 @@ items but not their closure state.
 
 ## 1. The headline
 
+> **These figures are the review as taken on 2026-08-21 and are deliberately not updated.**
+> Live progress lives in [`STATUS.md`](./STATUS.md) — read that for what is actually closed.
+> Already superseded by execution: RM-11, RM-13 and RM-19 are retired, and the RM-17 lock of
+> the same day (§4.6) added 13 work packages that this table does not count.
+
 | | Count |
 | --- | --- |
 | Items under `Roadmap/` | **28** (25 with a `STATUS.md` ledger, 3 without) |
@@ -206,16 +211,40 @@ under a heading that says they were resolved above**. See §6 — ledger hygiene
 **Effort: MEDIUM-HIGH (1 large WP).** **Importance: MEDIUM — but it is the last thing standing
 between RM-03 (32 WPs done) and its 18-box owner walk.**
 
-### 4.6 · RM-17 Observability — WP 3.5 · **1 WP, needs an owner decision first** · MEDIUM
-`WP 3.5 — Agent-graph lens (aggregated/expanded)`, **proposed 2026-08-19** as part of the Langfuse
-amendment (AM-OB1–14) which is **pending owner lock**. 28 of 29 boxes done.
+### 4.6 · RM-17 Observability — **DECIDED 2026-08-21: amendment LOCKED (D-OB29)** · 14 WPs
+This section originally read *"do not dispatch — decide the amendment first"*, and offered the
+owner the cheapest item-retirement in the roadmap: reject the Langfuse amendment and RM-17 closes
+outright, 28 of 29 boxes done with no checkbox owner-acceptance section.
 
-**Do not dispatch this.** Decide the amendment first: either lock AM-OB1–14 and build 3.5, or reject
-the amendment and drop the box — at which point RM-17 becomes retirable with zero owner-acceptance
-boxes, since it has none.
+**The owner locked it instead, with that trade on the table.** RM-17 is open again with **14
+boxes**, and no longer retires in this cleanup unless Phase 6 is split out.
 
-**Effort: 5 minutes (a decision) or MEDIUM (a WP).** **Importance: HIGH as a decision — it is the
-cheapest possible item-retirement in the whole roadmap if you reject it.**
+What the lock settled — both sub-questions the amendment draft left open:
+
+- **AM-OB1–AM-OB14 are held as work packages (a new Phase 6), not renumbered into D-OB29+.** A
+  `D-OB` number is a constraint the code must keep honouring; these fourteen are things to build,
+  each explicitly droppable on its own. Renumbering would have turned fourteen droppable items
+  into fourteen binding invariants.
+- **AM-OB9 was promoted out of the list into Phase 3 as WP 3.5**, because it alone already had a
+  written, acceptance-bearing spec and both dependencies (3.1 step hierarchy, 3.2 per-step
+  economics) are built. It is ready to dispatch with no gate left.
+
+Only the lock itself is a decision, and it is **D-OB29**. Nothing reopens D-OB1–D-OB28; the wire
+stays additive; doctrine holds (derived-never-authoritative, D-OB15/AR6 feedback-never-in-grades).
+
+RM-17's "🎉 WORKSTREAM COMPLETE" banner was corrected — it still describes the original 27 WPs
+accurately, but it no longer claims to be the whole workstream.
+
+**Two things to know before picking Phase 6 up.** Six of the thirteen items are marked
+*verify-at-pickup*: the observability surface shipped 27 WPs **before** the amendment was written,
+so the first task is to read what exists and shrink the item to its true residual, not rebuild it.
+And four items touch charts — the panel suites mock the chart package as no-ops, so a chart-prop
+bug passes the gate silently; each needs a faithful-stub test.
+
+**Effort: LOW for WP 3.5 (1 WP, spec written, deps built). HIGH for Phase 6 (13 items).**
+**Importance: MEDIUM — this is now scheduled work, not a blocker.** If RM-17 should still retire
+in this cleanup, split Phase 6 into its own RM item; that is recorded in RM-17's ledger as the
+sanctioned alternative.
 
 ### 4.7 · Owner-gated backlogs — decide keep or split · **5 WPs** · LOW
 Two ledgers carry phases explicitly marked *"do not pick up without owner instruction"*:
@@ -331,7 +360,8 @@ Anyone reading CLAUDE.md to find in-flight work will miss all seven.
 3. Fix RM-13's two "Gates" boxes (§6), then `/complete-roadmap RM-13 --docu DC-13`.
 4. Fix RM-03's four historical finding boxes (§6) — bookkeeping only, does not retire RM-03.
 5. Add the seven missing rows to CLAUDE.md and correct the RM-20 row (§9).
-6. Decide RM-17's Langfuse amendment (§4.6). If rejected, RM-17 retires with zero further work.
+6. ~~Decide RM-17's Langfuse amendment~~ — **done 2026-08-21: LOCKED, D-OB29** (§4.6). RM-17 no
+   longer retires in this cleanup; its 14 boxes move to Wave 3.
 7. Decide RM-06 Phase 5 and RM-07 Phase 6: build, or split to a new RM item (§4.7).
 
 ### Wave 1 — the leverage batch (1 agent batch)
@@ -348,16 +378,19 @@ Waves 0–2 take the active roadmap from **28 items to roughly 12**, with no fea
 
 ### Wave 3 — the engineering, in this order
 13. **RM-26 WP 4.4** — Docker-image e2e. 1 WP, highest value per hour, de-risks everything.
-14. **RM-34 WP 2.1** — re-measure the estimator band. 1 WP, fixes a number the owner has already seen be wrong.
-15. **RM-30 Phase 7** — Skill Studio, 6 WPs in three batches. The owner has already rejected the current surface; this is the rework.
-16. **RM-03 WP 2.3** — HITL approval-gating + MCP elicitation. Unblocks RM-03's 18-box walk.
-17. **RM-14 Phases 2–4** — 10 WPs. Largest remaining build. Do it when the above are closed, or accept that 24 components sit unusable.
+14. **RM-17 WP 3.5** — agent-graph lens over a run. 1 WP, locked 2026-08-21, spec written, both
+    deps built — dispatchable today. Needs a faithful-stub chart test.
+15. **RM-34 WP 2.1** — re-measure the estimator band. 1 WP, fixes a number the owner has already seen be wrong.
+16. **RM-30 Phase 7** — Skill Studio, 6 WPs in three batches. The owner has already rejected the current surface; this is the rework.
+17. **RM-03 WP 2.3** — HITL approval-gating + MCP elicitation. Unblocks RM-03's 18-box walk.
+18. **RM-14 Phases 2–4** — 10 WPs. Largest remaining build. Do it when the above are closed, or accept that 24 components sit unusable.
+19. **RM-17 Phase 6** — the thirteen locked Langfuse follow-ups. Six are verify-at-pickup residuals, not fresh builds; two may need a migration.
 
 ### Wave 4 — new work, owner's call
-18. **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade harness, perf pass).
+20. **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade harness, perf pass).
     Recheck the stale "blocked on Benchmarks" flags first.
-19. **RM-25** team-server — 6 WPs. Its gate (`RM-08` Phase 1) is met. Starting it is a product decision.
-20. **RM-19 / RM-12 / RM-31** — retire the three ledger-less items (§8).
+21. **RM-25** team-server — 6 WPs. Its gate (`RM-08` Phase 1) is met. Starting it is a product decision.
+22. **RM-19 / RM-12 / RM-31** — retire the three ledger-less items (§8).
 
 ---
 

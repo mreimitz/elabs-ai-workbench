@@ -1,18 +1,32 @@
 ---
 type: "Work Package Spec"
 title: "Amendment \u2014 Langfuse & landscape follow-ups (2026-08-18, corrected 2026-08-19)"
-description: "Status: PROPOSED \u2014 pending owner lock. Follow-up items for the completed observability"
+description: "Status: LOCKED 2026-08-21 (D-OB29). Follow-up items for the completed observability workstream, held as Phase 6 work packages AM-OB1-AM-OB14."
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-21T15:20:00Z"
 status: "final"
 ---
 # Amendment — Langfuse & landscape follow-ups (2026-08-18, corrected 2026-08-19)
 
-**Status: PROPOSED — pending owner lock.** Follow-up items for the **completed** observability
-workstream, derived from [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/)
-(Langfuse post-v4 + Phoenix/Opik/Braintrust/Weave, primary sources fetched 2026-08-18).
-Numbered **AM-OB1…AM-OB14**; on owner lock, renumber into D-OB29+ or hold as a follow-up WP
-list — owner's choice.
+**Status: LOCKED by the owner 2026-08-21 — recorded as D-OB29 in
+[`STATUS.md`](./STATUS.md).** Follow-up items for the **completed** observability workstream,
+derived from [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/) (Langfuse
+post-v4 + Phoenix/Opik/Braintrust/Weave, primary sources fetched 2026-08-18).
+
+**What the lock decided.** The amendment is accepted as a body of work, not as a body of
+decisions: **AM-OB1–AM-OB14 are held as a follow-up work-package list (ledger Phase 6), NOT
+renumbered into D-OB29+.** The two options the draft offered were mutually exclusive and the
+distinction is load-bearing — a `D-OB` number is a *constraint the code must keep honouring*,
+and these fourteen items are things to *build*, each explicitly droppable on its own. Only the
+lock itself is a decision, and that is D-OB29. **AM-OB9 is the exception**: it was already a
+work package with a written spec, so it takes its place in Phase 3 as
+[`WP 3.5`](./phase-3-console/WP-3.5-agent-graph.md) rather than sitting in the Phase 6 list.
+
+**Consequence the owner accepted.** RM-17 had exactly one open box and no checkbox-form
+owner-acceptance section, so rejecting this amendment would have retired the item outright with
+zero further work. Locking it instead re-opens RM-17 with fifteen open boxes (WP 3.5 + fourteen
+Phase 6 items). RM-17 now retires only when each is built or explicitly dropped — see the
+Phase 6 note in the ledger for the split-to-its-own-RM-item escape hatch.
 
 > **Correction (2026-08-19).** The first version of this amendment, and the research bundle's
 > gap analysis, treated the observability plan as *not yet started* (per the then-stale

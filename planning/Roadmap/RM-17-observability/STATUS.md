@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-20T14:03:37Z"
+timestamp: "2026-08-21T15:20:00Z"
 status: "active"
 ---
 
@@ -27,11 +27,13 @@ Files sections overlap (`packages/shared`, `testing/run-service.ts` + executors,
 `db/database.ts`/`schema.ts`, the run-console component cluster are the known contested
 surfaces). See `kickoff-prompt.md` for the cross-session contention override.
 
-📎 **Post-completion amendment (2026-08-19, proposed — pending owner lock):** follow-up items
+📎 **Post-completion amendment — LOCKED by the owner 2026-08-21 (D-OB29):** the follow-up items
 **AM-OB1–14** from [`research/langfuse-landscape/`](/Research/RS-05-langfuse-landscape/) —
-[`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md) — plus the proposed
-[`WP 3.5 agent-graph lens`](./phase-3-console/WP-3.5-agent-graph.md) (deps 3.1/3.2 ✅).
-Nothing picked up; no locked decision reopened.
+[`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md) — are now **[Phase 6](#phase-6--langfuse-follow-ups-amendment-locked-2026-08-21--d-ob29)
+work packages, not D-OB decisions**, and AM-OB9 has been promoted into Phase 3 as
+[`WP 3.5 agent-graph lens`](./phase-3-console/WP-3.5-agent-graph.md) (deps 3.1/3.2 ✅ — **ready to
+dispatch**). No locked decision D-OB1–D-OB28 was reopened. **This workstream is open again:** it
+had one open box before the lock and now has fourteen.
 
 ## Phase 1 — Backbone
 - [x] WP 1.1 — RunFilter grammar + GET /api/runs filters — done 2026-07-16 · wp/observability/1.1
@@ -56,9 +58,11 @@ Nothing picked up; no locked decision reopened.
 - [x] WP 3.2 — Tree StepLog + nested Gantt + per-step economics — done 2026-07-17 · wp/observability/3.2
 - [x] WP 3.3 — Fork-from-step (rerun + lineage + Compare pre-seed) — done 2026-07-17 · wp/observability/3.3
 - [x] WP 3.4 — In-run search + lenses — done 2026-07-17 · wp/observability/3.4
-- [ ] WP 3.5 — Agent-graph lens (aggregated/expanded) — **proposed 2026-08-19** (amendment
-      AM-OB9; spec [`phase-3-console/WP-3.5-agent-graph.md`](./phase-3-console/WP-3.5-agent-graph.md));
-      deps 3.1/3.2 ✅ — status: pending owner lock
+- [ ] WP 3.5 — Agent-graph lens (aggregated/expanded) — **LOCKED 2026-08-21 (D-OB29), READY TO
+      DISPATCH** (arrived as amendment AM-OB9; spec
+      [`phase-3-console/WP-3.5-agent-graph.md`](./phase-3-console/WP-3.5-agent-graph.md));
+      deps 3.1/3.2 ✅ — no gate left, run `/next-wp observability`. ⚠️ chart-touching: needs a
+      faithful-stub test (the panel suites mock `@elabs-ai/components-charts` as no-ops)
 
 ## Phase 4 — Watch rules
 - [x] WP 4.1 — Rules engine core (on-terminal + actions) — done 2026-07-17 · wp/observability/4.1
@@ -74,7 +78,99 @@ Nothing picked up; no locked decision reopened.
 - [x] WP 5.4 — Assistant issue loop — done 2026-07-17 · wp/observability/5.4 (live=owner-acceptance)
 - [x] WP 5.5 — Scheduled digest report — done 2026-07-17 · wp/observability/5.5
 
+## Phase 6 — Langfuse follow-ups (amendment locked 2026-08-21 · D-OB29)
+
+> The fourteen items of [`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md), held
+> as **work packages, not decisions** — a `D-OB` number is a constraint the code must keep
+> honouring, and these are things to build. **Every item is individually droppable**; dropping
+> one is a decision-log entry, not a failure.
+>
+> **Six are marked _verify-at-pickup_**: the observability workstream shipped 27 WPs before this
+> amendment was written, so the pickup agent's FIRST task is to read the shipped surface and
+> shrink the item to its true residual rather than rebuild what exists. Several are already
+> partly satisfied.
+>
+> ⚠️ **Every chart-touching item (AM-OB5, 7, 8, 14) must ship a faithful-stub test** per the
+> `time-axis-charts.test.tsx` pattern — the panel suites mock `@elabs-ai/components-charts` as no-ops, so a
+> chart-prop bug passes the gate silently (recorded blind spot, ledger 2026-07-17).
+>
+> **Migration discipline:** one migration-bearing WP in flight at a time; claim the next free
+> `user_version` in this log when you take one. Only AM-OB2 and AM-OB6 are expected to need one.
+>
+> **Escape hatch for retirement:** RM-17 cannot retire while these sit open. If the owner wants
+> RM-17 closed before Phase 6 is worked, split this phase into its own RM item via
+> `/new-roadmap` — that is a sanctioned move, and the roadmap-cleanup ledger
+> ([`../RM-35-roadmap-cleanup-close-what/STATUS.md`](../RM-35-roadmap-cleanup-close-what/STATUS.md))
+> records it as the alternative that was considered on lock day.
+
+- [ ] AM-OB1 — full `RunFilter` + view state serializes into the URL (saved views become named
+      URLs; routes rule D-TB10) · _verify-at-pickup: the built feed has filters/search/views —
+      check whether the state already round-trips before building_
+- [ ] AM-OB2 — `corrected_output` as a feedback kind through the existing `putRunFeedback`
+      upsert, plus a console/review-queue affordance; the corrected answer pre-fills the
+      expectation on promote-to-test, and joins the report-export `humanFeedback` block ·
+      pairs with the ledger's open promote-to-test endpoint follow-up · **AR6 holds: feedback
+      never blends into grades**
+- [ ] AM-OB3 — chart states URL-addressable (deep-linkable panel + time-bucket selection) ·
+      _verify-at-pickup: drill-down shipped with 2.2; residual only_
+- [ ] AM-OB4 — ratio measure (numerator/denominator, each with its own filter) — unlocks error
+      rate, pass rate, cache-hit share, skill-attach share · slots beside the recorded `grader`
+      + `feedbackRate` follow-ups in `metrics.ts` · ⚠ beware the recorded `buildRunFilterWhere`
+      duplication when touching filters
+- [ ] AM-OB5 — pulse strip above the runs feed: adaptive buckets (1 min–1 week), **sqrt height
+      scale**, count/cost/p95-duration, click→filter, drag→range, empty buckets render as gaps ·
+      ⚠ chart · exact spec in research `03 §1`
+- [ ] AM-OB6 — pricing editor scope-up, four parts: (a) additive usage-type columns
+      (`reasoning`/`cache_write`/`audio`/`image`) through accounting + estimate-vs-actual;
+      (b) condition-evaluated price tiers on top of effective-dating; (c) a price-drift check
+      that files a rating-issue on drift; (d) provider-ingested costs take precedence over
+      inferred · **one migration max** · builds on RM-33's cache-aware accounting (D-CT2: a
+      cache read and a cache write are never merged in a new surface)
+- [ ] AM-OB7 — chart composer type-set completion: histogram, pivot, radar (+ AM-OB4's ratio) ·
+      _verify-at-pickup: check the shipped type set first_ · ⚠ chart · missing primitives are an
+      **upstream `@elabs-ai/components-charts` gap to raise, never a hand-roll** (library-first)
+- [ ] AM-OB8 — nested Gantt gains "scale bars by" tokens/cost (not just time) + per-span cache
+      segment stacks · depends AM-OB6's usage types for the segments · must degrade gracefully
+      when economics aren't computed · ⚠ chart
+- [ ] AM-OB10 — watch-rule threshold/state semantics: WARNING below ALERT, explicit **NO_DATA**
+      (a bench where no runs happened IS signal) and PAUSED states, renotification interval for
+      sustained conditions · _verify-at-pickup against the built engine_
+- [ ] AM-OB11 — typed GitHub Actions `workflow_dispatch` rule action beside the built generic
+      webhook, so "regression detected → CI re-runs the suite" closes with no new infra ·
+      **sequence after RM-08 service tokens (done)** — reuse `api_tokens`, do not invent a second
+      token store
+- [ ] AM-OB12 — boolean grade/rating fields as share-true windowed metrics (e.g. hallucination-flag
+      rate), mirroring the numeric aggregations · _verify-at-pickup against the built measure set_
+- [ ] AM-OB13 — per-run/suite-run manual "send to webhook" (ids + report link) to an
+      admin-configured endpoint, reusing WP 4.3's webhook config + signing · day-scale
+- [ ] AM-OB14 — per-bucket distribution bars on the issue list · _verify-at-pickup: the
+      occurrence-over-time chart already ships_ · **explicitly out of scope: embedding-scatter
+      topic visuals — clustering stays deterministic over forensics buckets** · ⚠ chart
+_AM-OB9 is deliberately absent from this list — not an oversight. It was promoted to Phase 3
+as WP 3.5 on lock, because it alone already had a written spec. Noted here so the amendment's
+numbering has no silent hole, and as a plain line rather than a checkbox so it can never block
+retirement._
+
+
 ## Decision log
+
+- **2026-08-21 — D-OB29: the Langfuse amendment is LOCKED.** Owner accepted
+  [`amendment-2026-08-langfuse.md`](./amendment-2026-08-langfuse.md) in full. Two sub-decisions,
+  because the draft left both to the owner:
+  1. **AM-OB1–AM-OB14 are held as work packages (Phase 6 above), NOT renumbered into D-OB29+.**
+     A `D-OB` number names a constraint the code must keep honouring; these fourteen are things
+     to build, each explicitly droppable on its own. Conflating the two would have made fourteen
+     droppable items read as fourteen binding invariants. Only the lock itself is a decision,
+     and it is this one.
+  2. **AM-OB9 is promoted out of the list into Phase 3 as WP 3.5**, because it alone already had
+     a written, acceptance-bearing spec and both its dependencies (3.1, 3.2) are built. It is
+     ready to dispatch with no further gate.
+  **Consequence recorded honestly:** before this lock RM-17 had exactly one open box and no
+  checkbox-form owner-acceptance section — rejecting the amendment would have retired the item
+  outright with zero further work. Locking re-opens it with fifteen. The owner was shown that
+  trade and chose the lock. Nothing here reopens a locked D-OB1–D-OB28 decision; the wire stays
+  additive; doctrine holds (derived-never-authoritative; D-OB15/AR6 — feedback never blends into
+  grades).
 
 - 2026-07-16 — Plan created from `research/langsmith-observability/` +
   `research/unified-run-sessions/`; owner locked D-OB1–D-OB26 (see README). Migration claims:
@@ -640,7 +736,12 @@ Nothing picked up; no locked decision reopened.
   scope). Owner-acceptance: both-theme + keyboard walk of the review flow + rubric management.
 
 ═══════════════════════════════════════════════════════════════════════════════════════════════
-## 🎉 WORKSTREAM COMPLETE — all 27 WPs (Phases 1–5) merged to `main` (2026-07-17)
+## 🎉 THE ORIGINAL 27 WPs (Phases 1–5) — COMPLETE, merged to `main` (2026-07-17)
+
+> **No longer the whole workstream.** On 2026-08-21 the owner locked the Langfuse amendment
+> (D-OB29), which added **Phase 6** (thirteen follow-up items) and **WP 3.5**. This section
+> still describes exactly what it always did — the original plan, finished — but RM-17 is
+> open again and does not retire until Phase 6 and WP 3.5 are each built or dropped.
 
 Every WP is implemented, gate-green (`pnpm typecheck && test && build && lint`), and merged. Migrations
 **v32→v46** claimed one-at-a-time, each fresh-DB + upgrade-path tested. `main` @ `e28a52f`.
