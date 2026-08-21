@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { ScrollArea, Text, Tree, type TreeNode } from "@elabs-ai/components-ui";
+import { Text, Tree, type TreeNode } from "@elabs-ai/components-ui";
 import { SearchInput } from "@elabs-ai/components-data";
 import {
   FileCode2,
@@ -96,13 +96,13 @@ function toTreeNodes(nodes: WorkNode[]): TreeNode[] {
     node.type === "folder"
       ? {
           id: node.path,
-          label: <span className="truncate">{node.name}</span>,
+          label: <span className="min-w-0 truncate">{node.name}</span>,
           icon: <Folder className="size-4 text-muted-foreground" />,
           children: toTreeNodes(node.children),
         }
       : {
           id: node.path,
-          label: <span className="truncate">{node.name}</span>,
+          label: <span className="min-w-0 truncate">{node.name}</span>,
           icon: fileIcon(node.entry),
         },
   );
@@ -217,7 +217,14 @@ export function WorkspaceTree({
         <SearchInput value={query} onValueChange={setQuery} placeholder="Search files…" />
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
+      {/* RM-30 WP 7.1 — a plain bounded scroll box, not the brand `ScrollArea`. Measured in the
+          Studio's 184px rail: the Radix viewport sizes its content wrapper to the CONTENT, so the
+          tree's rows came out 242px wide and every long file name was hard-clipped at the rail edge
+          with no ellipsis — the row never got narrow enough for the label's own `truncate` to fire.
+          A `min-h-0 flex-1 overflow-y-auto` box makes the rows exactly as wide as the rail, so they
+          ellipsis properly. Same swap, same reason, as the SI15 fix in `ProblemsPanel`; at the wider
+          Files-tab width this is visually identical to what `ScrollArea` produced. */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="p-2">
           {treeNodes.length === 0 ? (
             <Text variant="meta" tone="muted" className="px-2 py-1">
@@ -237,7 +244,7 @@ export function WorkspaceTree({
             />
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
