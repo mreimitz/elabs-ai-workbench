@@ -21,7 +21,6 @@
 * [Model identity — a model choice means the model and the credential](RM-16-model-identity/) - Browse model identity — a model choice means the model and the credential.
 * [Observability — fleet monitoring, search and issues](RM-17-observability/) - Browse observability — fleet monitoring, search and issues.
 * [Platform hardening — the cross-cutting operability items](RM-18-platform/) - Browse platform hardening — the cross-cutting operability items.
-* [Release & delivery — the offline hand-off bundle](RM-19-release/) - Browse release & delivery — the offline hand-off bundle.
 * [Security posture — a deterministic analyzer over persisted scans and skills](RM-20-security-posture/) - Browse security posture — a deterministic analyzer over persisted scans and skills.
 * [Skill IDE — an enterprise IDE for Agent Skills](RM-22-skill-ide/) - Browse skill ide — an enterprise ide for agent skills.
 * [SkillFlow — the visual skill designer and tracer](RM-23-skillflow/) - Browse skillflow — the visual skill designer and tracer.

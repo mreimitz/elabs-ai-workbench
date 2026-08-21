@@ -3,8 +3,8 @@ type: "Roadmap Item"
 title: "Release & delivery — the offline hand-off bundle"
 description: "Package the app so someone with only Docker Desktop, no repository access and no registry can run it: a saved image plus self-detecting launchers in one directory."
 tags: ["roadmap", "RM-19"]
-timestamp: "2026-08-20T13:47:37Z"
-status: "planned"
+timestamp: "2026-08-21T15:42:04Z"
+status: "done"
 ---
 
 # Release & delivery — the offline hand-off bundle
@@ -19,9 +19,9 @@ The app builds from source with Docker Compose, which recipients outside a priva
 
 ## Milestones
 
-- [ ] Define the offline bundle format.
-- [ ] Build the image and the launchers.
-- [ ] Verify a cold start on a clean machine.
+- [x] Define the offline bundle format.
+- [x] Build the image and the launchers.
+- [x] Verify a cold start on a clean machine.
 
 ## Linked research
 

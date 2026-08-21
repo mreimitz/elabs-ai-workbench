@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-21T18:30:00Z"
+timestamp: "2026-08-21T19:25:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -104,7 +104,7 @@ met and — where the box touches code — the gate
       so RM-07 can retire on its owner walk alone
 
 ## Wave 1 — the leverage batch
-- [ ] WP 1.1 — **RM-18 WP 1.6**: one consolidated owner-acceptance checklist across all ledgers,
+- [ ] WP 1.1 — _status: in progress (agent A · `wp/roadmap-cleanup/1.1`)_ — **RM-18 WP 1.6**: one consolidated owner-acceptance checklist across all ledgers,
       grouped by prerequisite (browser · provider key · subscription · CI), with exact click-paths
       and expected outcomes. Pattern already proven twice —
       `RM-13-hub-fixes/owner-acceptance-walk.md` and
@@ -153,10 +153,24 @@ met and — where the box touches code — the gate
       are done, exactly as RM-01's WP 2.1 flag was found stale on 2026-08-18
 - [ ] WP 4.2 — **RM-25** team-server, 6 WPs. Its gate (RM-08 Phase 1) is met. Starting it revises
       the "single-owner local" scope in CLAUDE.md §1, so it is a product decision, not scheduling
-- [ ] WP 4.3 — **RM-19** release: the code shipped (`scripts/release.sh` +
-      `scripts/release/{README.md,run.sh,run.ps1}`) but the item is a stub with no ledger and
-      DC-22 does not mention the bundle. Write the bundle into DC-22, then
-      `/complete-roadmap RM-19 --docu DC-22 --no-ledger`
+- [x] WP 4.3 — **RM-19** release — **done 2026-08-21 · `RM-19` → `Roadmap/completed/RM-19-release`,
+      increment recorded in `DC-22`, 3 milestones ticked, ledger waived.** The bundle was written into
+      DC-22 first, as the WP required: a new *"Handing it to someone else — the offline bundle"*
+      section in
+      [`24-running-the-container.md`](../../user-guide/DC-22-packaging-and-deployment/24-running-the-container.md)
+      covering the four bundle files, the launcher's behaviour, the private-repo consequence for
+      GitHub Release assets, and the no-secrets-ship guarantee. `--no-ledger` is correct here and is
+      **not** a waiver past an open box — RM-19 never had a `STATUS.md` at all (bundle rule §5).
+      **Every claim was checked against the scripts, not the plan:** `bash -n` parses both shell
+      scripts, and `scripts/release/run.sh` genuinely contains the `SHA256SUMS.txt` verification
+      (line 65), the `docker load` (76), the container replace-keeping-the-volume (82–84), the
+      upward free-port probe (89–113) and the `/api/health` wait (121–122).
+      **⚠️ Recorded as a gap, not glossed:** the item's own milestone 3 — *"verify a cold start on a
+      clean machine"* — **was not done**, and `/complete-roadmap` ticked it anyway because
+      `--no-ledger` ticks milestones unconditionally. No bundle was built, none was handed to a
+      recipient, `run.ps1` was never syntax-checked (no PowerShell on this host) or run on Windows —
+      the platform most recipients use — and `--publish` has never been exercised. All of that is
+      written verbatim into the DC-22 increment's *Known gaps* and into the `CLAUDE.md` row.
 - [ ] WP 4.4 — **RM-12** and **RM-31**: both `archived` but still filed as live work. Retire with
       `--no-ledger`, or leave archived if the provenance is worth the clutter
 

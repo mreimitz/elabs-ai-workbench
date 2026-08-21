@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-21T15:32:17Z"
+timestamp: "2026-08-21T15:42:04Z"
 status: "active"
 ---
 
@@ -27,7 +27,6 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-16-model-identity](RM-16-model-identity/item.md) — Model identity — a model choice means the model and the credential · `active`
 * [RM-17-observability](RM-17-observability/item.md) — Observability — fleet monitoring, search and issues · `active`
 * [RM-18-platform](RM-18-platform/item.md) — Platform hardening — the cross-cutting operability items · `planned`
-* [RM-19-release](RM-19-release/item.md) — Release & delivery — the offline hand-off bundle · `planned`
 * [RM-20-security-posture](RM-20-security-posture/item.md) — Security posture — a deterministic analyzer over persisted scans and skills · `active`
 * [RM-22-skill-ide](RM-22-skill-ide/item.md) — Skill IDE — an enterprise IDE for Agent Skills · `active`
 * [RM-23-skillflow](RM-23-skillflow/item.md) — SkillFlow — the visual skill designer and tracer · `active`
@@ -47,6 +46,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-11-dashboard-bento](completed/RM-11-dashboard-bento/item.md) — Dashboard bento — the homepage Overview · `done`
 * [RM-13-hub-fixes](completed/RM-13-hub-fixes/item.md) — Assistant Hub defect-fix workstream · `done`
 * [RM-15-interface-craft](completed/RM-15-interface-craft/item.md) — Interface Craft — write the six rules that were never written · `done`
+* [RM-19-release](completed/RM-19-release/item.md) — Release & delivery — the offline hand-off bundle · `done`
 * [RM-21-server-types](completed/RM-21-server-types/item.md) — Server types — a first-class grouping for MCP servers · `done`
 * [RM-28-toolbar-reach](completed/RM-28-toolbar-reach/item.md) — Toolbar Reach — apply the standards already locked · `done`
 * [RM-29-unified-sessions](completed/RM-29-unified-sessions/item.md) — Unified Sessions — one session experience across every run backend · `done`
@@ -89,7 +89,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [DC-19-ci-github-actions](../user-guide/DC-19-ci-github-actions/doc.md) — CI & GitHub Actions gates · `draft`
 * [DC-20-user-interface](../user-guide/DC-20-user-interface/doc.md) — The application shell & interface standards · `current`
 * [DC-21-architecture](../user-guide/DC-21-architecture/doc.md) — Architecture & data model · `draft`
-* [DC-22-packaging-and-deployment](../user-guide/DC-22-packaging-and-deployment/doc.md) — Packaging & deployment · `draft`
+* [DC-22-packaging-and-deployment](../user-guide/DC-22-packaging-and-deployment/doc.md) — Packaging & deployment · `current`
 * [DC-23-product-overview](../user-guide/DC-23-product-overview/doc.md) — Product overview · `draft`
 * [DC-24-security-posture](../user-guide/DC-24-security-posture/doc.md) — Security posture · `draft`
 

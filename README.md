@@ -414,6 +414,30 @@ Then open **http://localhost:8081** (the container listens on 8080 internally; 8
 published host port — see `docker-compose.yml`). The single container runs the API, which serves the built web
 app. Keep the SQLite database and the generated encryption key on the same persistent `/data` volume.
 
+### Hand it to someone who has no repository
+
+`docker compose up --build` needs the source tree. For someone who does not have it — no repository
+access, no container registry, just Docker Desktop — there is an **offline bundle**:
+
+```bash
+scripts/release.sh          # builds dist/release/v<version>/
+```
+
+That directory holds the image as a gzipped `docker save` tarball, a `run.sh` and a `run.ps1`, a
+README written for the recipient, and `SHA256SUMS.txt`. They drop the launcher next to the tarball
+and run it: it verifies the checksums, loads the image, replaces any previous container **while
+keeping its data volume**, probes upward from port 8080 for a free one, waits for `/api/health`, and
+opens the browser. Re-running it with a newer bundle is an upgrade, not a reset.
+
+No secrets travel — `.dockerignore` excludes `.env*`, `data/` and `.git`, so each install generates
+its own encryption key on first boot. The image is cross-built to `linux/amd64` by default and built
+from committed `HEAD`. `scripts/release.sh --publish` additionally cuts a git tag and GitHub Release;
+because this repository is private, those assets are only downloadable by people who already have
+access, so an outside recipient gets the bundle handed over directly.
+
+**Not yet proven end to end:** no bundle has been built and started on a clean machine, and
+`run.ps1` has never been run on Windows.
+
 ### Local development
 
 ```bash

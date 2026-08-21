@@ -5,6 +5,28 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the app can be handed to someone who has no repository
+
+`docker compose up --build` needs the source tree, so anyone outside this repository could not run
+the workbench at all. `scripts/release.sh` now builds a **self-contained offline bundle** —
+`dist/release/v<version>/` holding the image as a gzipped `docker save` tarball, a `run.sh` and a
+`run.ps1`, a recipient-facing README, and `SHA256SUMS.txt`. The recipient drops the launcher beside
+the tarball and runs it: checksums verified, image loaded, any previous container replaced **while
+its data volume is kept**, a free port found by probing upward from 8080, `/api/health` polled, the
+browser opened. Re-running it with a newer bundle upgrades in place instead of resetting.
+
+No secrets travel — `.dockerignore` excludes `.env*`, `data/` and `.git`, so each install generates
+its own encryption key on first boot. The image is cross-built to `linux/amd64` (the build host is
+Apple Silicon; most recipients are not) from committed `HEAD`, with the quality gate run on the host
+first so a failure arrives before the slow image build rather than after it. `--publish` also cuts a
+git tag and GitHub Release, though a private repository means those assets reach only people who
+already have access.
+
+**This code shipped earlier and is only now written down.** The roadmap item was a stub with no
+ledger; it was retired on 2026-08-21 and its delivery recorded. **It has never been verified end to
+end:** no bundle has been built and cold-started on a clean machine, `run.ps1` has never been
+syntax-checked or run on Windows, and `--publish` has never been exercised.
+
 ## Unreleased — you can see what prompt caching is doing
 
 A run console could report **Tokens ↑ 958,457** while, two tabs away, a chart showed a single turn as

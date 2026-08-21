@@ -9,7 +9,7 @@ Cut a release of MCP Token Footprint as a **self-contained offline bundle** — 
 plus one-click `run.sh` / `run.ps1` launchers — that anyone with Docker Desktop can run **without
 access to this repo or any registry**. The engine is [`scripts/release.sh`](../../scripts/release.sh);
 recipient artifacts live in [`scripts/release/`](../../scripts/release/). Full concept:
-[`planning/Roadmap/RM-19-release/item.md`](../../planning/Roadmap/RM-19-release/item.md).
+[`planning/Roadmap/completed/RM-19-release/item.md`](../../planning/Roadmap/completed/RM-19-release/item.md).
 
 ## Decide the mode from `$ARGUMENTS`
 
