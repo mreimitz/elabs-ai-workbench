@@ -56,8 +56,8 @@
       "from": "hub-mcp.bus",
       "to": "agent.bottom",
       "kind": "read",
-      "shape": "l",
-      "fromDirection": "west",
+      "shape": "u",
+      "fromDirection": "south",
       "toDirection": "south",
       "points": [
         {
@@ -65,31 +65,35 @@
           "y": 384
         },
         {
+          "x": -216.942,
+          "y": 416
+        },
+        {
           "x": -168,
-          "y": 384
+          "y": 416
         },
         {
           "x": -168,
           "y": 119.6
         }
       ],
-      "corners": 1,
-      "d": "M -216.942 384 L -176 384 A 8 8 0 0 0 -168 376 L -168 119.6",
+      "corners": 2,
+      "d": "M -216.942 384 L -216.942 408 A 8 8 0 0 0 -208.942 416 L -176 416 A 8 8 0 0 0 -168 408 L -168 119.6",
       "nudge": 0,
-      "doublesBack": true,
+      "doublesBack": false,
       "label": {
         "text": "tools and the current Skill",
         "anchor": {
           "x": -168,
-          "y": 251.204
+          "y": 247.896
         },
         "box": {
           "x": -257.387,
-          "y": 239.442,
+          "y": 236.133,
           "width": 178.775,
           "height": 23.525
         },
-        "along": 0.58,
+        "along": 0.66,
         "offset": 0,
         "collides": false
       }

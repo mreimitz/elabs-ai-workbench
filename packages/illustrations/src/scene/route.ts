@@ -19,13 +19,17 @@
 // is the AUTHOR'S meaning copied verbatim from the spec (D-IL8) — the renderer maps meaning to
 // pixels, and a scene still physically cannot express a style.
 //
-// ── ITS ENTIRE INPUT FROM THE LAYOUT IS `endpoints` AND `nodes` ───────────────────────────────────
+// ── WHAT IT READS, AND THE ONE THING IT MUST NOT LEARN ────────────────────────────────────────────
 // `layout.endpoints` already resolves every `nodeId.port` and every `bandId.entry`/`.exit` to a
-// canvas point, so this file looks up two keys and draws between them and never learns what a band
-// is. `layout.nodes` is read for two things only: a port's owning FRAME (the departure rule below)
-// and the boxes a label must keep clear of. No position is re-derived, and `iso-math`'s projection
-// is deliberately not imported — ports resolve to plain screen points, so the router works in
-// ordinary screen space.
+// canvas point, so this file looks up two keys and draws between them and NEVER LEARNS WHAT A BAND
+// IS — that is the seam WP 2.1's header draws, and it is about band structure, not about the map.
+// `layout.nodes` is read for three things only: a port's owning component (to ask the catalog for
+// its declared side), its FRAME (the fallback departure rule), and the boxes a label must keep
+// clear of. It also takes the same `SceneCatalog` the layout engine takes, because a port's side is
+// a fact about the COMPONENT, held in the registry entry, not about the box drawn for it.
+//
+// No position is re-derived, and `iso-math`'s projection is deliberately not imported — ports
+// resolve to plain screen points, so the router works in ordinary screen space.
 //
 // ── IT NEVER THROWS ───────────────────────────────────────────────────────────────────────────────
 // Same discipline as `layout.ts`: a connector naming an endpoint the layout does not have is
@@ -44,11 +48,13 @@
 //   • every emitted number goes through `roundScene`, so float noise cannot make two runs disagree.
 
 import type {
-  IllustrationSceneConnector,
   IllustrationConnectorKind,
+  IllustrationPortSide,
+  IllustrationSceneConnector,
 } from "@mcp-token-footprint/shared";
 import { ISO_UNIT } from "../iso-math.js";
 import { ILLUS_TEXT } from "../line-system.js";
+import type { SceneCatalog } from "./catalog.js";
 import type { SceneLayout, SceneNodeLayout, ScenePoint, SceneRect } from "./layout.js";
 import { roundScene } from "./layout.js";
 import { splitEndpoint } from "./spec-validate.js";
@@ -75,7 +81,7 @@ export const PORT_MID_BAND_FRACTION = 0.25;
 /**
  * How close to the frame's vertical centre line a port must be to count as standing ON it. An
  * entity's view box is symmetric about the point the entity stands on, so a port on that line is the
- * ground port and its only sensible outward direction is down — see {@link portDirection}.
+ * ground port and its only sensible outward direction is down — see {@link framePortDirection}.
  */
 export const PORT_CENTRE_TOLERANCE_UNITS = 0.25;
 
@@ -188,6 +194,12 @@ export type RoutedConnector = {
    * The four shapes above are complete over DIRECTION PAIRS but not over POSITIONS: a port facing
    * east whose partner sits to the west has no 1- or 2-corner orthogonal path that honours it, and
    * the closed set has no fifth shape to fall back to. Reporting it beats hiding it.
+   *
+   * This field is deliberately NOT in WP 2.2's spec; it is the sibling of {@link
+   * RoutedLabel.collides}, kept on the same reasoning — a scene author needs to know when the
+   * drawing could not honour what the spec asked for. The remaining cases are real geometry the
+   * closed set cannot express, and what to do about them (a fifth shape, or better port choices in
+   * the scene) belongs to the acceptance scene in WP 2.4, not here.
    */
   readonly doublesBack: boolean;
   readonly label: RoutedLabel | null;
@@ -256,36 +268,65 @@ function overlaps(left: SceneRect, right: SceneRect): boolean {
 }
 
 // -- The departure rule ----------------------------------------------------------------------------
+//
+// The single most re-read decision in this file, and WP 2.3 wants it too, for marker rotation. It is
+// THREE rules in strict precedence, and the router takes the first that can answer:
+//
+//   1. `portSideDirection` — the side the CATALOG declares for that port. This is the answer
+//      whenever the endpoint names a catalogued node port, which is nearly always;
+//   2. `framePortDirection` — geometry, for a port the catalog does not describe;
+//   3. `endpointDirectionsToward` — for an endpoint with no owning box at all, which is exactly
+//      what a `cycle` band's `entry`/`exit` gate is.
+//
+// Rule 1 exists because the registry already answers this question and says so in as many words:
+// `ILLUSTRATION_PORT_SIDES` is documented as "the coarse attachment hint the connector router
+// needs". Rule 2 was this file's first cut, written on the belief that no declared normal existed;
+// measured against the catalog over both fixtures it agreed on 89 of 93 ports, and all four
+// disagreements were the same kind of port — a ground port carried off the frame's centre by an
+// `offset`. It is DEMOTED rather than deleted, because rule 3 cannot serve a port that has a box:
+// a scene may name a component the catalog never heard of, which the layout still gives a fallback
+// box and no port records at all.
 
 /**
- * Which way a line leaves a port that belongs to a node — the single most re-read decision in this
- * file, so it is exported and unit-tested on its own. WP 2.3 wants it too, for marker rotation.
+ * The declared side of a port, as a screen direction. This map is the whole of rule 1.
  *
- * A port carries no normal in the layout, so it is derived from where the point sits inside its
- * owning node's `frame`:
+ * The four sides name ISOMETRIC faces, but each projects to an unambiguous screen direction under
+ * the fixed projection in `iso-math.ts`: `top` (z = height) rises, `bottom` (z = 0) is the ground
+ * the entity stands on, and the two ground faces (+y, +x) project down-LEFT and down-RIGHT with the
+ * horizontal component dominant (`ISO_KX` about 13.86 against `ISO_KY` = 8). The mapping is
+ * arithmetic, not taste — and the router still never imports the projection itself.
+ */
+export const PORT_SIDE_DIRECTIONS: Record<IllustrationPortSide, OrthoDirection> = {
+  top: "north",
+  bottom: "south",
+  left: "west",
+  right: "east",
+};
+
+/** Rule 1: where a line leaves a port whose side the catalog declares. */
+export function portSideDirection(side: IllustrationPortSide): OrthoDirection {
+  return PORT_SIDE_DIRECTIONS[side];
+}
+
+/**
+ * Rule 2 — the fallback for a port that has a box but no catalogued side. Derived from where the
+ * point sits inside its owning node's `frame`:
  *
  *   1. materially above or below the frame's vertical mid-band (the middle
- *      {@link PORT_MID_BAND_FRACTION} either side of centre) → north or south;
+ *      {@link PORT_MID_BAND_FRACTION} either side of centre) gives north or south;
  *   2. otherwise on the frame's vertical centre line, within
- *      {@link PORT_CENTRE_TOLERANCE_UNITS} → south. An entity's view box is symmetric about the
- *      point the entity STANDS on, so a port on that line is the ground port and down is the only
- *      direction it can face;
+ *      {@link PORT_CENTRE_TOLERANCE_UNITS}, gives south. An entity's view box is symmetric about
+ *      the point the entity STANDS on, so a port on that line is the ground port and down is the
+ *      only direction it can face;
  *   3. otherwise the left half departs west and the right half departs east.
  *
- * ── WHAT THIS RULE PROVABLY CANNOT DO ─────────────────────────────────────────────────────────────
- * Rule 2 is not a tie-break for tidiness, it is the whole reason a `bottom` port works at all: the
- * ground port sits at the frame's centre on BOTH axes, so rules 1 and 3 are blind to it. Rule 2
- * rescues the centred case; it does not rescue a `bottom` port carried away from the centre by an
- * `offset` (an `mcp-server`'s `bus`, a `tool`'s `plug`), which still reads as west or east.
- *
- * That residue is a limitation of deriving a normal from a box, not of the arithmetic. The registry
- * DOES record a port's side, and its own contract calls it "the coarse attachment hint the connector
- * router needs" — but the side lives in the registry entry, and this pass is specified to take only
- * the layout. Measured against the catalog's declared sides over both fixtures, this rule agrees on
- * 89 of 93 ports; all four disagreements are offset `bottom` ports. Reading the declared side
- * instead is a one-line change once the seam is allowed to carry it.
+ * ── WHAT A BOX PROVABLY CANNOT TELL YOU ───────────────────────────────────────────────────────────
+ * Clause 2 is not a tie-break for tidiness, it is the whole reason a ground port works at all here:
+ * that port sits at the frame's centre on BOTH axes, so clauses 1 and 3 are blind to it. And it
+ * still does not rescue a ground port carried off the centre line by an `offset`, which is exactly
+ * the residue that made rule 1 necessary. Do not promote this back to primary.
  */
-export function portDirection(point: ScenePoint, frame: SceneRect): OrthoDirection {
+export function framePortDirection(point: ScenePoint, frame: SceneRect): OrthoDirection {
   const dy = point.y - (frame.y + frame.height / 2);
   if (Math.abs(dy) > frame.height * PORT_MID_BAND_FRACTION) return dy < 0 ? "north" : "south";
   const dx = point.x - (frame.x + frame.width / 2);
@@ -685,18 +726,50 @@ function spreadCluster(cluster: readonly Run[], step: number): void {
 
 // -- The router ------------------------------------------------------------------------------------
 
+export type RouteSceneOptions = {
+  /**
+   * The same catalog `layoutScene` takes, and for the same reason: a port's declared side is a fact
+   * about the COMPONENT, held in its registry entry, not a fact about the box the layout drew for
+   * it. Taking it here does not teach the router what a band is — the one thing WP 2.1's seam
+   * actually forbids — it only lets rule 1 of the departure rule ask the question the registry was
+   * already documented as answering.
+   */
+  readonly catalog: SceneCatalog;
+};
+
+/**
+ * The declared side of `endpoint`'s port, or `undefined` when nothing in the catalog describes it —
+ * an endpoint that names no node (a cycle band's gate), a node drawing a component the catalog
+ * never heard of, or a port name the component does not declare.
+ */
+function declaredSideOf(
+  endpoint: string,
+  nodes: ReadonlyMap<string, SceneNodeLayout>,
+  catalog: SceneCatalog,
+): IllustrationPortSide | undefined {
+  const split = splitEndpoint(endpoint);
+  if (split === undefined) return undefined;
+  const node = nodes.get(split.owner);
+  if (node === undefined) return undefined;
+  return catalog.entry(node.component)?.ports[split.member]?.side;
+}
+
 function frameOf(endpoint: string, nodes: ReadonlyMap<string, SceneNodeLayout>): SceneRect | null {
   const split = splitEndpoint(endpoint);
   if (split === undefined) return null;
   return nodes.get(split.owner)?.frame ?? null;
 }
 
+/** The departure rule's three-way precedence, in one place — see the section header above. */
 function directionCandidates(
   point: ScenePoint,
   other: ScenePoint,
+  side: IllustrationPortSide | undefined,
   frame: SceneRect | null,
 ): readonly OrthoDirection[] {
-  return frame === null ? endpointDirectionsToward(point, other) : [portDirection(point, frame)];
+  if (side !== undefined) return [portSideDirection(side)];
+  if (frame !== null) return [framePortDirection(point, frame)];
+  return endpointDirectionsToward(point, other);
 }
 
 function dedupe(points: readonly ScenePoint[]): ScenePoint[] {
@@ -724,7 +797,9 @@ function travelOf(from: ScenePoint, to: ScenePoint): OrthoDirection | null {
 export function routeScene(
   layout: SceneLayout,
   connectors: readonly IllustrationSceneConnector[],
+  options: RouteSceneOptions,
 ): SceneRouting {
+  const { catalog } = options;
   const nodes = new Map<string, SceneNodeLayout>();
   for (const node of layout.nodes) if (!nodes.has(node.id)) nodes.set(node.id, node);
   const frames = layout.nodes.map((node) => node.frame);
@@ -749,10 +824,18 @@ export function routeScene(
       continue;
     }
 
-    const fromFrame = frameOf(connector.from, nodes);
-    const toFrame = frameOf(connector.to, nodes);
-    const fromCandidates = directionCandidates(from, to, fromFrame);
-    const toCandidates = directionCandidates(to, from, toFrame);
+    const fromCandidates = directionCandidates(
+      from,
+      to,
+      declaredSideOf(connector.from, nodes, catalog),
+      frameOf(connector.from, nodes),
+    );
+    const toCandidates = directionCandidates(
+      to,
+      from,
+      declaredSideOf(connector.to, nodes, catalog),
+      frameOf(connector.to, nodes),
+    );
 
     // A node port has exactly one candidate, so this is a single pass for it. A frameless gate has
     // two, and takes the first pair that does not make the line leave or land against itself.

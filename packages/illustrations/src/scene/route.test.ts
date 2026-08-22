@@ -1,5 +1,6 @@
 import {
   ILLUSTRATION_NODE_DEFAULTS,
+  ILLUSTRATION_PORT_SIDES,
   type IllustrationRegistryEntry,
   type IllustrationSceneConnector,
   type IllustrationSceneSpec,
@@ -25,13 +26,16 @@ import {
   CONNECTOR_CORNER_UNITS,
   CONNECTOR_NUDGE_UNITS,
   LABEL_ALONG_FRACTIONS,
+  PORT_SIDE_DIRECTIONS,
+  type OrthoDirection,
   type RoutedConnector,
   type SceneRouting,
   connectorPathData,
   endpointDirectionsToward,
   labelBoxSize,
-  portDirection,
+  framePortDirection,
   routeScene,
+  portSideDirection,
   routeShapeOf,
 } from "./route.js";
 
@@ -55,7 +59,20 @@ function specOf(name: string): IllustrationSceneSpec {
 
 function routingOf(name: string, catalog: SceneCatalog = ILLUSTRATION_SCENE_CATALOG): SceneRouting {
   const spec = specOf(name);
-  return routeScene(layoutScene(spec, { catalog }), spec.connectors ?? []);
+  return routed(layoutScene(spec, { catalog }), spec.connectors ?? [], catalog);
+}
+
+/**
+ * `routeScene` with the live catalog, which is what every caller in the app will hand it. The stub
+ * scenes below deliberately use port names the catalog does NOT declare, so they exercise the
+ * frame-derived fallback; the fixtures exercise the declared-side rule.
+ */
+function routed(
+  layout: SceneLayout,
+  connectors: readonly IllustrationSceneConnector[],
+  catalog: SceneCatalog = ILLUSTRATION_SCENE_CATALOG,
+): SceneRouting {
+  return routeScene(layout, connectors, { catalog });
 }
 
 function routeOf(routing: SceneRouting, id: string): RoutedConnector {
@@ -90,7 +107,11 @@ function stubNode(
   };
 }
 
-/** A node whose only port is on the named face, positioned so {@link portDirection} says so. */
+/**
+ * A node whose only port is on the named face, positioned so {@link framePortDirection} says so.
+ * The port is called `p`, which the `agent` entry does not declare — so these stubs deliberately
+ * fall through rule 1 and exercise the geometric fallback.
+ */
 function faceNode(
   id: string,
   centre: ScenePoint,
@@ -180,14 +201,14 @@ describe("determinism — the same layout and connectors give byte-identical out
     for (const name of FIXTURE_NAMES) {
       const spec = specOf(name);
       const clone = JSON.parse(JSON.stringify(spec)) as IllustrationSceneSpec;
-      const route = (subject: IllustrationSceneSpec): string =>
+      const serialize = (subject: IllustrationSceneSpec): string =>
         JSON.stringify(
-          routeScene(
+          routed(
             layoutScene(subject, { catalog: ILLUSTRATION_SCENE_CATALOG }),
             subject.connectors ?? [],
           ),
         );
-      assert.equal(route(spec), route(clone));
+      assert.equal(serialize(spec), serialize(clone));
     }
   });
 
@@ -302,25 +323,94 @@ describe("every routed path is orthogonal — no diagonals in the connector laye
 
 // ── The departure rule ────────────────────────────────────────────────────────────────────────────
 
-describe("portDirection — where a line leaves a port", () => {
+describe("portSideDirection — rule 1, the side the catalog declares", () => {
+  it("maps each iso face to the screen direction it projects to", () => {
+    assert.equal(portSideDirection("top"), "north");
+    assert.equal(portSideDirection("bottom"), "south");
+    assert.equal(portSideDirection("left"), "west");
+    assert.equal(portSideDirection("right"), "east");
+    assert.deepEqual(Object.keys(PORT_SIDE_DIRECTIONS).sort(), [...ILLUSTRATION_PORT_SIDES].sort());
+  });
+
+  // THE MEASUREMENT, AS A GUARD. The frame-derived rule this replaced agreed with the catalog on
+  // 89 of the 93 catalogued ports across both fixtures — every disagreement a ground port carried
+  // off the frame's centre line by an `offset`, which no rule reading only a box can recover. This
+  // sweep is the reason that can never quietly come back: it routes one connector out of EVERY
+  // catalogued port in both fixtures and insists the line leaves along the side the registry
+  // declares. Anything less than 93 of 93 is a regression, not a rounding.
+  it("routes every catalogued port in both fixtures along its DECLARED side, 93 of 93", () => {
+    let checked = 0;
+    for (const name of FIXTURE_NAMES) {
+      const spec = specOf(name);
+      const laid = layoutScene(spec, { catalog: ILLUSTRATION_SCENE_CATALOG });
+      // An extra sink endpoint far off the canvas, so EVERY catalogued port can be a source. Using
+      // one of the real ports as the target would silently drop it from the sweep.
+      const layout: SceneLayout = {
+        ...laid,
+        endpoints: {
+          ...laid.endpoints,
+          "probe.sink": { x: laid.canvas.x + laid.canvas.width + 1000, y: laid.canvas.y - 1000 },
+        },
+      };
+
+      const probes: IllustrationSceneConnector[] = [];
+      const expected: OrthoDirection[] = [];
+      for (const node of layout.nodes) {
+        const entry = ILLUSTRATION_SCENE_CATALOG.entry(node.component);
+        if (entry === undefined) continue;
+        for (const port of Object.keys(node.ports).sort()) {
+          const side = entry.ports[port]?.side;
+          if (side === undefined) continue;
+          probes.push({
+            id: `p${probes.length}`,
+            from: `${node.id}.${port}`,
+            to: "probe.sink",
+            kind: "flow",
+          });
+          expected.push(portSideDirection(side));
+        }
+      }
+
+      const routing = routed(layout, probes);
+      assert.equal(routing.unresolved.length, 0);
+      assert.equal(routing.routes.length, probes.length);
+      for (const [index, route] of routing.routes.entries()) {
+        assert.equal(
+          route.fromDirection,
+          expected[index],
+          `${name}/${route.from} left ${route.fromDirection}, but the catalog declares ` +
+            `${expected[index]}`,
+        );
+      }
+      checked += probes.length;
+    }
+    assert.equal(checked, 93, "the sweep must cover every catalogued port, not a shrinking subset");
+  });
+});
+
+describe("framePortDirection — rule 2, the fallback for a port with no declared side", () => {
   const frame: SceneRect = { x: 0, y: 0, width: 200, height: 100 };
 
   it("takes north or south when the port is materially above or below the mid-band", () => {
-    assert.equal(portDirection({ x: 100, y: 4 }, frame), "north");
-    assert.equal(portDirection({ x: 100, y: 96 }, frame), "south");
-    assert.equal(portDirection({ x: 10, y: 4 }, frame), "north");
+    assert.equal(framePortDirection({ x: 100, y: 4 }, frame), "north");
+    assert.equal(framePortDirection({ x: 100, y: 96 }, frame), "south");
+    assert.equal(framePortDirection({ x: 10, y: 4 }, frame), "north");
   });
 
   it("takes west or east inside the mid-band", () => {
-    assert.equal(portDirection({ x: 20, y: 50 }, frame), "west");
-    assert.equal(portDirection({ x: 180, y: 50 }, frame), "east");
-    assert.equal(portDirection({ x: 20, y: 70 }, frame), "west");
+    assert.equal(framePortDirection({ x: 20, y: 50 }, frame), "west");
+    assert.equal(framePortDirection({ x: 180, y: 50 }, frame), "east");
+    assert.equal(framePortDirection({ x: 20, y: 70 }, frame), "west");
   });
 
   it("takes south on the frame's vertical centre line — the ground port", () => {
-    assert.equal(portDirection({ x: 100, y: 50 }, frame), "south");
-    assert.equal(portDirection({ x: 100 + 3, y: 52 }, frame), "south");
-    assert.equal(portDirection({ x: 100 + 5, y: 52 }, frame), "east", "5 units is off the line");
+    assert.equal(framePortDirection({ x: 100, y: 50 }, frame), "south");
+    assert.equal(framePortDirection({ x: 100 + 3, y: 52 }, frame), "south");
+    assert.equal(
+      framePortDirection({ x: 100 + 5, y: 52 }, frame),
+      "east",
+      "5 units is off the line",
+    );
   });
 
   // The rule is a rule about a BOX, and this is exactly what a box cannot tell you: an entity's
@@ -328,11 +418,19 @@ describe("portDirection — where a line leaves a port", () => {
   // it. Locking the boundary here means a later edit to the tolerance cannot quietly lose it.
   it("keeps the two clauses from swallowing each other", () => {
     const tall: SceneRect = { x: 0, y: 0, width: 200, height: 400 };
-    assert.equal(portDirection({ x: 100, y: 200 }, tall), "south");
-    assert.equal(portDirection({ x: 100, y: 299 }, tall), "south");
-    assert.equal(portDirection({ x: 100, y: 301 }, tall), "south", "past the band, still south");
-    assert.equal(portDirection({ x: 40, y: 301 }, tall), "south", "past the band, so not west");
-    assert.equal(portDirection({ x: 40, y: 299 }, tall), "west");
+    assert.equal(framePortDirection({ x: 100, y: 200 }, tall), "south");
+    assert.equal(framePortDirection({ x: 100, y: 299 }, tall), "south");
+    assert.equal(
+      framePortDirection({ x: 100, y: 301 }, tall),
+      "south",
+      "past the band, still south",
+    );
+    assert.equal(
+      framePortDirection({ x: 40, y: 301 }, tall),
+      "south",
+      "past the band, so not west",
+    );
+    assert.equal(framePortDirection({ x: 40, y: 299 }, tall), "west");
   });
 });
 
@@ -360,7 +458,7 @@ describe("endpointDirectionsToward — an endpoint with no box faces the other e
     const layout = stubLayout([faceNode("a", { x: 0, y: 0 }, "east")], {
       "gate.entry": { x: -400, y: 600 },
     });
-    const routing = routeScene(layout, [connector("c", "a.p", "gate.entry")]);
+    const routing = routed(layout, [connector("c", "a.p", "gate.entry")]);
     const route = routeOf(routing, "c");
     assert.equal(route.shape, "u");
     assert.equal(route.doublesBack, false);
@@ -375,7 +473,7 @@ describe("the four route shapes, each pinned to its corner count and turn points
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 240, y: 0 }, "west"),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c");
     assert.equal(route.shape, "straight");
     assert.equal(route.corners, 0);
     assert.deepEqual(route.points, [
@@ -390,7 +488,7 @@ describe("the four route shapes, each pinned to its corner count and turn points
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 300, y: 240 }, "north"),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c");
     assert.equal(route.shape, "l");
     assert.equal(route.corners, 1);
     assert.deepEqual(route.points, [
@@ -405,7 +503,7 @@ describe("the four route shapes, each pinned to its corner count and turn points
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 400, y: 200 }, "west"),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c");
     assert.equal(route.shape, "z");
     assert.equal(route.corners, 2);
     assert.deepEqual(route.points, [
@@ -421,7 +519,7 @@ describe("the four route shapes, each pinned to its corner count and turn points
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 300, y: 200 }, "east"),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c");
     assert.equal(route.shape, "u");
     assert.equal(route.corners, 2);
     assert.deepEqual(route.points, [
@@ -448,14 +546,14 @@ describe("the four route shapes, each pinned to its corner count and turn points
       faceNode("a", { x: 400, y: 0 }, "east"),
       faceNode("b", { x: 0, y: 200 }, "east"),
     ]);
-    const behind = routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c");
+    const behind = routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c");
     assert.equal(behind.doublesBack, false, "a u reaches behind itself honestly");
 
     const facing = stubLayout([
       faceNode("a", { x: 400, y: 0 }, "east"),
       faceNode("b", { x: 0, y: 200 }, "west"),
     ]);
-    const doubled = routeOf(routeScene(facing, [connector("c", "a.p", "b.p")]), "c");
+    const doubled = routeOf(routed(facing, [connector("c", "a.p", "b.p")]), "c");
     assert.equal(doubled.shape, "z");
     assert.equal(doubled.doublesBack, true);
   });
@@ -479,7 +577,7 @@ describe("parallel runs are nudged apart so two lines never read as one", () => 
   const second = connector("beta", "a2.p", "b2.p");
 
   it("pushes two collinear, overlapping runs apart about their shared centre line", () => {
-    const routing = routeScene(twoZLayout(), [first, second]);
+    const routing = routed(twoZLayout(), [first, second]);
     const alpha = routeOf(routing, "alpha");
     const beta = routeOf(routing, "beta");
     assert.equal(alpha.nudge, -step / 2);
@@ -492,8 +590,8 @@ describe("parallel runs are nudged apart so two lines never read as one", () => 
   });
 
   it("assigns the same offset to the same connector however the array is ordered", () => {
-    const forward = routeScene(twoZLayout(), [first, second]);
-    const backward = routeScene(twoZLayout(), [second, first]);
+    const forward = routed(twoZLayout(), [first, second]);
+    const backward = routed(twoZLayout(), [second, first]);
     for (const id of ["alpha", "beta"]) {
       assert.deepEqual(
         routeOf(backward, id).points,
@@ -511,7 +609,7 @@ describe("parallel runs are nudged apart so two lines never read as one", () => 
       faceNode("a2", { x: 0, y: 600 }, "east"),
       faceNode("b2", { x: 400, y: 800 }, "west"),
     ]);
-    const routing = routeScene(layout, [
+    const routing = routed(layout, [
       connector("alpha", "a1.p", "b1.p"),
       connector("beta", "a2.p", "b2.p"),
     ]);
@@ -528,7 +626,7 @@ describe("parallel runs are nudged apart so two lines never read as one", () => 
       faceNode("a2", { x: 0, y: 0 }, "east"),
       faceNode("b2", { x: 400, y: 0 }, "west"),
     ]);
-    const routing = routeScene(layout, [
+    const routing = routed(layout, [
       connector("alpha", "a1.p", "b1.p"),
       connector("beta", "a2.p", "b2.p"),
     ]);
@@ -559,7 +657,7 @@ describe("corner radii are fixed, and clamped to half the shorter run they join"
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 400, y: 200 }, "west"),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c");
     assert.deepEqual(
       arcsOf(route.d).map((arc) => arc.r),
       [radius, radius],
@@ -574,7 +672,7 @@ describe("corner radii are fixed, and clamped to half the shorter run they join"
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 400, y: 4 }, "west"),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c");
     const arcs = arcsOf(route.d);
     assert.equal(arcs.length, 2);
     assert.equal(arcs[0]?.r, 2, "the fillet is half the 4-unit run, not the full radius");
@@ -646,7 +744,7 @@ describe("a label is moved clear of the node boxes", () => {
       faceNode("b", { x: 460, y: 0 }, "west"),
       wall({ x: 150, y: -50, width: 100, height: 100 }),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p", "over the wall")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p", "over the wall")]), "c");
     const label = route.label;
     assert.ok(label);
     assert.equal(label.collides, false);
@@ -667,7 +765,7 @@ describe("a label is moved clear of the node boxes", () => {
       faceNode("b", { x: 460, y: 0 }, "west"),
       wall({ x: -4000, y: -4000, width: 8000, height: 8000 }),
     ]);
-    const route = routeOf(routeScene(layout, [connector("c", "a.p", "b.p", "nowhere to go")]), "c");
+    const route = routeOf(routed(layout, [connector("c", "a.p", "b.p", "nowhere to go")]), "c");
     const label = route.label;
     assert.ok(label);
     assert.equal(label.collides, true);
@@ -681,14 +779,14 @@ describe("a label is moved clear of the node boxes", () => {
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 400, y: 0 }, "west"),
     ]);
-    assert.equal(routeOf(routeScene(layout, [connector("c", "a.p", "b.p")]), "c").label, null);
+    assert.equal(routeOf(routed(layout, [connector("c", "a.p", "b.p")]), "c").label, null);
   });
 
   it("places every fixture label clear of every node frame", () => {
     for (const name of FIXTURE_NAMES) {
       const spec = specOf(name);
       const layout = layoutScene(spec, { catalog: ILLUSTRATION_SCENE_CATALOG });
-      for (const route of routeScene(layout, spec.connectors ?? []).routes) {
+      for (const route of routed(layout, spec.connectors ?? []).routes) {
         if (route.label === null) continue;
         assert.equal(
           route.label.collides,
@@ -705,7 +803,7 @@ describe("a label is moved clear of the node boxes", () => {
 describe("the router reports what it cannot route instead of throwing", () => {
   it("collects an endpoint the layout does not have", () => {
     const layout = stubLayout([faceNode("a", { x: 0, y: 0 }, "east")]);
-    const routing = routeScene(layout, [
+    const routing = routed(layout, [
       connector("c", "a.p", "ghost.in"),
       connector("d", "ghost.out", "a.p"),
     ]);
@@ -717,7 +815,7 @@ describe("the router reports what it cannot route instead of throwing", () => {
   });
 
   it("routes nothing at all without complaint", () => {
-    assert.deepEqual(routeScene(stubLayout([]), []), { routes: [], unresolved: [] });
+    assert.deepEqual(routed(stubLayout([]), []), { routes: [], unresolved: [] });
   });
 
   it("identifies a connector with no id by its endpoints, so the nudge order is still stable", () => {
@@ -725,7 +823,7 @@ describe("the router reports what it cannot route instead of throwing", () => {
       faceNode("a", { x: 0, y: 0 }, "east"),
       faceNode("b", { x: 400, y: 200 }, "west"),
     ]);
-    const routing = routeScene(layout, [{ from: "a.p", to: "b.p", kind: "flow" }]);
+    const routing = routed(layout, [{ from: "a.p", to: "b.p", kind: "flow" }]);
     assert.equal(routing.routes[0]?.id, null);
     assert.equal(routing.routes[0]?.identity, "a.p->b.p");
   });
