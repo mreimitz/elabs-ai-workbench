@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T20:35:00Z"
+timestamp: "2026-08-22T20:55:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -600,6 +600,27 @@ met and — where the box touches code — the gate
 >
 > **RM-30 WP 7.9 is briefed as four separately-committed pieces** (mode axis deleted · SKILL.md as a
 > source tab · the rail rename + width · the diff label), for the same recovery reason WP 7.8 was.
+>
+> ⚠️ **A CONCURRENT RM-37 SESSION IS LIVE IN THIS SAME WORKING TREE, and this batch already
+> collided with it once.** `a2d1893` (the spec commit above) swept that session's edit to
+> `RM-37-announcement-readiness/STATUS.md` into itself — `git add -A planning/` over a directory two
+> sessions are staging from. Content intact, nothing lost, and the other session confirmed it. **Stage
+> explicit paths from here on, never `-A` over `planning/`.** That session has since moved onto
+> `rm37/integration` and will not write `main`.
+>
+> **Its owner-taken decisions land on top of this batch**, so a validator should expect them: the
+> product name stays "AI Workbench", the machine handle becomes `aiwb`/`ai-workbench` **replacing
+> `mcpfp`** — including the `mcpfp_` service-token prefix and the `mcpfp.assert.json` CI gate
+> filename — licence Apache-2.0, release `0.3.0`, and a fresh install boots with the Assistant
+> workspace off and the dock on.
+>
+> **Two coupling points that are THIS plan's to absorb, both already flagged to that session:**
+> (a) AM-OB13 adds one environment variable, and **RM-18 WP 1.3's 78-entry env catalogue is
+> drift-tested against `config/env.ts` in BOTH directions** — so a new/renamed variable reddens that
+> test until the catalogue moves with it. That is the guard working, not a flake, and it applies to
+> the RM-37 rename too. (b) RM-18 WP 1.2's docs generator derives each guide URL from its subject
+> FOLDER name, so renaming `DC-18-mcpfp-cli` moves the generated `/docs/...` path. The rename wins;
+> re-point afterwards, and note it goes through the OKF generator, not a hand `mv` (bundle rule §9).
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade
