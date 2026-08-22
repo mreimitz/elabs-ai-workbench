@@ -66,6 +66,7 @@ import { SkillOverview } from "./SkillOverview";
 import { SkillUsageTab } from "./SkillUsageTab";
 import { SkillVersions } from "./SkillVersions";
 import { SkillDiffView } from "./SkillDiffView";
+import { formatVersionLabel } from "./version-label";
 import {
   getSkill,
   getSkillFiles,
@@ -80,18 +81,10 @@ import { notifyError } from "../../lib/notify";
 
 const LATEST = "__latest__";
 
-/**
- * One version's display label: `v{seq}`, plus the human `versionLabel` when it actually adds
- * information. The API derives a fallback label of exactly `v{seq}` for editor saves (no manifest
- * version, no git ref), which used to render as the duplicated "v5 · v5" — an identical (or
- * blank) label is dropped instead. Exported for tests.
- */
-export function formatVersionLabel(version: Pick<SkillVersion, "seq" | "versionLabel">): string {
-  const seqLabel = `v${version.seq}`;
-  const label = version.versionLabel?.trim();
-  if (!label || label.toLowerCase() === seqLabel.toLowerCase()) return seqLabel;
-  return `${seqLabel} · ${label}`;
-}
+// RM-30 WP 7.9 moved `formatVersionLabel` to `./version-label` so `SkillDiffView` can call it
+// without importing this file (which imports the diff view — the other direction would be a cycle).
+// Re-exported here so every existing caller and its tests are unchanged.
+export { formatVersionLabel };
 
 export type SkillInspectorProps = {
   skillId: string;

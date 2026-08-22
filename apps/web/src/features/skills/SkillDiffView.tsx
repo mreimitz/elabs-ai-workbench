@@ -29,6 +29,7 @@ import { getErrorMessage } from "../../lib/errors";
 import { formatNumber } from "../../lib/format";
 import { READ_ONLY_OPTIONS, languageFor } from "../../lib/monaco";
 import { getSkillDiff, getSkillFileDiff, type SkillFileDiff } from "./skills-inspector-api";
+import { formatVersionLabel } from "./version-label";
 
 // ── change-list status metadata (semantic tokens only — no raw colors) ──────────────────────────
 // Exported (with the delta helpers + DeltaStrip below) so other surfaces compositing a skill diff —
@@ -513,9 +514,12 @@ function VersionPicker({
         </SelectTrigger>
         <SelectContent>
           {versions.map((v) => (
+            // RM-30 WP 7.9 — the shared helper, not a hand-built label. Composing `v{seq}` +
+            // `versionLabel` here produced "v5 · v5" for every version the Studio saves, because the
+            // API's fallback label IS `v{seq}`; `formatVersionLabel` drops a label that only repeats
+            // the sequence, and it is what the inspector's own pickers and the Studio toolbar use.
             <SelectItem key={v.id} value={v.id}>
-              v{v.seq}
-              {v.versionLabel ? ` · ${v.versionLabel}` : ""}
+              {formatVersionLabel(v)}
             </SelectItem>
           ))}
         </SelectContent>
