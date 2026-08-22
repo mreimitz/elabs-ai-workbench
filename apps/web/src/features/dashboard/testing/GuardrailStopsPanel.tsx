@@ -7,6 +7,7 @@ import { formatNumber } from "../../../lib/format";
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { DrillList } from "./DrillList";
 import { buildGuardrailStopRows } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -61,6 +62,7 @@ export function GuardrailStopsPanel({
   return (
     <ChartPanel
       title="Guardrail stops by reason"
+      panelId={DASHBOARD_PANEL_IDS.guardrailStops}
       subtitle="Stacked stop count per stopReasonCode"
       icon={<ShieldAlert aria-hidden className="size-4" />}
     >

@@ -2,14 +2,22 @@ import { describe, expect, test } from "vitest";
 import { parseRunFilter, runFilterSchema } from "@mcp-token-footprint/shared";
 import {
   baseRunFilter,
+  bucketClampNote,
+  bucketPointCount,
   bucketRangeIso,
+  DEFAULT_TESTING_BUCKET,
   DEFAULT_TESTING_GROUP_BY,
   defaultControls,
   drillDownFilter,
   drillDownHref,
+  MAX_BUCKET_POINTS,
   metricsWindow,
   parseControlsFromSearchParams,
   resolveBucket,
+  resolveBucketSelection,
+  TESTING_BUCKET_AUTO,
+  TESTING_BUCKET_OPTIONS,
+  type TestingBucketChoice,
   type TestingDashboardControls,
   writeControlsToSearchParams,
 } from "./dashboard-url-state";
@@ -27,6 +35,10 @@ describe("defaultControls", () => {
     expect(controls.scenarioId).toEqual([]);
     expect(controls.suiteId).toBeUndefined();
     expect(controls.model).toEqual([]);
+    // AM-OB3 — "auto" is the default, so an untouched dashboard keeps deriving the bucket from the
+    // window span exactly as it did before the control existed.
+    expect(controls.bucket).toBe(DEFAULT_TESTING_BUCKET);
+    expect(DEFAULT_TESTING_BUCKET).toBe(TESTING_BUCKET_AUTO);
   });
 });
 
@@ -52,6 +64,7 @@ describe("parseControlsFromSearchParams", () => {
       from: defaultControls(NOW).from,
       to: defaultControls(NOW).to,
       groupBy: "server",
+      bucket: DEFAULT_TESTING_BUCKET,
       providerKind: ["anthropic", "openai"],
       serverId: ["srv-1", "srv-2"],
       scenarioId: ["scn-1"],
@@ -93,6 +106,7 @@ describe("writeControlsToSearchParams / parseControlsFromSearchParams — round 
       from: "2026-07-01",
       to: "2026-07-10",
       groupBy: "providerKind",
+      bucket: "week",
       providerKind: ["anthropic"],
       serverId: ["srv-1"],
       scenarioId: ["scn-1", "scn-2"],
@@ -263,5 +277,146 @@ describe("drillDownFilter / drillDownHref", () => {
     expect(
       parseRunFilter(decodeURIComponent(serverHref.slice("/testing/runs?filter=".length))).serverId,
     ).toEqual(["srv-failing"]);
+  });
+});
+
+// ── AM-OB3 — the bucket choice, its URL key and its clamp ────────────────────────────────────────
+
+/** A window of exactly `days` whole days, as instants (what the page range supplies). */
+function windowOf(days: number, bucket: TestingBucketChoice = TESTING_BUCKET_AUTO): TestingDashboardControls {
+  const to = new Date("2026-07-17T12:00:00.000Z");
+  const from = new Date(to.getTime() - days * 86_400_000);
+  return { ...defaultControls(NOW), from: from.toISOString(), to: to.toISOString(), bucket };
+}
+
+describe("tBucket — parsing and writing", () => {
+  test("every real bucket round-trips through ?tBucket=", () => {
+    for (const bucket of ["hour", "day", "week"] as const) {
+      const written = writeControlsToSearchParams(new URLSearchParams(), {
+        ...defaultControls(NOW),
+        bucket,
+      });
+      expect(written.get("tBucket")).toBe(bucket);
+      expect(parseControlsFromSearchParams(written, NOW).bucket).toBe(bucket);
+    }
+  });
+
+  test('"auto" writes NO param — a zero-choice dashboard URL is byte-identical to before this WP', () => {
+    const written = writeControlsToSearchParams(new URLSearchParams(), defaultControls(NOW));
+    expect(written.has("tBucket")).toBe(false);
+    expect(written.toString()).toBe("");
+  });
+
+  test("choosing auto again REMOVES an existing ?tBucket= rather than leaving a stale one", () => {
+    const written = writeControlsToSearchParams(new URLSearchParams({ tBucket: "hour" }), {
+      ...defaultControls(NOW),
+      bucket: TESTING_BUCKET_AUTO,
+    });
+    expect(written.has("tBucket")).toBe(false);
+  });
+
+  test("a malformed or unknown ?tBucket= degrades to auto — it never throws", () => {
+    for (const raw of ["", "minute", "HOUR", "auto", "day;drop", "__proto__", "toString"]) {
+      const controls = parseControlsFromSearchParams(new URLSearchParams({ tBucket: raw }), NOW);
+      expect(controls.bucket).toBe(TESTING_BUCKET_AUTO);
+    }
+  });
+
+  test("the control's option list is auto + the shared METRICS_BUCKETS vocabulary, in that order", () => {
+    expect(TESTING_BUCKET_OPTIONS).toEqual(["auto", "hour", "day", "week"]);
+  });
+});
+
+describe("resolveBucketSelection", () => {
+  test('"auto" reproduces the pre-existing span rule exactly, and is never marked clamped', () => {
+    for (const days of [1, 2, 7, 30, 60, 90, 400]) {
+      const controls = windowOf(days);
+      const selection = resolveBucketSelection(controls);
+      expect(selection.bucket).toBe(resolveBucket(controls));
+      expect(selection.clamped).toBe(false);
+      expect(selection.requested).toBe(TESTING_BUCKET_AUTO);
+    }
+  });
+
+  test("an explicit bucket that fits is honoured over the span rule (the point of the control)", () => {
+    // 7 days auto-buckets DAILY; hourly is 168 points, under the limit, so the choice wins.
+    const controls = windowOf(7, "hour");
+    expect(resolveBucket(controls)).toBe("day");
+    const selection = resolveBucketSelection(controls);
+    expect(selection.bucket).toBe("hour");
+    expect(selection.clamped).toBe(false);
+    expect(selection.points).toBe(168);
+    expect(bucketClampNote(selection)).toBeNull();
+  });
+
+  test("coarsening is always honoured — weekly over a one-day window is one bucket, not a clamp", () => {
+    const selection = resolveBucketSelection(windowOf(1, "week"));
+    expect(selection.bucket).toBe("week");
+    expect(selection.points).toBe(1);
+    expect(selection.clamped).toBe(false);
+  });
+
+  test("hourly over 90 days is CLAMPED to daily, not silently honoured (acceptance #2)", () => {
+    const selection = resolveBucketSelection(windowOf(90, "hour"));
+    expect(selection.requested).toBe("hour");
+    expect(selection.requestedPoints).toBe(90 * 24);
+    expect(selection.bucket).toBe("day");
+    expect(selection.clamped).toBe(true);
+    expect(selection.points).toBe(90);
+    const note = bucketClampNote(selection);
+    // The note must name BOTH buckets and the number that forced the change — "the chart did
+    // something else" with no reason is the silent honouring this rejects.
+    expect(note).toContain("hourly");
+    expect(note).toContain("daily");
+    expect(note).toContain("2,160");
+    expect(note).toContain(MAX_BUCKET_POINTS.toLocaleString("en-US"));
+  });
+
+  test("a request too fine even for daily coarsens all the way to weekly", () => {
+    const selection = resolveBucketSelection(windowOf(500, "hour"));
+    expect(selection.bucket).toBe("week");
+    expect(selection.clamped).toBe(true);
+    expect(bucketClampNote(selection)).toContain("weekly");
+  });
+
+  test("no choice the control offers ever queries more than the limit, except at the coarsest bucket", () => {
+    for (const days of [1, 2, 7, 30, 60, 90, 365, 1000]) {
+      for (const bucket of TESTING_BUCKET_OPTIONS) {
+        const selection = resolveBucketSelection(windowOf(days, bucket));
+        // Weekly is the coarsest bucket the API has, so a multi-decade window can still exceed the
+        // cap there — that is where the pre-existing "auto" rule already sat, and drawing a wide
+        // bar beats refusing to draw. Every finer bucket is held under it.
+        if (selection.bucket !== "week") {
+          expect(selection.points).toBeLessThanOrEqual(MAX_BUCKET_POINTS);
+        }
+      }
+    }
+  });
+
+  test("bucketPointCount is the count the clamp is judged on", () => {
+    expect(bucketPointCount(windowOf(2), "hour")).toBe(48);
+    expect(bucketPointCount(windowOf(30), "day")).toBe(30);
+    expect(bucketPointCount(windowOf(30), "week")).toBe(5);
+    // An empty/degenerate window still draws one column rather than zero.
+    expect(bucketPointCount({ ...defaultControls(NOW), from: "nonsense", to: "nonsense" }, "day")).toBe(1);
+  });
+
+  test("a clamp keeps as much of the request as fits — it is not a fallback to auto", () => {
+    // Over 90 days the span rule picks WEEKLY. A clamped hourly request lands on DAILY, the finest
+    // bucket that fits, so asking for more resolution still gets more resolution than auto would.
+    const selection = resolveBucketSelection(windowOf(90, "hour"));
+    expect(selection.auto).toBe("week");
+    expect(selection.bucket).toBe("day");
+  });
+});
+
+describe("the bucket choice does NOT leak into drill-down (acceptance #6)", () => {
+  test("an explicit ?tBucket= leaves the drill-down filter and href byte-identical", () => {
+    const base = windowOf(30);
+    const withBucket = windowOf(30, "week");
+    expect(drillDownFilter(withBucket)).toEqual(drillDownFilter(base));
+    expect(drillDownHref(drillDownFilter(withBucket))).toBe(drillDownHref(drillDownFilter(base)));
+    // …and the dimension filter every metrics query carries is untouched too.
+    expect(baseRunFilter(withBucket)).toEqual(baseRunFilter(base));
   });
 });

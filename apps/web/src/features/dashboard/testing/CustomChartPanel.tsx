@@ -11,6 +11,7 @@ import { IconButton } from "../../../components/IconButton";
 import { CustomChartCanvas } from "./CustomChartCanvas";
 import type { TestingDashboardControls } from "./dashboard-url-state";
 import { humanizeMeasure } from "./metrics-derive";
+import { customChartPanelId } from "./panel-anchor";
 import { ChartPanel } from "./panel-shell";
 import { type ChartGroupLabelCatalog, useCustomChartData } from "./use-custom-chart-data";
 
@@ -58,6 +59,10 @@ export function CustomChartPanel({
     <ChartPanel
       title={chart.name}
       subtitle={chartSubtitle(chart.config)}
+      // AM-OB3 — a custom chart's address is its PERSISTED row id, so the link a colleague was sent
+      // survives a reload, a reorder and a rename, and only stops resolving when the chart is
+      // deleted (at which point `?panel=` simply matches nothing — see `panel-anchor.ts`).
+      panelId={customChartPanelId(chart.id)}
       actions={
         <div className="flex items-center gap-1">
           <IconButton

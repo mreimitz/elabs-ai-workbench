@@ -7,6 +7,7 @@ import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatNumber } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { buildTokensResult, type CapabilityClassSeries, datapointBucketStart } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -49,6 +50,7 @@ export function TokensPanel({
   return (
     <ChartPanel
       title="Tokens by capability class"
+      panelId={DASHBOARD_PANEL_IDS.tokens}
       subtitle="Exact (provider-metered) vs estimated — always separate series, never summed"
       icon={<Layers aria-hidden className="size-4" />}
       actions={

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LineChart } from "lucide-react";
-import { ScrollArea, Skeleton } from "@elabs-ai/components-ui";
+import { LineChart, Timer } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle, ScrollArea, Skeleton } from "@elabs-ai/components-ui";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../components/InlineError";
 import { TabEmptyState } from "../../components/TabEmptyState";
@@ -10,6 +10,7 @@ import { CachePanel } from "./testing/CachePanel";
 import { CostPanel } from "./testing/CostPanel";
 import { CustomChartsSection } from "./testing/CustomChartsSection";
 import {
+  bucketClampNote,
   drillDownHref,
   parseControlsFromSearchParams,
   type TestingDashboardControls,
@@ -29,7 +30,7 @@ import {
   buildTestingKpis,
   makeGroupLabelResolver,
 } from "./testing/metrics-derive";
-import { PanelGrid } from "./testing/panel-shell";
+import { PanelAnchorProvider, PanelGrid } from "./testing/panel-shell";
 import { RunsErrorRatePanel } from "./testing/RunsErrorRatePanel";
 import { ScansStripPanel } from "./testing/ScansStripPanel";
 import { ScoreTrendPanel } from "./testing/ScoreTrendPanel";
@@ -75,7 +76,11 @@ export function TestingTab({ range }: { range: DashboardRange }) {
   };
 
   const catalog = useTestingCatalog();
-  const { loading, error, loadedOnce, data, bucket, reload } = useTestingMetrics(controls);
+  const { loading, error, loadedOnce, data, bucket, bucketSelection, reload } = useTestingMetrics(controls);
+  // AM-OB3 — non-null only when an explicit `?tBucket=` was coarsened for this window. It is a
+  // statement about what the CHARTS are drawing, so it sits above them at full width rather than
+  // as a chip in the facet row: "the panels quietly did something else" is the failure mode.
+  const clampNote = bucketClampNote(bucketSelection);
 
   const serversById = useMemo(() => new Map(catalog.servers.map((s) => [s.id, s.name])), [catalog.servers]);
   const scenariosById = useMemo(() => new Map(catalog.scenarios.map((s) => [s.id, s])), [catalog.scenarios]);
@@ -157,70 +162,87 @@ export function TestingTab({ range }: { range: DashboardRange }) {
           suites={catalog.suites.map((s) => ({ id: s.id, name: s.name }))}
           models={models}
           runCount={loadedOnce ? kpis.runCount : undefined}
+          bucketSelection={bucketSelection}
         />
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="flex flex-col gap-4 pr-3 pb-4">
-          {loading ? (
-            <TestingDashboardSkeleton />
-          ) : error && !loadedOnce ? (
-            <InlineError title="Couldn’t load testing metrics" detail={error} onRetry={reload} />
-          ) : !hasAnyData ? (
-            <TabEmptyState
-              icon={<LineChart aria-hidden />}
-              title="No runs in this window"
-              description="Widen the date range or clear a filter to see run and suite trends here."
-            />
-          ) : (
-            <>
-              {error && loadedOnce ? (
-                <InlineError
-                  title="Couldn’t refresh testing metrics"
-                  detail={`Showing the last successful load. ${error}`}
-                  onRetry={reload}
-                />
-              ) : null}
-              <KpiHeader kpis={kpis} extra={<WaitingForYouCard />} />
-              <PanelGrid>
-                <RunsErrorRatePanel
-                  series={data.runsOverTime}
-                  controls={controls}
-                  bucket={bucket}
-                  groupLabel={groupLabel}
-                  onDrill={onDrill}
-                />
-                <GuardrailStopsPanel series={data.guardrail} controls={controls} onDrill={onDrill} />
-                <DurationPanel series={data.duration} controls={controls} bucket={bucket} onDrill={onDrill} />
-                <TokensPanel series={data.tokens} controls={controls} bucket={bucket} onDrill={onDrill} />
-                <CachePanel
-                  series={data.cache}
-                  unavailableMeasures={data.cacheUnavailable}
-                  controls={controls}
-                  bucket={bucket}
-                  onDrill={onDrill}
-                />
-                <CostPanel series={data.cost} controls={controls} bucket={bucket} onDrill={onDrill} />
-                <ScoreTrendPanel series={data.score} controls={controls} bucket={bucket} onDrill={onDrill} />
-              </PanelGrid>
-              <LeaderboardsPanel
-                failingTests={failingTests}
-                failingServers={failingServers}
-                expensiveRuns={expensiveRuns}
-                controls={controls}
-                onDrill={onDrill}
-                onOpenRun={onOpenRun}
+        {/* AM-OB3 — everything below this line is panel-addressable: a `?panel=<id>` link scrolls to
+            its panel and marks it, and each panel header offers "copy link". The provider is the one
+            place that reads the URL for it (see `panel-shell.tsx`). */}
+        <PanelAnchorProvider>
+          <div className="flex flex-col gap-4 pr-3 pb-4">
+            {/* Rendered OUTSIDE the loading/empty branch on purpose: a coarsened bucket is true of the
+                whole tab, including a window that happens to hold no runs. */}
+            {clampNote !== null ? (
+              <Alert variant="warning">
+                <Timer aria-hidden />
+                <AlertTitle>Showing a coarser time bucket</AlertTitle>
+                <AlertDescription>
+                  <span className="block max-w-[68ch]">{clampNote}</span>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+            {loading ? (
+              <TestingDashboardSkeleton />
+            ) : error && !loadedOnce ? (
+              <InlineError title="Couldn’t load testing metrics" detail={error} onRetry={reload} />
+            ) : !hasAnyData ? (
+              <TabEmptyState
+                icon={<LineChart aria-hidden />}
+                title="No runs in this window"
+                description="Widen the date range or clear a filter to see run and suite trends here."
               />
-              <ScansStripPanel series={data.scans} onOpenServer={onOpenServer} />
-            </>
-          )}
+            ) : (
+              <>
+                {error && loadedOnce ? (
+                  <InlineError
+                    title="Couldn’t refresh testing metrics"
+                    detail={`Showing the last successful load. ${error}`}
+                    onRetry={reload}
+                  />
+                ) : null}
+                <KpiHeader kpis={kpis} extra={<WaitingForYouCard />} />
+                <PanelGrid>
+                  <RunsErrorRatePanel
+                    series={data.runsOverTime}
+                    controls={controls}
+                    bucket={bucket}
+                    groupLabel={groupLabel}
+                    onDrill={onDrill}
+                  />
+                  <GuardrailStopsPanel series={data.guardrail} controls={controls} onDrill={onDrill} />
+                  <DurationPanel series={data.duration} controls={controls} bucket={bucket} onDrill={onDrill} />
+                  <TokensPanel series={data.tokens} controls={controls} bucket={bucket} onDrill={onDrill} />
+                  <CachePanel
+                    series={data.cache}
+                    unavailableMeasures={data.cacheUnavailable}
+                    controls={controls}
+                    bucket={bucket}
+                    onDrill={onDrill}
+                  />
+                  <CostPanel series={data.cost} controls={controls} bucket={bucket} onDrill={onDrill} />
+                  <ScoreTrendPanel series={data.score} controls={controls} bucket={bucket} onDrill={onDrill} />
+                </PanelGrid>
+                <LeaderboardsPanel
+                  failingTests={failingTests}
+                  failingServers={failingServers}
+                  expensiveRuns={expensiveRuns}
+                  controls={controls}
+                  onDrill={onDrill}
+                  onOpenRun={onOpenRun}
+                />
+                <ScansStripPanel series={data.scans} onOpenServer={onOpenServer} />
+              </>
+            )}
 
-          {/* WP 2.7 — custom charts render UNDER the prebuilt panels regardless of the prebuilt
-              panels' own loading/error/empty state (each custom panel fetches + reports its OWN
-              state via useCustomChartData — an operator's custom chart may well have data even when
-              the prebuilt panels' default view doesn't). */}
-          <CustomChartsSection controls={controls} catalog={chartCatalog} />
-        </div>
+            {/* WP 2.7 — custom charts render UNDER the prebuilt panels regardless of the prebuilt
+                panels' own loading/error/empty state (each custom panel fetches + reports its OWN
+                state via useCustomChartData — an operator's custom chart may well have data even when
+                the prebuilt panels' default view doesn't). */}
+            <CustomChartsSection controls={controls} catalog={chartCatalog} />
+          </div>
+        </PanelAnchorProvider>
       </ScrollArea>
     </div>
   );

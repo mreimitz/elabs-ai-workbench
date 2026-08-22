@@ -9,6 +9,7 @@ import {
   type TestingDashboardControls,
 } from "./dashboard-url-state";
 import { buildScoreTrendRows, datapointBucketStart } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -37,6 +38,7 @@ export function ScoreTrendPanel({
   return (
     <ChartPanel
       title="Score trend"
+      panelId={DASHBOARD_PANEL_IDS.scoreTrend}
       subtitle="Mean grade — primary-priority grader chain"
       icon={<Star aria-hidden className="size-4" />}
     >

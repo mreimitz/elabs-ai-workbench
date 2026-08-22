@@ -1,5 +1,5 @@
 import type { MetricsBucket, ProviderKind, RunFilter, RunMetricsGroupBy } from "@mcp-token-footprint/shared";
-import { serializeRunFilter } from "@mcp-token-footprint/shared";
+import { METRICS_BUCKETS, serializeRunFilter } from "@mcp-token-footprint/shared";
 
 /**
  * Testing dashboard — URL-persisted control state (WP 2.2). Pure, React-free (mirrors
@@ -34,6 +34,56 @@ export const TESTING_GROUP_BY_OPTIONS: readonly TestingGroupBy[] = [
 
 export const DEFAULT_TESTING_GROUP_BY: TestingGroupBy = "model";
 
+/**
+ * ── THE TIME BUCKET (RM-17 AM-OB3) ───────────────────────────────────────────────────────────────
+ *
+ * Until this WP the bucket was DERIVED ONLY: {@link resolveBucket} read the window span and picked
+ * hour/day/week, with no URL key and — the part that mattered — no control anywhere in the UI. So
+ * there was no state to serialize: "this range, but hourly" was not a thing an operator could ask
+ * for, let alone link to. The control and the key therefore ship together; a key over a choice
+ * nobody can make would address nothing.
+ *
+ * `"auto"` is the default and means "keep deriving it from the span" — today's behaviour, exactly.
+ * It is deliberately NOT written to the URL (D-TB10: a field at its default is omitted), so an
+ * untouched `/dashboard?tab=testing` is byte-identical to what it was before this WP.
+ */
+export const TESTING_BUCKET_AUTO = "auto";
+export type TestingBucketChoice = typeof TESTING_BUCKET_AUTO | MetricsBucket;
+
+/** The bucket control's options, in order: Auto first, then coarsening. */
+export const TESTING_BUCKET_OPTIONS: readonly TestingBucketChoice[] = [
+  TESTING_BUCKET_AUTO,
+  ...METRICS_BUCKETS,
+];
+
+export const DEFAULT_TESTING_BUCKET: TestingBucketChoice = TESTING_BUCKET_AUTO;
+
+/** Human labels for the bucket vocabulary — used by the control AND by {@link bucketClampNote}, so
+ *  the note can never name a bucket differently from the option the operator picked. */
+export const TESTING_BUCKET_LABELS: Record<TestingBucketChoice, string> = {
+  auto: "Auto",
+  hour: "Hourly",
+  day: "Daily",
+  week: "Weekly",
+};
+
+const BUCKET_MS: Record<MetricsBucket, number> = {
+  hour: 3_600_000,
+  day: 86_400_000,
+  week: 604_800_000,
+};
+
+/**
+ * The most datapoints one series may carry before an EXPLICIT bucket choice is coarsened.
+ *
+ * The auto rule never gets near it (≤48 hourly points for a 2-day window, ≤60 daily for 60 days).
+ * It exists for the choice the operator can now make: hourly over a 90-day custom range is 2,160
+ * buckets — a wall of sub-pixel bars, one API response per panel measured in megabytes, and a
+ * per-bucket drill-down click nobody can hit. 200 is the point past which a bar in the panel's
+ * `h-56` box is thinner than a pixel on a normal screen.
+ */
+export const MAX_BUCKET_POINTS = 200;
+
 const DEFAULT_WINDOW_DAYS = 7;
 
 export type TestingDashboardControls = {
@@ -47,6 +97,9 @@ export type TestingDashboardControls = {
   from: string;
   to: string;
   groupBy: TestingGroupBy;
+  /** The operator's bucket-granularity choice (AM-OB3). `"auto"` derives it from the window span —
+   *  see {@link resolveBucketSelection}, which is what every caller should ask, not {@link resolveBucket}. */
+  bucket: TestingBucketChoice;
   providerKind: ProviderKind[];
   serverId: string[];
   /** The "environment" filter dimension — wire name stays `scenarioId` (D-T rename: UI label only). */
@@ -72,6 +125,7 @@ export function defaultControls(now: Date = new Date()): TestingDashboardControl
     from: isoDateOnly(fromDate),
     to,
     groupBy: DEFAULT_TESTING_GROUP_BY,
+    bucket: DEFAULT_TESTING_BUCKET,
     providerKind: [],
     serverId: [],
     scenarioId: [],
@@ -82,6 +136,7 @@ export function defaultControls(now: Date = new Date()): TestingDashboardControl
 
 const KEYS = {
   groupBy: "tGroupBy",
+  bucket: "tBucket",
   providerKind: "tProvider",
   serverId: "tServer",
   scenarioId: "tEnv",
@@ -105,6 +160,12 @@ function isTestingGroupBy(value: string): value is TestingGroupBy {
   return (TESTING_GROUP_BY_OPTIONS as readonly string[]).includes(value);
 }
 
+/** A `?tBucket=` value is honoured only if it names a REAL bucket. `"auto"` and anything malformed
+ *  both mean "derive it", which is why an unknown value degrades instead of throwing. */
+function isMetricsBucket(value: string): value is MetricsBucket {
+  return (METRICS_BUCKETS as readonly string[]).includes(value);
+}
+
 /**
  * Parse the dashboard's URL-persisted FACETS, falling back to {@link defaultControls} field by field
  * (an absent/malformed value never throws — it just falls back).
@@ -120,11 +181,13 @@ export function parseControlsFromSearchParams(
 ): TestingDashboardControls {
   const fallback = defaultControls(now);
   const groupByRaw = params.get(KEYS.groupBy);
+  const bucketRaw = params.get(KEYS.bucket);
   const suiteId = params.get(KEYS.suiteId);
   return {
     from: range?.from ?? fallback.from,
     to: range?.to ?? fallback.to,
     groupBy: groupByRaw && isTestingGroupBy(groupByRaw) ? groupByRaw : fallback.groupBy,
+    bucket: bucketRaw && isMetricsBucket(bucketRaw) ? bucketRaw : fallback.bucket,
     providerKind: parseList(params.get(KEYS.providerKind)) as ProviderKind[],
     serverId: parseList(params.get(KEYS.serverId)),
     scenarioId: parseList(params.get(KEYS.scenarioId)),
@@ -154,6 +217,7 @@ export function writeControlsToSearchParams(
     KEYS.groupBy,
     controls.groupBy === DEFAULT_TESTING_GROUP_BY ? undefined : controls.groupBy,
   );
+  setOrDelete(next, KEYS.bucket, controls.bucket === DEFAULT_TESTING_BUCKET ? undefined : controls.bucket);
   setOrDelete(
     next,
     KEYS.providerKind,
@@ -216,12 +280,97 @@ function windowDays(controls: TestingDashboardControls): number {
 
 /** Pick a sensible bucket granularity for the window span: hourly for a ≤2-day window (the "24h"
  *  preset), daily up to ~60 days (the "7d"/"30d" presets and most custom ranges), weekly beyond
- *  that — keeps a custom multi-month range from returning an unreadable wall of daily buckets. */
+ *  that — keeps a custom multi-month range from returning an unreadable wall of daily buckets.
+ *
+ *  This is the `"auto"` rule ONLY. A caller that must honour the operator's `?tBucket=` choice asks
+ *  {@link resolveBucketSelection} instead; this one stays exported because "what would auto pick?"
+ *  is a real question both the clamp and the control need to ask. */
 export function resolveBucket(controls: TestingDashboardControls): MetricsBucket {
   const days = windowDays(controls);
   if (days <= 2) return "hour";
   if (days <= 60) return "day";
   return "week";
+}
+
+/** Milliseconds spanned by the resolved window (0 when either bound is unparseable). */
+function windowSpanMs(controls: TestingDashboardControls): number {
+  const bounds = metricsWindow(controls);
+  const ms = Date.parse(bounds.to) - Date.parse(bounds.from);
+  return Number.isFinite(ms) && ms > 0 ? ms : 0;
+}
+
+/** How many buckets of `bucket` the window covers — at least 1, since an empty window still draws
+ *  one (empty) column rather than nothing. */
+export function bucketPointCount(controls: TestingDashboardControls, bucket: MetricsBucket): number {
+  return Math.max(1, Math.ceil(windowSpanMs(controls) / BUCKET_MS[bucket]));
+}
+
+/** What the dashboard actually queries with, and why. */
+export type TestingBucketSelection = {
+  /** The bucket every time-series metrics query uses. */
+  bucket: MetricsBucket;
+  /** What the operator asked for — `"auto"` when they have asked for nothing. */
+  requested: TestingBucketChoice;
+  /** What the `"auto"` rule picks for this window (shown as the Auto option's hint). */
+  auto: MetricsBucket;
+  /**
+   * True when an EXPLICIT request was coarsened because it exceeded {@link MAX_BUCKET_POINTS} over
+   * the active window. The request STAYS in the URL — it resumes the moment the window narrows
+   * again — so what changes is only what gets queried, and the UI has to say so out loud.
+   */
+  clamped: boolean;
+  /** Datapoints the effective `bucket` produces over the window. */
+  points: number;
+  /** Datapoints the REQUESTED bucket would have produced — equal to `points` unless `clamped`. */
+  requestedPoints: number;
+};
+
+/**
+ * Resolve the bucket for the current window and the operator's choice.
+ *
+ * `"auto"` → today's span-derived rule, untouched. An explicit bucket is honoured as long as it
+ * stays under {@link MAX_BUCKET_POINTS}; past that it is COARSENED one step at a time
+ * (hour → day → week) rather than silently obeyed. The coarsest bucket is always allowed even over
+ * an absurd window — drawing a wide bar beats refusing to draw anything.
+ */
+export function resolveBucketSelection(controls: TestingDashboardControls): TestingBucketSelection {
+  const auto = resolveBucket(controls);
+  const requested = controls.bucket;
+  if (requested === TESTING_BUCKET_AUTO) {
+    const points = bucketPointCount(controls, auto);
+    return { bucket: auto, requested, auto, clamped: false, points, requestedPoints: points };
+  }
+  const requestedPoints = bucketPointCount(controls, requested);
+  let bucket: MetricsBucket = requested;
+  for (const candidate of METRICS_BUCKETS.slice(METRICS_BUCKETS.indexOf(requested))) {
+    bucket = candidate;
+    if (bucketPointCount(controls, candidate) <= MAX_BUCKET_POINTS) break;
+  }
+  return {
+    bucket,
+    requested,
+    auto,
+    clamped: bucket !== requested,
+    points: bucketPointCount(controls, bucket),
+    requestedPoints,
+  };
+}
+
+/**
+ * The sentence the UI shows when a bucket choice was coarsened — `null` when nothing was.
+ *
+ * It names BOTH buckets, the count that forced the change and the way back, because "the chart
+ * quietly did something else" is exactly the silent honouring this WP's acceptance forbids.
+ */
+export function bucketClampNote(selection: TestingBucketSelection): string | null {
+  if (!selection.clamped) return null;
+  const asked = TESTING_BUCKET_LABELS[selection.requested].toLowerCase();
+  const shown = TESTING_BUCKET_LABELS[selection.bucket].toLowerCase();
+  return (
+    `${selection.requestedPoints.toLocaleString("en-US")} ${asked} buckets is more than one chart can show ` +
+    `(the limit is ${MAX_BUCKET_POINTS.toLocaleString("en-US")}), so these panels are drawn ${shown}. ` +
+    `Narrow the date range to get ${asked} back — the choice is kept.`
+  );
 }
 
 /**

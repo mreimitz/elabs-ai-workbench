@@ -313,6 +313,19 @@ describe("DashboardView — default tab + deep link", () => {
     // It is not a RETIRED tab either, so the (unknown) param is left alone rather than rewritten.
     expect(location()).toHaveTextContent("tab=toString");
   });
+
+  // AM-OB3 — `?panel=` is owned by the Testing tab's panels, not by this host (a panel exists only
+  // after that tab's metrics settle). What the host owes it is indifference: it must never treat an
+  // unknown extra param as a reason to move the tab or drop the window.
+  test("a ?panel= naming nothing does not disturb the tab, the range or the URL", async () => {
+    renderDashboard({}, { initialEntries: ["/dashboard?tab=testing&range=30d&panel=no-such-panel"] });
+    expect(screen.getByRole("tab", { name: "Testing" })).toHaveAttribute("data-state", "active");
+    await waitFor(() => expect(screen.getByText("No runs in this window")).toBeInTheDocument());
+    expect(location()).toHaveTextContent("tab=testing");
+    expect(location()).toHaveTextContent("range=30d");
+    // Ignored, not "corrected" — the app never rewrites a param it simply does not recognise.
+    expect(location()).toHaveTextContent("panel=no-such-panel");
+  });
 });
 
 describe("DashboardView — tab switch updates the URL (restore-on-reload)", () => {

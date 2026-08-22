@@ -541,3 +541,161 @@ describe("TestingTab — drill-down wiring (end-to-end navigate)", () => {
     expect(filter.stopReasonCode).toEqual(["max_turns"]);
   });
 });
+
+// ── RM-17 AM-OB3 ────────────────────────────────────────────────────────────────────────────────
+
+/** Every time-series `getRunMetrics` call's bucket. The two leaderboard calls are pinned to `week`
+ *  by the hook and are not a time series, so they are excluded — a bucket choice must not move them. */
+function timeSeriesBuckets(): string[] {
+  return getRunMetricsMock.mock.calls
+    .map(([query]) => query as { bucket: string; groupBy?: string })
+    .filter((q) => q.groupBy !== "test" && q.groupBy !== "server")
+    .map((q) => q.bucket);
+}
+
+describe("TestingTab — the time bucket is a control AND a URL key (AM-OB3)", () => {
+  test("the toolbar carries a Bucket select, and with no ?tBucket= the span rule still decides", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab();
+    await waitFor(() => expect(screen.getByText("Runs & error rate over time")).toBeInTheDocument());
+
+    // The control is real and reachable by its accessible name (a bare Select + `aria-label`, the
+    // same C-1 shape Suite/Group by use).
+    expect(screen.getByRole("combobox", { name: "Time bucket" })).toBeEnabled();
+    // …and the default is unchanged behaviour: a 7-day window still buckets daily.
+    expect(new Set(timeSeriesBuckets())).toEqual(new Set(["day"]));
+  });
+
+  test("?tBucket=hour overrides the span rule on every time-series query, leaving leaderboards weekly", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab(["/dashboard?tab=testing&tBucket=hour"]);
+    await waitFor(() => expect(screen.getByText("Runs & error rate over time")).toBeInTheDocument());
+
+    expect(new Set(timeSeriesBuckets())).toEqual(new Set(["hour"]));
+    const leaderboardBuckets = getRunMetricsMock.mock.calls
+      .map(([query]) => query as { bucket: string; groupBy?: string })
+      .filter((q) => q.groupBy === "test" || q.groupBy === "server")
+      .map((q) => q.bucket);
+    expect(new Set(leaderboardBuckets)).toEqual(new Set(["week"]));
+    // Nothing is coarsened here — 7 days of hours is 168 points, under the limit.
+    expect(screen.queryByText("Showing a coarser time bucket")).not.toBeInTheDocument();
+  });
+
+  test("a malformed ?tBucket= degrades to the span rule instead of blanking the tab", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab(["/dashboard?tab=testing&tBucket=minute"]);
+    await waitFor(() => expect(screen.getByText("Runs & error rate over time")).toBeInTheDocument());
+
+    expect(new Set(timeSeriesBuckets())).toEqual(new Set(["day"]));
+    expect(screen.queryByText("Showing a coarser time bucket")).not.toBeInTheDocument();
+  });
+
+  test("an unreasonable bucket is coarsened AND said out loud — never silently honoured", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    // A ~400-day custom window: hourly would be 9,600 buckets, daily 400 — both past the limit.
+    const wideRange = resolveDashboardRange(
+      { kind: "custom", from: "2025-06-13", to: "2026-07-17" },
+      new Date("2026-07-17T12:00:00.000Z"),
+    );
+    renderTab(["/dashboard?tab=testing&tBucket=hour"], wideRange);
+    await waitFor(() => expect(screen.getByText("Runs & error rate over time")).toBeInTheDocument());
+
+    expect(new Set(timeSeriesBuckets())).toEqual(new Set(["week"]));
+    expect(screen.getByText("Showing a coarser time bucket")).toBeInTheDocument();
+    // The note names what was asked for, what is drawn, and the count that forced it.
+    expect(screen.getByText(/hourly buckets is more than one chart can show/)).toBeInTheDocument();
+    expect(screen.getByText(/drawn weekly/)).toBeInTheDocument();
+    // The CHOICE is not thrown away — it is still on the URL, so it resumes on a narrower window.
+    expect(screen.getByTestId("location")).toHaveTextContent("tBucket=hour");
+  });
+});
+
+describe("TestingTab — every panel has an address (AM-OB3)", () => {
+  const PANEL_TITLES: Record<string, string> = {
+    "runs-error-rate": "Runs & error rate over time",
+    "guardrail-stops": "Guardrail stops by reason",
+    duration: "Duration (p50 / p95)",
+    tokens: "Tokens by capability class",
+    cache: "Prompt cache",
+    cost: "Cost by basis",
+    "score-trend": "Score trend",
+    leaderboards: "Leaderboards",
+    scans: "Scans strip",
+  };
+
+  test("every prebuilt panel renders its stable id and a copy-link affordance", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab();
+    await waitFor(() => expect(screen.getByText("Runs & error rate over time")).toBeInTheDocument());
+
+    for (const [panelId, title] of Object.entries(PANEL_TITLES)) {
+      const panel = document.getElementById(`dashboard-panel-${panelId}`);
+      expect(panel, `panel ${panelId} has no DOM id`).not.toBeNull();
+      expect(panel?.textContent).toContain(title);
+      // D-TB5: one affordance, and its tooltip IS its accessible name (IconButton derives both from
+      // the same prop, so asserting the accessible name asserts the tooltip text).
+      expect(screen.getByRole("button", { name: `Copy link to ${title}` })).toBeEnabled();
+    }
+  });
+
+  test("?panel= scrolls its panel into view and marks it — and marks only it", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    const scrollIntoView = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scrollIntoView;
+    try {
+      renderTab(["/dashboard?tab=testing&panel=cache"]);
+      await waitFor(() => expect(screen.getByText("Prompt cache")).toBeInTheDocument());
+
+      const cache = document.getElementById("dashboard-panel-cache");
+      await waitFor(() => expect(cache).toHaveAttribute("data-anchored", "true"));
+      expect(document.querySelectorAll('[data-anchored="true"]')).toHaveLength(1);
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled());
+      expect(scrollIntoView.mock.instances[0]).toBe(cache);
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
+  test("a ?panel= naming nothing is ignored — the tab, the range and the facets are untouched", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    renderTab(["/dashboard?tab=testing&tGroupBy=server&panel=removed-in-a-later-release"]);
+    await waitFor(() => expect(screen.getByText("Runs & error rate over time")).toBeInTheDocument());
+
+    // Nothing anchored, nothing thrown, every panel still rendered.
+    expect(document.querySelectorAll('[data-anchored="true"]')).toHaveLength(0);
+    expect(document.getElementById("dashboard-panel-cache")).not.toBeNull();
+    // The facet the URL also carried is still applied, and the unknown param is still on the URL —
+    // it is IGNORED, not "corrected" behind the operator's back.
+    expect(getRunMetricsMock.mock.calls.some(([q]) => (q as { groupBy?: string }).groupBy === "server")).toBe(true);
+    expect(screen.getByTestId("location")).toHaveTextContent("panel=removed-in-a-later-release");
+  });
+
+  test("copy link puts the WHOLE view on the clipboard — window, facets and the panel", async () => {
+    installCatalog();
+    installNonEmptyMetrics();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    renderTab(["/dashboard?tab=testing&range=30d&tGroupBy=server&tBucket=day"]);
+    await waitFor(() => expect(screen.getByText("Cost by basis")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy link to Cost by basis" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+
+    const copied = new URL(writeText.mock.calls[0]?.[0] as string);
+    expect(copied.pathname).toBe("/dashboard");
+    expect(copied.searchParams.get("panel")).toBe("cost");
+    expect(copied.searchParams.get("tab")).toBe("testing");
+    expect(copied.searchParams.get("range")).toBe("30d");
+    expect(copied.searchParams.get("tGroupBy")).toBe("server");
+    expect(copied.searchParams.get("tBucket")).toBe("day");
+  });
+});
