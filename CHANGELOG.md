@@ -5,6 +5,39 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — a bug report you can send without reading it first
+
+**A diagnostics bundle, and the one thing it will not promise.** Settings gained a single action
+that produces the document you paste into a bug report: versions, which environment variables are
+set, the database's shape and migration level, recent errors, and which features are switched on.
+Served as `GET /api/diagnostics` and `GET /api/diagnostics/markdown`, computed when you ask and
+stored nowhere — no migration, no table, no column, no dependency, no feature flag.
+
+The point is not the document, it is that you can send it **without auditing it line by line**. So
+the safety is built into the shape rather than bolted on as a filter: the environment section walks
+a fixed list of the 78 variables the app recognises and records only `set` / `unset` / `default`.
+There is no route from a variable's value into the output, which means no regular expression has to
+be trusted. Free text you typed — server names, skill titles, scenario labels, MCP commands — is
+never read at all; the bundle counts things instead of naming them. A test plants recognisable
+secrets through the real storage paths (server env and header secrets, OAuth tokens, provider
+credentials, and an encryption key whose own bytes are a sentinel) and fails the build if a single
+one surfaces in either rendering.
+
+**And it says where that promise stops.** A live failing scan showed that an error like
+`spawn /opt/homebrew/bin/acme-mcp-server ENOENT` puts the command path you configured into the
+errors section. Nothing else leaked — not the server's name, its arguments, a secret, or a variable's
+value. It was left in rather than stripped, because an ENOENT without its path is not worth filing
+and removing it would take a second redaction pass, which is exactly the kind of duplicate nobody
+would keep honest. Instead the bundle is shown to you before it goes anywhere, its preamble tells
+you to read the errors section, and a test pins the boundary in **both** directions so neither the
+behaviour nor the wording can drift away quietly.
+
+Where an error source does not exist, the bundle says **not captured** — a state the type system
+will not let render as "zero errors", so silence can never pass for a clean bill of health.
+
+*Not verified: no browser was opened for this. The Settings row, its dialog and the copy action are
+covered by tests, not by a two-theme look or a keyboard pass.*
+
 ## Unreleased — one way to make a thing, one link to a chart, and a migration that had quietly broken feedback
 
 **Building a skill now has exactly one path.** The Skill Studio's left panel was a list of the tools

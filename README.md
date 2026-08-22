@@ -572,6 +572,19 @@ This is a local/dev tool with no authentication by design.
   — keep the key on the same persistent `/data` volume as the database.
 - Tool execution runs in the API, validates arguments against the tool's input schema, and treats
   tool output as untrusted.
+- **Filing a bug report does not mean handing over your configuration.** Settings has a
+  **diagnostics bundle**: one action that produces a document — versions, environment, database
+  shape, recent errors, feature state — you can paste into an issue. Its safety is *structural*
+  rather than filtered: the environment section lists each variable this app recognises and says
+  only whether it is set, unset or defaulted, so **no code path carries a value into the document**.
+  Server names, skill titles, scenario labels and MCP commands are never read either — the bundle
+  carries counts, not content. An automated sweep plants sentinel secrets through the real storage
+  paths and fails the build if any of them reaches the document.
+  **One honest exception:** the recent-errors section quotes system error text verbatim, and an
+  error such as `spawn … ENOENT` names the command path you configured. That is deliberate — an
+  ENOENT with the path removed is not worth filing — so the bundle is shown to you before you send
+  it and tells you to read that section first.
+- The bundle is computed when you ask for it and stored nowhere.
 
 The embedded Assistant runs the `@anthropic-ai/claude-agent-sdk` in-container on the owner's Claude
 subscription (or an Anthropic API key) and needs outbound HTTPS to `api.anthropic.com` and
