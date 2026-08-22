@@ -3199,6 +3199,13 @@ export type CompatibilityResult = {
   testId: string;
   techName: string;
   userFacingName: string;
+  /**
+   * The same check, phrased as the PROBLEM it found (RM-37 WP 0.5): `userFacingName` names the
+   * check for a checks list ("Namespaced tool names stay within length limit"); `findingName` names
+   * the finding for a findings list ("Namespaced tool names exceed the length limit"). A findings
+   * card that prints the check name reads as though the check itself were the bad news.
+   */
+  findingName: string;
   level: CompatibilityLevel;
   subjectType: "server" | "tool" | "session" | "environment";
   /** Tool name for tool-level results; server/scan id otherwise. */
@@ -3270,6 +3277,8 @@ export type CompatibilityTestEntry = {
   testId: string;
   techName: string;
   userFacingName: string;
+  /** The check phrased as the problem it found — see {@link CompatibilityResult.findingName}. */
+  findingName: string;
   level: CompatibilityLevel;
   category: string;
   executionMode: string;
@@ -3311,6 +3320,8 @@ export type ToolFindingEntry = {
   testId: string;
   techName: string;
   userFacingName: string;
+  /** The check phrased as the problem it found — see {@link CompatibilityResult.findingName}. */
+  findingName: string;
   category: string;
   failureMode: string;
   recommendation: string;
