@@ -271,7 +271,7 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
   });
 
   test("a settings change shows in the Code view LIVE, with no save", async () => {
-    renderStudio("/skills/sk-1/studio?rail=settings&mode=code");
+    renderStudio("/skills/sk-1/studio?rail=settings&file=SKILL.md");
     const panel = await openLoadedSettings();
 
     fireEvent.change(within(panel).getByLabelText("Description"), {
@@ -293,7 +293,7 @@ describe("§I8 — bind a server, add a keyword and a command, save ONE version"
     // The fields read the live document rather than holding a private copy, which is the only way
     // the two can't drift. Without it, an author who edits `name:` by hand in Code and then touches
     // any settings field would silently write their old name back over it.
-    renderStudio("/skills/sk-1/studio?rail=settings&mode=code");
+    renderStudio("/skills/sk-1/studio?rail=settings&file=SKILL.md");
     const panel = await openLoadedSettings();
 
     fireEvent.click(await screen.findByTestId("code-hand-edit"));

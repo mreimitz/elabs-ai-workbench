@@ -24,6 +24,13 @@ import {
 // `content`; `useWorkspace` refuses to rename/move/delete it), so this filter is a belt-and-braces
 // guard on the boundary rather than a behaviour — and `studioFileOps` is where it is enforced once,
 // for every caller.
+//
+// RM-30 WP 7.9 made SKILL.md a visible SOURCE TAB in the same strip as every resource file, which
+// makes this filter matter more, not less: the tab LOOKS like the others, so the next author to
+// touch this code has an obvious wrong move available (route it through `WorkspaceEditor`, which
+// writes `files.setText` and would derive exactly the `update_file` this drops). The SKILL.md tab is
+// deliberately still the editor's own code pane over `content`, and `files-one-save.test.tsx` types
+// into it and then asserts the saved batch names the manifest nowhere.
 
 /** True when `op` is a tree op that would write, move or remove the SKILL.md manifest. */
 export function opTargetsSkillMd(op: SkillEditOp): boolean {
@@ -52,12 +59,16 @@ export function describeStudioFileOps(ops: readonly SkillEditOp[]): string[] {
   return ops.map(describeTreeOp);
 }
 
-/**
- * The files the Studio's centre surface can open as EDITOR TABS: everything except the manifest,
- * which is not a tab of its own — it is the Flow/Code/Split surface the whole Studio is built round.
- */
-export function isTabbableFile(entry: Pick<WorkEntry, "path" | "originalPath">): boolean {
-  return entry.path !== SKILL_MD && entry.originalPath !== SKILL_MD;
-}
+// RM-30 WP 7.9 DELETED `isTabbableFile`. It answered "which files can be an editor tab" with
+// "everything except the manifest" — and D-UX19 #2 makes that answer wrong: SKILL.md is the
+// manifest's SOURCE tab now, so every file in the working tree is tabbable and the predicate is
+// vacuously true. It is deleted rather than rewritten to `return true`, because a function whose
+// answer can never be `false` is a decision the reader thinks is being made and is not.
+//
+// Correcting the record while removing it: the predicate had **zero production call sites** — it was
+// exported and referenced only by its own test. What actually kept SKILL.md out of the tab strip was
+// `tab-model.ts` (`openTab` refused it, `activeTab` collapsed it onto the pinned surface) plus
+// `StudioFileTabs` prepending the manifest itself. That is where WP 7.9's change had to land, and
+// did.
 
 export { SKILL_MD };

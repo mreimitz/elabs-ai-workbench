@@ -26,8 +26,11 @@ type NameMode =
   | { kind: "rename-folder"; path: string };
 
 export type StudioFilesRailProps = {
-  /** The file the centre surface has open — the Studio's `?file=` param. */
-  selectedFile: string;
+  /** The file the centre surface has open — the Studio's `?file=` param. `undefined` when the
+   *  Designer is showing: the Designer is not a file, so NOTHING in the tree is selected, and the
+   *  rename/move/delete controls are correctly disabled rather than aimed at a path that is not a
+   *  file. */
+  selectedFile: string | undefined;
   /** Open a file in the centre surface (and, for anything but the manifest, as an editor tab). */
   onSelectFile: (path: string) => void;
   /** A path (a file, or a folder and everything under it) moved — the caller re-homes its open tabs

@@ -222,31 +222,60 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     renderStudio();
     await waitForStudio();
 
-    // The slim toolbar: Exit · the view control · Problems · the editor's save cluster.
+    // The slim toolbar: Exit · Problems · the editor's save cluster. RM-30 WP 7.9 removed the view
+    // control from it — see the "the mode axis is GONE" block below.
     expect(screen.getByRole("button", { name: "Exit" })).toBeInTheDocument();
-    expect(screen.getByRole("radiogroup", { name: "Editor view" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Problems 0" })).toBeInTheDocument();
     await screen.findByTestId("design-save-cluster");
 
-    // The mode toggle is the SHELL's — the editor must not render a second one.
-    expect(screen.getAllByRole("radiogroup", { name: "Editor view" })).toHaveLength(1);
+    // Zero params lands on the DESIGNER, and it is a real surface (the canvas), not a blank pane.
+    const tabs = await screen.findByRole("tablist", { name: "Open files" });
+    expect(within(tabs).getByRole("tab", { name: "Designer" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(await screen.findByTestId("canvas")).toBeInTheDocument();
 
     // The URL is left clean: a default view writes nothing.
     expect(url()).toBe("/skills/sk-1/studio");
   });
 
-  test("the left rail is open with Files·Tools·Settings; the context panel starts COLLAPSED", async () => {
+  test("the left rail is open with Files·Components·Settings; the context panel starts COLLAPSED", async () => {
     renderStudio();
     await waitForStudio();
 
     const rail = screen.getByTestId("studio-left-rail");
+    // RM-30 WP 7.9 paid WP 7.7's recorded debt: the TAB reads "Components", matching the panel it
+    // opens. There is no tab called "Tools" any more.
     expect(within(rail).getByRole("tab", { name: "Files" })).toBeInTheDocument();
-    expect(within(rail).getByRole("tab", { name: "Tools" })).toBeInTheDocument();
+    expect(within(rail).getByRole("tab", { name: "Components" })).toBeInTheDocument();
     expect(within(rail).getByRole("tab", { name: "Settings" })).toBeInTheDocument();
+    expect(within(rail).queryByRole("tab", { name: "Tools" })).toBeNull();
+
+    // The tabs are STACKED, which is what makes the longer label fit at all: measured in Chromium at
+    // 1600×1000 the label needs 105.17px, a three-way horizontal split of this rail leaves ~54px,
+    // and the full-width stack gives 163.05px. jsdom has no layout engine, so the pixels are the
+    // browser's job — what is pinned here is the orientation those pixels depend on, so putting the
+    // strip back in a row has to be a deliberate change and not an accident.
+    expect(within(rail).getByRole("tablist")).toHaveAttribute("aria-orientation", "vertical");
 
     // Never a reserved blank column: the context panel is a slim strip until asked for.
     expect(screen.getByTestId("studio-context-panel-collapsed")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-context-panel")).toBeNull();
+  });
+
+  test("a legacy ?rail=tools link still opens the Components tab", async () => {
+    renderStudio("/skills/sk-1/studio?rail=tools");
+    await waitForStudio();
+    const rail = screen.getByTestId("studio-left-rail");
+    await waitFor(() =>
+      expect(within(rail).getByRole("tab", { name: "Components" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      ),
+    );
+    // And the palette is actually mounted under it, not just the tab selected.
+    expect(await screen.findByRole("heading", { name: "Components" })).toBeInTheDocument();
   });
 
   test("the context panel opens onto the editor's OWN Node details panel, and collapses again", async () => {
@@ -276,8 +305,8 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(screen.queryByRole("heading", { name: "Components" })).toBeNull();
 
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
-    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Components" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Components" }));
 
     const palette = await screen.findByRole("heading", { name: "Components" });
     expect(rail.contains(palette)).toBe(true);
@@ -285,25 +314,55 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(screen.getAllByRole("heading", { name: "Components" })).toHaveLength(1);
   });
 
-  test("the mode toggle round-trips through ?mode=", async () => {
+  // ── RM-30 WP 7.9 (D-UX19 #2) — the mode axis is GONE, not moved ────────────────────────────────
+  // "Designer = visual, Files = source": the surface follows the open tab, so there is no control to
+  // pick a view with and no `?mode=` to carry one.
+
+  test("no view control renders anywhere in the Studio", async () => {
+    renderStudio();
+    await waitForStudio();
+    expect(screen.queryByRole("radiogroup", { name: "Editor view" })).toBeNull();
+    expect(screen.queryByRole("radio", { name: /Show flow|Show code|Split view/ })).toBeNull();
+  });
+
+  test("the SURFACE follows the tab: Designer ⇄ SKILL.md, carried by ?file= alone", async () => {
     renderStudio();
     await waitForStudio();
     expect(url()).toBe("/skills/sk-1/studio");
+    expect(await screen.findByTestId("canvas")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("radio", { name: "Show code" }));
-    await waitFor(() => expect(url()).toContain("mode=code"));
+    const rail = screen.getByTestId("studio-left-rail");
+    fireEvent.click(await within(rail).findByText("SKILL.md"));
 
-    fireEvent.click(screen.getByRole("radio", { name: "Split view" }));
-    await waitFor(() => expect(url()).toContain("mode=split"));
+    // SKILL.md is written EXPLICITLY now — it is a file tab, not the absent default.
+    await waitFor(() => expect(url()).toContain("file=SKILL.md"));
+    expect(url()).not.toContain("mode=");
+    const tabs = screen.getByRole("tablist", { name: "Open files" });
+    await waitFor(() =>
+      expect(within(tabs).getByRole("tab", { name: /SKILL\.md/ })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      ),
+    );
+    // The canvas is gone: one surface at a time, never two views of one document side by side.
+    await waitFor(() => expect(screen.queryByTestId("canvas")).toBeNull());
+
+    // …and back to the Designer clears the param.
+    fireEvent.click(within(tabs).getByRole("tab", { name: "Designer" }));
+    await waitFor(() => expect(url()).toBe("/skills/sk-1/studio"));
+    expect(await screen.findByTestId("canvas")).toBeInTheDocument();
   });
 
-  test("?mode= from a cold load selects that view (the reload half of the round-trip)", async () => {
+  test("a legacy ?mode= bookmark still lands on a usable workbench", async () => {
     renderStudio("/skills/sk-1/studio?mode=split");
     await waitForStudio();
-    expect(screen.getByRole("radio", { name: "Split view" })).toHaveAttribute(
-      "aria-checked",
+    // Ignored, not honoured and not an error: the Designer is showing, with its canvas.
+    const tabs = await screen.findByRole("tablist", { name: "Open files" });
+    expect(within(tabs).getByRole("tab", { name: "Designer" })).toHaveAttribute(
+      "aria-selected",
       "true",
     );
+    expect(await screen.findByTestId("canvas")).toBeInTheDocument();
   });
 
   test("selecting a node on the canvas round-trips through ?sel=", async () => {
@@ -335,8 +394,13 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     fireEvent.click(await within(rail).findByText("api.md"));
     await waitFor(() => expect(url()).toContain("file=references%2Fapi.md"));
 
-    // SKILL.md is the default, so re-selecting it CLEARS the param rather than pinning the default.
+    // RM-30 WP 7.9 inverted the default: SKILL.md is written out like every other path, and it is
+    // the DESIGNER (the pinned tab, no file at all) that clears the param.
     fireEvent.click(within(rail).getByText("SKILL.md"));
+    await waitFor(() => expect(url()).toContain("file=SKILL.md"));
+
+    const tabs = screen.getByRole("tablist", { name: "Open files" });
+    fireEvent.click(within(tabs).getByRole("tab", { name: "Designer" }));
     await waitFor(() => expect(url()).not.toContain("file="));
   });
 
@@ -357,9 +421,20 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(await within(rail).findByRole("button", { name: "New file" })).toBeInTheDocument();
     expect(within(rail).getByRole("button", { name: "New folder" })).toBeInTheDocument();
     expect(within(rail).getByRole("button", { name: "Upload files" })).toBeInTheDocument();
-    // The default selection is SKILL.md, and the manifest invariant survives the switch to an
-    // editable rail: rename / move / delete are all disabled AND say why.
-    expect(within(rail).getByRole("button", { name: "SKILL.md can’t be deleted" })).toBeDisabled();
+
+    // RM-30 WP 7.9: the Studio opens on the DESIGNER, which is not a file — so nothing in the tree
+    // is selected and the three path controls are disabled rather than aimed at a non-path.
+    expect(within(rail).getByRole("button", { name: "Delete" })).toBeDisabled();
+
+    // Pick the manifest and the invariant is still visible AND still refused with a reason.
+    fireEvent.click(within(rail).getByText("SKILL.md"));
+    await waitFor(() =>
+      expect(
+        within(rail).getByRole("button", { name: "SKILL.md can’t be deleted" }),
+      ).toBeDisabled(),
+    );
+    expect(within(rail).getByRole("button", { name: "SKILL.md can’t be renamed" })).toBeDisabled();
+    expect(within(rail).getByRole("button", { name: "SKILL.md can’t be moved" })).toBeDisabled();
   });
 
   test("the Problems strip is mounted ONCE, in the shell's bottom strip", async () => {
@@ -395,8 +470,8 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     // "Add section" button — creation is the Components palette now, so the dirty state is reached
     // exactly the way an author reaches it: open the palette, press a component's Add.
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
-    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Components" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Components" }));
     fireEvent.click(await screen.findByRole("button", { name: /^Add a Section/ }));
     await screen.findByText("1 unsaved change");
 
