@@ -2321,9 +2321,11 @@ function narrowProviderCredentialsKindCheck(db: AppDatabase): void {
  * v31 (Unified Sessions, WP1.6, D-US1/D-US2) — widen `runs.status`'s CHECK to admit `'ended'` AND add
  * the 7 new session-lifecycle columns, in one rebuild.
  *
- * UNLIKE {@link widenRunStepsTypeCheck} (v5/F6) — which safely renames `run_steps` itself out of the
- * way first, because nothing FK-references `run_steps` — `runs` IS FK-referenced (`run_steps`/
- * `run_events`/`run_grades`/`run_skills`, all `ON DELETE CASCADE`). SQLite's `ALTER TABLE … RENAME TO`
+ * `runs` IS FK-referenced (`run_steps`/`run_events`/`run_grades`/`run_skills`, all `ON DELETE
+ * CASCADE`), so it must NOT be renamed out of the way first. (This used to read "unlike
+ * {@link widenRunStepsTypeCheck}, which safely renames `run_steps` itself out of the way because
+ * nothing FK-references it" — that stopped being true at v36, which added `run_feedback.step_id`;
+ * v5 was fixed to use THIS pattern in 2026-08. See its doc comment.) SQLite's `ALTER TABLE … RENAME TO`
  * automatically rewrites OTHER tables' stored FK text to follow a renamed parent, so renaming `runs`
  * itself away first would silently repoint those children at the rename target — then dropping it
  * leaves them dangling. This instead follows the v16/v23/v28 shape: build the target shape under a
@@ -2365,8 +2367,35 @@ function widenRunsStatusCheckAndAddSessionColumns(db: AppDatabase): void {
 /**
  * F6 — rebuild `run_steps` so its `type` CHECK admits `'user_message'`, only if the existing table's
  * DDL doesn't already mention it. SQLite cannot ALTER a CHECK constraint in place, so the canonical
- * widening is a rebuild: rename → recreate from `schemaSql` (which now carries the widened CHECK) →
- * copy rows → drop → recreate the index. Idempotent: a fresh DB (table already widened) is skipped.
+ * widening is a rebuild. Idempotent: a fresh DB (table already widened) is skipped.
+ *
+ * DEFECT FIXED 2026-08-22 (RM-18 WP 1.4, found by the captured-fixture upgrade harness). This used to
+ * rename `run_steps` itself out of the way first (`ALTER TABLE run_steps RENAME TO run_steps_old`),
+ * on the stated grounds that "nothing FK-references `run_steps`". That was true when F6 shipped, and
+ * stopped being true at **v36**, which added `run_feedback.step_id TEXT REFERENCES run_steps(id) ON
+ * DELETE CASCADE`. SQLite's `ALTER TABLE … RENAME TO` REWRITES other tables' stored FK text to follow
+ * a renamed parent, so on any database still below v5 the sequence went:
+ *
+ *   1. `openDatabase` runs `schemaSql` FIRST → `run_feedback` exists, referencing `run_steps`;
+ *   2. this step renames `run_steps` → `run_steps_old`, and SQLite silently repoints
+ *      `run_feedback.step_id` at `run_steps_old`;
+ *   3. the rebuild drops `run_steps_old`, leaving `run_feedback` referencing a table that is gone.
+ *
+ * `foreign_key_check` did NOT catch it (a brand-new `run_feedback` is empty, and the pragma only
+ * inspects rows), so the migration committed clean and the damage only surfaced later: with
+ * `foreign_keys = ON`, EVERY insert into `run_feedback` then failed with "no such table:
+ * main.run_steps_old" — including one with a NULL `step_id`, because SQLite resolves the FK target
+ * when it PREPARES the statement, not when it evaluates the value. The whole human-feedback surface
+ * (WP1.5 feedback, WP4.5 review queue) was therefore dead on such a database.
+ *
+ * The fix is the pattern v31 already uses on `runs`, and for exactly the reason its comment gives:
+ * build the target shape under a NEW name, copy, DROP the ORIGINAL (freeing its name, and leaving
+ * every child's untouched `REFERENCES run_steps(id)` text alone), then RENAME the new table INTO that
+ * freed name. No child DDL is ever rewritten. Recreates the index a `DROP TABLE` removes.
+ *
+ * NOTE — this repairs the FORWARD path only. A database that already went through the old rename is
+ * not healed by this change; that needs a separate, numbered migration (reported as a follow-up, not
+ * done here: WP 1.4 is forbidden from adding a migration).
  */
 function widenRunStepsTypeCheck(db: AppDatabase): void {
   const row = db
@@ -2376,6 +2405,10 @@ function widenRunStepsTypeCheck(db: AppDatabase): void {
 
   const runStepsDdl = extractCreateTable(schemaSql, "run_steps");
   if (!runStepsDdl) return; // defensive: schemaSql always defines it
+  const runStepsNewDdl = runStepsDdl.replace(
+    "CREATE TABLE IF NOT EXISTS run_steps (",
+    "CREATE TABLE run_steps_new (",
+  );
 
   // Copy every existing column by name so the new (nullable) columns simply default to NULL.
   const cols = (db.prepare("PRAGMA table_info(run_steps)").all() as Array<{ name: string }>).map(
@@ -2384,10 +2417,10 @@ function widenRunStepsTypeCheck(db: AppDatabase): void {
   const colList = cols.join(", ");
   // Nested inside applyMigrations' transaction → runs as a SAVEPOINT (better-sqlite3 handles this).
   const rebuild = db.transaction(() => {
-    db.exec("ALTER TABLE run_steps RENAME TO run_steps_old");
-    db.exec(runStepsDdl);
-    db.exec(`INSERT INTO run_steps (${colList}) SELECT ${colList} FROM run_steps_old`);
-    db.exec("DROP TABLE run_steps_old");
+    db.exec(runStepsNewDdl);
+    db.exec(`INSERT INTO run_steps_new (${colList}) SELECT ${colList} FROM run_steps`);
+    db.exec("DROP TABLE run_steps");
+    db.exec("ALTER TABLE run_steps_new RENAME TO run_steps");
     db.exec("CREATE INDEX IF NOT EXISTS idx_run_steps_run_idx ON run_steps(run_id, idx ASC)");
   });
   rebuild();
