@@ -22,6 +22,13 @@
  * that was renamed, removed, or belongs to a deleted custom chart simply matches nothing, so nothing
  * scrolls and nothing is highlighted — the tab, the range and the facets are untouched. Validating
  * it would only buy the ability to throw away a param, which is strictly worse than ignoring it.
+ *
+ * ── NOT `features/testing/console-anchors.ts` ────────────────────────────────────────────────────
+ * The run console has its own anchor layer, and it answers a different question: it links panes
+ * WITHIN one already-mounted console, keyed by a `ConsoleNavRef` over turns and tool calls, resolved
+ * by an attribute walk inside a given container, with a transient flash. None of it is addressable
+ * from outside the page. Widening it to also mean "a dashboard panel named in the URL" would make a
+ * run-console module know about dashboard panels; this stays a separate, much smaller vocabulary.
  */
 
 /** The URL key. Namespaced alongside `?tab=` / `?range=` / the `t*` facets, like `?issue=` is. */

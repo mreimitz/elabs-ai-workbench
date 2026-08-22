@@ -1,6 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import { defaultControls, type TestingDashboardControls } from "./dashboard-url-state";
+import {
+  defaultControls,
+  type TestingBucketSelection,
+  type TestingDashboardControls,
+} from "./dashboard-url-state";
 import { FilterControls } from "./FilterControls";
 
 // jsdom omits matchMedia — `DateRangePicker`'s Radix Popover reads it (mirrors
@@ -18,7 +22,11 @@ if (typeof window.matchMedia !== "function") {
   })) as unknown as typeof window.matchMedia;
 }
 
-function renderControls(overrides: Partial<TestingDashboardControls> = {}, runCount?: number) {
+function renderControls(
+  overrides: Partial<TestingDashboardControls> = {},
+  runCount?: number,
+  bucketSelection?: TestingBucketSelection,
+) {
   const controls: TestingDashboardControls = { ...defaultControls(new Date("2026-07-20T00:00:00Z")), ...overrides };
   const onChange = vi.fn();
   render(
@@ -30,6 +38,7 @@ function renderControls(overrides: Partial<TestingDashboardControls> = {}, runCo
       suites={[{ id: "suite-1", name: "Regression" }]}
       models={["claude-sonnet-4"]}
       runCount={runCount}
+      bucketSelection={bucketSelection}
     />,
   );
   return { onChange };
@@ -93,5 +102,42 @@ describe("FilterControls — WP 2.1 (C-5) count badge", () => {
   test("singular 'run' at count 1", () => {
     renderControls({}, 1);
     expect(screen.getByText("1 run")).toBeInTheDocument();
+  });
+});
+
+describe("FilterControls — the time-bucket control (RM-17 AM-OB3)", () => {
+  test("renders a bare accessible Select, same shape as Suite/Group by (no label-above stack)", () => {
+    renderControls();
+    expect(screen.getByRole("combobox", { name: "Time bucket" })).toBeEnabled();
+    expect(screen.queryByText("Time bucket", { selector: "label" })).not.toBeInTheDocument();
+  });
+
+  test("defaults to Auto, and choosing a bucket round-trips through onChange", () => {
+    const { onChange } = renderControls();
+    const trigger = screen.getByRole("combobox", { name: "Time bucket" });
+    expect(trigger).toHaveTextContent("Auto");
+
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("option", { name: "Hourly" }));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toMatchObject({ bucket: "hour" });
+  });
+
+  test("the current choice is what the control shows — not what the window would have derived", () => {
+    renderControls({ bucket: "week" });
+    expect(screen.getByRole("combobox", { name: "Time bucket" })).toHaveTextContent("Weekly");
+  });
+
+  test("Auto names what it currently resolves to, so 'Auto' is never an unexplained option", () => {
+    renderControls({}, undefined, {
+      bucket: "day",
+      requested: "auto",
+      auto: "day",
+      clamped: false,
+      points: 7,
+      requestedPoints: 7,
+    });
+    fireEvent.click(screen.getByRole("combobox", { name: "Time bucket" }));
+    expect(screen.getByRole("option", { name: "Auto (daily)" })).toBeInTheDocument();
   });
 });
