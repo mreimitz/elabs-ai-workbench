@@ -5,6 +5,23 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the reference data the app reasons from has one address, and can be replaced
+
+**The model roster, the cross-cutting limits and the compatibility rule catalog are now read from a
+resolved data pack, not from files baked beside the code.** There were three copies of those
+documents in the tree; there is one. The app loads it at boot, verifies every file against the
+manifest's SHA-256 and against its JSON Schema, and applies it whole or not at all.
+
+**A newer pack can be dropped into the data volume without rebuilding the image.** A pack in
+`DATA_DIR/data-pack/` takes over when it verifies *and* carries a strictly higher version. Anything
+wrong with it — truncated, tampered, a layout this build does not understand, or not actually newer —
+is refused with a reason in the log while the shipped pack keeps serving. A bad pack never stops the
+app; a **missing shipped pack** does, loudly, naming the directory it looked in, because an empty
+model list would be a worse answer than none.
+
+Nothing a user sees changed: the heatmap, the compatibility test report, the model context limits
+and the priced-model set are byte-for-byte what they were, checked before and after.
+
 ## Unreleased — the guide you shipped is readable inside the app you shipped
 
 **The user guide now lives in the product.** Open **`/docs`** and you get the same 22 subjects that
