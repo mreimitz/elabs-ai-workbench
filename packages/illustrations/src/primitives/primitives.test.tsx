@@ -440,6 +440,34 @@ describe("PaperStage — grid before drawing", () => {
     // in it needs escaping inside a `url(…)` reference.
     for (const id of [minor, major, wider]) assert.match(id, /^illus-[a-z][a-zA-Z0-9_-]*$/);
   });
+
+  // WP 2.3. `useId` is stable per POSITION, which is exactly the promise the export path cannot
+  // use: a scene rendered alone and the same scene rendered second on a page would otherwise emit
+  // different bytes for an identical drawing. `idPrefix` moves the uniqueness promise to the
+  // caller, and the scene renderer keeps it by deriving the prefix from the scene id.
+  it("takes an explicit idPrefix, so one stage emits the same id in two different trees", () => {
+    const alone = render(<PaperStage width={90} height={90} idPrefix="scene-x" />);
+    const second = render(
+      <g>
+        <PaperStage width={40} height={40} idPrefix="scene-w" />
+        <PaperStage width={90} height={90} idPrefix="scene-x" />
+      </g>,
+    );
+    const [minor, major] = attributeValues(alone, "id");
+    assert.ok(minor?.startsWith("illus-paper-grid-scene-x-"), `prefix ignored: ${minor}`);
+    assert.ok(major);
+    assert.ok(second.includes(`id="${minor}"`), "the same stage should keep its id in a new tree");
+    assert.ok(second.includes(`id="${major}"`));
+
+    // The prefix goes through the same sanitiser the generated one does, so a caller cannot inject
+    // a character that would break a `url(#…)` reference.
+    const dirty = attributeValues(
+      render(<PaperStage width={40} height={40} idPrefix="a b#c" />),
+      "id",
+    )[0];
+    assert.ok(dirty);
+    assert.match(dirty, /^illus-[a-z][a-zA-Z0-9_-]*$/);
+  });
 });
 
 describe("GlyphFrame — the only route onto a face (D-IL15)", () => {

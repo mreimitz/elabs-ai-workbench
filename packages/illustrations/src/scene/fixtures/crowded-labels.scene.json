@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "registryVersion": "0.1.0",
+  "id": "crowded-labels",
+  "title": "Four stores, pressed together",
+  "summary": "A deliberately overcrowded scene: four databases pinned almost on top of one another, connected by one line of every kind, so a caption has nowhere clear to sit and the renderer has to say so.",
+  "canvas": { "format": "square", "stage": "plain" },
+  "bands": [{ "id": "cluster", "kind": "hub", "title": "The cluster" }],
+  "nodes": [
+    {
+      "id": "west",
+      "component": "database",
+      "band": "cluster",
+      "size": "l",
+      "at": { "x": -5, "y": 0 }
+    },
+    {
+      "id": "east",
+      "component": "database",
+      "band": "cluster",
+      "size": "l",
+      "at": { "x": 5, "y": 0 }
+    },
+    {
+      "id": "north",
+      "component": "database",
+      "band": "cluster",
+      "size": "l",
+      "at": { "x": 0, "y": -6 }
+    },
+    {
+      "id": "south",
+      "component": "database",
+      "band": "cluster",
+      "size": "l",
+      "at": { "x": 0, "y": 6 }
+    }
+  ],
+  "connectors": [
+    {
+      "id": "k-flow",
+      "from": "west.read",
+      "to": "east.write",
+      "kind": "flow",
+      "label": "a caption with nowhere to go"
+    },
+    { "id": "k-read", "from": "north.read", "to": "east.top", "kind": "read" },
+    { "id": "k-write", "from": "west.top", "to": "north.write", "kind": "write" },
+    { "id": "k-publish", "from": "south.read", "to": "east.bottom", "kind": "publish" },
+    { "id": "k-loop", "from": "west.bottom", "to": "south.write", "kind": "loop" },
+    { "id": "k-signal", "from": "north.bottom", "to": "south.top", "kind": "signal" }
+  ]
+}

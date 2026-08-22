@@ -24,9 +24,9 @@ import type { ReactElement } from "react";
 import { type ScreenPoint, fmt, polygonPoints, polylinePath } from "../iso-math.js";
 import { ILLUS_DASH, ILLUS_TEXT } from "../line-system.js";
 
-type ArrowHead = "ink" | "accent" | "none";
+export type ArrowHead = "ink" | "accent" | "none";
 
-type ConnectorStyle = {
+export type ConnectorStyle = {
   /** The `--illus-*` token the line is stroked with. */
   readonly stroke: string;
   readonly width: number;
@@ -40,8 +40,17 @@ type ConnectorStyle = {
  * `Record<IllustrationConnectorKind, ...>` is doing real work: if `packages/shared` ever grows a
  * seventh kind, THIS table stops compiling until somebody decides what the new kind looks like. A
  * lookup with a `default:` branch would have absorbed it silently.
+ *
+ * EXPORTED since WP 2.3, and exported rather than copied for one reason: the scene renderer paints a
+ * connector from `RoutedConnector.d` — the router's filleted path — instead of from this component,
+ * because rebuilding that path as a sharp polyline would throw away the corner radii WP 2.2 measured
+ * and clamped. It still has to know what a `write` looks like, and the only honest way for it to know
+ * is to read THIS table. A second copy of the six rows is precisely the drift D-IL8 exists to stop —
+ * `Connector.test.tsx` already keeps one deliberate hand-transcribed copy as a guard, and a THIRD
+ * would turn that guard into noise. `connector-style-single-source.test.ts` fails on a second
+ * declaration anywhere in `src/`.
  */
-const CONNECTOR_STYLE: Record<IllustrationConnectorKind, ConnectorStyle> = {
+export const CONNECTOR_STYLE: Record<IllustrationConnectorKind, ConnectorStyle> = {
   flow: {
     stroke: "var(--illus-ink-muted)",
     width: 2.5,
@@ -80,7 +89,8 @@ const CONNECTOR_STYLE: Record<IllustrationConnectorKind, ConnectorStyle> = {
   },
 };
 
-const ARROW_FILL: Record<Exclude<ArrowHead, "none">, string> = {
+/** The two arrowhead fills. Exported alongside {@link CONNECTOR_STYLE}, for the same reason. */
+export const CONNECTOR_ARROW_FILL: Record<Exclude<ArrowHead, "none">, string> = {
   ink: "var(--illus-ink)",
   accent: "var(--illus-accent)",
 };
@@ -88,6 +98,21 @@ const ARROW_FILL: Record<Exclude<ArrowHead, "none">, string> = {
 /** Arrowhead geometry, in px. Drawn as a polygon rather than an SVG `marker` on purpose — see below. */
 const ARROW_LENGTH = 10;
 const ARROW_HALF_WIDTH = 4.2;
+
+/**
+ * How far short of the tip a line stops so its stroke does not poke out past the narrowing sides of
+ * the arrowhead. Exported because the scene renderer draws the router's path and therefore has to
+ * apply the same trim itself; a second, slightly different number would show as a visible spur.
+ */
+export const CONNECTOR_ARROW_TRIM = ARROW_LENGTH * 0.75;
+
+/**
+ * The paper-coloured halo painted behind a connector's caption, in px, so the words knock a gap out
+ * of the line rather than sitting in a filled box. Exported for the scene renderer, which places
+ * its captions at the ROUTER'S anchors (in the `labels` layer, not this one) and must knock them
+ * out identically.
+ */
+export const CONNECTOR_LABEL_KNOCKOUT = 3.5;
 
 /**
  * The three points of the head, given its tip and the direction the line arrives from.
@@ -128,7 +153,7 @@ export function Connector({ kind, from, to, waypoints = [], label }: ConnectorPr
   const penultimate = points[points.length - 2] as ScreenPoint;
   // The line stops short of the tip so the stroke does not poke through the arrowhead's point.
   const head = style.arrow === "none" ? null : arrowHeadPoints(to, penultimate);
-  const drawnTo = head ? shortenTowards(to, penultimate, ARROW_LENGTH * 0.75) : to;
+  const drawnTo = head ? connectorLineEnd(to, penultimate, CONNECTOR_ARROW_TRIM) : to;
   const drawn = [...points.slice(0, -1), drawnTo];
   const mid = midpoint(points);
 
@@ -144,7 +169,7 @@ export function Connector({ kind, from, to, waypoints = [], label }: ConnectorPr
         style={{ stroke: style.stroke }}
       />
       {head && style.arrow !== "none" ? (
-        <polygon points={polygonPoints(head)} style={{ fill: ARROW_FILL[style.arrow] }} />
+        <polygon points={polygonPoints(head)} style={{ fill: CONNECTOR_ARROW_FILL[style.arrow] }} />
       ) : null}
       {label ? (
         <text
@@ -155,7 +180,7 @@ export function Connector({ kind, from, to, waypoints = [], label }: ConnectorPr
           // Painting the stroke first knocks a paper-coloured gap out of the line behind the words,
           // which is how a drafting sheet labels a run without a filled box getting in the way.
           paintOrder="stroke"
-          strokeWidth={3.5}
+          strokeWidth={CONNECTOR_LABEL_KNOCKOUT}
           strokeLinejoin="round"
           style={{ fill: "var(--illus-ink)", stroke: "var(--illus-paper)" }}
         >
@@ -168,7 +193,20 @@ export function Connector({ kind, from, to, waypoints = [], label }: ConnectorPr
 
 Connector.illusLayer = "connectors" as const;
 
-function shortenTowards(point: ScreenPoint, towards: ScreenPoint, by: number): ScreenPoint {
+/**
+ * Where a line must actually STOP so its stroke does not poke past the narrowing sides of an
+ * arrowhead whose tip is at `point`. Exported for the same reason {@link CONNECTOR_ARROW_TRIM} is:
+ * the scene renderer draws the router's own path and has to make the identical cut, and two
+ * slightly different cuts read as a visible spur on one kind of line and not on another.
+ *
+ * Refuses to overshoot: a run shorter than the trim keeps its endpoint, and the head simply covers
+ * the whole of it.
+ */
+export function connectorLineEnd(
+  point: ScreenPoint,
+  towards: ScreenPoint,
+  by: number,
+): ScreenPoint {
   const dx = point.x - towards.x;
   const dy = point.y - towards.y;
   const length = Math.hypot(dx, dy);
