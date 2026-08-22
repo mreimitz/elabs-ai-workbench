@@ -424,6 +424,14 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     await createFile("limits.md", "references");
     fireEvent.click(await screen.findByTestId("type:references/limits.md"));
 
+    // RM-30 WP 7.9 — and now type into SKILL.md THROUGH ITS OWN TAB, which is the move that could
+    // reintroduce the second writer. The tab sits in the same strip as `limits.md`, so the obvious
+    // wrong implementation (route it through `WorkspaceEditor`, which writes `files.setText`) would
+    // derive an `update_file` for the manifest and silently beat `content` on the server.
+    const rail = screen.getByTestId("studio-left-rail");
+    fireEvent.click(within(rail).getByText("SKILL.md"));
+    fireEvent.click(await screen.findByTestId("type:SKILL.md"));
+
     const cluster = await screen.findByTestId("design-save-cluster");
     fireEvent.click(within(cluster).getByRole("button", { name: /Save as v5/ }));
     const dialog = await screen.findByRole("dialog");
@@ -435,8 +443,59 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     for (const op of body.treeOps) {
       expect(JSON.stringify(op)).not.toContain("SKILL.md");
     }
-    // The manifest still went, exactly once, as `content`.
+    // The manifest went exactly once, as `content` — carrying what was typed into its source tab.
     expect(body.content).toContain("# Demo skill");
+    expect(body.content).toContain("See references/limits.md for the limits.");
+  });
+
+  test("ONE draft across all three layers: canvas + SKILL.md source + a resource file", async () => {
+    // RM-30 WP 7.9 acceptance #5. Three surfaces an author would think of as separate documents —
+    // the visual composer, the manifest's text, and a resource file — resolve to ONE dirty count,
+    // ONE save action and ONE new immutable version.
+    renderStudio();
+    await waitForStudio();
+
+    // 1 — the FILE layer: a new resource with typed bytes.
+    await createFile("limits.md", "references");
+    fireEvent.click(await screen.findByTestId("type:references/limits.md"));
+
+    // 2 — the CANVAS layer: add a component from the palette (WP 7.7's one creation path).
+    const rail = screen.getByTestId("studio-left-rail");
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Add a Section/ }));
+
+    const cluster = await screen.findByTestId("design-save-cluster");
+    await waitFor(() => expect(cluster.textContent).toMatch(/2 unsaved changes/));
+
+    // 3 — the MANIFEST TEXT layer, through the SKILL.md source tab.
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Files" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Files" }));
+    fireEvent.click(within(rail).getByText("SKILL.md"));
+    fireEvent.click(await screen.findByTestId("type:SKILL.md"));
+
+    // STILL two, not three — and that is the "one draft" property rather than a lost edit: a direct
+    // text edit makes the TEXT authoritative, so the staged canvas op stops being counted on its own
+    // because it is already inside the document the author has now typed over (`design/
+    // use-skill-draft.ts` + `studio/draft.ts`). One count, whatever the author touched.
+    await waitFor(() => expect(cluster.textContent).toMatch(/2 unsaved changes/));
+
+    // ONE save action in the whole workbench — no second save surface anywhere (WP 7.4's guardrail).
+    expect(screen.getAllByRole("button", { name: /Save as v5/ })).toHaveLength(1);
+    expect(saveDraftPosts()).toHaveLength(0);
+
+    fireEvent.click(within(cluster).getByRole("button", { name: /Save as v5/ }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Add references/limits.md")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: /Save as v5/ }));
+
+    // ONE request → ONE new version, carrying every layer.
+    await waitFor(() => expect(saveDraftPosts()).toHaveLength(1));
+    const body = savedBody();
+    expect(body.content).toContain("See references/limits.md for the limits.");
+    expect(body.treeOps).toEqual([
+      { op: "add_file", path: "references/limits.md", content: TYPED_RESOURCE },
+    ]);
   });
 
   test("deleting a file closes its tab and stages the delete on the same draft", async () => {
