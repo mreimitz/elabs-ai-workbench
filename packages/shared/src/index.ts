@@ -14,6 +14,7 @@ export * from "./hub-genui-catalog.js";
 export * from "./hub-icon.js";
 export * from "./illustration-registry.js";
 export * from "./illustration-scene.js";
+export * from "./json-schema.js";
 export * from "./manual-send.js";
 export * from "./model-data.generated.js";
 export * from "./model-dataset.js";

@@ -1,24 +1,35 @@
-// Loads the bundled model-comparison dataset (the single source of truth for model windows, tool /
-// schema limits, pricing, caching) and the cross-cutting (client/host/SDK/protocol) limits, and
-// exposes the lookups the compatibility engine + run engine need: by model id, the research
-// `provider.id` per model, and a hand-maintained run-engine-id → dataset-id crosswalk.
+// The lookups the compatibility engine + run engine need over the model-comparison dataset: by
+// model id, the `provider.id` per model, a hand-maintained run-engine-id → dataset-id crosswalk,
+// and the cross-cutting (client/host/SDK/protocol) limits.
 //
-// Assets are produced by `pnpm build:data-pack` from `data-pack/` and committed under ./data; read
-// via fs from a path
-// relative to this module so it works under both tsx (from src) and `node dist` (the build copies
-// ./data into dist — see apps/api/scripts/copy-data.mjs).
+// The DATA comes from the resolved reference data pack (RM-38 WP 1.2) — `getDataPack()`, never a
+// file path. Nothing here knows where a pack lives, whether it was the bundled snapshot or a
+// refreshed cache, or what the app is deployed on; `../data-pack/loader.ts` is the only module in
+// `apps/api` that reads pack bytes.
+//
+// Resolution is LAZY on purpose. These functions used to run at module load, which in ESM is
+// strictly before `index.ts` can install anything — so a module-load read could only ever see a
+// bundled pack, whatever boot resolved. See `../data-pack/source.ts` for the whole argument.
 
-import { readFileSync } from "node:fs";
 import type { AllModels, FlatModel } from "@mcp-token-footprint/shared";
+import { getDataPack } from "../data-pack/source.js";
 
-function readJson<T>(relative: string): T {
-  return JSON.parse(readFileSync(new URL(relative, import.meta.url), "utf8")) as T;
+/** Model-id index, built once per resolved pack. Keyed by the pack object so a swap rebuilds it. */
+let indexedFor: AllModels | null = null;
+let byId = new Map<string, FlatModel>();
+
+function models(): AllModels {
+  return getDataPack().documents.allModels;
 }
 
-const allModels = readJson<AllModels>("./data/all-models.json");
-const crossCutting = readJson<Record<string, unknown>>("./data/cross-cutting-limits.json");
-
-const byId = new Map<string, FlatModel>(allModels.models.map((m) => [m.model_id, m]));
+function index(): Map<string, FlatModel> {
+  const all = models();
+  if (indexedFor !== all) {
+    byId = new Map(all.models.map((m) => [m.model_id, m]));
+    indexedFor = all;
+  }
+  return byId;
+}
 
 /**
  * Run-engine model id → dataset model id. Current-generation ids are identical between the two
@@ -32,34 +43,35 @@ export const MODEL_ID_ALIASES: Record<string, string> = {
 
 /** The full dataset (flat rows + the per-model `detail` the resolver reads). */
 export function getAllModels(): AllModels {
-  return allModels;
+  return models();
 }
 
 /** Cross-cutting (client/host/SDK/protocol/provider) limits, under the catalog's `cross.*` namespace. */
 export function getCrossCutting(): Record<string, unknown> {
-  return crossCutting;
+  return getDataPack().documents.crossCutting;
 }
 
 /** Resolve a run-engine model id to its dataset id (via alias table), or null if not in the dataset. */
 export function resolveDatasetModelId(modelId: string): string | null {
+  const lookup = index();
   const aliased = MODEL_ID_ALIASES[modelId] ?? modelId;
-  if (byId.has(aliased)) return aliased;
+  if (lookup.has(aliased)) return aliased;
   // Fall back by stripping a trailing snapshot date (`-YYYYMMDD`), e.g. a provider's pinned
   // `claude-opus-4-8-20251101` → `claude-opus-4-8`. Only used when the exact id isn't in the dataset.
   const desnapshotted = aliased.replace(/-\d{8}$/, "");
-  if (desnapshotted !== aliased && byId.has(desnapshotted)) return desnapshotted;
+  if (desnapshotted !== aliased && lookup.has(desnapshotted)) return desnapshotted;
   return null;
 }
 
 /** A model row by dataset id (after alias resolution), or undefined if unknown. */
 export function getModel(modelId: string): FlatModel | undefined {
   const resolved = resolveDatasetModelId(modelId);
-  return resolved ? byId.get(resolved) : undefined;
+  return resolved ? index().get(resolved) : undefined;
 }
 
 /** Every dataset model id (canonical, for the heatmap model picker). */
 export function listModelIds(): string[] {
-  return allModels.models.map((m) => m.model_id);
+  return models().models.map((m) => m.model_id);
 }
 
 export type ModelRef = {
@@ -74,7 +86,7 @@ export type ModelRef = {
 
 /** Lightweight model metadata for the heatmap model picker. */
 export function listModelRefs(): ModelRef[] {
-  return allModels.models.map((m) => ({
+  return models().models.map((m) => ({
     id: m.model_id,
     providerId: m.provider_id,
     providerName: m.provider_name,

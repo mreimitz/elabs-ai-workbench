@@ -4,8 +4,10 @@
 //   1. `manifest.json` is shaped right (JSON Schema AND the zod contract) and every digest it
 //      claims matches the bytes on disk, in both directions (nothing missing, nothing unlisted).
 //   2. every pack data file validates against its JSON Schema.
-//   3. `packages/shared/src/data-pack.ts` imports nothing but `zod` — the contract has to stay
-//      loadable anywhere, so it may never reach for `node:fs`, `node:crypto` or the network.
+//   3. `packages/shared/src/data-pack.ts` imports nothing but `zod`, and
+//      `packages/shared/src/json-schema.ts` imports nothing at all — the contract and its validator
+//      have to stay loadable anywhere, so neither may reach for `node:fs`, `node:crypto` or the
+//      network.
 //   4. the small JSON Schema validator this repo owns is not vacuous — it rejects known-bad input.
 //
 // The drift guard (rebuild + byte-compare) lives next door in `compatibility-data.test.ts`.
@@ -17,21 +19,26 @@ import path from "node:path";
 import { test } from "node:test";
 import {
   comparePackVersions,
+  compileSchema,
+  DATA_PACK_CONTENT_DIRS,
+  DATA_PACK_MANIFEST_FILENAME,
   DATA_PACK_MIN_SUPPORTED_SCHEMA_VERSION,
   DATA_PACK_REFUSAL_REASONS,
   DATA_PACK_SCHEMA_VERSION,
   DataPackManifestSchema,
+  dataPackSchemaFor,
+  formatViolations,
   isSupportedDataPackSchemaVersion,
   isValidPackVersion,
+  type JsonSchema,
   verifyManifestDigests,
 } from "@mcp-token-footprint/shared";
 import { PACK_ROOT, PACK_SCHEMA_VERSION } from "../../../data-pack/build/build-cli.js";
 import {
-  compileSchema,
-  formatViolations,
-  type JsonSchema,
-} from "../../../data-pack/build/json-schema.js";
-import { digestPackContents, listPackContentFiles } from "../../../data-pack/build/manifest.js";
+  digestPackContents,
+  listPackContentFiles,
+  PACK_CONTENT_DIRS,
+} from "../../../data-pack/build/manifest.js";
 
 const readPack = (rel: string) => readFileSync(path.join(PACK_ROOT, rel), "utf8");
 const readPackJson = <T>(rel: string): T => JSON.parse(readPack(rel)) as T;
@@ -127,11 +134,8 @@ test("compatibility/test-catalog.json validates against schema/test-catalog.sche
 
 // --- 3. The contract's import boundary ----------------------------------------------------------
 
-test("packages/shared/src/data-pack.ts imports nothing but zod", () => {
-  const source = readFileSync(
-    path.resolve(PACK_ROOT, "../packages/shared/src/data-pack.ts"),
-    "utf8",
-  );
+function importSpecifiersOf(absPath: string): string[] {
+  const source = readFileSync(absPath, "utf8");
   const specifiers = new Set<string>();
   for (const m of source.matchAll(/(?:^|\n)\s*(?:import|export)[\s\S]*?from\s+["']([^"']+)["']/g)) {
     specifiers.add(m[1] as string);
@@ -139,11 +143,63 @@ test("packages/shared/src/data-pack.ts imports nothing but zod", () => {
   for (const m of source.matchAll(/(?:^|[^.\w])(?:import|require)\s*\(\s*["']([^"']+)["']/g)) {
     specifiers.add(m[1] as string);
   }
+  return [...specifiers].sort();
+}
+
+test("packages/shared/src/data-pack.ts imports nothing but zod", () => {
   assert.deepEqual(
-    [...specifiers].sort(),
+    importSpecifiersOf(path.resolve(PACK_ROOT, "../packages/shared/src/data-pack.ts")),
     ["zod"],
     "data-pack.ts is the portable pack contract — no node:fs, no node:crypto, no network",
   );
+});
+
+test("packages/shared/src/json-schema.ts imports nothing at all", () => {
+  // WP 1.2 moved this validator out of `data-pack/build/` so the API's runtime loader can use the
+  // SAME one (its rootDir is apps/api/src, which cannot reach data-pack/build/). It is now on the
+  // browser bundle's side of the fence too, so a stray `node:*` import here would break the web
+  // build rather than fail a test — which is exactly why this assertion is cheap and worth having.
+  assert.deepEqual(
+    importSpecifiersOf(path.resolve(PACK_ROOT, "../packages/shared/src/json-schema.ts")),
+    [],
+    "json-schema.ts is a pure validator — no zod, no node:*, no network",
+  );
+});
+
+test("the shared DATA_PACK_CONTENT_DIRS equals the pack build's PACK_CONTENT_DIRS", () => {
+  // Two declarations on purpose: `data-pack/build/` deliberately does not import `packages/shared`,
+  // so the pack build never needs shared to be built first (same reasoning as PACK_SCHEMA_VERSION).
+  // This is what holds them equal. WHAT IT CANNOT SEE: whether either list matches the directories
+  // that actually exist on disk — the manifest/digest tests above cover that.
+  assert.deepEqual([...DATA_PACK_CONTENT_DIRS], [...PACK_CONTENT_DIRS]);
+  assert.equal(DATA_PACK_MANIFEST_FILENAME, "manifest.json");
+});
+
+test("dataPackSchemaFor maps every schema-governed pack file, and only those", () => {
+  const governed = new Map<string, string | null>();
+  for (const rel of listPackContentFiles(PACK_ROOT)) governed.set(rel, dataPackSchemaFor(rel));
+
+  // Every models/** file is governed by the model-entry schema.
+  const modelFiles = [...governed].filter(([rel]) => rel.startsWith("models/"));
+  assert.equal(modelFiles.length, 11);
+  for (const [rel, schema] of modelFiles) {
+    assert.equal(schema, "schema/model-entry.schema.json", rel);
+  }
+  assert.equal(governed.get("limits/cross-cutting.json"), "schema/cross-cutting.schema.json");
+  assert.equal(
+    governed.get("compatibility/test-catalog.json"),
+    "schema/test-catalog.schema.json",
+  );
+  // Ungoverned, on purpose: the derived index (checked structurally by the loader instead) and the
+  // schemas themselves (validating a schema against itself proves nothing).
+  assert.equal(governed.get("generated/all-models.json"), null);
+  for (const [rel, schema] of governed) {
+    if (rel.startsWith("schema/")) assert.equal(schema, null, rel);
+  }
+  // Every named schema must be a real, digest-verified pack file.
+  for (const schema of new Set([...governed.values()].filter((v): v is string => v !== null))) {
+    assert.ok(listPackContentFiles(PACK_ROOT).includes(schema), `${schema} is not a pack file`);
+  }
 });
 
 // --- 4. Pure helpers ----------------------------------------------------------------------------
@@ -327,21 +383,9 @@ test("the relocation ledger is provenance, not pack content — the manifest doe
   assert.equal(listPackContentFiles(PACK_ROOT).includes("relocation-ledger.json"), false);
 });
 
-// --- 6. The transitional duplication is pinned --------------------------------------------------
-
-test("the apps/api snapshot is byte-identical to the pack files it is copied from", () => {
-  // WP 1.1 is a relocation: the compatibility engine still reads
-  // apps/api/src/compatibility/data/. WP 1.2 moves that read onto the resolved pack and deletes
-  // this duplication — until then, the two copies may not drift.
-  const apiData = path.resolve(PACK_ROOT, "../apps/api/src/compatibility/data");
-  const read = (p: string) => readFileSync(p, "utf8");
-  assert.equal(read(path.join(apiData, "all-models.json")), readPack("generated/all-models.json"));
-  assert.equal(
-    read(path.join(apiData, "cross-cutting-limits.json")),
-    readPack("limits/cross-cutting.json"),
-  );
-  assert.equal(
-    read(path.join(apiData, "test-catalog.json")),
-    readPack("compatibility/test-catalog.json"),
-  );
-});
+// --- 6. The transitional duplication is GONE ----------------------------------------------------
+//
+// WP 1.1 shipped a third copy of three pack files at `apps/api/src/compatibility/data/` and pinned
+// it byte-identical here, because the compatibility engine still read that address. WP 1.2 moved
+// the engine onto the resolved pack and DELETED the directory in the same change, so the assertion
+// that replaces this one lives in `compatibility-data.test.ts` and asserts the directory's absence.

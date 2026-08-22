@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import { MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
@@ -24,13 +24,8 @@ const read = (p: string) => readFileSync(p, "utf8");
 
 // --- Drift: the committed bundled assets must equal a fresh build from the research SoT ----------
 
-test("bundled all-models.json is not stale vs data-pack/models/** (rebuild + byte-compare)", () => {
+test("data-pack/generated/all-models.json is not stale vs data-pack/models/** (rebuild + byte-compare)", () => {
   const fresh = buildOutputs();
-  assert.equal(
-    read(OUTPUT_PATHS.allModels),
-    fresh.allModelsJson,
-    "run `pnpm build:data-pack` — apps/api/.../data/all-models.json is stale",
-  );
   assert.equal(
     read(OUTPUT_PATHS.packAllModels),
     fresh.allModelsJson,
@@ -43,14 +38,25 @@ test("bundled all-models.json is not stale vs data-pack/models/** (rebuild + byt
   );
 });
 
-test("cross-cutting-limits.json + test-catalog.json snapshots match the pack source verbatim", () => {
+// RM-38 WP 1.2 deleted the third copy this file used to pin (apps/api/src/compatibility/data/).
+// `getCrossCutting()` / `getCatalog()` below now read the pack itself, so a byte-comparison against
+// the pack source would be comparing a file with itself.
+test("the retired apps/api compatibility snapshot is gone and stays gone", () => {
+  const retired = path.resolve(PACK_ROOT, "../apps/api/src/compatibility/data");
   assert.equal(
-    read(OUTPUT_PATHS.crossCutting),
-    read(path.join(PACK_ROOT, "limits/cross-cutting.json")),
+    existsSync(retired),
+    false,
+    `${retired} is back. The pack is the one address (D-DP1); a second copy is how the two drift.`,
   );
-  assert.equal(
-    read(OUTPUT_PATHS.testCatalog),
-    read(path.join(PACK_ROOT, "compatibility/test-catalog.json")),
+  assert.deepEqual(
+    getCrossCutting(),
+    JSON.parse(read(path.join(PACK_ROOT, "limits/cross-cutting.json"))),
+    "getCrossCutting() must be the pack's own document — not a copy of it",
+  );
+  assert.deepEqual(
+    getCatalog(),
+    JSON.parse(read(path.join(PACK_ROOT, "compatibility/test-catalog.json"))),
+    "getCatalog() must be the pack's own document — not a copy of it",
   );
 });
 
@@ -60,8 +66,8 @@ test("cross-cutting-limits.json + test-catalog.json snapshots match the pack sou
 // description"), `finding_name` names the PROBLEM ("Tool has no description"). A findings card
 // printing the check name reads as though the check itself were the bad news.
 //
-// Note this reads through `getCatalog()`, i.e. the BUNDLED copy — which the test above has just
-// pinned byte-identical to the research source, so pinning one pins both.
+// Note this reads through `getCatalog()`, which since RM-38 WP 1.2 is the resolved data pack
+// itself — there is no second copy left to pin it against.
 test("every catalog test names its finding as a problem, not as the check", () => {
   const { tests } = getCatalog();
   assert.ok(tests.length > 0, "the catalog must not be empty");

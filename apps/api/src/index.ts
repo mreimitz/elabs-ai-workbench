@@ -34,6 +34,8 @@ import {
   registerRunCompatibilityRoutes,
 } from "./compatibility/routes.js";
 import { config } from "./config/env.js";
+import { resolveDataPackFromDisk } from "./data-pack/resolve.js";
+import { installDataPackSource } from "./data-pack/source.js";
 import { openDatabase } from "./db/database.js";
 import { registerMaintenanceRoutes } from "./db/maintenance.js";
 import { registerDiagnosticsRoutes } from "./diagnostics/routes.js";
@@ -196,6 +198,32 @@ import { toErrorMessage } from "./utils/errors.js";
 
 const server = Fastify({ logger: true });
 const db = openDatabase();
+// Reference data pack (planning/Roadmap/RM-38-reference-data-pack/, WP 1.2, D-DP2) — resolve the pack in force
+// (bundled snapshot → DATA_DIR cache when it is valid AND strictly newer) and install it in one
+// assignment, FIRST: ahead of `installPricingResolver` and ahead of any route registration, so a
+// cache refusal is in the log before the server can answer a request. If the BUNDLED snapshot is
+// missing or unusable this throws and boot stops — that is a broken build artifact, and an empty
+// model roster would be a worse answer than none (see data-pack/resolve.ts). A bad CACHE never
+// throws: it is refused as a value and the bundled pack keeps serving (D-DP4).
+const dataPackResolution = resolveDataPackFromDisk();
+installDataPackSource(dataPackResolution.pack);
+server.log.info(
+  {
+    packVersion: dataPackResolution.pack.manifest.packVersion,
+    schemaVersion: dataPackResolution.pack.manifest.schemaVersion,
+    asOf: dataPackResolution.pack.manifest.asOf,
+    origin: dataPackResolution.pack.origin,
+    dir: dataPackResolution.pack.dir,
+    files: dataPackResolution.pack.manifest.files.length,
+  },
+  "Reference data pack in force",
+);
+for (const refusal of dataPackResolution.refusals) {
+  server.log.warn(
+    { origin: refusal.origin, dir: refusal.dir, reason: refusal.reason, paths: refusal.paths },
+    `Reference data pack refused: ${refusal.detail}`,
+  );
+}
 // Observability WP2.6 (D-OB22) — install the DB-backed pricing resolver BEFORE any run/estimate can
 // price a model, so `estimateCost`/`isModelPriced` resolve edited prices from `model_pricing` (the
 // code table stays the seed + belt-and-braces fallback). Recorded run costs are NEVER recomputed.
