@@ -1,5 +1,5 @@
 // A deliberately small JSON Schema validator, covering exactly the draft-2020-12 keyword subset the
-// pack's own schemas use. It exists because adding a validator dependency (`ajv`) to ship four
+// reference data pack's own schemas use. It exists because adding a validator dependency (`ajv`) to ship four
 // schema files is out of proportion, and because a validator whose supported keyword set is
 // EXPLICIT cannot silently ignore a keyword an author wrote — `assertSupportedKeywords` fails on an
 // unknown keyword rather than passing a document the schema meant to reject.
@@ -14,6 +14,15 @@
 // if/then/else, patternProperties, propertyNames, dependent*, uniqueItems, prefixItems,
 // remote $refs, $dynamicRef, unevaluated*. If a pack schema ever needs one, teach this file
 // (with a negative test) instead of quietly widening what validates.
+//
+// It lives in `packages/shared` (RM-38 WP 1.2) rather than beside the pack build because it now has
+// TWO callers on opposite sides of a package boundary: the pack's own gate tests, and the API's
+// runtime pack loader (`apps/api/src/data-pack/loader.ts`), whose `rootDir` is `apps/api/src` and
+// therefore cannot reach into `data-pack/build/`. One definition, two callers — the alternative was
+// a second copy held equal by a hash, which this repository has already paid for once.
+//
+// Like `data-pack.ts`, this module imports NOTHING — not even `zod`. `apps/api/test/data-pack.test.ts`
+// pins that.
 
 export type JsonSchema = Record<string, unknown>;
 

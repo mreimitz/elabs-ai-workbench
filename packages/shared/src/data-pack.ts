@@ -32,6 +32,46 @@ export function isSupportedDataPackSchemaVersion(schemaVersion: number): boolean
   );
 }
 
+// --- Pack layout (RM-38 WP 1.2) -----------------------------------------------------------------
+
+/** The manifest's filename at the pack root. It is never listed in its own `files`. */
+export const DATA_PACK_MANIFEST_FILENAME = "manifest.json";
+
+/**
+ * The directories whose `*.json` files ARE the pack, in manifest order. Everything else at the pack
+ * root — `build/`, `package.json`, `tsconfig.json`, `relocation-ledger.json` — is repository
+ * scaffolding, not pack content, and is neither digested nor shipped.
+ *
+ * `data-pack/build/manifest.ts` declares the same list as `PACK_CONTENT_DIRS` and deliberately does
+ * NOT import it, so the pack build never needs `packages/shared` to be built first;
+ * `apps/api/test/data-pack.test.ts` holds the two equal. Same pattern as
+ * `PACK_SCHEMA_VERSION` / `DATA_PACK_SCHEMA_VERSION`.
+ */
+export const DATA_PACK_CONTENT_DIRS = [
+  "compatibility",
+  "generated",
+  "limits",
+  "models/open-weight",
+  "models/saas",
+  "schema",
+] as const;
+
+/**
+ * Which schema (a pack-root-relative path) each pack file is validated against, or `null` for a
+ * file that has no JSON Schema of its own.
+ *
+ * `generated/all-models.json` is deliberately `null`: it is a DERIVED artifact of the per-provider
+ * model files, which each validate against `model-entry.schema.json`, and the loader checks it
+ * structurally instead. `schema/*.json` are schemas, not instances — validating a schema against
+ * itself proves nothing.
+ */
+export function dataPackSchemaFor(relPath: string): string | null {
+  if (relPath.startsWith("models/")) return "schema/model-entry.schema.json";
+  if (relPath === "limits/cross-cutting.json") return "schema/cross-cutting.schema.json";
+  if (relPath === "compatibility/test-catalog.json") return "schema/test-catalog.schema.json";
+  return null;
+}
+
 // --- Manifest -----------------------------------------------------------------------------------
 
 /** One shipped pack file, addressed relative to the pack root with POSIX separators. */
