@@ -11,9 +11,7 @@ import { watchWindowConfigSchema } from "./schemas.js";
 import type { WatchWindowConfig } from "./types.js";
 import {
   crossesThreshold,
-  demoteNotifySeverity,
   isWatchRulePaused,
-  notifySeverityForLevel,
   resolveNoDataPolicy,
   scoreWatchWindowValue,
   validateWatchThresholds,
@@ -83,15 +81,17 @@ test("resolveNoDataPolicy: absent resolves to `hold` — NOT the old treat-as-re
   assert.equal(resolveNoDataPolicy({ noData: "notify" }), "notify");
 });
 
-test("demoteNotifySeverity: one step down the EXISTING ladder, floored at info", () => {
+test("level and severity are INDEPENDENT — this module resolves no severity at all", async () => {
+  // Owner decision 2026-08-22: a warning crossing notifies at the rule's CONFIGURED severity, the
+  // same as an alert crossing. AM-OB10's one-step demotion is gone, and so is the helper that did
+  // it — a module-surface assertion, because a demotion reintroduced anywhere else in this file
+  // would be exactly the regression this pins. The end-to-end proof that a `critical` rule sends
+  // `critical` on a WARN crossing lives in `apps/api/test/watch-thresholds-states.test.ts`.
+  const watchState = await import("./watch-state.js");
+  const severityHelpers = Object.keys(watchState).filter((name) => /severit/i.test(name));
+  assert.deepEqual(severityHelpers, [], "watch-state must export no severity-resolution helper");
+  // The severity ladder itself is untouched — it is still the vocabulary a `notify` action picks from.
   assert.deepEqual([...WATCH_NOTIFY_SEVERITIES], ["info", "warning", "critical"]);
-  assert.equal(demoteNotifySeverity("critical"), "warning");
-  assert.equal(demoteNotifySeverity("warning"), "info");
-  assert.equal(demoteNotifySeverity("info"), "info", "the floor never wraps");
-
-  assert.equal(notifySeverityForLevel("critical", "alert"), "critical");
-  assert.equal(notifySeverityForLevel("critical", "warn"), "warning");
-  assert.equal(notifySeverityForLevel("critical", undefined), "critical", "a no-level fire is as configured");
 });
 
 test("isWatchRulePaused: a pause is a timestamp that expires on its own", () => {

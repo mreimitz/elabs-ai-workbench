@@ -688,8 +688,10 @@ export const WATCH_NO_DATA_POLICIES = ["hold", "ok", "notify"] as const;
 /** The policy an existing rule (and any rule that does not choose) resolves to. */
 export const WATCH_DEFAULT_NO_DATA_POLICY = "hold";
 /** The two severity LEVELS a threshold crossing can reach. `alert` is the rule's `threshold`; `warn`
- *  is the optional, strictly-less-severe `warnThreshold`. This is NOT a severity vocabulary — it is
- *  resolved INTO `WATCH_NOTIFY_SEVERITIES` (a `warn` crossing demotes the action's severity by one). */
+ *  is the optional, strictly-less-severe `warnThreshold`. This is NOT a severity vocabulary and it
+ *  does NOT change one: a level says which threshold was crossed, and it travels on the event and
+ *  the audit row, while a `notify` action always sends at its own configured
+ *  `WATCH_NOTIFY_SEVERITIES` value (owner decision 2026-08-22). */
 export const WATCH_WINDOW_LEVELS = ["warn", "alert"] as const;
 /** The outcome of scoring ONE window — what the evaluator decided and what the preview reports. */
 export const WATCH_WINDOW_STATES = ["no_data", "ok", "warn", "alert"] as const;

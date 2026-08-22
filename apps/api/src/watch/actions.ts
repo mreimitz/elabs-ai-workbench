@@ -10,7 +10,6 @@
 // secret store transiently and NEVER echoed into a result/detail/error/log.
 
 import {
-  notifySeverityForLevel,
   WATCH_WEBHOOK_TIMEOUT_MS,
   type WatchAction,
   type WatchNotifySeverity,
@@ -55,7 +54,9 @@ export interface WatchWindowSummaryView {
    *  the two levels was crossed and what the other one is). */
   warnThreshold?: number;
   /** AM-OB10 — the severity LEVEL this fire reached. Absent on a single-threshold rule (always an
-   *  alert) and on a no-data fire. A `warn` DEMOTES the notify action's configured severity by one. */
+   *  alert) and on a no-data fire. The level is INDEPENDENT of the notify action's severity: it says
+   *  which threshold was crossed, while the notification goes out at the rule's configured severity
+   *  whichever one it was (owner decision 2026-08-22). */
   level?: WatchWindowLevel;
   /** AM-OB10 — true when the window contained NO runs and the rule's no-data policy is `notify`.
    *  `value` is then null: silence is the signal, not a fabricated zero. */
@@ -236,10 +237,11 @@ export async function executeWatchWindowAction(
   try {
     switch (action.type) {
       case "notify": {
-        // AM-OB10 — a WARN crossing demotes the configured severity by one step in the EXISTING
-        // vocabulary (`critical`→`warning`→`info`); an ALERT (and a single-threshold rule, and a
-        // no-data fire) keeps it exactly as configured. No second severity vocabulary.
-        const severity = notifySeverityForLevel(action.severity, ctx.window.level);
+        // Owner decision 2026-08-22 — the severity is EXACTLY what the rule configured, at every
+        // crossing level. AM-OB10 shipped a warn→one-step-down demotion; it was overturned, because
+        // an author who set `critical` meant it and could not see that a warn arrived as `warning`.
+        // The LEVEL that fired still rides on `ctx.window.level` (and the audit row) beside it.
+        const severity = action.severity;
         if (!services.notify) {
           // WP4.3 seam — accepted + audited, inert until the notification sink lands (no scheduler change then).
           return {

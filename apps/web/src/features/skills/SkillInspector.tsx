@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import type { BoundTool, Skill, SkillFileNode, SkillVersion } from "@mcp-token-footprint/shared";
 import {
   Badge,
@@ -26,7 +26,6 @@ import {
   ExternalLink,
   GitBranch,
   GitPullRequest,
-  PencilRuler,
   RefreshCw,
   Settings2,
   Upload,
@@ -55,7 +54,6 @@ import { GithubSourceDialog } from "./GithubSourceDialog";
 import { PublishGithubDialog } from "./PublishGithubDialog";
 import { PushGithubDialog } from "./PushGithubDialog";
 import { SkillFlowPreview } from "./studio/SkillFlowPreview";
-import { skillStudioPath } from "./studio/studio-url";
 import { ToolRunnerSheet } from "./design/ToolRunnerSheet";
 // WP R1.4 (D-AS22) — the Files tab's live-workspace mirror: detection/subscription runs HERE (not
 // gated by the active tab) so a change can auto-navigate INTO the Files tab from anywhere on this page.
@@ -630,13 +628,13 @@ export function SkillInspector({ skillId }: SkillInspectorProps) {
           }
           actions={
             <>
-              {/* RM-30 WP 7.1 (I2) — the one authoring entry point. The inspector reads a skill;
-                  the Studio edits it, and owns the only save path. */}
-              <Button asChild size="sm" className="shrink-0">
-                <Link to={skillStudioPath(skillId)}>
-                  <PencilRuler aria-hidden /> Edit in Studio
-                </Link>
-              </Button>
+              {/* NO "Edit in Studio" here (owner decision 2026-08-22). Editing is still the
+                  Studio's alone (RM-30 WP 7.1 / I2), but the page header offered a SECOND copy of a
+                  link every tab already carries in context — Design in its flow preview, Files on
+                  the open file, Overview on the keywords card, Bindings on the server binding —
+                  each of which deep-links to the right place in the Studio, where a bare header
+                  button could only land on its front door. One entry point per surface, and it is
+                  the contextual one. */}
 
               {/* Icon-only action cluster (tooltips carry the labels, like the Servers toolbar).
                   Push vs Publish is EITHER/OR: a repo-bound skill pushes back to its source; an

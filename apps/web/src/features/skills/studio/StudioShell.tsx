@@ -22,7 +22,7 @@ import { StudioContextPanel } from "./StudioContextPanel";
 import { StudioLeftRail } from "./StudioLeftRail";
 import { StudioRail } from "./StudioRail";
 import { StudioDraftContext, useStudioDraftController } from "./draft";
-import { StudioFileTabs } from "./files/StudioFileTabs";
+import { StudioFileTabs, studioTabDomId, studioTabPanelDomId } from "./files/StudioFileTabs";
 import { SKILL_MD } from "./files/file-ops";
 import { activeTab, closeTab, liveTabs, openTab, remapPath, remapTabs } from "./files/tab-model";
 import { readStudioRailCollapsed, writeStudioRailCollapsed } from "./studio-layout";
@@ -357,6 +357,9 @@ export function StudioShell({
                   the flow canvas both run `automaticLayout`/`ResizeObserver`, so they re-measure when
                   the pane is shown again. */}
               <div
+                role="tabpanel"
+                id={studioTabPanelDomId(SKILL_MD)}
+                aria-labelledby={studioTabDomId(SKILL_MD)}
                 className={cn(
                   "min-h-0 flex-1 flex-col p-3",
                   active === SKILL_MD ? "flex" : "hidden",
@@ -386,7 +389,13 @@ export function StudioShell({
                   file gets its own Monaco model (and its own undo stack) without a second component.
                   Text is editable; a binary file is a preview — `WorkspaceEditor` owns both. */}
               {activeEntry ? (
-                <div className="flex min-h-0 flex-1 flex-col p-3" data-testid="studio-pane-file">
+                <div
+                  role="tabpanel"
+                  id={studioTabPanelDomId(active)}
+                  aria-labelledby={studioTabDomId(active)}
+                  className="flex min-h-0 flex-1 flex-col p-3"
+                  data-testid="studio-pane-file"
+                >
                   <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
                     <WorkspaceEditor
                       key={activeEntry.id}

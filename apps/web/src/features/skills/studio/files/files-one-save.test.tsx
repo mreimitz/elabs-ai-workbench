@@ -314,8 +314,18 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
   test("SKILL.md's tab can never be closed — it IS the skill", async () => {
     renderStudio();
     await waitForStudio();
-    const close = screen.getByRole("button", { name: "Close file" });
-    expect(close).toBeDisabled();
+    const tabs = await screen.findByRole("tablist", { name: "Open files" });
+
+    // Every file tab carries its own × (owner decision 2026-08-22) — the pinned manifest tab carries
+    // NONE at all, not a disabled one, so with only SKILL.md open there is no close control anywhere
+    // in the strip.
+    expect(within(tabs).queryByRole("button", { name: /^Close/ })).toBeNull();
+
+    // …and the strip's keyboard close shortcut is inert on it.
+    const manifestTab = within(tabs).getByRole("tab", { name: /SKILL\.md/ });
+    fireEvent.keyDown(manifestTab, { key: "Delete" });
+    expect(within(tabs).getByRole("tab", { name: /SKILL\.md/ })).toBeInTheDocument();
+    expect(screen.getByTestId("studio-pane-skill-md")).toBeInTheDocument();
   });
 
   test("Flow and Split are offered for SKILL.md and DISABLED on a plain file tab", async () => {

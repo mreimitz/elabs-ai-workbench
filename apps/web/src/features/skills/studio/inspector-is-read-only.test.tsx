@@ -190,19 +190,29 @@ beforeEach(() => {
 });
 
 describe("the inspector after the Studio move (RM-30 WP 7.1)", () => {
-  test("the header carries an 'Edit in Studio' link to the Studio route, not a save cluster", async () => {
+  // Owner decision 2026-08-22: ONE "Edit in Studio" per surface, and it is the CONTEXTUAL one.
+  // The page header used to carry a second copy on every tab, duplicating the Design tab's own
+  // in-preview link — and a header button can only land on the Studio's front door, where each
+  // contextual link deep-links to the thing being looked at.
+  test("the page header carries NO 'Edit in Studio' — and no save cluster either", async () => {
     renderInspector();
-    const link = await screen.findByRole("link", { name: /Edit in Studio/ });
-    expect(link).toHaveAttribute("href", "/skills/sk-1/studio");
+    await screen.findByRole("tab", { name: "Design" });
+    expect(screen.queryByRole("link", { name: /Edit in Studio/ })).toBeNull();
     expect(screen.queryByTestId("design-save-cluster")).toBeNull();
   });
 
-  test("Design is back as a tab, and it is a READ-ONLY preview", async () => {
+  test("Design is back as a tab, and it is a READ-ONLY preview with EXACTLY one Studio link", async () => {
     renderInspector();
     await screen.findByRole("tab", { name: "Design" });
     activateTab("Design");
 
-    await screen.findByTestId("skill-flow-preview");
+    const preview = await screen.findByTestId("skill-flow-preview");
+    // The only "Edit in Studio" on the page is the preview's own, so there is nothing to double up.
+    const links = await screen.findAllByRole("link", { name: /Edit in Studio/ });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "/skills/sk-1/studio");
+    expect(preview).toContainElement(links[0] as HTMLElement);
+
     // The read-only canvas is mounted…
     expect(await screen.findByTestId("canvas")).toBeInTheDocument();
     // …with none of the editing chrome: no palette, no node editor, no view toggle, no save bar.
