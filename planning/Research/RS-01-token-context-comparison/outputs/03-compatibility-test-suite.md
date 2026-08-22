@@ -3,7 +3,7 @@ type: "Research Output"
 title: "03 \u2014 MCP \u00d7 Model Compatibility Test Suite"
 description: "A model-aware test suite that scores how well an MCP server (and each of its tools) will work on"
 tags: ["research", "RS-01"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-22T21:05:00Z"
 status: "final"
 ---
 # 03 — MCP × Model Compatibility Test Suite
@@ -13,8 +13,9 @@ status: "final"
 > tool checks (`optimize.ts`, `scan_events`) into per-model tests driven by the limit dataset in
 > this folder. **This document is written to be picked up and implemented by a coding agent.**
 >
-> Machine-readable companion: [`tests/test-catalog.json`](./tests/test-catalog.json) (validated by
-> [`tests/test-catalog.schema.json`](./tests/test-catalog.schema.json)). The catalog is the source of
+> Machine-readable companion: `data-pack/compatibility/test-catalog.json` (validated by
+> `data-pack/schema/test-catalog.schema.json`; both relocated by RM-38 WP 1.1 — see
+> [`07-dataset-moved-to-data-pack.md`](./07-dataset-moved-to-data-pack.md)). The catalog is the source of
 > truth for the rules; this doc explains the framework and the human-facing copy.
 > **As-of:** 2026-06-21.
 
@@ -42,8 +43,8 @@ Path namespaces (used in the catalog's `measured.inputs` and `threshold.source`)
 
 - `tool.*` — the normalized tool + its `TokenBreakdown` (`mcp_tool_scans`).
 - `scan.*` — server scan aggregate (`mcp_scans`: `total_tools`, `total_tokens`, `total_raw_bytes`, `tools[]`).
-- `model.*` — the per-model object from [`data/**`](./data) (== `all-models.json[].detail`).
-- `cross.*` — [`data/cross-cutting-limits.json`](./data/cross-cutting-limits.json) (protocol/client/SDK/provider limits).
+- `model.*` — the per-model object from `data-pack/models/**` (== `all-models.json[].detail`).
+- `cross.*` — `data-pack/limits/cross-cutting.json` (protocol/client/SDK/provider limits).
 - `session.*` — runtime data from `tool_executions` / `run_steps` (live session only).
 
 So a **static** run needs only a scan + the bundled dataset; a **session** run additionally needs a

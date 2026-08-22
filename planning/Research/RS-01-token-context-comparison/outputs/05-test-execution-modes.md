@@ -3,14 +3,15 @@ type: "Research Output"
 title: "05 \u2014 Test Execution Modes (what access each test needs)"
 description: "Re-classifies the compatibility tests by what access is required to run them, independent of"
 tags: ["research", "RS-01"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-22T21:05:00Z"
 status: "final"
 ---
 # 05 — Test Execution Modes (what access each test needs)
 
 > Re-classifies the compatibility tests by **what access is required to run them**, independent of
 > what they measure. This is the dimension that decides *when* each test can ship.
-> Authoritative field: `execution_mode` in [`tests/test-catalog.json`](./tests/test-catalog.json).
+> Authoritative field: `execution_mode` in `data-pack/compatibility/test-catalog.json` (moved by
+> RM-38 WP 1.1 — see [`07-dataset-moved-to-data-pack.md`](./07-dataset-moved-to-data-pack.md)).
 > **As-of:** 2026-06-21.
 
 ## The hard constraint: we never have the server's source code

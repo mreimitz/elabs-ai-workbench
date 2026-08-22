@@ -218,9 +218,11 @@ test("the JSON Schema validator rejects known-bad documents", () => {
 
   assert.deepEqual(validateModel(good), [], "the real file must be valid");
 
-  // required missing
+  // required missing. NOTE: this must genuinely REMOVE the key. Biome's noDelete autofix would
+  // write `= undefined`, which leaves `Object.hasOwn` true and silently makes this assertion
+  // vacuous — so `Reflect.deleteProperty`, which deletes without the flagged operator.
   const noId = clone();
-  delete firstModel(noId).id;
+  Reflect.deleteProperty(firstModel(noId), "id");
   assert.ok(validateModel(noId).length > 0, "a missing required `id` must be caught");
 
   // enum violation

@@ -66,7 +66,8 @@
     {
       "from": "planning/Research/RS-01-token-context-comparison/outputs/tests/test-catalog.json",
       "to": "compatibility/test-catalog.json",
-      "gitBlobSha1": "bc6591ed84414e28750e3a6b2034f972f47efd4e"
+      "gitBlobSha1": "09494f4194be32bcfb0e6a2734f2ac96b11af185",
+      "note": "Rebased onto wp/rm37/0.5 (RM-38 WP 1.1, 2026-08-22): RM-37 added finding_name to every test and declared it required. Hash updated in the same commit as the content change, per the rule in the header of the relocation test \u2014 never normalise a file to make this pass."
     },
     {
       "from": "planning/Research/RS-01-token-context-comparison/outputs/schema/model-entry.schema.json",
@@ -76,7 +77,8 @@
     {
       "from": "planning/Research/RS-01-token-context-comparison/outputs/tests/test-catalog.schema.json",
       "to": "schema/test-catalog.schema.json",
-      "gitBlobSha1": "f28eaf4947562a3e59e30cec08748827bb49e660"
+      "gitBlobSha1": "d1c45138257de3be2d3ff8403cac3a2b0e7563e8",
+      "note": "Rebased onto wp/rm37/0.5 (RM-38 WP 1.1, 2026-08-22): RM-37 added finding_name to every test and declared it required. Hash updated in the same commit as the content change, per the rule in the header of the relocation test \u2014 never normalise a file to make this pass."
     }
   ]
 }

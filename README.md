@@ -574,6 +574,9 @@ apps/
   web/       React 19 + Vite SPA — react-router-dom v7, the @elabs-ai/components-* design system
 packages/
   shared/    the API contract — types.ts, schemas.ts (zod), constants.ts
+data-pack/   the reference data the app checks servers and models against — per-provider model
+             entries, protocol/client limits, the compatibility test catalog, their JSON Schemas,
+             and a generated manifest.json carrying a SHA-256 per file (`pnpm build:data-pack`)
 ```
 
 - **Runtime boundary:** the API is the *only* process that spawns MCP stdio commands, makes MCP HTTP

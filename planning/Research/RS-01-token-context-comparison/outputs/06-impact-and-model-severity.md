@@ -3,7 +3,7 @@ type: "Research Output"
 title: "06 \u2014 Impact & Per-Model Severity"
 description: "Adds two things to every test: what concretely breaks when it's non-compliant (impact), and"
 tags: ["research", "RS-01"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-22T21:05:00Z"
 status: "final"
 ---
 # 06 — Impact & Per-Model Severity
@@ -13,7 +13,8 @@ status: "final"
 > documented limits with a generated rationale and dataset **evidence**. The same failure can be a
 > hard no-go on one model and merely "not great" on another — this layer makes that explicit and
 > traceable. **As-of:** 2026-06-21.
-> Fields live in [`tests/test-catalog.json`](./tests/test-catalog.json); reference resolver:
+> Fields live in `data-pack/compatibility/test-catalog.json` (moved by RM-38 WP 1.1 — see
+> [`07-dataset-moved-to-data-pack.md`](./07-dataset-moved-to-data-pack.md)); reference resolver:
 > [`tests/resolve_model_severity.py`](./tests/resolve_model_severity.py).
 
 ## 1. Why severity must be per-model

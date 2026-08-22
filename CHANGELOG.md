@@ -5,6 +5,31 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the reference data the app judges against now lives in one place
+
+The app checks your MCP servers against a pile of outside facts: how big each
+model's context window is, what it costs, how many tools a given client will
+accept, and the catalog of compatibility checks itself. All of that was filed
+inside a research folder, in among the notes that produced it, and the only way
+to correct a price or add a model was to edit source, run the full checks and
+rebuild the application image.
+
+Those files now live in one folder of their own, `data-pack/`, at the top of the
+repository. Nothing about what the app does has changed — this release moves
+files and adds a description of them; it deliberately changes no number and no
+verdict. Every file moved with its history intact, and the proof that nothing
+changed is recorded: rebuilding after the move produced output identical to what
+was already committed, apart from the lines that say where a file came from.
+
+What is new is the description. The folder carries a `manifest.json` listing
+every file with its size and a fingerprint, and a JSON Schema for each kind of
+file, so a corrupted or edited file can be spotted rather than trusted. Two of
+those schemas did not exist before. Rebuild with `pnpm build:data-pack`; the old
+`pnpm build:model-data` still works and says it has been renamed.
+
+This is the groundwork for the real goal: letting an installed copy refresh
+those facts on its own, without a new release.
+
 ## Unreleased — the test suite stopped failing at random
 
 For a while the checks failed on a different file almost every run, and passed
