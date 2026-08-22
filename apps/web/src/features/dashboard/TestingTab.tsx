@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { LineChart } from "lucide-react";
-import { ScrollArea, Skeleton } from "@elabs-ai/components-ui";
+import { LineChart, Timer } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle, ScrollArea, Skeleton } from "@elabs-ai/components-ui";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import { InlineError } from "../../components/InlineError";
 import { TabEmptyState } from "../../components/TabEmptyState";
@@ -10,6 +10,7 @@ import { CachePanel } from "./testing/CachePanel";
 import { CostPanel } from "./testing/CostPanel";
 import { CustomChartsSection } from "./testing/CustomChartsSection";
 import {
+  bucketClampNote,
   drillDownHref,
   parseControlsFromSearchParams,
   type TestingDashboardControls,
@@ -29,7 +30,7 @@ import {
   buildTestingKpis,
   makeGroupLabelResolver,
 } from "./testing/metrics-derive";
-import { PanelGrid } from "./testing/panel-shell";
+import { PanelAnchorProvider, PanelGrid } from "./testing/panel-shell";
 import { RunsErrorRatePanel } from "./testing/RunsErrorRatePanel";
 import { ScansStripPanel } from "./testing/ScansStripPanel";
 import { ScoreTrendPanel } from "./testing/ScoreTrendPanel";
@@ -75,7 +76,11 @@ export function TestingTab({ range }: { range: DashboardRange }) {
   };
 
   const catalog = useTestingCatalog();
-  const { loading, error, loadedOnce, data, bucket, reload } = useTestingMetrics(controls);
+  const { loading, error, loadedOnce, data, bucket, bucketSelection, reload } = useTestingMetrics(controls);
+  // AM-OB3 — non-null only when an explicit `?tBucket=` was coarsened for this window. It is a
+  // statement about what the CHARTS are drawing, so it sits above them at full width rather than
+  // as a chip in the facet row: "the panels quietly did something else" is the failure mode.
+  const clampNote = bucketClampNote(bucketSelection);
 
   const serversById = useMemo(() => new Map(catalog.servers.map((s) => [s.id, s.name])), [catalog.servers]);
   const scenariosById = useMemo(() => new Map(catalog.scenarios.map((s) => [s.id, s])), [catalog.scenarios]);
@@ -157,11 +162,27 @@ export function TestingTab({ range }: { range: DashboardRange }) {
           suites={catalog.suites.map((s) => ({ id: s.id, name: s.name }))}
           models={models}
           runCount={loadedOnce ? kpis.runCount : undefined}
+          bucketSelection={bucketSelection}
         />
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
+        {/* AM-OB3 — everything below this line is panel-addressable: a `?panel=<id>` link scrolls to
+            its panel and marks it, and each panel header offers "copy link". The provider is the one
+            place that reads the URL for it (see `panel-shell.tsx`). */}
+        <PanelAnchorProvider>
         <div className="flex flex-col gap-4 pr-3 pb-4">
+          {/* Rendered OUTSIDE the loading/empty branch on purpose: a coarsened bucket is true of the
+              whole tab, including a window that happens to hold no runs. */}
+          {clampNote !== null ? (
+            <Alert variant="warning">
+              <Timer aria-hidden />
+              <AlertTitle>Showing a coarser time bucket</AlertTitle>
+              <AlertDescription>
+                <span className="block max-w-[68ch]">{clampNote}</span>
+              </AlertDescription>
+            </Alert>
+          ) : null}
           {loading ? (
             <TestingDashboardSkeleton />
           ) : error && !loadedOnce ? (
@@ -221,6 +242,7 @@ export function TestingTab({ range }: { range: DashboardRange }) {
               the prebuilt panels' default view doesn't). */}
           <CustomChartsSection controls={controls} catalog={chartCatalog} />
         </div>
+        </PanelAnchorProvider>
       </ScrollArea>
     </div>
   );

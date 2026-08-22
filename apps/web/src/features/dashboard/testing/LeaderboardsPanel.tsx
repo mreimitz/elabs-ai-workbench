@@ -5,6 +5,7 @@ import { formatCostUsd, formatDateTime, formatPercent } from "../../../lib/forma
 import { drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { DrillList } from "./DrillList";
 import type { ExpensiveRunRow, FailingLeaderboardRow } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -31,7 +32,12 @@ export function LeaderboardsPanel({
   const hasData = failingTests.length > 0 || failingServers.length > 0 || expensiveRuns.length > 0;
 
   return (
-    <ChartPanel title="Leaderboards" subtitle="Top failing tests/servers · most expensive runs" icon={<AlertOctagon aria-hidden className="size-4" />}>
+    <ChartPanel
+      title="Leaderboards"
+      subtitle="Top failing tests/servers · most expensive runs"
+      icon={<AlertOctagon aria-hidden className="size-4" />}
+      panelId={DASHBOARD_PANEL_IDS.leaderboards}
+    >
       {hasData ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <LeaderboardColumn icon={<TestTube2 aria-hidden className="size-4" />} title="Top failing tests">

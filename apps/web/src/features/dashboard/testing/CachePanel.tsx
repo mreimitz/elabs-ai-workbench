@@ -13,6 +13,7 @@ import {
   type CacheSeriesEntry,
   datapointBucketStart,
 } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -85,6 +86,7 @@ export function CachePanel({
   return (
     <ChartPanel
       title="Prompt cache"
+      panelId={DASHBOARD_PANEL_IDS.cache}
       subtitle="Cache reads (~0.1× rate) vs writes (1.25× — a premium), and the share of input served from cache"
       icon={<DatabaseZap aria-hidden className="size-4" />}
       actions={

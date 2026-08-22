@@ -6,6 +6,7 @@ import { CHART_RAMP_LENGTH, chartSeriesColor } from "../../../lib/chart-colors";
 import { formatNumber, formatPercent } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { buildRunsOverTimeRows, datapointBucketStart } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -51,6 +52,7 @@ export function RunsErrorRatePanel({
   return (
     <ChartPanel
       title="Runs & error rate over time"
+      panelId={DASHBOARD_PANEL_IDS.runsErrorRate}
       subtitle={`Run count by ${groups.length > 0 ? "group" : "window"}, overall error rate`}
       icon={<Activity aria-hidden className="size-4" />}
     >

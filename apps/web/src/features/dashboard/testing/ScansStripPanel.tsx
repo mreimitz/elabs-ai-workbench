@@ -6,6 +6,7 @@ import { chartSeriesColor } from "../../../lib/chart-colors";
 import { formatNumber } from "../../../lib/format";
 import { DrillList } from "./DrillList";
 import { buildScansStripResult } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -50,6 +51,7 @@ export function ScansStripPanel({
   return (
     <ChartPanel
       title="Scans strip"
+      panelId={DASHBOARD_PANEL_IDS.scans}
       subtitle="Whole-surface footprint tokens (tools + resources + prompts) per server"
       icon={<Database aria-hidden className="size-4" />}
     >

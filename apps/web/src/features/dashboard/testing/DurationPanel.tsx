@@ -6,6 +6,7 @@ import type { MetricsBucket, RunFilter, RunMetricsSeries } from "@mcp-token-foot
 import { formatDuration } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { buildDurationRows, datapointBucketStart } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartBox, ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -34,6 +35,7 @@ export function DurationPanel({
   return (
     <ChartPanel
       title="Duration (p50 / p95)"
+      panelId={DASHBOARD_PANEL_IDS.duration}
       subtitle="Active duration — wall-clock excludes waiting-on-operator pauses"
       icon={<Clock aria-hidden className="size-4" />}
     >

@@ -11,7 +11,12 @@ import { PROVIDER_KINDS } from "@mcp-token-footprint/shared";
 import { ResultCount } from "../../../components/ResultCount";
 import { ViewToolbar } from "../../../components/ViewToolbar";
 import {
+  TESTING_BUCKET_AUTO,
+  TESTING_BUCKET_LABELS,
+  TESTING_BUCKET_OPTIONS,
   TESTING_GROUP_BY_OPTIONS,
+  type TestingBucketChoice,
+  type TestingBucketSelection,
   type TestingDashboardControls,
   type TestingGroupBy,
 } from "./dashboard-url-state";
@@ -53,6 +58,13 @@ export type CatalogOption = { id: string; name: string };
  * genuinely Testing's own, and the caller renders it frame-light so it reads as tab content rather
  * than a second chrome band.
  *
+ * ── THE TIME BUCKET JOINED THE ROW (RM-17 AM-OB3) ────────────────────────────────────────────────
+ * The bucket granularity was derived from the window span and nothing else — hourly under two days,
+ * daily under sixty, weekly beyond — with no way to say "this range, but hourly". The `Bucket`
+ * select is that missing control, and it is what makes the `?tBucket=` key worth having: a URL key
+ * over a choice the UI never offered would address nothing. `Auto` is the default (and names what
+ * auto currently resolves to), so an untouched dashboard behaves and reads exactly as before.
+ *
  * C-1 fix: `Suite`/`Group by` used to be `SelectField` (a label-ABOVE stack) — dropped into an
  * `items-center` row that floated their triggers ~9px below every sibling control (three heights,
  * three top edges, measured 11px of scatter). Both are now a bare `Select` + `SelectTrigger
@@ -68,6 +80,7 @@ export function FilterControls({
   suites,
   models,
   runCount,
+  bucketSelection,
 }: {
   controls: TestingDashboardControls;
   onChange: (next: TestingDashboardControls) => void;
@@ -78,6 +91,12 @@ export function FilterControls({
   /** Total runs in the current window/filter (C-5 count badge). Omitted while the caller's metrics
    *  haven't loaded at least once — never render a misleading "0 runs" ahead of real data. */
   runCount?: number;
+  /**
+   * AM-OB3 — the resolved bucket, used ONLY to spell out what "Auto" currently means on the Auto
+   * option itself. A clamped choice is reported by the caller as a full-width note above the
+   * panels, not squeezed into this row: it is a statement about the charts, not about this control.
+   */
+  bucketSelection?: TestingBucketSelection;
 }) {
   const serverOptions: FacetOption[] = servers.map((s) => ({ value: s.id, label: s.name }));
   const envOptions: FacetOption[] = environments.map((s) => ({ value: s.id, label: s.name }));
@@ -140,24 +159,49 @@ export function FilterControls({
         ) : undefined
       }
       actions={
-        <Select
-          value={controls.groupBy}
-          onValueChange={(value) => onChange({ ...controls, groupBy: value as TestingGroupBy })}
-        >
-          <SelectTrigger aria-label="Group by" className="h-9 w-auto shrink-0 gap-1.5">
-            <span aria-hidden className="text-muted-foreground">
-              Group by:
-            </span>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {GROUP_BY_SELECT_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <>
+          {/* AM-OB3 — the time-bucket control. It ships WITH the `?tBucket=` key it writes, because
+              a URL key over a choice the UI never offered would address nothing. "Auto" is the
+              default and writes no param, so an untouched dashboard URL is unchanged. */}
+          <Select
+            value={controls.bucket}
+            onValueChange={(value) => onChange({ ...controls, bucket: value as TestingBucketChoice })}
+          >
+            <SelectTrigger aria-label="Time bucket" className="h-9 w-auto shrink-0 gap-1.5">
+              <span aria-hidden className="text-muted-foreground">
+                Bucket:
+              </span>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TESTING_BUCKET_OPTIONS.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option === TESTING_BUCKET_AUTO && bucketSelection !== undefined
+                    ? `${TESTING_BUCKET_LABELS[option]} (${TESTING_BUCKET_LABELS[bucketSelection.auto].toLowerCase()})`
+                    : TESTING_BUCKET_LABELS[option]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={controls.groupBy}
+            onValueChange={(value) => onChange({ ...controls, groupBy: value as TestingGroupBy })}
+          >
+            <SelectTrigger aria-label="Group by" className="h-9 w-auto shrink-0 gap-1.5">
+              <span aria-hidden className="text-muted-foreground">
+                Group by:
+              </span>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {GROUP_BY_SELECT_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </>
       }
     />
   );

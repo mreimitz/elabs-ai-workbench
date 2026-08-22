@@ -7,6 +7,7 @@ import { chartSeriesColor, chartSwatchStyle } from "../../../lib/chart-colors";
 import { formatCostUsd, formatNumber } from "../../../lib/format";
 import { bucketRangeIso, drillDownFilter, type TestingDashboardControls } from "./dashboard-url-state";
 import { buildCostResult, datapointBucketStart } from "./metrics-derive";
+import { DASHBOARD_PANEL_IDS } from "./panel-anchor";
 import { ChartPanel, PanelEmptyState } from "./panel-shell";
 
 /**
@@ -50,6 +51,7 @@ export function CostPanel({
   return (
     <ChartPanel
       title="Cost by basis"
+      panelId={DASHBOARD_PANEL_IDS.cost}
       subtitle="$ exact vs $ est. subscription — one total per cost basis"
       icon={<Coins aria-hidden className="size-4" />}
       actions={

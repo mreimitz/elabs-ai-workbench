@@ -90,6 +90,15 @@ function isDashboardTab(value: string | null): value is DashboardTab {
  * unchanged; `?tab=scans` redirects to Overview (see {@link RETIRED_TABS}). `{ replace: true }`
  * throughout (mirroring `SkillInspector`'s `setLiveFileParam`) so clicking between tabs or windows
  * doesn't spam browser history — back/forward still leaves the page rather than walking tab-by-tab.
+ *
+ * ── ONE MORE KEY: `?panel=` (RM-17 AM-OB3) ───────────────────────────────────────────────────────
+ * The Testing tab is a long scrolling column, so a shared `/dashboard?tab=testing&range=…` link still
+ * meant "scroll down and find the cache panel". `?panel=<id>` names one panel; the panel that
+ * recognises its own id scrolls itself into view and marks itself. This host deliberately does NOT
+ * read it: a panel exists only after that tab's metrics fetch settles (and an inactive tab is
+ * unmounted entirely), so a scroll fired from here would run before its target exists. The
+ * vocabulary is `testing/panel-anchor.ts`; the behaviour is `testing/panel-shell.tsx`. An unknown
+ * `?panel=` matches nothing and is ignored — it never disturbs the tab, the range or the facets.
  */
 export function DashboardView(props: {
   /** True until the app's first data fetch settles — render loading, not the "no data" empty state. */

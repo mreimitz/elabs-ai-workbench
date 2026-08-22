@@ -12,7 +12,13 @@ import type {
 } from "@mcp-token-footprint/shared";
 import { getErrorMessage } from "../../../lib/errors";
 import { getMostExpensiveRuns, getRunMetrics, getScanMetrics, listScenarios, listServers, listSuites, listTests } from "../../../lib/api";
-import { baseRunFilter, metricsWindow, resolveBucket, type TestingDashboardControls } from "./dashboard-url-state";
+import {
+  baseRunFilter,
+  metricsWindow,
+  resolveBucketSelection,
+  type TestingBucketSelection,
+  type TestingDashboardControls,
+} from "./dashboard-url-state";
 
 // ── Catalog (servers/environments/suites/tests) — fetched ONCE, independent of the date/filter
 // controls. Feeds the filter bar's options + the leaderboard/expensive-runs labels. ─────────────
@@ -104,6 +110,10 @@ export type UseTestingMetricsResult = {
   loadedOnce: boolean;
   data: TestingMetricsData;
   bucket: MetricsBucket;
+  /** AM-OB3 — the bucket WITH its provenance: what the operator asked for, what auto would pick,
+   *  and whether the request had to be coarsened for this window (which the tab has to say out
+   *  loud). `bucket` above stays the plain effective value every panel already consumes. */
+  bucketSelection: TestingBucketSelection;
   reload: () => void;
 };
 
@@ -121,7 +131,10 @@ export function useTestingMetrics(controls: TestingDashboardControls): UseTestin
   const [loadedOnce, setLoadedOnce] = useState(false);
   const [nonce, setNonce] = useState(0);
   const loadedOnceRef = useRef(false);
-  const bucket = resolveBucket(controls);
+  // AM-OB3 — the operator's `?tBucket=` choice wins over the span-derived rule, unless honouring it
+  // would ask the API for thousands of buckets, in which case it is coarsened and the tab says so.
+  const bucketSelection = resolveBucketSelection(controls);
+  const bucket = bucketSelection.bucket;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -216,5 +229,14 @@ export function useTestingMetrics(controls: TestingDashboardControls): UseTestin
     // on an ACTUAL change, not every render.
   }, [JSON.stringify(controls), bucket, nonce]);
 
-  return { loading, refetching, error, loadedOnce, data, bucket, reload: () => setNonce((n) => n + 1) };
+  return {
+    loading,
+    refetching,
+    error,
+    loadedOnce,
+    data,
+    bucket,
+    bucketSelection,
+    reload: () => setNonce((n) => n + 1),
+  };
 }
