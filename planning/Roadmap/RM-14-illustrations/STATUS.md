@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-22T12:30:00Z"
+timestamp: "2026-08-22T15:40:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -581,7 +581,53 @@ and an explicit "Not verified:" tail.
       or the annotation row LOOK right is WP 2.3's question and is untested. Two shapes to eye at WP
       2.4: `ultra` on a tall composition fits to 4563×1956 (no crop, so a lot of empty paper), and the
       annotation card size is a placeholder that will move both goldens when WP 2.3 sizes cards
-- [ ] WP 2.2 — Connector router (orthogonal, port-to-port, label collision avoidance)
+- [x] WP 2.2 — Connector router (orthogonal, port-to-port, label collision avoidance) — **done
+      2026-08-22 · `wp/roadmap-cleanup/rm14-2.2` (3 commits, merged `1cb3312`) · spec:
+      [`wp-2.2-connector-router.md`](./wp-2.2-connector-router.md) · `scene/route.ts` +906,
+      `route.test.ts` +830, two golden route files · `packages/shared` and `scene/layout.ts` both
+      ZERO-line diffs · no new dependency.**
+      Pure geometry, as the seam demanded: a `SceneLayout` and the spec's connectors in, orthogonal
+      paths and placed label boxes out — no React, no SVG element, no DOM, and no colour/stroke/dash
+      in the output type or the body. Four shapes and no fifth (straight · L · Z mid-split · U
+      loop-back), each pinned to an exact corner count and turn points. Collinear overlapping runs
+      nudge apart on a quantized step ordered by **connector identity**, so a JSON round trip cannot
+      reorder them. Corner radii clamp to half the shorter joined run — a short-run test proves the
+      two fillets **meet** instead of reversing through each other. Labels place at the midpoint and
+      displace clear of node frames only, from a fixed ladder, with **no text measurement**: the box
+      comes from character count against `ILLUS_TEXT.caption`, because a measured box cannot exist in
+      a pure function. Determinism is gate-enforced three ways (twice · JSON round trip ·
+      reverse-ordered catalog) plus a source guard banning `Math.random`/`Date`/`getBBox`/
+      `getBoundingClientRect`.
+      **THE SPEC WAS WRONG AND THE BUILDER MEASURED IT — this is the WP's most useful output.** The
+      spec asserted *"a port carries no declared normal today, so derive it"*.
+      `ILLUSTRATION_PORT_SIDES` declares one, and its own contract calls it *"the coarse attachment
+      hint **the connector router needs**"*. Reading it does **not** widen WP 2.1's seam:
+      `layoutScene(spec, { catalog })` already takes a `SceneCatalog`, so `routeScene` taking the same
+      one teaches the router nothing about bands — the thing the seam actually forbids. Measured over
+      **all 93 catalogued ports** in both fixtures: the literal spec text agrees on **72/93** and
+      **cannot classify a `bottom` port at all** (an entity's view box is symmetric about the ground
+      point it stands on, so that port sits at the frame centre on both axes); frame geometry plus a
+      centre-line clause reaches **89/93**; the declared side reaches **93/93**. The builder reported
+      rather than widened — which was the instruction — and the orchestrator made the call and
+      corrected the spec on the record. Departure is now three rules in strict precedence: declared
+      side → frame fallback (**demoted, not deleted**: an uncatalogued component still gets a box with
+      no port records) → cycle-gate rule. The catalog parameter is **required, not optional**, because
+      an optional one would let a caller fall silently to the fallback. Two of twelve connectors moved,
+      both offset `bottom`-side ports — exactly the predicted residue.
+      **Two additions the spec did not ask for, both accepted.** `doublesBack` flags a connector whose
+      endpoints the closed four-shape set cannot honestly express — the direct sibling of the label
+      `collides` flag, flagging rather than emitting a quietly wrong path; it drops **4 → 3** with the
+      declared side, and the three survivors are real geometry for **WP 2.4**. And a run touching an
+      endpoint is **pinned** rather than nudged, since moving it would pull the line off its port.
+      **Validated by the orchestrator, not taken on report:** 957/957 here, and **three guards
+      independently re-broken** — removing the radius clamp → 5 red; bypassing the label collision
+      check → 4 red; mapping the `bottom` side to north → 3 red. All green on restore.
+      **One coverage note for WP 2.3:** the 93-port sweep compares `fromDirection` against
+      `portSideDirection(side)`, so it is **self-referential about the mapping** and would not catch a
+      corrupted map — the dedicated `portSideDirection` test and the goldens do. Together they hold;
+      neither alone does.
+      **Nothing here renders** — no SVG produced, no browser opened, no theme checked. That is WP 2.3,
+      and no visual claim is made or implied.
 - [ ] WP 2.3 — `<IllustrationScene>` deterministic renderer + annotations + accent-ratio dev warning
 - [ ] WP 2.4 — Acceptance scene (Self-Learning Agentic Loop as spec fixture, one shared hub) +
       standalone-SVG export — **owner-visible milestone**

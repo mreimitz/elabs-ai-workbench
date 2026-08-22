@@ -5,6 +5,35 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — lines between the illustrations, and a contract that already knew where they attach
+
+**The illustration system can now draw the arrows.** Twenty-four illustration components existed and
+nothing joined them up. The connector router is the piece that does: give it a laid-out scene and it
+returns every line as a right-angled path with rounded corners, plus a label placed clear of the
+boxes. Lines that would otherwise be drawn on top of each other are pushed apart; a corner on a very
+short run is tightened so the two curves meet instead of doubling back through each other.
+
+It draws nothing itself — it produces geometry, and a later work package paints it. That separation
+is deliberate: a function that only returns numbers can be checked exactly, so the same scene is
+guaranteed to produce the same lines every time. That is enforced three ways, including running the
+whole thing against a component catalogue rebuilt in reverse order.
+
+**The most useful thing this work produced was a correction to its own instructions.** The spec said
+illustration components do not record which side of themselves a connection point sits on, so the
+router should work it out from the shape's bounding box. They do record it — and the setting's own
+documentation says it exists precisely because the router needs it. Measured across all 93 connection
+points in the test scenes: guessing from the box got 72 right and could never get a bottom-mounted
+point right at all, because these shapes are symmetric about the spot they stand on. Reading the
+declared side gets all 93. The builder measured it and reported it rather than quietly changing
+scope; the instruction was corrected and the router now reads the declared side, keeping the guess as
+a fallback for anything the catalogue has never seen.
+
+Four line shapes are supported and there is deliberately no fifth. Where two points genuinely cannot
+be joined by any of the four, the connector is **flagged** rather than drawn wrongly — three cases
+remain in the test scenes, and they are for the next work package to resolve.
+
+*Not verified: nothing here renders. No image was produced, no browser opened, no theme looked at.*
+
 ## Unreleased — a bug report you can send without reading it first
 
 **A diagnostics bundle, and the one thing it will not promise.** Settings gained a single action
