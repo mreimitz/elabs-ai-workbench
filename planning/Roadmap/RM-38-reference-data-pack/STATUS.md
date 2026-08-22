@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T19:05:00Z"
+timestamp: "2026-08-22T19:15:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -110,6 +110,31 @@ still "AI Workbench".
 env vars are already neutral (`DATA_PACK_*`), but WP 3.3's publish script, release-asset name and DC
 documentation must not be written against the old handle and renamed twice. WP 3.2's stamp lands in the
 CI gate document, whose filename RM-37 is changing.
+
+## Sequencing against RM-37 — 2026-08-22
+
+`wp/rm37/0.5` (merged into `rm37/integration`) adds a `finding_name` field to every test in the
+compatibility catalog and declares it in the schema. It touches **four files WP 1.1 relocates**:
+
+```
+planning/Research/RS-01-token-context-comparison/outputs/tests/test-catalog.json
+planning/Research/RS-01-token-context-comparison/outputs/tests/test-catalog.schema.json
+apps/api/src/compatibility/data/test-catalog.json
+apps/api/test/compatibility-data.test.ts
+```
+
+A content edit against a file move does **not** produce a textual conflict. WP 1.1's branch would
+carry the pre-`finding_name` bytes to a new path and silently revert 39 lines, with no conflict and no
+red test. **Decision: RM-37 lands first; WP 1.1 rebases onto it.** Re-applying a move onto new content
+is cheap; re-applying a content edit onto a moved file is not. Verified 2026-08-22 that both sides of
+their branch hash identically, so their drift test is green and the field is deliberate work, not drift.
+
+`packages/shared/src/index.ts` currently has **three** branches appending one export line each — the
+textbook clean-auto-merge-wrong case. Merge one branch at a time and re-gate between.
+
+**WP 2.1 will collide harder.** RM-37 adds `packages/shared/src/severity-ramp.ts`, a
+`risk-vocabulary.guardrail.test.ts` and 65 lines to `security-posture.ts` — the file WP 2.1 empties of
+literals. Sequence, do not race, and announce before dispatch.
 
 ## Owner-acceptance (nothing below is verified)
 
