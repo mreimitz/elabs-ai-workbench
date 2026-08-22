@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T19:10:00Z"
+timestamp: "2026-08-22T20:35:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -575,6 +575,31 @@ met and — where the box touches code — the gate
 > it as `05fbf04`. Ten stale worktrees remain on disk; nine are merged, and `069941e` is the one
 > holding unmerged work. **None were deleted** — this plan has twice nearly lost rescued work to
 > routine cleanup.
+
+> **BATCH DISPATCHED 2026-08-22 (third batch of the day) — four agents, four different items, one WP
+> each.** Chosen for zero file overlap, so no two agents write the same file: **RM-30 WP 7.9**
+> (Designer=visual vs Files=source · `apps/web/src/features/skills/**`) · **RM-14 WP 2.3** (the
+> `<IllustrationScene>` renderer · `packages/illustrations/src/scene/**`) · **RM-17 AM-OB13**
+> (manual send-to-webhook · `apps/api/src/watch/**` + `apps/web/src/features/{testing,watch}/**`) ·
+> **RM-18 WP 1.2** (in-app docs + one top-bar Help control · new `apps/web/src/features/docs/**` +
+> `App.tsx` + `AppShell.tsx` + `packages/shared/src/assistant-route-manifest.ts`).
+>
+> **Three of the four had no spec of their own** — their scope lived only as a ledger line — so
+> `wp-7.9-designer-and-source.md`, `wp-2.3-scene-renderer.md` and `wp-1.2-in-app-docs.md` were
+> written, validated (`pnpm okf:validate` PASS after `okf:sync`) and committed **before** dispatch,
+> and each agent was given its spec's absolute path. AM-OB13 already had
+> `phase-6-langfuse/WP-6.12-AM-OB13-manual-send-to-webhook.md`.
+>
+> **Each spec carries a "where every premise was read" table with file:line citations.** That is the
+> direct answer to the previous batch's most transferable lesson: two specs stated premises about the
+> codebase that were false, and both cost a build-then-correct round trip a one-line citation would
+> have prevented.
+>
+> **AM-OB13's own "do not batch with AM-OB2" warning no longer binds** — it shares
+> `apps/web/src/features/testing/RunBar.tsx` with AM-OB2, and AM-OB2 merged in the previous batch.
+>
+> **RM-30 WP 7.9 is briefed as four separately-committed pieces** (mode axis deleted · SKILL.md as a
+> source tab · the rail rename + width · the diff label), for the same recovery reason WP 7.8 was.
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade
