@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-21T22:08:05Z"
+timestamp: "2026-08-22T07:32:49Z"
 status: "active"
 ---
 
@@ -38,6 +38,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-34-estimator-turn-model-calibrate](RM-34-estimator-turn-model-calibrate/item.md) — Estimator turn model — calibrate the run-plan preview against measured run history · `active`
 * [RM-35-roadmap-cleanup-close-what](RM-35-roadmap-cleanup-close-what/item.md) — Roadmap cleanup — close what is already started · `active`
 * [RM-36-ui-ux-audit-remediation](RM-36-ui-ux-audit-remediation/item.md) — UI/UX audit remediation 2026-08 · `planned`
+* [RM-37-announcement-readiness](RM-37-announcement-readiness/item.md) — Announcement readiness — multi-persona review remediation (2026-08) · `planned`
 
 ## Completed Roadmap Items
 
