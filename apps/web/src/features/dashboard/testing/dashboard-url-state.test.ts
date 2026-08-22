@@ -17,6 +17,7 @@ import {
   resolveBucketSelection,
   TESTING_BUCKET_AUTO,
   TESTING_BUCKET_OPTIONS,
+  type TestingBucketChoice,
   type TestingDashboardControls,
   writeControlsToSearchParams,
 } from "./dashboard-url-state";
@@ -282,7 +283,7 @@ describe("drillDownFilter / drillDownHref", () => {
 // ── AM-OB3 — the bucket choice, its URL key and its clamp ────────────────────────────────────────
 
 /** A window of exactly `days` whole days, as instants (what the page range supplies). */
-function windowOf(days: number, bucket = TESTING_BUCKET_AUTO): TestingDashboardControls {
+function windowOf(days: number, bucket: TestingBucketChoice = TESTING_BUCKET_AUTO): TestingDashboardControls {
   const to = new Date("2026-07-17T12:00:00.000Z");
   const from = new Date(to.getTime() - days * 86_400_000);
   return { ...defaultControls(NOW), from: from.toISOString(), to: to.toISOString(), bucket };
