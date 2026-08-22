@@ -6,6 +6,7 @@ export * from "./assistant-ui-registry.js";
 export * from "./ci-assertions.js";
 export * from "./cli-contract.js";
 export * from "./constants.js";
+export * from "./diagnostics.js";
 export * from "./feature-flags.js";
 export * from "./format.js";
 export * from "./hub-genui-catalog.js";
