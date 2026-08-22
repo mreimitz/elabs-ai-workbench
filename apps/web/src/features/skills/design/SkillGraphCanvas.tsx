@@ -63,7 +63,14 @@ import {
   explainerFor,
   NODE_KIND_EXPLAINER_IDS,
 } from "./code-intel/explainers";
-import { TOOL_DRAG_MIME, type ToolDragPayload } from "./ToolsPalette";
+import {
+  COMPONENT_DRAG_MIME,
+  isSkillComponentId,
+  TOOL_DRAG_MIME,
+  type ComponentDragPayload,
+  type SkillComponentId,
+  type ToolDragPayload,
+} from "./skill-components";
 import { PREVIEW_NODE_PREFIX } from "./use-edit-ops";
 import { getToolDiagnostics } from "../skills-inspector-api";
 
@@ -760,6 +767,14 @@ export type SkillGraphCanvasProps = {
    */
   onToolDrop?: (payload: { server: string; tool: string; nodeId: string | null }) => void;
   /**
+   * RM-30 WP 7.7 — only when `editable`: a COMPONENT was dragged off the components palette and
+   * dropped on the canvas. Hit-tested exactly like `onToolDrop` (the React Flow node wrapper's
+   * `data-id`, `null` for the empty pane) and handed up UNRESOLVED: the caller runs the one pure
+   * `resolveComponentPlacement` and stages whatever ops that yields — the canvas neither knows nor
+   * decides what a component means. Omitted / non-edit ⇒ the handlers are not wired at all.
+   */
+  onComponentDrop?: (payload: { component: SkillComponentId; nodeId: string | null }) => void;
+  /**
    * Skill IDE WP 5.2 — when BOTH are supplied, the canvas self-fetches this version's MCP
    * tool-reference diagnostics (`GET …/tool-diagnostics`, read-only over persisted scans) and paints a
    * warning-tone badge on every section node whose SKILL.md span carries an `unknown_tool`/`stale_tool`
@@ -796,6 +811,7 @@ export function SkillGraphCanvas({
   onConnect,
   onEdgesDelete,
   onToolDrop,
+  onComponentDrop,
   skillId,
   versionId,
 }: SkillGraphCanvasProps) {
@@ -805,16 +821,48 @@ export function SkillGraphCanvas({
   // preventDefault (only for OUR mime) to make the canvas a valid drop target; `drop` reads the tool
   // payload and hit-tests the React Flow node under the pointer (its wrapper carries `data-id`).
   const toolDropEnabled = editable && !!onToolDrop;
+  // RM-30 WP 7.7 — the same gesture for the components palette, on its own MIME so neither payload
+  // is ever read as the other.
+  const componentDropEnabled = editable && !!onComponentDrop;
+
+  /** Which React Flow node the pointer was over when the drop landed (`null` = the empty pane). */
+  const dropTargetNodeId = (event: DragEvent<HTMLDivElement>): string | null => {
+    const target = event.target as HTMLElement | null;
+    const nodeEl = target?.closest?.(".react-flow__node");
+    return nodeEl?.getAttribute("data-id") ?? null;
+  };
+
   const handleToolDragOver = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
-      if (!toolDropEnabled || !event.dataTransfer.types.includes(TOOL_DRAG_MIME)) return;
+      const types = event.dataTransfer.types;
+      const accepts =
+        (toolDropEnabled && types.includes(TOOL_DRAG_MIME)) ||
+        (componentDropEnabled && types.includes(COMPONENT_DRAG_MIME));
+      if (!accepts) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "copy";
     },
-    [toolDropEnabled],
+    [toolDropEnabled, componentDropEnabled],
   );
   const handleToolDrop = useCallback(
     (event: DragEvent<HTMLDivElement>) => {
+      if (componentDropEnabled) {
+        const rawComponent = event.dataTransfer.getData(COMPONENT_DRAG_MIME);
+        if (rawComponent) {
+          event.preventDefault();
+          let parsed: ComponentDragPayload | null = null;
+          try {
+            parsed = JSON.parse(rawComponent) as ComponentDragPayload;
+          } catch {
+            parsed = null;
+          }
+          // A drag payload is untrusted text: only one of the nine known ids is ever handed up.
+          if (parsed && isSkillComponentId(parsed.component)) {
+            onComponentDrop?.({ component: parsed.component, nodeId: dropTargetNodeId(event) });
+          }
+          return;
+        }
+      }
       if (!toolDropEnabled) return;
       const raw = event.dataTransfer.getData(TOOL_DRAG_MIME);
       if (!raw) return;
@@ -826,12 +874,9 @@ export function SkillGraphCanvas({
         return;
       }
       if (typeof payload?.server !== "string" || typeof payload?.tool !== "string") return;
-      const target = event.target as HTMLElement | null;
-      const nodeEl = target?.closest?.(".react-flow__node");
-      const nodeId = nodeEl?.getAttribute("data-id") ?? null;
-      onToolDrop?.({ server: payload.server, tool: payload.tool, nodeId });
+      onToolDrop?.({ server: payload.server, tool: payload.tool, nodeId: dropTargetNodeId(event) });
     },
-    [toolDropEnabled, onToolDrop],
+    [toolDropEnabled, onToolDrop, componentDropEnabled, onComponentDrop],
   );
 
   // WP 5.2 — the version's tool-reference diagnostics, self-fetched only when the caller supplies
@@ -972,8 +1017,8 @@ export function SkillGraphCanvas({
       deleteKeyCode={editable ? EDIT_DELETE_KEYS : null}
       onConnect={editable ? onConnect : undefined}
       onEdgesDelete={editable ? onEdgesDelete : undefined}
-      onDragOver={toolDropEnabled ? handleToolDragOver : undefined}
-      onDrop={toolDropEnabled ? handleToolDrop : undefined}
+      onDragOver={toolDropEnabled || componentDropEnabled ? handleToolDragOver : undefined}
+      onDrop={toolDropEnabled || componentDropEnabled ? handleToolDrop : undefined}
       onSelectionChange={handleSelectionChange}
     >
       {/* K3/K4 — the node-kind / verdict legend is DOCKED in each caller's IDE chrome (the Design

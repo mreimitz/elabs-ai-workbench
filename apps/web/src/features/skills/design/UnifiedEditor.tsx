@@ -5,6 +5,7 @@ import type {
   BoundTool,
   SkillDiff,
   SkillEditsResponse,
+  SkillFileNode,
   SkillGraph,
   SkillVersion,
 } from "@mcp-token-footprint/shared";
@@ -69,17 +70,22 @@ import { getSkillFiles } from "../skills-inspector-api";
 import { registerCodeIntel, type CodeIntelController } from "./code-intel";
 import { findUnknownToolReferences, formatUnknownToolWarning } from "./code-intel/tool-references";
 import "./code-intel/decorations.css";
-import { CommandDialog } from "./CommandDialog";
+import { ComponentsPalette } from "./ComponentsPalette";
+import {
+  ComponentValueDialog,
+  type ComponentValue,
+  type ComponentValueOption,
+} from "./ComponentValueDialog";
 import { NodeDetailPanel } from "./NodeDetailPanel";
 import { ProblemsPanel, type SkillProblemsSummary } from "./ProblemsPanel";
-import { ToolsPalette } from "./ToolsPalette";
-import { layoutSkillLanes } from "./graph-layout";
 import {
-  buildFlow,
-  ExplainerLegend,
-  SkillGraphCanvas,
-  type SkillCanvasNode,
-} from "./SkillGraphCanvas";
+  componentTargetError,
+  resolveComponentPlacement,
+  skillComponentSpec,
+  type SkillComponentId,
+} from "./skill-components";
+import { layoutSkillLanes } from "./graph-layout";
+import { buildFlow, SkillGraphCanvas, type SkillCanvasNode } from "./SkillGraphCanvas";
 import {
   applyPreviewOps,
   describeEditOp,
@@ -111,6 +117,18 @@ const isEditorMode = (value: string | null): value is EditorMode =>
 /** Editable Monaco options: the shared read-only baseline with `readOnly` lifted, glyph margin on for
  *  WP 9.3's kind/annotation/breadcrumb gutter glyphs. */
 const EDITABLE_OPTIONS = { ...READ_ONLY_OPTIONS, readOnly: false, glyphMargin: true };
+
+/**
+ * RM-30 WP 7.7 — is this path a script, for the validation-gate picker? Mirrors the API projector's
+ * own `isScript` (`file.kind === "script" || path.startsWith("scripts/")`) so the picker only offers
+ * files that would actually project as a gate. A path staged in the Studio draft but not yet saved
+ * carries no `kind` here, so it qualifies on the `scripts/` prefix alone — the same rule the server
+ * will apply to it once it exists.
+ */
+function isScriptPath(path: string, files: readonly SkillFileNode[]): boolean {
+  if (path.startsWith("scripts/")) return true;
+  return files.some((file) => file.path === path && file.kind === "script");
+}
 
 /** How long a cursor move waits before it highlights the owning node (avoid thrash while scrubbing). */
 const CURSOR_SYNC_DEBOUNCE_MS = 120;
@@ -271,17 +289,25 @@ function UnifiedEditorBody({
 
   const { edit, baseGraph: graph, treeSha, draftGraph, manualEdit, loading, error } = draft;
 
+  // RM-30 WP 7.7 — the Studio draft, when this editor is inside one. Read here (not beside the
+  // placement handler) because the value picker's option list is derived further up the body.
+  const studioDraft = useOptionalStudioDraft();
+  const draftText = draft.content;
+  const stageSettingsEdit = studioDraft?.stageSettingsEdit;
+  const declaredKeywords = studioDraft?.settings.keywords;
+
   const { boundTools, loading: boundToolsLoading } = useBoundTools(skillId, versionId);
 
   // WP 9.3 — the version's file paths drive code-mode relative-path (asset-ref) completion. A read-only
   // fetch; a failure degrades to no path suggestions (advisory tooling, never load-blocking).
-  const [filePaths, setFilePaths] = useState<string[]>([]);
+  const [versionFiles, setVersionFiles] = useState<SkillFileNode[]>([]);
+  const filePaths = useMemo(() => versionFiles.map((file) => file.path), [versionFiles]);
   useEffect(() => {
     let cancelled = false;
-    setFilePaths([]);
+    setVersionFiles([]);
     getSkillFiles(skillId, versionId)
       .then((files) => {
-        if (!cancelled) setFilePaths(files.map((file) => file.path));
+        if (!cancelled) setVersionFiles(files);
       })
       .catch(() => {
         /* no path completion — the rest of code-intel still works */
@@ -293,8 +319,11 @@ function UnifiedEditorBody({
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>(undefined);
   const [flowFilter, setFlowFilter] = useState<string>("__all__");
-  const [addSectionOpen, setAddSectionOpen] = useState(false);
-  const [addCommandOpen, setAddCommandOpen] = useState(false);
+  // RM-30 WP 7.7 — a component that references something that must RESOLVE asks which one.
+  const [valueRequest, setValueRequest] = useState<{
+    component: SkillComponentId;
+    targetNodeId: string | null;
+  } | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [discardConfirming, setDiscardConfirming] = useState(false);
 
@@ -446,26 +475,66 @@ function UnifiedEditorBody({
     return live.length > 0 ? [...warnings, ...live] : warnings;
   }, [warnings, draft.content, boundTools, boundToolsLoading]);
 
-  const sections = useMemo(
-    () =>
-      graph ? graph.nodes.filter(isSectionNode).map((n) => ({ id: n.id, label: n.label })) : [],
-    [graph],
+  // RM-30 WP 7.7 — de-duplication sources for a placed component's placeholder name. They read the
+  // PREVIEW graph, not the saved one, so dropping two sections in a row yields "New section" and
+  // "New section 2" rather than two headings with the same title.
+  const existingTitles = useMemo(
+    () => (flowGraph ? flowGraph.nodes.map((node) => node.label) : []),
+    [flowGraph],
   );
 
   const commandTokens = useMemo(() => {
-    if (!graph) return [];
+    if (!flowGraph) return [];
     const tokens: string[] = [];
-    for (const node of graph.nodes) {
+    for (const node of flowGraph.nodes) {
       if (node.kind === "entry_point" && node.trigger.type === "command")
         tokens.push(node.trigger.value);
     }
     return tokens;
-  }, [graph]);
+  }, [flowGraph]);
 
   const previewOnlyLabel =
     selectedNodeId && isPreviewOnlyNodeId(selectedNodeId)
       ? flowGraph?.nodes.find((n) => n.id === selectedNodeId)?.label
       : undefined;
+
+  // ── RM-30 WP 7.7 — what the value picker can offer ───────────────────────────────────────────────
+  // Files come from the SAVED version's tree, unioned with anything the Studio draft has staged but
+  // not saved, because a resource file created a minute ago is exactly the one an author wants to
+  // reference. Tools come from the bound-servers read — no scan, no options, and the dialog says so.
+  const requestSpec = valueRequest ? (skillComponentSpec(valueRequest.component) ?? null) : null;
+  const draftFilePaths = studioDraft?.files.entries;
+  const valueOptions = useMemo<ComponentValueOption[]>(() => {
+    if (!requestSpec?.needsValue) return [];
+    if (requestSpec.needsValue === "tool") {
+      return boundTools.map((tool) => ({
+        key: `${tool.serverName}\u0000${tool.toolName}`,
+        label: tool.toolName,
+        hint: tool.serverName,
+        value: { kind: "tool" as const, server: tool.serverName, tool: tool.toolName },
+      }));
+    }
+    const paths = new Set(versionFiles.map((file) => file.path));
+    for (const entry of draftFilePaths ?? []) paths.add(entry.path);
+    const scriptOnly = requestSpec.needsValue === "script";
+    return [...paths]
+      .filter((path) => path !== "SKILL.md")
+      .filter((path) => !scriptOnly || isScriptPath(path, versionFiles))
+      .sort()
+      .map((path) => ({ key: path, label: path, value: { kind: "file" as const, path } }));
+  }, [requestSpec, boundTools, versionFiles, draftFilePaths]);
+
+  const valueEmptyReason =
+    requestSpec?.needsValue === "tool"
+      ? "No bound tool to reference yet. Bind a server in the MCP Servers section of the palette, and make sure it has a completed scan."
+      : requestSpec?.needsValue === "script"
+        ? "This skill ships no script. Add one under scripts/ in the Files rail first — a validation gate has to name a script to check."
+        : "This skill has no other files yet. Create one in the Files rail first.";
+
+  const valueSectionLabel =
+    valueRequest?.targetNodeId != null
+      ? (graph?.nodes.find((node) => node.id === valueRequest.targetNodeId)?.label ?? null)
+      : null;
 
   // ── canvas gesture handlers (gesture → typed op on the shared buffer; nothing mutates until Save) ──
   const addOp = edit.addOp;
@@ -528,6 +597,82 @@ function UnifiedEditorBody({
       });
     },
     [graph, addOp],
+  );
+
+  // ── RM-30 WP 7.7 — placing a components-palette component ────────────────────────────────────────
+  // Exactly one path for both gestures: a canvas DROP hands (component, node under the pointer) and
+  // the palette's Add button hands (component, current canvas selection). Both land here, both go
+  // through the one pure `resolveComponentPlacement`, so a keyboard author and a mouse author stage
+  // byte-identical ops. Nothing mutates: the result is appended to the same edit buffer every other
+  // gesture writes to, and the frontmatter half rides the Studio draft's own staging.
+  /** Section bodies with a pending `update_section_body`, so an append composes rather than clobbers. */
+  const pendingBodies = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const op of edit.ops) {
+      if (op.op === "update_section_body") map.set(op.nodeId, op.body);
+    }
+    return map;
+  }, [edit.ops]);
+
+  const placeComponent = useCallback(
+    (
+      component: SkillComponentId,
+      targetNodeId: string | null,
+      value?: ComponentValue,
+    ): boolean => {
+      const result = resolveComponentPlacement({
+        component,
+        targetNodeId,
+        graph,
+        text: draftText,
+        existingTitles,
+        existingCommands: commandTokens,
+        existingKeywords: declaredKeywords ?? [],
+        pendingBodies,
+        canStageSettings: stageSettingsEdit !== undefined,
+        ...(value ? { value } : {}),
+      });
+      if (!result.ok) {
+        notifyError(result.title, { description: result.reason });
+        return false;
+      }
+      for (const op of result.ops) addOp(op);
+      if (result.keyword !== undefined) {
+        stageSettingsEdit?.({ field: "keywords", action: "add", value: result.keyword });
+      }
+      toast.success(result.title, { description: result.description });
+      return true;
+    },
+    [
+      graph,
+      draftText,
+      existingTitles,
+      commandTokens,
+      declaredKeywords,
+      pendingBodies,
+      stageSettingsEdit,
+      addOp,
+    ],
+  );
+
+  const handlePlaceComponent = useCallback(
+    (component: SkillComponentId, targetNodeId: string | null) => {
+      const spec = skillComponentSpec(component);
+      if (!spec) return;
+      if (spec.needsValue && graph) {
+        // Check the TARGET before asking which file/tool — "which script?" followed by "…actually,
+        // drop it on a section" is a worse conversation than refusing up front. Same rule, one copy.
+        const targetError = componentTargetError(component, targetNodeId, graph);
+        if (targetError) {
+          notifyError(targetError.title, { description: targetError.reason });
+          return;
+        }
+        setValueRequest({ component, targetNodeId });
+        return;
+      }
+      placeComponent(component, targetNodeId);
+    },
+    [graph, placeComponent],
   );
 
   // ── selection sync: node → line (reveal) ─────────────────────────────────────────────────────────
@@ -805,6 +950,7 @@ function UnifiedEditorBody({
       onConnect={handleConnect}
       onEdgesDelete={handleEdgesDelete}
       onToolDrop={handleToolDrop}
+      onPlaceComponent={handlePlaceComponent}
       previewOnlyLabel={previewOnlyLabel}
       edit={edit}
       boundTools={boundTools}
@@ -884,17 +1030,10 @@ function UnifiedEditorBody({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {flowVisible ? (
-            <>
-              <ExplainerLegend />
-              <Button variant="outline" size="sm" onClick={() => setAddCommandOpen(true)}>
-                <Terminal aria-hidden /> Add command
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setAddSectionOpen(true)}>
-                <Plus aria-hidden /> Add section
-              </Button>
-            </>
-          ) : null}
+          {/* RM-30 WP 7.7 deleted three controls from this row: "Add command", "Add section" and the
+              Legend popover. The first two are components you drag (or Add) from the palette, which
+              stages the SAME ops on the SAME draft; the Legend's vocabulary moved onto the palette
+              rows themselves, which read the same explainer registry the popover did. */}
 
           {/* SI13 — when the inspector hosts the save cluster in its page header, the toolbar
               doesn't repeat it; a standalone host keeps the inline cluster. */}
@@ -904,9 +1043,9 @@ function UnifiedEditorBody({
 
       {flowVisible ? (
         <Text variant="meta" tone="muted" className="shrink-0">
-          Drag from a section node onto an asset to connect it, or drag a tool from the palette onto
-          a section to reference it. Type in code to edit the document directly — both views stay in
-          sync. Nothing changes until you save.
+          Drag a component or a tool from the palette onto the flow — or select a node and use the
+          palette’s ＋. Drag from a section node onto an asset to connect it. Type in code to edit the
+          document directly — both views stay in sync. Nothing changes until you save.
         </Text>
       ) : null}
 
@@ -962,26 +1101,20 @@ function UnifiedEditorBody({
           (the Studio's bottom strip) it is registered there instead, never rendered twice. */}
       {onProblemsChange ? null : problemsPanel}
 
-      <AddSectionDialog
-        open={addSectionOpen}
-        onOpenChange={setAddSectionOpen}
-        sections={sections}
-        onAdd={(input) => edit.addOp({ op: "add_subroutine", ...input })}
-      />
-
-      <CommandDialog
-        open={addCommandOpen}
-        onOpenChange={setAddCommandOpen}
-        mode="add"
-        existingCommands={commandTokens}
-        onSubmit={({ command, title, body }) =>
-          edit.addOp({
-            op: "add_command",
-            command,
-            ...(title ? { title } : {}),
-            ...(body ? { body } : {}),
-          })
-        }
+      <ComponentValueDialog
+        open={valueRequest !== null}
+        onOpenChange={(open) => {
+          if (!open) setValueRequest(null);
+        }}
+        spec={requestSpec}
+        sectionLabel={valueSectionLabel}
+        options={valueOptions}
+        emptyReason={valueEmptyReason}
+        onPick={(value) => {
+          if (!valueRequest) return;
+          placeComponent(valueRequest.component, valueRequest.targetNodeId, value);
+          setValueRequest(null);
+        }}
       />
 
       <UnifiedSaveDialog
@@ -1154,6 +1287,8 @@ type FlowPaneProps = {
   onConnect: (connection: Connection) => void;
   onEdgesDelete: (edges: Edge[]) => void;
   onToolDrop: (payload: { server: string; tool: string; nodeId: string | null }) => void;
+  /** RM-30 WP 7.7 — one entry point for both gestures: the canvas drop and the palette's Add. */
+  onPlaceComponent: (component: SkillComponentId, targetNodeId: string | null) => void;
   previewOnlyLabel: string | undefined;
   edit: ReturnType<typeof useSkillDraft>["edit"];
   boundTools: BoundTool[];
@@ -1181,6 +1316,7 @@ function FlowPane({
   onConnect,
   onEdgesDelete,
   onToolDrop,
+  onPlaceComponent,
   previewOnlyLabel,
   edit,
   boundTools,
@@ -1199,19 +1335,34 @@ function FlowPane({
   // collapse chevron as an argument, because only the in-pane mount has a column to collapse.
   const renderToolsPanel = useCallback(
     (onCollapse?: () => void): ReactNode => (
-      <ToolsPalette
+      <ComponentsPalette
+        skillId={skillId}
+        versionId={versionId}
         graph={graph}
         boundTools={boundTools}
         loading={boundToolsLoading}
         editMode
         canInsert={canInsert}
         onInsertTool={onInsertTool}
+        onPlaceComponent={onPlaceComponent}
+        selectedNodeId={selectedNodeId}
         fluid
         {...(onCollapse ? { onCollapse } : {})}
         {...(onOpenServerSettings ? { onOpenServerSettings } : {})}
       />
     ),
-    [graph, boundTools, boundToolsLoading, canInsert, onInsertTool, onOpenServerSettings],
+    [
+      skillId,
+      versionId,
+      graph,
+      boundTools,
+      boundToolsLoading,
+      canInsert,
+      onInsertTool,
+      onPlaceComponent,
+      selectedNodeId,
+      onOpenServerSettings,
+    ],
   );
   const detailPanel = useMemo<ReactNode>(
     () => (
@@ -1248,7 +1399,7 @@ function FlowPane({
         <StatePanel
           kind="empty"
           title="Nothing to design yet"
-          description="No sections were found in this version's SKILL.md. Add a command or section, or switch to code and start typing."
+          description="No sections were found in this version's SKILL.md. Drag a Section or a /command from the Components palette, or switch to code and start typing."
         />
       ) : (
         <SkillGraphCanvas
@@ -1259,6 +1410,7 @@ function FlowPane({
           onConnect={onConnect}
           onEdgesDelete={onEdgesDelete}
           onToolDrop={onToolDrop}
+          onComponentDrop={({ component, nodeId }) => onPlaceComponent(component, nodeId)}
         />
       )}
     </div>
@@ -1810,97 +1962,3 @@ function RollupTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ── Add-section dialog (moved here from SkillDesignView — the flow-mode "Add section" affordance) ───
-
-function AddSectionDialog({
-  open,
-  onOpenChange,
-  sections,
-  onAdd,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  sections: { id: string; label: string }[];
-  onAdd: (input: { afterNodeId: string | null; title: string; body?: string }) => void;
-}) {
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [afterNodeId, setAfterNodeId] = useState<string>("__end__");
-
-  useEffect(() => {
-    if (open) {
-      setTitle("");
-      setBody("");
-      setAfterNodeId("__end__");
-    }
-  }, [open]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" className="flex max-h-[85vh] flex-col gap-0 p-0">
-        <DialogHeader className="flex-none gap-1 border-b border-border p-4 pe-12">
-          <DialogTitle>Add section</DialogTitle>
-          <DialogDescription>
-            Stages an `add_subroutine` op — a new `## ` heading is inserted into `SKILL.md` when you
-            save.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="add-section-title">Title</Label>
-            <Input
-              id="add-section-title"
-              value={title}
-              placeholder="Handle errors…"
-              onChange={(event) => setTitle(event.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="add-section-body">Body (optional)</Label>
-            <Textarea
-              id="add-section-body"
-              rows={5}
-              value={body}
-              placeholder="What should happen in this section…"
-              onChange={(event) => setBody(event.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>After</Label>
-            <Select value={afterNodeId} onValueChange={setAfterNodeId}>
-              <SelectTrigger aria-label="Insert after">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__end__">At the end of the document</SelectItem>
-                {sections.map((section) => (
-                  <SelectItem key={section.id} value={section.id}>
-                    {section.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter className="flex-none border-t border-border p-4">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            disabled={!title.trim()}
-            onClick={() => {
-              onAdd({
-                afterNodeId: afterNodeId === "__end__" ? null : afterNodeId,
-                title: title.trim(),
-                ...(body.trim() ? { body: body.trim() } : {}),
-              });
-              onOpenChange(false);
-            }}
-          >
-            <Plus aria-hidden /> Add section
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
