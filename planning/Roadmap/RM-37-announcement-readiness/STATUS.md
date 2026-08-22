@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Announcement readiness — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the RM-37 review-remediation plan (29 work packages in five phases), read and updated by /next-wp RM-37."
 tags: ["roadmap", "RM-37"]
-timestamp: "2026-08-22T07:40:00Z"
+timestamp: "2026-08-22T10:20:00Z"
 status: "active"
 ---
 
@@ -40,29 +40,40 @@ Phase 2 view by view (a relayout lands with its vocabulary). Phase 4 closes the 
 Hub on/off for fresh installs (WP 0.1) · one product name and machine handle (WP 0.2) · licence and
 distribution model (WP 0.2) · subscription-terms check (WP 0.7) · Assistant approval model (WP 1.5).
 
+### Owner decisions taken — 2026-08-22
+
+| # | Decision | Choice | Owns |
+| --- | --- | --- | --- |
+| D-AN1 | Product name (the name a user reads: README H1, `<title>`, sidebar lockup, `/api/health.service`) | **AI Workbench** — kept as today. The owner accepted the MK-02 third-party name collision knowingly; WP 0.7 does not reopen it. | WP 0.2 action 1 |
+| D-AN2 | Machine handle (CLI bin · image name · service-token prefix · CI gate filename) | **Derived from the product name.** Short handle `aiwb` (CLI bin, token prefix `aiwb_`, gate file `aiwb.assert.json`); long handle `ai-workbench` (Docker image, compose service and volume). Replaces `mcpfp`/`mcpfp_`/`mcpfp.assert.json`. No external token has been issued, so no credential migration is owed. | WP 0.2 action 2 |
+| D-AN3 | Licence and distribution | **Apache-2.0, public repository.** `LICENSE` at the repo root, `"license": "Apache-2.0"` in all five `package.json` files, one sentence in README §Run it, the licence name in the recipient README heredoc. Install path stays `docker compose up --build` plus the offline bundle. | WP 0.2 action 3 |
+| D-AN4 | Release number | **0.3.0** — continues `## 0.2.0 — 2026-07-02` and the changelog's own existing `## Unreleased (0.3.0)` heading. All five `package.json` versions mirror root. Orchestrator's call, not the owner's: root `package.json` said `1.1.0`, which never matched the changelog. | WP 0.2 action 6 |
+| D-AN5 | Assistant features on a fresh install | **Hub off, dock on** — spec option (b): `{ assistant: false, app_assistant: true, mcp_server: true }` stamped at first boot only. The "absent = on" rule is unchanged, so an existing install keeps every feature. | WP 0.1 action 1 |
+| D-AN6 | Assistant approval model (WP 1.5) | **Not yet taken** — asked when Phase 1 WP 1.5 is dispatched. | WP 1.5 |
+
 ## Work packages
 
 ### Phase 0 — Announcement gate (decisions and proofs)
 
 - [ ] **WP 0.1** — Hub as preview: `assistant`/`app_assistant` off on fresh installs, one
       "Assistant (preview)" nav entry below Testing, announcement copy reduced to one sentence.
-      Spec: [`wp-0.1-hub-preview.md`](./wp-0.1-hub-preview.md) · M
+      Spec: [`wp-0.1-hub-preview.md`](./wp-0.1-hub-preview.md) · M · _in progress — wp/rm37/0.1_
 - [ ] **WP 0.2** — One product name, one build-time version source, a tagged release, licence and
       distribution decision, Node pin.
-      Spec: [`wp-0.2-name-version-licence.md`](./wp-0.2-name-version-licence.md) · M
+      Spec: [`wp-0.2-name-version-licence.md`](./wp-0.2-name-version-licence.md) · M · _in progress — wp/rm37/0.2_
 - [ ] **WP 0.3** — Container trust boundary (service-token guard behind a port mapping) and the
       offline launchers proven on a clean macOS and a clean Windows machine; backup before migration;
       arm64 bundle.
       Spec: [`wp-0.3-container-trust-launchers.md`](./wp-0.3-container-trust-launchers.md) · L
 - [ ] **WP 0.4** — Loopback API hardening: Origin/Host allow-list, CSRF and DNS-rebinding defence,
       security headers, git subprocess env minimised.
-      Spec: [`wp-0.4-loopback-api-hardening.md`](./wp-0.4-loopback-api-hardening.md) · M
+      Spec: [`wp-0.4-loopback-api-hardening.md`](./wp-0.4-loopback-api-hardening.md) · M · _in progress — wp/rm37/0.4_
 - [ ] **WP 0.5** — Posture rule false positive (getter flagged as mutation), error-finding triage on
       the owner's servers, fleet chip without a risk band until accepted, one severity vocabulary.
-      Spec: [`wp-0.5-posture-rule-severity-vocabulary.md`](./wp-0.5-posture-rule-severity-vocabulary.md) · M
+      Spec: [`wp-0.5-posture-rule-severity-vocabulary.md`](./wp-0.5-posture-rule-severity-vocabulary.md) · M · _in progress — wp/rm37/0.5_
 - [ ] **WP 0.6** — `ci.yml` with the four-command gate, e2e and a build matrix; both GitHub Actions
       examples executed once; self-scan budget figure reconciled.
-      Spec: [`wp-0.6-ci-gate.md`](./wp-0.6-ci-gate.md) · M
+      Spec: [`wp-0.6-ci-gate.md`](./wp-0.6-ci-gate.md) · M · _in progress — wp/rm37/0.6_
 - [ ] **WP 0.7** — README and product-page truth-up: tokenizer wording (+ Anthropic `count_tokens`
       profile), "drafted fix" wording, judge prerequisite, inspector claim, ports, screenshots from
       demo data, subscription-terms check.
@@ -72,13 +83,13 @@ distribution model (WP 0.2) · subscription-terms check (WP 0.7) · Assistant ap
 
 - [ ] **WP 1.1** — Demo seed (neutral dataset), `demo-snapshot save|restore`, "Load demo data",
       wizard preset for the workbench's own `/api/mcp` server.
-      Spec: [`wp-1.1-demo-seed-snapshot.md`](./wp-1.1-demo-seed-snapshot.md) · M
+      Spec: [`wp-1.1-demo-seed-snapshot.md`](./wp-1.1-demo-seed-snapshot.md) · M · _in progress — wp/rm37/1.1_
 - [ ] **WP 1.2** — Import MCP servers from `claude_desktop_config.json` / `.mcp.json` / Cursor
       config; analyzer quick starts; research presets only behind the Hub flag.
       Spec: [`wp-1.2-config-import-quickstarts.md`](./wp-1.2-config-import-quickstarts.md) · M
 - [ ] **WP 1.3** — Testing first-run checklist (Provider → Environment → Test → Judge → Run), judge
       auto-default, linked empty states, launcher states what a run will load.
-      Spec: [`wp-1.3-testing-first-run.md`](./wp-1.3-testing-first-run.md) · M
+      Spec: [`wp-1.3-testing-first-run.md`](./wp-1.3-testing-first-run.md) · M · _in progress — wp/rm37/1.3_
 - [ ] **WP 1.4** — User guide served in-image at `/docs`, Help + Report a problem in the shell,
       redacted diagnostics export, pre-flight / demo-readiness panel.
       Spec: [`wp-1.4-docs-help-diagnostics-preflight.md`](./wp-1.4-docs-help-diagnostics-preflight.md) · M
@@ -126,7 +137,7 @@ distribution model (WP 0.2) · subscription-terms check (WP 0.7) · Assistant ap
 
 - [ ] **WP 3.1** — Planning ids and raw wire enums scrubbed from UI copy; shared label maps with a
       guardrail test.
-      Spec: [`wp-3.1-copy-scrub-label-maps.md`](./wp-3.1-copy-scrub-label-maps.md) · M
+      Spec: [`wp-3.1-copy-scrub-label-maps.md`](./wp-3.1-copy-scrub-label-maps.md) · M · _in progress — wp/rm37/3.1_
 - [ ] **WP 3.2** — One glossary (test / check / verify, session vs conversation, agent, runs not
       cells), one severity ramp, status spelling, absent-value rule, cost/token vocabulary, issue
       title template — enforced by tests.
@@ -137,7 +148,7 @@ distribution model (WP 0.2) · subscription-terms check (WP 0.7) · Assistant ap
 - [ ] **WP 3.4** — One definition per number in `packages/shared` (cache share, startup tokens,
       latest scan, tool-call count, first-measured, issue and session counts); URL state for every
       tab, version, session and filter; group-by/columns persistence.
-      Spec: [`wp-3.4-one-number-url-state.md`](./wp-3.4-one-number-url-state.md) · M
+      Spec: [`wp-3.4-one-number-url-state.md`](./wp-3.4-one-number-url-state.md) · M · _in progress — wp/rm37/3.4_
 
 ### Phase 4 — Acceptance and demo proof
 
