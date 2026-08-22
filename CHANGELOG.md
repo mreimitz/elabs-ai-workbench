@@ -5,6 +5,34 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the test suite stopped failing at random
+
+For a while the checks failed on a different file almost every run, and passed
+whenever that file was run on its own. The convenient explanation was that the
+machine was simply too busy, and that explanation was written down twice. It was
+wrong.
+
+Five parts of the project each rebuilt a shared piece of code as the first step
+of their own checks — and because those checks run at the same time, several
+rebuilds were writing to the same folder while other checks were reading out of
+it. Watching one run directly: three rebuilds running at once, and the shared
+file being replaced twice while tests were already using it. Reading a file
+mid-replacement gives you a truncated or briefly missing file, which is exactly
+"a different test fails each time, and none of them fail alone".
+
+The rebuild now happens once. Whoever gets there first does it; everyone else
+waits for them to finish. A rebuild is only treated as done if it actually
+succeeded, so a broken one can't be mistaken for a good one and handed to the
+tests.
+
+A second, unrelated weakness was fixed alongside it: three speed checks were
+timing themselves with a stopwatch, which on a busy machine measures how long
+they waited for a turn rather than how long the work took. They now measure
+processor time instead. **The limits were not relaxed** — only the clock
+changed.
+
+Before: roughly four failures in seven runs. After: five clean runs in a row.
+
 ## Unreleased — the skill diagram stopped being a picture and became a measurement
 
 **You can finally see what a skill actually makes the model read.** Pick a `/command` or a keyword
