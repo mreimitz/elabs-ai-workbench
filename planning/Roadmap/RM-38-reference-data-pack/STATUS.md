@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T18:30:00Z"
+timestamp: "2026-08-22T19:05:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -57,6 +57,8 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 
 - [ ] WP 1.1 — `data-pack/` + manifest + JSON Schemas + shared contract; RS-01 model data and the
       build script moved — spec: [`wp-1.1-pack-contract.md`](./wp-1.1-pack-contract.md).
+      **status: in progress** · `wp/reference-data-pack/1.1` · dispatched 2026-08-22. Runs **solo**:
+      it moves files three other WPs will read, so nothing may run beside it.
 - [ ] WP 1.2 — pack loader + `installDataPackSource()` boot seam; compatibility dataset/catalog read
       the resolved pack; snapshot copy replaces `copy-data.mjs` — spec:
       [`wp-1.2-loader-seam.md`](./wp-1.2-loader-seam.md). **Depends on 1.1.**
@@ -96,6 +98,18 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 - `pnpm lint` currently reports 2 pre-existing errors, both the oversized `all-models.json`. Relocating
   that file is an opportunity to resolve them; a WP that does not resolve them must say so rather than
   let the count drift.
+
+## Carried in from RM-37 (announcement readiness) — 2026-08-22
+
+RM-37 has renamed the product's machine handle on its own branch, not yet on `main`:
+`mcpfp` → **`aiwb`** (CLI binary, Docker image `ai-workbench`, data volume, service-token prefix
+`aiwb_`, CI gate filename `aiwb.assert.json`); version **0.3.0**, licence **Apache-2.0**, product name
+still "AI Workbench".
+
+**Every WP here that mints an identifier, names a file or documents a command uses `aiwb`** — WP 3.1's
+env vars are already neutral (`DATA_PACK_*`), but WP 3.3's publish script, release-asset name and DC
+documentation must not be written against the old handle and renamed twice. WP 3.2's stamp lands in the
+CI gate document, whose filename RM-37 is changing.
 
 ## Owner-acceptance (nothing below is verified)
 
