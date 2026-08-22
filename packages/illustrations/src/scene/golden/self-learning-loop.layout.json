@@ -1,0 +1,494 @@
+{
+  "id": "self-learning-agentic-loop",
+  "title": "Self-Learning Agentic Loop",
+  "summary": "The owner states an intent; the agent executes it with the current Skill and the shared MCP server's tools; a validator grades the result; the feedback is written back to the Skill, which is published as a new version. One shared pair serves every station.",
+  "canvas": {
+    "format": "hero_wide",
+    "stage": "paper",
+    "aspect": 1.777778,
+    "x": -830.578,
+    "y": -64,
+    "width": 1661.156,
+    "height": 934.4,
+    "viewBox": "-830.578 -64 1661.156 934.4"
+  },
+  "bands": [
+    {
+      "id": "process",
+      "kind": "lane",
+      "title": "One cycle",
+      "frame": {
+        "x": -640,
+        "y": 0,
+        "width": 1280,
+        "height": 223.6
+      },
+      "baseline": 119.6,
+      "nodeIds": [
+        "owner",
+        "agent",
+        "grader",
+        "feedback"
+      ]
+    },
+    {
+      "id": "shared",
+      "kind": "hub",
+      "title": "Shared by every station",
+      "frame": {
+        "x": -360,
+        "y": 287.6,
+        "width": 720,
+        "height": 230.8
+      },
+      "baseline": 398.4,
+      "nodeIds": [
+        "hub-mcp",
+        "hub-skill"
+      ]
+    },
+    {
+      "id": "notes",
+      "kind": "annotations",
+      "title": null,
+      "frame": {
+        "x": -639.139,
+        "y": 582.4,
+        "width": 1278.278,
+        "height": 224
+      },
+      "baseline": 582.4,
+      "nodeIds": []
+    }
+  ],
+  "nodes": [
+    {
+      "id": "owner",
+      "component": "owner",
+      "band": "process",
+      "placement": "row",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 4.08,
+      "origin": {
+        "x": -504,
+        "y": 119.6
+      },
+      "frame": {
+        "x": -639.138,
+        "y": 20.32,
+        "width": 270.277,
+        "height": 203.28
+      },
+      "ports": {
+        "bottom": {
+          "x": -504,
+          "y": 119.6
+        },
+        "intent-out": {
+          "x": -443.032,
+          "y": 99.76
+        },
+        "left": {
+          "x": -545.569,
+          "y": 110.96
+        },
+        "report-in": {
+          "x": -564.968,
+          "y": 99.76
+        },
+        "right": {
+          "x": -462.431,
+          "y": 110.96
+        },
+        "top": {
+          "x": -504,
+          "y": 54.32
+        }
+      }
+    },
+    {
+      "id": "agent",
+      "component": "agent",
+      "band": "process",
+      "placement": "row",
+      "size": "m",
+      "state": "active",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 5.35,
+      "origin": {
+        "x": -168,
+        "y": 119.6
+      },
+      "frame": {
+        "x": -303.138,
+        "y": 0,
+        "width": 270.277,
+        "height": 223.6
+      },
+      "ports": {
+        "bottom": {
+          "x": -168,
+          "y": 119.6
+        },
+        "context-in": {
+          "x": -209.569,
+          "y": 100.8
+        },
+        "result-out": {
+          "x": -126.431,
+          "y": 100.8
+        },
+        "top": {
+          "x": -168,
+          "y": 34
+        }
+      }
+    },
+    {
+      "id": "grader",
+      "component": "validator",
+      "band": "process",
+      "placement": "row",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "grader",
+      "heightUnits": 4.58,
+      "origin": {
+        "x": 168,
+        "y": 119.6
+      },
+      "frame": {
+        "x": 32.862,
+        "y": 12.32,
+        "width": 270.277,
+        "height": 211.28
+      },
+      "ports": {
+        "bottom": {
+          "x": 168,
+          "y": 119.6
+        },
+        "left": {
+          "x": 126.431,
+          "y": 106.96
+        },
+        "right": {
+          "x": 209.569,
+          "y": 106.96
+        },
+        "subject-in": {
+          "x": 107.032,
+          "y": 95.76
+        },
+        "top": {
+          "x": 168,
+          "y": 46.32
+        },
+        "verdict-out": {
+          "x": 228.968,
+          "y": 95.76
+        }
+      }
+    },
+    {
+      "id": "feedback",
+      "component": "feedback-report",
+      "band": "process",
+      "placement": "row",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 2.0700000000000003,
+      "origin": {
+        "x": 504,
+        "y": 119.6
+      },
+      "frame": {
+        "x": 368.862,
+        "y": 52.48,
+        "width": 270.277,
+        "height": 171.12
+      },
+      "ports": {
+        "bottom": {
+          "x": 504,
+          "y": 119.6
+        },
+        "in": {
+          "x": 443.032,
+          "y": 115.84
+        },
+        "left": {
+          "x": 462.431,
+          "y": 127.04
+        },
+        "out": {
+          "x": 564.968,
+          "y": 115.84
+        },
+        "right": {
+          "x": 545.569,
+          "y": 127.04
+        },
+        "top": {
+          "x": 504,
+          "y": 86.48
+        }
+      }
+    },
+    {
+      "id": "hub-mcp",
+      "component": "mcp-server",
+      "band": "shared",
+      "placement": "row",
+      "size": "l",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "stdio",
+      "heightUnits": 4.8,
+      "origin": {
+        "x": -192,
+        "y": 398.4
+      },
+      "frame": {
+        "x": -354.851,
+        "y": 287.6,
+        "width": 325.703,
+        "height": 230.8
+      },
+      "ports": {
+        "bottom": {
+          "x": -192,
+          "y": 398.4
+        },
+        "bus": {
+          "x": -216.942,
+          "y": 384
+        },
+        "left": {
+          "x": -247.426,
+          "y": 392
+        },
+        "right": {
+          "x": -136.574,
+          "y": 392
+        },
+        "top": {
+          "x": -192,
+          "y": 321.6
+        }
+      }
+    },
+    {
+      "id": "hub-skill",
+      "component": "skill",
+      "band": "shared",
+      "placement": "row",
+      "size": "l",
+      "state": "active",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "versioned",
+      "heightUnits": 2.56,
+      "origin": {
+        "x": 192,
+        "y": 398.4
+      },
+      "frame": {
+        "x": 29.149,
+        "y": 323.44,
+        "width": 325.703,
+        "height": 194.96
+      },
+      "ports": {
+        "bottom": {
+          "x": 192,
+          "y": 398.4
+        },
+        "left": {
+          "x": 136.574,
+          "y": 409.92
+        },
+        "right": {
+          "x": 247.426,
+          "y": 409.92
+        },
+        "top": {
+          "x": 192,
+          "y": 357.44
+        },
+        "version-out": {
+          "x": 269.596,
+          "y": 397.12
+        }
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "index": 0,
+      "kind": "principle-card",
+      "band": "notes",
+      "align": "start",
+      "frame": {
+        "x": -639.139,
+        "y": 646.4,
+        "width": 352,
+        "height": 160
+      }
+    },
+    {
+      "index": 1,
+      "kind": "callout",
+      "band": "notes",
+      "align": "end",
+      "frame": {
+        "x": 287.139,
+        "y": 646.4,
+        "width": 352,
+        "height": 160
+      }
+    }
+  ],
+  "endpoints": {
+    "owner.bottom": {
+      "x": -504,
+      "y": 119.6
+    },
+    "owner.intent-out": {
+      "x": -443.032,
+      "y": 99.76
+    },
+    "owner.left": {
+      "x": -545.569,
+      "y": 110.96
+    },
+    "owner.report-in": {
+      "x": -564.968,
+      "y": 99.76
+    },
+    "owner.right": {
+      "x": -462.431,
+      "y": 110.96
+    },
+    "owner.top": {
+      "x": -504,
+      "y": 54.32
+    },
+    "agent.bottom": {
+      "x": -168,
+      "y": 119.6
+    },
+    "agent.context-in": {
+      "x": -209.569,
+      "y": 100.8
+    },
+    "agent.result-out": {
+      "x": -126.431,
+      "y": 100.8
+    },
+    "agent.top": {
+      "x": -168,
+      "y": 34
+    },
+    "grader.bottom": {
+      "x": 168,
+      "y": 119.6
+    },
+    "grader.left": {
+      "x": 126.431,
+      "y": 106.96
+    },
+    "grader.right": {
+      "x": 209.569,
+      "y": 106.96
+    },
+    "grader.subject-in": {
+      "x": 107.032,
+      "y": 95.76
+    },
+    "grader.top": {
+      "x": 168,
+      "y": 46.32
+    },
+    "grader.verdict-out": {
+      "x": 228.968,
+      "y": 95.76
+    },
+    "feedback.bottom": {
+      "x": 504,
+      "y": 119.6
+    },
+    "feedback.in": {
+      "x": 443.032,
+      "y": 115.84
+    },
+    "feedback.left": {
+      "x": 462.431,
+      "y": 127.04
+    },
+    "feedback.out": {
+      "x": 564.968,
+      "y": 115.84
+    },
+    "feedback.right": {
+      "x": 545.569,
+      "y": 127.04
+    },
+    "feedback.top": {
+      "x": 504,
+      "y": 86.48
+    },
+    "hub-mcp.bottom": {
+      "x": -192,
+      "y": 398.4
+    },
+    "hub-mcp.bus": {
+      "x": -216.942,
+      "y": 384
+    },
+    "hub-mcp.left": {
+      "x": -247.426,
+      "y": 392
+    },
+    "hub-mcp.right": {
+      "x": -136.574,
+      "y": 392
+    },
+    "hub-mcp.top": {
+      "x": -192,
+      "y": 321.6
+    },
+    "hub-skill.bottom": {
+      "x": 192,
+      "y": 398.4
+    },
+    "hub-skill.left": {
+      "x": 136.574,
+      "y": 409.92
+    },
+    "hub-skill.right": {
+      "x": 247.426,
+      "y": 409.92
+    },
+    "hub-skill.top": {
+      "x": 192,
+      "y": 357.44
+    },
+    "hub-skill.version-out": {
+      "x": 269.596,
+      "y": 397.12
+    }
+  }
+}

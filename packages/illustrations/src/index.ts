@@ -29,6 +29,7 @@ export * from "./iso-math.js";
 export * from "./line-system.js";
 export * from "./layers.js";
 export * from "./primitives/index.js";
+export * from "./scene/index.js";
 export * from "./entities/index.js";
 export {
   ILLUSTRATION_COMPONENTS,
