@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 7.8 design — edge grammar + entry-point flows (for owner approval)"
 description: "The five decisions WP 7.8 needs signed off before any code is written: what a connection means, how an entry point's effective reading list is derived, what a refused connection says, where box positions live, and what this breaks."
 tags: ["roadmap", "RM-30"]
-timestamp: "2026-08-22T09:50:00Z"
+timestamp: "2026-08-22T11:10:00Z"
 status: "final"
 ---
 
@@ -286,3 +286,53 @@ own work package, not a line item in this one.
    branches move), and that a trace recorded before the change may no longer line up with the
    diagram. ⚠️ *Needs an explicit call:* migrate old traces, or let them degrade with a visible
    notice. I would let them degrade — they are records of past runs, not live state.
+
+---
+
+## Evidence — how branches are ACTUALLY written (measured 2026-08-22)
+
+The owner asked for this before deciding whether the unresolved-branch finding is a small fix or its
+own work package. It was measured, not estimated: the five registered skills (47 versions) were read
+from a **copy** of `data/app.sqlite` — the live file's md5 was `1762bcdadae9…` before and after,
+unchanged — and each latest `SKILL.md` was run through the real `projectSkillGraph` directly.
+
+| Skill (latest version) | nodes | gatekeepers | condition edges | "not resolvable" warnings |
+| --- | --- | --- | --- | --- |
+| qlik-ai-readiness-optimizer | 28 | 0 | 0 | 0 |
+| qlik-data-analyst | 40 | 0 | 0 | 0 |
+| qlik-freeform-analyst | 31 | **1** | **2** | **1** |
+| qlik-sense-app-analysis | 49 | 3 | 0 | 0 |
+| qlik-sense-mcp | 15 | 0 | 0 | 0 |
+
+**The whole corpus produces exactly one unresolved branch — and it is a MIS-PARSE, not a branch.**
+Its two condition labels are `"the answer is complete after one query"` and `"it takes twenty
+queries because one finding kept leading somewhere else"`, lifted by `extractConditions`'
+`/\b(?:otherwise if|else if|if)\b\s+([^,.;:]+)/gi` out of this narrative sentence in the skill's
+opening paragraph:
+
+> *"…Follow one finding into the next the way you would exploring a dashboard by hand. If the answer
+> is complete after one query, deliver it. If it takes twenty queries because one finding kept
+> leading somewhere else, that's fine too."*
+
+Both were then attached as labels to **the same single edge**, pointing at the next top-level
+section (`## Session setup`) — which is the "fork that does not fork" the design pass noticed.
+
+**Conditionals are everywhere in these skills and almost none of them route.** Lines matching
+`if|else|otherwise|when` run 4–44 per skill, but they are *intra-step rules* — retry policy,
+field-validation rules, timeout handling ("If a query times out (30s), do NOT retry the exact same
+query"). Across all five skills, only **three** phrases name a destination at all, and only two of
+those resolve to a real heading (`proceed to Step 2` → `### Step 2: Data Model Sanity Check`;
+`proceed to Phase 2 enrichment` → `### Phase 2: Dual-Mode Enrichment`) — and neither of those two
+sits in a section the projector classifies as a gatekeeper, so neither reaches the branch path today.
+
+**Recommendation: neither (a) nor (b) — the defect is a false POSITIVE, not a missing resolution.**
+Building target resolution would be machinery for one occurrence in the whole corpus, and that
+occurrence should not be a branch at all. The cheap, correct fix belongs inside WP 7.8: **tighten
+`extractConditions` so narrative prose stops becoming branch labels** (a routing condition needs a
+destination, not just the word "if"), and let the *Branch* edge kind stay defined-but-unused until an
+author has a real decision point to express. **Not its own work package.**
+
+**Sample-size warning, stated plainly:** five skills, all Qlik-domain, all by one author. That is far
+too small and too uniform to generalize about how skill authors in general write branches. What it
+does establish is that **this** corpus has no genuine branch for the current machinery to draw, so
+nothing here is being under-served by deferring branch authoring.
