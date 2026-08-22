@@ -6,9 +6,11 @@ export { CalibrationCube } from "./CalibrationCube.js";
 export {
   CONNECTOR_ARROW_FILL,
   CONNECTOR_ARROW_TRIM,
+  CONNECTOR_LABEL_KNOCKOUT,
   CONNECTOR_STYLE,
   Connector,
   arrowHeadPoints,
+  connectorLineEnd,
 } from "./Connector.js";
 export { ConstructionGhost } from "./ConstructionGhost.js";
 export { EntityRoot, entityPortAnchors } from "./EntityRoot.js";

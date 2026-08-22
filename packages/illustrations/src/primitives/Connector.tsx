@@ -107,6 +107,14 @@ const ARROW_HALF_WIDTH = 4.2;
 export const CONNECTOR_ARROW_TRIM = ARROW_LENGTH * 0.75;
 
 /**
+ * The paper-coloured halo painted behind a connector's caption, in px, so the words knock a gap out
+ * of the line rather than sitting in a filled box. Exported for the scene renderer, which places
+ * its captions at the ROUTER'S anchors (in the `labels` layer, not this one) and must knock them
+ * out identically.
+ */
+export const CONNECTOR_LABEL_KNOCKOUT = 3.5;
+
+/**
  * The three points of the head, given its tip and the direction the line arrives from.
  *
  * A `<marker>` would need an id, and an id inside a component is either duplicated (invalid markup
@@ -145,7 +153,7 @@ export function Connector({ kind, from, to, waypoints = [], label }: ConnectorPr
   const penultimate = points[points.length - 2] as ScreenPoint;
   // The line stops short of the tip so the stroke does not poke through the arrowhead's point.
   const head = style.arrow === "none" ? null : arrowHeadPoints(to, penultimate);
-  const drawnTo = head ? shortenTowards(to, penultimate, CONNECTOR_ARROW_TRIM) : to;
+  const drawnTo = head ? connectorLineEnd(to, penultimate, CONNECTOR_ARROW_TRIM) : to;
   const drawn = [...points.slice(0, -1), drawnTo];
   const mid = midpoint(points);
 
@@ -172,7 +180,7 @@ export function Connector({ kind, from, to, waypoints = [], label }: ConnectorPr
           // Painting the stroke first knocks a paper-coloured gap out of the line behind the words,
           // which is how a drafting sheet labels a run without a filled box getting in the way.
           paintOrder="stroke"
-          strokeWidth={3.5}
+          strokeWidth={CONNECTOR_LABEL_KNOCKOUT}
           strokeLinejoin="round"
           style={{ fill: "var(--illus-ink)", stroke: "var(--illus-paper)" }}
         >
@@ -185,7 +193,20 @@ export function Connector({ kind, from, to, waypoints = [], label }: ConnectorPr
 
 Connector.illusLayer = "connectors" as const;
 
-function shortenTowards(point: ScreenPoint, towards: ScreenPoint, by: number): ScreenPoint {
+/**
+ * Where a line must actually STOP so its stroke does not poke past the narrowing sides of an
+ * arrowhead whose tip is at `point`. Exported for the same reason {@link CONNECTOR_ARROW_TRIM} is:
+ * the scene renderer draws the router's own path and has to make the identical cut, and two
+ * slightly different cuts read as a visible spur on one kind of line and not on another.
+ *
+ * Refuses to overshoot: a run shorter than the trim keeps its endpoint, and the head simply covers
+ * the whole of it.
+ */
+export function connectorLineEnd(
+  point: ScreenPoint,
+  towards: ScreenPoint,
+  by: number,
+): ScreenPoint {
   const dx = point.x - towards.x;
   const dy = point.y - towards.y;
   const length = Math.hypot(dx, dy);
