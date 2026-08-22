@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T00:45:00Z"
+timestamp: "2026-08-23T01:00:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -274,6 +274,10 @@ the source rather than leaving a copy behind.
    *nothing about the merge mechanism is a guard.* Rename detection is heuristic — it may follow the
    edit, revert it, or drop the file cleanly, and it gives no signal distinguishing them. Verify by
    comparing content across the merge, never by whether git complained.
+   **RM-37's sharpening of this, worth more than the git detail:** the two things each session
+   trusted were both **absences** — this one trusted a conflict *appearing*, RM-37 trusted a conflict
+   *not* appearing. An absence is never a measurement. The content comparison was the only one of the
+   three instruments that was ever doing work.
 3. After any rebase or merge across a relocation, assert a **content invariant the incoming change
    introduced** (here: 39 `finding_name` values present), not merely that hashes are self-consistent.
    This is now the **only** rule of the three that has survived contact — and RM-37 arrived at the same
