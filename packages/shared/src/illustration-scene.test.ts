@@ -138,19 +138,23 @@ describe("illustrationSceneSpecSchema — round trip", () => {
   it("rejects a spec with no bands — bands are the composition (WP 2.1)", () => {
     const { bands: _dropped, ...withoutBands } = VALID_SPEC;
     assert.equal(illustrationSceneSpecSchema.safeParse(withoutBands).success, false);
-    assert.equal(illustrationSceneSpecSchema.safeParse({ ...VALID_SPEC, bands: [] }).success, false);
+    assert.equal(
+      illustrationSceneSpecSchema.safeParse({ ...VALID_SPEC, bands: [] }).success,
+      false,
+    );
   });
 });
 
 describe("illustrationSceneSpecSchema — the cycle band (WP 2.1)", () => {
-  const withBands = (bands: unknown) => illustrationSceneSpecSchema.safeParse({
-    ...VALID_SPEC,
-    bands,
-    nodes: [{ id: "agent", component: "agent", band: "loop", seq: 1 }],
-    connectors: [],
-    annotations: [],
-    steps: [{ focus: ["agent"], caption: "One lap." }],
-  });
+  const withBands = (bands: unknown) =>
+    illustrationSceneSpecSchema.safeParse({
+      ...VALID_SPEC,
+      bands,
+      nodes: [{ id: "agent", component: "agent", band: "loop", seq: 1 }],
+      connectors: [],
+      annotations: [],
+      steps: [{ focus: ["agent"], caption: "One lap." }],
+    });
 
   it("freezes the two travel directions", () => {
     assert.deepEqual([...ILLUSTRATION_CYCLE_DIRECTIONS], FROZEN_CYCLE_DIRECTIONS);

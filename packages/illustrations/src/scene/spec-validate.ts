@@ -302,7 +302,12 @@ export function validateScene(
     if (band !== undefined) {
       const facts = bands.get(band);
       if (facts === undefined) {
-        add(["nodes", index, "band"], "unknown-band", `no band is declared with id "${band}"`, band);
+        add(
+          ["nodes", index, "band"],
+          "unknown-band",
+          `no band is declared with id "${band}"`,
+          band,
+        );
       } else if (facts.kind === "cycle" && asString(node.attach) === undefined) {
         stationsPerBand.set(band, (stationsPerBand.get(band) ?? 0) + 1);
       }

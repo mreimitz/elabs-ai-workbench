@@ -45,7 +45,13 @@ import type {
 } from "@mcp-token-footprint/shared";
 import { ILLUSTRATION_NODE_DEFAULTS } from "@mcp-token-footprint/shared";
 import { type EntityViewBox, entityViewBox } from "../entities/entity-viewbox.js";
-import { ISO_UNIT, type ScreenPoint, footprintUnits, portAnchor, projectPoint } from "../iso-math.js";
+import {
+  ISO_UNIT,
+  type ScreenPoint,
+  footprintUnits,
+  portAnchor,
+  projectPoint,
+} from "../iso-math.js";
 import type { SceneCatalog } from "./catalog.js";
 
 // -- The dials -------------------------------------------------------------------------------------
@@ -394,7 +400,10 @@ export function layoutScene(spec: IllustrationSceneSpec, options: LayoutSceneOpt
 
   // Annotations are grouped by the band they name; the empty key holds the ones that name none,
   // which get their own trailing row rather than being silently dropped.
-  type AnnotationDraft = { readonly annotation: IllustrationSceneAnnotation; readonly index: number };
+  type AnnotationDraft = {
+    readonly annotation: IllustrationSceneAnnotation;
+    readonly index: number;
+  };
   const UNBANDED_ANNOTATIONS = "";
   const annotationsByBand = new Map<string, AnnotationDraft[]>();
   for (const [index, annotation] of (spec.annotations ?? []).entries()) {
@@ -582,7 +591,11 @@ export function layoutScene(spec: IllustrationSceneSpec, options: LayoutSceneOpt
   // ── The width pass: annotation cards need to know how wide the drawing turned out to be, which is
   // only knowable once every node has a box. Heights were settled above, so nothing moves vertically.
   const contentHalfWidth = Math.max(
-    nodes.reduce((max, node) => Math.max(max, Math.abs(node.frame.x), Math.abs(node.frame.x + node.frame.width)), 0),
+    nodes.reduce(
+      (max, node) =>
+        Math.max(max, Math.abs(node.frame.x), Math.abs(node.frame.x + node.frame.width)),
+      0,
+    ),
     (ANNOTATION_CARD_UNITS.width / 2) * ISO_UNIT,
   );
   const annotations: SceneAnnotationLayout[] = [];
@@ -602,11 +615,7 @@ export function layoutScene(spec: IllustrationSceneSpec, options: LayoutSceneOpt
       const group = groups[align];
       const run = group.length * cardWidth + Math.max(0, group.length - 1) * gap;
       const left =
-        align === "start"
-          ? -contentHalfWidth
-          : align === "end"
-            ? contentHalfWidth - run
-            : -run / 2;
+        align === "start" ? -contentHalfWidth : align === "end" ? contentHalfWidth - run : -run / 2;
       for (const [position, card] of group.entries()) {
         annotations.push({
           index: card.index,

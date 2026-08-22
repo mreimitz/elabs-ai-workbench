@@ -24,7 +24,8 @@ import {
 // shape failure does not silence a reference failure, and that nothing here throws — not on `null`,
 // not on a string, not on a spec that is half-written.
 
-const codes = (issues: readonly SceneIssue[]): SceneIssueCode[] => issues.map((issue) => issue.code);
+const codes = (issues: readonly SceneIssue[]): SceneIssueCode[] =>
+  issues.map((issue) => issue.code);
 const paths = (issues: readonly SceneIssue[]): string[] => issues.map((issue) => issue.path);
 const only = (issues: readonly SceneIssue[], code: SceneIssueCode): SceneIssue[] =>
   issues.filter((issue) => issue.code === code);
@@ -82,11 +83,7 @@ describe("validateScene — the catalog questions the schema cannot ask", () => 
       ],
     });
     assert.deepEqual(codes(issues), ["unknown-variant", "unknown-state", "unknown-size"]);
-    assert.deepEqual(paths(issues), [
-      "nodes[0].variant",
-      "nodes[1].state",
-      "nodes[2].size",
-    ]);
+    assert.deepEqual(paths(issues), ["nodes[0].variant", "nodes[1].state", "nodes[2].size"]);
   });
 
   it("rejects a port the component does not expose, and says which it does", () => {

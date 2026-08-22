@@ -11,7 +11,9 @@ const HERE = new URL(".", import.meta.url);
 
 /** The positive scene fixtures this package ships, by file stem. */
 export function readSceneFixture(name: string): unknown {
-  return JSON.parse(readFileSync(fileURLToPath(new URL(`fixtures/${name}.scene.json`, HERE)), "utf8"));
+  return JSON.parse(
+    readFileSync(fileURLToPath(new URL(`fixtures/${name}.scene.json`, HERE)), "utf8"),
+  );
 }
 
 /**

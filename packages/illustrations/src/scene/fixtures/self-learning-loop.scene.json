@@ -46,7 +46,13 @@
       "title": "Feedback",
       "caption": "what to change"
     },
-    { "id": "hub-mcp", "component": "mcp-server", "band": "shared", "variant": "stdio", "size": "l" },
+    {
+      "id": "hub-mcp",
+      "component": "mcp-server",
+      "band": "shared",
+      "variant": "stdio",
+      "size": "l"
+    },
     {
       "id": "hub-skill",
       "component": "skill",
@@ -57,12 +63,36 @@
     }
   ],
   "connectors": [
-    { "id": "c1", "from": "owner.intent-out", "to": "agent.context-in", "kind": "flow", "label": "the task" },
-    { "id": "c2", "from": "hub-mcp.bus", "to": "agent.bottom", "kind": "read", "label": "tools and the current Skill" },
+    {
+      "id": "c1",
+      "from": "owner.intent-out",
+      "to": "agent.context-in",
+      "kind": "flow",
+      "label": "the task"
+    },
+    {
+      "id": "c2",
+      "from": "hub-mcp.bus",
+      "to": "agent.bottom",
+      "kind": "read",
+      "label": "tools and the current Skill"
+    },
     { "id": "c3", "from": "agent.result-out", "to": "grader.subject-in", "kind": "flow" },
     { "id": "c4", "from": "grader.verdict-out", "to": "feedback.in", "kind": "flow" },
-    { "id": "c5", "from": "feedback.out", "to": "hub-skill.top", "kind": "write", "label": "the lesson" },
-    { "id": "c6", "from": "hub-skill.version-out", "to": "owner.report-in", "kind": "publish", "label": "a new Skill version" }
+    {
+      "id": "c5",
+      "from": "feedback.out",
+      "to": "hub-skill.top",
+      "kind": "write",
+      "label": "the lesson"
+    },
+    {
+      "id": "c6",
+      "from": "hub-skill.version-out",
+      "to": "owner.report-in",
+      "kind": "publish",
+      "label": "a new Skill version"
+    }
   ],
   "annotations": [
     {
@@ -82,14 +112,26 @@
     }
   ],
   "steps": [
-    { "focus": ["owner", "agent"], "connectors": ["c1"], "caption": "The owner states what the run is for." },
+    {
+      "focus": ["owner", "agent"],
+      "connectors": ["c1"],
+      "caption": "The owner states what the run is for."
+    },
     {
       "focus": ["agent", "hub-mcp", "hub-skill"],
       "connectors": ["c2"],
       "caption": "The agent loads the current Skill and the shared MCP tool surface.",
       "detail": "cutaway"
     },
-    { "focus": ["grader", "feedback"], "connectors": ["c3", "c4"], "caption": "The result is graded and the finding written down." },
-    { "focus": ["hub-skill", "owner"], "connectors": ["c5", "c6"], "caption": "The Skill absorbs the lesson and is published as a new version." }
+    {
+      "focus": ["grader", "feedback"],
+      "connectors": ["c3", "c4"],
+      "caption": "The result is graded and the finding written down."
+    },
+    {
+      "focus": ["hub-skill", "owner"],
+      "connectors": ["c5", "c6"],
+      "caption": "The Skill absorbs the lesson and is published as a new version."
+    }
   ]
 }

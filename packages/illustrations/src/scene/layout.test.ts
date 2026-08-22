@@ -124,8 +124,7 @@ describe("determinism — the same spec and catalog give byte-identical output",
 
     const sources = readdirSync(SCENE_DIR, { withFileTypes: true })
       .filter(
-        (entry) =>
-          entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts"),
+        (entry) => entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts"),
       )
       .map(
         (entry) =>
@@ -179,7 +178,10 @@ describe("a lane band distributes its stations by seq", () => {
     const lane = layout.bands.find((band) => band.id === "process");
     assert.deepEqual(lane?.nodeIds, ["owner", "agent", "grader", "feedback"]);
     const xs = lane?.nodeIds.map((id) => nodeOf(layout, id).origin.x) ?? [];
-    assert.deepEqual([...xs].sort((left, right) => left - right), xs);
+    assert.deepEqual(
+      [...xs].sort((left, right) => left - right),
+      xs,
+    );
   });
 
   it("reorders when `seq` does, and does not care what order the nodes were written in", () => {
@@ -316,7 +318,11 @@ describe("a cycle band lays its stations out as a ring", () => {
     };
     const other = layoutScene(thinned, { catalog: ILLUSTRATION_SCENE_CATALOG });
     const ring = other.bands.find((band) => band.id === "loop")?.ring;
-    assert.equal(ring?.stationAngles.length, 4, "the ring keeps the four slots the author asked for");
+    assert.equal(
+      ring?.stationAngles.length,
+      4,
+      "the ring keeps the four slots the author asked for",
+    );
   });
 });
 
