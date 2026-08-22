@@ -19,6 +19,7 @@ import type {
   GithubAccountStatus,
   GithubDeviceStart,
   HealthPayload,
+  RuntimePathsPayload,
   JudgeSettings,
   MaintenanceResult,
   ModelPricingEntry,
@@ -127,6 +128,7 @@ import {
   Timer,
   ToggleLeft,
   Trash2,
+  TriangleAlert,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -1175,6 +1177,34 @@ function DigestScheduleCard() {
  * ──────────────────────────────────────────────────────────────────────────────────────────── */
 
 function AboutSection(props: { health: HealthPayload | null }) {
+  // RM-37 WP 0.4 — the two paths used to ride on `/api/health`, which is the ONE route the service-
+  // token guard exempts (the Docker healthcheck and the release launchers poll it before anything
+  // else exists). They name the operator's home directory, and therefore their username, so anyone
+  // who could reach the port could read them. They now come from `/api/diagnostics/paths`, which the
+  // guard covers — hence a second fetch here rather than two more fields on the health payload.
+  //
+  // Fetched on mount rather than lifted into App.tsx like `health`: nothing outside this pane wants
+  // them, and a failure here should degrade this one row, not the app's boot sequence.
+  const [paths, setPaths] = useState<RuntimePathsPayload | null>(null);
+  const [pathsError, setPathsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiGet<RuntimePathsPayload>("/api/diagnostics/paths")
+      .then((payload) => {
+        if (!cancelled) setPaths(payload);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setPathsError(getErrorMessage(error));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pathValue = (value: string | undefined): string =>
+    value ?? (pathsError ? "Unavailable" : "Loading…");
+
   return (
     <SectionPane title="About" description="Runtime details reported by the API.">
       <Descriptions columns={2}>
@@ -1182,13 +1212,17 @@ function AboutSection(props: { health: HealthPayload | null }) {
         <DescriptionsItem label="Docker mode">
           {props.health?.dockerMode ? "true" : "false"}
         </DescriptionsItem>
-        <DescriptionsItem label="Database path">
-          {props.health?.databasePath ?? "n/a"}
-        </DescriptionsItem>
+        <DescriptionsItem label="Database path">{pathValue(paths?.databasePath)}</DescriptionsItem>
         <DescriptionsItem label="Data directory">
-          {props.health?.dataDirectory ?? "n/a"}
+          {pathValue(paths?.dataDirectory)}
         </DescriptionsItem>
       </Descriptions>
+      {pathsError ? (
+        <Alert variant="destructive">
+          <TriangleAlert aria-hidden />
+          <AlertDescription>{pathsError}</AlertDescription>
+        </Alert>
+      ) : null}
     </SectionPane>
   );
 }

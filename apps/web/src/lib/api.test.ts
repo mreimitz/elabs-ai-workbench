@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { serializeRunMetricsRatio } from "@mcp-token-footprint/shared";
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "@mcp-token-footprint/shared";
 import {
+  apiDelete,
   apiGet,
+  apiPatch,
   apiPost,
+  apiPut,
+  apiUpload,
   createHubSession,
   getAssistantStarters,
   getRunMetrics,
@@ -249,5 +254,73 @@ describe("getRunMetrics — the ratio param (AM-OB4)", () => {
     await getRunMetrics({ filter: {}, bucket: "day", measures: ["errorRate"] });
     const [url] = vi.mocked(fetch).mock.calls[0] as [string];
     expect(new URL(url, "http://localhost").searchParams.has("ratio")).toBe(false);
+  });
+});
+
+// -- The browser CSRF token (RM-37 WP 0.4) --------------------------------------------------------
+//
+// The API sets a `SameSite=Strict` cookie and requires it echoed back as `X-Workbench-Csrf` on every
+// state-changing request from a tokenless caller. If ONE helper in this module forgets, that call
+// 403s in production and nowhere else — the API tests cannot see the browser half, and the API's own
+// suite is perfectly green while the app is broken. So the contract under test is "every
+// state-changing helper carries it, and no GET does", asserted over the helpers themselves.
+
+describe("CSRF header (RM-37 WP 0.4)", () => {
+  const TOKEN = "Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFiY2RlZmdoaWpr";
+
+  function headersOf(call: unknown[]): Record<string, string> {
+    const init = call[1] as RequestInit | undefined;
+    return (init?.headers ?? {}) as Record<string, string>;
+  }
+
+  function stubCookie(value: string): void {
+    Object.defineProperty(document, "cookie", { configurable: true, get: () => value });
+  }
+
+  beforeEach(() => {
+    stubCookie(`theme=light; ${CSRF_COOKIE_NAME}=${TOKEN}; other=1`);
+    mockFetchOk({ ok: true });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("rides on every state-changing helper", async () => {
+    await apiPost("/api/x", {});
+    await apiPut("/api/x", {});
+    await apiPatch("/api/x", {});
+    await apiDelete("/api/x");
+    await apiUpload("/api/x", new File(["a"], "a.txt"));
+
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(calls).toHaveLength(5);
+    for (const call of calls) {
+      expect(headersOf(call)[CSRF_HEADER_NAME]).toBe(TOKEN);
+    }
+    // The multipart upload must NOT gain a content-type — the browser sets it, boundary included.
+    expect(headersOf(calls[4] as unknown[])["content-type"]).toBeUndefined();
+  });
+
+  it("never rides on a GET — a read has nothing to forge", async () => {
+    await apiGet("/api/x");
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(init).toBeUndefined();
+  });
+
+  it("is simply omitted when the cookie is absent, rather than sent blank", async () => {
+    stubCookie("theme=light");
+    await apiPost("/api/x", {});
+    const headers = headersOf(vi.mocked(fetch).mock.calls[0] as unknown[]);
+    expect(CSRF_HEADER_NAME in headers).toBe(false);
+    expect(headers["content-type"]).toBe("application/json");
+  });
+
+  it("still threads the caller's AbortSignal alongside the header", async () => {
+    const controller = new AbortController();
+    await apiPost("/api/x", {}, controller.signal);
+    const init = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    expect(init.signal).toBe(controller.signal);
+    expect((init.headers as Record<string, string>)[CSRF_HEADER_NAME]).toBe(TOKEN);
   });
 });

@@ -122,7 +122,15 @@ import type {
   // (a DIFFERENT shape — the run-EXPORT payload from `/api/reports/run/:id/json`).
   RunReport as RunRatingReport,
 } from "@mcp-token-footprint/shared";
-import { serializeRunFilter, serializeRunMetricsRatio } from "@mcp-token-footprint/shared";
+import {
+  // RM-37 WP 0.4 — the browser CSRF token's cookie/header names + the cookie reader, shared with the
+  // API so the two ends cannot drift into disagreeing about what the header is called.
+  CSRF_COOKIE_NAME,
+  CSRF_HEADER_NAME,
+  readCookie,
+  serializeRunFilter,
+  serializeRunMetricsRatio,
+} from "@mcp-token-footprint/shared";
 import type { RunReport } from "../features/testing/analytics-derive";
 
 /**
@@ -153,6 +161,51 @@ export class ApiError extends Error {
     this.status = status;
     this.issues = issues;
   }
+}
+
+// ── The browser CSRF token (RM-37 WP 0.4) ────────────────────────────────────────────────────────
+//
+// The API sets a `SameSite=Strict`, non-`HttpOnly` cookie on any GET whose request did not already
+// carry the current install token, and requires it back as `X-Workbench-Csrf` on every state-changing
+// request from a tokenless caller. This is the second half of a double-submit pair: a cross-site page
+// can make the browser SEND a request to `http://localhost:8080`, but `SameSite=Strict` means the
+// cookie does not ride along, and the same-origin policy means the attacker's script cannot read the
+// value to put in the header. The cookie is deliberately readable by THIS app's JavaScript — that is
+// the mechanism, not an oversight (it authenticates nobody on its own).
+//
+// Every state-changing request in this file goes through {@link stateChangingInit}, so there is one
+// place to get it right and no call site that can forget. A GET never carries it.
+
+/** Read the CSRF cookie the API set. Returns `undefined` when it is absent (a cold first load, a
+ *  browser that blocked it) — the header is then omitted and the API answers 403 with a message that
+ *  tells the operator to reload, which is the honest outcome rather than a silent failure. */
+function readCsrfCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  return readCookie(document.cookie, CSRF_COOKIE_NAME);
+}
+
+/**
+ * Build the `RequestInit` for a state-changing request: the method, the caller's headers, the CSRF
+ * header when we have one, and the caller's `AbortSignal` when they passed one.
+ *
+ * ONE definition on purpose. A per-call-site `headers` object is exactly how a CSRF header ends up
+ * on eight of nine requests, and the ninth is the one that 403s in production.
+ */
+function stateChangingInit(
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  options: { headers?: Record<string, string>; body?: BodyInit; signal?: AbortSignal } = {},
+): RequestInit {
+  const csrf = readCsrfCookie();
+  const headers: Record<string, string> = {
+    ...(options.headers ?? {}),
+    ...(csrf ? { [CSRF_HEADER_NAME]: csrf } : {}),
+  };
+  return {
+    method,
+    ...(Object.keys(headers).length > 0 ? { headers } : {}),
+    ...(options.body !== undefined ? { body: options.body } : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
+  };
 }
 
 /** `signal` is optional and additive — pass an `AbortController`'s signal to cancel an in-flight
@@ -233,27 +286,34 @@ export const testServerConnection = (serverId: string): Promise<ServerTestRespon
   apiPost<ServerTestResponse>(`/api/servers/${serverId}/test`, {});
 
 export async function apiPost<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(path, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-    ...(signal ? { signal } : {}),
-  });
+  const response = await fetch(
+    path,
+    stateChangingInit("POST", {
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      ...(signal ? { signal } : {}),
+    }),
+  );
   return readResponse<T>(response);
 }
 
 export async function apiPut<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(path, {
-    method: "PUT",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-    ...(signal ? { signal } : {}),
-  });
+  const response = await fetch(
+    path,
+    stateChangingInit("PUT", {
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+      ...(signal ? { signal } : {}),
+    }),
+  );
   return readResponse<T>(response);
 }
 
 export async function apiDelete(path: string, signal?: AbortSignal): Promise<void> {
-  const response = await fetch(path, { method: "DELETE", ...(signal ? { signal } : {}) });
+  const response = await fetch(
+    path,
+    stateChangingInit("DELETE", { ...(signal ? { signal } : {}) }),
+  );
   if (!response.ok) {
     await raiseResponseError(response);
   }
@@ -276,7 +336,12 @@ export async function apiUpload<T>(
   for (const [key, value] of Object.entries(fields)) {
     if (value) body.append(key, value);
   }
-  const response = await fetch(path, { method: "POST", body, ...(signal ? { signal } : {}) });
+  // NOTE: no `content-type` header — the browser sets it (with the multipart boundary) from the
+  // FormData body. `stateChangingInit` adds only the CSRF header, which does not disturb that.
+  const response = await fetch(
+    path,
+    stateChangingInit("POST", { body, ...(signal ? { signal } : {}) }),
+  );
   return readResponse<T>(response);
 }
 
@@ -547,7 +612,7 @@ export const pinRun = (runId: string): Promise<RunPinResult> =>
 export async function unpinRun(runId: string): Promise<RunPinResult> {
   // `apiDelete` discards the response body (204-shaped callers); this endpoint returns the run's
   // resulting pin state, so it reads the body directly (mirrors `apiPost`/`apiPut`, DELETE method).
-  const response = await fetch(`/api/runs/${runId}/pin`, { method: "DELETE" });
+  const response = await fetch(`/api/runs/${runId}/pin`, stateChangingInit("DELETE"));
   return readResponse<RunPinResult>(response);
 }
 
@@ -1098,7 +1163,7 @@ export const pollGithubDeviceFlow = (flowId: string): Promise<GithubDevicePoll> 
 
 /** Sign out of the app-wide GitHub account (keeps the configured client id). */
 export const disconnectGithubAccount = async (): Promise<GithubAccountStatus> => {
-  const response = await fetch("/api/github/account", { method: "DELETE" });
+  const response = await fetch("/api/github/account", stateChangingInit("DELETE"));
   return readResponse<GithubAccountStatus>(response);
 };
 
@@ -1439,11 +1504,13 @@ import type {
 
 /** PATCH helper — mirrors `apiPost`/`apiPut`; first consumer is the issue-status toggle. */
 export async function apiPatch<T>(path: string, body: unknown): Promise<T> {
-  const response = await fetch(path, {
-    method: "PATCH",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(body),
-  });
+  const response = await fetch(
+    path,
+    stateChangingInit("PATCH", {
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    }),
+  );
   return readResponse<T>(response);
 }
 

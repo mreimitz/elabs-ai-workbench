@@ -32,7 +32,17 @@ export type RecognisedEnvVar = {
  * across builds. Values are NEVER read from this list — only membership and `defaulted`.
  */
 export const RECOGNISED_ENV_VARS: readonly RecognisedEnvVar[] = [
+  // RM-37 WP 0.4 — all three are `defaulted: true`, and for `API_ALLOWED_HOSTS` that is a
+  // deliberate reading rather than a shrug. It is parsed by `parseAllowedHosts(...)`, which has no
+  // `fallback` argument, so it does not look like the `readX(value, fallback)` family at a glance.
+  // But absence does NOT mean the host allow-list is off: `localhost`, `127.0.0.0/8` and `::1` are
+  // always allowed and cannot be removed, so an unset value IS the intended configuration of a
+  // normal install. Reporting it as `unset` would read as a missing safety setting, which is the
+  // opposite of the truth.
+  { name: "API_ALLOWED_HOSTS", defaulted: true },
   { name: "API_AUTH_REQUIRED", defaulted: true },
+  { name: "API_RATE_LIMIT_AUTH_FAILURES", defaulted: true },
+  { name: "API_RATE_LIMIT_EXPENSIVE", defaulted: true },
   { name: "ASSISTANT_AUTO_TITLE", defaulted: true },
   { name: "ASSISTANT_DATA_DIR", defaulted: true },
   { name: "ASSISTANT_IDLE_TIMEOUT_MS", defaulted: true },

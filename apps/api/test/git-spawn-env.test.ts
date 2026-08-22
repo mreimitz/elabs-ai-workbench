@@ -165,7 +165,10 @@ test("runGit really spawns with that env — measured from a live child, not fro
     assert.ok(!/^MCP_SECRET_KEY=/m.test(hookEnv), "MCP_SECRET_KEY is present in the hook's env");
     assert.match(hookEnv, /^PATH=/m, "the hook still gets a PATH — the env is minimal, not empty");
   } finally {
-    if (previous === undefined) delete process.env.MCP_SECRET_KEY;
+    // `Reflect.deleteProperty`, not `delete` (Biome's noDelete) and NOT `= undefined` — assigning
+    // undefined to a `process.env` key stores the literal string "undefined", which would leave a
+    // fake MCP_SECRET_KEY behind for every test that runs after this one.
+    if (previous === undefined) Reflect.deleteProperty(process.env, "MCP_SECRET_KEY");
     else process.env.MCP_SECRET_KEY = previous;
     fs.rmSync(tmp, { recursive: true, force: true });
   }

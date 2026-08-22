@@ -574,10 +574,38 @@ packages/
 
 ## Data & security
 
-This is a local/dev tool with no authentication by design.
+This app runs on your machine and has no login. That is not the same as having no access control,
+and the difference matters, because "it only listens on localhost" stops a stranger on the network
+and stops nothing that runs in your own browser.
+
+**Who is allowed to talk to it**
+
+- **From this machine, in a browser:** no credential. The app is yours and it does not ask you to log
+  in to it.
+- **From anywhere else:** a **service token** (`Authorization: Bearer mcpfp_…`), created in
+  **Settings › API tokens**, stored as a digest and shown exactly once. Tokens carry scopes, cannot
+  delete anything, and cannot create or revoke other tokens. A new token expires in **90 days**
+  unless you deliberately choose otherwise, and each one can be **rotated** in a single step. Set
+  `API_AUTH_REQUIRED=true` to demand a token from this machine too.
+- **Only under a name that means this machine.** Every request's `Host` header must be `localhost`,
+  a `127.x.x.x` address or `::1` — or a name you listed in `API_ALLOWED_HOSTS`. This is what stops
+  **DNS rebinding**: a web page can point its own hostname at `127.0.0.1` and make *your* browser
+  talk to this app over a real local connection, but it cannot change the hostname it asked for.
+- **Not on behalf of another website.** A request that the browser says came from another site
+  (`Origin`, `Referer`, `Sec-Fetch-Site`) is refused, and anything that changes state additionally
+  has to echo back a token from a cookie only this app's own pages can read. Following a link to the
+  app still works; so does the sign-in redirect an MCP provider sends you back on.
+- **Not faster than a person could mean it.** Failed token attempts are capped at 20 a minute, and
+  the expensive actions — starting a scan, testing a server, launching a run or a suite — at 60.
+
+Pages are served with `nosniff`, `Referrer-Policy: no-referrer`, and a content-security policy that
+forbids framing the app and forbids it loading or contacting anything off this origin.
 
 - MCP `env`/`header` secrets and all OAuth material are **encrypted before** SQLite persistence and
-  are **never returned** by the API.
+  are **never returned** by the API. Nor do they reach a subprocess: `git` operations (skill import,
+  skill publish, collection sync) run with a **minimal environment** that deliberately excludes
+  `MCP_SECRET_KEY`, so a repository that ships a hook cannot read the key that decrypts your stored
+  credentials.
 - The encryption key is `MCP_SECRET_KEY` (base64, 32 bytes) or an auto-generated
   `DATA_DIR/mcp-secret.key`. Losing **both** the key and the file makes stored secrets unrecoverable
   — keep the key on the same persistent `/data` volume as the database.

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
-import type { ApiToken } from "@mcp-token-footprint/shared";
+import { API_TOKEN_DEFAULT_EXPIRY_DAYS, type ApiToken } from "@mcp-token-footprint/shared";
 
 // Settings › API tokens (planning/Roadmap/RM-08-ci/ WP 1.1). The behaviour under test is the ONE-TIME REVEAL: the
 // server keeps only a digest, so if this pane ever fails to show the plaintext — or shows it again
@@ -50,6 +50,21 @@ describe("TokensSection — listing", () => {
   test("renders a real empty state when there are no tokens", async () => {
     renderSection();
     expect(await screen.findByText("No service tokens yet")).toBeInTheDocument();
+  });
+
+  test("“Last used” is the FIRST column — this is a security pane, and staleness is the signal", async () => {
+    // RM-37 WP 0.4. Not cosmetic ordering: the question an operator scans this table for is "which of
+    // these credentials is nobody using any more", and it used to sit third, after the label and the
+    // scopes. Asserted on the header ROW so a reordering (or a rename) fails here rather than in a
+    // browser nobody opened.
+    vi.mocked(api.listApiTokens).mockResolvedValue({ tokens: [EXISTING] });
+    renderSection();
+    await screen.findByText("CI — footprint gate");
+
+    const headers = screen.getAllByRole("columnheader").map((cell) => cell.textContent?.trim());
+    expect(headers[0]).toBe("Last used");
+    expect(headers).toContain("Label");
+    expect(headers).toContain("Expires");
   });
 
   test("lists a token by its display prefix and never renders a secret field", async () => {
@@ -128,12 +143,16 @@ describe("TokensSection — create and the one-time reveal", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Create token" }));
 
     await waitFor(() => expect(api.createApiToken).toHaveBeenCalledTimes(1));
-    expect(api.createApiToken).toHaveBeenCalledWith({
-      label: "CI",
-      // Order follows the frozen API_TOKEN_SCOPES vocabulary, not click order.
-      scopes: ["read", "runs:launch"],
-      expiresAt: null,
-    });
+    const sent = vi.mocked(api.createApiToken).mock.calls[0]?.[0];
+    expect(sent?.label).toBe("CI");
+    // Order follows the frozen API_TOKEN_SCOPES vocabulary, not click order.
+    expect(sent?.scopes).toEqual(["read", "runs:launch"]);
+    // RM-37 WP 0.4 — the untouched default is a REAL expiry now, not "never". A token pasted into a
+    // CI secret and forgotten used to outlive the job, the branch and the laptop it was minted on.
+    expect(sent?.expiresAt).not.toBeNull();
+    const days =
+      (Date.parse(sent?.expiresAt as string) - Date.now()) / (24 * 60 * 60 * 1000);
+    expect(Math.abs(days - API_TOKEN_DEFAULT_EXPIRY_DAYS)).toBeLessThan(1);
 
     // The reveal: the plaintext, an unmissable "you will not see this again", and a copy affordance.
     expect(await screen.findByText(SECRET)).toBeInTheDocument();
@@ -146,7 +165,7 @@ describe("TokensSection — create and the one-time reveal", () => {
     expect(document.body.textContent).not.toContain(SECRET);
   });
 
-  test("an optional expiry is sent as a real instant, not the raw date input value", async () => {
+  test("a custom expiry is sent as a real instant, not the raw date input value", async () => {
     vi.mocked(api.createApiToken).mockResolvedValue({
       token: { ...EXISTING, expiresAt: "2027-01-31T23:59:59.999Z" },
       secret: SECRET,
@@ -154,7 +173,10 @@ describe("TokensSection — create and the one-time reveal", () => {
 
     const dialog = await openCreateDialog();
     fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "CI" } });
-    fireEvent.change(within(dialog).getByLabelText("Expires (optional)"), {
+    // The date picker only exists once "Custom date…" is the selected choice — the point of the
+    // three-way control is that an expiry is chosen, never inherited from an empty box.
+    fireEvent.click(within(dialog).getByRole("radio", { name: /^Custom date…$/ }));
+    fireEvent.change(await within(dialog).findByDisplayValue(""), {
       target: { value: "2027-01-31" },
     });
     fireEvent.click(within(dialog).getByRole("button", { name: "Create token" }));
@@ -163,6 +185,21 @@ describe("TokensSection — create and the one-time reveal", () => {
     expect(vi.mocked(api.createApiToken).mock.calls[0]?.[0]?.expiresAt).toBe(
       "2027-01-31T23:59:59.999Z",
     );
+  });
+
+  test("“Never” is still available — but only as an explicit choice", async () => {
+    vi.mocked(api.createApiToken).mockResolvedValue({
+      token: { ...EXISTING, expiresAt: null },
+      secret: SECRET,
+    });
+
+    const dialog = await openCreateDialog();
+    fireEvent.change(within(dialog).getByLabelText("Name"), { target: { value: "CI" } });
+    fireEvent.click(within(dialog).getByRole("radio", { name: /^Never$/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Create token" }));
+
+    await waitFor(() => expect(api.createApiToken).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(api.createApiToken).mock.calls[0]?.[0]?.expiresAt).toBeNull();
   });
 
   test("a failed create reports the reason inline and reveals nothing", async () => {
@@ -203,5 +240,71 @@ describe("TokensSection — revoke", () => {
 
     await waitFor(() => expect(api.deleteApiToken).toHaveBeenCalledWith("tok-1"));
     expect(await screen.findByText("No service tokens yet")).toBeInTheDocument();
+  });
+});
+
+// ── Rotate (RM-37 WP 0.4) ─────────────────────────────────────────────────────────────────────────
+//
+// The order is the behaviour: create the replacement FIRST, revoke the original only once it exists.
+// A rotation that revoked first and then failed to mint would leave the operator with no credential
+// at all, which is a worse outcome than the duplicate it was trying to avoid.
+
+describe("TokensSection — rotate", () => {
+  test("mints the replacement BEFORE revoking, and reveals the new secret once", async () => {
+    vi.mocked(api.listApiTokens)
+      .mockResolvedValueOnce({ tokens: [EXISTING] })
+      .mockResolvedValue({ tokens: [{ ...EXISTING, id: "tok-2", tokenPrefix: "ff99ee88" }] });
+    const order: string[] = [];
+    vi.mocked(api.createApiToken).mockImplementation(async () => {
+      order.push("create");
+      return { token: { ...EXISTING, id: "tok-2", lastUsedAt: null }, secret: SECRET };
+    });
+    vi.mocked(api.deleteApiToken).mockImplementation(async () => {
+      order.push("revoke");
+    });
+
+    renderSection();
+    await screen.findByText("CI — footprint gate");
+    fireEvent.click(screen.getByRole("button", { name: "Rotate CI — footprint gate" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Rotate token" }));
+
+    await waitFor(() => expect(api.deleteApiToken).toHaveBeenCalledWith("tok-1"));
+    expect(order).toEqual(["create", "revoke"]);
+    // The replacement inherits the identity an operator recognises it by.
+    expect(vi.mocked(api.createApiToken).mock.calls[0]?.[0]?.label).toBe("CI — footprint gate");
+    expect(vi.mocked(api.createApiToken).mock.calls[0]?.[0]?.scopes).toEqual(["read", "scan:run"]);
+    expect(await screen.findByText(SECRET)).toBeInTheDocument();
+  });
+
+  test("a failed mint revokes NOTHING — the operator keeps a working credential", async () => {
+    vi.mocked(api.listApiTokens).mockResolvedValue({ tokens: [EXISTING] });
+    vi.mocked(api.createApiToken).mockRejectedValue(new Error("Validation failed"));
+
+    renderSection();
+    await screen.findByText("CI — footprint gate");
+    fireEvent.click(screen.getByRole("button", { name: "Rotate CI — footprint gate" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Rotate token" }));
+
+    await waitFor(() => expect(api.createApiToken).toHaveBeenCalledTimes(1));
+    expect(api.deleteApiToken).not.toHaveBeenCalled();
+    expect(screen.queryByText(SECRET)).not.toBeInTheDocument();
+  });
+
+  test("a failed revoke still reveals the new secret — it exists and already works", async () => {
+    vi.mocked(api.listApiTokens).mockResolvedValue({ tokens: [EXISTING] });
+    vi.mocked(api.createApiToken).mockResolvedValue({
+      token: { ...EXISTING, id: "tok-2", lastUsedAt: null },
+      secret: SECRET,
+    });
+    vi.mocked(api.deleteApiToken).mockRejectedValue(new Error("No such service token."));
+
+    renderSection();
+    await screen.findByText("CI — footprint gate");
+    fireEvent.click(screen.getByRole("button", { name: "Rotate CI — footprint gate" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Rotate token" }));
+
+    // Discarding a minted credential because the cleanup failed would lose it for good — the server
+    // keeps only a digest.
+    expect(await screen.findByText(SECRET)).toBeInTheDocument();
   });
 });
