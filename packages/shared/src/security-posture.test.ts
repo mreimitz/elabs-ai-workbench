@@ -10,6 +10,7 @@ import {
   SECURITY_RULE_IDS,
   SECURITY_RULES,
   SECURITY_SCORE_BANDS,
+  SECURITY_SCORE_BAND_MINIMUM,
   SECURITY_SEVERITIES,
   SECURITY_SEVERITY_DEDUCTION,
   SECURITY_SEVERITY_DEDUCTION_CAP,
@@ -185,7 +186,13 @@ describe("security rule registry (D-SP2)", () => {
       assert.equal(rule.severity, severity, `${id} changed severity`);
       assert.equal(rule.subject, "server", `${id} changed subject`);
     }
-    assert.equal(SECURITY_ANALYZER_VERSION, 3);
+    // The version this registry was last frozen at. It moves ONLY together with a documented entry
+    // in `SECURITY_ANALYZER_VERSION`'s own doc comment — v4 is RM-37 WP 0.5, where
+    // `annotation.readonly-contradiction` became positional after flagging the getter
+    // `qlik_get_set_expression` as a mutation. The rule kept its id, its subject and its severity,
+    // which is why the loop above still passes; what changed is which token it fires on, and that
+    // is precisely the "two reports no longer comparable" condition the constant exists to signal.
+    assert.equal(SECURITY_ANALYZER_VERSION, 4);
   });
 });
 
@@ -298,7 +305,26 @@ describe("computeSecurityScore (D-SP3)", () => {
 
   it("echoes the analyzer version so a stored score is never re-banded later", () => {
     assert.equal(computeSecurityScore([]).analyzerVersion, SECURITY_ANALYZER_VERSION);
-    assert.equal(SECURITY_ANALYZER_VERSION, 3);
+    // Pinned as a literal on purpose: a bump has to be a deliberate edit here plus a paragraph in
+    // the constant's doc comment, never a number that drifts because a rule was tweaked in passing.
+    assert.equal(SECURITY_ANALYZER_VERSION, 4);
+  });
+
+  it("bands through ONE threshold table, which the UI can read (RM-37 WP 0.5)", () => {
+    // `SECURITY_SCORE_BAND_MINIMUM` exists so the Security tab can print the scale without
+    // retyping `>= 90`. It is only worth having if it really is what the scorer bands with, so
+    // score exactly onto each declared floor and check the band that comes back.
+    for (const band of SECURITY_SCORE_BANDS) {
+      const floor = SECURITY_SCORE_BAND_MINIMUM[band];
+      const findings =
+        floor >= 90
+          ? findingsOfSeverity("info", 100 - floor)
+          : findingsOfSeverity("error", Math.ceil((100 - floor) / 15));
+      assert.equal(computeSecurityScore(findings).band, band, `score ${floor} should band ${band}`);
+    }
+    // And the floors descend, so `find`-ing best-first can never return the wrong band.
+    const floors = SECURITY_SCORE_BANDS.map((band) => SECURITY_SCORE_BAND_MINIMUM[band]);
+    assert.deepEqual(floors, [...floors].sort((a, b) => b - a));
   });
 });
 

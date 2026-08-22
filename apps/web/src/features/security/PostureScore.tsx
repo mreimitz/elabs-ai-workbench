@@ -114,7 +114,9 @@ export function PostureScore({ score, variant = "full", className }: PostureScor
   // is muted so the figure that carries the information still leads.
   return (
     <span className={cn("inline-flex items-baseline gap-2", className)}>
-      <Text className="inline-flex items-baseline gap-0.5 font-semibold tabular-nums">
+      {/* `as="span"` so the whole score is phrasing content. The Security tab wraps this in a
+          `Button` tooltip trigger, and a paragraph element nested inside a button is invalid. */}
+      <Text as="span" className="inline-flex items-baseline gap-0.5 font-semibold tabular-nums">
         <span aria-label={`Posture score ${score.value} of 100`}>{score.value}</span>
         <Text as="span" variant="meta" tone="muted" className="font-normal tabular-nums" aria-hidden>
           {" / 100"}

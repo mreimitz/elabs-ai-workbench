@@ -269,11 +269,19 @@ function PostureHeader({ report, onReanalyze }: { report: SecurityReport; onRean
         <MetricCard
           label="Posture score"
           value={
+            // A real Button, not a `tabIndex`'d span: the scale is information a keyboard user
+            // needs as much as a mouse user, and the same `Button asChild` trigger is what the
+            // rule-rationale popover below already uses.
             <Tooltip>
               <TooltipTrigger asChild>
-                <span tabIndex={0} className="inline-flex rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto min-w-0 p-0 no-underline hover:no-underline"
+                  aria-label={`Posture score ${report.score.value} of 100 — show the band thresholds`}
+                >
                   <PostureScore score={report.score} />
-                </span>
+                </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <ScoreScaleHint />
