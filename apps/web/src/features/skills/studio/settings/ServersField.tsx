@@ -1,21 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ScanDetail, ServerConfig, ServerType } from "@mcp-token-footprint/shared";
-import { Alert, AlertDescription, AlertTitle, Button, Text, toast } from "@elabs-ai/components-ui";
+import { useCallback, useState } from "react";
+import { Alert, AlertDescription, AlertTitle, Button, Text } from "@elabs-ai/components-ui";
 import { AlertTriangle, Link2 } from "lucide-react";
-import { apiPost, listServerTypes } from "../../../../lib/api";
-import { getErrorMessage } from "../../../../lib/errors";
-import { notifyError } from "../../../../lib/notify";
 import { ConfirmDialog } from "../../../../components/dialogs";
-import { fetchSkillBindings, getBoundTools } from "../../skills-inspector-api";
-import {
-  deriveBindCandidates,
-  deriveBindTypeCandidates,
-  type BindCandidate,
-  type BindTypeCandidate,
-} from "../../design/bind-server-candidates";
-import { buildBindingChips } from "../../design/binding-display";
-import { BindServerDialog, useServerDirectory } from "../../design/BindServerDialog";
+import type { BindCandidate, BindTypeCandidate } from "../../design/bind-server-candidates";
+import { BindServerDialog } from "../../design/BindServerDialog";
 import { ServerChip, TypeChip } from "../../design/BindingChips";
+import { useSkillServerBinding } from "../../design/use-server-binding";
 
 // ── Skill Studio (RM-30 WP 7.3, audit SI1/SI3) — the settings panel's SERVERS field ───────────────
 // The picker WP 7.3a built, re-pointed at the WP 7.3 draft store. That re-pointing is the whole
@@ -52,68 +42,14 @@ export function ServersField({
 }: ServersFieldProps) {
   const [bindOpen, setBindOpen] = useState(false);
   const [unbindTarget, setUnbindTarget] = useState<string | null>(null);
-  const [scanningServerId, setScanningServerId] = useState<string | null>(null);
-  const [directoryNonce, setDirectoryNonce] = useState(0);
 
-  // The registered-server directory + scan summaries. Refetched whenever the dialog opens AND after
-  // a scan finishes, so a freshly scanned server's row stops saying "no scan yet".
-  const directory = useServerDirectory(bindOpen || directoryNonce > 0);
-
-  // Resolved bindings + type registry + bound-tool counts — all read-only, all best-effort: a failed
-  // fetch degrades every chip to the plain server rendering rather than inventing a type.
-  const [serverTypes, setServerTypes] = useState<ServerType[]>([]);
-  const [resolvedBindings, setResolvedBindings] = useState<
-    Awaited<ReturnType<typeof fetchSkillBindings>>
-  >([]);
-  const [toolCountByServer, setToolCountByServer] = useState<Map<string, number>>(new Map());
-
-  useEffect(() => {
-    let cancelled = false;
-    Promise.all([
-      listServerTypes().catch(() => [] as ServerType[]),
-      fetchSkillBindings(skillId).catch(() => []),
-      getBoundTools(skillId, versionId).catch(() => []),
-    ])
-      .then(([types, bindings, tools]) => {
-        if (cancelled) return;
-        setServerTypes(types);
-        setResolvedBindings(bindings);
-        const counts = new Map<string, number>();
-        for (const tool of tools) {
-          counts.set(tool.serverName, (counts.get(tool.serverName) ?? 0) + 1);
-        }
-        setToolCountByServer(counts);
-      })
-      .catch(() => {
-        /* honest degradation — plain chips, no counts */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [skillId, versionId]);
-
-  const servers = directory.servers as ServerConfig[];
-
-  const chips = useMemo(
-    () =>
-      buildBindingChips(
-        declaredServers,
-        resolvedBindings,
-        serverTypes,
-        servers,
-        toolCountByServer,
-      ),
-    [declaredServers, resolvedBindings, serverTypes, servers, toolCountByServer],
-  );
-
-  const candidates = useMemo(
-    () => deriveBindCandidates(servers, directory.scans, declaredServers),
-    [servers, directory.scans, declaredServers],
-  );
-  const typeCandidates = useMemo(
-    () => deriveBindTypeCandidates(serverTypes, servers, directory.scans, declaredServers),
-    [serverTypes, servers, directory.scans, declaredServers],
-  );
+  // RM-30 WP 7.7 — the registered-server directory, the resolved bindings, the chip model and the
+  // inline "Scan now" are ONE hook now, shared with the components palette's MCP Servers section.
+  // Two surfaces that offer binding must not hold two opinions about what is bound.
+  const binding = useSkillServerBinding(skillId, versionId, declaredServers, true);
+  const chips = binding.chips;
+  const candidates = binding.candidates;
+  const typeCandidates = binding.typeCandidates;
 
   const canManage = blockedReason === null;
 
@@ -134,36 +70,6 @@ export function ServersField({
     },
     [onBind],
   );
-
-  /**
-   * SI1's missing half — run a discovery scan for an unscanned server without leaving the Studio.
-   * This is the ONLY thing in the settings panel that talks to a server; it changes no skill state
-   * and stages nothing on the draft, so it can never interfere with the pending save.
-   */
-  const handleScan = useCallback(async (candidate: BindCandidate) => {
-    setScanningServerId(candidate.serverId);
-    try {
-      const scan = await apiPost<ScanDetail>(`/api/servers/${candidate.serverId}/scan`, {});
-      if (scan.status === "success") {
-        toast.success("Scan completed", {
-          description: `${candidate.serverName}: ${scan.totalTools} tools, ${scan.totalTokens.toLocaleString()} tokens.`,
-        });
-      } else {
-        notifyError("The scan didn’t complete", {
-          description:
-            scan.errorMessage ?? "The server reported no tools. Check it on the Servers page.",
-        });
-      }
-    } catch (err) {
-      notifyError("Couldn’t run the scan", {
-        description: getErrorMessage(err, "The scan request didn’t go through. Try again."),
-      });
-    } finally {
-      setScanningServerId(null);
-      // Re-read the directory so the row reflects the scan it just ran.
-      setDirectoryNonce((nonce) => nonce + 1);
-    }
-  }, []);
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
@@ -229,16 +135,16 @@ export function ServersField({
       <BindServerDialog
         open={bindOpen}
         onOpenChange={setBindOpen}
-        loading={directory.loading}
-        error={directory.error}
+        loading={binding.directoryLoading}
+        error={binding.directoryError}
         candidates={candidates}
         typeCandidates={typeCandidates}
         blockedReason={blockedReason}
         busyKey={null}
         onBind={handleBind}
         onBindType={handleBindType}
-        onScan={(candidate) => void handleScan(candidate)}
-        scanningServerId={scanningServerId}
+        onScan={binding.scan}
+        scanningServerId={binding.scanningServerId}
       />
 
       <ConfirmDialog

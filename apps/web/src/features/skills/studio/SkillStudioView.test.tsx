@@ -266,21 +266,23 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     await screen.findByTestId("studio-context-panel-collapsed");
   });
 
-  test("the Tools palette lives in the rail ONLY — the centre surface is the canvas alone", async () => {
+  // RM-30 WP 7.7 renamed the PANEL to "Components"; the rail TAB still reads "Tools" (the label did
+  // not fit a three-way split of the 184px rail — see the note in StudioLeftRail.tsx).
+  test("the Components palette lives in the rail ONLY — the centre surface is the canvas alone", async () => {
     renderStudio();
     await waitForStudio();
 
     // Not mounted while the Files tab is active (Radix unmounts inactive tab content).
-    expect(screen.queryByRole("heading", { name: "Tools" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Components" })).toBeNull();
 
     const rail = screen.getByTestId("studio-left-rail");
     fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
     fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
 
-    const palette = await screen.findByRole("heading", { name: "Tools" });
+    const palette = await screen.findByRole("heading", { name: "Components" });
     expect(rail.contains(palette)).toBe(true);
     // Exactly one palette — the editor portals its own in rather than the shell mounting a copy.
-    expect(screen.getAllByRole("heading", { name: "Tools" })).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { name: "Components" })).toHaveLength(1);
   });
 
   test("the mode toggle round-trips through ?mode=", async () => {
@@ -389,11 +391,13 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     renderStudio();
     await waitForStudio();
 
-    // Stage a real edit through the editor's own Add-section flow.
-    fireEvent.click(screen.getByRole("button", { name: /Add section/ }));
-    const dialog = await screen.findByRole("dialog");
-    fireEvent.change(within(dialog).getByLabelText("Title"), { target: { value: "New part" } });
-    fireEvent.click(within(dialog).getByRole("button", { name: /Add section/ }));
+    // Stage a real edit through the editor's own creation path. RM-30 WP 7.7 deleted the toolbar's
+    // "Add section" button — creation is the Components palette now, so the dirty state is reached
+    // exactly the way an author reaches it: open the palette, press a component's Add.
+    const rail = screen.getByTestId("studio-left-rail");
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Add a Section/ }));
     await screen.findByText("1 unsaved change");
 
     fireEvent.click(screen.getByRole("button", { name: "Exit" }));
