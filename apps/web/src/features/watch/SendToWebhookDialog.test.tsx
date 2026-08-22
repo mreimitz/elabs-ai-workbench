@@ -224,6 +224,19 @@ describe("SendToWebhookDialog", () => {
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
   });
 
+  test("a FAILED destination lookup is not reported as 'you have none'", async () => {
+    // These are different facts. With the lookup failed we know NOTHING about how many
+    // destinations exist, so the empty state's advice ("go add one under Rules") would be a guess
+    // about the operator's own setup — and it would send them to fix something that is not broken.
+    mockListWatchRules.mockRejectedValue(new Error("network down"));
+    renderDialog();
+    await waitFor(() =>
+      expect(screen.getByText("Couldn’t load your webhook destinations")).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("No webhook destination is configured")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
+  });
+
   test("a failed preview says so, and does NOT block sending", async () => {
     mockGetRunPayload.mockRejectedValue(new Error("boom"));
     mockSendRun.mockResolvedValueOnce({ ok: true, detail: "ok" });

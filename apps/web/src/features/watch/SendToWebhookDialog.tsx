@@ -67,11 +67,16 @@ export function SendToWebhookDialog({
   // `null` = the preview has not settled (loading, or the lookup failed) — so "nothing will be
   // sent" is never rendered from an unfinished fetch.
   const [previewError, setPreviewError] = useState<string | null>(null);
+  // DISTINCT from `error` (a submit-time problem) and from an empty list. "The destination lookup
+  // failed" and "you have configured no destinations" are different facts, and rendering the first
+  // as the second would be a CLAIM about the operator's setup that nothing measured.
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setError(null);
     setPreviewError(null);
+    setLoadError(null);
     setSending(false);
     setLoading(true);
     setPayload(null);
@@ -101,8 +106,11 @@ export function SendToWebhookDialog({
       })
       .catch((err: unknown) => {
         if (active)
-          setError(
-            getErrorMessage(err, "Couldn’t load your webhook destinations. Close and reopen to retry."),
+          setLoadError(
+            getErrorMessage(
+              err,
+              "Couldn’t load your webhook destinations. Close and reopen this dialog to try again.",
+            ),
           );
       })
       .finally(() => {
@@ -144,7 +152,9 @@ export function SendToWebhookDialog({
     }
   }
 
-  const noDestinations = !loading && destinations.length === 0;
+  // Deliberately guarded by `!loadError`: with the lookup failed we know NOTHING about how many
+  // destinations exist, so the empty-state's advice ("go add one") would be a guess.
+  const noDestinations = !loading && !loadError && destinations.length === 0;
 
   return (
     <FormDialog
@@ -164,6 +174,12 @@ export function SendToWebhookDialog({
             Loading destinations…
           </Text>
         </div>
+      ) : loadError ? (
+        <Alert variant="destructive">
+          <TriangleAlert aria-hidden />
+          <AlertTitle>Couldn’t load your webhook destinations</AlertTitle>
+          <AlertDescription>{loadError}</AlertDescription>
+        </Alert>
       ) : noDestinations ? (
         <Alert>
           <Link2Off aria-hidden />
