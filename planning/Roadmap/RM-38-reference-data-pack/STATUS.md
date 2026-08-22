@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T01:20:00Z"
+timestamp: "2026-08-23T01:35:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -67,8 +67,21 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       both component claims were not. RM-37's own correction was also partly wrong (it read the split as
       12/8, which counts subjects *mentioning* RM-37 rather than tagged with it, and asserted the
       arithmetic did not sum when it did). Recorded rather than tidied: two sessions restated the same
-      number four times across one hour, each time with the confidence of the previous restatement, and
-      only a measurement settled it. Five conflicts were
+      number four times across one hour — report, ledger copy, correction, counter-correction — each
+      borrowing the confidence of the one before, **and every one of the four was wrong, corrections
+      included.** A `git log` would have settled it at any point.
+      **A fourth error sits inside this very entry's first draft**, and it is the sharpest of them: in
+      correcting RM-37 I claimed their arithmetic objection was unsound because "the sentence before
+      said WP 1.1 contributed 4". It did not — that message named the merge and stated no count at all.
+      I reconstructed a term I remembered from a *different* message and argued from it. Conceded in
+      full: as sent, the arithmetic really was 10 + 6 = 20, and their objection was sound.
+      RM-37's own diagnosis of their error is worth more than the count: their 12 was **correct
+      arithmetic on the wrong question** — `grep -c "RM-37"` over subjects counts commits that *mention*
+      RM-37, and three of RM-35's ledger commits name the concurrent session in their subject lines. A
+      measurement of the wrong quantity survives the "did you actually run it?" check, which makes it
+      more dangerous than a recalled number, not less.
+      **The line to carry forward: a number that has been argued about is not thereby a measured
+      number.** Five conflicts were
       hand-resolved: `CHANGELOG.md` (both Unreleased entries kept), `package.json` (**both** needed —
       RM-18's `docs:bundle` **and** `build:data-pack`), RM-18's ledger (timestamp only, newer kept),
       and this item's own `STATUS.md` + WP 1.1 spec (add/add; `main`'s copies were strictly ahead —
