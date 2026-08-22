@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T01:00:00Z"
+timestamp: "2026-08-23T01:20:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -60,8 +60,15 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       `a0179f1`) · spec: [`wp-1.1-pack-contract.md`](./wp-1.1-pack-contract.md).
       **MERGED to `main` 2026-08-23** as `4795165`, on the owner's explicit instruction after the
       orchestrator verified `main` carried none of it. The merge brought **20** commits, not the one
-      that had been described to the owner: RM-38 WP 1.1 (4), RM-37 WP 0.5's severity/vocabulary work
-      (10, rebased underneath), and 6 RM-35 ledger commits already in that base. Five conflicts were
+      that had been described to the owner. **Split measured 2026-08-23 by commit-subject tag, after RM-37
+      challenged the arithmetic — the corrected figures, not the reported ones:** `RM-38` **4** ·
+      `RM-37` **9** · `RM-35` **5** · `RM-18,RM-35` **1** · `RM-18` **1** = 20. The original report said
+      "RM-37 (10)" and never mentioned the standalone `RM-18` commit at all; the *total* was right and
+      both component claims were not. RM-37's own correction was also partly wrong (it read the split as
+      12/8, which counts subjects *mentioning* RM-37 rather than tagged with it, and asserted the
+      arithmetic did not sum when it did). Recorded rather than tidied: two sessions restated the same
+      number four times across one hour, each time with the confidence of the previous restatement, and
+      only a measurement settled it. Five conflicts were
       hand-resolved: `CHANGELOG.md` (both Unreleased entries kept), `package.json` (**both** needed —
       RM-18's `docs:bundle` **and** `build:data-pack`), RM-18's ledger (timestamp only, newer kept),
       and this item's own `STATUS.md` + WP 1.1 spec (add/add; `main`'s copies were strictly ahead —
