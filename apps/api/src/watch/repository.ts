@@ -51,6 +51,21 @@ export class WatchRuleRepository {
     return toPublic(this.getRow(id));
   }
 
+  /**
+   * One rule, or `undefined` when it does not exist — the non-throwing sibling of {@link get}.
+   *
+   * AM-OB13 needs this because a manual send names its DESTINATION by rule id, and `watch_secrets`
+   * cascade-deletes with its rule. "That destination no longer exists" and "you asked for a rule
+   * that isn't there" are the same row missing, but they are not the same sentence to an operator,
+   * and `get`'s blanket 404 cannot tell them apart.
+   */
+  tryGet(id: string): WatchRule | undefined {
+    const row = this.db.prepare("SELECT * FROM watch_rules WHERE id = ?").get(id) as
+      | WatchRuleRow
+      | undefined;
+    return row ? toPublic(row) : undefined;
+  }
+
   /** Every enabled rule for a trigger (the engine reads `on_terminal`). Ordered so audit rows land in
    *  a stable, reproducible sequence. */
   listEnabledByTrigger(trigger: WatchRuleTrigger): WatchRule[] {

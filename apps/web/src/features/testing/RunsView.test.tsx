@@ -491,7 +491,12 @@ describe("RunsView — a saved view is a shareable named URL (AM-OB1)", () => {
     renderRuns("/testing/runs?view=deleted-view");
 
     await waitFor(() => expect(screen.getByTestId("location")).not.toHaveTextContent("view="));
-    expect(screen.getByRole("button", { name: /Views/ })).toBeInTheDocument();
+    // `findByRole`, not `getByRole`: the `waitFor` above gates on the LOCATION element, while this
+    // asserts on a DIFFERENT one — the toolbar's picker, which re-renders on its own schedule. The
+    // synchronous form silently depended on React batching the two updates together, which held
+    // until file scheduling shifted (RM-17 AM-OB13 added a web test file and this went red in the
+    // full suite while still passing alone). The two sibling tests below already await correctly.
+    expect(await screen.findByRole("button", { name: /Views/ })).toBeInTheDocument();
   });
 
   test("a URL that already describes its state is reproduced VERBATIM — `view=` is only the label", async () => {
@@ -517,7 +522,9 @@ describe("RunsView — a saved view is a shareable named URL (AM-OB1)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show forks" }));
 
     await waitFor(() => expect(screen.getByTestId("location")).not.toHaveTextContent("view="));
-    expect(screen.getByRole("button", { name: /Views/ })).toBeInTheDocument();
+    // Same construction as the test above, same reason — waited on the location, asserting on the
+    // picker.
+    expect(await screen.findByRole("button", { name: /Views/ })).toBeInTheDocument();
   });
 });
 

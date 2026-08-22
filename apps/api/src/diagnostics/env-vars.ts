@@ -33,6 +33,11 @@ export type RecognisedEnvVar = {
  */
 export const RECOGNISED_ENV_VARS: readonly RecognisedEnvVar[] = [
   { name: "API_AUTH_REQUIRED", defaulted: true },
+  // RM-17 Phase 6 (AM-OB13) — the deployment's own externally-reachable base URL, used ONLY to make
+  // a link in an outbound webhook payload absolute. No fallback BY DESIGN (`config/env.ts`'s
+  // `readBaseUrl` returns undefined rather than guessing an origin), so its absence is a real fact
+  // about this deployment: outbound links go out as app-relative paths.
+  { name: "APP_BASE_URL", defaulted: false },
   { name: "ASSISTANT_AUTO_TITLE", defaulted: true },
   { name: "ASSISTANT_DATA_DIR", defaulted: true },
   { name: "ASSISTANT_IDLE_TIMEOUT_MS", defaulted: true },

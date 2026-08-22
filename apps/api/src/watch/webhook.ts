@@ -14,6 +14,7 @@ import type { WatchRule, WatchRuleEventResult } from "@mcp-token-footprint/share
 import type { FastifyInstance } from "fastify";
 import { httpError } from "../utils/errors.js";
 import { postWebhook } from "./actions.js";
+import { appPath, outboundUrl } from "./outbound-link.js";
 import type { WatchRuleRepository } from "./repository.js";
 
 export async function registerWatchTestFireRoute(
@@ -53,6 +54,12 @@ export async function registerWatchTestFireRoute(
  * apart from a real one. A `windowed` rule with a saved threshold samples the `window` shape (using its
  * OWN threshold as the "measured" value, since there is no real window to score); every other rule
  * (on_terminal, or a windowed rule with no threshold saved yet) samples the `run` shape.
+ *
+ * AM-OB13 — the sample's DATA stays deliberately fake (that is the whole point of a test-fire: prove
+ * the plumbing without implying real data was shared), but its LINK is now built through the same
+ * `appPath`/`outboundUrl` vocabulary a real fire uses. Otherwise a test-fire would prove the plumbing
+ * with a link SHAPED differently from the one production sends — which is exactly the thing an
+ * operator is test-firing to check.
  */
 function sampleTestFireBody(rule: WatchRule, template: string | undefined): unknown {
   const now = new Date().toISOString();
@@ -71,7 +78,7 @@ function sampleTestFireBody(rule: WatchRule, template: string | undefined): unkn
         value: w.threshold,
         late: false,
       },
-      link: "/testing/observability/rules",
+      link: outboundUrl(appPath.watchRules()),
       ...(template !== undefined ? { template } : {}),
       sample: true,
     };
@@ -88,7 +95,7 @@ function sampleTestFireBody(rule: WatchRule, template: string | undefined): unkn
       tokensOut: 50,
       startedAt: now,
     },
-    link: "/testing/runs/sample-run",
+    link: outboundUrl(appPath.run("sample-run")),
     ...(template !== undefined ? { template } : {}),
     sample: true,
   };

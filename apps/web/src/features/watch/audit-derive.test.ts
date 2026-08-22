@@ -125,3 +125,25 @@ describe("deriveRuleFireStats — the AM-OB10 markers are not fires", () => {
     expect(deriveRuleFireStats(rows)).toEqual({ fireCount: 0, lastFiredAt: null });
   });
 });
+
+describe("the AM-OB13 manual-send marker", () => {
+  test("reads as an operator action, not as a rule action type", () => {
+    expect(auditActionLabel("manual_send")).toBe("Sent by hand");
+  });
+
+  test("a manual send is NOT counted as the rule firing", () => {
+    // An operator borrowed this rule's destination to push one run. The rule decided nothing, so
+    // counting it would make "how often does this rule trigger" answer a different question.
+    const rows = [
+      {
+        id: "e1",
+        ruleId: "r",
+        runId: "run-42",
+        at: "2026-08-22T10:00:00.000Z",
+        action: "manual_send",
+        result: { ok: true, detail: "sent run run-42 by hand — webhook responded 204" },
+      },
+    ];
+    expect(deriveRuleFireStats(rows)).toEqual({ fireCount: 0, lastFiredAt: null });
+  });
+});

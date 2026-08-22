@@ -33,7 +33,7 @@ import {
   TooltipTrigger,
   toast,
 } from "@elabs-ai/components-ui";
-import { Clock, Lock, LogOut, MoreHorizontal, Square, TestTube2 } from "lucide-react";
+import { Clock, Lock, LogOut, MoreHorizontal, Send, Square, TestTube2 } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
 import { StatusBadge } from "../../components/StatusBadge";
 import { ApiError, endRun, listRunFeedback } from "../../lib/api";
@@ -48,6 +48,7 @@ import {
 } from "../../lib/status";
 import { CorrectedOutputControl, FeedbackControl } from "./FeedbackControl";
 import { PromoteToTestDialog } from "../watch/PromoteToTestDialog";
+import { SendToWebhookDialog } from "../watch/SendToWebhookDialog";
 import { notifyError } from "../../lib/notify";
 
 /**
@@ -497,11 +498,11 @@ export function RunBar({
             Replay/Export, same class of thing), not on its own chrome row above the console. Present
             only for a terminal run (RunConsoleRoute supplies it); `undefined` renders nothing. */}
         {reRunAction}
-        {/* Observability WP4.4 (D-OB21) — the console's "Promote to test" affordance: any TERMINAL
-            run, live or replay. `runId === null` (pre-run) never shows it — nothing to promote.
-            Self-contained (mirrors EndSessionControl/RunFeedbackHeader) — RunConsole needs no
-            change to host it. */}
-        {!view.isLive && runId ? <PromoteToTestMenu runId={runId} noun={noun} /> : null}
+        {/* Observability WP4.4 (D-OB21) + AM-OB13 — the console's overflow menu (Promote to test,
+            Send to webhook): any TERMINAL run, live or replay. `runId === null` (pre-run) never
+            shows it — there is nothing yet to promote or send. Self-contained (mirrors
+            EndSessionControl/RunFeedbackHeader) — RunConsole needs no change to host it. */}
+        {!view.isLive && runId ? <RunActionsMenu runId={runId} noun={noun} /> : null}
       </div>
     </header>
   );
@@ -555,13 +556,18 @@ function RunFeedbackHeader({ runId }: { runId: string }) {
 }
 
 /**
- * Observability WP4.4 (D-OB21) — the "Promote to test" console affordance: an overflow menu (one
- * item today; room to grow) that opens the collection-picker dialog from `features/watch/`. Fully
- * self-contained — like `EndSessionControl`/`RunFeedbackHeader` above, it owns its own open state
- * so `RunConsole` needs no change to host it.
+ * Observability WP4.4 (D-OB21) — the terminal run's overflow menu. Fully self-contained — like
+ * `EndSessionControl`/`RunFeedbackHeader` above, it owns its own open state so `RunConsole` needs
+ * no change to host it.
+ *
+ * Two items, and they are the two ways a run leaves this page: "Promote to test…" turns it into
+ * something the bench will run again, and "Send to webhook…" (RM-17 Phase 6, AM-OB13) pushes it to
+ * somebody else's system. Both open a DIALOG rather than a route — a transient task with a start
+ * and an end, per D-TB10.
  */
-function PromoteToTestMenu({ runId, noun }: { runId: string; noun: string }) {
-  const [open, setOpen] = useState(false);
+function RunActionsMenu({ runId, noun }: { runId: string; noun: string }) {
+  const [promoteOpen, setPromoteOpen] = useState(false);
+  const [sendOpen, setSendOpen] = useState(false);
   return (
     <>
       <DropdownMenu>
@@ -571,13 +577,22 @@ function PromoteToTestMenu({ runId, noun }: { runId: string; noun: string }) {
           </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onSelect={() => setOpen(true)}>
+          <DropdownMenuItem onSelect={() => setPromoteOpen(true)}>
             <TestTube2 aria-hidden />
             <span>Promote to test…</span>
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setSendOpen(true)}>
+            <Send aria-hidden />
+            <span>Send to webhook…</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <PromoteToTestDialog open={open} onOpenChange={setOpen} runId={runId} />
+      <PromoteToTestDialog open={promoteOpen} onOpenChange={setPromoteOpen} runId={runId} />
+      <SendToWebhookDialog
+        open={sendOpen}
+        onOpenChange={setSendOpen}
+        subject={{ kind: "run", id: runId }}
+      />
     </>
   );
 }

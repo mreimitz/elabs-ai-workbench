@@ -67,6 +67,9 @@ import type {
   PromoteRunToTestResult,
   ScanMetricsResponse,
   ServerConfig,
+  // RM-17 Phase 6 (AM-OB13) — the body a hand-driven "send this run to a webhook" posts, previewed
+  // in the dialog before it goes. Carries a run/suite-run summary + two links; never a destination.
+  ManualSendPayload,
   // Observability WP4.4 (rules UI) — the watch-rule CRUD/audit/preview/test-fire wire (WP4.1–4.3).
   WatchRule,
   WatchRuleEvent,
@@ -1711,6 +1714,41 @@ export const previewWatchWindow = (
  *  carries no webhook action. Recorded to the same audit log a real fire uses. */
 export const testFireWatchRule = (id: string): Promise<WatchRuleEventResult> =>
   apiPost<WatchRuleEventResult>(`/api/watch-rules/${id}/test-fire`, {});
+
+// ── Observability (RM-17 Phase 6, AM-OB13) — the HAND-DRIVEN send ─────────────────────────────────
+// Push ONE run or suite run to a webhook on demand, borrowing a watch rule's already-encrypted
+// destination (`apps/api/src/watch/manual-send.ts`). The destination is named by RULE ID, never by
+// URL: a webhook URL lives encrypted server-side and never crosses this boundary in either
+// direction. The picker's list of candidate destinations is just `listWatchRules()` filtered to the
+// rules that carry a `webhook` action — no endpoint of its own.
+
+/** Exactly what a send to this run would POST — no request is made, nothing is audited. Drives the
+ *  dialog's preview, so an operator never sends blind. Carries no destination by construction. */
+export const getRunWebhookPayload = (runId: string): Promise<ManualSendPayload> =>
+  apiGet<ManualSendPayload>(`/api/runs/${runId}/webhook-payload`);
+
+/** The suite-run equivalent of {@link getRunWebhookPayload}. */
+export const getSuiteRunWebhookPayload = (suiteRunId: string): Promise<ManualSendPayload> =>
+  apiGet<ManualSendPayload>(`/api/suite-runs/${suiteRunId}/webhook-payload`);
+
+/**
+ * Post this run to `ruleId`'s webhook destination. A destination-side failure (a 500, an
+ * unreachable host) comes back as a 200 with `{ok:false,error}` — the same shape a rule fire's
+ * audit row carries — so the caller renders an outcome rather than catching. A rule that has been
+ * DELETED is a 404 whose message says the destination is gone, not a generic post failure.
+ */
+export const sendRunToWebhook = (
+  runId: string,
+  ruleId: string,
+): Promise<WatchRuleEventResult> =>
+  apiPost<WatchRuleEventResult>(`/api/runs/${runId}/send-to-webhook`, { ruleId });
+
+/** The suite-run equivalent of {@link sendRunToWebhook}. */
+export const sendSuiteRunToWebhook = (
+  suiteRunId: string,
+  ruleId: string,
+): Promise<WatchRuleEventResult> =>
+  apiPost<WatchRuleEventResult>(`/api/suite-runs/${suiteRunId}/send-to-webhook`, { ruleId });
 
 /**
  * Console "Promote to test" (D-OB21) — promotes ONE terminal run directly into a draft test in
