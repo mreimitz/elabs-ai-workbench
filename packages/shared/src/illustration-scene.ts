@@ -28,24 +28,23 @@ import {
 // and detail levels are ONE closed vocabulary (D-IL8), and a second copy of them in this file is
 // precisely the drift the decision exists to prevent.
 //
-// ── SCOPE: this is WP 0.1's STUB, and the looseness below is deliberate ─────────────────────────────
-// WP 0.1 fixes the ENVELOPE — `version`, `registryVersion`, `id`, the required `title` + `summary`,
-// and `canvas` — so that nothing downstream invents a second one while Phase 0 is still drawing
-// boxes. The `bands` / `nodes` / `connectors` / `annotations` / `steps` arrays are typed, and their
-// enums are already closed, but they are otherwise PERMISSIVE: most fields are optional, and NOTHING
-// here cross-references anything.
+// ── SCOPE: the SHAPE lives here, the RESOLUTION does not (WP 0.1, tightened by WP 2.1) ─────────────
+// WP 0.1 fixed the ENVELOPE — `version`, `registryVersion`, `id`, the required `title` + `summary`,
+// and `canvas`. WP 2.1 tightened the composition arrays around the layout engine it was written for:
+// `bands` became REQUIRED (a scene with nodes and no band has nowhere to put them), the band shape
+// became a DISCRIMINATED UNION so a `cycle` carries the four fields a ring needs and a `lane` cannot
+// carry them, and a node gained `attach` — pinned to a neighbour instead of sequenced.
 //
-// Specifically, **WP 2.1 owns** — and this module must not be mistaken for — all of the following:
+// What still does NOT live here, and deliberately: every question that needs the live registry or a
+// cross-reference within the spec. This module checks the SHAPE of a port reference, never that the
+// port exists; the SHAPE of a band id on a node, never that the band was declared. Those are
+// `validateScene(spec, registry)` in `@mcp-token-footprint/illustrations`
+// (`src/scene/spec-validate.ts`), which is where the registry can be seen — and it returns a LIST of
+// path-tagged errors rather than throwing, because an authoring surface needs every problem at once.
 //
-//   • resolving `node.component` against the live registry, and `connector.from` / `.to` against the
-//     ports the referenced component actually declares (this module checks the *shape* of a port
-//     reference, never its existence);
-//   • checking that `band` names a declared band, that `steps[].focus` names declared nodes, and
-//     that `steps[].connectors` names declared connectors;
-//   • the layout semantics of each band kind, including the `cycle` band;
-//   • deciding which of the optional arrays become required once the layout engine exists.
-//
-// Anyone tightening this file is doing WP 2.1, not WP 0.1. Anyone LOOSENING it is undoing D-IL10.
+// The split is D-IL10's, not a convenience: `packages/shared` is imported by the API, which must
+// validate an authored spec's shape without importing React, and the registry lives in the React
+// package. Anyone moving a registry lookup into this file is breaking that.
 //
 // Locked decisions this module encodes:
 //
@@ -108,6 +107,14 @@ export const ILLUSTRATION_ALIGNMENTS = ["start", "center", "end"] as const;
 export type IllustrationAlignment = (typeof ILLUSTRATION_ALIGNMENTS)[number];
 
 /**
+ * Which way a `cycle` band travels: `cw` clockwise on screen, `ccw` counter-clockwise. Closed
+ * (D-IL8), and REQUIRED on a cycle band — a ring of stations with no travel direction is a circle of
+ * boxes, not a loop, and the reader has no way to tell which way the process runs.
+ */
+export const ILLUSTRATION_CYCLE_DIRECTIONS = ["cw", "ccw"] as const;
+export type IllustrationCycleDirection = (typeof ILLUSTRATION_CYCLE_DIRECTIONS)[number];
+
+/**
  * A connector endpoint: `nodeId.port`, both halves kebab-case (D-IL7). This pattern checks the SHAPE
  * only. Whether that node exists, and whether that component declares that port, is the scene
  * validator's job in WP 2.1 — it needs the live registry, which this module deliberately cannot see.
@@ -123,6 +130,7 @@ export const illustrationStageKindSchema = z.enum(ILLUSTRATION_STAGE_KINDS);
 export const illustrationBandKindSchema = z.enum(ILLUSTRATION_BAND_KINDS);
 export const illustrationAnnotationKindSchema = z.enum(ILLUSTRATION_ANNOTATION_KINDS);
 export const illustrationAlignmentSchema = z.enum(ILLUSTRATION_ALIGNMENTS);
+export const illustrationCycleDirectionSchema = z.enum(ILLUSTRATION_CYCLE_DIRECTIONS);
 
 // -- The pieces ------------------------------------------------------------------------------------
 
@@ -138,20 +146,90 @@ export const illustrationCanvasSchema = z
   })
   .strict();
 
-export type IllustrationSceneBand = {
+/**
+ * Where the flow crosses a `cycle` band's ring, and how much of the ring is kept clear around that
+ * crossing so a station is never drawn under the arrow. Both halves are optional: the layout engine
+ * owns the defaults (entry on the left, exit on the right, a modest clearance either side), because
+ * they are GEOMETRY and geometry does not belong in a wire contract.
+ *
+ * `angle` is degrees clockwise from screen-east, the same convention the ring itself is measured in.
+ * A gate is not a port: it belongs to the BAND, and a connector reaches it as `bandId.entry` /
+ * `bandId.exit` — which is why the endpoint pattern is satisfied without any node being involved.
+ */
+export type IllustrationSceneCycleGate = {
+  angle?: number;
+  /** Angular clearance either side of `angle`, in degrees, kept free of stations. */
+  gap?: number;
+};
+
+export const illustrationSceneCycleGateSchema = z
+  .object({
+    angle: z.number().finite().optional(),
+    gap: z.number().finite().nonnegative().optional(),
+  })
+  .strict();
+
+/** The three band kinds that hold a flat row of content. */
+export type IllustrationSceneRowBand = {
   id: string;
-  kind: IllustrationBandKind;
+  kind: "lane" | "hub" | "annotations";
   /** Optional screen-aligned heading for the band. */
   title?: string;
 };
 
-export const illustrationSceneBandSchema = z
+/**
+ * The ring (WP 2.1). It is a band KIND rather than an arrangement of nodes because the run-flow
+ * exemplar proved the point in its own `$comment`: *"the lane/hub grammar cannot express an
+ * execution loop"*. A loop needs four things a row does not have — how many stations sit on the
+ * ring, which way the work travels, where the flow enters and leaves, and what one lap is CALLED
+ * (`turns`, `retries`, `versions`), which is the label that turns a circle of boxes into a
+ * countable process.
+ */
+export type IllustrationSceneCycleBand = {
+  id: string;
+  kind: "cycle";
+  title?: string;
+  /** How many station slots the ring holds. At least two: one station is not a cycle. */
+  stations: number;
+  direction: IllustrationCycleDirection;
+  /** What one lap counts, shown beside the ring (`turns`). */
+  counter?: string;
+  entry?: IllustrationSceneCycleGate;
+  exit?: IllustrationSceneCycleGate;
+};
+
+export type IllustrationSceneBand = IllustrationSceneRowBand | IllustrationSceneCycleBand;
+
+export const illustrationSceneRowBandSchema = z
   .object({
     id: illustrationIdSchema,
-    kind: illustrationBandKindSchema,
+    kind: z.enum(["lane", "hub", "annotations"]),
     title: z.string().min(1).optional(),
   })
   .strict();
+
+export const illustrationSceneCycleBandSchema = z
+  .object({
+    id: illustrationIdSchema,
+    kind: z.literal("cycle"),
+    title: z.string().min(1).optional(),
+    stations: z.number().int().min(2),
+    direction: illustrationCycleDirectionSchema,
+    counter: z.string().min(1).optional(),
+    entry: illustrationSceneCycleGateSchema.optional(),
+    exit: illustrationSceneCycleGateSchema.optional(),
+  })
+  .strict();
+
+/**
+ * Discriminated on `kind`, so `stations` is REQUIRED on a ring and IMPOSSIBLE on a lane. One flat
+ * object with four optional fields would have let a `lane` carry a lap counter and a `cycle` omit
+ * its direction — both nonsense a parser would then have waved through.
+ */
+export const illustrationSceneBandSchema = z.discriminatedUnion("kind", [
+  illustrationSceneRowBandSchema,
+  illustrationSceneCycleBandSchema,
+]);
 
 /**
  * One placed component. `component` is a registry id — resolved against the live registry by the
@@ -172,8 +250,16 @@ export type IllustrationSceneNode = {
   detail?: IllustrationDetailLevel;
   facing?: IllustrationFacing;
   /**
-   * The ONE place a scene may speak in coordinates (D-IL7): a per-node override, in grid units,
-   * that opts this node out of its band's distribution. Connector endpoints are never coordinates.
+   * Another node's id. This node is PINNED to that one — placed relative to it rather than given a
+   * slot of its own in the band's distribution — which is how the exemplar hangs a plan card off its
+   * agent and a context stack off the loop station that appends to it. `seq` is ignored while
+   * `attach` is set: a node cannot be both sequenced and pinned, and the pin is the stronger claim.
+   */
+  attach?: string;
+  /**
+   * The ONE place a scene may speak in coordinates (D-IL7): a per-node override, in grid units on
+   * the SCREEN plane (1 unit = 16 px), that opts this node out of its band's distribution.
+   * Connector endpoints are never coordinates.
    */
   at?: { x: number; y: number };
 };
@@ -191,6 +277,7 @@ export const illustrationSceneNodeSchema = z
     size: illustrationSizeSchema.optional(),
     detail: illustrationDetailLevelSchema.optional(),
     facing: illustrationFacingSchema.optional(),
+    attach: illustrationIdSchema.optional(),
     at: z.object({ x: z.number().finite(), y: z.number().finite() }).strict().optional(),
   })
   .strict();
@@ -273,7 +360,12 @@ export type IllustrationSceneSpec = {
   /** Required, non-empty: the text alternative, the SVG's `<desc>` (D-IL10). */
   summary: string;
   canvas: IllustrationCanvas;
-  bands?: IllustrationSceneBand[];
+  /**
+   * REQUIRED since WP 2.1. Bands ARE the composition — a node names the band it belongs to and the
+   * layout engine stacks bands vertically, so a scene with nodes and no band has nowhere to put
+   * them. The previous optionality only ever meant "the engine does not exist yet".
+   */
+  bands: IllustrationSceneBand[];
   nodes: IllustrationSceneNode[];
   connectors?: IllustrationSceneConnector[];
   annotations?: IllustrationSceneAnnotation[];
@@ -294,7 +386,7 @@ export const illustrationSceneSpecSchema = z
     title: z.string().min(1),
     summary: z.string().min(1),
     canvas: illustrationCanvasSchema,
-    bands: z.array(illustrationSceneBandSchema).optional(),
+    bands: z.array(illustrationSceneBandSchema).min(1),
     nodes: z.array(illustrationSceneNodeSchema).min(1),
     connectors: z.array(illustrationSceneConnectorSchema).optional(),
     annotations: z.array(illustrationSceneAnnotationSchema).optional(),

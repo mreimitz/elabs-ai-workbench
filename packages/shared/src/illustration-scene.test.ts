@@ -5,6 +5,7 @@ import {
   ILLUSTRATION_ANNOTATION_KINDS,
   ILLUSTRATION_BAND_KINDS,
   ILLUSTRATION_CANVAS_FORMATS,
+  ILLUSTRATION_CYCLE_DIRECTIONS,
   ILLUSTRATION_NODE_DEFAULTS,
   ILLUSTRATION_SCENE_SPEC_VERSION,
   ILLUSTRATION_STAGE_KINDS,
@@ -21,6 +22,7 @@ const FROZEN_CANVAS_FORMATS = ["hero_wide", "ultra", "square"];
 const FROZEN_STAGE_KINDS = ["paper", "plain"];
 const FROZEN_BAND_KINDS = ["lane", "hub", "annotations", "cycle"];
 const FROZEN_ANNOTATION_KINDS = ["callout", "principle-card"];
+const FROZEN_CYCLE_DIRECTIONS = ["cw", "ccw"];
 
 /**
  * A spec exercising every array, modelled on the design's self-learning-agentic-loop example, so a
@@ -124,9 +126,82 @@ describe("illustrationSceneSpecSchema — round trip", () => {
       title: "Scan pipeline",
       summary: "How a discovery scan reaches a token footprint.",
       canvas: { format: "square", stage: "plain" },
+      bands: [{ id: "process", kind: "lane" }],
       nodes: [{ id: "scan", component: "scan" }],
     };
     assert.equal(illustrationSceneSpecSchema.safeParse(minimal).success, true);
+  });
+
+  // TIGHTENED BY WP 2.1, and this is the assertion that records it. Before the layout engine
+  // existed `bands` was optional, which was honest then and is not now: a node names the band it
+  // belongs to, and a scene with nodes and no band has nowhere to put them.
+  it("rejects a spec with no bands — bands are the composition (WP 2.1)", () => {
+    const { bands: _dropped, ...withoutBands } = VALID_SPEC;
+    assert.equal(illustrationSceneSpecSchema.safeParse(withoutBands).success, false);
+    assert.equal(illustrationSceneSpecSchema.safeParse({ ...VALID_SPEC, bands: [] }).success, false);
+  });
+});
+
+describe("illustrationSceneSpecSchema — the cycle band (WP 2.1)", () => {
+  const withBands = (bands: unknown) => illustrationSceneSpecSchema.safeParse({
+    ...VALID_SPEC,
+    bands,
+    nodes: [{ id: "agent", component: "agent", band: "loop", seq: 1 }],
+    connectors: [],
+    annotations: [],
+    steps: [{ focus: ["agent"], caption: "One lap." }],
+  });
+
+  it("freezes the two travel directions", () => {
+    assert.deepEqual([...ILLUSTRATION_CYCLE_DIRECTIONS], FROZEN_CYCLE_DIRECTIONS);
+  });
+
+  it("accepts the exemplar's ring — stations, direction and a lap counter", () => {
+    const result = withBands([
+      { id: "loop", kind: "cycle", stations: 4, direction: "cw", counter: "turns" },
+    ]);
+    assert.equal(result.success, true);
+  });
+
+  it("accepts explicit entry and exit gates", () => {
+    const result = withBands([
+      {
+        id: "loop",
+        kind: "cycle",
+        stations: 3,
+        direction: "ccw",
+        counter: "retries",
+        entry: { angle: 200, gap: 24 },
+        exit: { angle: 20 },
+      },
+    ]);
+    assert.equal(result.success, true);
+  });
+
+  it("refuses a ring with no station count and a ring with no direction", () => {
+    assert.equal(withBands([{ id: "loop", kind: "cycle", direction: "cw" }]).success, false);
+    assert.equal(withBands([{ id: "loop", kind: "cycle", stations: 4 }]).success, false);
+  });
+
+  it("refuses a one-station ring and an unknown direction", () => {
+    assert.equal(
+      withBands([{ id: "loop", kind: "cycle", stations: 1, direction: "cw" }]).success,
+      false,
+    );
+    assert.equal(
+      withBands([{ id: "loop", kind: "cycle", stations: 4, direction: "widdershins" }]).success,
+      false,
+    );
+  });
+
+  // The discriminated union earning its keep: a ring's four fields are not merely optional
+  // elsewhere, they are unspellable elsewhere.
+  it("refuses ring fields on a lane — the union is discriminated, not a bag of optionals", () => {
+    assert.equal(
+      withBands([{ id: "loop", kind: "lane", stations: 4, direction: "cw" }]).success,
+      false,
+    );
+    assert.equal(withBands([{ id: "loop", kind: "hub", counter: "turns" }]).success, false);
   });
 });
 
@@ -239,6 +314,29 @@ describe("illustrationSceneSpecSchema — connectors attach to ports (D-IL7)", (
         `expected the endpoint ${JSON.stringify(from)} to be rejected`,
       );
     }
+  });
+
+  it("lets a node be pinned to another node instead of sequenced (`attach`, WP 2.1)", () => {
+    const result = illustrationSceneSpecSchema.safeParse({
+      ...VALID_SPEC,
+      nodes: [
+        { id: "agent", component: "agent", band: "process", seq: 1 },
+        { id: "plan", component: "prompt", band: "process", attach: "agent" },
+      ],
+      connectors: [],
+      steps: [{ focus: ["agent"], caption: "The agent drafts a plan." }],
+    });
+    assert.equal(result.success, true);
+    // Still SHAPE only: that `agent` exists is the WP 2.1 validator's question, not the parser's.
+    assert.equal(
+      illustrationSceneSpecSchema.safeParse({
+        ...VALID_SPEC,
+        nodes: [{ id: "plan", component: "prompt", attach: "nobody-at-all" }],
+        connectors: [],
+        steps: [{ focus: ["plan"], caption: "Pinned to a node that is not here." }],
+      }).success,
+      true,
+    );
   });
 
   it("keeps the one sanctioned coordinate escape hatch: a per-node `at` override", () => {
