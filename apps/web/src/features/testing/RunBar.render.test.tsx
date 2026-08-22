@@ -307,6 +307,81 @@ describe("RunBar — run-level feedback header (WP 2.5, D-OB15)", () => {
   });
 });
 
+/**
+ * RM-17 Phase 6 (AM-OB2) — the corrected-answer control beside the verdict thumbs: an operator can
+ * write "what this run should have said" WITHOUT leaving the console. These cases pin the WIRING
+ * (the header mounts it, hands it the right row, and writes the right key); the control's own
+ * behaviour is `FeedbackControl.test.tsx`.
+ */
+describe("RunBar — corrected-answer header control (AM-OB2)", () => {
+  test("renders beside the verdict thumbs whenever a run exists, live or replay", async () => {
+    renderBar({ runId: "run-1" });
+    expect(
+      await screen.findByRole("button", { name: "Write the corrected answer" }),
+    ).toBeInTheDocument();
+  });
+
+  test("is absent on the pre-run surface — there is no answer to correct yet", () => {
+    renderBar({ runId: null });
+    expect(
+      screen.queryByRole("button", { name: "Write the corrected answer" }),
+    ).not.toBeInTheDocument();
+  });
+
+  test("the ONE mount fetch feeds both controls: an existing correction shows as editable", async () => {
+    mockListRunFeedback.mockResolvedValueOnce([
+      {
+        id: "fb-1",
+        runId: "run-1",
+        key: "verdict",
+        score: 1,
+        source: "human",
+        createdAt: "2026-08-22T00:00:00Z",
+      },
+      {
+        id: "fb-2",
+        runId: "run-1",
+        key: "corrected_output",
+        comment: "It should have said 42.",
+        source: "human",
+        createdAt: "2026-08-22T00:00:01Z",
+      },
+    ]);
+    renderBar({ runId: "run-1" });
+
+    await waitFor(() => expect(mockListRunFeedback).toHaveBeenCalledTimes(1));
+    expect(
+      await screen.findByRole("button", { name: "Edit the corrected answer" }),
+    ).toBeInTheDocument();
+    // The verdict half of the same fetch still lands.
+    expect(
+      screen.getByRole("button", { name: "Clear your thumbs-up verdict" }),
+    ).toBeInTheDocument();
+  });
+
+  test("a STEP-scoped correction does not fill the run-level control", async () => {
+    mockListRunFeedback.mockResolvedValueOnce([
+      {
+        id: "fb-3",
+        runId: "run-1",
+        stepId: "run-1:step:2",
+        key: "corrected_output",
+        comment: "this ONE turn was wrong",
+        source: "human",
+        createdAt: "2026-08-22T00:00:02Z",
+      },
+    ]);
+    renderBar({ runId: "run-1" });
+
+    expect(
+      await screen.findByRole("button", { name: "Write the corrected answer" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit the corrected answer" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 // ── RM-36 WP 2.1 (audit finding P1-6) — the CLASS-LEVEL half of the responsive guard ─────────────
 //
 // HONEST SCOPE: this asserts the class recipe, NOT pixels. jsdom runs no layout engine at all —
