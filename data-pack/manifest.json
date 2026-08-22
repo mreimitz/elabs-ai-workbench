@@ -6,8 +6,8 @@
   "files": [
     {
       "path": "compatibility/test-catalog.json",
-      "sha256": "8c7a159b98a8e32e882db7455b72e3f75da1fd76ddd4ed0361cdc2be7f7ee8f4",
-      "bytes": 120260
+      "sha256": "da516d41d53624b200338cb66a9445bc076d9bf2a8d51e113f037b90ea517858",
+      "bytes": 122956
     },
     {
       "path": "generated/all-models.json",
@@ -91,8 +91,8 @@
     },
     {
       "path": "schema/test-catalog.schema.json",
-      "sha256": "717c53e758fcb429b2c8469d5d662b1431d8e01e143b73c2d662acce5e6832c5",
-      "bytes": 11034
+      "sha256": "f9934d11a62346b283671c3f6d1e25a44b2db282b1c6c58f7a2fcd94e3e9c34b",
+      "bytes": 11480
     }
   ]
 }
