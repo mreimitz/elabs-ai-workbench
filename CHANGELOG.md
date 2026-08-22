@@ -71,6 +71,22 @@ pass turned out to be two blockquote rules around quoted text and one that encod
 compare view. Changing them would have been the regression.
 
 
+## Unreleased — two corrections you asked for
+
+**Every file tab in the Skill Studio now has its own ×.** It previously had one close control at the
+end of the strip that acted on whichever tab was active. Doing it properly meant the tab strip no
+longer uses the component library's tab primitive — a close button cannot legally live inside a tab
+button — so it now handles its own keyboard behaviour: arrow keys and Home/End move between tabs,
+Delete closes the focused one, and however many files are open the strip costs you two tab stops
+rather than one per file. The main instructions tab still has no × and cannot be closed.
+
+**A warning-level watch alert now arrives at the severity you set.** It was being quietly demoted one
+step — a rule you marked critical would notify as a warning when it crossed its warning line. If you
+set a rule to critical, it sends critical; which line was crossed is still recorded and still visible.
+
+The skill inspector's design tab also stopped offering "Edit in Studio" twice; the one inside the
+preview stays.
+
 ## Unreleased — a skill's files are editable where the skill is edited
 
 The Studio could edit a skill's instructions and its settings, but its files were a read-only list —

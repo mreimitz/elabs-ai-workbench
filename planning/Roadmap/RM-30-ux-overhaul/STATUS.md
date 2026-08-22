@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UX Overhaul \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the ux-overhaul plan (source: /UI-UX-AUDIT-2026-07-05.md)."
 tags: ["roadmap", "RM-30"]
-timestamp: "2026-08-22T09:50:00Z"
+timestamp: "2026-08-22T10:30:00Z"
 status: "active"
 ---
 # UX Overhaul — work-package status ledger · **PRIORITY: HIGH**
@@ -111,6 +111,28 @@ each WP's file domain — the Domain column here is the collision-check shorthan
 - [x] WP 7.6 — Trace as a lens (SI6) — done 2026-07-06 · direct-tree · dead-space root cause = the 8-row Legend inside the `items-end` toolbar row (inflated it to the measured 242px) → legend now docked (collapsed) inside the Evidence pane; ONE compact toolbar row (picker · K4 chips · verdict, byte-preserved); flex lens layout (canvas flex-1 min-w-0 + 352px Evidence pane w/ own scroll — canvas can no longer run beneath it); NEW evidence→canvas focus (click centers cited node, pan-only) via `TraceFocusNode` in the canvas children slot — **SkillGraphCanvas unchanged**; 14 new tests · all 45 web test files / 387 tests + lint green · **visual walk pending (owner)**
 - [x] WP 7.5 — Tool-reference decorations (SI7) — done 2026-07-06 · direct-tree · pure matcher `code-intel/tool-references.ts` (bare AND backticked known refs, frontmatter/fence-aware, longest-match; unknown-toollike = backticked-only, conservative); decorations split graph/text — text set recomputes per keystroke AND on async bound-tools arrival (the flakiness root cause); bare known refs get full hover cards; backticked-unknown → warning underline + live Problems rows (existing warnings channel, deduped vs persisted diagnostics); 49 tests · typecheck/tests/lint green (documented deliberate divergence: web flags any backticked toollike span, API validator requires a context word) · **live Monaco visual pending (owner)**
 - [ ] Owner-acceptance addition: §I8 end-to-end walk (blank skill → bind → reference → configure → resource file → one save → LR flow → trace lens, no YAML by hand)
+
+### Phase 7 — owner corrections (2026-08-22, RM-35 roadmap-cleanup pass)
+
+Two judgement calls made by the WP 7.1/7.4 builders were put to the owner and **overturned**. Both
+landed on `wp/roadmap-cleanup/ux-corrections` (`7328e7d` · `f0c97b3`, merged), gate green
+(typecheck · shared 279 · illustrations 834 · cli 87 · api 3729 · web **374 files / 4149** · build ·
+lint), and both were mutation-probed by the orchestrator, not taken on trust.
+
+- **An × on EVERY file tab** (was: one close control at the end of the strip acting on the active
+  tab). The builder's objection was real — a Radix `TabsTrigger` renders a `<button>`, and a button
+  inside a button is invalid markup with no accessible resolution — so the owner chose the harder
+  option and the strip **no longer uses Radix Tabs**: it owns its own `role="tablist"` wiring,
+  roving tabindex, Arrow/Home/End movement and `Delete`-to-close, with a new 11-test suite pinning
+  all of it (*"the strip is TWO tab stops however many files are open"*, *"a key the strip does not
+  own is left alone"*). SKILL.md still has **no ×** and Delete on it is inert. **Probe:** making the
+  manifest tab ordinary turns **3 tests red**.
+- **One "Edit in Studio", not two.** The page-header link is gone; the contextual one inside the
+  read-only flow preview stays. **Probe:** duplicating the preview's own link turns the
+  exactly-one-link assertion red.
+
+**Neither was seen in a browser.** jsdom has no layout and does not open Radix tooltips — the
+keyboard behaviour is asserted, not walked.
 
 ### Phase 7 round 2 (2026-07-06, Cowork PM) — owner hands-on found SI9–SI17 + the **D-UX19 model correction**
 - [x] WP 7.R2a — **"Show node" app crash (SI14, P0) + Problems scroll (SI15)** — done 2026-07-06 · direct-tree · root cause: identity-unstable `onSelectionChange` → xyflow's selection listener re-announced a one-commit-stale selection on every parent render → controlled-state ping-pong → React #185. Stable callback via ref + `FocusSeededSelection` pan-into-view; Problems body real internal scroll (old `ScrollArea max-h-*` NEVER worked — Radix %-height vs auto-height root, **upstream brand-ui bug**, same latent pattern in UnifiedEditor save dialog + ExplainerLegend); 14 tests, regression proven failing-on-old-logic

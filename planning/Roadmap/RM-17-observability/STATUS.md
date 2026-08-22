@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-22T02:40:00Z"
+timestamp: "2026-08-22T10:30:00Z"
 status: "active"
 ---
 
@@ -333,11 +333,20 @@ had one open box before the lock and now has fourteen.
       default policy. Everything else is byte-identical — the audit detail string for a
       single-threshold fire is character-for-character what it was (pinned by a regex test), and the
       only wire addition is an additive `level: "alert"` field, which changes no severity.
-      **Two owner glances.** A `warn` crossing **demotes** the notify action's configured severity
-      one step (`critical`→`warning`→`info`) rather than introducing a second severity vocabulary,
-      per the spec's own non-goal; and a warn→alert escalation **re-fires through an active
-      cooldown**, which is beyond the letter of the acceptance criteria — the builder judged a
-      warning that silently swallows the following alert to be the worse trap.
+      **Two owner glances — the first was OVERTURNED 2026-08-22.** The builder had a `warn` crossing
+      **demote** the notify action's configured severity one step (`critical`→`warning`→`info`)
+      rather than introduce a second severity vocabulary. The owner reversed it: **level and severity
+      are independent axes.** The LEVEL says which threshold was crossed; the SEVERITY is what the
+      rule was configured to send, and an operator who set a rule to `critical` meant it — a
+      notification that quietly arrives as `warning` is one the author never asked for and cannot see
+      they lost. `demoteNotifySeverity`/`notifySeverityForLevel` are **deleted** from
+      `packages/shared/src/watch-state.ts`, which now exports **no severity helper at all** — pinned
+      by a test that greps the module's own exports, so the concept cannot creep back in under
+      another name (`wp/roadmap-cleanup/ux-corrections`, `66ad6c1`, merged; orchestrator probe:
+      re-adding any `*severit*` export turns it red). The level still rides on the event and the
+      audit row, so a warn stays distinguishable from an alert. The second glance stands: a
+      warn→alert escalation **re-fires through an active cooldown**, because a warning that silently
+      swallows the following alert is the worse trap.
       **Not verified:** no browser was opened. The pause chip, the Resume action, the two threshold
       fields and their inline error, the no-data picker and the preview strip's gap are proved by
       jsdom only — **no two-theme look, no keyboard pass**. No live webhook or notification was ever
@@ -436,6 +445,11 @@ had one open box before the lock and now has fourteen.
       **Performance measured, no index taken:** 50k runs · 150k grades, isolated — unfiltered p95
       65 ms, `answerVerdict` 74 ms, `errorBucket` 83 ms, composed 101 ms, all against a 500 ms
       budget, riding `idx_run_grades_run` which predates this WP.
+      ⚠️ **BEING FIXED, not finished (2026-08-22).** The owner chose the honest repair over raising
+      the ceiling — make the measurement independent of what else is running on the machine — and the
+      agent got as far as a `queryPlansFor` harness (201 lines) before dying on a session limit. It
+      is rescued verbatim as `069941e` on `wp/roadmap-cleanup/ux-corrections` and **is NOT merged**:
+      incomplete, ungated, unreviewed. Pick it up from there rather than starting over.
       ⚠️ **A pre-existing perf case is one bad scheduling slice from a red gate**: it flaked at p95
       486.5 ms against its 500 ms budget because `pnpm test` runs api and web in parallel and that
       case measures ~5× its isolated time under contention. The new case therefore asserts a **ratio

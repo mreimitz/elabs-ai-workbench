@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T09:20:00Z"
+timestamp: "2026-08-22T10:40:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -185,6 +185,14 @@ met and — where the box touches code — the gate
       sitting clears it. **This box still waits on Wave 2** — there is nothing to retire until a
       sitting actually clears an item
 
+> **Session-limit interruption, 2026-08-22.** Four agents died mid-task on an API session limit
+> (resets 04:50 Europe/Zurich): WP 7.7, the UX corrections (on its fourth item), the headless
+> two-theme walk, and the branch-authoring investigation. **Everything uncommitted was rescued and
+> committed verbatim before anything else** — see WP 3.3's note and RM-17's perf-case line. Two
+> deliverables were lost outright rather than half-done: the **headless two-theme walk** produced no
+> report (it was re-running its corrected audit when it died), and the **branch-authoring
+> investigation** never started. Both are cheap to re-run and neither wrote anything.
+
 ## Wave 3 — the remaining engineering, in value order
 - [ ] WP 3.1 — **RM-26 WP 4.4** end-to-end verification: a real run through the built Docker
       image. 1 WP, needs a provider key. Highest value per hour on this list — it exercises
@@ -274,7 +282,24 @@ met and — where the box touches code — the gate
       **deleted**, with a guardrail that goes red if the dialog returns — and a **third** hidden save
       path (the Files-tab bindings strip) went with it, which was the builder's judgement rather than
       the spec's letter.
-      **Still open: 7.7 · 7.8 · 7.9** (7.8 needs a short design doc and owner approval BEFORE build).
+      **BATCH 3 (2026-08-22) — cut short by a session limit; here is exactly where it stopped.**
+      **WP 7.8's design doc is written, merged and APPROVED** — five edge kinds with a legal-pair
+      table, an entry-point flow as forward reachability with always-read/maybe-read labels and token
+      figures, one box per file/tool, refusals that offer the legal move, **app-side box positions**
+      (chosen because a position comment would sit in the metered `l2_body_tokens` body and inflate
+      the very cost this app measures), branches deferred, and old traces **degrading with a visible
+      notice** rather than being migrated or hidden. So 7.8 is ready to build — **after 7.7, never
+      beside it**: both own `use-edit-ops`.
+      **WP 7.7 died mid-build** and is rescued as `0e8c5b5` on `wp/roadmap-cleanup/rm30-7.7-wip` —
+      9 files, **unreviewed, ungated, and it does not typecheck** (the agent's last words were "now
+      let's typecheck to find the fallout"). It had deleted `ToolsPalette.tsx` and written
+      `ComponentsPalette.tsx` · `ComponentValueDialog.tsx` · `skill-components.ts` ·
+      `use-server-binding.ts`. **It had NO commits of its own**, so a routine worktree cleanup would
+      have destroyed all of it silently — the same trap this plan hit once before with agent D.
+      **Two owner corrections DID land** (`wp/roadmap-cleanup/ux-corrections`, merged, gate green):
+      an × on every file tab with the strip owning its own keyboard, and one contextual "Edit in
+      Studio" instead of two. A third (the warning-severity reversal) landed in RM-17.
+      **Still open: 7.7 · 7.8 · 7.9** (7.8's gate is now cleared).
       **Nobody has still ever used any of this.** Three Studio WPs deep, no browser has been opened,
       no save has been completed against a live API, and it has never met a bound MCP server
 - [x] WP 3.4 — **RM-03 WP 2.3** — **done 2026-08-22 · dropped as engineering and closed as the ledger
