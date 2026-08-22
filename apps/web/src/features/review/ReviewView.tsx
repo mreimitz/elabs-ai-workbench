@@ -7,12 +7,17 @@ import type {
   RunFeedback,
   RunSummary,
 } from "@mcp-token-footprint/shared";
-import { parseRunFilter, serializeRunFilter } from "@mcp-token-footprint/shared";
+import {
+  parseRunFilter,
+  RUN_FEEDBACK_KEY_CORRECTED_OUTPUT,
+  serializeRunFilter,
+} from "@mcp-token-footprint/shared";
 import {
   Badge,
   Button,
   EmptyState,
   Heading,
+  Label,
   Progress,
   Select,
   SelectContent,
@@ -24,6 +29,7 @@ import {
   Textarea,
   Toggle,
   cn,
+  toast,
 } from "@elabs-ai/components-ui";
 import { ChevronLeft, ChevronRight, ClipboardList, SkipForward, ThumbsDown, ThumbsUp } from "lucide-react";
 import { IconButton } from "../../components/IconButton";
@@ -31,6 +37,7 @@ import { PageShell } from "../../components/PageShell";
 import { StatusBadge } from "../../components/StatusBadge";
 import { ViewToolbar } from "../../components/ViewToolbar";
 import {
+  deleteRunFeedback,
   getRun,
   listReviewRubrics,
   listRunFeedback,
@@ -270,14 +277,49 @@ export function ReviewView() {
     try {
       const saved = await putRunFeedback(currentRun.id, { key: keyDef.key, ...value });
       setCurrentFeedback((list) => [...list.filter((f) => f.key !== keyDef.key), saved]);
-      setQueue((list) =>
-        list.map((r, i) =>
-          i === runIndex ? withUpsertedFeedback(r, keyDef.key, saved.score ?? null) : r,
-        ),
-      );
+      setQueue((list) => list.map((r, i) => (i === runIndex ? withUpsertedFeedback(r, saved) : r)));
       advanceAfterKey();
     } catch (error) {
       notifyError("Couldn’t save your answer. Try again.", {
+        description: getErrorMessage(error),
+      });
+    }
+  }
+
+  /**
+   * RM-17 Phase 6 (AM-OB2) — save the corrected answer. It is NOT a rubric key: it is always
+   * present regardless of which rubric is picked, it never advances the queue pointer (writing what
+   * the answer should have been is a considered act, not a keystroke verdict), and it never counts
+   * toward "N/M reviewed". Same WP1.5 upsert endpoint as everything else on this page.
+   */
+  async function saveCorrectedOutput(text: string) {
+    if (!currentRun) return;
+    const trimmed = text.trim();
+    const existing = currentFeedback.find((f) => f.key === RUN_FEEDBACK_KEY_CORRECTED_OUTPUT);
+    try {
+      if (trimmed.length === 0) {
+        // Emptying the box REMOVES the row — an empty `corrected_output` would claim a correction
+        // was captured that carries no words.
+        if (!existing) return;
+        await deleteRunFeedback(currentRun.id, existing.id);
+        setCurrentFeedback((list) =>
+          list.filter((f) => f.key !== RUN_FEEDBACK_KEY_CORRECTED_OUTPUT),
+        );
+        toast.success("Corrected answer removed");
+        return;
+      }
+      const saved = await putRunFeedback(currentRun.id, {
+        key: RUN_FEEDBACK_KEY_CORRECTED_OUTPUT,
+        comment: trimmed,
+      });
+      setCurrentFeedback((list) => [
+        ...list.filter((f) => f.key !== RUN_FEEDBACK_KEY_CORRECTED_OUTPUT),
+        saved,
+      ]);
+      setQueue((list) => list.map((r, i) => (i === runIndex ? withUpsertedFeedback(r, saved) : r)));
+      toast.success("Corrected answer saved");
+    } catch (error) {
+      notifyError("Couldn’t save the corrected answer. Try again.", {
         description: getErrorMessage(error),
       });
     }
@@ -487,6 +529,16 @@ export function ReviewView() {
                   {rubric.instructions}
                 </Text>
               ) : null}
+              {/* AM-OB2 — always present, rubric-independent: reachable before only if an operator
+                  happened to hand-define a `note` rubric key called "corrected_output". */}
+              <CorrectedAnswerField
+                runId={currentRun?.id ?? null}
+                value={
+                  currentFeedback.find((f) => f.key === RUN_FEEDBACK_KEY_CORRECTED_OUTPUT)?.comment ??
+                  ""
+                }
+                onSave={(text) => void saveCorrectedOutput(text)}
+              />
               <div className="flex flex-col gap-3">
                 {rubric.keys.map((keyDef, index) => (
                   <RubricKeyRow
@@ -526,6 +578,72 @@ export function ReviewView() {
         </div>
       )}
     </PageShell>
+  );
+}
+
+/**
+ * RM-17 Phase 6 (AM-OB2) — the corrected answer, as a first-class field of the review pane rather
+ * than a rubric key an operator has to think to define.
+ *
+ * It saves EXPLICITLY (a button, not on blur) because the text is long-form and a stray focus change
+ * must not silently persist a half-written answer; the draft resets whenever the reviewed run
+ * changes, so a queue step never carries the previous run's words into the next one. It writes
+ * through the same WP1.5 feedback endpoint every other answer here uses, and — AR6 — it is not a
+ * grade: it only becomes the expectation of a test later promoted from this run.
+ */
+function CorrectedAnswerField({
+  runId,
+  value,
+  onSave,
+}: {
+  runId: string | null;
+  value: string;
+  onSave: (text: string) => void;
+}) {
+  const [draft, setDraft] = useState(value);
+  const lastRunRef = useRef<string | null>(runId);
+  const lastValueRef = useRef(value);
+  // Re-seed on a run change (a new run's persisted answer, or empty) and when the persisted value
+  // itself changes underneath us (the parent's post-save state update) — but never while the
+  // reviewer is mid-sentence on the same run with the same persisted value.
+  if (lastRunRef.current !== runId || lastValueRef.current !== value) {
+    lastRunRef.current = runId;
+    lastValueRef.current = value;
+    if (draft !== value) setDraft(value);
+  }
+
+  const dirty = draft.trim() !== value.trim();
+  const fieldId = "review-corrected-output";
+
+  return (
+    <div className="mb-3 flex flex-col gap-2 rounded-lg border border-border p-3">
+      <Label htmlFor={fieldId}>Corrected answer</Label>
+      <Text variant="meta" tone="muted">
+        What this run should have answered. Used as the expected answer if you promote it to a test —
+        it never changes this run’s grade.
+      </Text>
+      <Textarea
+        id={fieldId}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        placeholder="The answer this run should have given…"
+        rows={4}
+        spellCheck
+        disabled={runId === null}
+      />
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={runId === null || !dirty}
+          onClick={() => onSave(draft)}
+        >
+          {draft.trim().length === 0 && value.trim().length > 0
+            ? "Remove correction"
+            : "Save correction"}
+        </Button>
+      </div>
+    </div>
   );
 }
 

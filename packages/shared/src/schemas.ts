@@ -1186,6 +1186,36 @@ export const runFeedbackInputSchema = z
     path: ["score"],
   });
 
+// RM-17 Phase 6 (AM-OB2) — one persisted feedback row, and the `humanFeedback` block a run export
+// carries. `key` stays a free `z.string()` with NO enum: the review rubrics (WP4.5) write a row per
+// rubric key, so closing the key space would break them. `RUN_FEEDBACK_KEY_CORRECTED_OUTPUT` is a
+// WELL-KNOWN key, never a closed vocabulary.
+export const runFeedbackSchema = z
+  .object({
+    id: z.string().min(1),
+    runId: z.string().min(1),
+    stepId: z.string().min(1).optional(),
+    key: z.string().min(1),
+    score: z.number().finite().optional(),
+    comment: z.string().optional(),
+    source: runFeedbackSourceSchema,
+    createdAt: z.string().min(1),
+  })
+  .strict();
+
+export const runReportHumanFeedbackSchema = z
+  .object({
+    entries: z.array(runFeedbackSchema),
+    /** ABSENT means no correction was CAPTURED — never "the answer needed none" (D-OB15 honesty). */
+    correctedOutput: z.string().optional(),
+  })
+  .strict();
+
+/** `POST /api/runs/:id/promote-to-test` — the on-demand twin of WP4.1's `promote_to_test` action. */
+export const promoteRunToTestSchema = z
+  .object({ collectionId: z.string().trim().min(1) })
+  .strict();
+
 // --- Observability — model pricing editor (planning/Roadmap/RM-17-observability/, WP2.6, D-OB22) ----------------
 // `POST /api/pricing` / `PATCH /api/pricing/:id`. Prices are USD per 1M tokens (`.nonnegative()` — a
 // negative price is nonsense and would corrupt the spend cap). `modelMatch` is bounded (a bound that

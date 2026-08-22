@@ -1674,6 +1674,24 @@ export const ISSUE_ASSIST_MAX_CANDIDATES = 40;
 // WP1.5 `run_feedback` API (source='human', key = the rubric key's own name) — this table carries no
 // feedback data of its own, and grading/suites/compare stay untouched (D-OB15/AR6).
 
+// --- Observability — well-known human-feedback keys (RM-17 Phase 6, AM-OB2) ---------------------
+// `run_feedback.key` is, and stays, an OPEN free-form `string` on the wire — the review rubrics
+// (WP4.5) write a row per rubric key, so closing the key space into an enum would break them. These
+// two constants name the keys the APP itself writes, so the literals stop being retyped in the API,
+// the console and the review queue (they were hardcoded in three places before AM-OB2).
+//
+// `corrected_output` is the answer a human says the run SHOULD have given. It is a first-class human
+// signal and NOTHING else: no grader reads it, it never enters `run_grades`, `meanScore`, suite
+// aggregates or issue scoring (D-OB15/AR6). Its one downstream consumer is promote-to-test, where it
+// pre-fills the new draft test's `expectations.expectedInsight` — it changes what a NEWLY CREATED
+// test expects, never the score of the run it came from.
+
+/** Thumbs up/down on a run or one of its turns, conventionally `score` ±1. */
+export const RUN_FEEDBACK_KEY_VERDICT = "verdict";
+
+/** The corrected answer a human supplied for a run — a comment-only row (no score). */
+export const RUN_FEEDBACK_KEY_CORRECTED_OUTPUT = "corrected_output";
+
 /** One rubric key's answer widget. `thumbs` writes ±1 (mirrors the WP2.5 verdict convention); `scale5`
  *  writes 1..5; `note` writes a comment only (no score). */
 export const REVIEW_RUBRIC_KEY_KINDS = ["thumbs", "scale5", "note"] as const;

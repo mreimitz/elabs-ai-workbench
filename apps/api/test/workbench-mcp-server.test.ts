@@ -32,6 +32,7 @@ import { AppSettingsRepository } from "../src/grading/app-settings-repository.js
 import { GradeRepository } from "../src/grading/grade-repository.js";
 import { RunReportService } from "../src/grading/run-report.js";
 import { registerWorkbenchMcpRoutes } from "../src/mcp-server/routes.js";
+import { RunFeedbackRepository } from "../src/observability/feedback.js";
 import { ScanRepository, type ToolScanInsert } from "../src/scans/repository.js";
 import { SecretStore } from "../src/secrets/secret-store.js";
 import { ServerRepository } from "../src/servers/repository.js";
@@ -342,7 +343,14 @@ async function makeHarness(): Promise<Harness> {
     suites,
     suiteRuns,
     collections,
-    runReports: { runs, tests, scenarios, runReports: runReportService },
+    runReports: {
+      runs,
+      tests,
+      scenarios,
+      runReports: runReportService,
+      // AM-OB2 — the run export reads the human-feedback ledger for its `humanFeedback` block.
+      feedback: new RunFeedbackRepository(db),
+    },
     // WP M.3 — this file measures and reads the SURFACE; the write tools' behaviour is
     // `mcp-server-write-tools.test.ts`'s subject. Wiring them to stubs that throw keeps that split
     // honest: nothing in this file can start a scan or a run even by accident, and a test that

@@ -95,7 +95,7 @@ describe("RunPreviewRow", () => {
   });
 
   test("mode 'feedback' renders the run's RunSummary.feedback aggregate as a chip", () => {
-    renderPreview(makeRun({ feedback: [{ key: "verdict", score: 1 }] }), "feedback");
+    renderPreview(makeRun({ feedback: [{ key: "verdict", score: 1, hasComment: false }] }), "feedback");
     expect(screen.getByText("Your verdict")).toBeInTheDocument();
     expect(screen.queryByText("No human feedback on this run yet.")).not.toBeInTheDocument();
   });

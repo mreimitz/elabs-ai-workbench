@@ -19,6 +19,7 @@ import { SecretStore } from "../src/secrets/secret-store.js";
 import { ServerRepository } from "../src/servers/repository.js";
 import { RunRepository } from "../src/testing/run-repository.js";
 import { ScenarioRepository } from "../src/testing/scenario-repository.js";
+import { RunFeedbackRepository } from "../src/observability/feedback.js";
 import { TestRepository } from "../src/testing/test-repository.js";
 import { TestService } from "../src/testing/test-service.js";
 
@@ -145,6 +146,9 @@ function buildFixture(): Fixture {
     collections,
     runService: launcher,
     verification,
+    // AM-OB2 — tests_create_draft overlays the run's human corrected_output onto the draft's
+    // expected insight, so the tool needs the feedback ledger like every other promote path.
+    feedback: new RunFeedbackRepository(db),
   };
   return { deps, launcher, issues, verification, issueId: issue.id, runId, collectionId: collection.id };
 }

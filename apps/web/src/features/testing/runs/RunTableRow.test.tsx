@@ -252,7 +252,7 @@ describe("RunTableRow — preview disclosure", () => {
  */
 describe("RunTableRow — feedback chip (WP 2.5, D-OB15)", () => {
   test("a run with a thumbs-up 'verdict' shows the 'Your verdict' chip next to Status", () => {
-    renderRow(makeRun({ feedback: [{ key: "verdict", score: 1 }] }));
+    renderRow(makeRun({ feedback: [{ key: "verdict", score: 1, hasComment: false }] }));
     expect(screen.getByText("Your verdict")).toBeInTheDocument();
   });
 

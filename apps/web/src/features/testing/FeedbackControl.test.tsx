@@ -2,7 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { RunFeedback, RunFeedbackSummary } from "@mcp-token-footprint/shared";
 import { TooltipProvider, toast } from "@elabs-ai/components-ui";
-import { FeedbackChips, FeedbackControl, FeedbackSummaryChip } from "./FeedbackControl";
+import {
+  CorrectedOutputControl,
+  FeedbackChips,
+  FeedbackControl,
+  FeedbackSummaryChip,
+} from "./FeedbackControl";
 
 // WP 2.5 (D-OB15) — `FeedbackControl` is a CONTROLLED component: it never fetches on its own (the
 // caller — `RunBar`'s header, `ConversationPane`'s per-turn map — owns the read side), so this file
@@ -167,23 +172,45 @@ describe("FeedbackControl — the note popover saves explicitly", () => {
 
 describe("FeedbackChips / FeedbackSummaryChip — read-only rendering (feed + report)", () => {
   test("a thumbs-up 'verdict' entry renders the distinct 'Your verdict' chip", () => {
-    render(<FeedbackSummaryChip entry={{ key: "verdict", score: 1 }} />);
+    render(<FeedbackSummaryChip entry={{ key: "verdict", score: 1, hasComment: false }} />);
     expect(screen.getByText("Your verdict")).toBeInTheDocument();
   });
 
   test("a thumbs-down 'verdict' entry still reads 'Your verdict' (icon carries the direction)", () => {
-    render(<FeedbackSummaryChip entry={{ key: "verdict", score: -1 }} />);
+    render(<FeedbackSummaryChip entry={{ key: "verdict", score: -1, hasComment: false }} />);
     expect(screen.getByText("Your verdict")).toBeInTheDocument();
   });
 
-  test("a null-score 'verdict' entry (comment-only) renders nothing", () => {
-    const { container } = render(<FeedbackSummaryChip entry={{ key: "verdict", score: null }} />);
+  // AM-OB2 — a `verdict` row with a note but no thumb used to render NOTHING, so "the operator wrote
+  // something" and "nobody touched this run" looked identical.
+  test("a null-score 'verdict' entry WITH text renders a 'Your note' chip, not nothing", () => {
+    render(<FeedbackSummaryChip entry={{ key: "verdict", score: null, hasComment: true }} />);
+    expect(screen.getByText("Your note")).toBeInTheDocument();
+  });
+
+  test("a null-score 'verdict' entry with NO text still renders nothing (there is nothing to say)", () => {
+    const { container } = render(
+      <FeedbackSummaryChip entry={{ key: "verdict", score: null, hasComment: false }} />,
+    );
     expect(container).toBeEmptyDOMElement();
   });
 
+  test("a captured 'corrected_output' renders its own chip, distinct from a verdict", () => {
+    render(
+      <FeedbackSummaryChip entry={{ key: "corrected_output", score: null, hasComment: true }} />,
+    );
+    expect(screen.getByText("Corrected answer")).toBeInTheDocument();
+    expect(screen.queryByText("Your verdict")).not.toBeInTheDocument();
+  });
+
   test("a non-'verdict' key falls back to a generic 'key: score' chip", () => {
-    render(<FeedbackSummaryChip entry={{ key: "usefulness", score: 2 }} />);
+    render(<FeedbackSummaryChip entry={{ key: "usefulness", score: 2, hasComment: false }} />);
     expect(screen.getByText("usefulness: 2")).toBeInTheDocument();
+  });
+
+  test("a scoreless rubric key with a note reads 'key: note' rather than a bare key", () => {
+    render(<FeedbackSummaryChip entry={{ key: "notes", score: null, hasComment: true }} />);
+    expect(screen.getByText("notes: note")).toBeInTheDocument();
   });
 
   test("FeedbackChips renders nothing for an empty/absent feedback list (honest empty)", () => {
@@ -195,11 +222,120 @@ describe("FeedbackChips / FeedbackSummaryChip — read-only rendering (feed + re
 
   test("FeedbackChips renders one chip per entry", () => {
     const feedback: RunFeedbackSummary[] = [
-      { key: "verdict", score: 1 },
-      { key: "usefulness", score: 3 },
+      { key: "verdict", score: 1, hasComment: false },
+      { key: "usefulness", score: 3, hasComment: false },
     ];
     render(<FeedbackChips feedback={feedback} />);
     expect(screen.getByText("Your verdict")).toBeInTheDocument();
     expect(screen.getByText("usefulness: 3")).toBeInTheDocument();
+  });
+});
+
+// ── AM-OB2 — the feedback key is a prop, and the corrected answer is its own control ────────────────
+
+describe("FeedbackControl — the feedback key is a prop (AM-OB2)", () => {
+  test("defaults to 'verdict' so every pre-AM-OB2 call site writes exactly what it did before", async () => {
+    mockPut.mockResolvedValueOnce(row({ score: 1 }));
+    renderControl();
+    fireEvent.click(screen.getByRole("button", { name: "Your verdict: thumbs up" }));
+    await waitFor(() =>
+      expect(mockPut).toHaveBeenCalledWith("run-1", { key: "verdict", score: 1 }),
+    );
+  });
+
+  test("an explicit feedbackKey rides on the write instead of the hardcoded literal", async () => {
+    mockPut.mockResolvedValueOnce(row({ key: "helpful", score: 1 }));
+    renderControl({ feedbackKey: "helpful" });
+    fireEvent.click(screen.getByRole("button", { name: "Your verdict: thumbs up" }));
+    await waitFor(() =>
+      expect(mockPut).toHaveBeenCalledWith("run-1", { key: "helpful", score: 1 }),
+    );
+  });
+});
+
+describe("CorrectedOutputControl — write the answer the run should have given (AM-OB2)", () => {
+  function renderCorrection(current?: RunFeedback) {
+    const onChange = vi.fn();
+    render(
+      <TooltipProvider>
+        <CorrectedOutputControl runId="run-1" current={current} onChange={onChange} />
+      </TooltipProvider>,
+    );
+    return { onChange };
+  }
+
+  test("typing an answer and saving POSTs a comment-only 'corrected_output' row (no score)", async () => {
+    const saved = row({ id: "fb-c", key: "corrected_output", score: undefined, comment: "42." });
+    mockPut.mockResolvedValueOnce(saved);
+    const { onChange } = renderCorrection();
+
+    fireEvent.click(screen.getByRole("button", { name: "Write the corrected answer" }));
+    fireEvent.change(await screen.findByLabelText("Corrected answer"), {
+      target: { value: "42." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(mockPut).toHaveBeenCalledWith("run-1", { key: "corrected_output", comment: "42." }),
+    );
+    // A corrected answer is NOT a grade — no score is ever written with it (AR6/D-OB15).
+    expect(mockPut.mock.calls[0]?.[1]).not.toHaveProperty("score");
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(saved));
+  });
+
+  test("emptying the box DELETES the row rather than persisting a blank correction", async () => {
+    mockDelete.mockResolvedValueOnce(undefined);
+    const current = row({ id: "fb-c", key: "corrected_output", score: undefined, comment: "old" });
+    const { onChange } = renderCorrection(current);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit the corrected answer" }));
+    fireEvent.change(await screen.findByLabelText("Corrected answer"), { target: { value: "  " } });
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+
+    await waitFor(() => expect(mockDelete).toHaveBeenCalledWith("run-1", "fb-c"));
+    expect(mockPut).not.toHaveBeenCalled();
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(undefined));
+  });
+
+  test("a write failure surfaces a toast and never reports a saved correction", async () => {
+    mockPut.mockRejectedValueOnce(new Error("network down"));
+    const errorSpy = vi.spyOn(toast, "error").mockImplementation(() => "" as never);
+    const { onChange } = renderCorrection();
+
+    fireEvent.click(screen.getByRole("button", { name: "Write the corrected answer" }));
+    fireEvent.change(await screen.findByLabelText("Corrected answer"), {
+      target: { value: "should have said X" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith(
+        "Couldn’t save the corrected answer.",
+        expect.objectContaining({ description: "network down Try again." }),
+      ),
+    );
+    expect(onChange).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
+  test("the trigger names the state: writing a new answer vs editing an existing one", () => {
+    const { unmount } = render(
+      <TooltipProvider>
+        <CorrectedOutputControl runId="run-1" current={undefined} onChange={vi.fn()} />
+      </TooltipProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Write the corrected answer" })).toBeInTheDocument();
+    unmount();
+
+    render(
+      <TooltipProvider>
+        <CorrectedOutputControl
+          runId="run-1"
+          current={row({ key: "corrected_output", score: undefined, comment: "x" })}
+          onChange={vi.fn()}
+        />
+      </TooltipProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Edit the corrected answer" })).toBeInTheDocument();
   });
 });

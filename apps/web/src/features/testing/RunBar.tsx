@@ -8,6 +8,10 @@ import type {
   StopReasonCode,
 } from "@mcp-token-footprint/shared";
 import {
+  RUN_FEEDBACK_KEY_CORRECTED_OUTPUT,
+  RUN_FEEDBACK_KEY_VERDICT,
+} from "@mcp-token-footprint/shared";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -42,7 +46,7 @@ import {
   REVIEWING_STATUS_VIEW,
   type StatusView,
 } from "../../lib/status";
-import { FeedbackControl } from "./FeedbackControl";
+import { CorrectedOutputControl, FeedbackControl } from "./FeedbackControl";
 import { PromoteToTestDialog } from "../watch/PromoteToTestDialog";
 import { notifyError } from "../../lib/notify";
 
@@ -513,14 +517,21 @@ export function RunBar({
  */
 function RunFeedbackHeader({ runId }: { runId: string }) {
   const [current, setCurrent] = useState<RunFeedback | undefined>(undefined);
+  // RM-17 Phase 6 (AM-OB2) — the run-level `corrected_output` row, fetched by the SAME best-effort
+  // call. Its own state, not a second field on the verdict row: clearing a note and clearing a
+  // correction are different actions, and the two keys upsert independently server-side.
+  const [correction, setCorrection] = useState<RunFeedback | undefined>(undefined);
 
   useEffect(() => {
     let alive = true;
     setCurrent(undefined);
+    setCorrection(undefined);
     listRunFeedback(runId)
       .then((rows) => {
         if (!alive) return;
-        setCurrent(rows.find((row) => row.key === "verdict" && row.stepId === undefined));
+        const runLevel = rows.filter((row) => row.stepId === undefined);
+        setCurrent(runLevel.find((row) => row.key === RUN_FEEDBACK_KEY_VERDICT));
+        setCorrection(runLevel.find((row) => row.key === RUN_FEEDBACK_KEY_CORRECTED_OUTPUT));
       })
       .catch(() => {
         /* cosmetic lookup — the control simply starts unset, like useServerNames */
@@ -530,7 +541,17 @@ function RunFeedbackHeader({ runId }: { runId: string }) {
     };
   }, [runId]);
 
-  return <FeedbackControl runId={runId} current={current} onChange={setCurrent} size="sm" hideLabel />;
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <FeedbackControl runId={runId} current={current} onChange={setCurrent} size="sm" hideLabel />
+      <CorrectedOutputControl
+        runId={runId}
+        current={correction}
+        onChange={setCorrection}
+        size="sm"
+      />
+    </div>
+  );
 }
 
 /**

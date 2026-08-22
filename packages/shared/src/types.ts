@@ -2344,6 +2344,56 @@ export type RunFeedbackInput = {
 export type RunFeedbackSummary = {
   key: string;
   score: number | null;
+  /**
+   * RM-17 Phase 6 (AM-OB2) — whether the row carries free text, NOT the text itself: the summary is
+   * fetched for a whole page of runs at once and stays deliberately cheap. Call the full
+   * `GET /api/runs/:id/feedback` list when the text is actually needed.
+   *
+   * REQUIRED, not optional, on purpose. A comment-only row (`corrected_output`, or a `note` rubric
+   * key) has `score: null`, and before this field existed the chip rendered NOTHING for it — a
+   * captured correction was indistinguishable from no feedback at all. An OPTIONAL boolean would
+   * re-create exactly that conflation, because absent would have to mean "no text".
+   */
+  hasComment: boolean;
+};
+
+/**
+ * RM-17 Phase 6 (AM-OB2) — the `humanFeedback` block of a run export
+ * (`GET /api/reports/run/:id/{json,markdown}`).
+ *
+ * THREE distinguishable states, on purpose:
+ *   - the export carries **no** `humanFeedback` key  ⇒ the caller supplied no feedback source (the
+ *     assistant's cheap `run_report` tool, an embedded suite-member report). UNKNOWN, not empty.
+ *   - `{ entries: [] }`                              ⇒ carried, and this run genuinely has none.
+ *   - `correctedOutput` absent while `entries` is not ⇒ no correction was CAPTURED. It never means
+ *     "the answer needed no correction" — nothing in this app records that judgement.
+ *
+ * It is deliberately NOT part of {@link RunReport}. That type is the composed RATING document, and
+ * `RunReportService.compose` must never read `run_feedback` (D-OB15/AR6) — the feedback block is a
+ * SIBLING of the rating inside the export, never a member of it.
+ */
+export type RunReportHumanFeedback = {
+  /** Every persisted feedback row for the run, run-level and step-level, oldest write first. */
+  entries: RunFeedback[];
+  /** The run-level corrected answer, when one was captured. See the absence rule above. */
+  correctedOutput?: string;
+};
+
+/** Body of `POST /api/runs/:id/promote-to-test` (RM-17 Phase 6, AM-OB2). */
+export type PromoteRunToTestInput = {
+  /** The collection the draft test lands in. */
+  collectionId: string;
+};
+
+/** Response of `POST /api/runs/:id/promote-to-test` — the created DRAFT test. */
+export type PromoteRunToTestResult = {
+  testId: string;
+  /**
+   * Whether the run's captured `corrected_output` became the draft's
+   * `expectations.expectedInsight`. `false` means no correction was captured — NOT that the source
+   * test's expectation was judged good enough to keep.
+   */
+  usedCorrectedOutput: boolean;
 };
 
 // --- Observability — model pricing editor (planning/Roadmap/RM-17-observability/, WP2.6, D-OB22) ----------------
