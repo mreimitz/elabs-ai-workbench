@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T02:15:00Z"
+timestamp: "2026-08-23T02:40:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -211,6 +211,19 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 
       **Not verified:** no browser (no UI in this WP), the real `Dockerfile` was not built (only
       `apps/api/dist` exercised directly), `nodeDataPackFs` has no dedicated unit test.
+
+      **MERGED to `main` 2026-08-23** as `c177411`, no conflicts. Gate re-run on `main` after the
+      merge: typecheck **0** · lint **0** · build **0** · `okf:validate` PASS · `pnpm test` **EXIT=0**,
+      shared **288** · illustrations **1032** · cli **87** · api **3886** · web **394 files / 4463 + 5
+      skipped**.
+      **An honest limitation on that green.** Two earlier full-suite runs — one at load 155, one at
+      load 32 — reported *2 failed web files*. Web run alone passed 394/394 both times, and a third
+      full run captured to name the offenders came back **EXIT=0, 394/394**, so the failure did not
+      reproduce and **I never captured which two files they were**. The load-32 recurrence means
+      "false red under load" is a weaker explanation than the ledger's earlier note assumes. What is
+      solid: this WP touches **zero** `apps/web` files (measured), and web passes in isolation. What
+      is not: whether something in the full parallel run is genuinely flaky here. Left as a known
+      unknown rather than filed as a flake.
 
       **One `.dockerignore` comment was corrected** — it described `apps/api/src/compatibility/data`,
       which this WP deletes. Editing a comment its own change falsified is correct; the file's real
