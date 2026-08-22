@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T10:40:00Z"
+timestamp: "2026-08-22T11:30:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -194,6 +194,31 @@ met and — where the box touches code — the gate
 > investigation** never started. Both are cheap to re-run and neither wrote anything.
 
 ## Wave 3 — the remaining engineering, in value order
+
+> **Batch dispatched 2026-08-22 — four agents, four different items, one WP each.** Chosen for
+> zero file overlap, so no two agents write the same file: **RM-30 WP 7.7** (components palette ·
+> `apps/web/src/features/skills/**`) · **RM-14 WP 2.1** (scene spec + layout ·
+> `packages/shared` + `packages/illustrations`) · **RM-18 WP 1.4** (upgrade harness ·
+> `apps/api/test/**`) · **RM-17 AM-OB3** (chart URL state · `apps/web/src/features/dashboard/**`).
+> Three of the four had **no spec file of their own** — their scope lived only as a ledger line —
+> so `wp-7.7-components-palette.md`, `wp-2.1-scene-spec-layout.md` and `wp-1.4-upgrade-harness.md`
+> were written and committed **before** dispatch (`5d2b54f`).
+>
+> **The RM-36 fence is RELEASED.** WP 3.7's note fenced five Phase 6 items behind "a concurrent
+> RM-36 session holds the runs-feed/console surface". All six of RM-36's WPs are now merged into
+> `main` (verified with `git merge-base --is-ancestor` on each of `wp/ui-audit/1.1`–`2.2`); what
+> remains open in RM-36 is owner-acceptance walks and two owner decisions, which hold no files.
+> AM-OB2 · AM-OB3 · AM-OB5 · AM-OB8 · AM-OB13 are dispatchable again.
+>
+> ⚠ **Two orphan rescue commits are still unmerged, and neither is lost.** `71d7b60`
+> (`worktree-agent-acd2078a3c24a268f`) is **consumed** — RM-34's WP 2.1 is ticked on `main` via
+> `6faa5a5`, so that worktree is now genuinely stale and safe to remove. `069941e`
+> (`wp/roadmap-cleanup/ux-corrections`) is **not** consumed: it is the incomplete contention-free
+> `metrics-perf.test.ts` harness, already recorded as unmerged in RM-17's ledger. Related live
+> risk for anyone validating a gate run: the pre-existing rating-verdict perf case is one bad
+> scheduling slice from red, so a single perf failure in an agent's gate output is a known flake,
+> not that agent's defect.
+
 - [ ] WP 3.1 — **RM-26 WP 4.4** end-to-end verification: a real run through the built Docker
       image. 1 WP, needs a provider key. Highest value per hour on this list — it exercises
       migrations, the encrypted-secret path, static serving and the run engine in one shot
