@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T01:35:00Z"
+timestamp: "2026-08-23T02:15:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -158,15 +158,63 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       **Follow-up, not this WP's to fix:** stale `pnpm build:model-data` / old-path references survive
       in other items' planning docs — RM-26 (4), RM-16 (2), RM-08 (1), RS-07 (2). `CHANGELOG.md:774`
       and the RS-01 refresh report are historical records and were correctly left alone.
-- [ ] WP 1.2 — pack loader + `installDataPackSource()` boot seam; compatibility dataset/catalog read
-      the resolved pack; snapshot copy replaces `copy-data.mjs` — spec:
-      [`wp-1.2-loader-seam.md`](./wp-1.2-loader-seam.md). **status: in progress** · dispatched
-      2026-08-23 from `main` at `cf99ace`.
-      **Premises re-verified against the post-merge tree before dispatch** — the standing rule, after
-      RM-37 was caught four times by a premise that quietly stopped holding: `catalog.ts:88` and
-      `dataset.ts:15` still `readFileSync(new URL(…))` a fixed path; `copy-data.mjs` still copies
-      `src/compatibility/data` → `dist`; no `apps/api/src/data-pack/` exists yet;
-      `installPricingResolver` is still at `index.ts:203`. All four hold.
+- [x] WP 1.2 — pack loader + `installDataPackSource()` boot seam; compatibility dataset/catalog read
+      the resolved pack; snapshot copy replaces `copy-data.mjs` — **done 2026-08-23** ·
+      `worktree-agent-a698f04118cfc6f9f` (3 commits on `e6cd217`) · spec:
+      [`wp-1.2-loader-seam.md`](./wp-1.2-loader-seam.md).
+
+      **The erasure hazard WP 1.1 fought to preserve is now GONE BY CONSTRUCTION, not merely guarded.**
+      `apps/api/src/compatibility/data/` is deleted and `build-cli.ts` no longer writes there
+      (verified by reading its source, not its report), so the "build silently overwrites the shipped
+      copy from a stale source" path does not exist any more. WP 1.1's verbatim-copy assert is
+      correctly replaced by an assertion that the directory is *absent*. A guard retired because the
+      hazard was removed is the right kind of retirement; a guard retired because it was noisy is not.
+
+      **Validated by the orchestrator.** Gate re-run in the agent's worktree: typecheck **0** · lint
+      clean (1903 files) · build **0**. `pnpm test` first came back with **2 failed web files at load
+      155**; re-run alone at the same load it is **394 files / 4463 + 5 skipped, all passing**, and
+      this WP touches **zero** `apps/web` files (measured). False red, per the documented behaviour —
+      recorded rather than hidden. Counts: shared **288** · illustrations **1032** · cli **87** · api
+      **3886** (3857 **+29**, reconciling to 19 loader + 8 seam + 3 − 1) · web unchanged.
+
+      **No data changed at all — stronger than the byte-identity the spec asked for.** Not one blob
+      under `data-pack/{models,limits,compatibility,generated,schema}/` differs from `main`, nor does
+      `model-data.generated.ts` (same sha256 both sides), nor `manifest.json`, nor
+      `relocation-ledger.json`. The relocation's data is untouched by the seam that now reads it.
+
+      **Teeth broken by me, not taken on report.** Reintroducing a module-load read in `dataset.ts`
+      reddened both seam guards (`importing the compatibility readers resolves NOTHING`, `a pack
+      installed AFTER the readers were imported is the pack they return`). Booting the **built** API
+      with `apps/api/dist/data-pack-bundled/` removed exits **1** with
+      `DataPackUnavailableError: The bundled reference data pack is missing. Looked for manifest.json
+      in: …`; restored, it logs `origin:"bundled", files:18, packVersion:"1.0.0"` and listens.
+
+      **D-DP4 ruling, which the agent explicitly asked for — AGREED, and recorded as the boundary:**
+      a missing **bundled snapshot** throws and stops boot; a bad **cache** never does. D-DP4 governs
+      *data* — a refresh that cannot be trusted must not take the process down. A missing shipped
+      artifact is a **broken build**, and the only alternative is serving an empty model roster, which
+      is a fabricated result of exactly the kind `.claude/rules/` forbids ("never fake scan results").
+      Fail loudly.
+
+      **Three places the spec was wrong about the tree, all corrected the right way:** (1) shipping the
+      pack to `apps/api/dist/data-pack/` would have collided with the loader's own compiled output —
+      it ships to `dist/data-pack-bundled/`; (2) `apps/api`'s `rootDir: "src"` made the pack's JSON
+      Schema validator unimportable, so it moved to `packages/shared/src/json-schema.ts` (imports
+      nothing) rather than being copied and held equal by a hash — **the exact trap this ledger
+      records**; (3) `data-pack.ts` gained the pack's layout constants, still `zod`-only, with the
+      build's copy held equal by test on WP 1.1's precedent.
+
+      **Judgement calls left standing, with their limits stated in the test files:** "missing manifest"
+      maps to `schema_violation`, the closest of the five frozen D-DP5 reasons, and says so in its
+      detail string; the source scan is a tripwire that cannot see a computed path. The agent stating
+      each guard's blind spot in the file is this item's own hash-ledger lesson being applied.
+
+      **Not verified:** no browser (no UI in this WP), the real `Dockerfile` was not built (only
+      `apps/api/dist` exercised directly), `nodeDataPackFs` has no dedicated unit test.
+
+      **One `.dockerignore` comment was corrected** — it described `apps/api/src/compatibility/data`,
+      which this WP deletes. Editing a comment its own change falsified is correct; the file's real
+      cleanup stays WP 3.3.
 
 ## Phase 2 — Migrate the tables
 
