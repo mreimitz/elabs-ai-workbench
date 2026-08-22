@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T22:20:00Z"
+timestamp: "2026-08-23T00:05:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -58,8 +58,23 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 - [x] WP 1.1 — `data-pack/` + manifest + JSON Schemas + shared contract; RS-01 model data and the
       build script moved — **done 2026-08-22** · `worktree-agent-ab7c7d0267b9c491f` (2 commits on
       `a0179f1`) · spec: [`wp-1.1-pack-contract.md`](./wp-1.1-pack-contract.md).
-      **NOT MERGED — held deliberately.** Per the sequencing note below, `wp/rm37/0.5` lands first and
-      this branch rebases onto it. `wp/rm37/0.5` was **not** on `main` at validation time.
+      **MERGED to `main` 2026-08-23** as `4795165`, on the owner's explicit instruction after the
+      orchestrator verified `main` carried none of it. The merge brought **20** commits, not the one
+      that had been described to the owner: RM-38 WP 1.1 (4), RM-37 WP 0.5's severity/vocabulary work
+      (10, rebased underneath), and 6 RM-35 ledger commits already in that base. Five conflicts were
+      hand-resolved: `CHANGELOG.md` (both Unreleased entries kept), `package.json` (**both** needed —
+      RM-18's `docs:bundle` **and** `build:data-pack`), RM-18's ledger (timestamp only, newer kept),
+      and this item's own `STATUS.md` + WP 1.1 spec (add/add; `main`'s copies were strictly ahead —
+      268 lines vs 110 — and the branch-only lines were the superseded unticked box and the struck
+      lint claim).
+      **Gate re-run on `main` after the merge, at load 3.0:** typecheck **0** · lint clean (1905 files)
+      · build **0** · test **0** — shared **288** · illustrations **1032** · cli **87** · api **3857** ·
+      web **394 files / 4463 + 5 skipped**. `pnpm okf:validate` PASS. `pnpm build:data-pack` on `main`
+      is idempotent (clean tree after). On `main`: 26 `data-pack/` files, **39** `finding_name` values
+      in both the pack catalog and the api snapshot, old research path gone.
+      **One install step the merge introduces:** `data-pack/` is a new workspace package, so a checkout
+      that skips `pnpm install` fails typecheck with `node_modules missing`. Hit and fixed here; worth
+      knowing for anyone pulling.
 
       **Validated by the orchestrator, not taken on report.** The gate was re-run by me in the agent's
       worktree with load at 9.5 (not the 170–300 that makes web reds meaningless): `typecheck` **0** ·
