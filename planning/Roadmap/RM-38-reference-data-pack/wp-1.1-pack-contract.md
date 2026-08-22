@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 1.1 — data-pack/: manifest, JSON Schemas, shared contract, and the model data moved in"
 description: "Phase 1 of item.md. Ledger: STATUS.md. Mechanical relocation plus the pack contract — no behaviour change."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T19:25:00Z"
+timestamp: "2026-08-22T19:40:00Z"
 status: "final"
 ---
 # WP 1.1 — `data-pack/`: manifest, JSON Schemas, shared contract, and the model data moved in
@@ -57,6 +57,23 @@ every later WP moves values that change verdicts, and they need a mechanical, pr
 5. **Keep the drift guard**, repointed: `apps/api/test/compatibility-data.test.ts` rebuilds in memory
    and byte-compares the committed generated artifacts, and additionally asserts every
    `manifest.files[].sha256` matches the file on disk.
+
+6. **The verbatim-copy assert must survive, repointed — it guards a real erasure path.**
+   `build-cli.ts`'s `main()` writes `crossCuttingJson` and `testCatalogJson` **verbatim from the source
+   over the bundled copies** under `apps/api/src/compatibility/data/`, so a stale or wrong source
+   silently erases the shipped file with no error. The only thing in front of that is the test
+   `"cross-cutting-limits.json + test-catalog.json copies match the research source verbatim"`. After the
+   move its two sides become `data-pack/limits/cross-cutting.json` ↔ the bundled
+   `cross-cutting-limits.json`, and `data-pack/compatibility/test-catalog.json` ↔ the bundled
+   `test-catalog.json`. **Do not delete, weaken or narrow it.** RM-37's agent hit this same drift today
+   and its first instinct was to *exclude* the new field from the comparison — which does not repair the
+   drift, it makes the alarm unable to fire. That was correctly sent back.
+
+7. **Recompute the repo-root anchor deliberately.** `build-cli.ts` finds the root with
+   `path.resolve(here, "../../../..")`, commented `src/compatibility → src → api → apps → <repo root>`.
+   Moving the file makes that level count wrong, and wrong into a *plausible* directory rather than an
+   erroring one. Same for `researchDir`, `dataDir`, `appDataDir` and `sharedGenerated`. State in the
+   report which anchor was chosen and why.
 
 ## Explicitly out of scope
 
