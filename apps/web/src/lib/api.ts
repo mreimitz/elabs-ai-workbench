@@ -2675,3 +2675,17 @@ export const getAdvisorReport = (
   if (query.id !== undefined) params.set("id", query.id);
   return apiGet<AdvisorReport>(`/api/advisor/report?${params.toString()}`, signal);
 };
+
+// ── Diagnostics bundle (planning/Roadmap/RM-18-platform/, WP 1.3) ───────────────────────────────────
+// Two renderings of one builder, mirroring the `/api/reports/**` `{json,markdown}` pair. Both are
+// plain reads. Nothing in the payload is a secret, an environment value or a user-typed name — that
+// is the whole point of the endpoint, and it is asserted by `apps/api/test/diagnostics.test.ts`.
+import type { DiagnosticsBundle } from "@mcp-token-footprint/shared";
+
+/** `GET /api/diagnostics` — the typed payload. */
+export const getDiagnosticsBundle = (signal?: AbortSignal): Promise<DiagnosticsBundle> =>
+  apiGet<DiagnosticsBundle>("/api/diagnostics", signal);
+
+/** `GET /api/diagnostics/markdown` — the human-pasteable rendering of that same payload. */
+export const getDiagnosticsMarkdown = (signal?: AbortSignal): Promise<string> =>
+  apiGetText("/api/diagnostics/markdown", signal);

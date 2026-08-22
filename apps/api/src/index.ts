@@ -36,6 +36,7 @@ import {
 import { config } from "./config/env.js";
 import { openDatabase } from "./db/database.js";
 import { registerMaintenanceRoutes } from "./db/maintenance.js";
+import { registerDiagnosticsRoutes } from "./diagnostics/routes.js";
 // CI & headless automation — Phase MCP WP M.1 (planning/Roadmap/RM-08-ci/mcp-server.md): the workbench's OWN
 // read-only MCP server, mounted on this same Fastify instance at `/api/mcp` (D-MCP1) behind the
 // `mcp_server` feature flag (D-MCP6). It re-projects the repositories constructed below — it never
@@ -1458,6 +1459,7 @@ await registerMaintenanceRoutes(
   { repository: hubRepository, dataDir: config.dataDirectory },
 );
 await registerCompareRoutes(server, scans);
+registerDiagnosticsRoutes(server, { db, featureFlags: () => featureFlags.getFlags() }); // RM-18 WP 1.3
 // Security posture (planning/Roadmap/RM-20-security-posture/, WP 1.2 + WP 1.3) — `GET /api/scans/:scanId/security`
 // (the eleven deterministic rules over an already-persisted scan) and
 // `GET /api/skills/:id/versions/:vid/security` (the seven over an already-persisted skill version),
