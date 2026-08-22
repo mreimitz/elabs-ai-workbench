@@ -86,13 +86,14 @@ const posture = (
   serverId: string,
   value: number,
   band: SecurityFleetSummary["score"]["band"],
+  counts: SecurityFleetSummary["counts"] = { error: 1, warning: 0, info: 0, total: 1 },
 ): SecurityFleetSummary => ({
   serverId,
   serverName: serverId,
   scanId: `scan_${serverId}`,
   scannedAt: "2026-08-20T10:00:00.000Z",
   score: { value, band, analyzerVersion: 1 },
-  counts: { error: 1, warning: 0, info: 0, total: 1 },
+  counts,
 });
 
 function renderOverview(servers: ServerConfig[], scans: Map<string, ScanSummary>) {
@@ -127,9 +128,9 @@ function cardFor(name: string): HTMLElement {
 describe("the servers overview's posture badge (D-SP22)", () => {
   it("makes ONE request for the whole fleet, not one per row", async () => {
     getSecurityFleetSummary.mockResolvedValue([
-      posture("a", 70, "medium"),
-      posture("b", 100, "clean"),
-      posture("c", 40, "high"),
+      posture("a", 70, "medium", { error: 1, warning: 2, info: 9, total: 12 }),
+      posture("b", 100, "clean", { error: 0, warning: 0, info: 0, total: 0 }),
+      posture("c", 40, "high", { error: 4, warning: 0, info: 1, total: 5 }),
     ]);
     renderOverview(
       [server("a", "Alpha"), server("b", "Beta"), server("c", "Gamma")],
@@ -140,20 +141,48 @@ describe("the servers overview's posture badge (D-SP22)", () => {
       ]),
     );
 
-    expect(await screen.findByText("Medium risk")).toBeTruthy();
-    expect(screen.getByText("Clean")).toBeTruthy();
-    expect(screen.getByText("High risk")).toBeTruthy();
+    expect(await screen.findByText("12 findings · 1 error")).toBeTruthy();
+    expect(screen.getByText("0 findings")).toBeTruthy();
+    expect(screen.getByText("5 findings · 4 error")).toBeTruthy();
     // Three cards, one request.
     expect(getSecurityFleetSummary).toHaveBeenCalledTimes(1);
   });
 
-  it("carries the SCORE in the badge's accessible name, so the band is never the only cue", async () => {
-    getSecurityFleetSummary.mockResolvedValue([posture("a", 70, "medium")]);
+  // RM-37 WP 0.5 (action 4) — the fleet list states a MEASUREMENT, not a judgement, until the
+  // owner has accepted this analyzer's banding on their own servers (RM-20's "false-positive rate
+  // on YOUR real servers" box, gated by `FLEET_POSTURE_BAND_ACCEPTED`). The rule change that
+  // prompted it was a getter, `qlik_get_set_expression`, scoring the analyzer's one `error`.
+  it("states a finding COUNT, never a risk band, while the banding is unaccepted", async () => {
+    getSecurityFleetSummary.mockResolvedValue([
+      posture("a", 70, "medium", { error: 0, warning: 1, info: 6, total: 7 }),
+    ]);
     renderOverview([server("a", "Alpha")], new Map([["a", successScan("a")]]));
 
-    expect(
-      await screen.findByRole("img", { name: "Security posture Medium risk, score 70 of 100" }),
-    ).toBeTruthy();
+    expect(await screen.findByText("7 findings")).toBeTruthy();
+    for (const band of ["Clean", "Low risk", "Medium risk", "High risk"]) {
+      expect(screen.queryByText(band)).toBeNull();
+    }
+  });
+
+  it("reserves the loud tone for a card that really carries an error finding", async () => {
+    getSecurityFleetSummary.mockResolvedValue([
+      posture("a", 90, "low", { error: 0, warning: 0, info: 10, total: 10 }),
+      posture("b", 55, "high", { error: 2, warning: 1, info: 4, total: 7 }),
+    ]);
+    renderOverview(
+      [server("a", "Alpha"), server("b", "Beta")],
+      new Map([
+        ["a", successScan("a")],
+        ["b", successScan("b")],
+      ]),
+    );
+
+    // Ten hygiene notes read as ten hygiene notes; two real errors are the ones that get shouted.
+    const quiet = await screen.findByText("10 findings");
+    const loud = screen.getByText("7 findings · 2 error");
+    expect(quiet.className).not.toEqual(loud.className);
+    expect(loud.className).toContain("destructive");
+    expect(quiet.className).not.toContain("destructive");
   });
 
   it("shows a server with no usable scan as not-scanned, never as a score", async () => {

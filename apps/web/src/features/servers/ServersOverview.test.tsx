@@ -264,7 +264,7 @@ describe("ServersOverview — actions and states", () => {
  *
  * The measured defect: the section header reads `QLIK-SAAS · [Production] · 2`, and then EVERY card
  * inside it repeats `[qlik-saas] [Production]` as chips. By the reduction filter that is removable
- * without loss — the grouping IS the statement. The RISK chip stays, because it varies within a
+ * without loss — the grouping IS the statement. The FINDINGS chip stays, because it varies within a
  * group. And because the status chips sat in the card's top-right `shrink-0` slot, they squeezed the
  * title: `mcp-assets` clipped to `mcp-ass…` (81px shown against 90px needed).
  */
@@ -287,7 +287,7 @@ describe("ServersOverview — P2-2: cards don't repeat their group heading (RM-3
     expect(within(card).queryByText("Production")).toBeNull();
   });
 
-  test("KEEPS the risk chip on the card — it varies within a group", async () => {
+  test("KEEPS the findings chip on the card — it varies within a group", async () => {
     getSecurityFleetSummary.mockResolvedValue([
       {
         serverId: "a",
@@ -303,7 +303,8 @@ describe("ServersOverview — P2-2: cards don't repeat their group heading (RM-3
       serverTypes: [qlik],
       scans: new Map([["a", scan("a")]]),
     });
-    expect(await within(cardFor("mcp-assets")).findByText("Medium risk")).toBeTruthy();
+    // RM-37 WP 0.5 — a COUNT, not a band word, while `FLEET_POSTURE_BAND_ACCEPTED` is false.
+    expect(await within(cardFor("mcp-assets")).findByText("1 finding · 1 error")).toBeTruthy();
   });
 
   test("keeps the type chips when NOTHING else states them (grouping switched off)", async () => {

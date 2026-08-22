@@ -1225,7 +1225,9 @@ export const securityDiffQuerySchema = z.object({ baseline: z.string().trim().mi
  * Flipping this to `true` is a one-line change with no schema, wire or migration behind it, and it
  * belongs in the same commit that ticks RM-20's box.
  */
-export const FLEET_POSTURE_BAND_ACCEPTED = false;
+// Annotated `boolean` rather than left to infer the literal `false`, so a consumer's ternary keeps
+// both branches type-checked and flipping the switch stays a one-word edit.
+export const FLEET_POSTURE_BAND_ACCEPTED: boolean = false;
 
 /**
  * One server's posture, as of its latest **`success`** scan.
