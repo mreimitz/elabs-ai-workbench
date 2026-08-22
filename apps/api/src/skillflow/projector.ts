@@ -1,5 +1,6 @@
 import {
   DEFAULT_SKILL_FLOW_ID,
+  isLegalEdge,
   type SkillEdgeKind,
   type SkillFileNode,
   type SkillGraph,
@@ -363,6 +364,27 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
       toolBoxByName.set(reference.name, boxId);
     }
     addEdge(ownerId, boxId, flowId, "uses");
+  }
+
+  // RM-30 WP 7.8 — the projector READS the legality table, it does not merely get checked against it
+  // in a test. `(from, to)` alone cannot determine the kind (`subroutine → subroutine` is a legal
+  // `then` AND a legal `contains`), so each site above STATES its kind and this pass validates the
+  // triple against the one frozen definition in `skill-flow-grammar.ts`.
+  //
+  // A violation degrades to a WARNING rather than a throw, because this function's contract is "never
+  // throws on weird markdown; the worst case is an empty graph plus a human-readable warning" — and
+  // an author's document is never at fault here, only the projector is. The warning surfaces in the
+  // Problems panel, and `skillflow-edge-grammar.test.ts` turns the same condition red in the gate.
+  const kindById = new Map(nodes.map((node) => [node.id, node.kind] as const));
+  for (const edge of edges) {
+    const from = kindById.get(edge.from);
+    const to = kindById.get(edge.to);
+    if (from === undefined || to === undefined || edge.kind === undefined) continue;
+    if (!isLegalEdge(edge.kind, from, to)) {
+      warnings.push(
+        `projector defect: edge "${edge.id}" is a ${edge.kind} connection from a ${from} to a ${to}, which the edge grammar does not admit.`,
+      );
+    }
   }
 
   return { nodes, edges, warnings, flows: [mainFlow, ...commandFlows] };
