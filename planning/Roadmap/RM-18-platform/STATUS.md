@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Platform hardening \u2014 work-package status ledger \u00b7 PRIORITY: MEDIUM (rolling)"
 description: "Living state for the platform plan, read and updated by /next-wp platform. A box is ticked"
 tags: ["roadmap", "RM-18"]
-timestamp: "2026-08-22T22:00:00Z"
+timestamp: "2026-08-22T22:20:00Z"
 status: "active"
 ---
 # Platform hardening — work-package status ledger · **PRIORITY: MEDIUM (rolling)**
@@ -112,7 +112,21 @@ Living state for the **platform** plan, read and updated by `/next-wp platform`.
       database was deliberately not checked against it**. (2) The deep fixtures cannot see column drift
       on `run_steps` and `runs` specifically, because v5 and v31 rebuild those two from today's
       `schemaSql` — that is what `v61-at-capture` is for, and it is documented rather than glossed
-- [ ] WP 1.5 — performance & scale pass: fleet-scale fixtures, endpoint budgets, index review
+- [ ] WP 1.5 — performance & scale pass: fleet-scale fixtures, endpoint budgets, index review.
+      **⚠ Scoping input 2026-08-22 — an unbounded `runs` table is now the GUARANTEED shape on a fresh
+      install, which raises this WP's value rather than lowering it.** The concurrent RM-37 session
+      planned to stamp a nightly 180-day run prune onto fresh installs; the owner overrode it —
+      *keep everything, prune nothing unless switched on*. **That ruling restores the shipped
+      behaviour rather than changing it**, verified here rather than taken on report: run retention
+      is an opt-in **policy** (`POST /api/maintenance/prune-runs`, `db/maintenance.ts:169-175`),
+      persisted under `APP_SETTING_RUN_RETENTION_KEY`, and *"absent body → the saved policy (default
+      empty → no-op, no auto-prune without explicit configuration)"*; a pinned run is never a victim.
+      It is the app's convention stated **four** times — `SCAN_RETENTION_PER_SERVER` default 0
+      (`config/env.ts:180-183`, *"retention is opt-in and never silently discards history"*),
+      `ASSISTANT_SESSION_RETENTION_DAYS` 0 (`:230-233`), `HUB_SESSION_RETENTION_DAYS` 0 (`:478-482`),
+      and the run policy above. **Consequence for this WP:** size the fixtures and the index review
+      against a runs table that only ever grows — the endpoint budgets are the thing standing between
+      that and a slow bench, since nothing will trim it for the operator.
 - [x] WP 1.6 — owner-acceptance consolidation: one runnable checklist across all ledgers — done
       2026-08-21 · wp/roadmap-cleanup/1.1 · every pending owner walk in the bundle, grouped into four
       sittings by prerequisite (browser · provider key · subscription · CI):
