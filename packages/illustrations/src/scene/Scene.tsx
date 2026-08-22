@@ -106,9 +106,11 @@ export const BAND_TITLE_RISE = 10;
  * annotations against the total" — and that is what {@link sceneAccentBudget} computes, literally.
  * But a ratio of counts cannot land inside [0.02, 0.06] at all unless the scene has at least 17
  * parts: with n parts the reachable values are 0, 1/n, 2/n …, and 1/16 = 6.25% already overshoots
- * while 0 undershoots. Both fixtures this package ships have 14 parts, so BOTH warn on every render,
- * whatever they contain. The band is an INK-AREA budget; the proxy is a count. They are not the same
- * quantity and the WP's own numbers cannot be met by its own measure.
+ * while 0 undershoots. Measured on the three fixtures this package ships — `self-learning-loop`
+ * 4/14 = 28.6%, `run-turn-cycle` 4/19 = 21.1%, `crowded-labels` 3/10 = 30.0% — all three warn on
+ * every render, and the first and third could not have passed at any content. The band is an
+ * INK-AREA budget; the proxy is a count. They are not the same quantity, and the WP's own numbers
+ * cannot be met by its own measure.
  *
  * It is implemented as written rather than quietly re-scaled, because changing a locked decision's
  * numbers is not a builder's call. The finding is reported instead. See the work package's report.
@@ -172,6 +174,14 @@ export type SceneRenderReport = {
   readonly doublesBack: readonly string[];
   /** Connectors with no geometry at all — reported, because they cannot be drawn. */
   readonly unresolved: readonly string[];
+  /**
+   * The endpoint KEYS the layout could not resolve, deduplicated in first-seen order.
+   *
+   * Deliberately not the connectors' `from` fields: when it is the TARGET that is missing, naming
+   * the source would point a reader at an endpoint that resolved perfectly well. What could not be
+   * resolved is the only honest thing to name.
+   */
+  readonly unresolvedEndpoints: readonly string[];
   /** Captions sitting on a node box because no candidate placement cleared one. */
   readonly collidingLabels: readonly string[];
   /** Nodes whose component this build cannot draw. */
@@ -190,6 +200,7 @@ export function sceneRenderReport(
     unresolved: routing.unresolved.map(
       (entry) => `${entry.from} → ${entry.to} (missing: ${entry.missing.join(", ")})`,
     ),
+    unresolvedEndpoints: [...new Set(routing.unresolved.flatMap((entry) => entry.missing))],
     collidingLabels: routing.routes
       .filter((route) => route.label?.collides === true)
       .map((route) => route.identity),
@@ -315,7 +326,7 @@ export function IllustrationScene({
       data-illus-format={layout.canvas.format}
       // The three honesty flags survive into the artifact, not just into a console nobody kept.
       data-illus-doubles-back={joinOrUndefined(report.doublesBack)}
-      data-illus-unresolved={joinOrUndefined(routing.unresolved.map((entry) => entry.from))}
+      data-illus-unresolved={joinOrUndefined(report.unresolvedEndpoints)}
       data-illus-label-collisions={joinOrUndefined(report.collidingLabels)}
     >
       <title id={titleId}>{spec.title}</title>

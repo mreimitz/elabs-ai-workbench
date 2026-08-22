@@ -523,10 +523,33 @@ describe("a connector with no geometry is REPORTED, never swallowed", () => {
     assert.equal(groupTags(markup, "data-illus-connector=").length, 0);
   });
 
-  it("names every unresolved endpoint on the artifact", () => {
+  it("names the endpoints that could NOT be resolved — not the ones that could", () => {
     const listed = /data-illus-unresolved="([^"]+)"/.exec(markup)?.[1]?.split(" ") ?? [];
-    assert.equal(listed.length, (spec.connectors ?? []).length);
-    assert.ok(listed.includes("west.read"));
+    const expected = [
+      ...new Set((spec.connectors ?? []).flatMap((connector) => [connector.from, connector.to])),
+    ];
+    assert.deepEqual([...listed].sort(), [...expected].sort());
+  });
+
+  it("names only the missing HALF when one endpoint of a pair still resolves", () => {
+    // The trap this attribute could have fallen into — and did, until it was measured — is listing
+    // each connector's `from`. Here `from` resolves and `to` does not, so a `from`-keyed list would
+    // point a reader at a perfectly good endpoint and call it the problem.
+    const halfPortless = ILLUSTRATION_REGISTRY.map((entry) =>
+      entry.id === "database" ? { ...entry, ports: { read: entry.ports.read } } : entry,
+    ) as IllustrationRegistryEntry[];
+    const half = renderScene(spec, { catalog: sceneCatalogOf(halfPortless) });
+    const listed = /data-illus-unresolved="([^"]+)"/.exec(half)?.[1]?.split(" ") ?? [];
+    assert.ok(listed.length > 0, "the fixture must produce the condition");
+    assert.equal(
+      listed.includes("west.read"),
+      false,
+      "`west.read` still resolves — do not name it",
+    );
+    assert.ok(
+      listed.includes("east.write"),
+      `expected the missing target, got ${listed.join(" ")}`,
+    );
   });
 
   it("reports them through the one warning channel", () => {
@@ -613,9 +636,27 @@ describe("the accent-ratio warning (D-IL6)", () => {
     );
   });
 
+  it("pins the measured ratio of every fixture this package ships", () => {
+    // The numbers the WP report cites. If a fixture changes, this is what says so.
+    assert.deepEqual(
+      FIXTURE_NAMES.map((name) => {
+        const budget = sceneAccentBudget(specOf(name));
+        return `${name} ${budget.accentParts}/${budget.totalParts}`;
+      }),
+      ["self-learning-loop 4/14", "run-turn-cycle 4/19", "crowded-labels 3/10"],
+    );
+    for (const name of FIXTURE_NAMES) {
+      assert.equal(
+        sceneAccentBudget(specOf(name)).withinBand,
+        false,
+        `${name} unexpectedly passes`,
+      );
+    }
+  });
+
   it("cannot land inside the band at all below 17 parts — the measured finding, pinned", () => {
     // The reachable ratios for n parts are 0, 1/n, 2/n, …. For any n < 17, 1/n > 0.06 and 0 < 0.02,
-    // so NO scene of fewer than 17 parts can satisfy the band. Both original fixtures have 14.
+    // so NO scene of fewer than 17 parts can satisfy the band.
     for (let parts = 1; parts < 17; parts += 1) {
       const reachable = Array.from({ length: parts + 1 }, (_, k) => k / parts);
       assert.ok(
@@ -675,6 +716,7 @@ describe("the accent-ratio warning (D-IL6)", () => {
       sceneId: "quiet",
       doublesBack: [],
       unresolved: [],
+      unresolvedEndpoints: [],
       collidingLabels: [],
       missingComponents: [],
       accent: { accentParts: 1, totalParts: 20, ratio: 0.05, withinBand: true },
