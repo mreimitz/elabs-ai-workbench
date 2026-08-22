@@ -36,7 +36,14 @@ export type CatalogThreshold = {
 export type CatalogTest = {
   id: string;
   tech_name: string;
+  /** Names the CHECK, for the checks list. */
   user_facing_name: string;
+  /**
+   * Names the FINDING, for a findings list — the same check phrased as the problem it found
+   * (RM-37 WP 0.5, action 7). Required: every catalog entry carries one, so a findings surface can
+   * never silently fall back to the check name.
+   */
+  finding_name: string;
   level: CompatibilityLevel;
   scope: "per_tool" | "per_server" | "aggregate";
   category: string;

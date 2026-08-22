@@ -9,6 +9,11 @@ import type {
   CompatibilityVerdict,
   StatusKey,
 } from "@mcp-token-footprint/shared";
+import {
+  COMPATIBILITY_SEVERITY_LABEL,
+  COMPATIBILITY_SEVERITY_RAMP_STEP,
+  severityRampTone,
+} from "@mcp-token-footprint/shared";
 import { Check, Slash, TriangleAlert, X, type LucideIcon } from "lucide-react";
 
 type BadgeVariant =
@@ -109,18 +114,36 @@ export const VERDICT_META: Record<CompatibilityVerdict, { label: string; variant
     na: { label: "N/A", variant: "secondary" },
   };
 
-/** A severity's Badge variant + label. `na` shares the neutral secondary chip. */
+/**
+ * A severity's Badge variant + label. The LABEL is limit language, not an adjective — a compatibility
+ * severity is better named by the limit it measures ("Exceeds limit") than by an alarm word — so the
+ * label comes from {@link COMPATIBILITY_SEVERITY_LABEL}. The TONE still comes from the app's one
+ * {@link severityRampTone} ramp, so "Exceeds limit" is the same red as a Critical chip elsewhere
+ * (RM-37 WP 0.5). `na` shares the neutral secondary chip, off-ramp.
+ */
 export const SEVERITY_META: Record<
   CompatibilitySeverity | "na",
   { label: string; variant: BadgeVariant }
 > = {
-  blocker: { label: "Blocker", variant: "destructive" },
-  high: { label: "High", variant: "warning" },
+  blocker: {
+    label: COMPATIBILITY_SEVERITY_LABEL.blocker,
+    variant: severityRampTone(COMPATIBILITY_SEVERITY_RAMP_STEP.blocker),
+  },
+  high: {
+    label: COMPATIBILITY_SEVERITY_LABEL.high,
+    variant: severityRampTone(COMPATIBILITY_SEVERITY_RAMP_STEP.high),
+  },
   // NOT `info`/blue — S3 reserves blue for "Running". A severity ramp reads
   // blocker (red) → high (amber) → medium (neutral-filled) → low (neutral-outline),
   // so Medium is a filled `secondary` chip: clearly a severity, never mistaken for a live state.
-  medium: { label: "Medium", variant: "secondary" },
-  low: { label: "Low", variant: "outline" },
+  medium: {
+    label: COMPATIBILITY_SEVERITY_LABEL.medium,
+    variant: severityRampTone(COMPATIBILITY_SEVERITY_RAMP_STEP.medium),
+  },
+  low: {
+    label: COMPATIBILITY_SEVERITY_LABEL.low,
+    variant: severityRampTone(COMPATIBILITY_SEVERITY_RAMP_STEP.low),
+  },
   na: { label: "N/A", variant: "secondary" },
 };
 

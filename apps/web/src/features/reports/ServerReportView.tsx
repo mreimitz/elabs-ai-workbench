@@ -939,7 +939,7 @@ function Appendices({ report }: { report: ServerReport }) {
             Each test evaluates the scanned tool surface against a per-model limit resolved from a
             provenanced dataset. A test yields a verdict per model — <strong>pass</strong>,{" "}
             <strong>warn</strong>, <strong>fail</strong>, or <strong>n/a</strong> (no documented
-            limit) — and a per-model severity (Blocker → Low) that reflects the real-world
+            limit) — and a per-model severity (Exceeds limit → Advice) that reflects the real-world
             consequence on that model. Evidence chips carry the cited value, its source link, and a
             confidence label (Verified / Likely / Estimated / Unverified) derived from the
             dataset&apos;s source tier.

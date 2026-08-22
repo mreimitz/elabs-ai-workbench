@@ -2,7 +2,7 @@
 // ==================================================================================================
 // Before this file, four features each declared their own severity → chip map, and they disagreed:
 // Advisor rendered "High" as a red `destructive` chip, Issues rendered "High" as a red `destructive`
-// chip, Compatibility rendered "High" as an amber `warning` chip beneath a red "Blocker". So the
+// chip, Compatibility rendered "High" as an amber `warning` chip beneath a red `blocker`. So the
 // same word carried two different weights on two pages of the same app, and an operator comparing
 // them had no way to know which one meant more.
 //

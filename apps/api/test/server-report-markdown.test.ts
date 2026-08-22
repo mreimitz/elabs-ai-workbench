@@ -71,7 +71,10 @@ test("markdown report has the title, legend, and every section heading", () => {
     md.startsWith("# MCP Server Compatibility & Footprint Report — Demo Server"),
     "title present",
   );
-  assert.ok(md.includes("**Legend**") && md.includes("[BLOCKER]"), "legend + bracket tags present");
+  assert.ok(
+    md.includes("**Legend**") && md.includes("[EXCEEDS LIMIT]"),
+    "legend + bracket tags present",
+  );
   for (const heading of [
     "## Server",
     "## Executive summary",
@@ -88,7 +91,7 @@ test("markdown report has the title, legend, and every section heading", () => {
   assert.ok(!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(md), "no emoji in the document");
 });
 
-test("a real blocker finding surfaces a [BLOCKER] tag", () => {
+test("a real blocker finding surfaces an [EXCEEDS LIMIT] tag", () => {
   const md = createServerMarkdownReport(
     createServerReport(
       makeScan([tool("a", 4000), tool("b", 4000), tool("c", 4000)]),
@@ -97,7 +100,10 @@ test("a real blocker finding surfaces a [BLOCKER] tag", () => {
     ),
     "all",
   );
-  assert.ok(md.includes("[BLOCKER]"), "the tiny-window footprint blocker shows a [BLOCKER] tag");
+  assert.ok(
+    md.includes("[EXCEEDS LIMIT]"),
+    "the tiny-window footprint blocker shows an [EXCEEDS LIMIT] tag",
+  );
 });
 
 test("tool lists are COMPLETE — no '+N more' truncation marker", () => {

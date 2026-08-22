@@ -431,6 +431,7 @@ function toResult(
     testId: test.id,
     techName: test.tech_name,
     userFacingName: test.user_facing_name,
+    findingName: test.finding_name,
     level: test.level,
     subjectType: "session",
     subjectId: run.runId,

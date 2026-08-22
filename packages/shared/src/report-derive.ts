@@ -38,7 +38,7 @@ export const DETAIL_OPTIONS: { value: DetailLevel; label: string }[] = [
 // The wire values are frozen — `blocker`/`high`/`medium`/`low` still travel on `CompatibilityResult`,
 // still weight the score in `apps/api/src/compatibility/runner.ts`, still gate the heatmap band.
 // Only the WORDS change, and they change because the old ones described a mood rather than a
-// measurement: "Blocker" told an operator to panic, where what the check actually established is
+// measurement: the old `blocker` label told an operator to panic, where what the check established is
 // that a number crossed a published model limit. "Exceeds limit" says the same thing and can be
 // checked against the number printed beside it.
 //
