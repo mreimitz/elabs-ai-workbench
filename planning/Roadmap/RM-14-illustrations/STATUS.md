@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-22T11:20:00Z"
+timestamp: "2026-08-22T12:30:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -555,7 +555,32 @@ and an explicit "Not verified:" tail.
 
 ## Phase 2 — Scene engine
 
-- [ ] WP 2.1 — SceneSpec zod (shared) + band/lane/hub layout engine + validator + golden tests · **IN PROGRESS 2026-08-22 (agent B · `wp/roadmap-cleanup/rm14-2.1`)** · spec: [`wp-2.1-scene-spec-layout.md`](./wp-2.1-scene-spec-layout.md)
+- [x] WP 2.1 — SceneSpec zod (shared) + band/lane/hub layout engine + validator + golden tests — **done 2026-08-22 · `wp/roadmap-cleanup/rm14-2.1` (3 commits, merged) · spec:
+      [`wp-2.1-scene-spec-layout.md`](./wp-2.1-scene-spec-layout.md).** Phase 2's load-bearing piece:
+      24 components existed and nothing composed them. Now a scene is a JSON document, and the engine
+      turns it into exact positions. Two design rules are **structural, not advisory** — the schema has
+      no colour/stroke/fill/opacity/className/style field anywhere, so a scene physically cannot go
+      off-brand, and `title` + `summary` are required, so an inaccessible scene cannot be authored.
+      Four band kinds, incl. the `cycle` ring the run-flow exemplar discovered; `validateScene` returns
+      path-tagged errors (15 codes) and **never throws** — proved against 17 hostile inputs including a
+      self-referencing object. `REGISTRY_VERSION` unchanged; no entity added.
+      **Teeth probed by the orchestrator:** dropping the `.sort()` on port-key iteration turns 3 tests
+      red — **both goldens plus the insertion-order case** — so the key sorting is load-bearing.
+      ⚠️ **Correction to the WP spec, recorded rather than hidden:** the spec said to *create*
+      `packages/shared/src/illustration-scene.ts`. It **already existed** from WP 0.1 (318 lines, and
+      `ILLUSTRATION_BAND_KINDS` already listed `cycle`). What landed is a real tightening — bands became
+      a discriminated union on `kind`, so `stations` is required on a ring and *unspellable* on a lane —
+      but "authored the contract" would be the wrong summary, and the agent's report understated it.
+      **Four judgement calls left standing, each reversible:** `dashed`/`phase`/`$comment` deliberately
+      NOT added (`dashed` is a stroke, which D-IL8 forbids); `at` is measured in grid units on the
+      screen plane, which the design doc left undecided; one extra issue code beyond the spec's list
+      (`cycle-station-count`); and one `biome.json` ignore for the goldens, beside the existing
+      `all-models.json` entry for the same reason.
+      **NOT VERIFIED: nothing was rendered.** No SVG, no browser, no theme check. Every geometric claim
+      is arithmetic against a hand derivation or against `iso-math` — whether the ring, the lane pitch
+      or the annotation row LOOK right is WP 2.3's question and is untested. Two shapes to eye at WP
+      2.4: `ultra` on a tall composition fits to 4563×1956 (no crop, so a lot of empty paper), and the
+      annotation card size is a placeholder that will move both goldens when WP 2.3 sizes cards
 - [ ] WP 2.2 — Connector router (orthogonal, port-to-port, label collision avoidance)
 - [ ] WP 2.3 — `<IllustrationScene>` deterministic renderer + annotations + accent-ratio dev warning
 - [ ] WP 2.4 — Acceptance scene (Self-Learning Agentic Loop as spec fixture, one shared hub) +

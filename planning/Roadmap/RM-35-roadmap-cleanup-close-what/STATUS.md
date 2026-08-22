@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T11:30:00Z"
+timestamp: "2026-08-22T12:40:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -390,6 +390,54 @@ met and — where the box touches code — the gate
       renderer (2.1–2.4), explain mode (3.1–3.3), assistant compose tools (4.1–4.3). Largest
       remaining build. **The risk to weigh:** 24 illustration components exist and nothing composes
       them — Phase 1 delivered breadth, Phase 2 is the load-bearing part
+
+> **BATCH RESULT 2026-08-22 — all four WPs landed, gate green on `main` (EXIT=0: shared 287 ·
+> illustrations 917 · cli 87 · api 3738 · web 377 files · build · biome 1827 files, every package
+> `fail 0`).** Each was validated by the orchestrator against its acceptance, not ticked on the
+> agent's report, and each had at least one guard **broken by the orchestrator and watched go red**
+> before the merge.
+>
+> - **RM-30 WP 7.7** (WP 3.3) — the components palette. The rescued `0e8c5b5` was **kept, not
+>   rebuilt**: its recorded "does not typecheck" was a missing `node_modules`. **Phase 7 is now down
+>   to 7.8 · 7.9**, and 7.8's gate is already cleared.
+> - **RM-14 WP 2.1** (WP 3.8) — the scene spec + layout engine. **Phase 2 has started**; the largest
+>   remaining build is no longer unstarted.
+> - **RM-18 WP 1.4** (WP 4.1) — the upgrade harness, **which found a live defect in shipped migration
+>   code** (see below). RM-18 is 1 of 6.
+> - **RM-17 AM-OB3** (WP 3.7) — chart URL state. Phase 6 is **6 of 13**, so with WP 3.5 the
+>   amendment's fourteen boxes are down to **7**.
+>
+> ⚠️ **The most important outcome of this batch is not a work package — it is a defect.** RM-18's
+> captured-fixture harness found that **migration v5 has been silently breaking `run_feedback` on any
+> pre-v5 database.** v5 renamed `run_steps` out of the way on the recorded grounds that nothing
+> FK-referenced it; **v36 made that false**. SQLite rewrites a child's stored FK text to follow a
+> renamed parent, so the rename repointed `run_feedback.step_id` at `run_steps_old`, which the rebuild
+> then dropped — and `foreign_key_check` could not see it, because it inspects ROWS and the table was
+> new. The orchestrator **reproduced this independently** rather than accepting it: every insert then
+> failed with *"no such table: main.run_steps_old"*, **including one with a NULL `step_id`**, because
+> SQLite resolves the FK target at PREPARE time. The fix (v31's pattern) was verified the same way
+> under both `foreign_keys` settings. **It repairs the forward path only** — a database already
+> damaged needs a new numbered migration, which WP 1.4 was forbidden from adding, and **the owner's
+> live database was deliberately not checked against it.** That repair is a real follow-up, not a
+> footnote.
+>
+> ⚠️ **A second, quieter defect was found by the orchestrator during validation, in the gate itself.**
+> The first combined gate run went **red** — 11 failures in `packages/illustrations` — and the cause
+> was not any agent's code: `packages/illustrations` was the **only** consumer of
+> `packages/shared` whose `test` script did not rebuild shared first (`apps/api`, `apps/web` and
+> `apps/cli` all do), and the gate runs `test` **before** `build`. So it was reading a stale
+> `packages/shared/dist`. Every agent's "gate green" had been true only because each had run a build
+> in its own worktree. The script now mirrors the other three, and the fix was **proved against a
+> deliberately staled `dist`**: the same condition that produced 11 failures now passes 917/917. The
+> serious form of this bug is the one nobody would have noticed — a stale `dist` can hide a real
+> failure just as easily as invent a false one.
+>
+> 🛑 **NOT THIS SESSION'S WORK, LEFT UNTOUCHED:** an uncommitted **`RM-37-announcement-readiness`**
+> item (35 files, a multi-persona review of the running app) appeared in the working tree during this
+> batch, along with the `tag-registry.json` / `Roadmap/index.md` / `roadmap.md` edits that go with it.
+> It belongs to another session. Nothing here staged, moved, regenerated or deleted any of it — this
+> plan has already nearly lost two rescues to routine cleanup, and that lesson was applied. It needs
+> its owner to commit it.
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade

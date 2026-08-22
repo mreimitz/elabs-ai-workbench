@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UX Overhaul \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the ux-overhaul plan (source: /UI-UX-AUDIT-2026-07-05.md)."
 tags: ["roadmap", "RM-30"]
-timestamp: "2026-08-22T11:20:00Z"
+timestamp: "2026-08-22T12:30:00Z"
 status: "active"
 ---
 # UX Overhaul — work-package status ledger · **PRIORITY: HIGH**
@@ -138,7 +138,32 @@ keyboard behaviour is asserted, not walked.
 - [x] WP 7.R2a — **"Show node" app crash (SI14, P0) + Problems scroll (SI15)** — done 2026-07-06 · direct-tree · root cause: identity-unstable `onSelectionChange` → xyflow's selection listener re-announced a one-commit-stale selection on every parent render → controlled-state ping-pong → React #185. Stable callback via ref + `FocusSeededSelection` pan-into-view; Problems body real internal scroll (old `ScrollArea max-h-*` NEVER worked — Radix %-height vs auto-height root, **upstream brand-ui bug**, same latent pattern in UnifiedEditor save dialog + ExplainerLegend); 14 tests, regression proven failing-on-old-logic
 - [x] WP 7.R2b — **Tool-name IntelliSense (SI9)** — done 2026-07-06 · direct-tree · `code-intel/tool-completions.ts` (pure context + mapper + provider: ≥3-char tool-shaped prefix, fires only when a bound tool matches; backticked insert; lazy bound-tools read; backtick context deferred to WP 8.2's provider to avoid double suggestions); 35 tests · live popup pends owner
 - [x] WP 7.R2c — **Panels resizable/collapsible (SI16) + session-local node drag (SI10) + save cluster → header (SI13) + "v5 · v5" fix** — done 2026-07-06 · direct-tree · ResizablePanelGroup, persisted sizes/collapse; `nodesDraggable` + override map keyed skill|version|geometry-signature (never dirties the draft, never re-fits); header slot via `onHeaderActionsChange`; `formatVersionLabel` de-dupe · 18 tests · **features/skills 199/199 · web shards 454 green · typecheck + Biome clean** · resize feel/themes pend owner. Known: same label dupe in SkillDiffView pickers (helper exported, 1-liner); vitest resolves react-resizable-panels' SSR build (`resolve.conditions:["browser"]` would fix repo-wide)
-- [ ] WP 7.7 — **Components palette** (SI12/SI17, D-UX19#3): section 1 = draggable skill components (keyword · /command · section · sub-routine · gatekeeper · validation gate · loop guard · reference · asset); section 2 = collapsible **MCP Servers** (add on section header, hover-remove per server, tools beneath — absorbs the bind chips); kills the "Add command"/"Add section" toolbar buttons AND the Legend button · Domain: ToolsPalette rebuild + canvas drop wiring + use-edit-ops · Size L · **IN PROGRESS 2026-08-22 (agent A · `wp/roadmap-cleanup/rm30-7.7`)** · spec: [`wp-7.7-components-palette.md`](./wp-7.7-components-palette.md)
+- [x] WP 7.7 — **Components palette** (SI12/SI17, D-UX19#3): section 1 = draggable skill components (keyword · /command · section · sub-routine · gatekeeper · validation gate · loop guard · reference · asset); section 2 = collapsible **MCP Servers** (add on section header, hover-remove per server, tools beneath — absorbs the bind chips); kills the "Add command"/"Add section" toolbar buttons AND the Legend button · Domain: ToolsPalette rebuild + canvas drop wiring + use-edit-ops · Size L — **done 2026-08-22 · `wp/roadmap-cleanup/rm30-7.7` (6 commits, merged) · spec:
+      [`wp-7.7-components-palette.md`](./wp-7.7-components-palette.md).** The rescued `0e8c5b5` was
+      **kept, not rebuilt** — its recorded "does not typecheck" turned out to be a missing
+      `node_modules`, not broken code, so nothing was discarded. Two real defects were fixed inside it:
+      the "Not bound to a server" branch keyed on `declaredServers.length === 0` alone, so a skill whose
+      tools resolve through a name the declared list does not carry lost its **entire tool inventory**
+      behind an empty state; and `sectionBodyText` existed byte-identically in **two** files, which is
+      live hazard rather than tidiness — the loop-guard component appends to the body `NodeDetailPanel`
+      edits, so a divergence would eat or duplicate a line. **6 tests deleted → 71 added.**
+      **Validated by the orchestrator, not taken on report:** `ToolsPalette.tsx` is gone and
+      `ComponentsPalette` is mounted at exactly one call site; the nine ids exist; the three toolbar
+      controls are deleted with a comment at the site saying why; `BindingChips` is off the design
+      surface (its two remaining uses are the inspector panel and Studio settings — different
+      surfaces); every palette row is BOTH draggable and carries a labelled `IconButton`, so the
+      keyboard path is real; no raw colour and no hand-rolled `<button>` in any new file; the diff
+      touches no `apps/api`, `packages/` or `apps/cli`. **Teeth probed independently:** weakening
+      `isSkillComponentId` to `typeof value === "string"` turns 2 tests red across both new suites,
+      **including the `__proto__` case** — the drop path really does validate an untrusted drag payload.
+      ⚠️ **A deliberate, recorded mismatch ships with this:** the rail tab still reads "Tools" while the
+      panel inside is headed "Components". The rename was tried and reverted after a browser
+      measurement (the label needs ~78px against ~49px of room); both alternatives were looked at and
+      were worse (a scrolling strip cut "Settings" off; truncation clipped both ends into "omponer").
+      It is written into the code at both ends and belongs to **WP 7.9**, which reworks that rail.
+      **NOT VERIFIED — nobody has used this.** Every visual claim is headless Chromium. Specifically
+      not exercised: an actual mouse drag, a completed save, and the servers section against a real
+      bound MCP server with a real scan
 - [ ] WP 7.8 — **Edge grammar + entry-point flows** (SI11, SI10-persistence, D-UX19#1): legal edges express the LLM's reading order (keyword→skill · /command→section(s) · section→sub-routine/gatekeeper/reference/asset · gate→branches); flows render EFFECTIVE use per entry (sections/tools/references/templates actually read); connect-errors become guidance; decide node-position persistence · Domain: graph model (use-edit-ops, flow derivation, api flow extraction review) · Size XL · **short design doc → owner approval BEFORE build** · **DESIGN DOC WRITTEN AND APPROVED 2026-08-22** — [`wp-7.8-edge-grammar-design.md`](./wp-7.8-edge-grammar-design.md) (`wp/roadmap-cleanup/rm30-7.8-design`, merged). All six recommended decisions accepted as written; the seventh settled as **old traces degrade with a visible notice**. So the gate this WP carried is CLEARED and it is **ready to build** — after 7.7, not beside it: both touch `use-edit-ops`. **Two constraints ride along:** the build MAY take one migration (app-side box positions, decision 5 — chosen because a position comment would live in the metered `l2_body_tokens` body and inflate the very cost this app measures) and MUST ship the Auto-arrange reset that goes with it. **The branch question is ANSWERED (2026-08-22), and it changes the answer:** the investigation the owner asked for ran the real projector over all five registered skills, and the entire corpus yields **one** unresolved branch — which is a **mis-parse**, not a branch (two narrative sentences beginning "If the answer is complete after one query…" became two condition labels on one edge). Conditionals are frequent but are intra-step rules, not routing; only three phrases in the whole corpus name a destination and none of them sits in a gatekeeper section. So the defect is a **false positive**, not a missing resolution: **tighten `extractConditions` inside WP 7.8** so prose stops becoming branch labels, and leave *Branch* defined-but-unused until an author has a real decision point. **Not its own work package.** Evidence, method and the sample-size warning (five skills, one author, one domain) are in the design doc.
 - [ ] WP 7.9 — **Designer=visual vs Files=source** (D-UX19#2): Design drops Flow|Code|Split (pure visual composer); Files becomes the editable source register (absorbs WP 7.4); one draft across both; SkillDiffView label fix rides along · Depends 7.7+7.8 · Size L–XL
 

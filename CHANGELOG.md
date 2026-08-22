@@ -5,6 +5,51 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — one way to make a thing, one link to a chart, and a migration that had quietly broken feedback
+
+**Building a skill now has exactly one path.** The Skill Studio's left panel was a list of the tools
+a server offered. It is now a **Components palette**: nine draggable building blocks — Keyword,
+/command, Section, Sub-routine, Gatekeeper, Validation gate, Loop guard, Tool reference, Asset
+reference — above a collapsible **MCP Servers** section that adds a server from its own header,
+removes one from its row, and lists that server's tools underneath. The separate strip of binding
+chips is gone, and so are the "Add command", "Add section" and Legend buttons from the toolbar,
+because creating something was possible two ways and now is possible one way. Anything that points at
+a real thing — a script, a file, a server's tool — asks which one before it creates anything, instead
+of dropping a placeholder that points nowhere. Every row can be dragged *or* pressed, so the keyboard
+path survived the toolbar's deletion. Nothing is written until you save.
+
+One rough edge ships with it, deliberately: the rail tab still says "Tools" while the panel inside
+says "Components". The rename was tried and looked at in a browser — the word needs about 78 pixels
+and has about 49 — and both ways of forcing it in were worse. It is written down at both ends and
+belongs to the work package that reworks that rail.
+
+**A chart's settings now fit in a link.** The dashboard's time resolution used to be decided purely
+by how wide the date range was — hourly under two days, daily under sixty — with no way to say "this
+range, but hourly". There is now a **Bucket** control that says so, and the choice travels in the
+URL; leaving it on Auto writes nothing, so an untouched dashboard link is character-for-character
+what it was. Asking for more bars than a chart can draw does not silently do something else: the
+panels are drawn coarser and **a note says what you asked for, what is drawn, and why**, keeping your
+choice so it comes back when the range narrows. Separately, every panel now has a copy-link button,
+and opening such a link lands the reader on that panel with a ring around it. A link naming a panel
+that no longer exists is ignored rather than breaking the page.
+
+**A migration had been quietly breaking human feedback on older databases.** Building a test harness
+from *captured* databases — rather than new ones with pieces stripped off, which is what the existing
+tests did — turned up a real defect on its first run. A step from early in the schema history rebuilt
+one table by renaming it out of the way first, recorded as safe because nothing referenced that table.
+That stopped being true when the feedback table was added and pointed at it. SQLite quietly rewrites
+such a reference to follow a renamed table, and the rebuild then deleted what it now pointed at — so
+on any database old enough to run that step, **every** write of human feedback failed afterwards, and
+the routine integrity check could not see it because the table was empty. It is fixed by the same
+approach a later migration already used for the same reason. The fix repairs the path forward; a
+database already damaged this way needs a separate repair step that has **not** been written.
+
+**Also:** the illustration system gained the layer that lets its 24 drawings be arranged into a
+picture — a scene is now a JSON document with a validator that refuses one naming anything that does
+not exist, and the same document always lays out identically. Nothing is drawn from it yet. And
+`pnpm test` no longer depends on a build that happened earlier: one package was reading a stale copy
+of the shared contract, which could report a failure that was not real — or, worse, hide one that was.
+
 ## Unreleased — the advice fits on the screen, and the grid stops lying
 
 The Advisor's top recommendation used to bury its own conclusion. It would tell you that trimming

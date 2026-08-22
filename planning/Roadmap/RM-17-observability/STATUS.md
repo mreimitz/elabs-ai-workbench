@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-22T11:20:00Z"
+timestamp: "2026-08-22T12:30:00Z"
 status: "active"
 ---
 
@@ -219,7 +219,34 @@ had one open box before the lock and now has fourteen.
       expectation on promote-to-test, and joins the report-export `humanFeedback` block ·
       pairs with the ledger's open promote-to-test endpoint follow-up · **AR6 holds: feedback
       never blends into grades**
-- [ ] AM-OB3 — chart states URL-addressable (deep-linkable panel + time-bucket selection) · · **IN PROGRESS 2026-08-22 (agent D · `wp/roadmap-cleanup/am-ob3`)**
+- [x] AM-OB3 — chart states URL-addressable (deep-linkable panel + time-bucket selection) · — **done 2026-08-22 ·
+      `wp/roadmap-cleanup/am-ob3` (3 commits, merged) · 22 files, ALL under
+      `apps/web/src/features/dashboard/`; `apps/api`, `packages/` and `apps/cli` a zero-line diff.**
+      **The verify-at-pickup pass held in full and nothing already-built was rebuilt** — the tab, the
+      page-wide range (incl. the legacy read-only keys), the six Testing facets, the issue sheet and
+      drill-down were all already addressable. Genuinely missing, and all that was built: the bucket
+      and the panel anchor. A **Bucket** control now sits beside "Group by" (chart resolution used to
+      be derived from the window span with no way to override it), and every panel has a copy-link
+      button whose link carries the whole view plus the panel, landing the reader scrolled to it with a
+      ring. A request needing more bars than a chart can draw is **coarsened with a visible note** that
+      names what was asked, what is drawn and why — and the choice is kept, so it resumes when the
+      range narrows. A `?panel=` naming nothing is ignored without disturbing tab, range or filters.
+      **Verified by the orchestrator:** the default is genuinely omitted — a default control set
+      serializes to the empty string, so a zero-param `/dashboard` is byte-unchanged (D-TB10); a
+      malformed `?tBucket=` degrades rather than throws; the copy control is an `IconButton`, so
+      tooltip and `aria-label` are one string by construction (D-TB5).
+      **Two judgement calls recorded rather than buried.** The key and its UI control shipped
+      **together**, because a URL key over a choice the interface never offers addresses nothing. And
+      the scroll lives in the panel, not in `DashboardView` — an inactive tab is unmounted and a
+      Testing panel exists only after its metrics fetch settles, so a host-level scroll would fire at a
+      target that is not there; router access sits behind a context provider, which is why twelve
+      existing panel test suites needed no edit.
+      **NOT VERIFIED: the browser walk used SYNTHETIC data.** The throwaway database was empty and
+      `/api/metrics/runs` was stubbed at the network boundary, so this has never been seen against real
+      recorded runs; the walk's Playwright spec was deleted, not committed, so it is evidence rather
+      than a regression test; no human drove it and no screen reader was used. One thing for an owner
+      eye: in the **dark** theme the ring marking a linked panel is the same lime as the focus ring —
+      legible, but the two are not distinguishable from each other
       _verify-at-pickup: drill-down shipped with 2.2; residual only_
 - [x] AM-OB4 — ratio measure — **done 2026-08-21 · `wp/roadmap-cleanup/am-ob4` (6 commits, merged) ·
       25 files · 19 mutation probes, 19 red · no migration, `db/**` a zero-line diff.**
