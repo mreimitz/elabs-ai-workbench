@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
+import { entryPointIds } from "@mcp-token-footprint/shared";
 import type {
   BoundTool,
   SkillDiff,
   SkillEditsResponse,
   SkillFileNode,
+  SkillFlowNodeCost,
   SkillGraph,
   SkillVersion,
 } from "@mcp-token-footprint/shared";
@@ -49,6 +51,7 @@ import {
   CheckCircle2,
   Code2,
   Columns2,
+  LayoutGrid,
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
@@ -66,7 +69,13 @@ import { AdaptivePanelGroup } from "../../../components/AdaptivePanelGroup";
 import { IconButton } from "../../../components/IconButton";
 import { DiscardChangesDialog } from "../../../components/UnsavedChangesGuard";
 import { useBoundTools } from "../use-bound-tools";
-import { getSkillFiles } from "../skills-inspector-api";
+import {
+  clearSkillBoxPositions,
+  getSkillBoxPositions,
+  getSkillFiles,
+  getSkillFlowTokens,
+  putSkillBoxPositions,
+} from "../skills-inspector-api";
 import { registerCodeIntel, type CodeIntelController } from "./code-intel";
 import { findUnknownToolReferences, formatUnknownToolWarning } from "./code-intel/tool-references";
 import "./code-intel/decorations.css";
@@ -84,7 +93,8 @@ import {
   skillComponentSpec,
   type SkillComponentId,
 } from "./skill-components";
-import { layoutSkillLanes } from "./graph-layout";
+import { isConnectionOfferable, resolveConnection } from "./connect-grammar";
+import { FlowReadingPanel } from "./FlowReadingPanel";
 import { buildFlow, SkillGraphCanvas, type SkillCanvasNode } from "./SkillGraphCanvas";
 import {
   applyPreviewOps,
@@ -416,15 +426,32 @@ function UnifiedEditorBody({
   const syncGraphRef = useRef<SkillGraph | null>(null);
   syncGraphRef.current = syncGraph;
 
-  const lanes = useMemo(() => (flowGraph ? layoutSkillLanes(flowGraph) : []), [flowGraph]);
-  const showFlowPicker = lanes.length > 1;
-  const visibleFlowId = flowFilter === "__all__" ? undefined : flowFilter;
+  // RM-30 WP 7.8 — the flow picker now offers ENTRY POINTS, not lanes. A lane said where text sits in
+  // the file; an entry point says what the model reads when that trigger fires, which is the question
+  // this workbench exists for. The option list is the shared `entryPointIds` walk, in document order.
+  const entryOptions = useMemo(() => {
+    if (!flowGraph) return [] as Array<{ id: string; label: string; hint?: string }>;
+    const byId = new Map(flowGraph.nodes.map((node) => [node.id, node] as const));
+    return entryPointIds(flowGraph).flatMap((id) => {
+      const node = byId.get(id);
+      if (!node || node.kind !== "entry_point") return [];
+      return [
+        {
+          id,
+          label: node.trigger.value,
+          ...(node.label !== node.trigger.value ? { hint: node.label } : {}),
+        },
+      ];
+    });
+  }, [flowGraph]);
+  const showFlowPicker = entryOptions.length > 0;
+  const visibleEntryNodeId = flowFilter === "__all__" ? undefined : flowFilter;
 
   useEffect(() => {
-    if (flowFilter !== "__all__" && !lanes.some((lane) => lane.flowId === flowFilter)) {
+    if (flowFilter !== "__all__" && !entryOptions.some((option) => option.id === flowFilter)) {
       setFlowFilter("__all__");
     }
-  }, [lanes, flowFilter]);
+  }, [entryOptions, flowFilter]);
 
   const {
     nodes: builtNodes,
@@ -433,10 +460,89 @@ function UnifiedEditorBody({
   } = useMemo(
     () =>
       flowGraph
-        ? buildFlow(flowGraph, undefined, visibleFlowId ? { visibleFlowId } : undefined)
+        ? buildFlow(flowGraph, undefined, visibleEntryNodeId ? { visibleEntryNodeId } : undefined)
         : { nodes: [] as SkillCanvasNode[], edges: [] as Edge[], droppedEdges: 0 },
-    [flowGraph, visibleFlowId],
+    [flowGraph, visibleEntryNodeId],
   );
+
+  // ── RM-30 WP 7.8 (design decision 5) — the arrangement, remembered ───────────────────────────────
+  // Positions live in the app's own database, per SKILL (not per version, so they survive saving),
+  // and never in `SKILL.md` — its body is what the model reads and this app meters it as the L2
+  // footprint, so storing cosmetics there would inflate the very cost this tool exists to measure.
+  // A saved id the graph no longer has matches nothing, so that ONE box lays out automatically.
+  const [boxPositions, setBoxPositions] = useState<ReadonlyMap<string, { x: number; y: number }>>(
+    () => new Map(),
+  );
+  const [autoArrangeToken, setAutoArrangeToken] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setBoxPositions(new Map());
+    getSkillBoxPositions(skillId)
+      .then((report) => {
+        if (cancelled) return;
+        setBoxPositions(
+          new Map(report.positions.map((p) => [p.nodeId, { x: p.x, y: p.y }] as const)),
+        );
+      })
+      .catch(() => {
+        // Cosmetic state: a failed read degrades to automatic layout, never to a broken canvas.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [skillId]);
+
+  const handleNodeMoved = useCallback(
+    (nodeId: string, position: { x: number; y: number }) => {
+      setBoxPositions((current) => new Map(current).set(nodeId, position));
+      // Fire-and-forget: the box is already where the author put it, and a failed write must not
+      // interrupt authoring. The arrangement simply is not remembered — nothing is corrupted.
+      void putSkillBoxPositions(skillId, [{ nodeId, x: position.x, y: position.y }]).catch(
+        () => {},
+      );
+    },
+    [skillId],
+  );
+
+  const handleAutoArrange = useCallback(() => {
+    setBoxPositions(new Map());
+    setAutoArrangeToken((token) => token + 1);
+    clearSkillBoxPositions(skillId)
+      .then(() => {
+        toast.success("Auto-arranged", {
+          description: "Saved box positions were cleared — the diagram is laid out automatically.",
+        });
+      })
+      .catch((error: unknown) => {
+        notifyError("Couldn’t forget the saved arrangement", {
+          description: `${getErrorMessage(error, "The positions are still stored")}. The canvas is auto-arranged for now; they will come back on reload.`,
+        });
+      });
+  }, [skillId]);
+
+  // RM-30 WP 7.8 — the per-node read cost behind the flow's token figure. Fetched once per
+  // (skill, version) and only when there is an entry point worth measuring; a failure degrades to
+  // "not yet measured" in the panel rather than a broken canvas, because the counts are still true.
+  const [flowCosts, setFlowCosts] = useState<SkillFlowNodeCost[]>([]);
+  const [flowCostsLoading, setFlowCostsLoading] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setFlowCosts([]);
+    setFlowCostsLoading(true);
+    getSkillFlowTokens(skillId, versionId)
+      .then((report) => {
+        if (!cancelled) setFlowCosts(report.nodes);
+      })
+      .catch(() => {
+        if (!cancelled) setFlowCosts([]);
+      })
+      .finally(() => {
+        if (!cancelled) setFlowCostsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [skillId, versionId]);
 
   // Re-seed `selected` onto the freshly built nodes (a rebuild produces new node objects with no React
   // Flow `selected` flag). This is also how a CODE→canvas selection lands: setting `selectedNodeId`
@@ -543,24 +649,51 @@ function UnifiedEditorBody({
     setSelectedNodeId(nodeId);
   }, []);
 
+  // RM-30 WP 7.8 (design decision 4) — behaviour 1: an impossible target never snaps, so `onConnect`
+  // is never even reached for it and no error is shown. Resolved against the graph the canvas is
+  // CURRENTLY rendering (`flowGraph`), so a box staged a moment ago is a legitimate drag target.
+  const handleIsValidConnection = useCallback(
+    (connection: Connection | Edge) =>
+      flowGraph ? isConnectionOfferable(flowGraph, connection.source, connection.target) : false,
+    [flowGraph],
+  );
+
+  // Behaviours 2 and 3: a completed drag either stages the connection, OFFERS the move that was
+  // almost certainly meant (one click applies it), or names the rule it broke and links the guide.
+  // THE RULE: no message that only says an action failed. Every branch below either acts or teaches.
   const handleConnect = useCallback(
     (connection: Connection) => {
-      if (!graph) return;
-      const source = graph.nodes.find((n) => n.id === connection.source);
-      const target = graph.nodes.find((n) => n.id === connection.target);
-      if (source && target && isSectionNode(source) && target.kind === "asset") {
-        addOp({ op: "connect_asset", nodeId: source.id, path: target.path });
-        toast.success("Connection staged", {
-          description: `“${target.label}” will be referenced from “${source.label}” when you save.`,
+      const source = flowGraph;
+      if (!source) return;
+      const resolution = resolveConnection(source, connection.source, connection.target, {
+        boundTools,
+      });
+      if (resolution.outcome === "connect") {
+        addOp(resolution.op);
+        toast.success(resolution.title, { description: resolution.description });
+        return;
+      }
+      if (resolution.outcome === "offer") {
+        toast.warning(resolution.title, {
+          description: resolution.description,
+          duration: 12_000,
+          action: {
+            label: resolution.actionLabel,
+            onClick: () => {
+              addOp(resolution.op);
+              toast.success(resolution.appliedTitle, {
+                description: resolution.appliedDescription,
+              });
+            },
+          },
         });
         return;
       }
-      notifyError("Couldn’t create that connection", {
-        description:
-          "A connection runs from a section to an asset file — drag from a section node onto an asset.",
+      notifyError(resolution.title, {
+        description: `${resolution.description} See ${resolution.guideAnchor}.`,
       });
     },
-    [graph, addOp],
+    [flowGraph, addOp, boundTools],
   );
 
   const handleEdgesDelete = useCallback(
@@ -615,11 +748,7 @@ function UnifiedEditorBody({
   }, [edit.ops]);
 
   const placeComponent = useCallback(
-    (
-      component: SkillComponentId,
-      targetNodeId: string | null,
-      value?: ComponentValue,
-    ): boolean => {
+    (component: SkillComponentId, targetNodeId: string | null, value?: ComponentValue): boolean => {
       const result = resolveComponentPlacement({
         component,
         targetNodeId,
@@ -948,9 +1077,13 @@ function UnifiedEditorBody({
       selectedNodeId={selectedNodeId}
       onSelectNode={handleSelectNode}
       onConnect={handleConnect}
+      onIsValidConnection={handleIsValidConnection}
       onEdgesDelete={handleEdgesDelete}
       onToolDrop={handleToolDrop}
       onPlaceComponent={handlePlaceComponent}
+      boxPositions={boxPositions}
+      onNodeMoved={handleNodeMoved}
+      autoArrangeToken={autoArrangeToken}
       previewOnlyLabel={previewOnlyLabel}
       edit={edit}
       boundTools={boundTools}
@@ -1010,22 +1143,43 @@ function UnifiedEditorBody({
           {flowVisible && showFlowPicker ? (
             <div className="flex items-center gap-2">
               <Text variant="meta" tone="muted" as="span">
-                Flow
+                Entry point
               </Text>
               <Select value={flowFilter} onValueChange={setFlowFilter}>
-                <SelectTrigger aria-label="Filter shown flow" className="w-48">
+                <SelectTrigger aria-label="Show what one entry point reads" className="w-56">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="__all__">All flows</SelectItem>
-                  {lanes.map((lane) => (
-                    <SelectItem key={lane.flowId} value={lane.flowId}>
-                      {lane.label}
+                  <SelectItem value="__all__">Whole skill</SelectItem>
+                  {entryOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.hint ? `${option.label} — ${option.hint}` : option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+          ) : null}
+
+          {/* RM-30 WP 7.8 (design decision 5) — the way back. Positions are remembered, so an author
+              who has made a mess needs one visible control that forgets them. It ships WITH the
+              persistence, not after it: the approval names both. */}
+          {flowVisible ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={handleAutoArrange}
+              disabled={boxPositions.size === 0}
+              title={
+                boxPositions.size === 0
+                  ? "Nothing to reset — no box has been moved"
+                  : "Forget the saved box positions and lay the diagram out automatically"
+              }
+            >
+              <LayoutGrid className="size-4" aria-hidden />
+              Auto-arrange
+            </Button>
           ) : null}
         </div>
 
@@ -1041,11 +1195,24 @@ function UnifiedEditorBody({
         </div>
       </div>
 
+      {/* RM-30 WP 7.8 — the token figure. This is the deliverable: with an entry point picked, the
+          canvas stops being a picture of the document and becomes a measurement of what firing that
+          trigger puts in front of the model. */}
+      {flowVisible && visibleEntryNodeId && flowGraph ? (
+        <FlowReadingPanel
+          graph={flowGraph}
+          entryNodeId={visibleEntryNodeId}
+          costs={flowCosts}
+          boundTools={boundTools}
+          loading={flowCostsLoading}
+        />
+      ) : null}
+
       {flowVisible ? (
         <Text variant="meta" tone="muted" className="shrink-0">
           Drag a component or a tool from the palette onto the flow — or select a node and use the
-          palette’s ＋. Drag from a section node onto an asset to connect it. Type in code to edit the
-          document directly — both views stay in sync. Nothing changes until you save.
+          palette’s ＋. Drag from a section node onto an asset to connect it. Type in code to edit
+          the document directly — both views stay in sync. Nothing changes until you save.
         </Text>
       ) : null}
 
@@ -1285,10 +1452,16 @@ type FlowPaneProps = {
   selectedNodeId: string | undefined;
   onSelectNode: (nodeId: string | undefined) => void;
   onConnect: (connection: Connection) => void;
+  /** RM-30 WP 7.8 — behaviour 1: an impossible target never snaps, so no error is ever shown. */
+  onIsValidConnection: (connection: Connection | Edge) => boolean;
   onEdgesDelete: (edges: Edge[]) => void;
   onToolDrop: (payload: { server: string; tool: string; nodeId: string | null }) => void;
   /** RM-30 WP 7.7 — one entry point for both gestures: the canvas drop and the palette's Add. */
   onPlaceComponent: (component: SkillComponentId, targetNodeId: string | null) => void;
+  /** RM-30 WP 7.8 — the arrangement loaded from the app's database, merged over automatic layout. */
+  boxPositions: ReadonlyMap<string, { x: number; y: number }>;
+  onNodeMoved: (nodeId: string, position: { x: number; y: number }) => void;
+  autoArrangeToken: number;
   previewOnlyLabel: string | undefined;
   edit: ReturnType<typeof useSkillDraft>["edit"];
   boundTools: BoundTool[];
@@ -1314,9 +1487,13 @@ function FlowPane({
   selectedNodeId,
   onSelectNode,
   onConnect,
+  onIsValidConnection,
   onEdgesDelete,
   onToolDrop,
   onPlaceComponent,
+  boxPositions,
+  onNodeMoved,
+  autoArrangeToken,
   previewOnlyLabel,
   edit,
   boundTools,
@@ -1408,9 +1585,15 @@ function FlowPane({
           onSelectNode={onSelectNode}
           editable
           onConnect={onConnect}
+          isValidConnection={onIsValidConnection}
           onEdgesDelete={onEdgesDelete}
           onToolDrop={onToolDrop}
           onComponentDrop={({ component, nodeId }) => onPlaceComponent(component, nodeId)}
+          skillId={skillId}
+          versionId={versionId}
+          savedPositions={boxPositions}
+          onNodeMoved={onNodeMoved}
+          positionsResetToken={autoArrangeToken}
         />
       )}
     </div>
@@ -1961,4 +2144,3 @@ function RollupTile({ label, value }: { label: string; value: string }) {
     </Card>
   );
 }
-

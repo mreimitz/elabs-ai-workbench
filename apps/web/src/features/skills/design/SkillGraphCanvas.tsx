@@ -9,6 +9,8 @@ import {
 } from "react";
 import {
   DEFAULT_SKILL_FLOW_ID,
+  reachFromEntry,
+  type SkillEdgeKind,
   type SkillGraph,
   type SkillGraphEdge,
   type ToolDiagnostic,
@@ -34,13 +36,19 @@ import type {
   Node,
   NodeProps,
 } from "@elabs-ai/components-flow";
-import { CanvasShell, FlowNode, useNodesState, useReactFlow, ZoomControls } from "@elabs-ai/components-flow";
+import {
+  CanvasShell,
+  FlowNode,
+  useNodesState,
+  useReactFlow,
+  ZoomControls,
+} from "@elabs-ai/components-flow";
 // `@elabs-ai/components-flow` does not re-export these React Flow building blocks, so they come from the direct
 // `@xyflow/react` dependency: `Handle` because the brand `FlowNode` hardcodes its handles to
 // Top/Bottom (an upstream gap — it ignores a node's `sourcePosition`/`targetPosition`, see
 // `CanvasNodeView`), the smoothstep path for the LR edge, and the store hook for pane dimensions.
 import { BaseEdge, getSmoothStepPath, Handle, useStoreApi } from "@xyflow/react";
-import { AlertTriangle, HelpCircle, Play, Waypoints } from "lucide-react";
+import { AlertTriangle, HelpCircle, Play } from "lucide-react";
 import {
   edgeLabelPosition,
   FIT_MAX_ZOOM,
@@ -58,11 +66,8 @@ import {
   TARGET_HANDLE_ID,
 } from "./graph-layout";
 import { diagnosticsInRange, NODE_KIND_META } from "./node-kind-meta";
-import {
-  EDGE_KIND_EXPLAINER_IDS,
-  explainerFor,
-  NODE_KIND_EXPLAINER_IDS,
-} from "./code-intel/explainers";
+import { EDGE_KIND_ORDER, edgeKindMeta } from "./edge-kind-meta";
+import { explainerFor, NODE_KIND_EXPLAINER_IDS } from "./code-intel/explainers";
 import {
   COMPONENT_DRAG_MIME,
   isSkillComponentId,
@@ -149,6 +154,9 @@ type CanvasNodeData = FlowNodeData & {
   anchorEndLine?: number;
   /** Skill IDE WP 5.2 — count of tool-reference diagnostics anchored inside this node → warning badge. */
   toolDiagnostics?: number;
+  /** RM-30 WP 7.8 — set in an ENTRY-POINT view when this box is only POSSIBLY read (a branch or a
+   *  uses edge lies on the path to it). Rendered as a visible "Maybe" badge, not a shade. */
+  maybeRead?: boolean;
 };
 type CanvasBrandNode = Node<CanvasNodeData, "brand">;
 export type SkillCanvasNode = CanvasBrandNode | ConditionLabelNode | LaneLabelNode;
@@ -198,6 +206,7 @@ function CanvasNodeView(props: NodeProps<CanvasBrandNode>) {
   const diagnostics = props.data.toolDiagnostics;
   const showVisits = typeof visits === "number" && visits > 0;
   const showDiagnostics = typeof diagnostics === "number" && diagnostics > 0;
+  const maybeRead = props.data.maybeRead === true;
   return (
     <div className="relative w-56 [&_.react-flow__handle-bottom]:hidden [&_.react-flow__handle-top]:hidden">
       <Handle
@@ -232,6 +241,16 @@ function CanvasNodeView(props: NodeProps<CanvasBrandNode>) {
           aria-label={`Executed ${visits} ${visits === 1 ? "time" : "times"}`}
         >
           ×{visits}
+        </Badge>
+      ) : null}
+      {maybeRead && !showVisits ? (
+        <Badge
+          variant="outline"
+          className="absolute -bottom-2 -right-2 gap-0.5 shadow-sm"
+          aria-label="Maybe read — a branch or a reference lies on the path to this"
+        >
+          <HelpCircle className="size-3" aria-hidden />
+          Maybe
         </Badge>
       ) : null}
     </div>
@@ -269,6 +288,10 @@ function SkillFlowEdge({
     borderRadius: 12,
     ...(skipsRanks ? { centerY: sourceY - SKIP_EDGE_ARC } : {}),
   });
+  // RM-30 WP 7.8 — the per-kind stroke (dash pattern + width + token colour) is computed in
+  // `buildFlow` and handed down as `style`, so this component stays a pure path renderer and the
+  // grammar lives in exactly one place (`edge-kind-meta.ts`). The defaults below only apply to an
+  // edge nothing set a kind on.
   return (
     <BaseEdge
       id={id}
@@ -444,11 +467,18 @@ function overlayTone(status: TraceVerdictStatus): FlowNodeData["tone"] {
   return "default";
 }
 
-/** Options for {@link buildFlow}. `visibleFlowId` scopes the canvas to one flow lane (the Design
- *  tab's flow picker); absent ⇒ every lane is shown. */
+/**
+ * Options for {@link buildFlow}.
+ *
+ * RM-30 WP 7.8 replaced `visibleFlowId` (LANE MEMBERSHIP — a filter on where text sits in the file)
+ * with `visibleEntryNodeId` (FORWARD REACHABILITY from one entry point — a filter on what the model
+ * actually ends up reading). The two answer different questions, and only the second one is the
+ * question this workbench exists for.
+ */
 export type BuildFlowOptions = {
-  /** When set, only nodes on this flow — and edges with BOTH endpoints on it — render. */
-  visibleFlowId?: string;
+  /** When set, the canvas shows exactly what this entry point reaches, and marks each item
+   *  always-read or maybe-read. Absent ⇒ the whole graph, stacked in flow lanes as before. */
+  visibleEntryNodeId?: string;
 };
 
 /** Build the React Flow node/edge arrays from a `SkillGraph` + its layout positions (+ optional
@@ -458,22 +488,44 @@ export type BuildFlowOptions = {
  *
  *  WP 1.3 — flow lanes: nodes are laid out in one vertical band per flow, each band headed by a
  *  non-interactive lane label (only when the graph has >1 flow, so single-flow skills look
- *  unchanged). `options.visibleFlowId` filters to a single lane: a node is kept iff it's on that
- *  flow, and an edge iff BOTH its endpoints survive that filter — so a cross-flow edge only renders
- *  when both lanes are shown (no dangling half-edges). Filtering the node/edge set also filters the
- *  overlay, so per-flow filtering can never strand a verdict badge on a hidden node. */
+ *  unchanged).
+ *
+ *  RM-30 WP 7.8 — `options.visibleEntryNodeId` scopes the canvas to ONE ENTRY POINT'S REACHABILITY
+ *  rather than to one lane: follow the arrows forward from that entry point and show what they
+ *  reach, laying out only that subgraph. Everything reached is marked **always read** (every edge on
+ *  the path is triggers/then/contains) or **maybe read** (a branch or uses edge lies on the path),
+ *  and the maybe-read boxes carry a visible "Maybe" badge — not just a dimmer shade — so the
+ *  distinction survives a colour-blind reader and a greyscale screenshot. Filtering the node/edge set
+ *  also filters the overlay, so scoping can never strand a verdict badge on a hidden node. */
 export function buildFlow(
   graph: SkillGraph,
   overlay?: TraceCanvasOverlay,
   options?: BuildFlowOptions,
 ): { nodes: SkillCanvasNode[]; edges: Edge[]; droppedEdges: number } {
-  const { positions, lanes } = layoutSkillGraphWithLanes(graph);
-  const visibleFlowId = options?.visibleFlowId;
-  const isFlowVisible = (item: { flowId?: string }): boolean =>
-    visibleFlowId === undefined || flowIdOf(item) === visibleFlowId;
+  const entryNodeId = options?.visibleEntryNodeId;
+  const reach = entryNodeId ? reachFromEntry(graph, entryNodeId) : undefined;
+  const maybeIds = new Set(reach?.maybe ?? []);
+  const visibleNodeIds = reach
+    ? new Set([...reach.always, ...reach.maybe])
+    : new Set(graph.nodes.map((n) => n.id));
 
-  const visibleNodes = graph.nodes.filter(isFlowVisible);
-  const visibleNodeIds = new Set(visibleNodes.map((n) => n.id));
+  const visibleNodes = graph.nodes.filter((node) => visibleNodeIds.has(node.id));
+  // Lay out only what is shown: an entry-point view is ONE flow's geometry, not the whole document's
+  // with most of it hidden (which would leave the reached boxes scattered across empty lanes).
+  const { positions, lanes } = layoutSkillGraphWithLanes(
+    reach
+      ? {
+          ...graph,
+          nodes: visibleNodes,
+          edges: graph.edges.filter(
+            (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
+          ),
+        }
+      : graph,
+  );
+  const isFlowVisible = (item: { flowId?: string }): boolean =>
+    reach === undefined || visibleNodes.some((node) => flowIdOf(node) === flowIdOf(item));
+
   // Asset targets drive which edges the editable canvas lets you DELETE (WP 2.2 — only section→asset
   // "connections" can be removed → `disconnect_asset`; flow-sequence/branch edges stay put).
   const assetNodeIds = new Set(graph.nodes.filter((n) => n.kind === "asset").map((n) => n.id));
@@ -491,11 +543,14 @@ export function buildFlow(
     const entrySubtitle =
       node.kind === "entry_point" && node.label !== node.trigger.value ? node.label : undefined;
     const subtitle = fractureReason ?? (node.kind === "asset" ? node.path : entrySubtitle);
+    // RM-30 WP 7.8 — in an entry-point view, say out loud whether this box is certainly read or only
+    // possibly read. It rides the accessible name too, so the distinction is not a visual-only cue.
+    const certainty = reach ? (maybeIds.has(node.id) ? " — maybe read" : " — always read") : "";
     const ariaLabel = verdict
       ? `${meta.label}: ${node.label} — ${verdict.status}, ${verdict.visits} ${
           verdict.visits === 1 ? "visit" : "visits"
         }`
-      : `${meta.label}: ${node.label}`;
+      : `${meta.label}: ${node.label}${certainty}`;
 
     return {
       id: node.id,
@@ -525,6 +580,7 @@ export function buildFlow(
         anchorStartLine: node.anchor.startLine,
         anchorEndLine: node.anchor.endLine,
         ...(verdict && verdict.visits > 0 ? { visits: verdict.visits } : {}),
+        ...(reach && maybeIds.has(node.id) ? { maybeRead: true } : {}),
       },
     };
   });
@@ -541,22 +597,36 @@ export function buildFlow(
     (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to),
   );
 
-  const flowEdges: Edge[] = validEdges.map((edge) => ({
-    id: edge.id,
-    source: edge.from,
-    target: edge.to,
-    type: "brand",
-    // WP 7.2 (SI4) — bind every edge explicitly to the side handles `CanvasNodeView` renders (the
-    // brand `FlowNode`'s legacy top/bottom handles are hidden and must never receive an edge).
-    sourceHandle: SOURCE_HANDLE_ID,
-    targetHandle: TARGET_HANDLE_ID,
-    // Only a REAL section→asset edge is deletable (→ `disconnect_asset`); a preview-only connect edge
-    // (its id carries the preview prefix) isn't — undo a staged connect via Discard, not the canvas.
-    deletable: assetNodeIds.has(edge.to) && !edge.id.startsWith(PREVIEW_NODE_PREFIX),
-    // Traversed edges animate (React Flow's token-styled dash animation) — the executed path reads
-    // as motion, never as a raw color.
-    ...((overlay?.edgeTraversals.get(edge.id) ?? 0) > 0 ? { animated: true } : {}),
-  }));
+  const flowEdges: Edge[] = validEdges.map((edge) => {
+    // RM-30 WP 7.8 — the five kinds are told apart by DASH PATTERN and WIDTH first, colour last
+    // (D-DB4's principle: never colour alone), and the kind's name rides the accessible label so it
+    // is legible to a screen reader and in a greyscale screenshot alike.
+    const kindMeta = edgeKindMeta(edge.kind);
+    return {
+      id: edge.id,
+      source: edge.from,
+      target: edge.to,
+      type: "brand",
+      ariaLabel: `${kindMeta.label}: ${edge.from} → ${edge.to}`,
+      // WP 7.2 (SI4) — bind every edge explicitly to the side handles `CanvasNodeView` renders (the
+      // brand `FlowNode`'s legacy top/bottom handles are hidden and must never receive an edge).
+      sourceHandle: SOURCE_HANDLE_ID,
+      targetHandle: TARGET_HANDLE_ID,
+      style: {
+        stroke: kindMeta.stroke,
+        strokeWidth: kindMeta.width,
+        ...(kindMeta.dash
+          ? { strokeDasharray: kindMeta.dash, strokeLinecap: "round" as const }
+          : {}),
+      },
+      // Only a REAL section→asset edge is deletable (→ `disconnect_asset`); a preview-only connect edge
+      // (its id carries the preview prefix) isn't — undo a staged connect via Discard, not the canvas.
+      deletable: assetNodeIds.has(edge.to) && !edge.id.startsWith(PREVIEW_NODE_PREFIX),
+      // Traversed edges animate (React Flow's token-styled dash animation) — the executed path reads
+      // as motion, never as a raw color.
+      ...((overlay?.edgeTraversals.get(edge.id) ?? 0) > 0 ? { animated: true } : {}),
+    };
+  });
 
   // Edge labels: one small non-interactive "label" node per condition-carrying edge, fanned out
   // horizontally when a source has more than one (a gatekeeper's branches). With an overlay, a
@@ -687,13 +757,16 @@ export function ExplainerLegend() {
               );
             })}
             <div className="my-1 border-t border-border" />
-            {EDGE_KIND_EXPLAINER_IDS.map((id) => {
-              const entry = explainerFor(id);
+            {/* RM-30 WP 7.8 — each edge kind's glyph is the LINE ITSELF, drawn with the exact stroke
+                the canvas uses. So the legend does not merely name the five kinds, it shows how to
+                tell them apart, and the distinguishing signal is the dash pattern, not a hue. */}
+            {EDGE_KIND_ORDER.map((kind) => {
+              const entry = explainerFor(edgeKindMeta(kind).explainerId);
               if (!entry) return null;
               return (
                 <LegendRow
-                  key={id}
-                  glyph={<Waypoints />}
+                  key={kind}
+                  glyph={<EdgeStrokeSample kind={kind} />}
                   title={entry.title}
                   short={entry.short}
                   guideAnchor={entry.guideAnchor}
@@ -704,6 +777,31 @@ export function ExplainerLegend() {
         </ScrollArea>
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * RM-30 WP 7.8 — a 20×12 sample of an edge kind's ACTUAL stroke: the same dash pattern, width and
+ * token colour {@link buildFlow} hands React Flow. It is `aria-hidden` because the row's title
+ * already names the kind; its job is to let a reader match a line on the canvas to a row here
+ * WITHOUT relying on colour, which a colour-blind reader or a greyscale screenshot loses.
+ */
+function EdgeStrokeSample({ kind }: { kind: SkillEdgeKind }) {
+  const meta = edgeKindMeta(kind);
+  return (
+    <svg viewBox="0 0 20 12" className="h-3 w-5" aria-hidden focusable="false">
+      <title>{`${meta.label} stroke`}</title>
+      <line
+        x1="0"
+        y1="6"
+        x2="20"
+        y2="6"
+        stroke={meta.stroke}
+        strokeWidth={meta.width}
+        strokeLinecap="round"
+        {...(meta.dash ? { strokeDasharray: meta.dash } : {})}
+      />
+    </svg>
   );
 }
 
@@ -751,9 +849,17 @@ export type SkillGraphCanvasProps = {
    * behave exactly as before (no connect handles are live, no delete key is bound).
    */
   editable?: boolean;
-  /** Only when `editable`: the user completed a connection drag. The caller validates the section→
-   *  asset rule and stages `connect_asset` (or rejects it inline). Nothing mutates here. */
+  /** Only when `editable`: the user completed a connection drag. The caller resolves it through the
+   *  ONE `connect-grammar` resolver and stages an op, offers the legal move, or explains the rule.
+   *  Nothing mutates here. */
   onConnect?: (connection: Connection) => void;
+  /**
+   * RM-30 WP 7.8, behaviour 1 — PREVENT THE IMPOSSIBLE SILENTLY. Asked mid-drag for every candidate
+   * target: `false` means the handle never snaps and `onConnect` never fires, so an impossible arrow
+   * produces NO error, because nothing went wrong — the rule was shown instead of told afterwards.
+   * Omitted ⇒ React Flow's default (everything snaps), which is the pre-WP-7.8 behaviour.
+   */
+  isValidConnection?: (connection: Connection | Edge) => boolean;
   /** Only when `editable`: the user deleted edges on the canvas. The caller stages `disconnect_asset`
    *  for the section→asset edges among them. */
   onEdgesDelete?: (edges: Edge[]) => void;
@@ -784,6 +890,18 @@ export type SkillGraphCanvasProps = {
    */
   skillId?: string;
   versionId?: string;
+  /**
+   * RM-30 WP 7.8 (design decision 5) — positions the author dragged, loaded from the app's own
+   * database (per skill, never from `SKILL.md`). Merged OVER the automatic layout. A node id absent
+   * from this map keeps its automatic position, which is also what makes an ORPHANED position
+   * harmless: it simply matches nothing and that one box lays out automatically. Omitted (the Trace
+   * tab) ⇒ dragging stays session-local exactly as before.
+   */
+  savedPositions?: ReadonlyMap<string, { x: number; y: number }>;
+  /** Fired when a drag settles, so the caller can persist it. Omitted ⇒ nothing is persisted. */
+  onNodeMoved?: (nodeId: string, position: { x: number; y: number }) => void;
+  /** Bump to forget the session's un-persisted drags — the Auto-arrange reset. */
+  positionsResetToken?: number;
 };
 
 /**
@@ -809,11 +927,15 @@ export function SkillGraphCanvas({
   children,
   editable = false,
   onConnect,
+  isValidConnection,
   onEdgesDelete,
   onToolDrop,
   onComponentDrop,
   skillId,
   versionId,
+  savedPositions,
+  onNodeMoved,
+  positionsResetToken = 0,
 }: SkillGraphCanvasProps) {
   const [liveNodes, setLiveNodes, onNodesChange] = useNodesState<SkillCanvasNode>(nodes);
 
@@ -922,15 +1044,22 @@ export function SkillGraphCanvas({
   // drag can never trigger a refit (or reset itself).
   const geometrySignature = useMemo(() => nodeGeometrySignature(decoratedNodes), [decoratedNodes]);
 
-  // ── SI10 — session-local node dragging ───────────────────────────────────────────────────────────
-  // Manual positions are VIEW state only: stored here (never in the draft — no op, no dirty flag,
-  // nothing persisted) and merged over the auto-layout output on every re-seed, so a dragged node
-  // keeps its place through selection re-seeds and diagnostic repaints. The overrides are keyed to
-  // the layout they were dragged on (`skillId | versionId | geometry signature`): the moment the
-  // structural layout changes — a node added/removed/re-ranked, or a skill/version switch — the key
-  // no longer matches and the stale positions are ignored (auto-layout wins again), exactly in step
-  // with the `FitViewOnChange` refit that fires on the same signature.
-  const layoutKey = `${skillId ?? ""} ${versionId ?? ""} ${geometrySignature}`;
+  // ── SI10 — session-local node dragging, and RM-30 WP 7.8's persisted arrangement ────────────────
+  //
+  // SI10 stored a drag in component state keyed to the exact layout it was dragged on, and threw it
+  // away the moment the structural layout changed or the page reloaded — so the arrangement you made
+  // was gone by the time you came back to it. WP 7.8 (decision 5) gives it a memory in the APP'S OWN
+  // DATABASE, per skill, never in `SKILL.md` (whose body is what the model reads and what this app
+  // meters as the L2 footprint — cosmetics must not inflate the very cost the tool exists to measure).
+  //
+  // Two layers, in this order:
+  //   1. `savedPositions` — what the caller loaded from the database. Survives a reload, a version
+  //      switch, and adding a section. An id in here that the graph no longer has simply matches
+  //      nothing, so that ONE box falls back to automatic layout; the canvas is never broken by it.
+  //   2. the SESSION map below — the drag that just happened, held so the box does not jump back
+  //      while the save is in flight. Still keyed to its layout, and still never touches the draft:
+  //      no op, no dirty flag. Persistence leaves through `onNodeMoved`, not through the buffer.
+  const layoutKey = `${skillId ?? ""} ${versionId ?? ""} ${geometrySignature}`;
   const layoutKeyRef = useRef(layoutKey);
   layoutKeyRef.current = layoutKey;
   const [dragOverrides, setDragOverrides] = useState<{
@@ -942,23 +1071,42 @@ export function SkillGraphCanvas({
       ? dragOverrides.positions
       : null;
 
+  // Auto-arrange: the caller cleared the saved positions, so the session's drags must go too —
+  // otherwise the box the author just moved would stubbornly stay put after asking for a reset.
+  useEffect(() => {
+    setDragOverrides(null);
+  }, [positionsResetToken]);
+
+  const mergedOverrides = useMemo(() => {
+    if (!savedPositions?.size && !activeOverrides?.size) return null;
+    const merged = new Map(savedPositions ?? []);
+    for (const [id, position] of activeOverrides ?? []) merged.set(id, position);
+    return merged;
+  }, [savedPositions, activeOverrides]);
+
   const positionedNodes = useMemo(
     () =>
-      activeOverrides ? applyPositionOverrides(decoratedNodes, activeOverrides) : decoratedNodes,
-    [decoratedNodes, activeOverrides],
+      mergedOverrides ? applyPositionOverrides(decoratedNodes, mergedOverrides) : decoratedNodes,
+    [decoratedNodes, mergedOverrides],
   );
 
-  /** Record where a drag left a node. STRICTLY view state — no callback prop fires, so nothing can
-   *  reach the edit buffer / draft store from here. Stable identity (reads the layout key via ref). */
+  /** Record where a drag left a node, and hand it up to be persisted. Nothing here can reach the edit
+   *  buffer / draft store: `onNodeMoved` writes a cosmetic row, never a skill edit. */
+  const onNodeMovedRef = useRef(onNodeMoved);
+  onNodeMovedRef.current = onNodeMoved;
   const handleNodeDragStop = useCallback((_event: unknown, node: SkillCanvasNode) => {
     const key = layoutKeyRef.current;
+    const position = { x: node.position.x, y: node.position.y };
     setDragOverrides((current) => {
       const positions = new Map(
         current !== null && current.layoutKey === key ? current.positions : [],
       );
-      positions.set(node.id, { x: node.position.x, y: node.position.y });
+      positions.set(node.id, position);
       return { layoutKey: key, positions };
     });
+    // Helper nodes (a condition label, a lane header) are not real graph boxes and are not draggable,
+    // but guard anyway so nothing cosmetic-only ever reaches the database.
+    if (node.type === "brand") onNodeMovedRef.current?.(node.id, position);
   }, []);
 
   // Re-seed when the caller rebuilds the flow (new graph / overlay), the diagnostic decoration
@@ -1016,6 +1164,10 @@ export function SkillGraphCanvas({
       fitViewOptions={FIT_VIEW_OPTIONS}
       deleteKeyCode={editable ? EDIT_DELETE_KEYS : null}
       onConnect={editable ? onConnect : undefined}
+      // RM-30 WP 7.8 — an impossible target simply never snaps (behaviour 1). React Flow calls this
+      // for every candidate while the drag is live, so the author is SHOWN the rule rather than told
+      // it in a toast after the fact.
+      isValidConnection={editable ? isValidConnection : undefined}
       onEdgesDelete={editable ? onEdgesDelete : undefined}
       onDragOver={toolDropEnabled || componentDropEnabled ? handleToolDragOver : undefined}
       onDrop={toolDropEnabled || componentDropEnabled ? handleToolDrop : undefined}

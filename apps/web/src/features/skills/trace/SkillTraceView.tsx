@@ -10,6 +10,9 @@ import type {
   SkillVersion,
 } from "@mcp-token-footprint/shared";
 import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Badge,
   Button,
   Card,
@@ -29,7 +32,12 @@ import {
 } from "@elabs-ai/components-ui";
 import type { Edge } from "@elabs-ai/components-flow";
 import { InspectorPanel } from "@elabs-ai/components-flow";
-import { PlayCircle, Server } from "lucide-react";
+import { AlertTriangle, PlayCircle, Server } from "lucide-react";
+import {
+  describeTraceAlignmentDrift,
+  detectTraceAlignmentDrift,
+  hasTraceAlignmentDrift,
+} from "./trace-alignment-drift";
 import { getSkillUsage } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
 import { formatDateTime } from "../../../lib/format";
@@ -143,6 +151,10 @@ export function SkillTraceView({
   const [runs, setRuns] = useState<RunSummary[] | null>(null);
   const [runsError, setRunsError] = useState<string | null>(null);
   const [graph, setGraph] = useState<SkillGraph | null>(null);
+  // RM-30 WP 7.8 (decision 7) — the projector that produced the graph on screen, kept so a trace
+  // recorded under a DIFFERENT projector can be recognised and said out loud rather than painted
+  // as a silently thinner overlay.
+  const [graphProjectorVersion, setGraphProjectorVersion] = useState<number | undefined>(undefined);
   const [graphError, setGraphError] = useState<string | null>(null);
   // The version's CURRENT `treeSha` (WP 5.2's apply flow needs it as `baseTreeSha`) — loaded
   // alongside the graph; re-loaded on demand if a suggestion's apply dialog hits a 409.
@@ -171,6 +183,7 @@ export function SkillTraceView({
     setRuns(null);
     setRunsError(null);
     setGraph(null);
+    setGraphProjectorVersion(undefined);
     setGraphError(null);
     setVersion(null);
     setSelectedRunId(undefined);
@@ -191,7 +204,9 @@ export function SkillTraceView({
       });
     getSkillGraph(skillId, versionId)
       .then((response) => {
-        if (!cancelled) setGraph(response.graph);
+        if (cancelled) return;
+        setGraph(response.graph);
+        setGraphProjectorVersion(response.projectorVersion);
       })
       .catch((err: unknown) => {
         if (!cancelled) setGraphError(getErrorMessage(err, "Couldn’t load the skill graph"));
@@ -273,6 +288,7 @@ export function SkillTraceView({
       getSkillVersion(skillId, versionId),
     ]);
     setGraph(graphResponse.graph);
+    setGraphProjectorVersion(graphResponse.projectorVersion);
     setVersion(loadedVersion);
   }, [skillId, versionId]);
 
@@ -304,6 +320,17 @@ export function SkillTraceView({
         : { nodes: [] as SkillCanvasNode[], edges: [] as Edge[], droppedEdges: 0 },
     [graph, overlay],
   );
+
+  // RM-30 WP 7.8 (decision 7) — a trace recorded before the diagram changed DEGRADES WITH A VISIBLE
+  // NOTICE. It is not migrated and it is not hidden: the alternative is an overlay that quietly drops
+  // the verdicts whose boxes were merged away, which reads as "the run touched less than it did".
+  const drift = useMemo(
+    () =>
+      graph && trace ? detectTraceAlignmentDrift(graph, trace, graphProjectorVersion) : undefined,
+    [graph, trace, graphProjectorVersion],
+  );
+  const driftNotice =
+    drift && hasTraceAlignmentDrift(drift) ? describeTraceAlignmentDrift(drift) : null;
 
   const summary = useMemo(() => (trace ? summarize(trace) : undefined), [trace]);
 
@@ -435,6 +462,16 @@ export function SkillTraceView({
           </Text>
         ) : null}
       </div>
+
+      {/* RM-30 WP 7.8 (decision 7) — an old trace degrades WITH A NOTICE. Never migrated, never
+          hidden, and above all never a silently thinner overlay. */}
+      {driftNotice ? (
+        <Alert variant="warning" className="shrink-0" data-testid="trace-drift-notice">
+          <AlertTriangle />
+          <AlertTitle>This replay no longer lines up with the diagram</AlertTitle>
+          <AlertDescription className="text-pretty">{driftNotice}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {traceError ? (
         // A settled failure (e.g. the 409 version-mismatch) — inline, with the server's reason.

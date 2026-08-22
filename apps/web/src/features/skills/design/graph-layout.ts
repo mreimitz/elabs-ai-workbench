@@ -282,10 +282,10 @@ export function layoutSkillGraph(graph: SkillGraph): Map<string, NodePosition> {
   return layoutSkillGraphWithLanes(graph).positions;
 }
 
-/** The ordered flow lanes for a graph (positions discarded) — powers the flow picker + lane labels. */
-export function layoutSkillLanes(graph: SkillGraph): SkillLane[] {
-  return layoutSkillGraphWithLanes(graph).lanes;
-}
+// RM-30 WP 7.8 deleted `layoutSkillLanes` (positions discarded, lanes only). Its ONE consumer was the
+// flow picker's option list, and a flow is no longer a lane: the picker offers ENTRY POINTS and the
+// canvas filters by reachability from one of them. Keeping a "list the lanes" helper around would have
+// left a second, quietly wrong answer to "what flows does this skill have" sitting in the tree.
 
 /** A same-row edge that spans MORE than one rank step (node origins compared) — it skips over at
  *  least one intermediate column, so the canvas arcs it above the row (see `SKIP_EDGE_ARC`). */

@@ -242,9 +242,21 @@ function matchMarkers(state: AlignmentState, events: TraceEvent[]): void {
 function inferGatekeepers(state: AlignmentState): void {
   for (const node of state.graph.nodes) {
     if (node.kind !== "gatekeeper" || state.markerVisited.has(node.id)) continue;
-    const conditional = (state.outEdges.get(node.id) ?? []).filter(
-      (e) => e.condition !== undefined,
-    );
+    // RM-30 WP 7.8 — a gatekeeper's branches are the edges that CARRY a condition, or (on a WP-7.8+
+    // graph) the ones stamped `branch`. When the projector resolved no branch at all — which, after
+    // WP 7.8 tightened `extractConditions`, is the common case, since narrative "if" prose is no
+    // longer lifted into a fork — fall back to the gatekeeper's ordinary forward successors. The
+    // reasoning is identical and just as conservative: if what comes after the decision was visited,
+    // the decision was passed through. Without the fallback a gatekeeper with one plain successor
+    // could never be implied at all, and every such section reported `unvisited` on a clean run.
+    const outgoing = state.outEdges.get(node.id) ?? [];
+    const branches = outgoing.filter((e) => e.condition !== undefined || e.kind === "branch");
+    const conditional =
+      branches.length > 0
+        ? branches
+        : outgoing.filter(
+            (e) => e.kind === "then" || e.kind === "contains" || e.kind === "triggers",
+          );
     const implyingEvidence = new Set<number>();
     let takenBranches = 0;
 
@@ -263,7 +275,9 @@ function inferGatekeepers(state: AlignmentState): void {
       state.visit(node.id, ...[...implyingEvidence]);
       state.okNote.set(
         node.id,
-        `implied: downstream visits reach through ${takenBranches} condition branch(es)`,
+        branches.length > 0
+          ? `implied: downstream visits reach through ${takenBranches} condition branch(es)`
+          : `implied: downstream visits reach through ${takenBranches} successor(s)`,
       );
     }
   }

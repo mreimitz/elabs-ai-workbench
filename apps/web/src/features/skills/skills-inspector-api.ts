@@ -1,20 +1,24 @@
 import type {
+  PutSkillBoxPositionsRequest,
   RestoreSkillVersionRequest,
   RunSummary,
   SessionTrace,
   Skill,
+  SkillBoxPosition,
+  SkillBoxPositionsResponse,
   SkillDiff,
   SkillEditsRequest,
   SkillEditsResponse,
   SkillFileContent,
   SkillFileNode,
+  SkillFlowTokensResponse,
   SkillGraphResponse,
   SkillSuggestionsResponse,
   SkillVersion,
   ToolDiagnostic,
   ToolDiagnosticsReport,
 } from "@mcp-token-footprint/shared";
-import { ApiError, apiGet, apiPost } from "../../lib/api";
+import { ApiError, apiDelete, apiGet, apiPost, apiPut } from "../../lib/api";
 
 /**
  * Both file contents for one path across the two versions — the payload of `GET /:id/diff/file`
@@ -68,6 +72,40 @@ export const getSkillFile = (
  */
 export const getSkillGraph = (skillId: string, versionId: string): Promise<SkillGraphResponse> =>
   apiGet<SkillGraphResponse>(`/api/skills/${skillId}/versions/${versionId}/graph`);
+
+/**
+ * RM-30 WP 7.8 — what each graph node costs the model to READ, in tokens. The entry-point flow view
+ * sums these over the reachability sets to answer "when this command fires, how much does the model
+ * actually read?". Computed on read from the version's own token profile and the footprint's
+ * already-persisted per-file totals — never a second counter, never persisted.
+ */
+export const getSkillFlowTokens = (
+  skillId: string,
+  versionId: string,
+): Promise<SkillFlowTokensResponse> =>
+  apiGet<SkillFlowTokensResponse>(`/api/skills/${skillId}/versions/${versionId}/flow-tokens`);
+
+// ── RM-30 WP 7.8 (design decision 5) — canvas box positions, kept APP-SIDE, per SKILL ─────────────
+// Not written into `SKILL.md`: its body is what the model reads and this app meters it as the L2
+// footprint, so a position comment would be invisible to a reader and fully visible to the tokenizer.
+// Per skill rather than per version, so an arrangement survives saving a new version.
+
+/** Every saved box position for a skill. A node id absent here uses automatic layout. */
+export const getSkillBoxPositions = (skillId: string): Promise<SkillBoxPositionsResponse> =>
+  apiGet<SkillBoxPositionsResponse>(`/api/skills/${skillId}/box-positions`);
+
+/** Upsert positions. Anything not named is left alone — a drag saves one box, not the layout. */
+export const putSkillBoxPositions = (
+  skillId: string,
+  positions: SkillBoxPosition[],
+): Promise<SkillBoxPositionsResponse> =>
+  apiPut<SkillBoxPositionsResponse>(`/api/skills/${skillId}/box-positions`, {
+    positions,
+  } satisfies PutSkillBoxPositionsRequest);
+
+/** Auto-arrange: forget every saved position so the canvas falls back to automatic layout. */
+export const clearSkillBoxPositions = (skillId: string): Promise<SkillBoxPositionsResponse> =>
+  apiDelete(`/api/skills/${skillId}/box-positions`).then(() => ({ skillId, positions: [] }));
 
 /**
  * The runs that RESOLVED this skill version (SkillFlow WP 2.1 — `GET /:id/versions/:vid/runs`,

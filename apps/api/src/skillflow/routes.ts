@@ -1,13 +1,18 @@
 import {
   SKILLFLOW_EDIT_SOURCE_REF,
   SKILLFLOW_PROJECTOR_VERSION,
+  putSkillBoxPositionsRequestSchema,
   qualityReportSchema,
+  skillBoxPositionsResponseSchema,
   skillEditsRequestSchema,
+  skillFlowTokensResponseSchema,
   skillSuggestionsResponseSchema,
   type QualityReport,
   type RunSummary,
   type RunTraceResponse,
+  type SkillBoxPositionsResponse,
   type SkillEditsResponse,
+  type SkillFlowTokensResponse,
   type SkillGraph,
   type SkillGraphResponse,
   type SkillSuggestionsResponse,
@@ -27,6 +32,7 @@ import {
 import type { RunRepository } from "../testing/run-repository.js";
 import { httpError } from "../utils/errors.js";
 import { validateEditOps } from "./edit-ops.js";
+import { computeFlowNodeCosts } from "./flow-tokens.js";
 import { projectSkillGraph } from "./projector.js";
 import { analyzeSkillQuality } from "./quality.js";
 import { applyOpsToContent } from "./roundtrip.js";
@@ -105,6 +111,77 @@ export async function registerSkillflowRoutes(
 
     return { graph, projectorVersion: SKILLFLOW_PROJECTOR_VERSION };
   });
+
+  // RM-30 WP 7.8 (design decision 5) — canvas box positions, kept APP-SIDE and per SKILL.
+  //
+  // Three routes, one table, one migration (v62), and NOTHING in this trio touches a version, a blob
+  // or a file row — which is the whole point. `SKILL.md`'s body is what the model reads and this app
+  // meters it as the L2 footprint, so a position comment would be invisible to a reader and fully
+  // visible to the tokenizer. `apps/api/test/skillflow-box-positions.test.ts` pins that the skill
+  // file is byte-identical across a box move, because that byte-identity IS the decision's
+  // justification.
+  //
+  //   GET    → every saved position (an orphan simply is not found by the canvas; that ONE box then
+  //            falls back to automatic layout, never a broken canvas).
+  //   PUT    → upsert the named positions; anything unnamed is left alone (a drag saves one box).
+  //   DELETE → Auto-arrange: forget the arrangement entirely.
+  app.get("/api/skills/:id/box-positions", async (request): Promise<SkillBoxPositionsResponse> => {
+    const { id } = request.params as { id: string };
+    return skillBoxPositionsResponseSchema.parse({
+      skillId: id,
+      positions: repo.listBoxPositions(id),
+    } satisfies SkillBoxPositionsResponse);
+  });
+
+  app.put("/api/skills/:id/box-positions", async (request): Promise<SkillBoxPositionsResponse> => {
+    const { id } = request.params as { id: string };
+    const body = putSkillBoxPositionsRequestSchema.parse(request.body ?? {});
+    repo.saveBoxPositions(id, body.positions);
+    return skillBoxPositionsResponseSchema.parse({
+      skillId: id,
+      positions: repo.listBoxPositions(id),
+    } satisfies SkillBoxPositionsResponse);
+  });
+
+  app.delete(
+    "/api/skills/:id/box-positions",
+    async (request): Promise<SkillBoxPositionsResponse> => {
+      const { id } = request.params as { id: string };
+      repo.clearBoxPositions(id);
+      return skillBoxPositionsResponseSchema.parse({
+        skillId: id,
+        positions: [],
+      } satisfies SkillBoxPositionsResponse);
+    },
+  );
+
+  // RM-30 WP 7.8 — GET /api/skills/:id/versions/:vid/flow-tokens → what each graph node costs the
+  // model to READ. The entry-point flow view sums these over the reachability sets to answer "when
+  // this command fires, how much does the model actually read?" — the deliverable of the work
+  // package. Read-only, computed on read, persisted nowhere: no migration, no table, no column.
+  // Reuses the version's own token profile and the footprint's already-persisted per-file totals, so
+  // there is exactly one counter in the app (see `flow-tokens.ts`'s header).
+  app.get(
+    "/api/skills/:id/versions/:vid/flow-tokens",
+    async (request): Promise<SkillFlowTokensResponse> => {
+      const { id, vid } = request.params as { id: string; vid: string };
+
+      repo.getPublic(id); // 404 if the skill is missing
+      const version = repo.getVersion(vid); // 404 if the version is missing
+      if (version.skillId !== id) throw httpError(404, "Skill version not found");
+
+      const files = repo.listFiles(vid);
+      const skillMd = loadSkillMd(repo, vid);
+      const graph = projectSkillGraph(skillMd, files);
+      const nodes = await computeFlowNodeCosts(graph, skillMd, files, version.tokenProfile);
+
+      return skillFlowTokensResponseSchema.parse({
+        tokenProfile: version.tokenProfile,
+        projectorVersion: SKILLFLOW_PROJECTOR_VERSION,
+        nodes,
+      } satisfies SkillFlowTokensResponse);
+    },
+  );
 
   // GET /api/skills/:id/versions/:vid/runs → the runs that RESOLVED this skill version (joined via
   // run_skills), newest first. 404 on an unknown skill/version (validated the same way as the graph

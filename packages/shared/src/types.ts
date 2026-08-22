@@ -88,6 +88,7 @@ import type {
   SESSION_COST_BASES,
   SESSION_LIVE_REASONING,
   SESSION_TOKEN_ACCOUNTING,
+  SKILL_EDGE_KINDS,
   SKILL_EDIT_OP_TYPES,
   SKILL_FILE_ENCODINGS,
   SKILL_FILE_KINDS,
@@ -3609,10 +3610,18 @@ export type SkillGraphNode =
   // references projects no `tool_ref` node (regression-locked).
   | (SkillGraphNodeCommon & { kind: "tool_ref"; toolName: string; serverName?: string });
 
+/** RM-30 WP 7.8 — what an arrow MEANS at read time. See `SKILL_EDGE_KINDS` in `constants.ts` for the
+ *  five kinds and `skill-flow-grammar.ts` for the one frozen legality table over them. */
+export type SkillEdgeKind = (typeof SKILL_EDGE_KINDS)[number];
+
 /**
  * A directed edge in the skill graph. `condition` labels a gatekeeper branch; `anchor` is optional.
  * `flowId` (Skill IDE WP 1.1/I1) is ADDITIVE — absent ⇒ `DEFAULT_SKILL_FLOW_ID` (`'main'`); a
  * cross-flow edge (e.g. "see /other") carries the source flow's id.
+ *
+ * `kind` (RM-30 WP 7.8) is ADDITIVE/optional — a graph serialized before that work package carries no
+ * kind anywhere and still parses. Absent means UNKNOWN, never "sequence": reachability treats an
+ * unkinded edge as only-maybe-traversed rather than promising a reading floor it cannot prove.
  */
 export type SkillGraphEdge = {
   id: string;
@@ -3621,6 +3630,7 @@ export type SkillGraphEdge = {
   condition?: string;
   anchor?: SkillGraphAnchor;
   flowId?: string;
+  kind?: SkillEdgeKind;
 };
 
 /**
@@ -3739,6 +3749,67 @@ export type SessionTrace = {
 export type SkillGraphResponse = {
   graph: SkillGraph;
   projectorVersion: number;
+};
+
+/**
+ * RM-30 WP 7.8 — what ONE graph node costs the model to read, in tokens.
+ *
+ * The deliverable of the entry-point flow view is a NUMBER — "always reads 4 sections, 1,240 tokens.
+ * May additionally read 1 file and call 1 tool, up to 3,900 tokens." — and this is the measurement
+ * behind it. It is not a new counter: a SECTION's cost is its own `SKILL.md` line span counted with
+ * the version's own token profile (the same `TokenCounter` the L1/L2/L3 footprint uses), and a
+ * bundled FILE's cost is the `tokenTotal` the footprint already persisted for it.
+ *
+ * A node with no measurable text of its own — a loop guard, which is a construct rather than prose —
+ * costs 0 and says so. A `tool_ref` is deliberately ABSENT from this map: a tool's definition tokens
+ * come from the bound server's scan, not from the skill, and the caller already holds them.
+ */
+export type SkillFlowNodeCost = {
+  nodeId: string;
+  tokens: number;
+};
+
+/**
+ * Response of `GET /api/skills/:id/versions/:vid/flow-tokens` (RM-30 WP 7.8). Read-only, computed on
+ * read, persisted nowhere. `projectorVersion` stamps which projector produced the node ids, so a
+ * caller holding a graph from a different version never silently sums the wrong boxes.
+ */
+export type SkillFlowTokensResponse = {
+  tokenProfile: TokenProfileId;
+  projectorVersion: number;
+  /** One entry per measurable node, in graph order. A node id absent here is NOT MEASURED, not zero. */
+  nodes: SkillFlowNodeCost[];
+};
+
+/**
+ * RM-30 WP 7.8 (design decision 5) — where ONE box sits on the canvas, after someone dragged it.
+ *
+ * Stored APP-SIDE, per skill, NOT written into `SKILL.md`. The reason is this project's whole
+ * subject: `SKILL.md`'s body is what the model reads, and this app meters it as the L2 footprint. A
+ * position comment is invisible to a reader and fully visible to the tokenizer — a tool whose purpose
+ * is measuring context cost should not inflate that cost to store cosmetics. Two further consequences
+ * ruled the in-file option out: every version is an immutable snapshot, so nudging a box would either
+ * dirty the draft or be discarded; and layout churn would appear in every version diff.
+ *
+ * Kept per SKILL rather than per VERSION, so the arrangement survives saving a new version. Box
+ * identity is derived from the document, so heavily restructuring a skill orphans some positions —
+ * an orphan falls back to automatic layout FOR THAT ONE BOX, never a broken canvas.
+ */
+export type SkillBoxPosition = {
+  nodeId: string;
+  x: number;
+  y: number;
+};
+
+/** Response of `GET /api/skills/:id/box-positions` — every saved position for the skill. */
+export type SkillBoxPositionsResponse = {
+  skillId: string;
+  positions: SkillBoxPosition[];
+};
+
+/** Body of `PUT /api/skills/:id/box-positions` — upsert these positions (others are left alone). */
+export type PutSkillBoxPositionsRequest = {
+  positions: SkillBoxPosition[];
 };
 
 /**

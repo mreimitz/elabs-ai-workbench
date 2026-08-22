@@ -735,6 +735,27 @@ CREATE TABLE IF NOT EXISTS skill_server_bindings (
   PRIMARY KEY (skill_id, server_name)
 );
 
+-- RM-30 WP 7.8 (design decision 5, migration v62) — where the author dragged each box on the skill
+-- canvas. Kept HERE and not in SKILL.md, deliberately: SKILL.md's body is what the model reads and
+-- this app meters it as the L2 footprint, so a position comment would be invisible to a reader and
+-- fully visible to the tokenizer. A tool whose purpose is measuring context cost must not inflate
+-- that cost to store cosmetics. (Two further consequences ruled the in-file option out: every
+-- version is an immutable snapshot, so nudging a box would either dirty the draft or be discarded;
+-- and layout churn would show up in every version diff.)
+--
+-- Keyed per SKILL, not per version, so an arrangement survives saving a new version. Node ids are
+-- DERIVED from the document, so restructuring a skill orphans some rows — an orphan is simply not
+-- found at read time and that ONE box falls back to automatic layout. Nothing prunes them: they are
+-- a few bytes each, and a row that looks orphaned today comes back to life if the heading returns.
+CREATE TABLE IF NOT EXISTS skill_box_positions (
+  skill_id   TEXT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+  node_id    TEXT NOT NULL,
+  x          REAL NOT NULL,
+  y          REAL NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY (skill_id, node_id)
+);
+
 -- NOTE: the external Claude Code session-log tables (session_traces + session_trace_events, WP 3.1)
 -- were removed by owner decision 2026-07-03 — Trace Mode sources are ONLY this app's own test runs.
 -- A fresh DB never creates them (they are absent here); an existing DB drops them via migration v12

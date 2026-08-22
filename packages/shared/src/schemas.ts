@@ -105,6 +105,7 @@ import {
   SESSION_COST_BASES,
   SESSION_LIVE_REASONING,
   SESSION_TOKEN_ACCOUNTING,
+  SKILL_EDGE_KINDS,
   SKILL_FILE_ENCODINGS,
   SKILL_FILE_KINDS,
   SKILL_GATE_EXPECTATIONS,
@@ -1330,10 +1331,7 @@ function watchWorkflowDispatchActionSchema() {
   return z
     .object({
       type: z.literal("workflow_dispatch"),
-      owner: z
-        .string()
-        .trim()
-        .refine(isWatchWorkflowOwner, { message: "invalid GitHub owner" }),
+      owner: z.string().trim().refine(isWatchWorkflowOwner, { message: "invalid GitHub owner" }),
       repo: z.string().trim().refine(isWatchWorkflowRepo, { message: "invalid repository name" }),
       workflow: z
         .string()
@@ -1450,7 +1448,11 @@ export const watchWindowConfigSchema = z
   .superRefine((config, ctx) => {
     const check = validateWatchThresholds(config);
     if (!check.ok) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["warnThreshold"], message: check.message });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["warnThreshold"],
+        message: check.message,
+      });
     }
     // AM-OB4 — the SAME rule the chart config runs, so an editor's inline message, a chart 400 and a
     // rule 400 all say the same thing about a half-configured ratio.
@@ -1923,6 +1925,9 @@ export const skillGraphEdgeSchema = z.object({
   condition: z.string().optional(),
   anchor: skillGraphAnchorSchema.optional(),
   flowId: z.string().trim().min(1).optional(),
+  // RM-30 WP 7.8 — the reading-order grammar. ADDITIVE/optional: a graph serialized before that work
+  // package carries no kind anywhere and still parses (fixture-locked in skill-ide-projector.test.ts).
+  kind: z.enum(SKILL_EDGE_KINDS).optional(),
 });
 
 /** One flow in a graph (Skill IDE I1): its id/label + the entry-point node heading it (if any). */
@@ -2067,6 +2072,41 @@ export const sessionTraceSchema = z.object({
 export const skillGraphResponseSchema = z.object({
   graph: skillGraphSchema,
   projectorVersion: z.number().int().nonnegative(),
+});
+
+/** RM-30 WP 7.8 — per-node read cost behind the entry-point flow's token figure. */
+export const skillFlowNodeCostSchema = z.object({
+  nodeId: z.string().trim().min(1),
+  tokens: z.number().int().nonnegative(),
+});
+
+/** Flow-tokens route response (`…/versions/:vid/flow-tokens`). */
+export const skillFlowTokensResponseSchema = z.object({
+  tokenProfile: z.enum(TOKEN_PROFILES),
+  projectorVersion: z.number().int().nonnegative(),
+  nodes: z.array(skillFlowNodeCostSchema),
+});
+
+/**
+ * RM-30 WP 7.8 — one saved canvas position. Coordinates are FINITE and bounded: a position is
+ * cosmetic state written from a drag gesture, so `NaN`/`Infinity`/an absurd magnitude is a bug or a
+ * hostile body, never a real arrangement, and it is refused at the door rather than persisted.
+ */
+export const skillBoxPositionSchema = z.object({
+  nodeId: z.string().trim().min(1).max(512),
+  x: z.number().finite().min(-1_000_000).max(1_000_000),
+  y: z.number().finite().min(-1_000_000).max(1_000_000),
+});
+
+/** `GET /api/skills/:id/box-positions`. */
+export const skillBoxPositionsResponseSchema = z.object({
+  skillId: z.string().trim().min(1),
+  positions: z.array(skillBoxPositionSchema),
+});
+
+/** `PUT /api/skills/:id/box-positions` — capped so one request cannot write an unbounded table. */
+export const putSkillBoxPositionsRequestSchema = z.object({
+  positions: z.array(skillBoxPositionSchema).max(2000),
 });
 
 /** Trace route response (`…/versions/:vid/trace`): the aligned session trace. */

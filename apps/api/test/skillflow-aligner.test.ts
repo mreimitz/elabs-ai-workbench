@@ -207,9 +207,13 @@ test("clean run over the zero-annotation graph: gate + assets ok, no fractures, 
   assert.equal(alignment.edgeTraversals["e-validate-the-data-gate-validate-py"], 1);
   assert.equal(alignment.edgeTraversals["e-generate-the-report-asset-template-html"], 1);
   assert.equal(alignment.edgeTraversals["e-generate-the-report-asset-format-spec-md"], 1);
-  // BOTH condition branches lead to visited territory → each traversed (no guessing between them).
+  // RM-30 WP 7.8 — this fixture's "If the input is CSV … Otherwise if JSON …" is an INTRA-STEP rule,
+  // not routing, so the tightened `extractConditions` no longer lifts it into two condition edges
+  // pointing at the same successor (the "fork that does not fork"). "Gather inputs" is still a
+  // gatekeeper by prose, and it now has exactly ONE plain `then` successor, which the gatekeeper
+  // inference follows instead — so the section is still implied visited, over one edge, not two.
   assert.equal(alignment.edgeTraversals["e-gather-inputs-validate-the-data"], 1);
-  assert.equal(alignment.edgeTraversals["e-gather-inputs-validate-the-data-2"], 1);
+  assert.equal(alignment.edgeTraversals["e-gather-inputs-validate-the-data-2"], undefined);
 
   // Unmatched = exactly the genuinely unmatchable events (turns, user_message, tool plumbing, the
   // SKILL.md read — not an asset node — and the raw no-gateId marker). No silent drops.

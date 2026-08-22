@@ -874,10 +874,10 @@ test("migration v26 — fresh DB stamps LATEST (55) and carries rating_issues + 
   applyMigrations(db);
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    61,
-    "LATEST_SCHEMA_VERSION auto-derived to 61 (v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index; v34 = run_views; v35 = runs.pinned; v36 = run_feedback; v37 = run_steps hierarchy; v38 = watch_rules; v39 = watch_rules.last_evaluated_at; v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10)",
+    62,
+    "LATEST_SCHEMA_VERSION auto-derived to 62 (v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index; v34 = run_views; v35 = runs.pinned; v36 = run_feedback; v37 = run_steps hierarchy; v38 = watch_rules; v39 = watch_rules.last_evaluated_at; v40 = notifications; v41 = fleet issue aggregation; v42 = runs fork lineage; v43 = digest reports; v44 = model pricing; v45 = dashboard charts; v46 = review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10; v62 = skill_box_positions, canvas box positions kept APP-SIDE per skill so a position comment never inflates the metered SKILL.md body, planning/Roadmap/RM-30-ux-overhaul WP 7.8 decision 5)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
   assert.ok(tableExists(db, "rating_issues"));
   assert.ok(tableExists(db, "rating_issue_occurrences"));
   // v30 — the concrete-evidence columns exist on a fresh DB (schema.ts baseline).
@@ -895,7 +895,7 @@ test("migration v26 — a pre-v26 DB (stamped 25, no tables) is brought forward 
   db.pragma("user_version = 25"); // a MINIMAL fixture: nothing but the version stamp (the v19/v24 guard pattern)
   assert.ok(!tableExists(db, "rating_issues"));
   applyMigrations(db);
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "stamped forward to LATEST (61)");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "stamped forward to LATEST (62)");
   assert.ok(tableExists(db, "rating_issues"), "v26 created rating_issues");
   assert.ok(tableExists(db, "rating_issue_occurrences"), "v26 created rating_issue_occurrences");
 });
@@ -917,7 +917,7 @@ test("migration v30 — a pre-v30 occurrences table (no evidence columns) gains 
 
   applyMigrations(db as unknown as AppDatabase);
 
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "stamped forward to LATEST (61)");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "stamped forward to LATEST (62)");
   const cols = (db.pragma("table_info(rating_issue_occurrences)") as { name: string }[]).map(
     (c) => c.name,
   );

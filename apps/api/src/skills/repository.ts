@@ -9,6 +9,7 @@ import type {
   SkillUsage,
   SkillUsageEnvironment,
   SkillUsageRun,
+  SkillBoxPosition,
   SkillVersion,
   TokenProfileId,
 } from "@mcp-token-footprint/shared";
@@ -596,6 +597,51 @@ export class SkillRepository {
       )
       .all(skillId) as Array<{ scenario_id: string }>;
     return rows.map((row) => row.scenario_id);
+  }
+
+  // --- Canvas box positions (RM-30 WP 7.8, design decision 5) -----------------------------------
+  //
+  // Purely cosmetic per-skill state: where the author dragged each box. It lives HERE rather than in
+  // `SKILL.md` because the body of `SKILL.md` is what the model reads and this app meters it as the
+  // L2 footprint — a position comment would be invisible to a reader and fully visible to the
+  // tokenizer. Nothing in these three methods touches a version, a blob, or a file row, which is why
+  // moving a box leaves `SKILL.md` byte-for-byte unchanged (pinned by test).
+
+  /** Every saved position for a skill, in stable node-id order. Unknown skill ⇒ 404. */
+  listBoxPositions(skillId: string): SkillBoxPosition[] {
+    this.getPublic(skillId); // 404 if the skill is missing
+    const rows = this.db
+      .prepare(
+        "SELECT node_id, x, y FROM skill_box_positions WHERE skill_id = ? ORDER BY node_id ASC",
+      )
+      .all(skillId) as Array<{ node_id: string; x: number; y: number }>;
+    return rows.map((row) => ({ nodeId: row.node_id, x: row.x, y: row.y }));
+  }
+
+  /** Upsert positions. Positions NOT named are left alone — a drag saves one box, not the layout. */
+  saveBoxPositions(skillId: string, positions: SkillBoxPosition[]): void {
+    this.getPublic(skillId); // 404 if the skill is missing
+    const now = new Date().toISOString();
+    const statement = this.db.prepare(`
+      INSERT INTO skill_box_positions (skill_id, node_id, x, y, updated_at)
+      VALUES (@skillId, @nodeId, @x, @y, @now)
+      ON CONFLICT(skill_id, node_id) DO UPDATE SET x = @x, y = @y, updated_at = @now
+    `);
+    const writeAll = this.db.transaction((rows: SkillBoxPosition[]) => {
+      for (const row of rows) {
+        statement.run({ skillId, nodeId: row.nodeId, x: row.x, y: row.y, now });
+      }
+    });
+    writeAll(positions);
+  }
+
+  /** Auto-arrange: drop every saved position so the canvas falls back to automatic layout. */
+  clearBoxPositions(skillId: string): number {
+    this.getPublic(skillId); // 404 if the skill is missing
+    const result = this.db
+      .prepare("DELETE FROM skill_box_positions WHERE skill_id = ?")
+      .run(skillId);
+    return result.changes;
   }
 
   // --- Files ----------------------------------------------------------------------------------

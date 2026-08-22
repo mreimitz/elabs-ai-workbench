@@ -308,48 +308,84 @@ test("every multi-command node is anchored (startLine ≤ endLine; heading nodes
 // output and deep-compare against a frozen snapshot of the pre-plan projection captured from the base
 // projector. The snapshot lives at fixtures/skillflow/zero-annotation.v2-graph.json.
 
-/** Remove the additive WP 1.2 fields, yielding the pre-plan graph shape for a modulo-delta compare. */
-function stripAdditiveDelta(graph: SkillGraph): {
-  nodes: unknown[];
-  edges: unknown[];
-  warnings: string[];
-} {
-  const stripNode = (node: SkillGraphNode) => {
-    const { flowId: _flowId, ...rest } = node;
-    return rest;
-  };
-  const stripEdge = (edge: SkillGraphEdge) => {
-    const { flowId: _flowId, ...rest } = edge;
-    return rest;
-  };
-  return {
-    nodes: graph.nodes.map(stripNode),
-    edges: graph.edges.map(stripEdge),
-    warnings: graph.warnings,
-  };
-}
+// RM-30 WP 7.8 SUPERSEDES the "modulo the additive delta" form of this lock, and does so
+// deliberately rather than by accident. Two of that work package's three projector changes are NOT
+// additive — duplicate file/tool boxes merge (node ids move) and narrative prose stops becoming a
+// branch label (edges disappear) — which is exactly why `SKILLFLOW_PROJECTOR_VERSION` went to 5.
+//
+// So the lock now compares the FULL v5 projection against a frozen v5 snapshot (a stronger lock: no
+// field is stripped before comparing), and the v2 snapshot keeps its own, narrower job below — proving
+// a graph serialized before WP 7.8, with no `kind` on any edge, still parses.
+//
+// What moved between the two snapshots, and why, is asserted explicitly further down rather than left
+// to a reader diffing two JSON files.
 
-test("zero-command regression lock: zero-annotation projects the pre-plan graph modulo the additive delta", () => {
+test("zero-command lock: zero-annotation projects the frozen v5 graph, byte for byte", () => {
   const { skillMd, files } = loadFixture("zero-annotation");
   const graph = projectSkillGraph(skillMd, files);
 
-  // Delta clause 1 + 2: every node/edge is on the main flow (no command/keyword sections here).
+  // Every node/edge is on the main flow (no command/keyword sections here).
   for (const node of graph.nodes)
     assert.equal(node.flowId, DEFAULT_SKILL_FLOW_ID, `node ${node.id} on main flow`);
   for (const edge of graph.edges)
     assert.equal(edge.flowId, DEFAULT_SKILL_FLOW_ID, `edge ${edge.id} on main flow`);
 
-  // Delta clause 3: exactly the single main flow (no command flows).
+  // Exactly the single main flow (no command flows).
   assert.deepEqual(graph.flows, [{ id: DEFAULT_SKILL_FLOW_ID, label: "Main flow" }]);
 
-  // Delta clause 4: no keyword entry points (zero-annotation frontmatter has no keywords:).
+  // No keyword entry points (zero-annotation frontmatter has no keywords:).
   assert.equal(entryPoints(graph).length, 0, "no entry-point nodes for a zero-command skill");
 
-  // The residual (additive fields removed) must equal the frozen pre-plan projection, byte for byte.
   const snapshot = JSON.parse(
-    readFileSync(path.join(here, "fixtures/skillflow/zero-annotation.v2-graph.json"), "utf8"),
+    readFileSync(path.join(here, "fixtures/skillflow/zero-annotation.v5-graph.json"), "utf8"),
   );
-  assert.deepEqual(stripAdditiveDelta(graph), snapshot, "stripped v3 === pre-plan v2 projection");
+  assert.deepEqual(graph, snapshot, "current projection === frozen v5 snapshot");
+});
+
+test("a pre-WP-7.8 graph — no edge `kind` anywhere — still parses (the additive proof)", () => {
+  const v2 = JSON.parse(
+    readFileSync(path.join(here, "fixtures/skillflow/zero-annotation.v2-graph.json"), "utf8"),
+  ) as { edges: SkillGraphEdge[] };
+
+  // The fixture is genuinely pre-grammar — if someone ever regenerates it WITH kinds, this test would
+  // silently stop proving anything, so assert the premise before the conclusion.
+  assert.ok(v2.edges.length > 0, "the pre-WP-7.8 fixture actually carries edges");
+  for (const edge of v2.edges) {
+    assert.equal(edge.kind, undefined, `pre-WP-7.8 edge ${edge.id} carries no kind`);
+  }
+
+  const parsed = skillGraphSchema.parse(v2);
+  assert.equal(parsed.edges.length, v2.edges.length, "every kindless edge survived parsing");
+  for (const edge of parsed.edges)
+    assert.equal(edge.kind, undefined, "kind stays absent, not zeroed");
+});
+
+test("the v2 → v5 delta on zero-annotation is exactly the three documented changes", () => {
+  const v2 = JSON.parse(
+    readFileSync(path.join(here, "fixtures/skillflow/zero-annotation.v2-graph.json"), "utf8"),
+  ) as { nodes: SkillGraphNode[]; edges: SkillGraphEdge[]; warnings: string[] };
+  const { skillMd, files } = loadFixture("zero-annotation");
+  const v5 = projectSkillGraph(skillMd, files);
+
+  // (1) Every edge is now kinded. (Nothing else about an edge changed shape.)
+  for (const edge of v5.edges) assert.ok(edge.kind, `edge ${edge.id} carries a kind`);
+
+  // (2) The two spurious CONDITION edges are gone — "If the input is CSV … Otherwise if JSON …" is an
+  //     intra-step rule, not routing, and it used to draw a fork that pointed both arms at the SAME
+  //     next section. One plain `then` edge replaces them, and the apologetic warning goes with them.
+  assert.equal(v2.edges.filter((e) => e.condition !== undefined).length, 2, "v2 had two");
+  assert.equal(v5.edges.filter((e) => e.condition !== undefined).length, 0, "v5 has none");
+  assert.equal(v2.warnings.length, 1, "v2 warned it could not resolve them");
+  assert.deepEqual(v5.warnings, [], "v5 has nothing to apologise for");
+  assert.equal(v5.edges.length, v2.edges.length - 1, "exactly one edge fewer");
+
+  // (3) Node identity is UNCHANGED for this fixture — it cites each file from exactly one section, so
+  //     the box merge has nothing to merge here. (The merge itself is proved on its own fixture below.)
+  assert.deepEqual(
+    v5.nodes.map((n) => n.id),
+    v2.nodes.map((n) => n.id),
+    "no node id moved on this fixture",
+  );
 });
 
 // --- (i) tool_ref projection (Skill IDE WP 8.1 / I9.2) ------------------------------------------
@@ -408,13 +444,11 @@ test("extended multi-command projects two tool_ref accessory nodes with the righ
   assert.equal(flowIdOf(listRef), analyze.id, "the tool_ref inherits its owner's flow");
   assert.equal(flowIdOf(renderRef), report.id, "the tool_ref inherits its owner's flow");
 
-  // id pinned by (line + tool name) — deterministic and slug-based.
+  // RM-30 WP 7.8 — the id is pinned by tool NAME alone. It used to carry the citation's line number
+  // (`…-l12`), which was right when a box existed per MENTION and wrong now that one box serves every
+  // mention of the same tool.
   for (const ref of refs) {
-    assert.match(
-      ref.id,
-      new RegExp(`^tool-ref-${ref.toolName.replace(/_/g, "-")}-l\\d+$`),
-      "id pinned by name + line",
-    );
+    assert.equal(ref.id, `tool-ref-${ref.toolName.replace(/_/g, "-")}`, "id pinned by tool name");
   }
 
   assert.doesNotThrow(() => skillGraphSchema.parse(graph));
