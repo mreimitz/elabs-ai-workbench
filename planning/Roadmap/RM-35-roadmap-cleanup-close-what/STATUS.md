@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T16:35:00Z"
+timestamp: "2026-08-22T17:50:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -347,6 +347,13 @@ met and — where the box touches code — the gate
       an × on every file tab with the strip owning its own keyboard, and one contextual "Edit in
       Studio" instead of two. A third (the warning-severity reversal) landed in RM-17.
       **Still open: 7.7 · 7.8 · 7.9** (7.8's gate is now cleared).
+      **7.7 LANDED 2026-08-22, then 7.8 LANDED 2026-08-22 (merged `8b423e7`, migration v62, full gate
+      EXIT=0) — so this box is down to WP 7.9 alone.** 7.8 gave the arrows a kind held as one frozen
+      legality table (gated against a second copy), replaced lane-membership filtering with forward
+      reachability, and made the canvas print what an entry point actually makes the model read —
+      the token figure that was the WP's real deliverable. It also killed a fork that did not fork:
+      the corpus's only "unresolvable branch" was a mis-parse of two narrative sentences. Box
+      positions persist per skill and are provably **not** written into `SKILL.md`.
       **Nobody has still ever used any of this.** Three Studio WPs deep, no browser has been opened,
       no save has been completed against a live API, and it has never met a bound MCP server
 - [x] WP 3.4 — **RM-03 WP 2.3** — **done 2026-08-22 · dropped as engineering and closed as the ledger
@@ -480,6 +487,17 @@ met and — where the box touches code — the gate
 > - **RM-17 AM-OB2** (WP 3.7) — corrected-answer feedback. Orchestrator probe: an `UPDATE run_grades`
 >   inside the feedback upsert → **2 AR6 assertions red**. **Phase 6 is 7 of 13**, so with WP 3.5 the
 >   amendment's fourteen boxes are down to **6**.
+> - **RM-30 WP 7.8** (WP 3.3) — the edge grammar and entry-point flows, the batch's XL item, merged
+>   `8b423e7` with migration **v62**. Orchestrator probes: planting a second legality table in
+>   `apps/web` → the no-second-copy scan red; reinstating the old *"Couldn't create that connection"*
+>   string → the bare-failure rule red. **Phase 7 is down to 7.9 alone.** The four-piece commit
+>   discipline the brief imposed held: six commits, each gate-green when it landed, so a session limit
+>   could not have destroyed it the way it destroyed 7.7's first attempt.
+>
+> **The final gate on merged `main` was EXIT=0 and genuinely clean** — shared 287 · illustrations 957
+> · cli 87 · api 3,811 · web 4,319 (+5 skipped) · build · biome 1,855 files. Worth recording
+> precisely because of the flake note below: a clean run **is** achievable, so a red one is a
+> coin-flip rather than a permanent condition.
 >
 > ⚠️ **TWO SPECS WERE WRONG, AND BOTH WERE CAUGHT BY A BUILDER MEASURING RATHER THAN COMPLYING.** This
 > is the batch's most transferable outcome, and both failures were the orchestrator's, not the
