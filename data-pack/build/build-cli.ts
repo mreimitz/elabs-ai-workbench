@@ -12,11 +12,11 @@
 //   - data-pack/generated/all-models.json          built flat index — the pack's derived artifact
 //   - data-pack/manifest.json                      packVersion + schemaVersion + per-file SHA-256
 //   - packages/shared/src/model-data.generated.ts  derived context-limit + pricing maps
-//   - apps/api/src/compatibility/data/*.json       the snapshot the engine reads today
 //
-// That last line is transitional and deliberate: RM-38 WP 1.1 is a RELOCATION, so the compatibility
-// engine keeps reading `apps/api/src/compatibility/data/` at the same address it always has, now
-// produced there by this build. WP 1.2 moves the read onto the resolved pack and this copy goes.
+// It no longer writes a copy into `apps/api/src/compatibility/data/`: RM-38 WP 1.2 moved the
+// compatibility engine onto the resolved pack (`apps/api/src/data-pack/`), and that directory was
+// deleted in the same change. The pack IS the address now; `apps/api/scripts/copy-data-pack.mjs`
+// puts it in `apps/api/dist/data-pack-bundled/` at build time so `node dist` can read it.
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -35,13 +35,11 @@ const repoRoot = path.resolve(PACK_ROOT, "..");
 
 const modelsDir = path.join(PACK_ROOT, "models");
 const generatedDir = path.join(PACK_ROOT, "generated");
-const appDataDir = path.join(repoRoot, "apps/api/src/compatibility/data");
 const sharedGenerated = path.join(repoRoot, "packages/shared/src/model-data.generated.ts");
 
 /**
  * Prove the two path anchors before writing a single byte. A silently-wrong `repoRoot` would write
- * `model-data.generated.ts` and the compatibility snapshot into some other real directory and
- * report success.
+ * `model-data.generated.ts` into some other real directory and report success.
  */
 function assertAnchors(): void {
   const nameOf = (dir: string): unknown => {
@@ -58,7 +56,7 @@ function assertAnchors(): void {
   if (nameOf(repoRoot) !== "mcp-token-footprint") {
     throw new Error(`repoRoot does not look like the repository root: ${repoRoot}`);
   }
-  for (const required of [modelsDir, appDataDir, path.dirname(sharedGenerated)]) {
+  for (const required of [modelsDir, path.dirname(sharedGenerated)]) {
     if (!existsSync(required)) {
       throw new Error(`Expected directory is missing — wrong anchor? ${required}`);
     }
@@ -99,11 +97,6 @@ export function buildOutputs() {
   const all = buildAllModels(readProviderFiles());
   return {
     allModelsJson: serializeAllModels(all),
-    crossCuttingJson: readFileSync(path.join(PACK_ROOT, "limits/cross-cutting.json"), "utf8"),
-    testCatalogJson: readFileSync(
-      path.join(PACK_ROOT, "compatibility/test-catalog.json"),
-      "utf8",
-    ),
     sharedGeneratedTs: renderSharedGenerated(all),
     asOf: all.as_of,
     modelCount: all.model_count,
@@ -112,13 +105,9 @@ export function buildOutputs() {
 }
 
 export const OUTPUT_PATHS = {
-  /** The pack's own derived artifact — what WP 1.2's loader will read. */
+  /** The pack's own derived artifact — what `apps/api/src/data-pack/loader.ts` reads. */
   packAllModels: path.join(generatedDir, "all-models.json"),
   packManifest: path.join(PACK_ROOT, "manifest.json"),
-  /** The transitional snapshot the compatibility engine reads today (see the header). */
-  allModels: path.join(appDataDir, "all-models.json"),
-  crossCutting: path.join(appDataDir, "cross-cutting-limits.json"),
-  testCatalog: path.join(appDataDir, "test-catalog.json"),
   sharedGenerated,
 };
 
@@ -161,11 +150,6 @@ function main() {
 
   mkdirSync(generatedDir, { recursive: true });
   writeFileSync(OUTPUT_PATHS.packAllModels, o.allModelsJson);
-
-  mkdirSync(appDataDir, { recursive: true });
-  writeFileSync(OUTPUT_PATHS.allModels, o.allModelsJson);
-  writeFileSync(OUTPUT_PATHS.crossCutting, o.crossCuttingJson);
-  writeFileSync(OUTPUT_PATHS.testCatalog, o.testCatalogJson);
   writeFileSync(OUTPUT_PATHS.sharedGenerated, o.sharedGeneratedTs);
 
   // The manifest digests what is on disk, so it is written LAST.
@@ -181,8 +165,7 @@ function main() {
   console.log(
     `Built data pack ${manifest.packVersion} (schema ${manifest.schemaVersion}, as-of ${manifest.asOf}): ` +
       `${o.providerCount} providers, ${o.modelCount} models, ${manifest.files.length} pack files → ` +
-      "data-pack/{generated,manifest.json} + packages/shared/src/model-data.generated.ts + " +
-      "apps/api/src/compatibility/data/",
+      "data-pack/{generated,manifest.json} + packages/shared/src/model-data.generated.ts",
   );
 }
 

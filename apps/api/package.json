@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/copy-data.mjs",
+    "build": "tsc -p tsconfig.json && node scripts/copy-data-pack.mjs",
     "dev": "tsx watch --env-file-if-exists=.env.local --env-file-if-exists=.env src/index.ts",
     "start": "node --env-file-if-exists=.env.local --env-file-if-exists=.env dist/index.js",
     "test": "node ../../scripts/build-shared-once.mjs && tsx --test test/*.test.ts",

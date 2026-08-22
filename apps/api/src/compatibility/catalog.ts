@@ -1,13 +1,16 @@
-// Loads + types the bundled compatibility test catalog (the source of truth for the rules; the
-// pack file data-pack/compatibility/test-catalog.json, copied to ./data by `pnpm build:data-pack`).
-// The engine never hand-authors test logic — it reads this.
+// Types the compatibility test catalog and hands it to the engine. The engine never hand-authors
+// test logic — it reads this.
+//
+// The DOCUMENT is `compatibility/test-catalog.json` inside the resolved reference data pack
+// (RM-38 WP 1.2), reached through `getDataPack()` — not a path, and not at module load. See
+// `../data-pack/source.ts` for why the read is lazy.
 
-import { readFileSync } from "node:fs";
 import type {
   CompatibilityLevel,
   CompatibilitySeverity,
   CompatibilityVerdict,
 } from "@mcp-token-footprint/shared";
+import { getDataPack } from "../data-pack/source.js";
 
 export type CatalogModelSeverityRule = {
   when: string;
@@ -84,14 +87,10 @@ export type Catalog = {
   tests: CatalogTest[];
 };
 
-const catalog = JSON.parse(
-  readFileSync(new URL("./data/test-catalog.json", import.meta.url), "utf8"),
-) as Catalog;
-
 export function getCatalog(): Catalog {
-  return catalog;
+  return getDataPack().documents.testCatalog as Catalog;
 }
 
 export function getTest(id: string): CatalogTest | undefined {
-  return catalog.tests.find((t) => t.id === id);
+  return getCatalog().tests.find((t) => t.id === id);
 }

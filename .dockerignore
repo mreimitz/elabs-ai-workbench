@@ -6,8 +6,10 @@ dist
 .DS_Store
 .env
 .env.*
-# Only the root runtime SQLite dir — NOT nested data/ dirs. The bundled compatibility dataset under
-# apps/api/src/compatibility/data must be in the build context so the api `copy-data` build step works.
+# Only the root runtime SQLite dir — NOT nested data/ dirs, and NOT `data-pack/`, which is a
+# different name entirely. The reference data pack must be in the build context: the api's
+# `copy-data-pack` build step copies it into apps/api/dist/data-pack-bundled/, and that is the only
+# copy the runtime image gets.
 /data
 coverage
 *.log

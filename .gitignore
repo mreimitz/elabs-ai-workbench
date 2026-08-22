@@ -2,8 +2,8 @@ node_modules
 dist
 **/dist
 # Only the runtime SQLite dir at the project root. `/data` is anchored, so it matches ONLY that dir:
-# `data-pack/` (the versioned reference data pack) and the bundled apps/api/src/compatibility/data
-# snapshot are NOT matched and stay versioned.
+# `data-pack/` (the versioned reference data pack) is a different name and stays versioned. The
+# snapshot the runtime reads is built into apps/api/dist/, which `**/dist` already ignores.
 /data
 .env
 .env.*
