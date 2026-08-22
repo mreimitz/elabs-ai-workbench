@@ -47,3 +47,7 @@ apps/*/vitest.config.ts.timestamp-*.mjs
 # OKF planning bundle tooling
 planning/**/__pycache__/
 planning/tools/.venv/
+
+# packages/shared build-once guard (scripts/build-shared-once.mjs)
+packages/shared/.build-stamp
+packages/shared/.build-lock/

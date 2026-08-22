@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "pnpm --filter @mcp-token-footprint/shared build && tsx --test test/*.test.ts",
+    "test": "node ../../scripts/build-shared-once.mjs && tsx --test test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "mcpfp": "tsx src/index.ts"
   },
