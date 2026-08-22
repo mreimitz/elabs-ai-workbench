@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Platform hardening \u2014 work-package status ledger \u00b7 PRIORITY: MEDIUM (rolling)"
 description: "Living state for the platform plan, read and updated by /next-wp platform. A box is ticked"
 tags: ["roadmap", "RM-18"]
-timestamp: "2026-08-22T15:10:00Z"
+timestamp: "2026-08-22T22:00:00Z"
 status: "active"
 ---
 # Platform hardening — work-package status ledger · **PRIORITY: MEDIUM (rolling)**
@@ -120,6 +120,27 @@ Living state for the **platform** plan, read and updated by `/next-wp platform`.
 
 ## Decision log
 _Entries: date · decision · rationale._
+
+- **2026-08-22 · OWNER DECISION — the in-app guide gets NO sidebar entry. Top-bar Help only.**
+  Asked directly, as a question with the consequence stated, because nav placement is the owner's
+  call and not a work package's — the `/illustrations` precedent, which shipped as a real route with
+  no nav item on exactly those grounds. The owner chose *"top-bar Help only"* over *"add it beside
+  Settings"* and over deferring.
+  **What WP 1.2 therefore builds:** the guide is reached by **one route-aware control in the
+  AppShell top-bar `end` slot** (`AppShell.tsx:474-538`) — it opens the page for the view you are on,
+  via one route-pattern → subject table — **and by URL**. `AppShell.tsx:764-787`'s `SidebarFooter`
+  is untouched; WP 1.2's §5 non-goal *"No new nav item"* stands as written.
+  **This decision reaches outside this item, which is why it is recorded here rather than in a
+  message.** The concurrent RM-37 session's **WP 2.1** specifies a `SidebarFooter` reading
+  *"Settings · Help (→ `/docs`) · Report a problem · version"* — stated three times in its spec
+  (`wp-2.1-shell-ia.md:40`, `:91`, `:107`) — and its Phase 1 owner-acceptance line ends *"`/docs`
+  opens from the sidebar footer"*. **The owner has now ruled against that entry point.** That is
+  RM-37's line to change, not this item's; it was relayed rather than edited (repo scope rule — never
+  write another item's ledger on its behalf).
+  **Sequence, recorded because it matters to who decided what:** the question was asked *before* the
+  RM-37 session sent a stand-down saying no owner interrupt was needed. The stand-down was reasonable
+  — its argument was that WP 2.1 already owned the IA decision — but the owner had already answered,
+  and an owner answer outranks a peer's reading of which work package owns a choice.
 
 ## Owner acceptance (owner-only)
 - [ ] Fresh install → load demo data → every main view populated and self-explanatory → remove
