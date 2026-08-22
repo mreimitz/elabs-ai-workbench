@@ -8,10 +8,11 @@ import { isStudioRail, type StudioRail as StudioLeftRailTab } from "./studio-url
 // ── Skill Studio (RM-30 WP 7.1) — the left rail's three tabs ──────────────────────────────────────
 //   • Files    — RM-30 WP 7.4: the EDITABLE workspace tree. Create · upload · rename · move · delete
 //                all stage on the ONE Studio draft and are applied by the one save.
-//   • Tools    — the editor's OWN live Tools palette, PORTALLED into this rail rather
-//                than mounted a second time here. That matters: the palette carries insert-at-cursor
-//                and drag-to-reference against the live draft, which a second instance could not.
-//                (WP 7.7 rebuilds it as the components palette.)
+//   • Components — RM-30 WP 7.7: the editor's OWN live components palette, PORTALLED into this rail
+//                rather than mounted a second time here. That matters: the palette stages component
+//                placements, insert-at-cursor and drag-to-reference against the live draft, which a
+//                second instance could not. The tab's URL value stays `tools` so every `?rail=tools`
+//                link already shared keeps working — only the label moved.
 //   • Settings — RM-30 WP 7.3: the full settings panel — name · description · servers · keywords ·
 //                command entry points — writing to the ONE Studio draft.
 
@@ -30,10 +31,10 @@ export type StudioLeftRailProps = {
   onSelectFile: (path: string) => void;
   /** A path (a file, or a folder and everything under it) was renamed or moved in the draft. */
   onPathMoved: (from: string, to: string) => void;
-  /** Mount point for the editor's live Tools palette, which is PORTALLED in (see
+  /** Mount point for the editor's live components palette, which is PORTALLED in (see
    *  `StudioContextPanel` for why): pass the setter from a `useState`. It goes `null` whenever the
-   *  Tools tab isn't the active one, because Radix unmounts inactive tab content — and the editor
-   *  then simply renders no palette. */
+   *  Components tab isn't the active one, because Radix unmounts inactive tab content — and the
+   *  editor then simply renders no palette. */
   toolsContainerRef: (node: HTMLDivElement | null) => void;
 };
 
@@ -70,7 +71,7 @@ export function StudioLeftRail({
         className="[&>button]:min-w-0 [&>button]:flex-1 [&>button]:px-1.5"
       >
         <TabsTrigger value="files">Files</TabsTrigger>
-        <TabsTrigger value="tools">Tools</TabsTrigger>
+        <TabsTrigger value="tools">Components</TabsTrigger>
         <TabsTrigger value="settings">Settings</TabsTrigger>
       </ScrollableTabsList>
 

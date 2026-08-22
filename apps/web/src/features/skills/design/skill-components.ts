@@ -302,7 +302,7 @@ export function resolveComponentPlacement(input: ComponentPlacementInput): Compo
         ops: [],
         keyword,
         title: "Keyword added",
-        description: `“${keyword}” joins the draft’s keywords: — rename it in Settings, then save.`,
+        description: `“${keyword}” joins the draft’s keywords — rename it in Settings, then save.`,
       };
     }
 

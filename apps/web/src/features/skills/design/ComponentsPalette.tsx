@@ -543,7 +543,10 @@ function McpServersSection({
             loadingLabel="Reading bound scans…"
             size="sm"
           />
-        ) : declaredServers.length === 0 ? (
+        ) : declaredServers.length === 0 && totalToolCount === 0 ? (
+          // Only an empty declaration AND an empty tool read is "not bound". A skill whose tools
+          // resolve through something the declared list doesn't name still has its tools rendered
+          // (as orphan groups below) — hiding them behind "not bound" would lose real inventory.
           <StatePanel
             kind="empty"
             size="sm"
