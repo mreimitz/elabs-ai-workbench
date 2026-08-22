@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T20:55:00Z"
+timestamp: "2026-08-22T21:10:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -621,6 +621,23 @@ met and — where the box touches code — the gate
 > the RM-37 rename too. (b) RM-18 WP 1.2's docs generator derives each guide URL from its subject
 > FOLDER name, so renaming `DC-18-mcpfp-cli` moves the generated `/docs/...` path. The rename wins;
 > re-point afterwards, and note it goes through the OKF generator, not a hand `mv` (bundle rule §9).
+>
+> **RESOLVED 2026-08-22, both, by the RM-37 session — and both differently than proposed.**
+> (a) **Nothing is held.** That session merges `main` FORWARD into `rm37/integration` periodically
+> and absorbs this plan's changes: the long-lived branch eats the mainline, not the reverse, so
+> holding the smallest WP to spare the largest branch a conflict only relocates a cost onto the side
+> that gains nothing. Every WP here lands on `main` as it passes. (b) **`DC-18-mcpfp-cli` is NOT
+> renamed.** WP 0.2 updates the document's CONTENT where it names the `mcpfp` command, the `mcpfp_`
+> prefix or `mcpfp.assert.json` — required, or the page documents a command that no longer exists —
+> and leaves the folder name alone; the tagged-folder rename is deferred to one generator pass
+> alongside the `@mcp-token-footprint/*` scope rename. So the docs generator's derived URLs do not
+> move at all, and the coupling is removed rather than sequenced.
+>
+> **Standing instruction for every agent in this plan: do NOT rename an `mcpfp` reference.** If one
+> is unavoidable, leave it and report it; WP 0.2 absorbs it. A rename applied from two sides is worse
+> than one applied late. The env-catalogue requirement (a) names has been relayed to the AM-OB13
+> agent with `env-vars.ts`'s `defaulted` rule spelled out, after the orchestrator verified the file
+> and `diagnostics.test.ts:164` directly rather than forwarding the claim.
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade
