@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T00:20:00Z"
+timestamp: "2026-08-23T00:45:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -263,10 +263,26 @@ the source rather than leaving a copy behind.
 **Rules that follow, for WP 2.1 and any later relocation:**
 1. A hash ledger is a mutation detector, never a reversion detector. Do not cite it as protection
    against a bad merge.
-2. **Delete the old path in the same change that creates the new one.** The modify/delete conflict is
-   the only reliable signal here; leaving a copy behind removes it and the reversion goes silent.
-3. After any rebase across a relocation, assert a **content invariant** the incoming change introduced
-   (here: 39 `finding_name` values present), not merely that hashes are self-consistent.
+2. ~~**Delete the old path in the same change that creates the new one.** The modify/delete conflict is
+   the only reliable signal here.~~ **CORRECTED 2026-08-23 — this over-claimed, and a minimal
+   reproduction disproves it.** In a clean two-branch fixture, git's rename detection carried an
+   upstream edit onto the relocated path **with no conflict at all** — in a merge *and* in a rebase,
+   edit intact. So the modify/delete conflict is **not** a property of deleting the old path; it did
+   not fire in the simple case, and in the real 26-file relocation it fired only after the reversion
+   had already happened in an earlier commit. RM-37 independently observed a third outcome: a clean,
+   correct, silent deletion. **Three different outcomes from the same shape.** The rule that survives:
+   *nothing about the merge mechanism is a guard.* Rename detection is heuristic — it may follow the
+   edit, revert it, or drop the file cleanly, and it gives no signal distinguishing them. Verify by
+   comparing content across the merge, never by whether git complained.
+3. After any rebase or merge across a relocation, assert a **content invariant the incoming change
+   introduced** (here: 39 `finding_name` values present), not merely that hashes are self-consistent.
+   This is now the **only** rule of the three that has survived contact — and RM-37 arrived at the same
+   place by a different route, having verified their side with a byte-compare against their own blob
+   rather than trusting a clean merge.
+4. **A conflict between two work packages is far more often "both" than "one"** (RM-37's formulation,
+   after we each hit it independently in one day): `package.json` needed RM-18's `docs:bundle` *and*
+   `build:data-pack`; `packages/shared/src/index.ts` needed RM-37's `demo-seed.js` *and* this item's
+   `data-pack.js`. Taking a side is the default that quietly deletes a work package's public surface.
 
 ## Test-count baselines (measured by the RM-35 session, 2026-08-22, gate green)
 
