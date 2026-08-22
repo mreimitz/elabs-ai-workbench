@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T13:20:00Z"
+timestamp: "2026-08-22T13:35:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -460,6 +460,10 @@ met and — where the box touches code — the gate
 > It belongs to another session. Nothing here staged, moved, regenerated or deleted any of it — this
 > plan has already nearly lost two rescues to routine cleanup, and that lesson was applied. It needs
 > its owner to commit it.
+> **RESOLVED 2026-08-22: its owner committed it** as `05fbf04` *"feat: Add work packages for roadmap
+> RM-37 announcement readiness"*, which is the parent of this session's first commit. The warning is
+> kept rather than deleted because it is the record of a near-miss being handled correctly — but it no
+> longer describes the working tree, and nothing in RM-37 is at risk.
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade

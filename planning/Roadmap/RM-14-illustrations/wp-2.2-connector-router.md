@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 2.2 - connector router (orthogonal port-to-port paths, parallel-run nudging, corner radii, label placement with node-box collision avoidance)"
 description: "Phase 2 of 02-plan.md. Ledger: STATUS.md. The pure geometry layer between WP 2.1's layout and WP 2.3's renderer: every connector in a SceneSpec becomes an orthogonal path with fixed corner radii and a placed label, deterministically, with no DOM measurement and no colour."
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-22T13:05:00Z"
+timestamp: "2026-08-22T14:10:00Z"
 status: "final"
 ---
 # WP 2.2 — connector router + labels
@@ -58,12 +58,32 @@ Isometric entities sit on a skewed grid; their *ports* do not. Ports resolve to 
 (see `SceneNodeLayout.ports`), so the router works in ordinary screen space. Do not import
 `iso-math` projection into the router — if you find yourself needing it, the seam has been crossed.
 
-**Departure and arrival direction.** A port carries no declared normal today, so derive it: compare
-the port point to its owning node's `frame` and leave along the axis whose face the port sits
-nearest. A port on the left half departs west, right half departs east, and a port materially above
-or below the frame's vertical mid-band departs north or south respectively. Make the rule a named,
-exported, unit-tested function — it is the single most re-read decision in this file, and the
-renderer will want it for marker rotation.
+**Departure and arrival direction.**
+
+> ⚠️ **CORRECTED 2026-08-22 by the orchestrator, after the builder measured it.** This paragraph
+> originally opened *"A port carries no declared normal today, so derive it"*. **That was false.** A
+> port declares `IllustrationPortDef.side` (`top`/`bottom`/`left`/`right`), and its own contract in
+> `packages/shared/src/illustration-registry.ts` says in as many words: *"This is the coarse
+> attachment hint **the connector router needs**."* The builder followed the erroneous instruction,
+> built the frame-derived rule as written, and reported the discrepancy instead of widening the seam
+> — which is exactly right. The correction below is the orchestrator's call, not a scope change the
+> builder took.
+>
+> Reading the side does **not** widen WP 2.1's seam: `layoutScene(spec, { catalog })` already takes a
+> `SceneCatalog`, so `routeScene` taking the same one teaches the router nothing about bands, which
+> is the thing the seam actually forbids.
+>
+> **Measured cost of getting this wrong** (all 93 catalogued ports across both fixtures, against
+> their declared sides): the literal spec text agrees on 72/93 and **cannot classify a `bottom` port
+> at all**, because an entity's view box is symmetric about the ground point it stands on, so that
+> port sits at the frame centre on both axes. The shipped frame rule plus a centre-line clause
+> reaches 89/93. The declared side reaches 93/93.
+
+**The rule:** read the port's declared `side` from the catalog. Fall back to frame geometry only for
+an endpoint that has no catalogued side — a `cycle` band's `entry`/`exit` are exactly that case, and
+they must keep working. Make the rule a named, exported, unit-tested function — it is the single most
+re-read decision in this file, and the renderer will want it for marker rotation. Pin the agreement
+with a test that asserts every catalogued port in both fixtures routes along its declared side.
 
 **Route shapes.** Two endpoints and two departure directions admit a small, closed set of shapes.
 Implement exactly these, in this precedence:
@@ -176,6 +196,12 @@ that is a finding worth reporting, not a licence to widen it mid-WP.
       test constructs that collision and asserts the final box intersects no node frame.
 - [ ] A label that cannot be cleared is returned at its midpoint **with an explicit flag**, and a
       test asserts the flag rather than an exception or a loop.
+- [ ] Every catalogued port in both fixtures departs along its **declared** `side`; a test pins the
+      agreement at 93/93 (added by the orchestrator after the builder's measurement — see §2.1).
+- [ ] A connector whose endpoints the four shapes cannot honestly express carries an explicit
+      `doublesBack` flag rather than a quietly wrong path. **Accepted as an addition the original
+      spec did not ask for**: it is the direct sibling of the label `collides` flag, and flagging
+      beats pretending. The residual cases are real geometry for WP 2.4 to resolve, not router bugs.
 - [ ] Determinism: same input twice, JSON round trip, and reverse-ordered catalog all produce
       byte-identical output. Three separate assertions.
 - [ ] A source guard fails on `Math.random`, `Date`, `getBBox` and `getBoundingClientRect` in the
