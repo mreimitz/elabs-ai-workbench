@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T21:45:00Z"
+timestamp: "2026-08-22T22:00:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -682,6 +682,28 @@ met and — where the box touches code — the gate
 > (`AppShell.tsx:474-538`) and is deliberately serialised behind it — one small JSX insertion after
 > the other, rather than two agents each believing they own the block. They dispatch against the
 > merged shape, not today's. **Do not let this fall off: their WP is blocked on a message from here.**
+>
+> ✅ **OWNER DECISION 2026-08-22 — the in-app guide gets NO sidebar entry; top-bar Help only.** Asked
+> directly (nav placement is the owner's call, not a work package's — the `/illustrations` precedent),
+> with the consequence for the other item stated in the question. **WP 1.2's non-goal stands as
+> written and nothing widens.** Full entry, including what it costs RM-37, is in
+> [`RM-18/STATUS.md`](../RM-18-platform/STATUS.md)'s decision log.
+> **It reaches outside this plan:** RM-37 **WP 2.1** specifies a `SidebarFooter` reading
+> *"Settings · Help (→ `/docs`) · Report a problem · version"* three times over
+> (`wp-2.1-shell-ia.md:40`, `:91`, `:107`), and its Phase 1 acceptance ends *"`/docs` opens from the
+> sidebar footer"*. The owner ruled against that entry point. **Relayed, not edited** — never write
+> another item's ledger on its behalf.
+> **The sequence matters:** the question went to the owner BEFORE that session sent a stand-down
+> arguing no owner interrupt was needed. Its argument was sound (WP 2.1 already owned the IA choice);
+> it was simply overtaken. An owner answer outranks a peer's reading of which work package owns a
+> decision — and the reason to ask at all was that a clause in a peer's ledger is not authority to
+> widen a written non-goal.
+>
+> 🐳 **The container proof is the ORCHESTRATOR's job here, not an agent caveat.** Docker 29.6.1 is
+> running on this host, so WP 1.2's load-bearing acceptance item — build the image, confirm `/docs`
+> renders with `planning/` absent from the runtime stage (`Dockerfile:83-85`) — gets run at
+> validation whether or not the agent's worktree could reach a daemon. RM-37's Phase 1 depends on the
+> same fact, so it gets a yes or a no, never "sound in principle".
 >
 > **Their check and this plan's check catch different classes, which is worth keeping straight.**
 > Theirs — *does the cited path still say this?* — finds **rot**. The `file:line` premise table this
