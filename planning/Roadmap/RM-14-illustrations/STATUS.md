@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-21T15:10:00Z"
+timestamp: "2026-08-22T11:20:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -555,7 +555,7 @@ and an explicit "Not verified:" tail.
 
 ## Phase 2 — Scene engine
 
-- [ ] WP 2.1 — SceneSpec zod (shared) + band/lane/hub layout engine + validator + golden tests
+- [ ] WP 2.1 — SceneSpec zod (shared) + band/lane/hub layout engine + validator + golden tests · **IN PROGRESS 2026-08-22 (agent B · `wp/roadmap-cleanup/rm14-2.1`)** · spec: [`wp-2.1-scene-spec-layout.md`](./wp-2.1-scene-spec-layout.md)
 - [ ] WP 2.2 — Connector router (orthogonal, port-to-port, label collision avoidance)
 - [ ] WP 2.3 — `<IllustrationScene>` deterministic renderer + annotations + accent-ratio dev warning
 - [ ] WP 2.4 — Acceptance scene (Self-Learning Agentic Loop as spec fixture, one shared hub) +

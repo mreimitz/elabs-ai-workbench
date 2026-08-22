@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Platform hardening \u2014 work-package status ledger \u00b7 PRIORITY: MEDIUM (rolling)"
 description: "Living state for the platform plan, read and updated by /next-wp platform. A box is ticked"
 tags: ["roadmap", "RM-18"]
-timestamp: "2026-08-21T20:05:00Z"
+timestamp: "2026-08-22T11:20:00Z"
 status: "active"
 ---
 # Platform hardening — work-package status ledger · **PRIORITY: MEDIUM (rolling)**
@@ -29,7 +29,7 @@ Living state for the **platform** plan, read and updated by `/next-wp platform`.
 - [ ] WP 1.1 — first-run onboarding: seeded demo content + guided empty states
 - [ ] WP 1.2 — docs & changelog: in-app docs route, CHANGELOG discipline, per-view help links
 - [ ] WP 1.3 — diagnostics bundle: redacted export, secret-free proven by test
-- [ ] WP 1.4 — upgrade-path test harness: fixture DBs → migrate → invariants
+- [ ] WP 1.4 — upgrade-path test harness: fixture DBs → migrate → invariants · **IN PROGRESS 2026-08-22 (agent C · `wp/roadmap-cleanup/rm18-1.4`)** · spec: [`wp-1.4-upgrade-harness.md`](./wp-1.4-upgrade-harness.md)
 - [ ] WP 1.5 — performance & scale pass: fleet-scale fixtures, endpoint budgets, index review
 - [x] WP 1.6 — owner-acceptance consolidation: one runnable checklist across all ledgers — done
       2026-08-21 · wp/roadmap-cleanup/1.1 · every pending owner walk in the bundle, grouped into four

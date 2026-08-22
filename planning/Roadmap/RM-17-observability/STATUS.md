@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-22T10:30:00Z"
+timestamp: "2026-08-22T11:20:00Z"
 status: "active"
 ---
 
@@ -219,7 +219,7 @@ had one open box before the lock and now has fourteen.
       expectation on promote-to-test, and joins the report-export `humanFeedback` block ·
       pairs with the ledger's open promote-to-test endpoint follow-up · **AR6 holds: feedback
       never blends into grades**
-- [ ] AM-OB3 — chart states URL-addressable (deep-linkable panel + time-bucket selection) ·
+- [ ] AM-OB3 — chart states URL-addressable (deep-linkable panel + time-bucket selection) · · **IN PROGRESS 2026-08-22 (agent D · `wp/roadmap-cleanup/am-ob3`)**
       _verify-at-pickup: drill-down shipped with 2.2; residual only_
 - [x] AM-OB4 — ratio measure — **done 2026-08-21 · `wp/roadmap-cleanup/am-ob4` (6 commits, merged) ·
       25 files · 19 mutation probes, 19 red · no migration, `db/**` a zero-line diff.**
