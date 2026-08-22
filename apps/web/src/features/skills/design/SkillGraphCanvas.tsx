@@ -849,9 +849,17 @@ export type SkillGraphCanvasProps = {
    * behave exactly as before (no connect handles are live, no delete key is bound).
    */
   editable?: boolean;
-  /** Only when `editable`: the user completed a connection drag. The caller validates the section→
-   *  asset rule and stages `connect_asset` (or rejects it inline). Nothing mutates here. */
+  /** Only when `editable`: the user completed a connection drag. The caller resolves it through the
+   *  ONE `connect-grammar` resolver and stages an op, offers the legal move, or explains the rule.
+   *  Nothing mutates here. */
   onConnect?: (connection: Connection) => void;
+  /**
+   * RM-30 WP 7.8, behaviour 1 — PREVENT THE IMPOSSIBLE SILENTLY. Asked mid-drag for every candidate
+   * target: `false` means the handle never snaps and `onConnect` never fires, so an impossible arrow
+   * produces NO error, because nothing went wrong — the rule was shown instead of told afterwards.
+   * Omitted ⇒ React Flow's default (everything snaps), which is the pre-WP-7.8 behaviour.
+   */
+  isValidConnection?: (connection: Connection | Edge) => boolean;
   /** Only when `editable`: the user deleted edges on the canvas. The caller stages `disconnect_asset`
    *  for the section→asset edges among them. */
   onEdgesDelete?: (edges: Edge[]) => void;
@@ -907,6 +915,7 @@ export function SkillGraphCanvas({
   children,
   editable = false,
   onConnect,
+  isValidConnection,
   onEdgesDelete,
   onToolDrop,
   onComponentDrop,
@@ -1114,6 +1123,10 @@ export function SkillGraphCanvas({
       fitViewOptions={FIT_VIEW_OPTIONS}
       deleteKeyCode={editable ? EDIT_DELETE_KEYS : null}
       onConnect={editable ? onConnect : undefined}
+      // RM-30 WP 7.8 — an impossible target simply never snaps (behaviour 1). React Flow calls this
+      // for every candidate while the drag is live, so the author is SHOWN the rule rather than told
+      // it in a toast after the fact.
+      isValidConnection={editable ? isValidConnection : undefined}
       onEdgesDelete={editable ? onEdgesDelete : undefined}
       onDragOver={toolDropEnabled || componentDropEnabled ? handleToolDragOver : undefined}
       onDrop={toolDropEnabled || componentDropEnabled ? handleToolDrop : undefined}

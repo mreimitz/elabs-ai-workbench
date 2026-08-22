@@ -86,6 +86,7 @@ import {
   skillComponentSpec,
   type SkillComponentId,
 } from "./skill-components";
+import { isConnectionOfferable, resolveConnection } from "./connect-grammar";
 import { FlowReadingPanel } from "./FlowReadingPanel";
 import { buildFlow, SkillGraphCanvas, type SkillCanvasNode } from "./SkillGraphCanvas";
 import {
@@ -586,24 +587,51 @@ function UnifiedEditorBody({
     setSelectedNodeId(nodeId);
   }, []);
 
+  // RM-30 WP 7.8 (design decision 4) — behaviour 1: an impossible target never snaps, so `onConnect`
+  // is never even reached for it and no error is shown. Resolved against the graph the canvas is
+  // CURRENTLY rendering (`flowGraph`), so a box staged a moment ago is a legitimate drag target.
+  const handleIsValidConnection = useCallback(
+    (connection: Connection | Edge) =>
+      flowGraph ? isConnectionOfferable(flowGraph, connection.source, connection.target) : false,
+    [flowGraph],
+  );
+
+  // Behaviours 2 and 3: a completed drag either stages the connection, OFFERS the move that was
+  // almost certainly meant (one click applies it), or names the rule it broke and links the guide.
+  // THE RULE: no message that only says an action failed. Every branch below either acts or teaches.
   const handleConnect = useCallback(
     (connection: Connection) => {
-      if (!graph) return;
-      const source = graph.nodes.find((n) => n.id === connection.source);
-      const target = graph.nodes.find((n) => n.id === connection.target);
-      if (source && target && isSectionNode(source) && target.kind === "asset") {
-        addOp({ op: "connect_asset", nodeId: source.id, path: target.path });
-        toast.success("Connection staged", {
-          description: `“${target.label}” will be referenced from “${source.label}” when you save.`,
+      const source = flowGraph;
+      if (!source) return;
+      const resolution = resolveConnection(source, connection.source, connection.target, {
+        boundTools,
+      });
+      if (resolution.outcome === "connect") {
+        addOp(resolution.op);
+        toast.success(resolution.title, { description: resolution.description });
+        return;
+      }
+      if (resolution.outcome === "offer") {
+        toast.warning(resolution.title, {
+          description: resolution.description,
+          duration: 12_000,
+          action: {
+            label: resolution.actionLabel,
+            onClick: () => {
+              addOp(resolution.op);
+              toast.success(resolution.appliedTitle, {
+                description: resolution.appliedDescription,
+              });
+            },
+          },
         });
         return;
       }
-      notifyError("Couldn’t create that connection", {
-        description:
-          "A connection runs from a section to an asset file — drag from a section node onto an asset.",
+      notifyError(resolution.title, {
+        description: `${resolution.description} See ${resolution.guideAnchor}.`,
       });
     },
-    [graph, addOp],
+    [flowGraph, addOp, boundTools],
   );
 
   const handleEdgesDelete = useCallback(
@@ -987,6 +1015,7 @@ function UnifiedEditorBody({
       selectedNodeId={selectedNodeId}
       onSelectNode={handleSelectNode}
       onConnect={handleConnect}
+      onIsValidConnection={handleIsValidConnection}
       onEdgesDelete={handleEdgesDelete}
       onToolDrop={handleToolDrop}
       onPlaceComponent={handlePlaceComponent}
@@ -1337,6 +1366,8 @@ type FlowPaneProps = {
   selectedNodeId: string | undefined;
   onSelectNode: (nodeId: string | undefined) => void;
   onConnect: (connection: Connection) => void;
+  /** RM-30 WP 7.8 — behaviour 1: an impossible target never snaps, so no error is ever shown. */
+  onIsValidConnection: (connection: Connection | Edge) => boolean;
   onEdgesDelete: (edges: Edge[]) => void;
   onToolDrop: (payload: { server: string; tool: string; nodeId: string | null }) => void;
   /** RM-30 WP 7.7 — one entry point for both gestures: the canvas drop and the palette's Add. */
@@ -1366,6 +1397,7 @@ function FlowPane({
   selectedNodeId,
   onSelectNode,
   onConnect,
+  onIsValidConnection,
   onEdgesDelete,
   onToolDrop,
   onPlaceComponent,
@@ -1460,6 +1492,7 @@ function FlowPane({
           onSelectNode={onSelectNode}
           editable
           onConnect={onConnect}
+          isValidConnection={onIsValidConnection}
           onEdgesDelete={onEdgesDelete}
           onToolDrop={onToolDrop}
           onComponentDrop={({ component, nodeId }) => onPlaceComponent(component, nodeId)}
