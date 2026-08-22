@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T19:55:00Z"
+timestamp: "2026-08-22T21:40:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -55,10 +55,74 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 
 ## Phase 1 — The folder and the seam (mechanical, no behaviour change)
 
-- [ ] WP 1.1 — `data-pack/` + manifest + JSON Schemas + shared contract; RS-01 model data and the
-      build script moved — spec: [`wp-1.1-pack-contract.md`](./wp-1.1-pack-contract.md).
-      **status: in progress** · `wp/reference-data-pack/1.1` · dispatched 2026-08-22. Runs **solo**:
-      it moves files three other WPs will read, so nothing may run beside it.
+- [x] WP 1.1 — `data-pack/` + manifest + JSON Schemas + shared contract; RS-01 model data and the
+      build script moved — **done 2026-08-22** · `worktree-agent-ab7c7d0267b9c491f` (2 commits on
+      `a0179f1`) · spec: [`wp-1.1-pack-contract.md`](./wp-1.1-pack-contract.md).
+      **NOT MERGED — held deliberately.** Per the sequencing note below, `wp/rm37/0.5` lands first and
+      this branch rebases onto it. `wp/rm37/0.5` was **not** on `main` at validation time.
+
+      **Validated by the orchestrator, not taken on report.** The gate was re-run by me in the agent's
+      worktree with load at 9.5 (not the 170–300 that makes web reds meaningless): `typecheck` **0** ·
+      `lint` clean (`Checked 1862 files`) · `build` **0** · `test` **0**. Every count reconciles —
+      shared **287** · illustrations **957** · cli **87** · api **3832** · web **382 files / 4319 + 5
+      skipped**. api is 3814 + the 18 tests this WP adds; illustrations reads 957 rather than the
+      ledger's 1032 because the base predates RM-14 2.3, which is on `main` and not on this branch.
+
+      **The relocation is proved, not asserted.** I independently recomputed all 15 moved files'
+      hashes: for every one, the base-commit blob, the recorded `gitBlobSha1` and the current file
+      agree — 15 files, 0 mismatches. `data-pack/relocation-ledger.json` records them permanently and a
+      test re-asserts them in-process.
+
+      **I broke the guards myself and watched them go red.** Tampering the SHIPPED snapshot alone (pack
+      source untouched — the erasure path) turned **two** independent tests red, including the
+      repointed verbatim-copy assert. Tampering a MOVED pack file by one field turned **four** red:
+      the verbatim-copy assert, the manifest digest check, the relocation-hash ledger, and the
+      snapshot-equality check. Both restored, worktree clean.
+
+      **The spec was wrong and the agent was right to refuse it.** WP 1.1 demanded byte-identical
+      regeneration of `all-models.json`. That is **impossible by construction** — the file embeds a
+      `generator` string and a `source_file` per model, all naming paths this WP moves. The agent did
+      not adjust the expected output to make the claim true; it proved the stronger thing instead, and
+      I verified it independently: of 112 differing lines, **110 are `source_file` and 2 are
+      `generator`; zero are data.** Stripping only those keys and sorting, both sides hash identically
+      (`ab5639e1…84f8` by my own computation). `model-data.generated.ts` differs by **one line**, its
+      source-of-truth header.
+
+      **A correction to this ledger's own "Known facts".** The claim that `pnpm lint` carries 2
+      pre-existing errors was **stale** — I checked `biome.json` at the base commit and both
+      `all-models.json` paths were already in `files.ignore` (added by `88acce2`). Lint was clean
+      before and is clean after; the new 1.8 MiB `data-pack/generated/all-models.json` was added to the
+      same list. The stale claim is struck below.
+
+      **Decisions taken by the agent that I accepted, listed so they are reviewable:** `data-pack/` is
+      a pnpm workspace package (`@mcp-token-footprint/data-pack`) because `zod` will not otherwise
+      resolve from `data-pack/build/`; **no new external dependency** — the lockfile delta is `zod`,
+      `tsx`, `typescript`, `@types/node`, all already in the tree, verified. A ~250-line draft-2020-12
+      JSON Schema subset validator was written rather than adding `ajv`; it **throws on an
+      unimplemented keyword** instead of ignoring it, so an unsupported construct fails loudly. A new
+      `packages/shared/src/model-dataset.ts` holds `FlatModel`/`AllModels`, forced because moving
+      `build.ts` out of `apps/api/src` put those types outside every app's `rootDir`; it imports
+      nothing. `packages/shared/src/index.ts` gained **two** lines, not one — both alphabetically
+      correct, and I eyeballed the auto-merge against `main` (which adds `manual-send.js`): all three
+      survive, none lost.
+
+      **Merge preconditions — do not merge without these.** (1) `wp/rm37/0.5` on `main` first.
+      (2) After rebasing, `relocation-ledger.json`'s two entries for `compatibility/test-catalog.json`
+      and `schema/test-catalog.schema.json` **will go red** — that is the designed signal that the
+      rebase landed on RM-37's post-`finding_name` bytes. Update those two `gitBlobSha1` values in the
+      same commit as the content change; **never** normalise a file to make the test pass.
+      (3) Re-run `pnpm build:data-pack` and recommit `manifest.json`, `generated/all-models.json` and
+      the api snapshot, or the digest test fails. (4) Two known textual conflicts against current
+      `main`, both trivial and visible: `CHANGELOG.md` (competing Unreleased entries) and
+      `package.json` (scripts).
+
+      **Not verified:** no browser, no running app, no route — this WP has no UI. The real `Dockerfile`
+      was not built, though a probe image confirmed all 25 `data-pack/` files enter the build context
+      and `.dockerignore`'s anchored `/data` does not match `data-pack`.
+
+      **Follow-up, not this WP's to fix:** stale `pnpm build:model-data` / old-path references survive
+      in other items' planning docs — RM-26 (4), RM-16 (2), RM-08 (1), RS-07 (2). `CHANGELOG.md:774`
+      and the RS-01 refresh report are historical records and were correctly left alone.
 - [ ] WP 1.2 — pack loader + `installDataPackSource()` boot seam; compatibility dataset/catalog read
       the resolved pack; snapshot copy replaces `copy-data.mjs` — spec:
       [`wp-1.2-loader-seam.md`](./wp-1.2-loader-seam.md). **Depends on 1.1.**
@@ -95,9 +159,10 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
   today. WP 3.3 fixes this; it is a build-context cost, not a leak.
 - The compatibility test catalog is already the engine's rule source ("the engine never hand-authors
   test logic — it reads this", `catalog.ts:3`). Moving it changes its address, not its authority.
-- `pnpm lint` currently reports 2 pre-existing errors, both the oversized `all-models.json`. Relocating
-  that file is an opportunity to resolve them; a WP that does not resolve them must say so rather than
-  let the count drift.
+- ~~`pnpm lint` currently reports 2 pre-existing errors, both the oversized `all-models.json`.~~
+  **STRUCK 2026-08-22 — this was false.** `biome.json` already ignored both `all-models.json` paths at
+  the base commit (added by `88acce2`); lint was clean. Verified by reading `biome.json` at `a0179f1`,
+  not by re-running the linter. A "known fact" that nobody re-checks is how a plan goes stale.
 
 ## Carried in from RM-37 (announcement readiness) — 2026-08-22
 
