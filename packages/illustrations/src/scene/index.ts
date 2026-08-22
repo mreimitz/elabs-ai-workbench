@@ -9,9 +9,39 @@
 // filleted corners, nudged parallel runs and placed labels. Pure geometry: it emits numbers and path
 // data, never an element and never a colour.
 //
-// Still to come, and deliberately absent: `Scene.tsx` (WP 2.3, the renderer) and `export.ts`
-// (WP 2.4). The router's output is what 2.3 paints.
+// WP 2.3: `Scene.tsx` — `<IllustrationScene>`, the first thing here that DRAWS. It validates, lays
+// out, routes and paints, and it computes no geometry of its own: every number it draws with came
+// out of the two layers above. `annotations.tsx` is the adapter between an annotation's text (the
+// spec) and its slot (the layout) for the two card kinds.
+//
+// Still to come, and deliberately absent: `export.ts` (WP 2.4 — standalone SVG with resolved theme
+// values, and the gallery's Scenes tab).
 
+export {
+  ACCENT_NODE_STATES,
+  BAND_TITLE_RISE,
+  ILLUS_ACCENT_BAND,
+  IllustrationScene,
+  LABEL_BASELINE_SHIFT,
+  STATION_HEADER_DROP,
+  STATION_HEADER_INSET,
+  SceneFailureNotice,
+  type IllustrationSceneProps,
+  type SceneAccentBudget,
+  type SceneRenderReport,
+  isAccentConnectorKind,
+  sceneAccentBudget,
+  sceneElementId,
+  sceneRenderReport,
+  warnAboutScene,
+} from "./Scene.js";
+export {
+  ANNOTATION_MIN_LINE_CHARS,
+  SceneAnnotationCard,
+  type SceneAnnotationCardProps,
+  annotationLineBudget,
+  wrapAnnotationBody,
+} from "./annotations.js";
 export {
   ILLUSTRATION_SCENE_CATALOG,
   ILLUSTRATION_SCENE_REGISTRY,

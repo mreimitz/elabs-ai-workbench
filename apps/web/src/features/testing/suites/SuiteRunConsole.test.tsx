@@ -1,7 +1,8 @@
 import { MemoryRouter } from "react-router-dom";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { Suite, SuiteRun } from "@mcp-token-footprint/shared";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // The console's three data hooks are mocked to inert, settled-empty state — this test locks the TAB
 // STRIP (order + default), not the streaming/data behavior (each tab's own component has its tests).
@@ -82,19 +83,24 @@ const SUITE_RUN: SuiteRun = {
   endedAt: "2026-07-11T00:05:00.000Z",
 };
 
+// `TooltipProvider` mirrors the real app root (`apps/web/src/main.tsx`), which has always wrapped
+// this console — the harness simply never needed it until AM-OB13 put an `IconButton` (a Radix
+// tooltip trigger, per D-TB5) in the header's action cluster.
 function renderConsole(suiteRun: SuiteRun = SUITE_RUN) {
   render(
     <MemoryRouter>
-      <SuiteRunConsole
-        suiteRunId="sr_1"
-        suite={SUITE}
-        suiteRun={suiteRun}
-        tests={[]}
-        scenarios={[]}
-        providers={[]}
-        onBack={vi.fn()}
-        onOpenRun={vi.fn()}
-      />
+      <TooltipProvider>
+        <SuiteRunConsole
+          suiteRunId="sr_1"
+          suite={SUITE}
+          suiteRun={suiteRun}
+          tests={[]}
+          scenarios={[]}
+          providers={[]}
+          onBack={vi.fn()}
+          onOpenRun={vi.fn()}
+        />
+      </TooltipProvider>
     </MemoryRouter>,
   );
 }
@@ -241,5 +247,29 @@ describe("SuiteRunConsole — the header chip actually renders the outcome-aware
     renderConsole({ ...SUITE_RUN, status: "completed", aggregates: undefined });
     const chip = screen.getByText("Completed");
     expect(chip.closest("[data-status]")).toHaveAttribute("data-status", "success");
+  });
+});
+
+describe("SuiteRunConsole — the send-to-webhook affordance (RM-17 Phase 6, AM-OB13)", () => {
+  test("the header offers 'Send to webhook…' behind a keyboard-reachable overflow trigger", async () => {
+    renderConsole();
+    const trigger = screen.getByRole("button", { name: "More actions for this suite run" });
+    // D-TB5 — one affordance: the tooltip text IS the accessible name, and never a native `title`.
+    expect(trigger).toHaveAttribute("aria-label", "More actions for this suite run");
+    expect(trigger).not.toHaveAttribute("title");
+
+    await act(async () => {
+      trigger.focus();
+    });
+    expect(trigger).toHaveFocus();
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(await screen.findByText("Send to webhook…")).toBeInTheDocument();
+  });
+
+  test("it is offered while the suite run is still LIVE too — that is when you want to share it", () => {
+    renderConsole({ ...SUITE_RUN, status: "running", endedAt: undefined });
+    expect(
+      screen.getByRole("button", { name: "More actions for this suite run" }),
+    ).toBeInTheDocument();
   });
 });

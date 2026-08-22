@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { SkillEditOp, SkillFileNode } from "@mcp-token-footprint/shared";
 import type { WorkEntry } from "../../workspace/workspace-model";
 import { buildWorkingTree } from "../../workspace/workspace-model";
-import { describeStudioFileOps, isTabbableFile, opTargetsSkillMd, studioFileOps } from "./file-ops";
+import { describeStudioFileOps, opTargetsSkillMd, studioFileOps } from "./file-ops";
 
 // ── RM-30 WP 7.4 — the one invariant the files layer must never break ─────────────────────────────
 // `POST /api/skills/:id/save-draft` builds the new tree as "the base tree with SKILL.md ← content"
@@ -103,11 +103,17 @@ describe("describeStudioFileOps", () => {
   });
 });
 
-describe("isTabbableFile", () => {
-  test("the manifest is not a file tab — it IS the Studio's own surface", () => {
-    expect(isTabbableFile({ path: "SKILL.md", originalPath: "SKILL.md" })).toBe(false);
-    expect(isTabbableFile({ path: "references/api.md", originalPath: "references/api.md" })).toBe(
-      true,
-    );
+// RM-30 WP 7.9 removed the `isTabbableFile` block that stood here. The predicate said "every file
+// except the manifest can be a tab", which D-UX19 #2 makes false — SKILL.md is the manifest's source
+// tab now. It had no production call site (only this test), so it was deleted rather than reduced to
+// a `return true` that reads like a decision. What actually decides tabbability is `tab-model.ts`,
+// tested beside it.
+
+describe("the manifest is written by `content` even though it is now a TAB (WP 7.9)", () => {
+  test("a working-tree edit to SKILL.md still yields no op, however it got there", () => {
+    // The Studio's SKILL.md tab writes the draft's `content`, never `files.setText` — but if a
+    // future change wired it to `WorkspaceEditor` (which looks like the obvious move now that the
+    // tab sits beside the resource files), this is the boundary that has to refuse it.
+    expect(studioFileOps(BASE, edited("SKILL.md", "# typed into the wrong door"))).toEqual([]);
   });
 });

@@ -1,15 +1,18 @@
 import { useRef, type KeyboardEvent } from "react";
 import { Button, cn } from "@elabs-ai/components-ui";
-import { FileText, PanelTop, X } from "lucide-react";
+import { FileText, Workflow, X } from "lucide-react";
 import { IconButton } from "../../../../components/IconButton";
 import { isContentDirty, type WorkEntry } from "../../workspace/workspace-model";
 import { SKILL_MD } from "./file-ops";
+import { DESIGNER_TAB } from "./tab-model";
 import { baseNameOf } from "../../workspace/workspace-model";
 
-// ── Skill Studio (RM-30 WP 7.4) — the centre surface's editor tabs ────────────────────────────────
-// SKILL.md is the first tab and is PINNED: it is the Flow | Code | Split surface the whole Studio is
-// built around, and closing it would leave the workbench with nothing to show. It therefore carries
-// NO close control at all — not a disabled one — and the Delete shortcut below is inert on it.
+// ── Skill Studio (RM-30 WP 7.4, reworked by WP 7.9) — the centre surface's editor tabs ────────────
+// RM-30 WP 7.9 (D-UX19 #2) put the DESIGNER in the pinned first slot and let every file — SKILL.md
+// included — be an ordinary closable tab. The Designer is the visual composer, not a document, so it
+// carries NO close control at all (not a disabled one) and the Delete shortcut below is inert on it;
+// closing it would leave the workbench with nothing to fall back to. `SKILL.md` is now the
+// manifest's SOURCE tab and closes like any other file — the Designer is what it hands back to.
 //
 // WHY THIS STRIP IS HAND-ROLLED AND NOT `SandboxTabs*`/Radix `Tabs` (owner decision, 2026-08-22)
 //   Every file tab needs its own ×. A Radix `TabsTrigger` renders a `<button>`, and a button inside
@@ -35,17 +38,14 @@ import { baseNameOf } from "../../workspace/workspace-model";
 //     Movement ACTIVATES, matching the automatic-activation behaviour of the Radix strip it
 //     replaces, and focus is moved onto the target tab's own DOM node so the roving index follows.
 //   · Delete on a focused tab closes it — the mouse-free equivalent of clicking its ×, and inert on
-//     the pinned SKILL.md tab.
+//     the pinned Designer tab.
 //   · `role="tablist"` / `role="tab"` / `aria-selected` / `aria-controls` are wired by hand; the
 //     panels themselves are in `StudioShell` and take their ids from {@link studioTabPanelDomId}.
-//     (The old Radix strip pointed `aria-controls` at generated ids that matched no element on the
-//     page, because the Studio's panes were never `TabsContent` — that is fixed here.)
-//   Each tab + its × sit in a `role="presentation"` wrapper so the tablist still OWNS them both.
 
 /** One open editor tab. */
 export type StudioFileTab = {
   path: string;
-  /** The entry behind it, when the file is in the working tree (the pinned manifest has none). */
+  /** The entry behind it, when the file is in the working tree. */
   entry?: WorkEntry;
 };
 
@@ -58,15 +58,20 @@ export const studioTabDomId = (path: string): string => `studio-tab-${idSafe(pat
 /** The DOM id of `path`'s PANEL — `aria-controls` for its tab. Owned by `StudioShell`. */
 export const studioTabPanelDomId = (path: string): string => `studio-tabpanel-${idSafe(path)}`;
 
+/** The pinned tab's visible label. */
+export const DESIGNER_TAB_LABEL = "Designer";
+
 export type StudioFileTabsProps = {
-  /** The open FILE tabs, in open order — SKILL.md is added by this component and never listed here. */
+  /** The open FILE tabs, in open order — the Designer is added by this component and never listed. */
   tabs: StudioFileTab[];
-  /** The active tab's path (`SKILL.md` for the pinned manifest tab). */
+  /** The active tab's path (`DESIGNER_TAB` for the pinned Designer). */
   active: string;
   onSelect: (path: string) => void;
-  /** Close one open file tab. Never called for `SKILL.md`. */
+  /** Close one open file tab. Never called for the Designer. */
   onClose: (path: string) => void;
-  /** True while the SKILL.md draft differs from the saved version — the pinned tab's own marker. */
+  /** True while the SKILL.md draft differs from the saved version — the manifest tab's own marker.
+   *  It is NOT held on a working-tree entry: the manifest is written by the draft's `content`, so
+   *  its dirty state comes from the draft, not from `files`. */
   manifestDirty: boolean;
 };
 
@@ -81,7 +86,7 @@ export function StudioFileTabs({
   // key-press time, not cached across renders.
   const tabNodes = useRef(new Map<string, HTMLButtonElement>());
 
-  const paths = [SKILL_MD, ...tabs.map((tab) => tab.path)];
+  const paths = [DESIGNER_TAB, ...tabs.map((tab) => tab.path)];
   // The active path is always in the list (`activeTab()` guarantees it), but if it somehow is not,
   // the FIRST tab holds the single tab stop rather than the strip becoming unreachable.
   const rovingIndex = Math.max(0, paths.indexOf(active));
@@ -116,7 +121,7 @@ export function StudioFileTabs({
         return;
       case "Delete": {
         const path = paths[index];
-        if (path === undefined || path === SKILL_MD) return; // the manifest tab is pinned
+        if (path === undefined || path === DESIGNER_TAB) return; // the Designer tab is pinned
         event.preventDefault();
         onClose(path);
         return;
@@ -135,9 +140,10 @@ export function StudioFileTabs({
       >
         {paths.map((path, index) => {
           const tab = tabs.find((entry) => entry.path === path);
+          const isDesigner = path === DESIGNER_TAB;
           const isManifest = path === SKILL_MD;
           const selected = path === active;
-          const Icon = isManifest ? PanelTop : FileText;
+          const Icon = isDesigner ? Workflow : FileText;
           return (
             // `presentation` keeps the wrapper out of the accessibility tree, so the tablist still
             // owns the tab (and its ×) directly.
@@ -161,20 +167,30 @@ export function StudioFileTabs({
                 tabIndex={index === rovingIndex ? 0 : -1}
                 variant="ghost"
                 size="sm"
-                title={path}
+                title={isDesigner ? undefined : path}
                 className={cn(
                   "gap-1.5 whitespace-nowrap rounded-none",
-                  isManifest ? "pr-3" : "pr-1.5",
+                  isDesigner ? "pr-3" : "pr-1.5",
                   selected ? "text-foreground" : "text-muted-foreground",
                 )}
                 onClick={() => onSelect(path)}
                 onKeyDown={(event) => handleKeyDown(event, index)}
               >
                 <Icon className="size-3.5" aria-hidden />
-                <span className="font-mono">{isManifest ? SKILL_MD : baseNameOf(path)}</span>
+                {isDesigner ? (
+                  <span>{DESIGNER_TAB_LABEL}</span>
+                ) : (
+                  <span className="font-mono">{baseNameOf(path)}</span>
+                )}
+                {/* The Designer carries no marker of its own: a canvas edit moves the SAME document
+                    the SKILL.md tab marks, and the toolbar's one dirty count already names it. */}
                 <TabMarker
                   show={
-                    isManifest ? manifestDirty : tab?.entry !== undefined && isTabDirty(tab.entry)
+                    isDesigner
+                      ? false
+                      : isManifest
+                        ? manifestDirty
+                        : tab?.entry !== undefined && isTabDirty(tab.entry)
                   }
                   label={!isManifest && tab?.entry?.originalPath === null ? "new" : "unsaved"}
                 />
@@ -183,7 +199,7 @@ export function StudioFileTabs({
               {/* The × is a real SIBLING of the tab, always visible (never hover-only), and only in
                   the page tab order for the ACTIVE tab — reach any other one by arrowing to it
                   first (which selects it), or press Delete on the focused tab. */}
-              {isManifest ? null : (
+              {isDesigner ? null : (
                 <IconButton
                   variant="ghost"
                   size="icon-sm"

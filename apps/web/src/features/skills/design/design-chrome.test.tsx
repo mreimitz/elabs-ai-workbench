@@ -198,6 +198,10 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
+// The helper's own unit tests. What it is CALLED FROM is asserted separately, because a shared
+// helper nobody calls fixes nothing: RM-30 WP 7.9 found the Diff tab's A/B pickers still building
+// their label by hand and still rendering "v5 · v5", four surfaces after this was written. That is
+// pinned from the outside in `../SkillDiffView.versions.test.tsx`.
 describe("formatVersionLabel (SI13 — the duplicated 'v5 · v5' select label)", () => {
   test("drops a versionLabel that merely repeats v{seq} (the editor-save fallback)", () => {
     expect(formatVersionLabel({ seq: 5, versionLabel: "v5" })).toBe("v5");

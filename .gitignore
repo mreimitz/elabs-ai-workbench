@@ -51,3 +51,9 @@ planning/tools/.venv/
 # packages/shared build-once guard (scripts/build-shared-once.mjs)
 packages/shared/.build-stamp
 packages/shared/.build-lock/
+
+# RM-18 WP 1.2 — the in-app docs bundle. GENERATED at build time by
+# `scripts/build-docs-bundle.mjs` from planning/user-guide/DC-* + CHANGELOG.md, and copied into
+# apps/web/dist by Vite. Never committed: a checked-in copy of a document that is authored somewhere
+# else is a second source of truth, and it drifts.
+apps/web/public/doc-content/

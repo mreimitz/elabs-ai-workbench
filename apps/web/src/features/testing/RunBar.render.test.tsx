@@ -24,6 +24,11 @@ vi.mock("../../lib/api", async (importOriginal) => {
     putRunFeedback: vi.fn(),
     listCollections: vi.fn().mockResolvedValue([]),
     promoteRunToTest: vi.fn(),
+    // AM-OB13 — the same reason: the terminal-run overflow menu also mounts (closed)
+    // `SendToWebhookDialog`, whose own behaviour is covered by `SendToWebhookDialog.test.tsx`.
+    listWatchRules: vi.fn().mockResolvedValue([]),
+    getRunWebhookPayload: vi.fn(),
+    sendRunToWebhook: vi.fn(),
   };
 });
 
@@ -411,5 +416,59 @@ describe("RunBar responsive recipe (class-level, NOT layout)", () => {
     expect(classes).toContain("justify-end");
     // `shrink-0` prevented the cluster from ever narrowing, so its internal wrap could never fire.
     expect(classes).not.toContain("shrink-0");
+  });
+});
+
+describe("RunBar — the terminal-run overflow menu (WP4.4 + AM-OB13)", () => {
+  /** Open the menu the way a keyboard user does: focus the trigger, press Enter. */
+  async function openMenu() {
+    const trigger = screen.getByRole("button", { name: "More actions for this run" });
+    // `act` because focusing the trigger also opens its Radix tooltip (D-TB5's one affordance),
+    // which is a second state update the assertion below would otherwise race.
+    await act(async () => {
+      trigger.focus();
+    });
+    expect(trigger).toHaveFocus();
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    return trigger;
+  }
+
+  test("a TERMINAL run offers both ways out of this page: promote, and send to a webhook", async () => {
+    renderBar({
+      identity: identity("automated"),
+      view: deriveRunBarView("completed", "completed", undefined),
+    });
+    await openMenu();
+    expect(await screen.findByText("Promote to test…")).toBeInTheDocument();
+    expect(screen.getByText("Send to webhook…")).toBeInTheDocument();
+  });
+
+  test("D-TB5 — the trigger's accessible name IS its tooltip text (one `label`, not a `title`)", () => {
+    renderBar({
+      identity: identity("automated"),
+      view: deriveRunBarView("completed", "completed", undefined),
+    });
+    const trigger = screen.getByRole("button", { name: "More actions for this run" });
+    // `IconButton` derives both from one prop, so the only way they diverge is by not using it.
+    expect(trigger).toHaveAttribute("aria-label", "More actions for this run");
+    expect(trigger).not.toHaveAttribute("title");
+  });
+
+  test("a LIVE run offers neither — there is nothing settled to promote or send yet", () => {
+    renderBar({ identity: identity("automated") });
+    expect(
+      screen.queryByRole("button", { name: "More actions for this run" }),
+    ).not.toBeInTheDocument();
+  });
+
+  test("the pre-run surface (no runId) offers neither", () => {
+    renderBar({
+      runId: null,
+      identity: identity("automated"),
+      view: deriveRunBarView("completed", "completed", undefined),
+    });
+    expect(
+      screen.queryByRole("button", { name: "More actions for this run" }),
+    ).not.toBeInTheDocument();
   });
 });

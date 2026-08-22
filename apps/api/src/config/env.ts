@@ -67,6 +67,30 @@ function readString(value: string | undefined, fallback: string): string {
   return trimmed && trimmed.length > 0 ? trimmed : fallback;
 }
 
+/**
+ * Parse the deployment's own base URL (RM-17 Phase 6, AM-OB13) — the origin the app is reachable at
+ * from OUTSIDE itself, used to make a link in an OUTBOUND payload openable.
+ *
+ * Deliberately has NO fallback. There is no honest way to guess it: `HOST`/`PORT` describe the
+ * socket the process binds, not the address a Slack message's reader can reach, and `127.0.0.1` in
+ * a ticket is worse than a bare path because it looks clickable and is not. A value that is not an
+ * absolute `http(s)` URL is treated as ABSENT for the same reason — a half-typed origin would
+ * fabricate a wrong link rather than fall back to the honest relative one.
+ */
+function readBaseUrl(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return undefined;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return undefined;
+  // Normalize away a trailing slash so the ONE joiner (`watch/outbound-link.ts`) never produces `//`.
+  return trimmed.replace(/\/+$/, "");
+}
+
 /** Parse a Hub tool-loading PREFERENCE env override (`eager`/`deferred`/`auto`); fall back to `auto`
  *  (WP1.1 / D-HF1 — the flipped default: eager under the token threshold, deferred-with-promotion
  *  above). `auto` is the Hub-internal `HubToolLoadingPreference` superset of the wire `ToolLoadingMode`,
@@ -155,6 +179,17 @@ export const config = {
   oauthRedirectUrl:
     process.env.OAUTH_REDIRECT_URL ??
     `http://127.0.0.1:${Number(process.env.PORT ?? 8080)}/api/oauth/callback`,
+  /**
+   * RM-17 Phase 6 (AM-OB13) — the base URL this deployment is reachable at from outside itself
+   * (e.g. `http://localhost:8081`). Used ONLY to turn an app path into an absolute URL in an
+   * OUTBOUND payload (a webhook body). `undefined` when unset or unparseable, and every consumer
+   * then emits the app-relative path unchanged — see `apps/api/src/watch/outbound-link.ts`.
+   *
+   * NOT derived from `oauthRedirectUrl` above, even though that one carries an origin: its default
+   * is a loopback address the app invented for itself, and inheriting it would silently put
+   * `http://127.0.0.1:8080/...` into somebody else's ticket.
+   */
+  appBaseUrl: readBaseUrl(process.env.APP_BASE_URL),
   webDistPath: path.resolve(
     process.env.WEB_DIST_PATH ?? path.join(repoRoot, "apps", "web", "dist"),
   ),

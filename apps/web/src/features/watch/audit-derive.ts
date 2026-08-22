@@ -1,5 +1,6 @@
 import {
   WATCH_ACTION_TYPES,
+  WATCH_MARKER_MANUAL_SEND,
   WATCH_MARKER_PAUSED,
   WATCH_MARKER_RATE_LIMITED,
   WATCH_MARKER_WINDOW_NO_DATA,
@@ -16,11 +17,15 @@ import type { WatchAction, WatchRuleEvent, WatchRuleTrigger } from "@mcp-token-f
 const REAL_ACTION_TYPES = new Set<string>(WATCH_ACTION_TYPES);
 
 /** True for a row that represents an actual action attempt (ok or failed) — excludes the
- *  decision/state markers (`sampled_out`, `window_recover`, `window_catchup`, `test_fire`, and the
- *  AM-OB10 `window_no_data` / `paused` / `rate_limited` markers) that the audit log also carries but
- *  that are not themselves a rule "firing". A `window_fire` written for a PAUSED rule still counts:
- *  the condition genuinely occurred, only the dispatch was suppressed — and the paired `paused` row
- *  is what tells the operator nothing was sent. */
+ *  decision/state markers (`sampled_out`, `window_recover`, `window_catchup`, `test_fire`, the
+ *  AM-OB10 `window_no_data` / `paused` / `rate_limited` markers, and AM-OB13's `manual_send`) that
+ *  the audit log also carries but that are not themselves a rule "firing". A `window_fire` written
+ *  for a PAUSED rule still counts: the condition genuinely occurred, only the dispatch was
+ *  suppressed — and the paired `paused` row is what tells the operator nothing was sent.
+ *
+ *  `manual_send` is excluded for the same reason as `test_fire`: an operator borrowed this rule's
+ *  destination to push one run by hand. The rule did not decide anything, and counting it as a fire
+ *  would make "how often does this rule trigger" answer a different question than it claims to. */
 function isFireActionRow(action: string): boolean {
   return REAL_ACTION_TYPES.has(action) || action === "window_fire";
 }
@@ -93,6 +98,9 @@ export function auditActionLabel(action: string): string {
       return "Boot catch-up";
     case "test_fire":
       return "Test-fire";
+    case WATCH_MARKER_MANUAL_SEND:
+      // AM-OB13 — an operator pushed one run/suite run to this rule's destination by hand.
+      return "Sent by hand";
     case "error":
       return "Evaluation error";
     default:

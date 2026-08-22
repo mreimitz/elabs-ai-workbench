@@ -214,6 +214,17 @@ const ReviewView = lazy(() =>
 const RubricsView = lazy(() =>
   import("./features/review/RubricsView").then((m) => ({ default: m.RubricsView })),
 );
+// RM-18 WP 1.2 — the in-app user guide. Lazy like every other route: it pulls in the markdown
+// renderer, which a cold load of any other page has no reason to pay for.
+const DocsIndexView = lazy(() =>
+  import("./features/docs/DocsIndexView").then((m) => ({ default: m.DocsIndexView })),
+);
+const DocsSubjectView = lazy(() =>
+  import("./features/docs/DocsSubjectView").then((m) => ({ default: m.DocsSubjectView })),
+);
+const ChangelogView = lazy(() =>
+  import("./features/docs/ChangelogView").then((m) => ({ default: m.ChangelogView })),
+);
 
 /** Shared fallback for a lazy route while its chunk loads. `@elabs-ai/components-*` StatePanel (loading kind). */
 function RouteFallback() {
@@ -235,6 +246,8 @@ export const PAGESHELL_EXACT_ROUTES = new Set<string>([
   "/testing/compatibility", // WP 2.9
   "/advisor", // advisor WP 1.3 (recommendation cards, centered reading surface)
   "/illustrations", // RM-14 WP 0.3 — the illustration asset repository (full-bleed catalog grid)
+  "/docs", // RM-18 WP 1.2 — the user-guide index (centered document page)
+  "/docs/changelog", // RM-18 WP 1.2 — the rendered CHANGELOG (centered document page)
   "/scans", // WP 2.3 (master-detail, in-view split)
   "/compare/scans", // WP 2.3
   "/skills", // RM-32 WP 2.2 — the registry OVERVIEW (grouped grid ⇄ table); no rail
@@ -267,6 +280,7 @@ const PAGESHELL_ROUTE_PREFIXES: string[] = [
   // `/assistant/agents/crew/:crewId`, both declared below alongside the bare `/assistant/agents`
   // route already in the exact-match set above) — the profile-modal deep link stays full-bleed too.
   "/assistant/agents/",
+  "/docs/", // RM-18 WP 1.2 — `/docs/:subject` (and `/docs/changelog`, already exact above)
 ];
 
 /**
@@ -1108,6 +1122,18 @@ export function App() {
     if (location.pathname === "/illustrations") {
       return [{ label: "Home", to: "/dashboard" }, { label: "Illustrations" }];
     }
+    // RM-18 WP 1.2 — the guide has no sidebar section of its own (it deliberately adds no nav item;
+    // where a manual belongs in the IA is an owner decision), so like `/illustrations` it roots at
+    // Home. A subject's leaf is its real title, published by `DocsSubjectView` via `useRouteCrumb`.
+    if (location.pathname === "/docs") {
+      return [{ label: "Home", to: "/dashboard" }, { label: "User guide" }];
+    }
+    if (location.pathname === "/docs/changelog") {
+      return [{ label: "User guide", to: "/docs" }, { label: "Changelog" }];
+    }
+    if (location.pathname.startsWith("/docs/")) {
+      return [{ label: "User guide", to: "/docs" }, { label: routeCrumb ?? "Section" }];
+    }
     // Depth-1 list roots also root at their section so the top bar always carries a breadcrumb (S16).
     if (location.pathname === "/testing/runs") {
       return [{ label: "Testing" }, { label: "Runs" }];
@@ -1490,6 +1516,20 @@ export function App() {
                 renders the whole catalog, and drilling into one component opens a dialog rather
                 than a second route (see `IllustrationDetail`'s docstring for why). */}
                 <Route path="/illustrations" element={<IllustrationsGallery />} />
+                {/* The in-app user guide (planning/Roadmap/RM-18-platform/ WP 1.2). Three routes, not a
+                dialog (D-TB10): a page of the manual is a place an operator bookmarks, pastes to a
+                colleague and reloads. Each renders something useful with ZERO query params — the
+                index is the whole table of contents, and a subject is that section end to end.
+                `/docs/changelog` is declared BEFORE `/docs/:subject` so the reserved id wins; the
+                generator additionally refuses to emit a DC subject that would take it. The content
+                is static build output under `/doc-content/` (a deliberately different name, so the
+                SPA fallback and the static plugin never race for `/docs/…`). */}
+                <Route path="/docs" element={<DocsIndexView />} />
+                <Route
+                  path="/docs/changelog"
+                  element={<ChangelogView version={health?.version ?? null} />}
+                />
+                <Route path="/docs/:subject" element={<DocsSubjectView />} />
                 {/* Bare `/testing` parent → the testing home (Collections), not the dashboard catch-all
                 (WP 0.3 / C1). Collections is the test home per the IA nav order. */}
                 <Route path="/testing" element={<Navigate to="/testing/collections" replace />} />

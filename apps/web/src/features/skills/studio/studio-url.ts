@@ -3,42 +3,40 @@
 // bookmarks it, pastes it into a message, and refreshes it. So everything that decides WHAT the
 // workbench is showing lives in the query string, never in component state:
 //
-//   /skills/:skillId/studio?mode=flow|code|split & file=<path> & sel=<graph node id>
+//   /skills/:skillId/studio?file=<path> & rail=<files|components|settings> & sel=<graph node id>
 //
-// This closes the carry-forward the phase-7 plan names explicitly ("the skill inspector's sub-tab
-// selection is local state — the new `/skills/:id/studio` route must carry mode/file/selection in
-// the URL"). Pure, framework-free helpers so the round-trip is unit-testable without a router.
+// RM-30 WP 7.9 (D-UX19 #2) DELETED the view-mode axis. There is no "mode" any more: which surface
+// is showing is a consequence of which tab is open, and `?file=` alone says that.
 //
-// `mode` deliberately shares its key with the editor's OWN `?mode=` param (`UnifiedEditor`) — one
-// param, one meaning, read by both the Studio toolbar and the editor it frames.
+//   • `?file=` ABSENT   ⇒ the Designer (the visual composer) — the zero-param landing surface.
+//   • `?file=SKILL.md`  ⇒ the manifest's SOURCE tab, written explicitly like every other path.
+//   • `?file=<path>`    ⇒ that file's source tab.
+//
+// A legacy bookmark still carrying the old view-mode param is simply IGNORED — the reader below
+// only reads the params it owns, so a stale link still lands on a usable workbench rather than
+// throwing or painting a blank pane. `studio-url.test.ts` pins that.
+//
+// Pure, framework-free helpers so the round-trip is unit-testable without a router.
 
-/** The three views of one document the unified editor offers. */
-export type StudioMode = "flow" | "code" | "split";
+/** The left rail's three tabs. RM-30 WP 7.3 put this in the URL so the palette's empty state can
+ *  DEEP-LINK the Settings tab ("Bind a server in Settings →") rather than reach across the tree for
+ *  a callback — and so an author can share "open this skill on its settings". */
+export type StudioRail = "files" | "components" | "settings";
 
-export const STUDIO_MODES: readonly StudioMode[] = ["flow", "code", "split"];
-
-/** What the Studio opens in when the URL names no mode — the visual view (the authoring default). */
-export const STUDIO_DEFAULT_MODE: StudioMode = "flow";
-
-/** The file the centre surface edits when the URL names none. WP 7.1 only mounts `SKILL.md`; the
- *  multi-tab file editor lands in WP 7.4, which reuses this same param. */
-export const STUDIO_DEFAULT_FILE = "SKILL.md";
-
-export function isStudioMode(value: string | null | undefined): value is StudioMode {
-  return (
-    value !== null && value !== undefined && (STUDIO_MODES as readonly string[]).includes(value)
-  );
-}
-
-/** The left rail's three tabs. RM-30 WP 7.3 put this in the URL so the Tools palette's empty state
- *  can DEEP-LINK the Settings tab ("Bind a server in Settings →") rather than reach across the tree
- *  for a callback — and so an author can share "open this skill on its settings". */
-export type StudioRail = "files" | "tools" | "settings";
-
-export const STUDIO_RAILS: readonly StudioRail[] = ["files", "tools", "settings"];
+export const STUDIO_RAILS: readonly StudioRail[] = ["files", "components", "settings"];
 
 /** What the left rail opens on when the URL names no tab. */
 export const STUDIO_DEFAULT_RAIL: StudioRail = "files";
+
+/**
+ * Values this param used to carry, mapped onto what they mean now. RM-30 WP 7.7 shipped the panel as
+ * **Components** while its tab (and this param) still read `tools`; WP 7.9 finished the rename, so an
+ * existing shared link must still open the right tab rather than silently falling back to Files.
+ *
+ * READ-ONLY. `writeStudioUrlState` takes a `StudioRail`, so a legacy value is not even spellable on
+ * the write side — the URL an author copies today always carries the current vocabulary.
+ */
+const LEGACY_RAIL_ALIASES: Readonly<Record<string, StudioRail>> = { tools: "components" };
 
 export function isStudioRail(value: string | null | undefined): value is StudioRail {
   return (
@@ -46,10 +44,16 @@ export function isStudioRail(value: string | null | undefined): value is StudioR
   );
 }
 
+/** Resolve a raw `?rail=` value — a current name, or a legacy alias. `null` when it is neither. */
+export function resolveStudioRail(value: string | null | undefined): StudioRail | null {
+  if (isStudioRail(value)) return value;
+  if (value === null || value === undefined) return null;
+  return LEGACY_RAIL_ALIASES[value] ?? null;
+}
+
 /** The Studio's complete, URL-carried view state. `file`/`sel` are `null` when the URL omits them —
  *  an absent param is NOT the same as an empty one, and the writer keeps absent URLs clean. */
 export type StudioUrlState = {
-  mode: StudioMode;
   rail: StudioRail;
   file: string | null;
   sel: string | null;
@@ -61,17 +65,15 @@ function toParams(search: SearchLike): URLSearchParams {
   return typeof search === "string" ? new URLSearchParams(search) : new URLSearchParams(search);
 }
 
-/** Read the Studio's view state out of a query string. An unrecognised `mode` degrades to the
- *  default rather than throwing — a hand-typed URL must still land on a usable workbench. */
+/** Read the Studio's view state out of a query string. An unrecognised value degrades to the default
+ *  rather than throwing — a hand-typed or stale URL must still land on a usable workbench. */
 export function readStudioUrlState(search: SearchLike): StudioUrlState {
   const params = toParams(search);
-  const mode = params.get("mode");
   const rail = params.get("rail");
   const file = params.get("file");
   const sel = params.get("sel");
   return {
-    mode: isStudioMode(mode) ? mode : STUDIO_DEFAULT_MODE,
-    rail: isStudioRail(rail) ? rail : STUDIO_DEFAULT_RAIL,
+    rail: resolveStudioRail(rail) ?? STUDIO_DEFAULT_RAIL,
     file: file !== null && file.length > 0 ? file : null,
     sel: sel !== null && sel.length > 0 ? sel : null,
   };
@@ -88,7 +90,6 @@ export function writeStudioUrlState(
   next: Partial<StudioUrlState>,
 ): URLSearchParams {
   const params = toParams(previous);
-  if (next.mode !== undefined) params.set("mode", next.mode);
   // The default rail is omitted rather than written, so a zero-param Studio URL stays clean (D-TB10).
   if (next.rail !== undefined) {
     if (next.rail === STUDIO_DEFAULT_RAIL) params.delete("rail");

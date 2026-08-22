@@ -28,7 +28,6 @@ import {
   Label,
   ResizableHandle,
   ResizablePanel,
-  ResizablePanelGroup,
   ScrollArea,
   Select,
   SelectContent,
@@ -39,8 +38,6 @@ import {
   StatePanel,
   Text,
   Textarea,
-  ToggleGroup,
-  ToggleGroupItem,
   toast,
 } from "@elabs-ai/components-ui";
 import type { Connection, Edge } from "@elabs-ai/components-flow";
@@ -49,8 +46,6 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle2,
-  Code2,
-  Columns2,
   LayoutGrid,
   PanelLeftOpen,
   PanelRightClose,
@@ -60,7 +55,6 @@ import {
   Save,
   Terminal,
   Undo2,
-  Workflow,
 } from "lucide-react";
 import { ApiError } from "../../../lib/api";
 import { getErrorMessage } from "../../../lib/errors";
@@ -106,23 +100,26 @@ import { useSkillDraft, type SkillDraftController } from "./use-skill-draft";
 import { useOptionalStudioDraft } from "../studio/draft";
 import { notifyError } from "../../../lib/notify";
 
-// ── Skill IDE WP 9.2 (I10) — the unified editor shell: Flow | Code | Split ─────────────────────────
-// "Show flow | Show code" as ONE surface, not two tabs. The WP 9.1 live draft (`useSkillDraft`) is the
-// SINGLE canonical state — neither view owns it, so the two are ALWAYS in sync:
-//   • Flow: canvas gestures compile to edit-ops → apply-preview → the draft text; the canvas renders the
-//     draft's live projection (`draftGraph`) once the text has been touched directly, else a snappy
-//     client-side op preview.
-//   • Code: a full-document Monaco `CodeEditor` bound to `draft.content`; every keystroke writes back
-//     through `draft.setContent`, which re-projects (debounced) — so the graph updates.
-//   • Split: both side by side, resizable, with selection synced BOTH ways via anchors.
-// One pending-changes bar drives 9.1's content-canonical save (intent log rides along) + Discard resets
-// the draft to the base version. Monaco is NEVER double-mounted: the Code pane lives at ONE stable tree
-// position across Code↔Split (the split centerpiece), so the model is shared, not recreated.
+// ── Skill IDE WP 9.2 (I10), reworked by RM-30 WP 7.9 — the editor over ONE document ────────────────
+// The WP 9.1 live draft (`useSkillDraft`) is the SINGLE canonical state — neither view owns it, so
+// the two are ALWAYS in sync:
+//   • flow: canvas gestures compile to edit-ops → apply-preview → the draft text; the canvas renders
+//     the draft's live projection (`draftGraph`) once the text has been touched directly, else a
+//     snappy client-side op preview.
+//   • code: a full-document Monaco `CodeEditor` bound to `draft.content`; every keystroke writes
+//     back through `draft.setContent`, which re-projects (debounced) — so the graph updates.
+// One pending-changes bar drives 9.1's content-canonical save (intent log rides along) + Discard
+// resets the draft to the base version.
+//
+// RM-30 WP 7.9 (D-UX19 #2 — "Designer = visual, Files = source") DELETED the mode AXIS. There is no
+// segmented view control any more, no `mode` query param, and no side-by-side view of one document:
+// which of the two surfaces this component paints is a CONSEQUENCE of which tab the host has open,
+// handed down as a required `mode` prop. The host is the Studio, where `mode === "flow"` IS the
+// Designer tab and `mode === "code"` IS the SKILL.md source tab. When it needs the other surface — a
+// problems-panel deep link to a line, a canvas selection while the source is showing — it ASKS,
+// through `onRequestMode`, and the host opens the corresponding tab.
 
-export type EditorMode = "flow" | "code" | "split";
-const EDITOR_MODES: EditorMode[] = ["flow", "code", "split"];
-const isEditorMode = (value: string | null): value is EditorMode =>
-  value !== null && (EDITOR_MODES as string[]).includes(value);
+export type EditorMode = "flow" | "code";
 
 /** Editable Monaco options: the shared read-only baseline with `readOnly` lifted, glyph margin on for
  *  WP 9.3's kind/annotation/breadcrumb gutter glyphs. */
@@ -167,9 +164,20 @@ const clampLine = (line: number, max: number): number =>
 export type UnifiedEditorProps = {
   skillId: string;
   versionId: string;
-  /** Which mode to open in the FIRST time (no `?mode=` in the URL yet). Design host ⇒ "flow"; the Files
-   *  tab's SKILL.md entry ⇒ "code". */
-  defaultMode?: EditorMode;
+  /**
+   * WHICH surface this editor paints — the visual composer (`"flow"`) or the manifest's source
+   * (`"code"`). RM-30 WP 7.9: it is a REQUIRED prop, not a URL param and not local state, because
+   * the host decides it from the tab it has open. There is no third value: two views of one
+   * document side by side is exactly the "pick a mode" affordance D-UX19 #2 removed.
+   */
+  mode: EditorMode;
+  /**
+   * Ask the host to show the OTHER surface. The editor calls this when it has somewhere specific to
+   * go — a problems-panel deep link to a line while the canvas is showing, or a canvas selection
+   * while the source is showing. In the Studio this opens the Designer or the SKILL.md source tab.
+   * Must be a stable (`useCallback`) reference.
+   */
+  onRequestMode: (mode: EditorMode) => void;
   /** Bubbles the live-draft dirty state up (the inspector's unsaved-changes guard on tab/version switch). */
   onDirtyChange?: (dirty: boolean) => void;
   /** Called with the NEW version's id right after a save (the inspector refetches + repoints its picker). */
@@ -191,9 +199,6 @@ export type UnifiedEditorProps = {
   // additive and opt-in: omit them and the editor renders exactly the chrome it always has (the
   // inspector, the tests, any other host).
 
-  /** The host renders the `Flow | Code | Split` control itself — it writes the same `?mode=` param —
-   *  so this surface must not repeat it. */
-  hideModeToggle?: boolean;
   /** Register the unified problems panel INTO the host's own bottom strip instead of rendering it at
    *  the foot of this surface. Cleared (`null`) on unmount, exactly like the save cluster. */
   onProblemsChange?: (problems: ReactNode | null) => void;
@@ -231,9 +236,8 @@ export type UnifiedEditorProps = {
 };
 
 /**
- * The unified Flow/Code editor surface (WP 9.2) — a segmented Flow | Code | Split view over ONE
- * document. Hosted by the Design tab (default "flow") and opened for `SKILL.md` from the Files tab
- * (default "code").
+ * The editor surface over ONE document (WP 9.2, reworked by RM-30 WP 7.9): the visual composer or
+ * the manifest source, whichever the host's `mode` names — one live draft behind both.
  *
  * RM-30 WP 7.3 moved WHERE the draft is created, not what it is. Inside the Skill Studio the draft
  * belongs to the SHELL (so the settings panel in the left rail edits the same one), and this
@@ -260,13 +264,13 @@ function UnifiedEditorBody({
   skillId,
   versionId,
   draft,
-  defaultMode = "flow",
+  mode,
+  onRequestMode,
   onDirtyChange,
   onVersionSaved,
   onOpenDiff,
   onTestTool,
   onHeaderActionsChange,
-  hideModeToggle = false,
   onProblemsChange,
   problemsOpen,
   onProblemsOpenChange,
@@ -278,24 +282,6 @@ function UnifiedEditorBody({
   onOpenServerSettings,
 }: UnifiedEditorProps & { draft: SkillDraftController }) {
   const [searchParams, setSearchParams] = useSearchParams();
-
-  // Mode lives in the URL so it survives tab switches (Radix unmounts inactive tab content) AND doubles
-  // as the 9.4 problems-panel deep link (`?mode=code`). Absent ⇒ the host's default.
-  const modeParam = searchParams.get("mode");
-  const mode: EditorMode = isEditorMode(modeParam) ? modeParam : defaultMode;
-  const setMode = useCallback(
-    (next: EditorMode) => {
-      setSearchParams(
-        (prev) => {
-          const params = new URLSearchParams(prev);
-          params.set("mode", next);
-          return params;
-        },
-        { replace: true },
-      );
-    },
-    [setSearchParams],
-  );
 
   const { edit, baseGraph: graph, treeSha, draftGraph, manualEdit, loading, error } = draft;
 
@@ -853,20 +839,21 @@ function UnifiedEditorBody({
 
   // ── problems-panel deep links (WP 9.4) — the same anchor plumbing 9.2's `?node=`/`?line=` use, but
   //    driven in-process (the panel is mounted inside this editor, so no URL round-trip is needed). ──
-  // Node: select on the canvas → make a flow-visible mode so the selection actually shows.
+  // Node: select on the canvas → ask the host for the Designer, so the selection actually shows.
   const goToNode = useCallback(
     (nodeId: string) => {
       selectionSourceRef.current = "external";
       setSelectedNodeId(nodeId);
-      if (mode === "code") setMode("split");
+      if (mode === "code") onRequestMode("flow");
     },
-    [mode, setMode],
+    [mode, onRequestMode],
   );
-  // Line: reveal it in the code editor → switch to code if we're on the bare flow canvas. When Monaco
-  // isn't mounted yet (flow→code), defer through the same pending-reveal ref the mount effect drains.
+  // Line: reveal it in the code editor → ask the host for the source tab if the canvas is showing.
+  // When Monaco isn't mounted yet (flow→code), defer through the same pending-reveal ref the mount
+  // effect drains.
   const goToLine = useCallback(
     (line: number) => {
-      if (mode === "flow") setMode("code");
+      if (mode === "flow") onRequestMode("code");
       const editor = editorRef.current;
       if (editor && editorMounted) {
         const target = clampLine(line, editor.getModel()?.getLineCount() ?? line);
@@ -877,7 +864,7 @@ function UnifiedEditorBody({
         pendingRevealLineRef.current = line;
       }
     },
-    [mode, editorMounted, setMode],
+    [mode, editorMounted, onRequestMode],
   );
 
   // Apply a pending `?line=` reveal once the editor is live.
@@ -916,13 +903,14 @@ function UnifiedEditorBody({
         }
       }
     }
+    // RM-30 WP 7.9: a `?line=` deep link needs the SOURCE surface, and the way to get it is now to
+    // ask the host to open the SKILL.md tab — not to write a view-mode param that no longer exists.
+    if (switchToCode) onRequestMode("code");
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev);
         params.delete("node");
         params.delete("line");
-        if (switchToCode && !isEditorMode(params.get("mode"))) params.set("mode", "code");
-        if (switchToCode && params.get("mode") === "flow") params.set("mode", "code");
         return params;
       },
       { replace: true },
@@ -1056,7 +1044,7 @@ function UnifiedEditorBody({
     return <StatePanel kind="loading" title="Loading…" loadingLabel="Projecting the skill…" />;
   }
 
-  const flowVisible = mode !== "code";
+  const flowVisible = mode === "flow";
   const graphEmpty = flowGraph.nodes.length === 0;
 
   // RM-30 WP 7.1 — when the host has taken BOTH side panels, the pane is the canvas alone and the
@@ -1113,33 +1101,11 @@ function UnifiedEditorBody({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      {/* Toolbar: the segmented view control + (flow-only) picker/add actions + the ONE save bar. */}
+      {/* Toolbar: the (flow-only) entry-point picker + Auto-arrange, and the ONE save bar.
+          RM-30 WP 7.9 DELETED the view control that used to open this row: which surface is showing
+          is decided by the tab the host has open, so there is nothing here to pick. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-3">
-          {/* RM-30 WP 7.1 — the Studio's slim toolbar owns this control (same `?mode=` param), so it
-              is suppressed there rather than rendered twice. */}
-          {hideModeToggle ? null : (
-            <ToggleGroup
-              type="single"
-              variant="segmented"
-              value={mode}
-              onValueChange={(value) => {
-                if (isEditorMode(value)) setMode(value);
-              }}
-              aria-label="Editor view"
-            >
-              <ToggleGroupItem value="flow" aria-label="Show flow">
-                <Workflow className="size-4" aria-hidden /> Flow
-              </ToggleGroupItem>
-              <ToggleGroupItem value="code" aria-label="Show code">
-                <Code2 className="size-4" aria-hidden /> Code
-              </ToggleGroupItem>
-              <ToggleGroupItem value="split" aria-label="Split view">
-                <Columns2 className="size-4" aria-hidden /> Split
-              </ToggleGroupItem>
-            </ToggleGroup>
-          )}
-
           {flowVisible && showFlowPicker ? (
             <div className="flex items-center gap-2">
               <Text variant="meta" tone="muted" as="span">
@@ -1230,39 +1196,21 @@ function UnifiedEditorBody({
         </Alert>
       ) : null}
 
-      {/* Body. In flow mode the canvas fills the surface; otherwise a ResizablePanelGroup hosts the code
-          pane at a STABLE tree position (key="code") so Monaco is never remounted between Code and Split —
-          the model is shared. The flow panel + handle are added only in split mode. */}
+      {/* Body — ONE surface, never two. RM-30 WP 7.9 deleted the side-by-side branch (and with it the
+          `ResizablePanelGroup` that only existed to host it): the canvas fills the surface on the
+          Designer tab, the code pane fills it on the SKILL.md source tab. */}
       <div className="flex min-h-0 flex-1 flex-col">
         {mode === "flow" ? (
           flowPane
         ) : (
-          <ResizablePanelGroup
-            direction="horizontal"
-            autoSaveId="skill-unified-editor"
-            className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border"
-          >
-            {mode === "split" ? (
-              <ResizablePanel key="flow" id="unified-flow" order={1} defaultSize={50} minSize={25}>
-                {flowPane}
-              </ResizablePanel>
-            ) : null}
-            {mode === "split" ? <ResizableHandle key="handle" withHandle /> : null}
-            <ResizablePanel
-              key="code"
-              id="unified-code"
-              order={2}
-              defaultSize={mode === "split" ? 50 : 100}
-              minSize={25}
-            >
-              {codePane}
-            </ResizablePanel>
-          </ResizablePanelGroup>
+          <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
+            {codePane}
+          </div>
         )}
       </div>
 
-      {/* WP 9.4 — the unified problems panel, mounted ONCE below the body so it renders IDENTICALLY in
-          Flow, Code, and Split. It reads the SAME live projection (`syncGraph`) + the live projector
+      {/* WP 9.4 — the unified problems panel, mounted ONCE below the body so it renders IDENTICALLY
+          on BOTH surfaces. It reads the SAME live projection (`syncGraph`) + the live projector
           warnings the canvas/code decorations use — plus (WP 7.5) the live unknown-tool findings —
           and adds the persisted quality + tool findings. RM-30 WP 7.1: when a host takes the panel
           (the Studio's bottom strip) it is registered there instead, never rendered twice. */}
@@ -1742,9 +1690,9 @@ function CodePane({
   const onTestToolRef = useRef(onTestTool);
   onTestToolRef.current = onTestTool;
 
-  // Dispose the cursor listener + code-intel + release the editor ONLY on real unmount (Code→Flow).
-  // Code↔Split keeps this component mounted at a stable tree position, so this never fires there → no
-  // Monaco remount and no provider/decoration leak across mode toggles.
+  // Dispose the cursor listener + code-intel + release the editor ONLY on real unmount — i.e. when
+  // the host moves off the SKILL.md source tab and the code pane goes away. It fires exactly once
+  // per such move, so there is no provider/decoration leak.
   useEffect(
     () => () => {
       disposeRef.current?.dispose();

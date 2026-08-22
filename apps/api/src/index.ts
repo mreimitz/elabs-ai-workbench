@@ -188,6 +188,7 @@ import { promoteRunToTest } from "./watch/promote.js";
 import { WatchRuleRepository } from "./watch/repository.js";
 import { registerWatchRoutes } from "./watch/routes.js";
 import { WatchScheduler } from "./watch/scheduler.js";
+import { registerManualSendRoutes } from "./watch/manual-send.js";
 import { registerWatchTestFireRoute } from "./watch/webhook.js";
 import type { WatchActionServices } from "./watch/actions.js";
 import { dispatchGithubWorkflow } from "./watch/github-dispatch.js";
@@ -1536,6 +1537,15 @@ await registerNotificationRoutes(server, notificationRepository, notificationHub
 await registerWatchTestFireRoute(server, watchRuleRepository, (secretRef) =>
   watchRuleRepository.resolveWebhookUrl(secretRef),
 );
+// RM-17 Phase 6 (AM-OB13) — the HAND-DRIVEN send: push ONE run or suite run to a webhook on
+// demand, borrowing a watch rule's already-encrypted destination. Reuses `postWebhook` and
+// `resolveWebhookUrl` unchanged (D-MCP4 — no second outbound path, no second secret lifecycle),
+// and needs no table of its own.
+await registerManualSendRoutes(server, {
+  rules: watchRuleRepository,
+  runs: runRepository,
+  suiteRuns: suiteRunRepository,
+});
 await registerReportRoutes(
   server,
   scans,

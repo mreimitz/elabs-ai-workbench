@@ -92,3 +92,33 @@ growth record; none of them moves the version.
 
 <!-- new-component.mjs appends one line per component below -->
 - 2026-08-21 — `owner` — Owner / User (orchestration cast)
+
+---
+
+## Not a component: the scene engine
+
+Everything above is the CATALOG. Phase 2 adds the layer that composes it, and it moves
+`REGISTRY_VERSION` no more than an addition does — it adds no entry, and changes no entry's
+scene-visible contract. Recorded here because this file, not the number, is the growth record.
+
+### WP 2.3 — `<IllustrationScene>`, the renderer
+
+The first thing in this package that draws a whole scene. `scene/Scene.tsx` validates a spec, lays
+it out (WP 2.1), routes its connectors (WP 2.2) and paints the result through the fixed
+`ILLUSTRATION_LAYERS` order; `scene/annotations.tsx` adapts an annotation's text to the slot the
+layout gave it. Byte-identical for the same spec, in any tree.
+
+Two primitives grew a seam for it, both additive and neither changing what they draw:
+
+- **`Connector`** now exports its style table (`CONNECTOR_STYLE`), the arrowhead fills, the tail
+  trim and the caption knockout, because the renderer paints from the router's filleted path rather
+  than through the component and must not keep a second copy of the six rows.
+  `connector-style-single-source.test.ts` fails on a second declaration anywhere in `src/`.
+- **`PaperStage`** takes an optional `idPrefix`. Its `useId` default is stable per POSITION, which
+  an export path cannot use; the scene derives the prefix from the scene id instead.
+
+**Two measured findings are recorded in the source rather than smoothed over.** The connector
+table's six kinds separate without hue in 13 of the 15 pairs — `flow`/`publish` and `write`/`loop`
+do not — and the D-IL6 accent band (2–6%) cannot be satisfied by a part-count proxy at all below 17
+parts, so all three fixtures warn on every render (28.6% · 21.1% · 30.0%). Neither is patched here:
+both are properties of locked design artifacts, and changing one is not a builder's call.

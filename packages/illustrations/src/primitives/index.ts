@@ -3,7 +3,15 @@
 
 export { CalloutCard, calloutCardHeight, CARD_PADDING, CARD_RADIUS } from "./CalloutCard.js";
 export { CalibrationCube } from "./CalibrationCube.js";
-export { Connector, arrowHeadPoints } from "./Connector.js";
+export {
+  CONNECTOR_ARROW_FILL,
+  CONNECTOR_ARROW_TRIM,
+  CONNECTOR_LABEL_KNOCKOUT,
+  CONNECTOR_STYLE,
+  Connector,
+  arrowHeadPoints,
+  connectorLineEnd,
+} from "./Connector.js";
 export { ConstructionGhost } from "./ConstructionGhost.js";
 export { EntityRoot, entityPortAnchors } from "./EntityRoot.js";
 export { FIGURE_PROPORTIONS, IsoFigure, figureBoxes, figureHeightUnits } from "./IsoFigure.js";
@@ -33,7 +41,7 @@ export {
 
 export type { CalloutCardProps } from "./CalloutCard.js";
 export type { CalibrationCubeProps } from "./CalibrationCube.js";
-export type { ConnectorProps } from "./Connector.js";
+export type { ArrowHead, ConnectorProps, ConnectorStyle } from "./Connector.js";
 export type { ConstructionGhostProps } from "./ConstructionGhost.js";
 export type { EntityMeta, EntityRootProps } from "./EntityRoot.js";
 export type { GlyphFace, GlyphFrameProps } from "./GlyphFrame.js";

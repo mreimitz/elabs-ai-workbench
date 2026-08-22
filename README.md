@@ -241,6 +241,18 @@ someone else and they see exactly what you see. A saved view is also a short nam
 
 ![The unified Runs feed: 76 runs, 70.6M tokens, $90.64, a 6.6% failure rate, with grades and durations.](docs/screenshots/runs-feed.png)
 
+**Push one out by hand.** A run or a suite-run you want someone else to see can go straight to a
+webhook — a Slack channel, a ticket system, whatever is on the other end — from the console's
+overflow menu, without waiting for a watch rule to decide it is interesting. You pick the
+destination by name (it is a watch rule you already set up; the URL itself stays encrypted on the
+server and is never shown), and you see the exact payload before it leaves: the run's status, cost
+and tokens, plus a link to its console and a link to its Markdown report. Every send is recorded in
+that rule's own history, so "did this actually go out" stays answerable afterwards.
+
+For those links to be clickable on the other end, the app has to know the address you reach it at —
+set `APP_BASE_URL` (e.g. `http://localhost:8081`). Leave it unset and the links go out as plain
+paths, and the dialog tells you so rather than letting you send a link nobody can open.
+
 ### 9 · The Assistant and the multi-agent Hub
 
 A built-in **App assistant** dock operates the current page on your behalf — analyze this scan,

@@ -22,28 +22,33 @@ export type SkillDesignViewProps = {
   onHeaderActionsChange?: (actions: ReactNode | null) => void;
 } & Pick<
   UnifiedEditorProps,
-  // RM-30 WP 7.1 — the Skill Studio's host-chrome slots, forwarded verbatim (this component already
-  // spreads `{...props}` onto the editor). Every one is optional, so the inspector's own usage and
-  // the existing tests are unchanged.
-  | "hideModeToggle"
-  | "onProblemsChange"
-  | "problemsOpen"
-  | "onProblemsOpenChange"
-  | "onProblemsSummaryChange"
-  | "initialSelectedNodeId"
-  | "onSelectedNodeChange"
-  | "flowToolsContainer"
-  | "flowDetailContainer"
-  // RM-30 WP 7.3 — the Tools palette's deep link into the Studio rail's Settings tab.
-  | "onOpenServerSettings"
->;
+  // RM-30 WP 7.9 — WHICH surface the editor paints, and how it asks for the other one. Both are
+  // REQUIRED: the host decides them from the tab it has open, and there is no default that would be
+  // right for every host.
+  "mode" | "onRequestMode"
+> &
+  Pick<
+    UnifiedEditorProps,
+    // RM-30 WP 7.1 — the Skill Studio's host-chrome slots, forwarded verbatim (this component
+    // already spreads `{...props}` onto the editor). Every one is optional.
+    | "onProblemsChange"
+    | "problemsOpen"
+    | "onProblemsOpenChange"
+    | "onProblemsSummaryChange"
+    | "initialSelectedNodeId"
+    | "onSelectedNodeChange"
+    | "flowToolsContainer"
+    | "flowDetailContainer"
+    // RM-30 WP 7.3 — the palette's deep link into the Studio rail's Settings tab.
+    | "onOpenServerSettings"
+  >;
 
 /**
- * The Design tab. Since Skill IDE WP 9.2 (I10 — "one document, two live views") the Design tab HOSTS
- * the unified {@link UnifiedEditor} surface (Flow | Code | Split over one live draft), defaulting to the
- * flow view. All the editing behavior — canvas gestures, the code editor, the single Save/Discard bar,
- * selection sync, deep links — lives in `UnifiedEditor`; this is a thin, prop-preserving host so the
- * inspector's `SkillDesignView` usage is unchanged.
+ * The authoring surface. Since Skill IDE WP 9.2 (I10 — "one document, two live views") it HOSTS the
+ * {@link UnifiedEditor} over one live draft; RM-30 WP 7.9 made WHICH of the two views it paints a
+ * required prop rather than a control on the toolbar. All the editing behavior — canvas gestures,
+ * the code editor, the single Save/Discard bar, selection sync, deep links — lives in
+ * `UnifiedEditor`; this is a thin, prop-preserving host.
  *
  * Skill Studio WP 7.3a: it additionally provides the {@link SkillBindingHostContext} around the
  * editor so the Tools palette (mounted deep inside `UnifiedEditor`) can run the first-class
@@ -76,7 +81,7 @@ export function SkillDesignView(props: SkillDesignViewProps) {
 
   return (
     <SkillBindingHostContext.Provider value={bindingHost}>
-      <UnifiedEditor defaultMode="flow" {...props} onDirtyChange={handleDirtyChange} />
+      <UnifiedEditor {...props} onDirtyChange={handleDirtyChange} />
     </SkillBindingHostContext.Provider>
   );
 }
