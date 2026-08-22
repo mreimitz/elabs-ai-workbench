@@ -1,3 +1,4 @@
 packages:
+  - "data-pack"
   - "apps/*"
   - "packages/*"

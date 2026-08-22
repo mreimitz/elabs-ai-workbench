@@ -1,0 +1,2384 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-08-19",
+  "provider": {
+    "id": "microsoft-copilot",
+    "name": "Microsoft Copilot",
+    "group": "saas",
+    "homepage": "https://www.microsoft.com/en-us/microsoft-copilot",
+    "api_docs_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview",
+    "tokenizer_docs_url": null,
+    "native_mcp_support": {
+      "value": true,
+      "confidence": "high",
+      "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/build-mcp-plugins",
+      "source_tier": 1,
+      "as_of": "2026-08-19",
+      "notes": "Re-verified 2026-08-19 against Microsoft Learn (page updated 2026-08-11). MCP is now a first-class extensibility path across FOUR Microsoft Copilot surfaces: (1) Microsoft 365 Copilot declarative agents via MCP-server plugins (`RemoteMCPServer` runtime in plugin manifest 2.4), incl. MCP apps/UI widgets and runtime dynamic tool discovery; (2) Microsoft 365 Copilot federated connectors, which are MCP-based read-only data connectors surfaced in Copilot Chat, Copilot in Excel and the Researcher agent; (3) Microsoft Copilot Studio, where MCP is GA and servers are attached as Power Platform custom connectors; (4) GitHub Copilot (VS Code, JetBrains, Xcode, Eclipse, Cursor, Windsurf, Copilot CLI, Copilot app, cloud agent). Copilot Cowork (GA 2026-06-16) adds MCP `remoteMcpServer` connectors in its app packages. A fifth path, the Microsoft Work IQ API, exposes Microsoft 365 data to external agents over both Agent-to-Agent and MCP. Consumer Copilot (copilot.microsoft.com) still exposes no developer MCP surface."
+    },
+    "skills_concept": {
+      "value": "Declarative agents + MCP/API plugins (M365 Copilot); Skills + connectors in app packages (Copilot Cowork); agents + tools (Copilot Studio); agent mode + MCP servers (GitHub Copilot); no developer skills surface (consumer Copilot)",
+      "confidence": "high",
+      "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+      "source_tier": 1,
+      "as_of": "2026-08-19",
+      "notes": "Changed 2026-08-19: Microsoft now ships an explicit, Anthropic-style 'Skill' primitive in Copilot Cowork — prompt-based `SKILL.md` workflow packages with a documented context budget (body target under 5,000 tokens; up to 20 skills and 10 MCP connectors per app package; up to 50 custom skills and plugins per user). That sits alongside the older 'declarative agent' analog in Microsoft 365 Copilot (instructions + plugins + knowledge, actions array capped at 10), Copilot Studio agents (tools + knowledge sources), and GitHub Copilot agent mode (MCP servers as the tool/skill provider). These are the vendor's 'skills' analogs for this dataset."
+    }
+  },
+  "models": [
+    {
+      "id": "microsoft-365-copilot",
+      "display_name": "Microsoft 365 Copilot",
+      "family": "Microsoft 365 Copilot",
+      "release_date": {
+        "value": "2023-11-01",
+        "confidence": "low",
+        "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/microsoft-365-copilot-overview",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "CONFIDENCE LOWERED high→low on re-verification: the cited Microsoft Learn overview page was opened on 2026-08-19 (page itself updated 2026-08-18) and is reachable, but it does NOT print a general-availability date — Microsoft publishes no Tier-1 GA-date page for Microsoft 365 Copilot. The November 2023 value is retained as the widely-reported enterprise GA month rather than a vendor-confirmed date. CHANGED CONTEXT 2026: Microsoft 365 Copilot is no longer a single-vendor-model product — Anthropic Claude became selectable in Copilot Chat on 2026-06-16, Claude Opus 5 shipped 2026-07-24, and Anthropic model choice reached Word on 2026-08-11 (Microsoft 365 Copilot release notes). Treat this entry as a product layer over a user/tenant-selectable OpenAI GPT-5.x or Anthropic Claude model."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/microsoft-365-copilot-overview",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Re-verified 2026-08-19: Microsoft still publishes no knowledge cutoff for the Microsoft 365 Copilot product layer. It would now be ambiguous in any case, since the underlying model is user/tenant-selectable between OpenAI GPT-5.x and Anthropic Claude. Graph and web grounding make the effective recency of answers a retrieval property rather than a training-cutoff property."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "pdf"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 (architecture page updated 2026-07-13). Microsoft still publishes no raw per-request context-window token number for Microsoft 365 Copilot, and the underlying model is now user-selectable (OpenAI GPT-5.x or Anthropic Claude), so a single number would be wrong anyway. What IS documented and binding for MCP work is the plugin scope: a 4,096-token limit that 'includes all context and response data', with guidance to 'Optimize for approximately 66% of the technical limit' (~2,730 tokens)."
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Still undocumented at the product layer as of 2026-08-19; would in any case vary with the selected underlying model."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": false,
+          "notes": "Not published. The product applies file/grounding limits (e.g. SharePoint list knowledge source capped at 20,000 items per the 2026-07-29 release notes) and the 4,096-token plugin I/O budget rather than a raw input-token cap."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published by Microsoft for Microsoft 365 Copilot; inherited from the selected underlying model (OpenAI GPT-5.x or Anthropic Claude)."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published. The documented output-side constraints are product-layer item counts: plugin response limit 25 items, grounding record limit 50 items, all inside the 4,096-token plugin budget."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No publicly documented extended-context mode for the Microsoft 365 Copilot product surface as of 2026-08-19."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Microsoft 365 Copilot is seat-licensed, so reasoning-token accounting is not exposed to customers. (Agent/Cowork consumption is separately metered in Copilot Credits, but not broken out per token class.)"
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "model-dependent (OpenAI GPT-5.x → o200k_base-family; Anthropic Claude → Anthropic tokenizer)",
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/release-notes",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED from a flat 'o200k_base'. Microsoft 365 Copilot became a multi-vendor-model surface during the refresh window: release notes record 'Anthropic's Claude now available in Microsoft 365 Copilot' (2026-06-16) and 'Word: Choose Anthropic models when editing' (2026-08-11); Claude Opus 5 announced 2026-07-24. Microsoft publishes no tokenizer identity for either path, so the family is stated as model-dependent rather than asserted."
+        },
+        "tokenizer_public": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/release-notes",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Depends on the selected model: OpenAI-family counts are reproducible with the public tiktoken library; Anthropic's tokenizer is not public (API count endpoint only). Microsoft documents neither for the Copilot product layer."
+        },
+        "tokenizer_access": {
+          "value": "model-dependent; use the upstream provider's tokenizer for the selected model (no Microsoft 365 Copilot count-tokens API)",
+          "confidence": "medium",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "tiktoken (o200k_base / cl100k_base) is public and usable as a proxy for the OpenAI path; the Anthropic path needs Anthropic's count endpoint. Microsoft exposes no count-tokens API for Microsoft 365 Copilot."
+        },
+        "count_tokens_method": {
+          "value": "approximate only — tiktoken o200k_base for the OpenAI path; no Microsoft 365 Copilot-native count API",
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. There is still no Microsoft-provided token-count endpoint for Microsoft 365 Copilot, and the selected model may now be Anthropic rather than OpenAI, so local counts are an estimate."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Microsoft publishes no image-to-token conversion rule for Microsoft 365 Copilot; the underlying provider's rule applies but is not surfaced at the product layer."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Meeting audio (Teams) is transcribed, but token accounting for audio is not published."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "medium",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "Standard ~4 chars/token rule of thumb for English text on o200k_base-family encodings; empirical, not a Microsoft-published figure."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-plugins",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 (page updated 2026-08-05). Declarative agents call tools through plugins, which are either MCP servers or OpenAPI-described REST APIs."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/build-mcp-plugins",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 (page updated 2026-08-11). A declarative agent plugin can point at a remote MCP server (`RemoteMCPServer` runtime, plugin manifest 2.4); the agent resolves the server's tools at runtime. MCP apps (tools returning UI widgets) render inline. Auth: none, API key, OAuth (static or dynamic client registration), or Microsoft Entra SSO. Separately, MCP-enabled agents reached Word/Excel/PowerPoint/Outlook on 2026-07-15 per the release notes."
+        },
+        "parallel_tool_calls": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED from null to false. The architecture page (updated 2026-07-13) still states: 'Because Microsoft grounding and calls to external tools happen sequentially, you can't use chained operations with grounding data or looped operation plans.' Sequential-only processing is documented, so parallel tool calling is not available on this surface."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-plugins",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric per-request cap on the NUMBER of tools/functions is published for Microsoft 365 Copilot. The plugins page (re-opened 2026-08-19, updated 2026-08-05) explicitly declines to bound functions or MCP tools per plugin ('A plugin can include an unlimited number of functions or MCP tools'). The limits that DO bind, all AGGREGATE across the declarative agent rather than per MCP server: the manifest's 10-action/plugin-object ceiling per declarative agent (recorded under max_connected_servers, and derived there -- Microsoft never states it in MCP-server units), the 4,096-token plugin I/O budget that every injected tool definition competes for (a token budget, not a byte payload cap -- see max_request_size.notes, whose value is null for that reason), the documented quality cliff above 10 functions/tools, and the 5-plugin always-injected threshold beyond which semantic matching decides what is injected."
+        },
+        "max_tools_practical": {
+          "value": 10,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-plugins",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19; wording now reads 'Due to token window limits, the quality of the responses might degrade if more than 10 functions or tools are included' (previous wording said 'functions'; MCP tools are now named explicitly). Scope: per plugin / per MCP server, not aggregate. Vendor-published but behavioural rather than enforced, hence recorded as the practical limit."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-manifest-2.4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No dedicated tool-name length cap is published. Plugin manifest 2.4 (updated 2026-07-01) constrains function `name` by pattern only — must match `^[A-Za-z0-9_]+$` (and `namespace` must match `^[A-Za-z0-9]+$`) — and applies the manifest-wide default of 4,000 characters to unqualified string properties. MCP tool names come from the server and are not separately bounded in Microsoft's docs."
+        },
+        "max_tool_description_len": {
+          "value": 2048,
+          "unit": "characters",
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-manifest-2.4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED from null. Plugin manifest schema 2.4 (updated 2026-07-01) states that for `description_for_model`, 'Characters beyond 2048 MAY be ignored' — that is the model-facing tool/plugin description, i.e. exactly the field whose tokens land in the prompt. (Human-facing fields are tighter still: `name_for_human` beyond 20 chars and `description_for_human` beyond 100 chars MAY be ignored.) Confidence medium because the cap is expressed as MAY-be-ignored rather than a hard rejection, and because MCP tool descriptions arriving from the server are governed by the 4,096-token plugin budget rather than this manifest field."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19: was 4096 with unit \"tokens\"; now null. Across this dataset max_request_size is the BYTE ceiling on the request payload (Anthropic 32 MB, Gemini 100 MB, OpenAI 512 MB, Copilot Studio 5 MB connector payload), so a token budget stored in the same field made Microsoft 365 Copilot look ~5 orders of magnitude smaller than its peers and corrupted any cross-vendor min()/comparison. One field name, one meaning. Microsoft publishes NO byte/KB/MB request or response ceiling for the Microsoft 365 Copilot plugin/MCP path -- re-checked 2026-08-19 on this architecture page (its technical-limits table is expressed only in items, tokens and seconds), the plugins overview, the API plugin manifest 2.4 schema (character limits only, plus \"Implementations are free to impose their own practical limits on manifest length\") and the MCP-apps troubleshooting page (which only advises \"Ensure responses aren't excessively large\" with no number). WHAT THE 4,096 ACTUALLY IS, and where it now lives: a product-layer TOKEN budget for the plugin scope, verbatim \"Token limit: 4,096* - Includes all context and response data\", with the asterisk defined as \"Limits include external overhead such as network latency and Microsoft service processing. Optimize for about 66% of the technical limit\" (~2,730 tokens). Every injected tool definition, tool argument and tool result competes inside that one budget, and it is the ceiling that really binds this surface -- it is preserved in prose here, in tool_schema_limits_notes item (6), and in the max_tools_hard / max_total_tools notes, but it is NOT a byte ceiling and is not comparable to one. A 45-second timeout (\"Timeout limit: 45 seconds* - Includes network latency and processing time\") applies to the same scope."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19: was 25 with unit \"items\"; now null. Across this dataset max_tool_result_size is a SIZE ceiling on a single tool RESULT (OpenAI 512 KB, Copilot Cowork 150 MiB per tool call); an item COUNT recorded in the same field is a different quantity and would corrupt any cross-vendor min()/comparison -- 25 would have read as the smallest result cap in the roster. Microsoft documents no byte or token ceiling on an individual plugin/MCP tool result for Microsoft 365 Copilot: the MCP-apps troubleshooting page only advises \"Ensure responses aren't excessively large\" (re-opened 2026-08-19), and no byte/KB/MB figure appears on the architecture page, the plugins overview or the API plugin manifest 2.4 schema. WHAT IS DOCUMENTED, and what actually binds a chatty tool here, verbatim from this page: \"Plugin response limit: 25 items - Constrains external API response sizes\" and \"Grounding record limit: 50 items - Affects the amount of contextual data available\" -- item counts, not sizes -- together with the 4,096-token plugin I/O budget, which truncates rather than rejects: \"The token window for inputs to and outputs from a plugin truncates large content\" (overview-plugins). Both item counts are also carried in tool_schema_limits_notes items (4) and (5); the token budget is described in max_request_size.notes and item (6)."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": 1,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Recorded as 1 to represent the documented sequential-only model ('Microsoft grounding and calls to external tools happen sequentially'). Microsoft does not state a parallel-call count, so this encodes the constraint rather than a published integer."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No published cap on tool-call/result cycles per turn. The binding documented constraint is the 45-second timeout for the plugin scope (including network latency and processing), reinforced by the sequential-processing model; the architecture page lists 'long-running processes' and 'complex decision trees requiring multiple conditional branches' as poor fits for declarative agents."
+        },
+        "max_connected_servers": {
+          "value": 10,
+          "unit": "action (plugin) objects per declarative agent",
+          "derived": true,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-manifest-1.8",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "DERIVED, and NOT a published MCP-server cap. Confidence lowered high -> medium on 2026-08-19 after re-opening the cited page. What the page actually says (re-read 2026-08-19): the `actions` property is 'A list of 1-10 objects that identify plugins that provide actions accessible to the declarative agent', and the Actions object section adds 'The array must contain at least one and no more than 10 objects.' The words MCP / Model Context Protocol do not appear on that page at all, so the unit here is action (plugin) OBJECTS, not MCP servers. The bridge to MCP is a different tier-1 page, https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/build-mcp-plugins (re-read 2026-08-19): an MCP server is attached to a declarative agent by adding an action ('Add an Action' -> 'Start with an MCP Server'), whose generated `ai-plugin.json` uses the RemoteMCPServer runtime and resolves the server's tools at runtime; that page publishes no numeric limit of its own. So an agent whose every action is an MCP server tops out at 10 MCP servers -- an inference across two tier-1 pages, not a sentence Microsoft has written. Related documented behaviour: at 5 or fewer plugins all are injected into the prompt; above 5, semantic matching selects which are injected per turn (overview-plugins, 2026-08-05)."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-plugins",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 2026-08-19 from 10 to null. The previous 10 was the declarative-agent manifest's `actions` cap -- a count of plugin OBJECTS -- recorded on this dataset's TOOL-COUNT axis, which rendered Microsoft 365 Copilot as a 10-tool ceiling next to GitHub Copilot's 128 and Grok's 200. That is a unit conflation and a false cross-vendor comparison; the plugin-object ceiling now lives in max_connected_servers. Microsoft publishes NO aggregate cap on the number of individual tools: the plugins overview (tier 1, re-opened 2026-08-19) states verbatim 'A plugin can include an unlimited number of functions or MCP tools. All of a matched plugin's functions or tools are returned, even if only one is matched.' -- i.e. no per-request numeric tool-count cap is documented for this surface. The limits that DO bind, all aggregate across the declarative agent: (1) at most 10 action/plugin objects per agent (schema 1.8, 'A list of 1-10 objects that identify plugins') -- see max_connected_servers; (2) 5 or fewer plugins are always injected into the prompt, above that semantic matching decides which are injected per turn, and a matched plugin brings ALL of its tools with it; (3) the 4,096-token plugin I/O budget, inside which every injected tool definition, argument and result competes (documented in max_request_size.notes; that numeric field is null because it is this dataset's byte-payload ceiling and Microsoft publishes no byte figure for this surface); (4) the documented quality cliff -- 'Due to token window limits, the quality of the responses might degrade if more than 10 functions or tools are included' (max_tools_practical)."
+        },
+        "tool_definition_shape": {
+          "value": "raw_mcp or openai_function (OpenAPI-based)",
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-manifest-2.4",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Plugin manifest 2.4 added the `RemoteMCPServer` runtime type, so a plugin is backed either by an MCP server (raw MCP tool schemas fetched from the server) or by an OpenAPI document (OpenAI-function-shaped operations declared in the `functions` array)."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. The 4,096-token plugin limit explicitly 'includes all context and response data', and plugins are injected into the prompt (all of them when there are 5 or fewer). Tool definitions therefore consume the budget before any tool is called."
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-dynamic-tool-discovery",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Confidence raised medium→high and re-sourced. Two documented deferral mechanisms now exist: (1) semantic matching — with more than 5 plugins on an agent, only matched plugins are injected per turn (overview-plugins, 2026-08-05); (2) dynamic tool discovery for MCP plugins (page updated 2026-07-16) — with `\"functions\": []` and `run_for_functions: [\"*\"]` on a `RemoteMCPServer` runtime, the agent resolves the server's tool list at runtime per session from the MCP server instead of pinning a static list at publish time. Microsoft publishes no token-saving figure for either."
+        },
+        "tool_schema_limits_notes": "PRODUCT-LAYER LIMITS (Microsoft 365 Copilot declarative agents), re-verified 2026-08-19. (1) Actions (plugin OBJECTS; an MCP server is attached as one action, per build-mcp-plugins) per agent: 1-10 — declarative agent schema 1.8, GA, which caps `actions` without ever mentioning MCP; the MCP-server reading is derived. (2) Always-injected plugins: 5 or fewer; above that, semantic matching selects which are injected. (3) Functions / MCP tools per plugin: no numeric cap is published — 'A plugin can include an unlimited number of functions or MCP tools' (overview-plugins, 2026-08-05) — but Microsoft documents that response quality might degrade above 10 functions or tools. (4) Plugin response: 25 items. (5) Grounding records: 50 items. (6) Plugin I/O token budget: 4,096 TOKENS covering context AND response; optimize to ~66% (~2,730 tokens). This is a token budget, not a byte payload ceiling -- Microsoft publishes no byte/KB/MB request or response limit for this surface, so max_request_size (this dataset's byte field) is null. (7) Turn timeout for the plugin scope: 45 seconds including network latency. (8) Sequential tool/grounding processing only. (9) Manifest strings: 4,000-character default; instructions 8,000; name 100; description 1,000; disclaimer.text 500. (10) Model-facing plugin/function description (`description_for_model`): characters beyond 2,048 MAY be ignored; `name_for_human` beyond 20 and `description_for_human` beyond 100 MAY be ignored (plugin manifest 2.4). (11) Function names must match `^[A-Za-z0-9_]+$`; namespaces `^[A-Za-z0-9]+$`. (12) Conversation starters: 12. (13) Capability caps in 1.8: WebSearch sites 4; TeamsMessages urls 5; Meetings items_by_id 5; Email group_mailboxes 25; EmbeddedKnowledge 10 files at 1 MB each; editorial_answers 300. (14) MCP plugin auth: none, API key, OAuth (static or dynamic registration), Microsoft Entra SSO.",
+        "other_limits_notes": "NEW SINCE 2026-06-21. (a) Declarative agent manifest 1.8 shipped July 2026, adding EmailActions and MeetingActions write capabilities, a `file` property on worker agents, and `embedded_resource_snapshot_id` on embedded knowledge; no change to the 10-action cap. (b) MCP-enabled agents became available inside Word, Excel, PowerPoint, Outlook and Catalyst (2026-07-15 release notes). (c) Federated Copilot connectors — MCP-based, read-only, user-identity, non-indexing data connectors surfaced in Copilot Chat, Copilot in Excel and the Researcher agent — became manageable in the Microsoft 365 admin center (2026-07-15); Microsoft-published connectors are enabled by default, partner connectors need admin approval with a 7-day review window; the gallery lists 12 categories and 50+ sources. Microsoft publishes no numeric result/tool/timeout limit for federated connectors. (d) Dynamic tool discovery for MCP plugins (2026-07-16). (d2) The Microsoft 365 Copilot extensibility overview (updated 2026-08-05) now lists FOUR extensibility paths — agents, Copilot connectors (synced into Microsoft Graph, or federated with real-time retrieval over MCP), the Microsoft Work IQ API (which exposes Microsoft 365 data to external agents over both Agent-to-Agent and Model Context Protocol), and the Microsoft 365 Copilot APIs (Retrieval, Search, Chat, Interaction Export, Meeting Insights). Microsoft publishes no numeric tool, token or payload limit for the Work IQ MCP path. (e) SharePoint list knowledge source capped at 20,000 items (2026-07-29). (f) Agent submission to the Agent Store from Agent Builder (2026-07-15), admin-reviewed. (g) Multi-vendor model choice: Anthropic Claude selectable in Copilot Chat from 2026-06-16, Claude Opus 5 from 2026-07-24, Anthropic models in Word from 2026-08-11. Governance unchanged: tenant admins control plugin/agent availability per user and group; distribution via the Microsoft 365 app catalog or AppSource; one declarative agent definition per app package. Adjacent Microsoft surfaces now have their own entries in this file: Copilot Cowork (`microsoft-copilot-cowork`) and Copilot Studio (`microsoft-copilot-studio`).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-manifest-2.4",
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode (100-property / 5-level / no-oneOf enforcement) is documented for Microsoft 365 Copilot plugins. Plugin manifest 2.4 constrains parameter names by regex and requires `required` values to match declared `properties`, but publishes no property-count or nesting-depth ceiling."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-declarative-agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Declarative agents remain the Microsoft 365 Copilot skills analog: instructions + plugins (tools) + knowledge sources, authored in Agent Builder, the Microsoft 365 Agents Toolkit, or Copilot Studio."
+        },
+        "skills_loading_model": {
+          "value": "always_on",
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-plugins",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Agent instructions are always injected. Plugins: all injected when there are 5 or fewer; above 5, semantic matching selects per turn. MCP plugins may additionally resolve their tool list at runtime (dynamic tool discovery), which is partial progressive disclosure. Recorded as always_on because the default small-agent case injects everything."
+        },
+        "skills_context_cost_notes": "Declarative agent instructions (up to 8,000 characters) are injected as system-prompt context every turn. Plugin/tool definitions are injected into the 4,096-token plugin budget that also has to hold tool arguments and tool results — Microsoft's own guidance is to plan for ~66% of it (~2,730 tokens). All functions of a matched plugin are injected even when only one function matched, and Microsoft documents quality degradation above 10 functions/tools per plugin. Dynamic tool discovery (2026-07-16) resolves MCP tool lists at runtime rather than pinning them at publish time, but Microsoft publishes no token saving for it.",
+        "system_prompt_overhead_notes": "Agent instructions plus Microsoft 365 Copilot's own grounding scaffolding are injected per turn. Microsoft publishes no token count for the base system prompt overhead; the only published number in this area remains the 4,096-token plugin scope.",
+        "prompt_caching": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Changed false→null: Microsoft neither documents nor denies prompt caching at the Microsoft 365 Copilot product layer, and the product is seat-licensed so no cache discount is surfaced to customers. Recording the absence of documentation rather than asserting the feature is off. (Contrast: GitHub Copilot now publishes explicit cached-input rates.)"
+        },
+        "memory_feature": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/release-notes",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Microsoft Graph grounding (mail, calendar, files, meetings) plus Work IQ supply per-turn enterprise context that consumes the window. Re-sourced to the Microsoft 365 Copilot release notes, which track the connector/grounding surface continuously; Microsoft publishes no token accounting for it."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token input price exists for Microsoft 365 Copilot: it is sold as a per-user-per-month add-on licence. Token-metered billing in the Microsoft Copilot family appears only in Copilot Studio and Copilot Cowork (Copilot Credits) and in GitHub Copilot (AI Credits) — see those entries."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token output price is published or charged for the seat-licensed Microsoft 365 Copilot product."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No cached-input rate is published for the seat-licensed Microsoft 365 Copilot product."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No batch-processing discount concept is published for the seat-licensed Microsoft 365 Copilot product."
+        },
+        "billing_unit": {
+          "value": "per_seat_monthly",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED PRICES. Verified 2026-08-19: Microsoft 365 Copilot Business add-on is listed at $18.00 user/month paid yearly (promotional, down from $21.00, stated as running through 2026-09-30); bundles are $23.50 (Business Standard with Copilot) and $32.00 (Business Premium with Copilot) user/month paid yearly. The enterprise add-on page lists $30.00 user/month paid yearly / $31.50 paid monthly on an annual commitment. A qualifying Microsoft 365 base licence is required. Agent/Cowork consumption on top of the seat is metered separately in Copilot Credits."
+        },
+        "multimodal_billing_notes": "No per-unit token charge is surfaced for images, documents or meeting audio — they are covered by the seat licence. Consumption-metered work (Copilot Cowork tasks, Copilot Studio agents) is billed in Copilot Credits instead, at $0.01 per credit on pay-as-you-go.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token billing exists on the seat-licensed surface, so reasoning tokens are not separately priced or reported to customers."
+        }
+      },
+      "self_host": null,
+      "notes": "PRODUCT-LAYER ENTRY, refreshed 2026-08-19. Microsoft 365 Copilot is a product layer over a user/tenant-SELECTABLE frontier model — no longer OpenAI-only: Anthropic Claude arrived in Copilot Chat 2026-06-16, Claude Opus 5 on 2026-07-24, and Anthropic models in Word on 2026-08-11. All the numbers here are product-level, not raw model-API limits. Binding MCP limits: 1-10 actions (plugins / MCP servers) per declarative agent (schema 1.8, GA); 5-or-fewer plugins are always injected and above that semantic matching selects per turn; no numeric cap on functions/tools per plugin is published but quality is documented to degrade above 10; the plugin scope has a 4,096-token budget covering context AND response (optimize to ~2,730) and a 45-second timeout; plugin responses cap at 25 items and grounding at 50; tool/grounding calls are sequential, not parallel. New in this window: dynamic tool discovery for MCP plugins (runtime `tools/list` instead of a pinned manifest list), MCP agents inside Word/Excel/PowerPoint/Outlook, MCP-based federated Copilot connectors, and manifest 1.8's EmailActions/MeetingActions. The model-facing `description_for_model` field is now recorded as a 2,048-character soft cap. Cost remains per seat; the price of the Business add-on dropped to a promotional $18/user/month.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/build-mcp-plugins",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-plugins",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview-declarative-agent",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-architecture",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/declarative-agent-manifest-1.8",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-manifest-2.4",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/plugin-dynamic-tool-discovery",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/connectors/federated-connectors-overview",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/whats-new",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/release-notes",
+        "https://www.microsoft.com/en-us/microsoft-365-copilot/pricing",
+        "https://www.microsoft.com/en-us/microsoft-365-copilot/enterprise",
+        "https://techcommunity.microsoft.com/blog/microsoft365copilotblog/available-today-anthropic-claude-opus-5-in-microsoft-365-copilot/4540524",
+        "https://github.com/openai/tiktoken",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/extensibility/overview"
+      ]
+    },
+    {
+      "id": "microsoft-copilot-consumer",
+      "display_name": "Microsoft Copilot (Consumer / copilot.microsoft.com)",
+      "family": "Microsoft Copilot",
+      "release_date": {
+        "value": "2023-11-15",
+        "confidence": "medium",
+        "source_url": "https://en.wikipedia.org/wiki/Microsoft_Copilot",
+        "source_tier": 3,
+        "as_of": "2026-08-19",
+        "notes": "CHANGED from 2023-09-21. The cited page states: 'On November 15, 2023, Microsoft announced that Bing Chat itself was being rebranded under the Copilot name' (the service having launched as Bing Chat on 2023-02-07). The previous 2023-09-21 value corresponded to the September 2023 Microsoft event at which the Copilot brand was announced; the rebrand date is the better-evidenced anchor on the source actually opened. Tier 3 — Microsoft publishes no single launch-date page for the consumer surface."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Re-verified 2026-08-19: Microsoft publishes no knowledge cutoff for consumer Copilot. Smart mode uses 'GPT-5's real-time router to choose the best response approach', so the cutoff would vary per turn with the routed model; web grounding makes recency a retrieval property."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "audio"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/answers/questions/5447652/whats-token-limit-for-think-deeper-quick-response",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 200000 → null. The only source for the old figure is a Microsoft Q&A thread answered by an 'Independent Advisor' (not Microsoft) on 2025-07-10, quoting Azure AI Foundry reasoning-model docs for o1/o3-mini — models that no longer back this surface, and the same thread contradicts itself elsewhere. Under this dataset's tiered-evidence rule a context window needs Tier-1 vendor documentation; Microsoft publishes none for consumer Copilot, so the value is null. What is documented: Smart mode uses 'GPT-5's real-time router to choose the best response approach' and Think Deeper uses 'advanced reasoning models by OpenAI', with 'usage limits [that] may apply to certain features and differ for free and Microsoft 365 Premium users'."
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented at the product layer for consumer Copilot; model routing means it would vary per turn in any case."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/answers/questions/5447652/whats-token-limit-for-think-deeper-quick-response",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "derived": false,
+          "notes": "CHANGED 200000 → null, same reasoning as context_window_tokens: the only source was a community Q&A citing retired o1/o3-mini specs, which fails the Tier-1 requirement for a hard limit."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/answers/questions/5447652/whats-token-limit-for-think-deeper-quick-response",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 100000 → null. Community-Q&A-only figure quoting retired reasoning models; no Tier-1 Microsoft source for a consumer Copilot output cap."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/answers/questions/5447652/whats-token-limit-for-think-deeper-quick-response",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED 100000 → null, same reasoning as max_output_tokens_default."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric extended-context mode is published for consumer Copilot."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot is free or bundled with a Microsoft 365 Premium subscription and is not token-billed, so reasoning-token accounting is not surfaced."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED from 'o200k_base' → null. Tokenizer identity is a hard field under this dataset's rules and requires Tier-1 vendor documentation; Microsoft publishes none for consumer Copilot, and Smart mode explicitly routes across models per turn ('GPT-5's real-time router'), so no single tokenizer can be asserted. Previously this field cited OpenAI's model docs, which describe OpenAI's API models rather than the Microsoft product."
+        },
+        "tokenizer_public": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Unknown because the routed model is undisclosed. If the turn lands on an OpenAI model the tiktoken encodings are public; Microsoft neither confirms the model nor the encoding."
+        },
+        "tokenizer_access": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No Microsoft-provided tokenizer or count-tokens endpoint exists for consumer Copilot. tiktoken can be used as a rough proxy if one assumes an OpenAI-family model, but that assumption is not documented per turn."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "There is no native count-tokens method for consumer Copilot, and real-time model routing means any local estimate may be against the wrong tokenizer."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Image upload and generation are supported, but Microsoft publishes no image-to-token conversion rule for consumer Copilot."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Voice mode is supported; token accounting for audio is not published."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "Generic ~4 chars/token rule of thumb for English text on modern BPE encodings. Confidence lowered medium→low because the routed model — and therefore the encoding — is undisclosed."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 against the consumer features page: it advertises memory, app connectors (OneDrive, Outlook, Google Drive, Gmail), group chats and Smart/Think Deeper modes, and mentions no developer API, function-calling interface or extensibility framework. Built-in capabilities are Microsoft-managed."
+        },
+        "native_mcp": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: no MCP server support is published for consumer Copilot. Its 'connectors' are Microsoft-curated first- and third-party data links (OneDrive, Outlook, Google Drive, Gmail), not developer-attachable MCP servers. MCP extensibility in the Microsoft Copilot family lives in Microsoft 365 Copilot, Copilot Studio, Copilot Cowork and GitHub Copilot."
+        },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "tool_definition_shape": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "tool_defs_count_as_input": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Consumer Copilot publishes no developer tool-calling or MCP surface, so there is no per-request numeric cap to record here. The limits that actually bind a consumer session are Microsoft-managed and undocumented: per-feature usage limits that 'differ for free and Microsoft 365 Premium users', and the undisclosed context window of whichever model the Smart-mode router selects."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "There is no developer tool catalog on consumer Copilot, hence no deferral/tool-search mechanism to expose. Microsoft-managed built-in capabilities are selected opaquely."
+        },
+        "tool_schema_limits_notes": "Consumer Copilot exposes no developer tool/MCP surface, so no schema limits are published. Built-in Microsoft-managed capabilities (web search, image generation, file analysis, connectors to OneDrive/Outlook/Google Drive/Gmail) are not developer-extensible. Every tool-limit field on this entry is null for lack of a documented developer surface, not because the surface is unbounded.",
+        "other_limits_notes": "Refreshed 2026-08-19. Free with a Microsoft account; Microsoft 365 Premium is the paid tier and 'Premium subscribers get the highest usage limits for Copilot features'. Documented product limits: a Copilot group chat holds up to 32 people including the initiator; 'usage limits may apply to certain features and differ for free and Microsoft 365 Premium users'. RETIREMENTS effective 2026-08-18 per Microsoft Support: Group Chat (messages, threads and generated images do not carry forward), Podcasts, and Deep Research for consumer users. Memory ('remember, update, or forget info anytime, or manage memories in settings') remains and is injected as per-turn context.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode is documented, because consumer Copilot publishes no developer function-calling surface at all."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the consumer features page advertises no developer skills/agents/plugins SDK. Microsoft's skills primitives live in Copilot Cowork (SKILL.md packages), Microsoft 365 Copilot (declarative agents) and Copilot Studio (agents/tools)."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "There is no developer-configurable skill catalog on this surface, so no loading model can be recorded."
+        },
+        "skills_context_cost_notes": "No developer-configurable skills or agent context exists on consumer Copilot. Microsoft-managed built-in capabilities and connector results are injected opaquely and are not metered to the user.",
+        "system_prompt_overhead_notes": "Not published. Consumer Copilot uses an undisclosed internal system prompt; Smart mode's real-time router selects the model and prompt template per turn.",
+        "prompt_caching": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Changed false→null. Microsoft neither documents nor denies prompt caching for consumer Copilot; the product is not token-billed so no cache discount would be surfaced. Recording absence of documentation rather than asserting the feature is off."
+        },
+        "memory_feature": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Confidence raised medium→high. The consumer features page states users 'can ask Copilot to remember, update, or forget info anytime, or manage memories in settings'. Stored memories are injected as context on later turns; Microsoft publishes no token accounting for them."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token price exists for consumer Copilot: the surface is free with a Microsoft account, with Microsoft 365 Premium as the paid tier that raises usage limits."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token output price is published for the free/subscription consumer surface."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No cached-input rate is published for the free/subscription consumer surface."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No batch-processing discount concept is published for the free/subscription consumer surface."
+        },
+        "billing_unit": {
+          "value": "free_or_subscription",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED NOTES. Verified 2026-08-19: the paid consumer tier is now branded Microsoft 365 Premium (Copilot 'free' baseline at copilot.microsoft.com and in the apps; Premium 'unlocks powerful AI tools, productivity apps, and advanced security', gives 'the highest usage limits for Copilot features', up to 6 TB of storage, Defender, Designer and Clipchamp). The earlier Personal/Family framing and the February-2025 'no usage cap on Think Deeper and Voice' claim are superseded — the current page states usage limits apply and differ by tier."
+        },
+        "multimodal_billing_notes": "Image generation, file uploads and voice are included in the free tier or the Microsoft 365 Premium subscription with no per-unit charge surfaced to the user; the differentiator between tiers is usage limits, not unit price.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token billing exists on the consumer surface, so reasoning tokens are not separately priced or reported."
+        }
+      },
+      "self_host": null,
+      "notes": "PRODUCT-LAYER ENTRY, refreshed 2026-08-19. Consumer Copilot (copilot.microsoft.com and the Copilot apps) still exposes NO developer MCP or function-calling surface, so it remains out of scope for MCP footprint work and is kept for completeness. Material changes this refresh: the four numeric context/output values (200K in / 100K out) were REMOVED — their only source was a 2025 community Q&A quoting Azure AI Foundry specs for o1/o3-mini, models that no longer back this surface, which fails the dataset's Tier-1 requirement for hard limits; the tokenizer family was likewise nulled because Smart mode routes across models per turn and Microsoft documents no tokenizer. The paid tier is now Microsoft 365 Premium. Group Chat, Podcasts and consumer Deep Research retire on 2026-08-18. Memory is confirmed and injects per-turn context; group chats hold up to 32 people.",
+      "sources": [
+        "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals",
+        "https://www.microsoft.com/en-us/microsoft-copilot/for-individuals/features",
+        "https://support.microsoft.com/en-us/microsoft-365-copilot/learning/changes-microsoft-copilot-app",
+        "https://learn.microsoft.com/en-us/answers/questions/5447652/whats-token-limit-for-think-deeper-quick-response",
+        "https://en.wikipedia.org/wiki/Microsoft_Copilot",
+        "https://github.com/openai/tiktoken"
+      ]
+    },
+    {
+      "id": "github-copilot",
+      "display_name": "GitHub Copilot (model-picker surface; VS Code / IDE / CLI / Copilot app)",
+      "family": "GitHub Copilot",
+      "release_date": {
+        "value": "2022-06-21",
+        "confidence": "medium",
+        "source_url": "https://docs.github.com/en/copilot/get-started/plans",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "GitHub Copilot GA June 2022; multi-model picker added 2023-2024; MCP support GA across IDEs, Copilot CLI, the GitHub Copilot app and cloud agents. Usage-based AI Credits billing went live 2026-06-01. New since the last refresh: 1M-token context windows and configurable reasoning levels shipped 2026-06-04."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://docs.github.com/en/copilot/reference/ai-models/model-comparison",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Not a single-model surface, so no single cutoff applies. The picker spans ~34 models across OpenAI, Anthropic, Google, Microsoft MAI, xAI, Moonshot and Alibaba, each with its own cutoff; GitHub publishes cutoffs for none of them on the Copilot reference pages. (The one Microsoft first-party datapoint: MAI-Code-1.1-Flash has a December 2025 pretraining cutoff per its model card — see the `mai-code-1-1-flash` entry.)"
+      },
+      "modalities": [
+        "text",
+        "image"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Still model-dependent and still not published as a per-model number by GitHub. The supported-models reference lists ~34 models across OpenAI (GPT-5 mini, GPT-5.3-Codex, GPT-5.4/5.4 mini, GPT-5.5, GPT-5.6 Luna/Sol/Terra), Anthropic (Claude Haiku 4.5, Sonnet 4.5/4.6, Sonnet 5, Opus 4.7/4.8/4.8 fast mode, Opus 5, Fable 5), Google (Gemini 3.1 Pro, Gemini 3.5/3.6/3.7 Flash), Microsoft (MAI-Code-1-Flash, MAI-Code-1.1-Flash), xAI (Grok 4.5/4.6), Moonshot (Kimi K2.7 Code, Kimi K3), Qwen2.5 and Raptor mini, with capability checkmarks but NO context-window column. The nearest published proxy is the billing page's long-context pricing threshold — e.g. GPT-5.5 is priced in a '≤ 272K' input-token tier and a '> 272K' long-context tier."
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Depends on the selected model; GitHub publishes no input/output split for the Copilot surface."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": false,
+          "notes": "Not published per model. The only GitHub-published input-size signal is the billing tier threshold (e.g. '≤ 272K' vs '> 272K' input tokens for GPT-5.5, where the long-context tier costs more). Community reports of a ~40% reserved output headroom remain empirical and unconfirmed by GitHub."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published per model by GitHub for the Copilot surface."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published per model by GitHub for the Copilot surface."
+        },
+        "extended_context": {
+          "value": 1000000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Confidence raised medium→high and re-sourced to Tier-1 GitHub docs. The supported-models reference states 'The latest Copilot models support the following extended capabilities', listing a '1 million token context window' and 'Configurable reasoning levels', and constrains it: 'The 1 million token context window is available in Visual Studio Code and Copilot CLI only. Configurable reasoning levels are available in Visual Studio Code, Copilot CLI, and Copilot cloud agent.' Models with both extended capabilities: Claude Sonnet 4.6, Opus 4.6/4.7/4.8 (incl. fast mode), Opus 5, Sonnet 5, Fable 5; GPT-5.3-Codex, GPT-5.4, GPT-5.5, GPT-5.6 Luna/Sol/Terra; Kimi K3. Shipped 2026-06-04 per the GitHub changelog, which also warns that 'Choosing a larger context window or higher reasoning level will consume more AI credits per interaction.'"
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "GitHub's AI Credits pricing table meters input, cached input, cache write and output tokens per model but does not name a reasoning-token class, so whether thinking tokens bill at the output rate is not explicitly stated. Configurable reasoning levels are documented to increase credit consumption without a published token accounting."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "model-dependent (OpenAI GPT-5.x → o200k_base-family; Anthropic Claude → Anthropic tokenizer; Gemini → Google tokenizer; MAI-Code, Kimi, Grok, Qwen → vendor-specific)",
+          "confidence": "medium",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/model-comparison",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. The picker now spans seven vendors (OpenAI, Anthropic, Google, Microsoft MAI, xAI, Moonshot/Kimi, Alibaba/Qwen plus Raptor mini), so no single tokenizer applies; GitHub publishes none of them."
+        },
+        "tokenizer_public": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/model-comparison",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Depends on the model selected: OpenAI-family encodings are public via tiktoken; Anthropic, Google and Microsoft MAI tokenizers are not published. GitHub documents none of them for the Copilot surface."
+        },
+        "tokenizer_access": {
+          "value": "model-dependent: tiktoken for OpenAI-family models; the provider's count-tokens API otherwise",
+          "confidence": "medium",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "GitHub exposes no count-tokens endpoint for Copilot. tiktoken is confirmed as 'a fast BPE tokeniser for use with OpenAI's models' supporting o200k_base and cl100k_base; other families need their own provider APIs."
+        },
+        "count_tokens_method": {
+          "value": "use the upstream provider tokenizer for the selected model; no GitHub Copilot-native count API",
+          "confidence": "medium",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. GitHub bills per token (input, cached input, cache write, output) but publishes no endpoint to count them ahead of a request; only post-hoc usage reporting exists."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model-dependent; GitHub publishes no image-to-token rule for the Copilot product layer."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No audio input is documented for the Copilot IDE/CLI surface."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "Generic ~4 chars/token rule of thumb; low confidence because the picker spans seven tokenizer families."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Copilot agent mode calls tools; MCP is the documented extensibility mechanism 'across all major Copilot surfaces—whether you're working in an IDE, using GitHub Copilot CLI, working in the GitHub Copilot app, or delegating tasks to an agent on GitHub.com.'"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 and broadened. Documented surfaces: VS Code, JetBrains IDEs, Xcode, Eclipse, Cursor and Windsurf; Copilot CLI (local and remote servers); the GitHub Copilot app (repository-configured and user-added servers); and the cloud agent plus code review (repository-level config with the GitHub and Playwright servers pre-configured). The GitHub MCP Registry is called out as 'currently in public preview and subject to change'; the MCP capability itself is production-documented."
+        },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Neither GitHub nor the VS Code docs state whether agent mode emits parallel tool calls; it would in any case depend on the selected model. Recorded as undocumented rather than assumed."
+        },
+        "max_tools_hard": {
+          "value": 128,
+          "confidence": "high",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "SOURCE UPGRADED tier 2 → tier 1. The VS Code documentation now states the cap directly: 'A chat request can have a maximum of 128 tools enabled at a time', with the error 'Cannot have more than 128 tools per request.' (Field reports show the runtime variant 'Tool limit exceeded (132/128). Click Configure Tools in the chat input to disable 4 tools and retry'.) SCOPE: AGGREGATE — every enabled tool in the request counts, across all connected MCP servers plus built-in and extension tools; there is no per-MCP-server cap. LAYER: client/host (VS Code + Copilot Chat), not the model API. Mitigation: the `github.copilot.chat.virtualTools.threshold` setting groups tools behind virtual stubs so large catalogs stay under 128."
+        },
+        "max_tools_practical": {
+          "value": 13,
+          "confidence": "medium",
+          "source_url": "https://github.blog/ai-and-ml/github-copilot/how-were-making-github-copilot-smarter-with-fewer-tools/",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 by opening the GitHub engineering blog (published 2025-11-19): GitHub 'trimmed the default 40 built-in tools down to 13 core ones', improving SWE-Lancer and SWEbench-Verified 'success rates by 2-5 percentage points' and cutting latency by 'an average of 400 milliseconds'. Remaining built-ins are grouped into four virtual categories (Jupyter Notebook Tools, Web Interaction Tools, VS Code Workspace Tools, Testing Tools) via embedding-guided routing and adaptive clustering. EMPIRICAL, not a spec: this is the vendor's recommended working-set size, not an enforced cap — MCP servers can push the total far higher, up to the 128 hard cap, with quality falling off."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Still not published by GitHub or the VS Code docs for the Copilot MCP surface. The selected model's own naming constraints apply downstream (e.g. OpenAI-family 64-character function names), and VS Code namespaces MCP tool names, which consumes part of any such budget — but no Copilot-layer number is documented."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published for the Copilot MCP surface. MCP tool descriptions are passed through to the selected model, so that model's limits apply; GitHub documents no Copilot-layer cap. The binding pressure is token consumption in the context window, which GitHub addresses qualitatively: 'Disabling unused toolsets also frees up tokens in the AI's context window.'"
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No request payload size cap is published for the Copilot surface. The binding constraints are the selected model's context window (up to 1M tokens in VS Code and Copilot CLI on supported models) and the 128-tool aggregate cap. Note the billing consequence: input tokens — including every injected tool definition — are metered per model, and crossing the long-context threshold (e.g. > 272K input tokens on GPT-5.5) moves the request into a higher-priced tier."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No separate tool-result size cap is published for GitHub Copilot. Results return as input tokens against the selected model's window and are billed as such."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No parallel tool-call count is published for the Copilot surface; it would be a property of the selected model in any case."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-turn tool-call cycle cap is published for GitHub Copilot. The model context window and the AI-credit budget bound long agent runs indirectly."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "A limit on the NUMBER of connected MCP servers is not documented in the VS Code or GitHub docs. The binding constraint is aggregate: total enabled tools across every server plus built-ins must stay at or below 128 per request, with `github.copilot.chat.virtualTools.threshold` grouping surplus tools behind virtual stubs. Practically, a handful of chatty servers reaches 128 quickly — six 30-tool servers already exceed it."
+        },
+        "max_total_tools": {
+          "value": 128,
+          "unit": "tools per request (aggregate across all connected MCP servers and built-in tools)",
+          "confidence": "high",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "SOURCE UPGRADED tier 2 → tier 1 (VS Code documentation). Identical number and scope to max_tools_hard: 128 is the AGGREGATE ceiling on tools enabled in one chat request across all connected MCP servers, built-in tools and extension-contributed tools. Tool sets (`#name` groupings) help curate the working set; virtual tools keep large catalogs addressable without exceeding the cap."
+        },
+        "tool_definition_shape": {
+          "value": "raw_mcp",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. Copilot speaks MCP directly; tool definitions are MCP tool schema objects, which the host re-serializes into the selected model's native tool format before the request."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19 and now vendor-stated rather than inferred: 'Fewer tools means better tool selection accuracy and fewer errors. Disabling unused toolsets also frees up tokens in the AI's context window.' Under AI Credits billing those input tokens are directly chargeable."
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Source upgraded to the Tier-1 VS Code docs, which document `github.copilot.chat.virtualTools.threshold` as the setting that automatically manages large tool collections to avoid hitting the 128-tool ceiling. Mechanism detail from GitHub's engineering blog: embedding-guided tool routing and adaptive clustering group functionally related tools into virtual categories the model expands on demand. Tool sets are a complementary manual grouping referenced with `#`."
+        },
+        "tool_schema_limits_notes": "CLIENT-LAYER LIMITS (GitHub Copilot / VS Code), re-verified 2026-08-19 against Tier-1 VS Code docs. (1) Hard aggregate tool cap: 'A chat request can have a maximum of 128 tools enabled at a time' — across all connected MCP servers plus built-in and extension tools. Errors: 'Cannot have more than 128 tools per request.' / 'Tool limit exceeded (132/128).' (2) Default built-in toolset trimmed from 40 to 13 core tools (2025-11-19), the rest grouped into four virtual categories. (3) `github.copilot.chat.virtualTools.threshold` groups surplus tools behind virtual stubs so a large catalog stays under 128. (4) Tool sets let a user reference a curated group with `#name`. (5) Tool definitions consume input tokens against the selected model's window and are billed as input under AI Credits. (6) No Copilot-layer tool-name or tool-description length cap is published; the selected model's constraints apply downstream. (7) Extended capability: a 1M-token context window on supported models, available in VS Code and Copilot CLI only, which raises the practical tool budget but increases AI-credit consumption.",
+        "other_limits_notes": "Refreshed 2026-08-19. Multi-vendor picker (~34 models across OpenAI, Anthropic, Google, Microsoft MAI, xAI, Moonshot, Alibaba). Tool limits sit at the VS Code/Copilot client layer (128 aggregate); the selected model's own API limits also apply and the more restrictive binds. New since 2026-06-21: (a) 1M-token context windows and configurable reasoning levels shipped 2026-06-04 for VS Code, Copilot CLI and the GitHub Copilot app, with GitHub warning that 'Choosing a larger context window or higher reasoning level will consume more AI credits per interaction'; (b) MAI-Code-1.1-Flash (Microsoft's own coding model) reached GA in Copilot on 2026-08-11 at $0.20/$1.20 per 1M input/output tokens — see the `mai-code-1-1-flash` entry; (c) the billing table now exposes cached-input and cache-write columns per model, and long-context pricing tiers keyed to input-token thresholds (e.g. GPT-5.5 '≤ 272K' vs '> 272K'). MCP servers: local (stdio) and remote (HTTP) both supported; the GitHub MCP Server is hosted by GitHub; the GitHub MCP Registry is in public preview. Minimum IDE versions vary per model (VS Code v1.104.1-v1.131 depending on the model).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "notes": "GitHub Copilot publishes no OpenAI-style strict function-schema mode of its own; whatever the selected model enforces applies downstream (e.g. OpenAI strict mode's 100-property / 5-level ceiling when an OpenAI model is chosen)."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19. MCP servers are the skills/extensibility mechanism across IDEs, Copilot CLI, the Copilot app and cloud agents; the GitHub MCP Server plus registry servers supply the tool catalog."
+        },
+        "skills_loading_model": {
+          "value": "always_on",
+          "confidence": "medium",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Enabled tools from all connected servers are presented per request (subject to the 128 cap), so the default is always-on. Virtual tools (`github.copilot.chat.virtualTools.threshold`) convert large catalogs into deferred stubs — partial progressive disclosure — and tool sets let a user curate the working set manually."
+        },
+        "skills_context_cost_notes": "MCP tool definitions are injected as input tokens on every agent-mode turn and are billed as input under AI Credits, so tool-definition bloat has a direct, per-interaction dollar cost as well as a context cost. GitHub states plainly that 'Disabling unused toolsets also frees up tokens in the AI's context window.' The 40→13 default-toolset trim improved benchmark success rates by 2-5 points and cut ~400 ms of latency, which is the clearest vendor evidence that fewer tool definitions is better on both axes. Virtual tools reduce the injected surface by clustering; a 1M-token window (VS Code / Copilot CLI, supported models) raises the ceiling but pushes the request toward higher-priced long-context tiers.",
+        "system_prompt_overhead_notes": "Copilot injects IDE context (open files, selection, recent edits), repository context and the enabled tool definitions each turn. GitHub publishes no token breakdown for this overhead; the ~40% reserved-output-headroom figure circulating in community reports is unverified.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CHANGED null → true. GitHub's models-and-pricing table now exposes prompt caching directly in the billing columns: 'Model | Release status | Category | Tier | Threshold (input tokens) | Input | Cached input | Cache write | Output', and states that users pay for 'input tokens (what's sent to the model), output tokens (what the model generates), and cached tokens (context the model reuses or stores).' Examples: GPT-5.5 $5.00 input vs $0.50 cached input; MAI-Code-1.1-Flash $0.20 input vs $0.02 cached input. 'GPT-5.6 Sol, GPT-5.6 Terra, and GPT-5.6 Luna include a cache write cost in addition to cached input. Earlier OpenAI models have no cache write cost.' GitHub does not document which prefix segments (tool definitions, system prompt, repo context) are cached or how to control it."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No persistent cross-session memory feature is documented for the Copilot IDE/CLI surface; context is per session, with repository-level configuration supplying the durable part."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Deliberately null because GitHub Copilot is a multi-model surface with a per-model rate table rather than one price. Verified examples per 1M input tokens (2026-08-19): MAI-Code-1.1-Flash $0.20; GPT-5 mini $0.25; Gemini 3.6/3.7 Flash $0.75 (promotional); Claude Haiku 4.5 $1.00; Gemini 3.5 Flash $1.50; GPT-5.4 $2.50; Claude Opus 4.5 $5.00; GPT-5.5 $5.00 (standard tier, '≤ 272K' input tokens; a higher long-context tier applies above that)."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model-dependent, same reasoning as input. Verified examples per 1M output tokens (2026-08-19): MAI-Code-1.1-Flash $1.20; GPT-5 mini $2.00; Gemini 3.6/3.7 Flash $3.75 (promotional); Claude Haiku 4.5 $5.00; Gemini 3.5 Flash $9.00; GPT-5.4 $15.00; Claude Opus 4.5 $25.00; GPT-5.5 $30.00."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model-dependent; the pricing table now has explicit 'Cached input' and 'Cache write' columns. Verified examples per 1M cached-input tokens (2026-08-19): GPT-5.5 $0.50 (vs $5.00 uncached, a 90% discount); MAI-Code-1.1-Flash $0.02 (vs $0.20). Cache write is charged only on GPT-5.6 Sol, Terra and Luna; earlier OpenAI models have no cache-write cost."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No batch-processing discount is published for GitHub Copilot; the cost levers exposed are cached input, model choice, context-window size and reasoning level."
+        },
+        "billing_unit": {
+          "value": "ai_credits_per_token",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: '1 AI credit = $0.01 USD', with token consumption (input, cached input, cache write, output) converted to credits at per-model rates. Plans verified on the plans page: Copilot Free ($0), Copilot Student (free, verified), Copilot Pro $10/month, Copilot Pro+ $39/month, Copilot Max $100/month, Copilot Business $19 per granted seat/month, Copilot Enterprise $39 per granted seat/month; 'each plan comes with an allowance of GitHub AI Credits' — the per-plan credit allowances are not stated on the plans page itself, so the specific 1,900/3,900-credit figures previously recorded here are no longer asserted. Larger context windows and higher reasoning levels consume more credits per interaction."
+        },
+        "multimodal_billing_notes": "Image input is supported in Copilot Chat and metered as tokens at the selected model's rate; GitHub publishes no separate image-token rate for the Copilot surface.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "GitHub's rate table has no reasoning-token column, so it does not state whether thinking tokens bill at the output rate. What is documented is directional: raising the reasoning level increases AI-credit consumption per interaction."
+        }
+      },
+      "self_host": null,
+      "notes": "MULTI-MODEL PRODUCT ENTRY, refreshed 2026-08-19. GitHub Copilot is the most MCP-relevant Microsoft Copilot surface: MCP is documented across IDEs (VS Code, JetBrains, Xcode, Eclipse, Cursor, Windsurf), Copilot CLI, the GitHub Copilot app, and cloud agents/code review. KEY LIMIT, now Tier-1 sourced: 'A chat request can have a maximum of 128 tools enabled at a time' (VS Code docs) — an AGGREGATE, client-layer cap across all connected MCP servers plus built-in and extension tools, mitigated by `github.copilot.chat.virtualTools.threshold` (virtual-tool clustering) and tool sets. GitHub's own guidance puts the practical working set far lower: the default built-in toolset was cut from 40 to 13 tools, worth 2-5 benchmark points and ~400 ms. New since 2026-06-21: 1M-token context windows and configurable reasoning levels (2026-06-04, VS Code + Copilot CLI + Copilot app), MAI-Code-1.1-Flash GA (2026-08-11), and an AI-Credits rate table that now exposes cached-input and cache-write pricing plus long-context tiers keyed to input-token thresholds — so prompt caching is confirmed present on this surface (changed from null to true). Tool definitions are input tokens and are therefore directly billable: trimming an MCP catalog cuts both context and cost.",
+      "sources": [
+        "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+        "https://docs.github.com/en/enterprise-cloud@latest/copilot/reference/ai-models/supported-models",
+        "https://docs.github.com/en/copilot/reference/ai-models/model-comparison",
+        "https://docs.github.com/en/copilot/concepts/context/mcp",
+        "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+        "https://docs.github.com/en/copilot/get-started/plans",
+        "https://github.blog/changelog/2026-06-04-larger-context-windows-and-configurable-reasoning-levels-for-github-copilot/",
+        "https://github.blog/ai-and-ml/github-copilot/how-were-making-github-copilot-smarter-with-fewer-tools/",
+        "https://code.visualstudio.com/docs/agents/run/tools",
+        "https://code.visualstudio.com/docs/copilot/agents/agent-tools",
+        "https://github.com/microsoft/vscode/issues/290356",
+        "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+        "https://microsoft.ai/news/mai-code-1-1-flash-br-better-faster-at-a-quarter-of-the-cost/",
+        "https://github.com/openai/tiktoken"
+      ]
+    },
+    {
+      "id": "microsoft-copilot-cowork",
+      "display_name": "Microsoft Copilot Cowork",
+      "family": "Microsoft 365 Copilot",
+      "release_date": {
+        "value": "2026-06-16",
+        "confidence": "high",
+        "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "NEW ENTRY. Copilot Cowork reached worldwide general availability on 2026-06-16 per the Microsoft 365 Blog — five days before this dataset's previous as_of date, which is why it was missing. It 'executes complex, long-running, multi-tool tasks' and returns finished work rather than drafts."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Not published for the Cowork surface; it would belong to whichever underlying model the user selects (GPT-5.5/5.6 variants, Claude Opus, Claude Sonnet, or Claude Fable 5 in preview)."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "pdf"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Microsoft publishes no context-window token number for Copilot Cowork, and the underlying model is user-selectable, so a single value would be wrong. The documented input-side ceiling is expressed in characters instead: 'Maximum prompt/message length: 250,000 characters' (roughly 60k-65k tokens at ~4 chars/token, but Microsoft does not publish that conversion)."
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented for the Cowork surface."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": false,
+          "notes": "Not published in tokens. The documented equivalents are a 250,000-character maximum prompt/message and attached files of less than 200 MB."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published; inherited from the selected model."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published; inherited from the selected model."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric extended-context mode is published for Copilot Cowork."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not broken out. Cowork exposes an 'effort level' control that defaults to Medium and 'balances quality, speed, and cost', and billing is in Copilot Credits determined by 'model use, context retrieval, tool calls, and runtime' — so reasoning effort is priced, but not as a named token class."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "model-dependent (OpenAI GPT-5.5 / GPT-5.6 variants, or Anthropic Claude Opus / Sonnet / Fable 5)",
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The Cowork FAQ lists the selectable models as GPT 5.5 and GPT 5.6 variants, Claude Opus, Claude Sonnet and Claude Fable 5 (Preview). Microsoft publishes no tokenizer identity for either family on this surface. At GA the blog stated Cowork ran on 'Anthropic models, including Opus 4.8 and Sonnet 4.6', with a first-party 'Cowork 1' model announced as forthcoming."
+        },
+        "tokenizer_public": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Depends on the selected model; Microsoft documents none for this surface."
+        },
+        "tokenizer_access": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No Cowork-native count-tokens API exists. tiktoken is usable as a rough proxy only if one assumes an OpenAI-family model for the turn."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No native token-count method. The one published budgeting number developers can design against is the SKILL.md body target of under 5,000 tokens."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Image preview and input are supported (PDF, Office documents, CSV, Markdown, code, images, HTML, email); no image-to-token rule is published."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No audio token accounting is published for Copilot Cowork."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "Generic ~4 chars/token rule of thumb; useful because Cowork's own input cap is expressed in characters (250,000)."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Cowork connectors are invoked through MCP `tools/call`; the plugin development guide documents JSON-RPC 2.0 messaging with `tools/list` for discovery and `tools/call` for invocation."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Copilot Cowork supports MCP natively through `remoteMcpServer` connectors declared in the M365 app package manifest. Requirements: streamable HTTP over HTTPS with TLS 1.2+, `tools/list` support for dynamic discovery, `tools/call` for invocation, a tool-call response in under 30 seconds, and a recommended 99.9% uptime SLA for store-published apps. Core MCP operations documented as supported: initialize, tools/list, tools/call, notifications/initialized. Auth: none (anonymous), OAuthPluginVault, ApiKeyPluginVault."
+        },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. Cowork is positioned around 'complex, long-running, multi-tool tasks', but Microsoft does not state whether tool calls are issued in parallel."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric per-request cap on the NUMBER of tools is published for Copilot Cowork. The limits that DO bind are packaging- and account-scoped: 10 MCP connectors per app package, 20 skills per app package, and up to 50 custom skills and plugins per user drawn from the Microsoft 365 App Store. Beyond those, the selected model's context window and the 250,000-character prompt ceiling bound how much tool surface fits."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "No empirical tool-count cliff has been published or measured for Copilot Cowork specifically. Microsoft's only qualitative guidance in this family is the Microsoft 365 Copilot plugins note that quality can degrade above 10 functions/tools per plugin, and the GitHub Copilot 40→13 built-in trim; neither has been validated on Cowork."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tool-name length cap is published. The adjacent documented naming rule is for skills: skill names are 1-64 characters in kebab-case, and folder paths run up to 256 characters."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tool-description length cap is published for Cowork connectors. The comparable published budget is the SKILL.md body target of under 5,000 tokens (1,500-2,000 words ideal)."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No byte-size request cap is published. The documented input ceilings are a 250,000-character maximum prompt/message and attached files under 200 MB; on the tool path, a single tool call may carry up to 8 workspace files at 150 MiB each with a 150 MiB total per call."
+        },
+        "max_tool_result_size": {
+          "value": 150,
+          "unit": "MiB per tool call (file payloads, max 8 workspace files)",
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Per the Cowork plugin development guide: a tool call may involve up to 8 workspace files, with a per-file limit of 150 MiB and a total of 150 MiB per call. Scope: per tool call. This is a byte cap on file payloads, not a token cap — the token cost of whatever is injected still lands in the selected model's context window."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented for Copilot Cowork."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-turn tool-call cycle cap is published. The documented per-call constraint is a response time of under 30 seconds; long-running work is the product's stated purpose, so runtime is metered in Copilot Credits rather than capped by a published cycle count."
+        },
+        "max_connected_servers": {
+          "value": 10,
+          "unit": "MCP connectors per M365 app package",
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The Cowork plugin development guide caps connectors at 10 per app package (alongside 20 skills per package). Scope: per M365 app package. AGGREGATE across packages, the account-level ceiling is the documented 'up to 50 custom skills and plugins' a user can add from the Microsoft 365 App Store."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No aggregate cap on individual tools is published. The aggregate ceilings Microsoft does publish are on containers, not tools: 10 connectors and 20 skills per app package, and up to 50 custom skills and plugins per user. A single connector may expose many tools, so the real ceiling is the selected model's context window."
+        },
+        "tool_definition_shape": {
+          "value": "raw_mcp",
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Connectors are remote MCP servers (`remoteMcpServer` in the app package manifest, manifest schema v1.28, strict with `additionalProperties: false`); tool definitions are MCP tool schema objects fetched via `tools/list`."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Confidence medium — inferred rather than stated outright. Microsoft does not say 'tool definitions are input tokens' for Cowork, but it budgets the adjacent skill text in tokens (SKILL.md body target under 5,000 tokens, 1,500-2,000 words ideal), which only makes sense if that text is injected into the model context. The same must hold for connector tool schemas resolved via `tools/list`."
+        },
+        "tool_search_deferral": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. Cowork requires `tools/list` support for 'dynamic discovery', but Microsoft does not say whether the resolved tools are injected eagerly for every turn or deferred/selected per task, so no deferral claim is made here."
+        },
+        "tool_schema_limits_notes": "PRODUCT-LAYER LIMITS (Copilot Cowork app packages), as of 2026-08-19. (1) Connectors (remote MCP servers) per package: 10. (2) Skills per package: 20. (3) Custom skills and plugins per user, from the Microsoft 365 App Store: up to 50. (4) SKILL.md body target: under 5,000 tokens (1,500-2,000 words ideal). (5) Companion files per skill: 20, at 5 MB each, 10 MB total per skill; companion download timeout 15 seconds. (6) Files per tool call: up to 8 workspace files; 150 MiB per file and 150 MiB total per call. (7) Tool-call response time: under 30 seconds. (8) Skill name: 1-64 characters, kebab-case; folder path up to 256 characters. (9) Prompt/message: 250,000 characters; attached file: under 200 MB. (10) Transport: streamable HTTP over HTTPS, TLS 1.2+; JSON-RPC 2.0; initialize / tools/list / tools/call / notifications/initialized. (11) Auth: none (anonymous), OAuthPluginVault, ApiKeyPluginVault. (12) Manifest v1.28 is strict (`additionalProperties: false`). (13) Store-published apps: 99.9% uptime SLA recommended.",
+        "other_limits_notes": "Copilot Cowork requires a Microsoft 365 Copilot User Subscription Licence and bills consumption in Copilot Credits on top of it. Built-in skills at GA: Word, Excel, PowerPoint, PDF, Email, Scheduling, Calendar Management, Meetings, Daily Briefing, Enterprise Search, Communications, Deep Research, Adaptive Cards. Custom skills live in the user's OneDrive at /Documents/Cowork/skills/. Generally available for work and school accounts; preview for personal accounts. Available in browser, desktop (Windows/Mac) and mobile (iOS/Android). Regional availability is limited to Anthropic-supported countries/regions. Microsoft Purview Information Barriers are not supported for plugin/skill management and sharing, and in IB-enabled tenants embedded knowledge file uploads are blocked tenant-wide. Effort level defaults to Medium.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode (100-property / 5-level / no-oneOf) is documented for Cowork connectors. The app package manifest itself is strict (`additionalProperties: false`, schema v1.28), but that constrains the manifest, not the MCP tool input schemas."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Copilot Cowork has the most explicit 'skill' primitive Microsoft ships: prompt-based `SKILL.md` workflow packages that 'teach Cowork new domain expertise (financial analysis, legal research, HR workflows...)', distributed in M365 app packages alongside MCP connectors, or stored per user in OneDrive."
+        },
+        "skills_loading_model": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Microsoft does not state whether skill bodies are always injected or progressively disclosed. The documented SKILL.md body target of under 5,000 tokens, plus separate companion files with their own 15-second download timeout, is consistent with a body-plus-on-demand-companions model, but that is an inference and is recorded as undocumented rather than asserted."
+        },
+        "skills_context_cost_notes": "The only vendor-published token budget on any Microsoft Copilot surface: a SKILL.md body should stay under 5,000 tokens (1,500-2,000 words ideal). With up to 20 skills per package and up to 50 custom skills and plugins per user, a fully loaded account could nominally carry 250k tokens of skill text if everything were injected at once — which is why the loading model matters and why Microsoft's silence on it is the most important gap in this entry. Companion files (20 per skill, 5 MB each, 10 MB per skill, 15-second download timeout) are fetched separately and are the natural place for detail that should not sit in the always-on budget.",
+        "system_prompt_overhead_notes": "Not published. Cowork injects built-in skill scaffolding (Word, Excel, PowerPoint, PDF, Email, Scheduling, Calendar, Meetings, Daily Briefing, Enterprise Search, Communications, Deep Research, Adaptive Cards) plus workspace and Microsoft Graph context; Microsoft gives no token count for any of it.",
+        "prompt_caching": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. Billing is in Copilot Credits determined by 'model use, context retrieval, tool calls, and runtime', with no cache line item exposed, so any caching that happens is invisible to the customer."
+        },
+        "memory_feature": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented as a named feature. Cowork works over the user's Microsoft 365 content and a per-user OneDrive skills folder, which provides durable context, but Microsoft publishes no cross-session memory primitive or its token accounting."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Cowork is not priced per token. It bills in Copilot Credits, at $0.01 per credit on pay-as-you-go (or via P3 commitment discounts), with cost determined by 'model use, context retrieval, tool calls, and runtime'. Microsoft publishes no token-to-credit conversion, so a $/1M-token figure cannot be derived."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token output rate is published; consumption is metered in Copilot Credits."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No cached-input rate is published for Copilot Cowork."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No batch discount is published; the documented discount lever is a P3 commitment on Copilot Credits versus the $0.01/credit pay-as-you-go rate."
+        },
+        "billing_unit": {
+          "value": "copilot_credits_usage_based",
+          "confidence": "high",
+          "source_url": "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Requires a Microsoft 365 Copilot User Subscription Licence, then usage-based billing in Copilot Credits: '$0.01 per credit' pay-as-you-go, or P3 commitment discounts. Cost is driven by model use, context retrieval, tool calls and runtime. Administrators can set consumption limits per user or group; billing is charged per organization. Microsoft's GA post claims 30-40% cost savings versus Claude Cowork with a Microsoft 365 connector."
+        },
+        "multimodal_billing_notes": "Document, image and PDF handling are part of task execution and are absorbed into the Copilot Credit cost of the task rather than priced per unit. File previews are supported for PDF, Microsoft 365 documents, CSV, Markdown, code files, images, HTML and email.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not exposed as a token class. The user-facing analogue is the 'effort level' control (default Medium) which 'balances quality, speed, and cost' — so more reasoning costs more credits, but Microsoft publishes no token-level accounting."
+        }
+      },
+      "self_host": null,
+      "notes": "NEW ENTRY (added 2026-08-19). Copilot Cowork is the Microsoft Copilot surface that most resembles an agentic coding/work harness, and it is MCP-native: connectors are remote MCP servers declared in an M365 app package (`remoteMcpServer`, manifest v1.28), speaking JSON-RPC 2.0 over streamable HTTP with `tools/list` + `tools/call`. It GA'd worldwide on 2026-06-16 — five days before the previous refresh's as_of date, which is why it was absent. Its limits are packaged rather than per-request: 10 connectors and 20 skills per app package, up to 50 custom skills and plugins per user, up to 8 workspace files and 150 MiB per tool call, tool calls under 30 seconds, prompt up to 250,000 characters, attachments under 200 MB. Microsoft publishes NO numeric cap on tools per request and NO context-window token figure, so the binding constraint is the selected model's window (GPT-5.5/5.6 or Claude Opus/Sonnet/Fable 5). Most valuable finding for this dataset: the SKILL.md body target of under 5,000 tokens is the only vendor-published context budget for a skill anywhere in the Microsoft Copilot family. Billing is usage-based in Copilot Credits at $0.01/credit on top of a Microsoft 365 Copilot seat.",
+      "sources": [
+        "https://www.microsoft.com/en-us/microsoft-365/blog/2026/06/16/copilot-cowork-is-now-generally-available/",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugin-development",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-manage-plugins",
+        "https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-faq",
+        "https://github.com/openai/tiktoken"
+      ]
+    },
+    {
+      "id": "microsoft-copilot-studio",
+      "display_name": "Microsoft Copilot Studio (agent platform)",
+      "family": "Microsoft Copilot Studio",
+      "release_date": {
+        "value": "2025-05-29",
+        "confidence": "medium",
+        "source_url": "https://www.microsoft.com/en-us/microsoft-copilot/blog/copilot-studio/model-context-protocol-mcp-is-now-generally-available-in-microsoft-copilot-studio/",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "NEW ENTRY. The date recorded is the Model Context Protocol GA announcement in Microsoft Copilot Studio (the capability this dataset tracks), per the Microsoft Copilot Blog. The Copilot Studio product itself is older (Power Virtual Agents lineage) and Microsoft publishes no single product launch date, hence medium confidence on the date's meaning rather than its accuracy."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Not published; Copilot Studio agents run on selectable Microsoft-hosted models whose cutoffs Microsoft does not surface at the platform layer."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "pdf"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Microsoft publishes no context-window token number for Copilot Studio agents. The quota page (updated 2026-07-08) expresses limits in characters, items and payload bytes instead: agent instructions 8,000 characters; knowledge sources 500 per agent; connector payload 5 MB (public cloud) or 450 KB (GCC)."
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented at the Copilot Studio platform layer."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": false,
+          "notes": "Not published in tokens. Character- and byte-scoped equivalents: instructions 8,000 characters; connector payload 5 MB public cloud / 450 KB GCC; file upload 512 MB with up to 500 files."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published for Copilot Studio agents."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published for Copilot Studio agents."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric extended-context mode is published for Copilot Studio."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not exposed. Copilot Credits 'measure complexity of tasks' including information retrieval, prompt responses, and actions and custom skills execution — a task-complexity metric rather than a token class breakdown."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Microsoft publishes no tokenizer identity for Copilot Studio agents. Models are Microsoft-hosted and selectable, and the platform bills in Copilot Credits rather than tokens, so no tokenizer is surfaced to makers."
+        },
+        "tokenizer_public": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Unknown; no tokenizer is documented for this platform."
+        },
+        "tokenizer_access": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No Copilot Studio tokenizer or count-tokens endpoint is published."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No token-count method exists for Copilot Studio. Consumption is reported in Copilot Credits, and the documented design budgets are in characters, items and payload bytes."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No image-to-token rule is published for Copilot Studio."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Voice experiences exist in Copilot Studio, but no audio token accounting is published."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "Generic ~4 chars/token rule of thumb, useful because Copilot Studio's own budgets (8,000-character instructions) are expressed in characters."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Copilot Studio agents call tools through an orchestrator: 'The agent orchestrator evaluates each user message and decides whether a tool is needed. The tool's name and description are critical. Well-described tools are invoked more accurately.'"
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "MCP is GA in Microsoft Copilot Studio (page updated 2026-08-03; GA announced on the Microsoft Copilot Blog). MCP servers are attached as Power Platform custom connectors: Tools page → Add a tool → Model Context Protocol → select connector and authorize; individual tools can then be toggled on or off ('Allow all' is on by default). Tools are listed and configurable per server; MCP resources are surfaced only when the server owner configures them as outputs of MCP tools; prompts are not documented. Generative orchestration must be enabled to use MCP. Streamable HTTP is the supported transport — SSE transport is deprecated and remains in public preview only."
+        },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. The tools overview describes orchestrator-driven selection but does not state whether calls are issued in parallel."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric per-request cap on the NUMBER of tools is published for Copilot Studio. What the docs state qualitatively is that 'Model Context Protocol (MCP) servers count against the total number of tools an agent can host' and that concurrent MCP server instances in one conversation are capped — without publishing the number — with the guidance to 'keep the count of attached servers small and remove servers you no longer use.' The published hard ceilings elsewhere in the platform are the 5 MB connector payload, 500 knowledge sources per agent, 100 skills per agent and 1,000 topics per agent."
+        },
+        "max_tools_practical": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "No empirical tool-count cliff has been published or measured for Copilot Studio. The documentation explicitly 'does not describe degraded performance or specific behavior changes when many tools are present', instead advising that tool names and descriptions drive selection accuracy and that attached-server counts should be kept small."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published. Tool names come from the MCP server via the custom connector; Copilot Studio documents no length constraint of its own."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published, despite the docs stressing that 'The tool's name and description are critical.' No character cap is stated for either field."
+        },
+        "max_request_size": {
+          "value": 5,
+          "unit": "MB (connector payload, public cloud; 450 KB in GCC)",
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Connector payload limit: 5 MB in the public cloud, 450 KB in GCC (quota page updated 2026-07-08). This is a byte cap on the connector transport that carries MCP traffic, so it bounds both tool arguments and tool results, and it is the single hardest numeric limit on the Copilot Studio MCP path."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No separate tool-result cap is published; results traverse the same connector and are therefore bounded by the 5 MB public-cloud / 450 KB GCC connector payload limit. Files created during a turn are separately capped at 10 MB per file."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not published. The docs note that concurrent MCP server instances in one conversation are capped but do not give the number."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-turn tool-call cycle cap is published. The binding throughput constraints are rate limits: 8,000 requests per minute for messages to an agent per Dataverse environment on a paid plan, and 100 RPM / 2,000 RPH of generative AI messages for Microsoft 365 Copilot licensed users (10 RPM / 200 RPH in trial and developer environments)."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No numeric cap on attached MCP servers is published. The docs state that concurrent MCP server instances in one conversation are capped without giving the figure, and advise keeping the attached-server count small. Recorded as undocumented rather than unbounded."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No aggregate tool-count cap is published. The adjacent published per-agent aggregates are 100 skills per agent, 500 knowledge sources per agent (all types) and 1,000 topics per agent (Dataverse environments) — none of which is a tool count, so none can be substituted for one."
+        },
+        "tool_definition_shape": {
+          "value": "raw_mcp (surfaced through a Power Platform custom connector)",
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "MCP servers are wrapped in a Power Platform custom connector; the agent then lists and toggles the server's MCP tools individually. Tool definitions originate as MCP tool schemas."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Confidence medium — inferred. Microsoft does not state that tool definitions consume context on this surface, but it emphasises that tool names and descriptions drive selection accuracy, warns that MCP servers 'count against the total number of tools an agent can host', and bills Copilot Credits partly on 'prompt responses', all of which imply the definitions are injected into the prompt."
+        },
+        "tool_search_deferral": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. Makers can manually toggle individual MCP tools on or off per agent (a static curation control), but no automatic deferral, clustering or tool-search mechanism is described."
+        },
+        "tool_schema_limits_notes": "PLATFORM-LAYER LIMITS (Microsoft Copilot Studio), quota page updated 2026-07-08. (1) Connector payload: 5 MB public cloud, 450 KB GCC — the hard cap on MCP traffic. (2) Instructions: 8,000 characters. (3) Knowledge sources per agent: 500 (all types). (4) Skills per agent: 100 (web app and Teams app). (5) Topics per agent: 1,000 in Dataverse environments (250 in Dataverse for Teams). (6) Trigger phrases per topic: 200. (7) File upload: 512 MB, up to 500 files. (8) Files created during a turn: 10 MB each. (9) Agents per team (Teams app): 50. (10) SharePoint knowledge: 25 sites per agent with generative orchestration, 1,000 files per source, 50 folders, 10 subfolder levels, 512 MB per file (7 MB without a Microsoft 365 Copilot licence). (11) Generative orchestration must be enabled for MCP. (12) Streamable HTTP transport; SSE deprecated. (13) No numeric cap on tools per request or MCP servers per agent is published.",
+        "other_limits_notes": "Rate limits (Dataverse environment scope): 8,000 RPM for messages to an agent on a paid plan. Generative AI messages: 50 RPM / 1,000 RPH for 1-10 prepaid packs; 80 RPM / 1,600 RPH for 11-50 packs; 100 RPM / 2,000 RPH for 51-150 packs, plus 1 RPM / 20 RPH per additional 10 packs above 150; 10 RPM / 200 RPH in trial and developer environments; 100 RPM / 2,000 RPH for pay-as-you-go environments and for Microsoft 365 Copilot licensed users. Power Platform requests per 24 hours: 250,000 standard, 6,000 for the Teams (Microsoft 365) tier. Access to MCP servers is governed by Power Platform connector policies and data loss prevention rules. A Microsoft MCP server certification programme is in preview.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+          "source_tier": 1,
+          "notes": "No OpenAI-style strict function-schema mode (100-property / 5-level / no-oneOf) is documented for Copilot Studio MCP tools. Schema validity is governed by the Power Platform custom connector definition and the MCP server itself."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Copilot Studio agents are the skills analog: instructions plus tools (MCP servers, connectors, Power Automate flows, prompts) plus knowledge sources, orchestrated by generative orchestration. Note the platform also has a distinct legacy 'skills' primitive (Bot Framework skills) capped at 100 per agent, which is not the same thing as a tool."
+        },
+        "skills_loading_model": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. Makers toggle individual tools on or off per agent, and the orchestrator decides per message whether a tool is needed, but Microsoft does not state whether all enabled tool definitions are injected each turn or selected first."
+        },
+        "skills_context_cost_notes": "Agent instructions (up to 8,000 characters) plus every enabled tool's name and description are what the orchestrator reasons over, and Microsoft stresses that 'Well-described tools are invoked more accurately' — so description quality is traded directly against context cost. Knowledge sources (up to 500 per agent) are retrieved rather than always injected. Because billing is in Copilot Credits by task complexity rather than tokens, makers get no per-turn token feedback to optimize against, which makes this the least measurable Microsoft Copilot surface for footprint work.",
+        "system_prompt_overhead_notes": "Not published. Generative orchestration injects its own scaffolding plus the agent's instructions and enabled tool descriptions; Microsoft gives no token count.",
+        "prompt_caching": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. Copilot Credits are metered by task complexity, with no cache line item exposed to makers."
+        },
+        "memory_feature": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented as a named token-consuming memory primitive at the platform layer; conversation state and knowledge-source retrieval provide the durable context instead."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Copilot Studio is not priced per token. Since 2025-09-01 'the common currency for agents changed from messages to Copilot Credits', consumed via prepaid packs, a prepaid subscription of Copilot Credit Commit Units (CCCUs), or pay-as-you-go billed to an Azure subscription. Microsoft publishes credit billing rates per task type, not per token, so no $/1M-token figure can be derived."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-token output rate is published; consumption is metered in Copilot Credits."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No cached-input rate is published for Copilot Studio."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No batch discount is published. The documented discount levers are prepaid packs and one-year prepaid CCCU commitments versus pay-as-you-go."
+        },
+        "billing_unit": {
+          "value": "copilot_credits_usage_based",
+          "confidence": "high",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Copilot Credits, effective 2025-09-01 (previously 'messages'; no change in quantity per prepaid pack or in the pay-as-you-go rate). Three purchase paths: Copilot Studio prepaid subscription (CCCU pool via the Azure portal), pay-as-you-go (month-end billing, requires an Azure billing policy on the environment), and a tenant-level Copilot Credits prepaid pack. Credits measure task complexity — information retrieval, prompt responses, and actions and custom skills execution. Microsoft 365 Copilot licensed users get zero-rated usage for classic answers, generative answers and Microsoft Graph tenant grounding in Copilot Chat, Teams and SharePoint."
+        },
+        "multimodal_billing_notes": "File uploads (512 MB, up to 500 files) and knowledge ingestion are covered by the credit model rather than per-unit media pricing; the connector payload cap of 5 MB (450 KB GCC) is the practical constraint on what a tool call can move.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not exposed as a token class; credits reflect task complexity rather than a token breakdown."
+        }
+      },
+      "self_host": null,
+      "notes": "NEW ENTRY (added 2026-08-19). Copilot Studio is the maker-facing Microsoft Copilot surface where MCP is GA, and it was previously represented in this file only as a footnote inside other entries' other_limits_notes — a gap worth closing because its limit profile is genuinely different from Microsoft 365 Copilot's. MCP servers attach as Power Platform custom connectors; generative orchestration must be enabled; streamable HTTP is the supported transport and SSE is deprecated. Resources appear only when the server owner exposes them as tool outputs, and prompts are not documented. CRITICALLY, Microsoft publishes NO numeric cap on tools per request or MCP servers per agent here — the docs say only that MCP servers 'count against the total number of tools an agent can host', that concurrent MCP server instances per conversation are capped without giving the number, and that makers should 'keep the count of attached servers small'. The hardest published number on the MCP path is the 5 MB connector payload (450 KB in GCC). Other binding aggregates are per agent, not per request: 100 skills, 500 knowledge sources, 1,000 topics, 8,000-character instructions. Billing moved from messages to Copilot Credits on 2025-09-01, metered by task complexity, so makers get no token-level feedback.",
+      "sources": [
+        "https://learn.microsoft.com/en-us/microsoft-copilot-studio/mcp-add-components-to-agent",
+        "https://learn.microsoft.com/en-us/microsoft-copilot-studio/agents-experience/tools-overview",
+        "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-quotas",
+        "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+        "https://www.microsoft.com/en-us/microsoft-copilot/blog/copilot-studio/model-context-protocol-mcp-is-now-generally-available-in-microsoft-copilot-studio/",
+        "https://github.com/openai/tiktoken"
+      ]
+    },
+    {
+      "id": "mai-code-1-1-flash",
+      "display_name": "MAI-Code-1.1-Flash",
+      "family": "Microsoft MAI",
+      "release_date": {
+        "value": "2026-08-11",
+        "confidence": "high",
+        "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "NEW ENTRY. The official Microsoft AI model card gives a release date of August 11, 2026, matched by the Microsoft AI news post 'MAI-Code-1.1-Flash: Better, faster, at a quarter of the cost' (August 11, 2026), which states the model is 'now in production in GitHub Copilot'. It supersedes MAI-Code-1-Flash (released 2026-06-02)."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": "2025-12",
+        "confidence": "high",
+        "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Model card: 'Pretraining cut-off date: December 2025'. Recorded as year-month because the card gives no day."
+      },
+      "modalities": [
+        "text",
+        "image"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": 256000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card: 'Context length 256K tokens'. This is a genuine Tier-1 vendor figure — notably the only published context-window number anywhere in the Microsoft Copilot family, since every Copilot product surface declines to publish one. Note it sits below the 1M-token extended context GitHub Copilot offers on some third-party models, so MAI-Code-1.1-Flash is not on the 1M list in GitHub's supported-models reference."
+        },
+        "input_output_shared": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model card gives a single 256K context length without splitting input and output pools, and does not state whether they share the window."
+        },
+        "max_input_tokens": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": false,
+          "notes": "Not stated separately on the model card; bounded by the 256K context length."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not specified on the model card."
+        },
+        "max_output_tokens_max": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not specified on the model card."
+        },
+        "extended_context": {
+          "value": null,
+          "unit": "tokens",
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No extended-context mode is published for this model. GitHub's supported-models reference lists the 1M-token context window as an extended capability of specific Claude, GPT-5.x and Kimi K3 models; MAI-Code-1.1-Flash is not among them."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. GitHub's Copilot rate table meters input, cached input, cache write and output for this model but names no reasoning-token class."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The Microsoft AI model card does not name a tokenizer. Under this dataset's tiered-evidence rule, tokenizer identity requires Tier-1 vendor documentation, and none exists — so this is null rather than assumed from the architecture ('transformer architecture with self-attention using sparse Mixture-of-Experts layers')."
+        },
+        "tokenizer_public": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "MAI-Code-1.1-Flash is a closed-weight, Microsoft-hosted model with no published tokenizer artifact, no Hugging Face model card and no downloadable weights; the model card is a PDF describing behaviour, not a config. Recorded as not public rather than unknown because no distribution channel for a tokenizer exists."
+        },
+        "tokenizer_access": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tokenizer or count-tokens endpoint is published for MAI-Code-1.1-Flash. Token counts are only observable after the fact, through GitHub Copilot's AI-credit usage reporting."
+        },
+        "count_tokens_method": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No native or third-party count method exists. GitHub bills this model per token (input $0.20, cached input $0.02, output $1.20 per 1M) but exposes no pre-flight counting API, and no public tokenizer allows a local estimate."
+        },
+        "image_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model card lists 'Inputs Text, Image' but publishes no image-to-token conversion rule."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Audio is not a listed modality: the model card gives 'Inputs Text, Image' and 'Outputs Text'."
+        },
+        "chars_per_token_estimate": {
+          "value": 4,
+          "confidence": "low",
+          "source_url": "https://github.com/openai/tiktoken",
+          "source_tier": 3,
+          "as_of": "2026-08-19",
+          "notes": "Generic ~4 chars/token rule of thumb, applied for want of a published tokenizer. Treat with extra caution here: Microsoft claims MAI-Code-1.1-Flash needs '25% fewer tokens to complete a task' than version 1.0, implying tokenizer or behaviour changes that a generic ratio will not capture."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model card describes the model as built for 'agentic tool use' and 'tool-using developer scenarios', and it ships as an agent-mode model in GitHub Copilot, where tool calling is the operating mode."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "MCP support here is a property of the HOST, not the model: MAI-Code-1.1-Flash is 'Available in GitHub Copilot for all clients' per the model card, and GitHub Copilot speaks MCP natively across IDEs, Copilot CLI, the Copilot app and cloud agents. Microsoft publishes no standalone MCP-capable API endpoint for this model, so its MCP behaviour is whatever the Copilot host provides. Confidence medium for that indirection."
+        },
+        "parallel_tool_calls": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented on the model card or in GitHub's Copilot documentation."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-layer cap on the number of tools per request is published for MAI-Code-1.1-Flash. The limit that binds in practice is imposed by the host: VS Code enforces 128 enabled tools per chat request (see max_total_tools). Beyond that, the 256K context window is the ceiling — at a typical ~500-800 tokens per MCP tool definition that is a few hundred tool definitions before the window is consumed by tools alone, which is why the host cap bites first."
+        },
+        "max_tools_practical": {
+          "value": 13,
+          "confidence": "low",
+          "source_url": "https://github.blog/ai-and-ml/github-copilot/how-were-making-github-copilot-smarter-with-fewer-tools/",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19: the previous citation (docs.github.com models-and-pricing) was re-opened and contains no tool count at all. The 13 comes from GitHub's engineering blog (2025-11-19, tier 4), re-opened 2026-08-19, which states 'we're rolling out a reduced toolset that trims the default 40 built-in tools down to 13 core ones' and 'we identified a core toolset of 13 essential tools'. NOTE WHAT THAT NUMBER IS: a product decision about the size of the DEFAULT BUILT-IN toolset in VS Code, not a measured degradation threshold, and not measured on MAI-Code-1.1-Flash -- the same post notes 'GitHub Copilot Chat can access hundreds of tools through the Model Context Protocol (MCP).' EMPIRICAL and inherited from the host surface; no published benchmark isolates this model's tool-selection degradation curve. Confidence low for both reasons; the hard host-layer cap that actually binds is the 128 tools/request in max_total_tools."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tool-name length constraint is published for this model."
+        },
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tool-description length constraint is published for this model."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No request payload size cap is published. The binding constraint is the 256K-token context length; GitHub's Copilot pricing for this model carries no long-context tier, unlike GPT-5.5's '> 272K' tier."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tool-result size cap is published; results consume the 256K context window as input tokens and are billed at the input rate."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented for this model."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-turn tool-call cycle cap is published for this model; the host's agent loop and the AI-credit budget bound long runs instead."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not a model-layer property. In the VS Code host a limit on the number of connected MCP servers is not documented; the aggregate 128-tool-per-request cap is what binds."
+        },
+        "max_total_tools": {
+          "value": 128,
+          "unit": "tools per request (host-layer cap in VS Code, aggregate across all servers)",
+          "confidence": "high",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "HOST-LAYER limit inherited from the surface this model runs on: 'A chat request can have a maximum of 128 tools enabled at a time' (VS Code documentation). Scope: AGGREGATE across all connected MCP servers plus built-in and extension tools. This is not a MAI-Code-1.1-Flash constraint — Microsoft publishes none — but it is the number that actually gates an MCP catalog when this model is selected in Copilot."
+        },
+        "tool_definition_shape": {
+          "value": "raw_mcp (as presented by the GitHub Copilot host)",
+          "confidence": "medium",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The Copilot host speaks MCP and re-serializes tool definitions into the selected model's native tool format before the request; Microsoft does not publish MAI-Code-1.1-Flash's native tool-definition schema."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tool definitions are injected into the prompt and billed as input tokens on this surface — GitHub prices MAI-Code-1.1-Flash at $0.20 per 1M input tokens and $0.02 per 1M cached-input tokens, and states that disabling unused toolsets 'frees up tokens in the AI's context window'."
+        },
+        "tool_search_deferral": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Available through the host, not the model: VS Code's `github.copilot.chat.virtualTools.threshold` setting groups surplus tools behind virtual stubs so a large catalog stays under the 128-tool cap. Nothing model-specific is published."
+        },
+        "tool_schema_limits_notes": "MODEL-LAYER: Microsoft publishes no tool-count, tool-name, tool-description, schema-depth or request-size limits for MAI-Code-1.1-Flash. The model card documents only the 256K context length, a December 2025 pretraining cutoff, text+image input / text output, a sparse Mixture-of-Experts transformer architecture, and support for agentic tool use. HOST-LAYER (GitHub Copilot / VS Code, which is where this model is reachable): 128 enabled tools per chat request, aggregate across all MCP servers and built-in tools; `github.copilot.chat.virtualTools.threshold` for virtual-tool clustering; tool sets for manual curation. When both layers apply, the host cap binds first.",
+        "other_limits_notes": "Distribution: 'Available in GitHub Copilot for all clients' per the model card, with use inside GitHub Copilot in Visual Studio Code called out and Copilot CLI support noted as planned for later rollout; GitHub's own reference lists it among supported models but NOT among those offering the 1M-token extended context or configurable reasoning levels. Vendor performance claims versus MAI-Code-1.0: 25% greater token efficiency, tokens stream 25% faster, 25% fewer tokens to complete a task, 22% improvement on Terminal-Bench 2.1, 15% improvement on .NET tasks, code survival up 4%, return visits up 9%, at roughly a quarter of the cost. These are vendor benchmarks, not independent measurements. Closed weights; no Hugging Face card, no self-hosting path.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "notes": "No strict function-schema mode is documented for MAI-Code-1.1-Flash. Recorded as false for absence of any published enforcement, not as a positive statement that arbitrary schemas are accepted."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.github.com/en/copilot/concepts/context/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Via the host rather than the model: when MAI-Code-1.1-Flash is selected in GitHub Copilot, MCP servers supply the tool/skill catalog exactly as they do for any other model in the picker. Microsoft publishes no model-native skills primitive."
+        },
+        "skills_loading_model": {
+          "value": "always_on",
+          "confidence": "medium",
+          "source_url": "https://code.visualstudio.com/docs/agents/run/tools",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Inherited from the GitHub Copilot host: enabled tools are presented per request, subject to the 128-tool cap, with virtual tools deferring surplus tools behind stubs."
+        },
+        "skills_context_cost_notes": "MCP tool definitions consume the model's 256K context window as input tokens and are billed at $0.20 per 1M ($0.02 cached). This is the cheapest per-token model in GitHub's Copilot rate table, so an oversized MCP catalog costs less here than on GPT-5.5 ($5.00 input) or Claude Opus 4.5 ($5.00 input) — but it also has the smallest window among the flagship options, since it is excluded from the 1M-token extended-context list. Tool-definition bloat therefore bites on capacity before it bites on cost.",
+        "system_prompt_overhead_notes": "Not published. Overhead is whatever the GitHub Copilot host injects (IDE context, repository context, enabled tool definitions); Microsoft publishes no model-side system-prompt token accounting.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "GitHub's Copilot rate table lists a cached-input price of $0.02 per 1M tokens for MAI-Code-1.1-Flash against $0.20 uncached — a 90% discount — which confirms prompt caching is active for this model on the Copilot surface. No cache-write cost is listed (that applies only to GPT-5.6 Sol, Terra and Luna). Microsoft publishes no cache TTL, minimum cacheable prefix or breakpoint control."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "low",
+          "source_url": "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-native persistent memory is documented; session context is supplied by the host."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.2,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "GitHub Copilot models-and-pricing table, verified 2026-08-19: MAI-Code-1.1-Flash is listed as GA in the Lightweight category at $0.20 per 1M input tokens. Billed as AI Credits at 1 credit = $0.01 USD. Microsoft publishes no independent API price for this model outside the Copilot surface."
+        },
+        "output_per_mtok_usd": {
+          "value": 1.2,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "GitHub Copilot models-and-pricing table, verified 2026-08-19: $1.20 per 1M output tokens — a 6x input-to-output ratio, and the cheapest output rate in GitHub's table (compare GPT-5.5 at $30.00 and Claude Opus 4.5 at $25.00)."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": 0.02,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "GitHub Copilot models-and-pricing table, verified 2026-08-19: $0.02 per 1M cached-input tokens, a 90% discount on the $0.20 uncached input rate. No cache-write cost applies to this model."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No batch-processing discount is published; the exposed cost levers on the Copilot surface are cached input and model choice."
+        },
+        "billing_unit": {
+          "value": "ai_credits_per_token",
+          "confidence": "high",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Billed through GitHub Copilot's AI Credits system (1 AI credit = $0.01 USD) at the per-model token rates above. There is no separate Microsoft-hosted pay-per-token endpoint for MAI-Code-1.1-Flash documented at Tier 1 as of 2026-08-19."
+        },
+        "multimodal_billing_notes": "Image input is a listed modality on the model card, but GitHub's rate table publishes only text-token rates for this model and no separate image-token price.",
+        "reasoning_billed_as_output": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Not documented. This model is not on GitHub's configurable-reasoning-levels list, and the rate table has no reasoning-token column."
+        }
+      },
+      "self_host": null,
+      "notes": "NEW ENTRY (added 2026-08-19). MAI-Code-1.1-Flash is Microsoft's own first-party agentic coding model, released 2026-08-11 and in production in GitHub Copilot. It is included here because it is a Microsoft model shipped inside a Microsoft Copilot surface, and because it is the ONLY entity in this vendor's file with a Tier-1 published context window: 'Context length 256K tokens' per the official Microsoft AI model card. Also published: December 2025 pretraining cutoff, text+image input / text output, sparse Mixture-of-Experts transformer, agentic tool use. It supersedes MAI-Code-1-Flash (2026-06-02) — that predecessor has no entry in this file and is not added, since only the current-generation model belongs in the roster. MCP and tool limits are HOST-supplied, not model-supplied: reachable only through GitHub Copilot, where VS Code's aggregate 128-tools-per-request cap binds. No tokenizer is published, so token counts on this model cannot be reproduced locally — a real gap given Microsoft's claim of '25% fewer tokens to complete a task'. Pricing is Tier-1 and concrete: $0.20 input / $0.02 cached input / $1.20 output per 1M tokens, the cheapest in GitHub's Copilot rate table.",
+      "sources": [
+        "https://microsoft.ai/pdf/MAI-Code-1.1-Flash-Model-Card.PDF",
+        "https://microsoft.ai/news/mai-code-1-1-flash-br-better-faster-at-a-quarter-of-the-cost/",
+        "https://microsoft.ai/news/",
+        "https://microsoft.ai/news/introducingmai-code-1-flash/",
+        "https://docs.github.com/en/copilot/reference/copilot-billing/models-and-pricing",
+        "https://docs.github.com/en/copilot/reference/ai-models/supported-models",
+        "https://docs.github.com/en/copilot/concepts/context/mcp",
+        "https://code.visualstudio.com/docs/agents/run/tools",
+        "https://github.com/openai/tiktoken"
+      ]
+    }
+  ]
+}

@@ -11,7 +11,7 @@ const src = path.join(apiRoot, "src/compatibility/data");
 const dest = path.join(apiRoot, "dist/compatibility/data");
 
 if (!existsSync(src)) {
-  console.error(`copy-data: missing ${src} — run \`pnpm build:model-data\` first.`);
+  console.error(`copy-data: missing ${src} — run \`pnpm build:data-pack\` first.`);
   process.exit(1);
 }
 cpSync(src, dest, { recursive: true });

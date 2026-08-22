@@ -9,7 +9,7 @@
 
 import type { CompatibilityEvidence, CompatibilitySeverity } from "@mcp-token-footprint/shared";
 import type { CatalogTest } from "./catalog.js";
-import type { FlatModel } from "./build.js";
+import type { FlatModel } from "@mcp-token-footprint/shared";
 import { getCrossCutting, getModel } from "./dataset.js";
 
 export type ResolvedSeverity = {

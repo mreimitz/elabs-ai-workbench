@@ -14,6 +14,7 @@
       "**/test-results/**",
       ".claude/worktrees/**",
       "apps/api/src/compatibility/data/all-models.json",
+      "data-pack/generated/all-models.json",
       "packages/illustrations/src/scene/golden/**",
       "planning/Research/RS-01-token-context-comparison/outputs/comparison/all-models.json"
     ]

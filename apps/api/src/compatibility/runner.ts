@@ -13,7 +13,7 @@ import type {
 import { bandForScore } from "@mcp-token-footprint/shared";
 import { getCatalog, type CatalogTest } from "./catalog.js";
 import { getCrossCutting, getModel } from "./dataset.js";
-import type { FlatModel } from "./build.js";
+import type { FlatModel } from "@mcp-token-footprint/shared";
 import {
   annotationsCoherent,
   countAllProperties,

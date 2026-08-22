@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elabs-ai/mcp-token-footprint/data-pack/cross-cutting.schema.json",
+  "title": "Cross-cutting MCP protocol, client, SDK and provider limits",
+  "description": "data-pack/limits/cross-cutting.json — the limits that belong to the MCP protocol, a host/client, an SDK default or a provider account rather than to any one model. Written for RM-38 WP 1.1; the file predates its schema, so this describes the structure the compatibility engine actually reads and leaves the hand-curated leaves open (additionalProperties: true) rather than pretending to a completeness it never had.",
+  "type": "object",
+  "required": [
+    "as_of",
+    "mcp_protocol",
+    "clients",
+    "sdk_defaults",
+    "serving_stack_open_weight",
+    "providers",
+    "sources"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "as_of": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$", "format": "date" },
+    "mcp_protocol": {
+      "type": "object",
+      "description": "Ceilings the MCP specification itself sets (mostly: none — which is the finding).",
+      "additionalProperties": true,
+      "properties": {
+        "resources": { "$ref": "#/$defs/openGroup" },
+        "prompts": { "$ref": "#/$defs/openGroup" },
+        "elicitation": { "$ref": "#/$defs/openGroup" },
+        "sampling": { "$ref": "#/$defs/openGroup" }
+      }
+    },
+    "clients": {
+      "type": "object",
+      "description": "Per-host tool-count and timeout caps. `cross.clients.<id>.max_tools` is read by the compatibility engine, so its type is pinned; everything else stays open.",
+      "additionalProperties": { "$ref": "#/$defs/client" }
+    },
+    "sdk_defaults": {
+      "type": "object",
+      "description": "Defaults an SDK applies when the caller sets nothing.",
+      "additionalProperties": { "$ref": "#/$defs/openGroup" }
+    },
+    "serving_stack_open_weight": {
+      "type": "object",
+      "description": "What binds when you serve open weights yourself (operator-configured, not vendor-fixed).",
+      "additionalProperties": true
+    },
+    "providers": {
+      "type": "object",
+      "description": "Account-level and API-level limits that are not per model: cache breakpoints, rate-limit meters, schema micro-limits.",
+      "additionalProperties": { "$ref": "#/$defs/provider" }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "openGroup": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "client": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_tools": { "type": ["integer", "null"] },
+        "tool_call_timeout_ms": { "type": ["integer", "null"] },
+        "timeout_configurable": { "type": ["boolean", "null"] },
+        "sources": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "tool_defs_count_toward_rate_limit": { "type": ["boolean", "null"] },
+        "tool_call_timeout_ms": { "type": ["integer", "null"] },
+        "schema_micro_limits": { "$ref": "#/$defs/openGroup" },
+        "sources": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

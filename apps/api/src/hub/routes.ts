@@ -341,7 +341,7 @@ export function createHubModelResolver(
         "hub model resolution: no known context window for this model — compaction is DISABLED and " +
           "every context-usage surface will read as meaningless for this session. Add the id to " +
           "ROSTER_GAP_MODEL_CONTEXT_LIMITS (packages/shared/src/constants.ts), or refresh the model " +
-          "dataset and regenerate (pnpm build:model-data)",
+          "dataset and regenerate (pnpm build:data-pack)",
       );
     }
     if (providerKind === "claude_subscription") {

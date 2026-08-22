@@ -1,5 +1,5 @@
 // GENERATED — do not edit by hand.
-// Source of truth: planning/Research/RS-01-token-context-comparison/outputs/data/**; regenerate with `pnpm build:model-data`.
+// Source of truth: data-pack/models/**; regenerate with `pnpm build:data-pack`.
 // Derived from the model-comparison dataset (as-of 2026-08-19; 55 models).
 
 /** Context window (tokens) per model id, for every model with a documented window. */

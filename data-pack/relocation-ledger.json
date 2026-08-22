@@ -1,0 +1,82 @@
+{
+  "movedAt": "2026-08-22",
+  "movedBy": "RM-38 WP 1.1",
+  "baseCommit": "a0179f1",
+  "files": [
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/anthropic.json",
+      "to": "models/saas/anthropic.json",
+      "gitBlobSha1": "f6aedd0fec8a89b1a686c67a464838619b66f98c"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/google-gemini.json",
+      "to": "models/saas/google-gemini.json",
+      "gitBlobSha1": "32d5d04f770bee679f79e10a40320dd027f3a835"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/microsoft-copilot.json",
+      "to": "models/saas/microsoft-copilot.json",
+      "gitBlobSha1": "8e58d2aaa6687af22c1afa316066bd97466cebde"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/mistral.json",
+      "to": "models/saas/mistral.json",
+      "gitBlobSha1": "6ce047c1663d38a272677446b0aae28a7e2b0ea0"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/openai.json",
+      "to": "models/saas/openai.json",
+      "gitBlobSha1": "8732a12b073e830689fdb51e821c34c31b2bbacc"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/saas/xai-grok.json",
+      "to": "models/saas/xai-grok.json",
+      "gitBlobSha1": "8a0ce162d669c3fd3d9170785af985a05e412c96"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/alibaba-qwen.json",
+      "to": "models/open-weight/alibaba-qwen.json",
+      "gitBlobSha1": "10a6a61d1b40276d3a3524b62cd9320b503797af"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/deepseek.json",
+      "to": "models/open-weight/deepseek.json",
+      "gitBlobSha1": "5e9ff1a0698038d6d5f7579435951461db60828e"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/google-gemma.json",
+      "to": "models/open-weight/google-gemma.json",
+      "gitBlobSha1": "f28b2ef258e006609a79aa1ffe3d893c9b7f2c75"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/meta-llama.json",
+      "to": "models/open-weight/meta-llama.json",
+      "gitBlobSha1": "5ea406e03f3ece20909eabc308ed979df8bd46fe"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/open-weight/microsoft-phi.json",
+      "to": "models/open-weight/microsoft-phi.json",
+      "gitBlobSha1": "bcdee47d117634fdcd687a912ee9de2ca2e759b2"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/data/cross-cutting-limits.json",
+      "to": "limits/cross-cutting.json",
+      "gitBlobSha1": "51154c3cc559d5fc3694def7084a46c860a320ec"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/tests/test-catalog.json",
+      "to": "compatibility/test-catalog.json",
+      "gitBlobSha1": "bc6591ed84414e28750e3a6b2034f972f47efd4e"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/schema/model-entry.schema.json",
+      "to": "schema/model-entry.schema.json",
+      "gitBlobSha1": "f361e0fd212b29958c43a7893a1397746c9d6117"
+    },
+    {
+      "from": "planning/Research/RS-01-token-context-comparison/outputs/tests/test-catalog.schema.json",
+      "to": "schema/test-catalog.schema.json",
+      "gitBlobSha1": "f28eaf4947562a3e59e30cec08748827bb49e660"
+    }
+  ]
+}

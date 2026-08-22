@@ -1,0 +1,2273 @@
+{
+  "schema_version": "1.0",
+  "as_of": "2026-08-19",
+  "provider": {
+    "id": "alibaba-qwen",
+    "name": "Alibaba (Qwen)",
+    "group": "open_weight",
+    "homepage": "https://qwen.ai",
+    "api_docs_url": "https://www.alibabacloud.com/help/en/model-studio/models",
+    "tokenizer_docs_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+    "native_mcp_support": {
+      "value": true,
+      "confidence": "high",
+      "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+      "source_tier": 1,
+      "as_of": "2026-08-19",
+      "notes": "Upgraded at the 2026-08-19 refresh from 'framework-level only'. MCP is now a documented first-class feature of the vendor's hosted API as well as its agent stack. Hosted (tier 1, Model Studio): 'Add MCP server information in the tools parameter when using the Responses API', 'Available through the Responses API only', 'Supports MCP servers using the SSE protocol', 'Maximum 10 MCP servers'; supported models include the Qwen3.7-Max / Qwen3.7-3.5-Plus / Qwen3.6-3.5-Flash tiers, the 'Qwen3.6 open-source series (except qwen3.6-27b)' and the 'Qwen3.5 open-source series' - Qwen3.8 ids are not yet listed. Self-host (tier 1, vendor repos): Qwen-Agent takes an mcpServers block in function_list and auto-starts the servers; Qwen Code loads mcpServers from settings.json over stdio (command/args), HTTP (httpUrl) or SSE (url) with includeTools/excludeTools filtering. In every path MCP tool schemas are converted to OpenAI-shaped function definitions and injected as input tokens - MCP is not an in-model protocol."
+    },
+    "skills_concept": {
+      "value": "Qwen-Agent tools/plugins + Qwen Code MCP servers (no packaged skill format)",
+      "confidence": "high",
+      "source_url": "https://github.com/QwenLM/Qwen-Agent",
+      "source_tier": 1,
+      "as_of": "2026-08-19",
+      "notes": "There is no Anthropic-Agent-Skills-style packaged, progressively-disclosed skill bundle. Qwen-Agent ('pip install -U \"qwen-agent[gui,rag,code_interpreter,mcp]\"') exposes a function_list of tools, plugins, built-ins and mcpServers configs; Qwen Code exposes MCP servers from settings.json. Everything registered is injected in full at request time and billed as input tokens on every turn - there is no lazy loading tier."
+    }
+  },
+  "models": [
+    {
+      "id": "Qwen/Qwen3.8-2.4T-A95B",
+      "display_name": "Qwen3.8-2.4T-A95B (Qwen3.8-Max, open weights)",
+      "family": "Qwen3.8 MoE",
+      "release_date": {
+        "value": "2026-08-12",
+        "confidence": "medium",
+        "source_url": "https://vllm.ai/blog/2026-08-12-qwen3.8",
+        "source_tier": 2,
+        "as_of": "2026-08-19",
+        "notes": "The model card citation gives only month = August, year = 2026 (tier 1). Day precision comes from vLLM's day-0 support announcement for Qwen3.8-2.4T-A95B, published 2026-08-12. Conflict noted: OpenRouter shows a 2026-08-03 creation date for the hosted qwen3.8-max endpoint - that is the priced API launch; the open weights landed later, which is what this entry covers."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "The Qwen team publishes no knowledge-cutoff date for the Qwen3.8 series; the model card does not state one. Left null rather than guessed."
+      },
+      "modalities": [
+        "text"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card, Model Overview: 'Context Length: 262,144 natively and extensible up to 1,010,000 tokens.' Confirmed by config.json max_position_embeddings = 262144 and tokenizer_config.json model_max_length = 262144. Shared input+output pool."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Single causal-LM position budget (max_position_embeddings 262144); prompt, tool definitions, the <think> reasoning trace and the answer all draw on the same pool."
+        },
+        "max_input_tokens": {
+          "value": 131072,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Derived: native window 262,144 minus the card's recommended 131,072-token final-response allocation. No vendor max-input cap is published for the open weights - on a self-hosted server the operator sets it with --max-model-len. Note the card's allocation guidance ('Reasoning Content: 262,144; Final Response: 131,072') is written for the 1M extended configuration, so at native 262,144 the reasoning trace and the prompt compete directly."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The card publishes no per-query default output length for Qwen3.8 (unlike Qwen3.5/3.6, which recommend 32,768). It instead gives a budget allocation, and vLLM's launch post advises setting max_tokens=128,000 for agentic workflows. Defaults are set by the serving stack."
+        },
+        "max_output_tokens_max": {
+          "value": 131072,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card, Best Practices: 'For frameworks that support separate token limits for internal reasoning and final outputs, we suggest the following configuration within the 1M context length: Reasoning Content: Set the maximum output length to 262,144 tokens. Final Response: Set the maximum output length to 131,072 tokens.' 131,072 is the final-response cap; the reasoning trace may consume up to a further 262,144 tokens on top of it."
+        },
+        "extended_context": {
+          "value": 1010000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: 'extensible up to 1,010,000 tokens' via YaRN RoPE scaling (rope_type yarn, factor 4.0, original_max_position_embeddings 262144), enabled with VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 / SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 plus --max-model-len 1000000. config.json ships rope_type 'default', so the extension is an explicit operator override, not the shipped state. Conflict noted: OpenRouter lists the hosted qwen3.8-max endpoint at 1,000,000 - tier 1 preferred here."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Thinking mode is mandatory for this model - the chat template always emits a <think>...</think> block before the answer and exposes reasoning_effort levels 'xhigh' (default), 'medium' and 'low'. Reasoning tokens are generated tokens: they occupy the output budget and, on a hosted endpoint, bill at the output rate."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3.5-generation byte-level BPE (tokenizer_class Qwen2Tokenizer), vocab_size 248,320",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED at the 2026-08-19 refresh. The previous entry said '~151,643 tokens' - that figure comes from the Qwen1-era tokenization note (github.com/QwenLM/Qwen), which describes Qwen-7B ('151,643 regular tokens and 208 control tokens'), a different and much smaller vocabulary. The Qwen3.5/3.6/3.8 generation ships a new tokenizer: config.json reports vocab_size 248320, tokenizer_config.json reports tokenizer_class Qwen2Tokenizer with 33 added special tokens at ids 248,044-248,076 (<|endoftext|>, <|im_start|>/<|im_end|>, vision/video/audio pads, <think>/</think>). The model cards state 'Token Embedding: 248,320 (Padded)'. Still tiktoken-style byte-level BPE."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer.json / tokenizer_config.json are published in the public HuggingFace repo under the model's license; counts are locally reproducible."
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer.from_pretrained('Qwen/Qwen3.8-2.4T-A95B')",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer_config.json: tokenizer_class = Qwen2Tokenizer, model_max_length = 262144. Loadable with transformers AutoTokenizer; the chat template (which is what actually renders tool definitions into the prompt) ships in the same file, so apply_chat_template(tools=...) is the accurate way to count an MCP tool surface."
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.8-2.4T-A95B'); len(tok.apply_chat_template(messages, tools=tools, tokenize=True))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Use apply_chat_template with the tools argument rather than encoding the raw JSON: the template wraps tool definitions in a <tools> block plus format instructions, so raw-JSON counts understate the real footprint."
+        },
+        "image_token_rule": {
+          "value": "Not applicable - this checkpoint is text-only",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json model_type is 'qwen3_5_moe_text' with no vision/text sub-config, and the card states the model 'cannot process multimodal inputs'; multimodal Qwen3.8-Max is offered only through the official hosted API."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "This checkpoint is text-only ('cannot process multimodal inputs'; config.json model_type qwen3_5_moe_text with no vision sub-config), so no audio rule applies. The shared 248,320-token vocabulary still reserves audio special-token ids, which is a property of the generation's vocabulary, not of this checkpoint."
+        },
+        "chars_per_token_estimate": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Set to null at the 2026-08-19 refresh. The previous value (3.5) was attributed to the Qwen1 tokenization note, which documents a 151,643-token vocabulary - a different tokenizer from the 248,320-vocab one this generation ships, so the ratio does not carry over. No vendor-published characters-per-token figure exists for the Qwen3.5/3.6/3.8 tokenizer; measure with the published AutoTokenizer instead of estimating."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED at the 2026-08-19 remediation from the Model Studio function-calling page (whose supported-model list runs Qwen3.6 / Qwen3.5 / Qwen3 / Qwen2.5 open source and names no Qwen3.8 id) to this model's own tier-1 artefact. tokenizer_config.json ships tokenizer_class Qwen2Tokenizer, model_max_length 262144 and a chat_template that takes a `tools` argument and renders it verbatim as '# Tools\\n\\nYou have access to the following functions:\\n\\n<tools>', instructing 'If you choose to call a function ONLY reply in the following format with NO suffix:\\n\\n<tool_call>'. Function calling is therefore a property of the shipped weights + template, independent of any hosted platform listing."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/Qwen-Agent/en/guide/core_moduls/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED and DOWNGRADED to medium at the 2026-08-19 remediation; the previous citation was the hosted Model Studio MCP page, which lists no Qwen3.8 id. MCP is a serving-stack / agent-framework property for open weights, not an in-model protocol and not a hosted-platform one. Tier-1 vendor path, verbatim from the Qwen-Agent MCP guide: MCP servers are configured as an `mcpServers` dictionary passed in `function_list` ('Pass the MCP configuration when initializing your agent'), e.g. \"command\": \"npx\", \"args\": [\"-y\", \"@modelcontextprotocol/server-filesystem\", \"./workspace\"]; the guide publishes no server or tool cap and only advises 'Avoid defining unnecessary services to reduce overhead'. Qwen Code, the vendor CLI, loads mcpServers from settings.json over stdio/HTTP/SSE. Medium confidence because the Qwen-Agent guide's worked example is configured for 'qwen3-max' and neither it nor the Qwen3.8-2.4T-A95B card names a Qwen3.8 id; what makes the path work is this model's chat template, which carries the <tools>/<tool_call> contract MCP definitions are rendered into. The hosted Model Studio Responses-API MCP route is NOT available for this id as of 2026-08-19."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED and DOWNGRADED to medium at the 2026-08-19 remediation. The previous citation was the Model Studio function-calling page's `parallel_tool_calls` parameter, but that page lists no Qwen3.8 id. Per-model evidence: this model's chat_template iterates an assistant message's tool_calls array ('{%- for tool_call in message.tool_calls %}'), so more than one call per assistant turn is representable in the wire format the weights were trained on. Medium rather than high because neither the model card nor any Qwen3.8-specific vendor page states parallel tool calling as a supported feature or exposes a `parallel_tool_calls` switch for this id."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "NULL, and DOWNGRADED from high to medium at the 2026-08-19 remediation. No tier-1 page states a per-request numeric cap on the number of tools for this id. Searched: the Qwen3.8-2.4T-A95B model card and README (no tool-calling section at all), its tokenizer_config.json chat template (renders a <tools> block with no count rule), its vLLM recipe, and the Model Studio function-calling reference - which describes the OpenAI-style `tools` array without a maximum but lists no Qwen3.8 id. Scope note: the limits that DO bind are (1) the empirical ~30-50-tool selection cliff (see max_tools_practical) and (2) the 262,144-token context window shared by tool definitions, prompt, the mandatory reasoning trace and the answer. The hosted 'Maximum 10 MCP servers' Responses-API cap does not cover this id. There is no documented per-MCP-server tool cap."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": "https://arxiv.org/abs/2606.17519",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "Empirical, not spec. No Qwen-specific published degradation point exists. Anchors: 'Scaling Enterprise Agent Routing' (arXiv 2606.17519, 2026-06-16) measured routing F1 dropping 16-23 percentage points across three frontier models as a catalog scaled from 10 agents to 110 agents / 584 tools; MCP-Atlas (arXiv 2602.00933) exposes only 10-25 tools per task by design. 40 is a conservative mid-point of the community ~30-50 range for a capable model. Aggregate scope (all connected servers + built-ins combined)."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19. Tools are supplied as OpenAI-shaped {\"type\":\"function\",\"function\":{\"name\",\"description\",\"parameters\"}} JSON over the OpenAI-compatible Chat Completions endpoint that vLLM/SGLang expose, and this model's own chat_template converts them into the on-the-wire prompt shape: a <tools> block plus 'Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call>'. The model's vLLM recipe serves it with '--enable-auto-tool-choice --tool-call-parser qwen3_coder', which is the parser that turns that XML back into OpenAI-shaped tool_calls. Note the shape difference matters for footprint: the rendered XML is not the same token count as the raw function JSON."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19 to this model's own chat template. tokenizer_config.json renders the `tools` argument into a system-message block - '# Tools\\n\\nYou have access to the following functions:\\n\\n<tools>' - so tool JSON is serialized into the prompt and consumes input context on every request. Corroboration (weaker, coverage caveat): the Model Studio context-cache reference states 'for function calling, if a request includes the `tools` parameter, the tool definition is included in the system message for cache calculation' and 'tool definitions cannot be cached independently', but that page lists no Qwen3.8 id."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No runtime tool-search / deferred-definition-loading mechanism (the Claude ENABLE_TOOL_SEARCH / defer_loading equivalent) is documented for Qwen. The nearest facility is static filtering in Qwen Code - per-server includeTools/excludeTools allow/deny lists and global mcp.allowed / mcp.excluded globs - which shrinks the catalog before the request, not lazily during it. Qwen Code does discover servers progressively: 'sending a prompt before MCP finishes simply means the model sees the tools that are ready at that moment'."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No character-count or character-class cap on tool names is published. Model Studio only recommends: 'The name field is a custom tool function name. We recommend using the same name as the function, such as get_current_weather or get_current_time.' Long client-namespaced MCP names therefore cost tokens rather than being rejected. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "tool_schema_limits_notes": "No documented JSON-Schema depth, property-count or keyword restrictions for Qwen tool definitions. The Model Studio function-calling reference only recommends that the `name` field match the implementing function (e.g. get_current_weather); no length or character-class rule is published. The practical constraint is the input token budget. The chat template renders tools into a <tools> block and requires calls inside <tool_call></tool_call> tags. For this model the template additionally requires an inner <function=...></function> block nested inside <tool_call></tool_call>, and vLLM/SGLang need --enable-auto-tool-choice --tool-call-parser qwen3_coder to parse it.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap on description length; the description is serialized into the <tools> block and counts against the shared 262,144-token window. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No maximum request body size in bytes/MB is documented. The Model Studio rate-limit reference governs throughput instead (600 RPM and 1,000,000-5,000,000 TPM per open-source model id); for self-hosting the bound is the serving config (--max-model-len / --max-num-batched-tokens) and GPU memory. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No documented ceiling on a single tool result. A result is ordinary conversation content, so it is bounded by the 262,144-token window (or --max-model-len on a self-hosted server) shared with the tool definitions and the reasoning trace."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "`parallel_tool_calls` is a boolean switch; no numeric ceiling on how many calls may be emitted in one turn is published. The practical bound is the remaining output budget. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cap on tool-call/result cycles per turn. Qwen Code (the vendor's own CLI host) documents a per-tool-call `timeout` defaulting to 10 minutes and a `discoveryTimeoutMs` handshake timeout (30s stdio / 5s remote) but no cycle cap; agentic loops are bounded by the host and by context."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "NULLED at the 2026-08-19 remediation (previously 10 at high confidence). The Model Studio MCP reference does state 'Maximum 10 MCP servers.', but it is a hosted Responses-API platform cap, and that page's supported-model list reads \"Qwen-Max: Qwen3.7-Max series; Qwen-Plus: Qwen3.7-Plus series, Qwen3.6-Plus series, Qwen3.5-Plus series; Qwen-Flash: Qwen3.6-Flash series, Qwen3.5-Flash series; Qwen3.6 open-source series (except qwen3.6-27b); Qwen3.5 open-source series\" - i.e. there is no Qwen3.8 entry on that list at all, so asserting the cap for this id was unsupported. Searched for a replacement: the Qwen3.8-2.4T-A95B model card and README, its tokenizer_config.json chat template, its vLLM recipe and the Qwen-Agent MCP guide all publish no server-count cap. No per-request numeric cap on connected MCP servers is documented for this model; what binds is the 262,144-token window shared by tool definitions, prompt, reasoning and output, the empirical ~30-50-tool selection cliff, and the agent host."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://recipes.vllm.ai/Qwen/Qwen3.8-2.4T-A95B",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19 from a vLLM recipe page named for Qwen3.5 to this model's own vLLM recipe. Tier 4: a serving-framework doc, not a vendor spec. It documents '--max-model-len 262144' (extensible to 1M) with '--enable-auto-tool-choice --tool-call-parser qwen3_coder' and documents no numeric ceiling on the number of tools. No aggregate tool-count cap is published at the model layer; the effective aggregate ceiling is derived - (262,144 - reasoning and answer headroom) / average tool-definition tokens - and is set by the operator's --max-model-len. Host layers cap lower in practice (Cursor ~40 tools, Claude Desktop ~100). The hosted Responses-API 10-server cap does not cover this id."
+        },
+        "other_limits_notes": "Open-weight: the model API layer publishes no tool count/size cap, and - CORRECTED 2026-08-19 - no Qwen3.8 id appears on the hosted Model Studio MCP, function-calling, context-cache, batch or pricing pages, so none of the Model Studio platform caps (including 'Maximum 10 MCP servers' on the Responses API) can be asserted for this model. Binding limits, in the order they usually bite: (1) the 262,144-token context window shared by tool definitions + prompt + reasoning + output, with the mandatory <think> trace competing directly for it; (2) the empirical ~30-50-tool selection cliff; (3) the serving stack - vLLM/SGLang --max-model-len, --max-num-batched-tokens and KV cache, plus a matching --enable-auto-tool-choice --tool-call-parser qwen3_coder and --reasoning-parser qwen3 (without the tool parser the model's <tool_call> XML is returned as plain text); (4) the agent host - Qwen-Agent mcpServers configs and Qwen Code includeTools/excludeTools and mcp.allowed/mcp.excluded filters with a 10-minute default tool-call timeout, and third-party hosts cap lower (Cursor ~40 tools, Claude Desktop ~100).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style `strict` structured-function mode (100-property / 5-level / no-oneOf enforcement) is documented for Qwen. Schemas are passed through as ordinary JSON Schema. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No packaged, model-invokable 'skill' format analogous to Anthropic Agent Skills. The vendor's agent stack is Qwen-Agent (pip install -U \"qwen-agent[gui,rag,code_interpreter,mcp]\"), which exposes a function_list of tools/plugins and mcpServers configs, and Qwen Code, which loads MCP servers from settings.json. Both are tool wiring, not a progressive-disclosure skill bundle: everything configured is injected up front."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No skill system, so no loading model. Tools/plugins registered in Qwen-Agent's function_list or Qwen Code's mcpServers are always-on for the session and injected in full at request time."
+        },
+        "skills_context_cost_notes": "No skills system to cost. The context cost that matters is the tool surface: MCP tool schemas are translated to OpenAI-shaped function definitions, rendered into the chat template's <tools> block, and counted as input tokens on every request in the conversation - they are re-sent each turn, so the footprint is multiplied by turn count unless a prefix cache absorbs it.",
+        "system_prompt_overhead_notes": "System prompt is billed as input tokens. Tool definitions are folded into the system message for cache-prefix purposes (Model Studio context-cache reference), so system prompt + tool JSON form one contiguous prefix. No fixed platform-injected overhead is documented for self-hosted deployments.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Self-host value. vLLM's Qwen recipe for this generation serves with --enable-prefix-caching, so a stable system prompt + tool-definition prefix is recomputed once and reused - the main lever for a large MCP tool surface on a multi-turn agent loop. Hosted: the Model Studio context-cache reference lists neither qwen3.8 nor any open-source Qwen id, so no hosted cache discount is documented for this model as of 2026-08-19."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No built-in cross-session memory in the model or in the open-source serving path. Qwen-Agent ships RAG/memory helper modules that an application can wire up, but they are application state injected as ordinary input tokens, not a model feature."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tier-1 price. The Alibaba Cloud Model Studio pricing page carries no qwen3.8 row at all as of 2026-08-19 (its newest entries are qwen3.7-max/plus, qwen3.6-*, qwen3.5-*), and the open-source pricing table has no qwen3.8 id. Tier-3 for reference only: OpenRouter lists the hosted qwen3.8-max endpoint at $2/M input and $6/M output - a different product from these open weights. Self-hosted, cost is compute."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Same as input: no tier-1 qwen3.8 row on the Model Studio pricing page. OpenRouter (tier 3) shows $6/M output for the hosted qwen3.8-max endpoint. Remember the reasoning trace bills as output on any hosted endpoint, and this model always thinks."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price: the Model Studio context-cache reference (explicit cache = 10% of input price, implicit = 20%) lists no qwen3.8 id and no open-source Qwen id."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Batch inference is documented at '50% of the real-time inference price' for both input and output, but the supported-model list is qwen-max / qwen-plus / qwen-flash / qwen-turbo (Singapore) and the commercial qwen3.7/3.6/3.5 tiers (Beijing). No qwen3.8 id and no open-source Qwen id appears, so no batch discount is documented for this model."
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio bills per input and output token; open weights under the qwen3.8-max license are otherwise a pure compute cost."
+        },
+        "multimodal_billing_notes": "Not applicable to this checkpoint: it is text-only (config.json model_type qwen3_5_moe_text, and the card states it cannot process multimodal inputs). Multimodal Qwen3.8-Max is available only through the official hosted API, whose rates are not published on the Alibaba Cloud Model Studio pricing page as of 2026-08-19.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Thinking is mandatory - the chat template always produces a <think> block, at reasoning_effort xhigh by default - so the reasoning trace is generated output on every request and is charged at the output rate on any hosted endpoint. With a recommended reasoning allocation of up to 262,144 tokens this dominates cost on agentic runs."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "FP8, BF16, NVFP4 and MXFP4 checkpoints were published for day-0 vLLM support."
+        },
+        "license": {
+          "value": "Qwen3.8-Max License (custom, source-available)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/LICENSE",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "NOT Apache-2.0 - unlike the Qwen3.5/3.6/3.8-27B open weights. The LICENSE file is titled 'Qwen3.8-Max License (Copyright 2026 Qwen)'. Commercial use is permitted with two conditions: products or services with 'more than 100,000,000 monthly active users or US$ 20,000,000 monthly revenue' must prominently display the model name, and a 'Model as a Service or AI Work Assistant business' whose 'aggregate revenue exceeds US$50,000,000 during any consecutive twelve months' must obtain a separate license from Qwen."
+        },
+        "param_variants": {
+          "value": "2.4T total / 95B activated MoE; FP8, BF16, NVFP4 and MXFP4 checkpoints",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card Model Overview: 'Number of Parameters: 2.4T in total and 95B activated', 'Number of Layers: 92', 'Number of Experts: 512', 'Number of Activated Experts: 10 Routed + 1 Shared'. config.json confirms num_hidden_layers 92 and 512/10 experts."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings = 262144; tokenizer_config.json model_max_length = 262144."
+        },
+        "max_context_documented": {
+          "value": 1010000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: 'extensible up to 1,010,000 tokens' with YaRN (rope_type yarn, factor 4.0). Requires VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 / SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 and an explicit rope override; static YaRN can cost short-context quality."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (day-0 support, 2026-08-12), SGLang, TokenSpeed, HuggingFace Transformers",
+          "confidence": "high",
+          "source_url": "https://vllm.ai/blog/2026-08-12-qwen3.8",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "vLLM announced day-0 support on 2026-08-12 with FP8/BF16/NVFP4/MXFP4 checkpoints; the card also names SGLang (with a Qwen3.8 cookbook) and TokenSpeed and advises using the latest framework versions."
+        },
+        "framework_tool_calling_notes": "vLLM/SGLang: add --enable-auto-tool-choice --tool-call-parser qwen3_coder (per vLLM's Qwen3.8 launch post) plus --reasoning-parser qwen3 to split the mandatory <think> block out of the answer; without the tool-call parser the model's <tool_call> XML is returned as plain text and the client sees no tool call. vLLM's post advises budgeting max_tokens=128_000 for agentic workflows. Qwen-Agent supplies the MCP layer (mcpServers in function_list); Qwen Code loads MCP servers from settings.json over stdio/HTTP/SSE. Because thinking cannot be disabled, every agent turn pays reasoning tokens on top of the tool-definition prefix."
+      },
+      "notes": "Qwen3.8-2.4T-A95B is the open-weight release of Qwen3.8-Max, the flagship of the Qwen3.8 generation (August 2026) and the largest open-weight Qwen to date at 2.4T total / 95B activated parameters. It is text-only, thinking-always-on with three reasoning_effort levels (xhigh default / medium / low), and ships under a custom source-available 'qwen3.8-max' licence rather than Apache-2.0. Card benchmarks emphasise agentic work: Terminal Bench 2.1 86.6, SWE-bench Pro 67.7, DeepSWE 1.1 56.6, CoWorkBench 74.8. For MCP work the practical caveats are the mandatory reasoning budget (recommended up to 262,144 tokens) competing with tool definitions inside the 262,144-token native window, and the absence of any hosted Model Studio listing (so no documented context cache, batch discount or tier-1 price).",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+        "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/README.md",
+        "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/config.json",
+        "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/tokenizer_config.json",
+        "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B/raw/main/LICENSE",
+        "https://vllm.ai/blog/2026-08-12-qwen3.8",
+        "https://www.alibabacloud.com/help/en/model-studio/mcp",
+        "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+        "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+        "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+        "https://github.com/QwenLM/Qwen-Agent",
+        "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+        "https://openrouter.ai/qwen/qwen3.8-max",
+        "https://recipes.vllm.ai/Qwen/Qwen3.8-2.4T-A95B",
+        "https://qwenlm.github.io/Qwen-Agent/en/guide/core_moduls/mcp/"
+      ]
+    },
+    {
+      "id": "Qwen/Qwen3.8-27B",
+      "display_name": "Qwen3.8-27B",
+      "family": "Qwen3.8",
+      "release_date": {
+        "value": "2026-08-14",
+        "confidence": "medium",
+        "source_url": "https://www.orcarouter.ai/blog/qwen-3-8-27b-release-date",
+        "source_tier": 4,
+        "as_of": "2026-08-19",
+        "notes": "Tier-1 gives month only: the model card citation reads month = August, year = 2026. Day precision is tier-4 - a release tracker reports 'Alibaba shipped the open weights for Qwen3.8-27B on the evening of August 14, 2026, landing the repository on Hugging Face and ModelScope'. Consistent with the HuggingFace org listing, which showed the repo 'Updated 3-4 days ago' when checked on 2026-08-19. Treat the day as approximate."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Not stated on the model card; the Qwen team publishes no cutoff for the Qwen3.8 series. Left null."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card: 'Context Length: 262,144 natively and extensible up to 1,000,000 tokens.' Confirmed by config.json max_position_embeddings = 262144 and tokenizer_config.json model_max_length = 262144. Shared input+output pool."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "One position budget (max_position_embeddings 262144) covers prompt, tool definitions, the <think> trace and the answer."
+        },
+        "max_input_tokens": {
+          "value": 131072,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Derived: 262,144 native window minus the card's 131,072-token final-response allocation. No vendor max-input cap is published; on a self-hosted server the operator sets it via --max-model-len. The card's allocation advice is framed 'within the 1M context length', so at the native 262,144 window the reasoning trace competes directly with the prompt."
+        },
+        "max_output_tokens_default": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Qwen3.8 drops the per-query default that Qwen3.5/3.6 carried ('an output length of 32,768 tokens for most queries'); the card publishes only a maximum allocation. Defaults are set by the serving stack."
+        },
+        "max_output_tokens_max": {
+          "value": 131072,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card, Best Practices - Adequate Output Length: 'For frameworks that support separate token limits for internal reasoning and final outputs, we suggest the following configuration within the 1M context length: Reasoning Content: Set the maximum output length to 262,144 tokens. Final Response: Set the maximum output length to 131,072 tokens.' Recorded value is the final-response cap; reasoning may consume up to a further 262,144 tokens."
+        },
+        "extended_context": {
+          "value": 1000000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: 'extensible up to 1,000,000 tokens'. Note this differs from the 1,010,000 figure on Qwen3.5/3.6 and on Qwen3.8-2.4T-A95B - the 27B card states 1,000,000 and its serving commands pass --max-model-len 1000000 / --context-length 1000000 with rope_type yarn, factor 4.0, original_max_position_embeddings 262144 and VLLM_ALLOW_LONG_MAX_MODEL_LEN=1. config.json ships rope_type 'default', so YaRN is an explicit operator override."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The chat template emits <think>...</think> before the answer and supports enable_thinking / preserve_thinking controls; reasoning tokens are generated tokens and occupy the output budget (and bill as output on a hosted endpoint)."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3.5-generation byte-level BPE (tokenizer_class Qwen2Tokenizer), vocab_size 248,320",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED at the 2026-08-19 refresh. The previous entry said '~151,643 tokens' - that figure comes from the Qwen1-era tokenization note (github.com/QwenLM/Qwen), which describes Qwen-7B ('151,643 regular tokens and 208 control tokens'), a different and much smaller vocabulary. The Qwen3.5/3.6/3.8 generation ships a new tokenizer: config.json reports vocab_size 248320, tokenizer_config.json reports tokenizer_class Qwen2Tokenizer with 33 added special tokens at ids 248,044-248,076 (<|endoftext|>, <|im_start|>/<|im_end|>, vision/video/audio pads, <think>/</think>). The model cards state 'Token Embedding: 248,320 (Padded)'. Still tiktoken-style byte-level BPE."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer.json / tokenizer_config.json are published in the public HuggingFace repo under the model's license; counts are locally reproducible."
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer.from_pretrained('Qwen/Qwen3.8-27B')",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer_config.json: tokenizer_class = Qwen2Tokenizer, model_max_length = 262144. Loadable with transformers AutoTokenizer; the chat template (which is what actually renders tool definitions into the prompt) ships in the same file, so apply_chat_template(tools=...) is the accurate way to count an MCP tool surface."
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.8-27B'); len(tok.apply_chat_template(messages, tools=tools, tokenize=True))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Use apply_chat_template with the tools argument rather than encoding the raw JSON: the template wraps tool definitions in a <tools> block plus format instructions, so raw-JSON counts understate the real footprint."
+        },
+        "image_token_rule": {
+          "value": "Variable: the vision encoder patches an image into a resolution-dependent number of visual tokens; no closed-form per-image formula is published",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/vision",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Alibaba's vision reference states only that 'the total token count for all images and text must not exceed the model's maximum input' and that the number of images per request is 'determined by the model's total token limit' - it publishes no pixels-per-token constant or per-image cap. The model card gives no formula either. Count multimodal input with the model's AutoProcessor rather than estimating."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model card scopes this model to text, image and video input; audio is handled by the separate Qwen3-Omni / Qwen3.5-Omni line. Note that the shared tokenizer nevertheless reserves <|audio_start|>, <|audio_end|> and <|audio_pad|> ids in the 248,044-248,076 special-token block (it is one vocabulary across the generation), so the presence of those ids is not evidence of audio support in this checkpoint."
+        },
+        "chars_per_token_estimate": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Set to null at the 2026-08-19 refresh. The previous value (3.5) was attributed to the Qwen1 tokenization note, which documents a 151,643-token vocabulary - a different tokenizer from the 248,320-vocab one this generation ships, so the ratio does not carry over. No vendor-published characters-per-token figure exists for the Qwen3.5/3.6/3.8 tokenizer; measure with the published AutoTokenizer instead of estimating."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED at the 2026-08-19 remediation from the Model Studio function-calling page (whose supported-model list runs Qwen3.6 / Qwen3.5 / Qwen3 / Qwen2.5 open source and names no Qwen3.8 id) to this model's own tier-1 artefact. tokenizer_config.json ships tokenizer_class Qwen2Tokenizer, model_max_length 262144 and a chat_template that takes a `tools` argument and renders it verbatim as '# Tools\\n\\nYou have access to the following functions:\\n\\n<tools>', instructing 'If you choose to call a function ONLY reply in the following format with NO suffix:\\n\\n<tool_call>'. Function calling is therefore a property of the shipped weights + template, independent of any hosted platform listing."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/Qwen-Agent/en/guide/core_moduls/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED and DOWNGRADED to medium at the 2026-08-19 remediation; the previous citation was the hosted Model Studio MCP page, which lists no Qwen3.8 id. MCP is a serving-stack / agent-framework property for open weights, not an in-model protocol and not a hosted-platform one. Tier-1 vendor path, verbatim from the Qwen-Agent MCP guide: MCP servers are configured as an `mcpServers` dictionary passed in `function_list` ('Pass the MCP configuration when initializing your agent'), e.g. \"command\": \"npx\", \"args\": [\"-y\", \"@modelcontextprotocol/server-filesystem\", \"./workspace\"]; the guide publishes no server or tool cap and only advises 'Avoid defining unnecessary services to reduce overhead'. Qwen Code, the vendor CLI, loads mcpServers from settings.json over stdio/HTTP/SSE. Medium confidence because the Qwen-Agent guide's worked example is configured for 'qwen3-max' and neither it nor the Qwen3.8-27B card names a Qwen3.8 id; what makes the path work is this model's chat template, which carries the <tools>/<tool_call> contract MCP definitions are rendered into. The hosted Model Studio Responses-API MCP route is NOT available for this id as of 2026-08-19."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED and DOWNGRADED to medium at the 2026-08-19 remediation. The previous citation was the Model Studio function-calling page's `parallel_tool_calls` parameter, but that page lists no Qwen3.8 id. Per-model evidence: this model's chat_template iterates an assistant message's tool_calls array ('{%- for tool_call in message.tool_calls %}'), so more than one call per assistant turn is representable in the wire format the weights were trained on. Medium rather than high because neither the model card nor any Qwen3.8-specific vendor page states parallel tool calling as a supported feature or exposes a `parallel_tool_calls` switch for this id."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "NULL, and DOWNGRADED from high to medium at the 2026-08-19 remediation. No tier-1 page states a per-request numeric cap on the number of tools for this id. Searched: the Qwen3.8-27B model card and README (no tool-calling section at all), its tokenizer_config.json chat template (renders a <tools> block with no count rule), its vLLM recipe, and the Model Studio function-calling reference - which describes the OpenAI-style `tools` array without a maximum but lists no Qwen3.8 id. Scope note: the limits that DO bind are (1) the empirical ~30-50-tool selection cliff (see max_tools_practical) and (2) the 262,144-token context window shared by tool definitions, prompt, the mandatory reasoning trace and the answer. The hosted 'Maximum 10 MCP servers' Responses-API cap does not cover this id. There is no documented per-MCP-server tool cap."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": "https://arxiv.org/abs/2606.17519",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "Empirical, not spec. No Qwen-specific published degradation point exists. Anchors: 'Scaling Enterprise Agent Routing' (arXiv 2606.17519, 2026-06-16) measured routing F1 dropping 16-23 percentage points across three frontier models as a catalog scaled from 10 agents to 110 agents / 584 tools; MCP-Atlas (arXiv 2602.00933) exposes only 10-25 tools per task by design. 40 is a conservative mid-point of the community ~30-50 range for a capable model. Aggregate scope (all connected servers + built-ins combined)."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19. Tools are supplied as OpenAI-shaped {\"type\":\"function\",\"function\":{\"name\",\"description\",\"parameters\"}} JSON over the OpenAI-compatible Chat Completions endpoint that vLLM/SGLang expose, and this model's own chat_template converts them into the on-the-wire prompt shape: a <tools> block plus 'Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call>'. The model's vLLM recipe serves it with '--enable-auto-tool-choice --tool-call-parser qwen3_coder', which is the parser that turns that XML back into OpenAI-shaped tool_calls. Note the shape difference matters for footprint: the rendered XML is not the same token count as the raw function JSON."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19 to this model's own chat template. tokenizer_config.json renders the `tools` argument into a system-message block - '# Tools\\n\\nYou have access to the following functions:\\n\\n<tools>' - so tool JSON is serialized into the prompt and consumes input context on every request. Corroboration (weaker, coverage caveat): the Model Studio context-cache reference states 'for function calling, if a request includes the `tools` parameter, the tool definition is included in the system message for cache calculation' and 'tool definitions cannot be cached independently', but that page lists no Qwen3.8 id."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No runtime tool-search / deferred-definition-loading mechanism (the Claude ENABLE_TOOL_SEARCH / defer_loading equivalent) is documented for Qwen. The nearest facility is static filtering in Qwen Code - per-server includeTools/excludeTools allow/deny lists and global mcp.allowed / mcp.excluded globs - which shrinks the catalog before the request, not lazily during it. Qwen Code does discover servers progressively: 'sending a prompt before MCP finishes simply means the model sees the tools that are ready at that moment'."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No character-count or character-class cap on tool names is published. Model Studio only recommends: 'The name field is a custom tool function name. We recommend using the same name as the function, such as get_current_weather or get_current_time.' Long client-namespaced MCP names therefore cost tokens rather than being rejected. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "tool_schema_limits_notes": "No documented JSON-Schema depth, property-count or keyword restrictions for Qwen tool definitions. The Model Studio function-calling reference only recommends that the `name` field match the implementing function (e.g. get_current_weather); no length or character-class rule is published. The practical constraint is the input token budget. The chat template renders tools into a <tools> block and requires calls inside <tool_call></tool_call> tags. vLLM's recipe for this model serves it with --enable-auto-tool-choice --tool-call-parser qwen3_coder; the chat template requires an inner <function=...></function> block nested inside <tool_call></tool_call>.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap on description length; the description is serialized into the <tools> block and counts against the shared 262,144-token window. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No maximum request body size in bytes/MB is documented. The Model Studio rate-limit reference governs throughput instead (600 RPM and 1,000,000-5,000,000 TPM per open-source model id); for self-hosting the bound is the serving config (--max-model-len / --max-num-batched-tokens) and GPU memory. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No documented ceiling on a single tool result. A result is ordinary conversation content, so it is bounded by the 262,144-token window (or --max-model-len on a self-hosted server) shared with the tool definitions and the reasoning trace."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "`parallel_tool_calls` is a boolean switch; no numeric ceiling on how many calls may be emitted in one turn is published. The practical bound is the remaining output budget. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cap on tool-call/result cycles per turn. Qwen Code (the vendor's own CLI host) documents a per-tool-call `timeout` defaulting to 10 minutes and a `discoveryTimeoutMs` handshake timeout (30s stdio / 5s remote) but no cycle cap; agentic loops are bounded by the host and by context."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "NULLED at the 2026-08-19 remediation (previously 10 at high confidence). The Model Studio MCP reference does state 'Maximum 10 MCP servers.', but it is a hosted Responses-API platform cap, and that page's supported-model list reads \"Qwen-Max: Qwen3.7-Max series; Qwen-Plus: Qwen3.7-Plus series, Qwen3.6-Plus series, Qwen3.5-Plus series; Qwen-Flash: Qwen3.6-Flash series, Qwen3.5-Flash series; Qwen3.6 open-source series (except qwen3.6-27b); Qwen3.5 open-source series\" - i.e. there is no Qwen3.8 entry on that list at all, so asserting the cap for this id was unsupported. Searched for a replacement: the Qwen3.8-27B model card and README, its tokenizer_config.json chat template, its vLLM recipe and the Qwen-Agent MCP guide all publish no server-count cap. No per-request numeric cap on connected MCP servers is documented for this model; what binds is the 262,144-token window shared by tool definitions, prompt, reasoning and output, the empirical ~30-50-tool selection cliff, and the agent host."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://recipes.vllm.ai/Qwen/Qwen3.8-27B",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19 from a vLLM recipe page named for Qwen3.5 to this model's own vLLM recipe. Tier 4: a serving-framework doc, not a vendor spec. It documents '--max-model-len 262144' (extensible to 1M) with '--enable-auto-tool-choice --tool-call-parser qwen3_coder' and documents no numeric ceiling on the number of tools. No aggregate tool-count cap is published at the model layer; the effective aggregate ceiling is derived - (262,144 - reasoning and answer headroom) / average tool-definition tokens - and is set by the operator's --max-model-len. Host layers cap lower in practice (Cursor ~40 tools, Claude Desktop ~100). The hosted Responses-API 10-server cap does not cover this id."
+        },
+        "other_limits_notes": "Open-weight: the model API layer publishes no tool count/size cap, and - CORRECTED 2026-08-19 - no Qwen3.8 id appears on the hosted Model Studio MCP, function-calling, context-cache, batch or pricing pages, so none of the Model Studio platform caps (including 'Maximum 10 MCP servers' on the Responses API) can be asserted for this model. Binding limits, in the order they usually bite: (1) the 262,144-token context window shared by tool definitions + prompt + reasoning + output, with the mandatory <think> trace competing directly for it; (2) the empirical ~30-50-tool selection cliff; (3) the serving stack - vLLM/SGLang --max-model-len, --max-num-batched-tokens and KV cache, plus a matching --enable-auto-tool-choice --tool-call-parser qwen3_coder and --reasoning-parser qwen3 (without the tool parser the model's <tool_call> XML is returned as plain text); (4) the agent host - Qwen-Agent mcpServers configs and Qwen Code includeTools/excludeTools and mcp.allowed/mcp.excluded filters with a 10-minute default tool-call timeout, and third-party hosts cap lower (Cursor ~40 tools, Claude Desktop ~100).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style `strict` structured-function mode (100-property / 5-level / no-oneOf enforcement) is documented for Qwen. Schemas are passed through as ordinary JSON Schema. Coverage caveat added 2026-08-19: the cited Model Studio page's supported-model list contains no Qwen3.8 entry of any kind (its newest open-source entries are the Qwen3.6 and Qwen3.5 series), so this records the vendor's documented Qwen tool-calling contract generally rather than a statement about this id."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No packaged, model-invokable 'skill' format analogous to Anthropic Agent Skills. The vendor's agent stack is Qwen-Agent (pip install -U \"qwen-agent[gui,rag,code_interpreter,mcp]\"), which exposes a function_list of tools/plugins and mcpServers configs, and Qwen Code, which loads MCP servers from settings.json. Both are tool wiring, not a progressive-disclosure skill bundle: everything configured is injected up front."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No skill system, so no loading model. Tools/plugins registered in Qwen-Agent's function_list or Qwen Code's mcpServers are always-on for the session and injected in full at request time."
+        },
+        "skills_context_cost_notes": "No skills system to cost. The context cost that matters is the tool surface: MCP tool schemas are translated to OpenAI-shaped function definitions, rendered into the chat template's <tools> block, and counted as input tokens on every request in the conversation - they are re-sent each turn, so the footprint is multiplied by turn count unless a prefix cache absorbs it.",
+        "system_prompt_overhead_notes": "System prompt is billed as input tokens. Tool definitions are folded into the system message for cache-prefix purposes (Model Studio context-cache reference), so system prompt + tool JSON form one contiguous prefix. No fixed platform-injected overhead is documented for self-hosted deployments.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Self-host value. vLLM's Qwen recipe for this generation serves with --enable-prefix-caching, reusing a stable system prompt + tool-definition prefix across turns - the main mitigation for a large MCP tool surface. Hosted: the Model Studio context-cache reference lists no qwen3.8 id and no open-source Qwen id, so no hosted cache discount is documented for this model as of 2026-08-19."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No built-in cross-session memory in the model or in the open-source serving path. Qwen-Agent ships RAG/memory helper modules that an application can wire up, but they are application state injected as ordinary input tokens, not a model feature."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No tier-1 price: the Alibaba Cloud Model Studio pricing page has no qwen3.8 row (open-source or commercial) as of 2026-08-19 - its Qwen (open source) table stops at qwen3.6-27b / qwen3.6-35b-a3b / the qwen3.5-* ids. Self-hosted, cost is compute only."
+        },
+        "output_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Same as input - no qwen3.8 row on the tier-1 pricing page. Any third-party host prices this independently."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No cached-input price documented: the context-cache reference (explicit 10% / implicit 20% of input price) lists no qwen3.8 id and no open-source Qwen id."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Batch inference is '50% of the real-time inference price' for supported models, but the supported list (qwen-max/plus/flash/turbo in Singapore; commercial qwen3.7/3.6/3.5 tiers in Beijing) contains no qwen3.8 id and no open-source Qwen id."
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio bills per input and output token; Apache-2.0 weights are otherwise pure compute cost."
+        },
+        "multimodal_billing_notes": "Image and video input is billed as input tokens wherever the model is hosted, at a resolution-dependent count. Alibaba's vision reference publishes no pixels-per-token constant and no per-image cap - only that 'the total token count for all images and text must not exceed the model's maximum input' and that the number of images per request is 'determined by the model's total token limit'. Count with the model's AutoProcessor.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The <think> block is generated output; on hosted endpoints it bills at the output rate. The card's recommended reasoning allocation (up to 262,144 tokens) is far larger than the final-response allocation, so reasoning dominates cost and window pressure on agentic runs."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.8-27B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "An FP8 variant (Qwen/Qwen3.8-27B-FP8) is published alongside it."
+        },
+        "license": {
+          "value": "Apache-2.0",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "README front-matter: license: apache-2.0. Note the sibling flagship Qwen3.8-2.4T-A95B is NOT Apache-2.0 - it ships under the custom qwen3.8-max licence - so the Qwen3.8 generation is licence-split."
+        },
+        "param_variants": {
+          "value": "27B dense (BF16) plus an FP8 checkpoint; NVFP4 community builds exist",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card Model Overview: 27B parameters, 64 layers arranged as '16 x (3 x (Gated DeltaNet -> FFN) -> 1 x (Gated Attention -> FFN))', hidden dimension 5120, token embedding 248,320 (padded). The HuggingFace listing shows 28B safetensors parameters; the card's stated figure (27B) is recorded here."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings = 262144, rope_type 'default', rope_theta 10000000, partial_rotary_factor 0.25, mrope_section [11, 11, 10]; tokenizer_config.json model_max_length = 262144."
+        },
+        "max_context_documented": {
+          "value": 1000000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/README.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Reached by overriding rope_parameters to rope_type 'yarn', factor 4.0, original_max_position_embeddings 262144 - VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 vllm serve ... --hf-overrides '{\"text_config\": {\"rope_parameters\": {...}}}' --max-model-len 1000000, or SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 ... --context-length 1000000."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (recipe lists 0.17.0+ with transformers >= 5.8.0), SGLang, HuggingFace Transformers",
+          "confidence": "medium",
+          "source_url": "https://recipes.vllm.ai/Qwen/Qwen3.8-27B",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "vLLM's recipe for Qwen3.8-27B states 'vLLM 0.17.0+' and transformers >= 5.8.0. Flagged medium: the Qwen3.6 cards ask for vLLM >= 0.19.0, so the recipe's floor looks inconsistent with the series' own guidance - use the latest release, as the card advises. The model also ships an MTP draft head usable with --speculative-config '{\"method\":\"mtp\",\"num_speculative_tokens\":3}'."
+        },
+        "framework_tool_calling_notes": "vLLM: --enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser qwen3 (the recipe's low-latency command is 'vllm serve ... --max-model-len 262144 --kv-cache-dtype fp8 --reasoning-parser qwen3 --enable-auto-tool-choice --tool-call-parser qwen3_coder'). Without the tool-call parser the <tool_call> XML is returned as ordinary text and no tool call reaches the client. MCP comes from Qwen-Agent (mcpServers in function_list) or Qwen Code (settings.json mcpServers over stdio/HTTP/SSE). Budget for the <think> trace: it is emitted before tool calls and shares the 262,144-token window with the tool definitions."
+      },
+      "notes": "Qwen3.8-27B is the dense, Apache-2.0 member of the Qwen3.8 generation (open weights ~2026-08-14), succeeding Qwen3.6-27B. Multimodal (text/image/video), 262,144-token native window extensible to 1,000,000 with YaRN. Card benchmarks: SWE-bench Pro 61.7, Terminal Bench 2.1 73.0, GPQA Diamond 89.2, LiveCodeBench v6 90.3, OSWorld-Verified 84.3, MathVision 94.6 - substantially above Qwen3.6-27B on agentic/coding work. Two MCP-relevant cautions: the card documents no explicit tool-calling section (function calling is evidenced by the chat template and the vLLM recipe rather than prose), and the hosted Model Studio MCP path does not yet list any qwen3.8 id, so MCP use means self-hosting plus Qwen-Agent or Qwen Code.",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/README.md",
+        "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/config.json",
+        "https://huggingface.co/Qwen/Qwen3.8-27B/raw/main/tokenizer_config.json",
+        "https://recipes.vllm.ai/Qwen/Qwen3.8-27B",
+        "https://www.alibabacloud.com/help/en/model-studio/mcp",
+        "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+        "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+        "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+        "https://www.alibabacloud.com/help/en/model-studio/vision",
+        "https://github.com/QwenLM/Qwen-Agent",
+        "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+        "https://www.orcarouter.ai/blog/qwen-3-8-27b-release-date",
+        "https://qwenlm.github.io/Qwen-Agent/en/guide/core_moduls/mcp/"
+      ]
+    },
+    {
+      "id": "Qwen/Qwen3.6-27B",
+      "display_name": "Qwen3.6-27B",
+      "family": "Qwen3.6",
+      "release_date": {
+        "value": "2026-04",
+        "confidence": "medium",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Precision reduced at the 2026-08-19 refresh. The only tier-1 statement is the model card citation (month = April, year = 2026); the previous day-precision value (2026-04-22) rested on a HuggingFace collection timestamp that no longer reads that way and could not be re-verified against any opened source. Alibaba's newly-released-models page dates the hosted Qwen3.6 line to 2026-04-02 (Plus) and 2026-04-16 (Flash), which brackets but does not fix the open-weight drop."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "No knowledge-cutoff date is published for the Qwen3.6 series; the model card does not state one. Left null."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card: 'Context Length: 262,144 natively and extensible up to 1,010,000 tokens.' config.json confirms max_position_embeddings = 262144. Shared input+output pool."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Single position budget (max_position_embeddings 262144) shared by prompt, tool definitions, <think> trace and answer."
+        },
+        "max_input_tokens": {
+          "value": 180224,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Derived: 262,144 native window minus the card's 81,920-token complex-problem output allocation. No vendor max-input cap is published; the serving stack sets it (--max-model-len)."
+        },
+        "max_output_tokens_default": {
+          "value": 32768,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card, Best Practices: 'We recommend using an output length of 32,768 tokens for most queries.'"
+        },
+        "max_output_tokens_max": {
+          "value": 81920,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: 'For benchmarking on highly complex problems, such as those found in math and programming competitions, we suggest setting the max output length to 81,920 tokens.' A recommendation, not an API-enforced cap - the hard ceiling is the window and the operator's --max-model-len."
+        },
+        "extended_context": {
+          "value": 1010000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: 'extensible up to 1,010,000 tokens' via YaRN (rope_type yarn, factor 4.0, original_max_position_embeddings 262144). config.json ships rope_type 'default', so YaRN is an explicit operator override; vLLM needs VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 and --max-model-len 1010000. Static YaRN can degrade short-context quality."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Qwen3.6 emits <think>...</think> before the answer (--reasoning-parser qwen3 splits it out). Reasoning tokens are generated tokens: they consume the output budget and bill at the output rate on Model Studio."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3.5-generation byte-level BPE (tokenizer_class Qwen2Tokenizer), vocab_size 248,320",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED at the 2026-08-19 refresh. The previous entry said '~151,643 tokens' - that figure comes from the Qwen1-era tokenization note (github.com/QwenLM/Qwen), which describes Qwen-7B ('151,643 regular tokens and 208 control tokens'), a different and much smaller vocabulary. The Qwen3.5/3.6/3.8 generation ships a new tokenizer: config.json reports vocab_size 248320, tokenizer_config.json reports tokenizer_class Qwen2Tokenizer with 33 added special tokens at ids 248,044-248,076 (<|endoftext|>, <|im_start|>/<|im_end|>, vision/video/audio pads, <think>/</think>). The model cards state 'Token Embedding: 248,320 (Padded)'. Still tiktoken-style byte-level BPE."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer.json / tokenizer_config.json are published in the public HuggingFace repo under the model's license; counts are locally reproducible."
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer.from_pretrained('Qwen/Qwen3.6-27B')",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer_config.json: tokenizer_class = Qwen2Tokenizer, model_max_length = 262144. Loadable with transformers AutoTokenizer; the chat template (which is what actually renders tool definitions into the prompt) ships in the same file, so apply_chat_template(tools=...) is the accurate way to count an MCP tool surface."
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.6-27B'); len(tok.apply_chat_template(messages, tools=tools, tokenize=True))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Use apply_chat_template with the tools argument rather than encoding the raw JSON: the template wraps tool definitions in a <tools> block plus format instructions, so raw-JSON counts understate the real footprint."
+        },
+        "image_token_rule": {
+          "value": "Variable: the vision encoder patches an image into a resolution-dependent number of visual tokens; no closed-form per-image formula is published",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/vision",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Alibaba's vision reference states only that 'the total token count for all images and text must not exceed the model's maximum input' and that the number of images per request is 'determined by the model's total token limit' - it publishes no pixels-per-token constant or per-image cap. The model card gives no formula either. Count multimodal input with the model's AutoProcessor rather than estimating."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model card scopes this model to text, image and video input; audio is handled by the separate Qwen3-Omni / Qwen3.5-Omni line. Note that the shared tokenizer nevertheless reserves <|audio_start|>, <|audio_end|> and <|audio_pad|> ids in the 248,044-248,076 special-token block (it is one vocabulary across the generation), so the presence of those ids is not evidence of audio support in this checkpoint."
+        },
+        "chars_per_token_estimate": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Set to null at the 2026-08-19 refresh. The previous value (3.5) was attributed to the Qwen1 tokenization note, which documents a 151,643-token vocabulary - a different tokenizer from the 248,320-vocab one this generation ships, so the ratio does not carry over. No vendor-published characters-per-token figure exists for the Qwen3.5/3.6/3.8 tokenizer; measure with the published AutoTokenizer instead of estimating."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: the Model Studio function-calling reference lists the Qwen3.6 / Qwen3.5 / Qwen3 open-source series among the models that support function calling, using the OpenAI-shaped `tools` array. Independently confirmed at the weights level: the model's tokenizer_config.json chat template renders a <tools> block and requires 'Function calls MUST follow the specified format' inside <tool_call></tool_call> tags."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED at the 2026-08-19 remediation. The previous citation was the hosted Model Studio MCP reference, which EXPLICITLY EXCLUDES this id. The Model Studio MCP reference's supported-model list reads \"Qwen-Max: Qwen3.7-Max series; Qwen-Plus: Qwen3.7-Plus series, Qwen3.6-Plus series, Qwen3.5-Plus series; Qwen-Flash: Qwen3.6-Flash series, Qwen3.5-Flash series; Qwen3.6 open-source series (except qwen3.6-27b); Qwen3.5 open-source series\". For open weights MCP support is a serving-stack / agent-framework property, not a hosted-platform one, and this model's own tier-1 HuggingFace card carries it: the Agentic Usage section says 'We recommend using Qwen-Agent to quickly build Agent applications with Qwen3.6' and ships an MCP example verbatim - tools = [{'mcpServers': {\"filesystem\": {\"command\": \"npx\", \"args\": [\"-y\", \"@modelcontextprotocol/server-filesystem\", \"/Users/xxxx/Desktop\"]}}}] - alongside 'Qwen Code is an open-source AI agent for the terminal, optimized for Qwen models' and the --tool-call-parser qwen3_coder serving flag. So: MCP servers are attachable to this model through Qwen-Agent / Qwen Code against a self-hosted or OpenAI-compatible endpoint, which convert MCP tool schemas into Qwen function definitions injected as input tokens; the model itself speaks no MCP wire protocol, and the hosted Model Studio Responses-API MCP route is unavailable for this id."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: Model Studio documents a `parallel_tool_calls` request parameter - 'set the parallel_tool_calls request parameter to true' - so all tool calls are returned simultaneously. The Qwen function-calling guide adds that 'the current default tool calling template natively supports Parallel Function Calls'."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric cap on the number of tools is documented for Qwen at the model-API layer: the Model Studio function-calling reference lists the 'Qwen3.6 open source' series among the models that support function calling and describes the OpenAI-style `tools` array without stating a maximum, and self-hosted vLLM/SGLang enforce no tool count. Scope note, CORRECTED 2026-08-19: the hosted 'Maximum 10 MCP servers' Responses-API cap is out of scope for this id (that page's supported-model list reads \"Qwen-Max: Qwen3.7-Max series; Qwen-Plus: Qwen3.7-Plus series, Qwen3.6-Plus series, Qwen3.5-Plus series; Qwen-Flash: Qwen3.6-Flash series, Qwen3.5-Flash series; Qwen3.6 open-source series (except qwen3.6-27b); Qwen3.5 open-source series\".). The limits that DO bind here are (1) the empirical ~30-50-tool selection cliff (see max_tools_practical) and (2) the 262,144-token context window shared by tool definitions, prompt and output, i.e. window / average tool-definition tokens. There is no documented per-MCP-server tool cap."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": "https://arxiv.org/abs/2606.17519",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "Empirical, not spec. No Qwen-specific published degradation point exists. Anchors: 'Scaling Enterprise Agent Routing' (arXiv 2606.17519, 2026-06-16) measured routing F1 dropping 16-23 percentage points across three frontier models as a catalog scaled from 10 agents to 110 agents / 584 tools; MCP-Atlas (arXiv 2602.00933) exposes only 10-25 tools per task by design. 40 is a conservative mid-point of the community ~30-50 range for a capable model. Aggregate scope (all connected servers + built-ins combined)."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: tools are supplied as {\"type\":\"function\",\"function\":{\"name\",\"description\",\"parameters\"}} with JSON-Schema parameters, over the OpenAI-compatible Chat Completions endpoint that both Model Studio and self-hosted vLLM/SGLang expose. The Qwen function-calling guide notes the chat template 'has already included support for the Hermes-style tool use'; vLLM ships both `hermes` and `qwen3_coder` parsers, and the Qwen recipes use --tool-call-parser qwen3_coder for this generation."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1 confirmation: the Model Studio context-cache reference states that 'for function calling, if a request includes the `tools` parameter, the tool definition is included in the system message for cache calculation' and that 'tool definitions cannot be cached independently'. Tool JSON is therefore serialized into the prompt and billed as input tokens; on a self-hosted deployment it is rendered into the chat template and consumes context."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No runtime tool-search / deferred-definition-loading mechanism (the Claude ENABLE_TOOL_SEARCH / defer_loading equivalent) is documented for Qwen. The nearest facility is static filtering in Qwen Code - per-server includeTools/excludeTools allow/deny lists and global mcp.allowed / mcp.excluded globs - which shrinks the catalog before the request, not lazily during it. Qwen Code does discover servers progressively: 'sending a prompt before MCP finishes simply means the model sees the tools that are ready at that moment'."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No character-count or character-class cap on tool names is published. Model Studio only recommends: 'The name field is a custom tool function name. We recommend using the same name as the function, such as get_current_weather or get_current_time.' Long client-namespaced MCP names therefore cost tokens rather than being rejected."
+        },
+        "tool_schema_limits_notes": "No documented JSON-Schema depth, property-count or keyword restrictions for Qwen tool definitions. The Model Studio function-calling reference only recommends that the `name` field match the implementing function (e.g. get_current_weather); no length or character-class rule is published. The practical constraint is the input token budget. The chat template renders tools into a <tools> block and requires calls inside <tool_call></tool_call> tags. vLLM/SGLang for this generation need --enable-auto-tool-choice --tool-call-parser qwen3_coder plus --reasoning-parser qwen3. The model card reports MCPMark 37.0 for the sibling 35B-A3B, measured against GitHub MCP with a standard tool schema, indicating standard MCP schemas are handled without special shaping.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap on description length; the description is serialized into the <tools> block and counts against the shared 262,144-token window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No maximum request body size in bytes/MB is documented. The Model Studio rate-limit reference governs throughput instead (600 RPM and 1,000,000-5,000,000 TPM per open-source model id); for self-hosting the bound is the serving config (--max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No documented ceiling on a single tool result. A result is ordinary conversation content, so it is bounded by the 262,144-token window (or --max-model-len on a self-hosted server) shared with the tool definitions and the reasoning trace."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "`parallel_tool_calls` is a boolean switch; no numeric ceiling on how many calls may be emitted in one turn is published. The practical bound is the remaining output budget."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cap on tool-call/result cycles per turn. Qwen Code (the vendor's own CLI host) documents a per-tool-call `timeout` defaulting to 10 minutes and a `discoveryTimeoutMs` handshake timeout (30s stdio / 5s remote) but no cycle cap; agentic loops are bounded by the host and by context."
+        },
+        "max_connected_servers": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "NULLED at the 2026-08-19 remediation (previously 10). The Model Studio MCP reference does state 'Maximum 10 MCP servers.', but that cap governs the hosted Responses-API MCP path ('Available through the Responses API only'; 'Supports MCP servers using the SSE protocol') whose supported-model list reads \"Qwen-Max: Qwen3.7-Max series; Qwen-Plus: Qwen3.7-Plus series, Qwen3.6-Plus series, Qwen3.5-Plus series; Qwen-Flash: Qwen3.6-Flash series, Qwen3.5-Flash series; Qwen3.6 open-source series (except qwen3.6-27b); Qwen3.5 open-source series\" - this id is the one member of the Qwen3.6 open-source series the page carves out, so the cap provably does not cover it. Searched for a replacement: the model card, the Qwen-Agent MCP guide (which only advises 'Avoid defining unnecessary services to reduce overhead') and the Qwen Code MCP docs publish no server-count cap. No per-request numeric cap on connected MCP servers is documented for this model; what binds is the 262,144-token window shared by tool definitions, prompt and output, the empirical ~30-50-tool selection cliff, and whatever the agent host imposes."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://recipes.vllm.ai/Qwen/Qwen3.6-27B",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19 from a vLLM recipe page named for Qwen3.5 to this model's own vLLM recipe. Tier 4: a serving-framework doc, not a vendor spec. It documents serving this model at '--max-model-len 262144' with '--enable-auto-tool-choice' and '--tool-call-parser qwen3_coder' and documents no numeric ceiling on the number of tools. No aggregate tool-count cap is published at the model layer; the effective aggregate ceiling is derived - (262,144 - reasoning and answer headroom) / average tool-definition tokens - and is set by the operator's --max-model-len. Host layers cap lower in practice (Cursor ~40 tools, Claude Desktop ~100). The hosted Responses-API 10-server cap does not cover this id."
+        },
+        "other_limits_notes": "Open-weight: the model API layer publishes no tool count/size cap, and - CORRECTED 2026-08-19 - the hosted Model Studio Responses-API MCP path does not cover this id (its supported-model list reads \"Qwen-Max: Qwen3.7-Max series; Qwen-Plus: Qwen3.7-Plus series, Qwen3.6-Plus series, Qwen3.5-Plus series; Qwen-Flash: Qwen3.6-Flash series, Qwen3.5-Flash series; Qwen3.6 open-source series (except qwen3.6-27b); Qwen3.5 open-source series\".), so its 'Maximum 10 MCP servers' / SSE-only constraints are out of scope here. Binding limits, in the order they usually bite: (1) the 262,144-token context window shared by tool definitions + prompt + reasoning + output; (2) the empirical ~30-50-tool selection cliff; (3) the serving stack - vLLM/SGLang --max-model-len, --max-num-batched-tokens and KV cache, plus a matching --enable-auto-tool-choice --tool-call-parser qwen3_coder (without it tool calls are emitted as plain text); (4) the agent host - Qwen-Agent mcpServers configs and Qwen Code includeTools/excludeTools and mcp.allowed/mcp.excluded filters with a 10-minute default tool-call timeout, and third-party hosts cap lower (Cursor ~40 tools, Claude Desktop ~100); (5) hosted rate limits if served through Model Studio.",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style `strict` structured-function mode (100-property / 5-level / no-oneOf enforcement) is documented for Qwen. Schemas are passed through as ordinary JSON Schema."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No packaged, model-invokable 'skill' format analogous to Anthropic Agent Skills. The vendor's agent stack is Qwen-Agent (pip install -U \"qwen-agent[gui,rag,code_interpreter,mcp]\"), which exposes a function_list of tools/plugins and mcpServers configs, and Qwen Code, which loads MCP servers from settings.json. Both are tool wiring, not a progressive-disclosure skill bundle: everything configured is injected up front."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No skill system, so no loading model. Tools/plugins registered in Qwen-Agent's function_list or Qwen Code's mcpServers are always-on for the session and injected in full at request time."
+        },
+        "skills_context_cost_notes": "No skills system to cost. The context cost that matters is the tool surface: MCP tool schemas are translated to OpenAI-shaped function definitions, rendered into the chat template's <tools> block, and counted as input tokens on every request in the conversation - they are re-sent each turn, so the footprint is multiplied by turn count unless a prefix cache absorbs it.",
+        "system_prompt_overhead_notes": "System prompt is billed as input tokens. Tool definitions are folded into the system message for cache-prefix purposes (Model Studio context-cache reference), so system prompt + tool JSON form one contiguous prefix. No fixed platform-injected overhead is documented for self-hosted deployments.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Scope split, corrected at the 2026-08-19 refresh. (a) Self-host: vLLM's own Qwen recipe serves this generation with --enable-prefix-caching, so a stable system-prompt + tool-definition prefix is reused across turns - this is the value recorded here (tier 2). (b) Hosted Model Studio: the previous entry claimed DashScope context caching applied. It does not for the open-source model ids - the Model Studio context-cache reference lists only the commercial qwen3.7-max/plus, qwen3.6-max-preview/plus/flash and qwen3.5-plus/flash tiers for both explicit (10% of input price) and implicit (20%) caching; qwen3.6-27b, qwen3.6-35b-a3b and qwen3.5-35b-a3b appear in none of those lists. Where caching does apply, tool definitions ride in the cached system-message prefix but 'cannot be cached independently'."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No built-in cross-session memory in the model or in the open-source serving path. Qwen-Agent ships RAG/memory helper modules that an application can wire up, but they are application state injected as ordinary input tokens, not a model feature."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.6,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED with a tier-1 source. Alibaba Cloud Model Studio pricing, 'Text generation - Qwen (open source)' table, Singapore (International): qwen3.6-27b input $0.6 per 1M tokens. The previous value ($0.14) came from a tier-3 aggregator page for a different model (qwen3.6-35b-a3b) and was ~4x low."
+        },
+        "output_per_mtok_usd": {
+          "value": 3.6,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED with a tier-1 source. Model Studio open-source table, Singapore: qwen3.6-27b output $3.6 per 1M tokens for both Non-Thinking and Thinking modes. The previous value ($0.9) came from a tier-3 aggregator page for a different model. Reasoning tokens bill at this rate."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED to null. The previous value ($0.05) came from a tier-3 aggregator. Alibaba's context-cache reference prices explicit cache at '10%' and implicit cache at '20%' of the standard input price, but its supported-model lists cover only the commercial qwen3.7-max/plus, qwen3.6-max-preview/plus/flash and qwen3.5-plus/flash tiers - qwen3.6-27b appears in neither. No cached-input price is documented for this id."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED to null. Batch inference is documented at '50% of the real-time inference price' for input and output, but the supported-model list is qwen-max / qwen-plus / qwen-flash / qwen-turbo (Singapore) and the commercial qwen3.7/3.6/3.5 tiers (Beijing); no open-source Qwen id, including qwen3.6-27b, is listed. The previous entry asserted the 50% discount applied here."
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio bills per input and output token; Apache-2.0 weights are otherwise compute cost only."
+        },
+        "multimodal_billing_notes": "Image and video input bills as input tokens at a resolution-dependent count. Alibaba's vision reference publishes no pixels-per-token constant, no per-image token cap and no per-request image cap - only that 'the total token count for all images and text must not exceed the model's maximum input' and that the number of images is 'determined by the model's total token limit'. Count with the model's AutoProcessor.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio's open-source table prices output identically for 'Non-Thinking' and 'Thinking' modes ($3.6/M for qwen3.6-27b), i.e. the <think> trace is charged as ordinary output rather than at a separate rate."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the repository is live and the weights remain published."
+        },
+        "license": {
+          "value": "Apache-2.0",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card license: apache-2.0 - commercial use and redistribution permitted. (The Qwen3.8 generation is licence-split: Qwen3.8-27B stays Apache-2.0 but Qwen3.8-2.4T-A95B ships a custom qwen3.8-max licence.)"
+        },
+        "param_variants": {
+          "value": "27B dense (single size in Qwen3.6 dense lineup as of 2026-06-21)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card: Qwen3.6-27B is the dense 27B member; the Qwen3.6 open-weight release also includes the MoE Qwen3.6-35B-A3B and FP8 variants of both. This entry covers the 27B dense model. Alibaba's Model Studio open-source pricing table lists exactly two Qwen3.6 ids (qwen3.6-27b, qwen3.6-35b-a3b), consistent with that."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings = 262144 (rope_type 'default', rope_theta 10000000)."
+        },
+        "max_context_documented": {
+          "value": 1010000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: extensible to 1,010,000 tokens with YaRN (rope_type yarn, factor 4.0). Requires an explicit config/CLI override plus VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 and --max-model-len 1010000."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (>= 0.19.0), SGLang (>= 0.5.10), HuggingFace Transformers, KTransformers, Ollama (quantized GGUF)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-27B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card deployment section; vLLM's Qwen3.5/3.6 recipe serves it as 'vllm serve Qwen/Qwen3.6-27B --port 8000 --tensor-parallel-size 8 --max-model-len 262144 --reasoning-parser qwen3', and SGLang as 'python -m sglang.launch_server --model-path Qwen/Qwen3.6-27B --context-length 262144 --reasoning-parser qwen3'."
+        },
+        "framework_tool_calling_notes": "vLLM/SGLang: add --enable-auto-tool-choice --tool-call-parser qwen3_coder for structured tool output and --reasoning-parser qwen3 to separate the <think> block; without the tool-call parser the tool XML is returned as plain text. Both expose an OpenAI-compatible /v1/chat/completions endpoint, so the tools array is the OpenAI function shape. Qwen-Agent (pip qwen-agent[mcp]) supplies MCP by translating mcpServers configs to Qwen function definitions; Qwen Code loads MCP servers from settings.json over stdio/HTTP/SSE. Thinking mode is on by default and its tokens count against output before any tool call is emitted."
+      },
+      "notes": "Qwen3.6-27B is the dense flagship of the Qwen3.6 generation (April 2026). SUPERSEDED as the current dense open-weight lead by Qwen3.8-27B (August 2026) but still GA: it remains published on HuggingFace under Apache-2.0, is priced on the Alibaba Cloud Model Studio open-source table ($0.6/$3.6 per M), and does not appear on Model Studio's model-decommissioning list. Card benchmarks: SWE-bench Verified 77.2, SWE-bench Pro 53.5, GPQA Diamond 87.8, AIME 2026 94.1. MCP caveat specific to this id: it is the one model explicitly EXCLUDED from Model Studio's hosted Responses-API MCP path ('Qwen3.6 open-source series (except qwen3.6-27b)'), so hosted MCP attachment is unavailable and MCP use means Qwen-Agent or Qwen Code against an OpenAI-compatible endpoint.",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.6-27B",
+        "https://huggingface.co/Qwen/Qwen3.6-27B/raw/main/config.json",
+        "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://www.alibabacloud.com/help/en/model-studio/mcp",
+        "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+        "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+        "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+        "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+        "https://www.alibabacloud.com/help/en/model-studio/vision",
+        "https://www.alibabacloud.com/help/en/model-studio/model-depreciation",
+        "https://www.alibabacloud.com/help/en/model-studio/newly-released-models",
+        "https://github.com/QwenLM/Qwen-Agent",
+        "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+        "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+        "https://arxiv.org/abs/2606.17519",
+        "https://recipes.vllm.ai/Qwen/Qwen3.6-27B",
+        "https://qwenlm.github.io/Qwen-Agent/en/guide/core_moduls/mcp/"
+      ]
+    },
+    {
+      "id": "Qwen/Qwen3.6-35B-A3B",
+      "display_name": "Qwen3.6-35B-A3B",
+      "family": "Qwen3.6 MoE",
+      "release_date": {
+        "value": "2026-04",
+        "confidence": "medium",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "Precision reduced and source upgraded at the 2026-08-19 refresh. The previous value (2026-04-27) cited a tier-3 pricing aggregator that was not re-opened in this pass. The only source actually opened that dates this release is the model card citation: month = April, year = 2026."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "No knowledge-cutoff date is published for this series; the model card does not state one. Left null."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card: 262,144 tokens natively, extensible to 1,010,000 with YaRN. config.json confirms max_position_embeddings = 262144. Shared input+output pool."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Single position budget (max_position_embeddings 262144) shared by prompt, tool definitions, <think> trace and answer."
+        },
+        "max_input_tokens": {
+          "value": 180224,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Derived: 262,144 native window minus the card's 81,920-token complex-problem output allocation. No vendor max-input cap is published; the serving stack sets it (--max-model-len)."
+        },
+        "max_output_tokens_default": {
+          "value": 32768,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card, Best Practices: 'We recommend using an output length of 32,768 tokens for most queries.'"
+        },
+        "max_output_tokens_max": {
+          "value": 81920,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: 'For benchmarking on highly complex problems, such as those found in math and programming competitions, we suggest setting the max output length to 81,920 tokens.' A recommendation, not an API-enforced cap."
+        },
+        "extended_context": {
+          "value": 1010000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: extensible up to 1,010,000 tokens via YaRN (rope_type yarn, factor 4.0). config.json ships rope_type 'default', so YaRN is an explicit operator override (VLLM_ALLOW_LONG_MAX_MODEL_LEN=1, --max-model-len 1010000). Static YaRN can degrade short-context quality."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model emits <think>...</think> before the answer (--reasoning-parser qwen3 splits it out); reasoning tokens are generated tokens that consume the output budget and bill at the output rate."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3.5-generation byte-level BPE (tokenizer_class Qwen2Tokenizer), vocab_size 248,320",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED at the 2026-08-19 refresh. The previous entry said '~151,643 tokens' - that figure comes from the Qwen1-era tokenization note (github.com/QwenLM/Qwen), which describes Qwen-7B ('151,643 regular tokens and 208 control tokens'), a different and much smaller vocabulary. The Qwen3.5/3.6/3.8 generation ships a new tokenizer: config.json reports vocab_size 248320, tokenizer_config.json reports tokenizer_class Qwen2Tokenizer with 33 added special tokens at ids 248,044-248,076 (<|endoftext|>, <|im_start|>/<|im_end|>, vision/video/audio pads, <think>/</think>). The model cards state 'Token Embedding: 248,320 (Padded)'. Still tiktoken-style byte-level BPE."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer.json / tokenizer_config.json are published in the public HuggingFace repo under the model's license; counts are locally reproducible."
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer.from_pretrained('Qwen/Qwen3.6-35B-A3B')",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer_config.json: tokenizer_class = Qwen2Tokenizer, model_max_length = 262144. Loadable with transformers AutoTokenizer; the chat template (which is what actually renders tool definitions into the prompt) ships in the same file, so apply_chat_template(tools=...) is the accurate way to count an MCP tool surface."
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.6-35B-A3B'); len(tok.apply_chat_template(messages, tools=tools, tokenize=True))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Use apply_chat_template with the tools argument rather than encoding the raw JSON: the template wraps tool definitions in a <tools> block plus format instructions, so raw-JSON counts understate the real footprint."
+        },
+        "image_token_rule": {
+          "value": "Variable: the vision encoder patches an image into a resolution-dependent number of visual tokens; no closed-form per-image formula is published",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/vision",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Alibaba's vision reference states only that 'the total token count for all images and text must not exceed the model's maximum input' and that the number of images per request is 'determined by the model's total token limit' - it publishes no pixels-per-token constant or per-image cap. The model card gives no formula either. Count multimodal input with the model's AutoProcessor rather than estimating."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model card scopes this model to text, image and video input; audio is handled by the separate Qwen3-Omni / Qwen3.5-Omni line. Note that the shared tokenizer nevertheless reserves <|audio_start|>, <|audio_end|> and <|audio_pad|> ids in the 248,044-248,076 special-token block (it is one vocabulary across the generation), so the presence of those ids is not evidence of audio support in this checkpoint."
+        },
+        "chars_per_token_estimate": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Set to null at the 2026-08-19 refresh. The previous value (3.5) was attributed to the Qwen1 tokenization note, which documents a 151,643-token vocabulary - a different tokenizer from the 248,320-vocab one this generation ships, so the ratio does not carry over. No vendor-published characters-per-token figure exists for the Qwen3.5/3.6/3.8 tokenizer; measure with the published AutoTokenizer instead of estimating."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: the Model Studio function-calling reference lists the Qwen3.6 / Qwen3.5 / Qwen3 open-source series among the models that support function calling, using the OpenAI-shaped `tools` array. Independently confirmed at the weights level: the model's tokenizer_config.json chat template renders a <tools> block and requires 'Function calls MUST follow the specified format' inside <tool_call></tool_call> tags."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "MCP is supported both through the vendor's agent stack and, new since the 2026-06-21 pass, as a first-class hosted-API feature. Tier-1: the Model Studio MCP reference lets you 'add MCP server information in the tools parameter when using the Responses API', with 'Maximum 10 MCP servers', SSE transport, and 'Available through the Responses API only'; its supported list explicitly includes the 'Qwen3.6 open-source series (except qwen3.6-27b)' and the 'Qwen3.5 open-source series'. Self-hosted, the same surface is reached through Qwen-Agent (mcpServers in function_list) or Qwen Code (settings.json mcpServers over stdio/HTTP/SSE). MCP tool schemas are converted to OpenAI-shaped function definitions and injected as input tokens."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: Model Studio documents a `parallel_tool_calls` request parameter - 'set the parallel_tool_calls request parameter to true' - so all tool calls are returned simultaneously. The Qwen function-calling guide adds that 'the current default tool calling template natively supports Parallel Function Calls'."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric cap on the number of tools is documented for Qwen at the model-API layer: the Model Studio function-calling reference describes the OpenAI-style `tools` array without stating a maximum, and self-hosted vLLM/SGLang enforce no tool count. Scope note: the limits that DO bind are (1) an AGGREGATE cap of 'Maximum 10 MCP servers' per request on the Model Studio Responses API MCP path, (2) the empirical ~30-50-tool selection cliff (see max_tools_practical), and (3) the 262,144-token context window shared by tool definitions, prompt and output. There is no documented per-MCP-server tool cap."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": "https://arxiv.org/abs/2606.17519",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "Empirical, not spec. No Qwen-specific published degradation point exists. Anchors: 'Scaling Enterprise Agent Routing' (arXiv 2606.17519, 2026-06-16) measured routing F1 dropping 16-23 percentage points across three frontier models as a catalog scaled from 10 agents to 110 agents / 584 tools; MCP-Atlas (arXiv 2602.00933) exposes only 10-25 tools per task by design. 40 is a conservative mid-point of the community ~30-50 range for a capable model. Aggregate scope (all connected servers + built-ins combined)."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: tools are supplied as {\"type\":\"function\",\"function\":{\"name\",\"description\",\"parameters\"}} with JSON-Schema parameters, over the OpenAI-compatible Chat Completions endpoint that both Model Studio and self-hosted vLLM/SGLang expose. The Qwen function-calling guide notes the chat template 'has already included support for the Hermes-style tool use'; vLLM ships both `hermes` and `qwen3_coder` parsers, and the Qwen recipes use --tool-call-parser qwen3_coder for this generation."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1 confirmation: the Model Studio context-cache reference states that 'for function calling, if a request includes the `tools` parameter, the tool definition is included in the system message for cache calculation' and that 'tool definitions cannot be cached independently'. Tool JSON is therefore serialized into the prompt and billed as input tokens; on a self-hosted deployment it is rendered into the chat template and consumes context."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No runtime tool-search / deferred-definition-loading mechanism (the Claude ENABLE_TOOL_SEARCH / defer_loading equivalent) is documented for Qwen. The nearest facility is static filtering in Qwen Code - per-server includeTools/excludeTools allow/deny lists and global mcp.allowed / mcp.excluded globs - which shrinks the catalog before the request, not lazily during it. Qwen Code does discover servers progressively: 'sending a prompt before MCP finishes simply means the model sees the tools that are ready at that moment'."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No character-count or character-class cap on tool names is published. Model Studio only recommends: 'The name field is a custom tool function name. We recommend using the same name as the function, such as get_current_weather or get_current_time.' Long client-namespaced MCP names therefore cost tokens rather than being rejected."
+        },
+        "tool_schema_limits_notes": "No documented JSON-Schema depth, property-count or keyword restrictions for Qwen tool definitions. The Model Studio function-calling reference only recommends that the `name` field match the implementing function (e.g. get_current_weather); no length or character-class rule is published. The practical constraint is the input token budget. The chat template renders tools into a <tools> block and requires calls inside <tool_call></tool_call> tags. The card reports MCPMark 37.0, measured against a standard GitHub MCP tool schema, so ordinary MCP schemas need no special shaping. vLLM/SGLang need --enable-auto-tool-choice --tool-call-parser qwen3_coder plus --reasoning-parser qwen3.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap on description length; the description is serialized into the <tools> block and counts against the shared 262,144-token window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No maximum request body size in bytes/MB is documented. The Model Studio rate-limit reference governs throughput instead (600 RPM and 1,000,000-5,000,000 TPM per open-source model id); for self-hosting the bound is the serving config (--max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No documented ceiling on a single tool result. A result is ordinary conversation content, so it is bounded by the 262,144-token window (or --max-model-len on a self-hosted server) shared with the tool definitions and the reasoning trace."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "`parallel_tool_calls` is a boolean switch; no numeric ceiling on how many calls may be emitted in one turn is published. The practical bound is the remaining output budget."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cap on tool-call/result cycles per turn. Qwen Code (the vendor's own CLI host) documents a per-tool-call `timeout` defaulting to 10 minutes and a `discoveryTimeoutMs` handshake timeout (30s stdio / 5s remote) but no cycle cap; agentic loops are bounded by the host and by context."
+        },
+        "max_connected_servers": {
+          "value": 10,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1 and NEW since the 2026-06-21 pass: the Model Studio MCP reference states 'Maximum 10 MCP servers.' Scope: AGGREGATE per request, enforced at the hosted-API layer on the Responses API path ('Available through the Responses API only'; 'Supports MCP servers using the SSE protocol'). It bounds the number of servers, not the number of tools. Self-hosted deployments and the Qwen-Agent / Qwen Code hosts are outside its scope and publish no equivalent server-count constraint of their own."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://recipes.vllm.ai/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19 from a vLLM recipe page named for Qwen3.5 to this model's own vLLM recipe. Tier 4: a serving-framework doc, not a vendor spec. It documents serving this model at '--max-model-len 262144' with '--enable-auto-tool-choice' and '--tool-call-parser qwen3_coder' and documents no numeric ceiling on the number of tools. No aggregate tool-count cap is published at the model layer; the effective aggregate ceiling is derived - (262,144 - reasoning and answer headroom) / average tool-definition tokens - and is set by the operator's --max-model-len. Host layers cap lower in practice (Cursor ~40 tools, Claude Desktop ~100), and the hosted Model Studio Responses API - which does cover this id - caps connected MCP servers at 10."
+        },
+        "other_limits_notes": "Open-weight: the model API layer publishes no tool count/size cap. Binding limits, in the order they usually bite: (1) hosted Model Studio Responses API - 'Maximum 10 MCP servers' per request, SSE transport only, MCP available through the Responses API only; (2) hosted rate limits - 600 RPM and 1,000,000-5,000,000 TPM per open-source model id (Singapore/Beijing); (3) the 262,144-token context window shared by tool definitions + prompt + reasoning + output; (4) the serving stack - vLLM/SGLang --max-model-len, --max-num-batched-tokens and KV cache, plus a matching --tool-call-parser qwen3_coder (without it tool calls are emitted as plain text); (5) the agent host - Qwen Code applies includeTools/excludeTools and mcp.allowed/mcp.excluded filters and a 10-minute default tool-call timeout, and third-party hosts cap lower (Cursor ~40 tools, Claude Desktop ~100).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style `strict` structured-function mode (100-property / 5-level / no-oneOf enforcement) is documented for Qwen. Schemas are passed through as ordinary JSON Schema."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No packaged, model-invokable 'skill' format analogous to Anthropic Agent Skills. The vendor's agent stack is Qwen-Agent (pip install -U \"qwen-agent[gui,rag,code_interpreter,mcp]\"), which exposes a function_list of tools/plugins and mcpServers configs, and Qwen Code, which loads MCP servers from settings.json. Both are tool wiring, not a progressive-disclosure skill bundle: everything configured is injected up front."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No skill system, so no loading model. Tools/plugins registered in Qwen-Agent's function_list or Qwen Code's mcpServers are always-on for the session and injected in full at request time."
+        },
+        "skills_context_cost_notes": "No skills system to cost. The context cost that matters is the tool surface: MCP tool schemas are translated to OpenAI-shaped function definitions, rendered into the chat template's <tools> block, and counted as input tokens on every request in the conversation - they are re-sent each turn, so the footprint is multiplied by turn count unless a prefix cache absorbs it.",
+        "system_prompt_overhead_notes": "System prompt is billed as input tokens. Tool definitions are folded into the system message for cache-prefix purposes (Model Studio context-cache reference), so system prompt + tool JSON form one contiguous prefix. No fixed platform-injected overhead is documented for self-hosted deployments.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Scope split, corrected at the 2026-08-19 refresh. (a) Self-host: vLLM's own Qwen recipe serves this generation with --enable-prefix-caching, so a stable system-prompt + tool-definition prefix is reused across turns - this is the value recorded here (tier 2). (b) Hosted Model Studio: the previous entry claimed DashScope context caching applied. It does not for the open-source model ids - the Model Studio context-cache reference lists only the commercial qwen3.7-max/plus, qwen3.6-max-preview/plus/flash and qwen3.5-plus/flash tiers for both explicit (10% of input price) and implicit (20%) caching; qwen3.6-27b, qwen3.6-35b-a3b and qwen3.5-35b-a3b appear in none of those lists. Where caching does apply, tool definitions ride in the cached system-message prefix but 'cannot be cached independently'."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No built-in cross-session memory in the model or in the open-source serving path. Qwen-Agent ships RAG/memory helper modules that an application can wire up, but they are application state injected as ordinary input tokens, not a model feature."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.375,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED with a tier-1 source. Alibaba Cloud Model Studio pricing, 'Text generation - Qwen (open source)' table, Singapore (International): qwen3.6-35b-a3b input $0.375 per 1M tokens. The previous value came from a tier-3 aggregator."
+        },
+        "output_per_mtok_usd": {
+          "value": 2.25,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED with a tier-1 source. Model Studio open-source table, Singapore: qwen3.6-35b-a3b output $2.25 per 1M tokens, identical for Non-Thinking and Thinking modes. The previous value came from a tier-3 aggregator."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED to null. Alibaba prices explicit context cache at '10%' and implicit at '20%' of the standard input price, but the supported-model lists cover only the commercial qwen3.7-max/plus, qwen3.6-max-preview/plus/flash and qwen3.5-plus/flash tiers - qwen3.6-35b-a3b is in neither list, so no cached-input price is documented for it."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED to null. Batch inference is '50% of the real-time inference price' for input and output, but the supported-model list is qwen-max / qwen-plus / qwen-flash / qwen-turbo (Singapore) and the commercial qwen3.7/3.6/3.5 tiers (Beijing); no open-source Qwen id, including qwen3.6-35b-a3b, appears."
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio bills per input and output token; Apache-2.0 weights are otherwise compute cost only."
+        },
+        "multimodal_billing_notes": "Image and video input bills as input tokens at a resolution-dependent count. Alibaba's vision reference publishes no pixels-per-token constant, no per-image token cap and no per-request image cap - only that 'the total token count for all images and text must not exceed the model's maximum input'. Count with the model's AutoProcessor.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio's open-source table prices output identically for 'Non-Thinking' and 'Thinking' modes ($2.25/M for qwen3.6-35b-a3b), i.e. the <think> trace is charged as ordinary output."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the repository is live and the weights remain published."
+        },
+        "license": {
+          "value": "Apache-2.0",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card license: apache-2.0 - commercial use and redistribution permitted."
+        },
+        "param_variants": {
+          "value": "35B total / 3B activated MoE (256 experts, 8 activated per token)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card Model Overview. The sibling dense model in the same generation is Qwen3.6-27B."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: default context length 262,144 tokens (max_position_embeddings)."
+        },
+        "max_context_documented": {
+          "value": 1010000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "YaRN RoPE scaling to 1,010,000 tokens with rope_type yarn, factor 4.0; requires VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 and --max-model-len 1010000 (or SGLang's equivalent override)."
+        },
+        "serving_frameworks": {
+          "value": "vLLM (>= 0.19.0), SGLang (>= 0.5.10), HuggingFace Transformers, Ollama (quantized GGUF)",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card deployment section. vLLM's Qwen3.5/3.6 recipe serves it as 'vllm serve Qwen/Qwen3.6-35B-A3B --tensor-parallel-size 8 --max-model-len 262144 --reasoning-parser qwen3', optionally with --speculative-config '{\"method\": \"mtp\", \"num_speculative_tokens\": 2}'."
+        },
+        "framework_tool_calling_notes": "vLLM/SGLang: --enable-auto-tool-choice --tool-call-parser qwen3_coder for structured tool output plus --reasoning-parser qwen3 to split the <think> block; without the tool-call parser tool XML is returned as plain text. MCP arrives via Qwen-Agent (mcpServers in function_list) or Qwen Code (settings.json mcpServers over stdio/HTTP/SSE), or - uniquely among these entries alongside the Qwen3.5 open-source series - via Alibaba's hosted Responses API with up to 10 MCP servers over SSE."
+      },
+      "notes": "Qwen3.6-35B-A3B is the sparse (35B total / 3B activated) member of the Qwen3.6 generation, April 2026. SUPERSEDED as the open-weight lead by the Qwen3.8 generation (August 2026) but still GA: published on HuggingFace under Apache-2.0, priced on Alibaba's Model Studio open-source table ($0.375/$2.25 per M), and absent from Model Studio's decommissioning list. Card benchmarks: SWE-bench Verified 73.4, GPQA Diamond 86.0, MMLU-Pro 85.2, MCPMark 37.0 - the MCPMark figure is the only direct MCP-competency number Qwen publishes for any model in this file. Unlike its dense sibling qwen3.6-27b, this id IS eligible for Alibaba's hosted Responses-API MCP path (max 10 MCP servers, SSE).",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://www.alibabacloud.com/help/en/model-studio/mcp",
+        "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+        "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+        "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+        "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+        "https://www.alibabacloud.com/help/en/model-studio/vision",
+        "https://www.alibabacloud.com/help/en/model-studio/model-depreciation",
+        "https://github.com/QwenLM/Qwen-Agent",
+        "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+        "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+        "https://arxiv.org/abs/2606.17519",
+        "https://recipes.vllm.ai/Qwen/Qwen3.6-35B-A3B"
+      ]
+    },
+    {
+      "id": "Qwen/Qwen3.5-35B-A3B",
+      "display_name": "Qwen3.5-35B-A3B",
+      "family": "Qwen3.5 MoE",
+      "release_date": {
+        "value": "2026-02-16",
+        "confidence": "high",
+        "source_url": "https://github.com/QwenLM/Qwen-Agent",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "CORRECTED from 2026-02-24. The Qwen-Agent repository's news log states the Qwen3.5 series was open-sourced on 2026-02-16, and Alibaba's newly-released-models page dates Qwen3.5-Plus to 2026-02-16. The model card citation is consistent (month = February, year = 2026). The previous day (2026-02-24) came from a tier-3 aggregator."
+      },
+      "status": "ga",
+      "knowledge_cutoff": {
+        "value": null,
+        "confidence": "low",
+        "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+        "source_tier": 1,
+        "as_of": "2026-08-19",
+        "notes": "No knowledge-cutoff date is published for this series; the model card does not state one. Left null."
+      },
+      "modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "context": {
+        "context_window_tokens": {
+          "value": 262144,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card: 262,144 tokens natively, extensible to 1,010,000 with YaRN. config.json confirms max_position_embeddings = 262144. Shared input+output pool."
+        },
+        "input_output_shared": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Single position budget (max_position_embeddings 262144) shared by prompt, tool definitions, <think> trace and answer."
+        },
+        "max_input_tokens": {
+          "value": 180224,
+          "unit": "tokens",
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "derived": true,
+          "notes": "Derived: 262,144 native window minus the card's 81,920-token complex-problem output allocation. No vendor max-input cap is published; the serving stack sets it (--max-model-len)."
+        },
+        "max_output_tokens_default": {
+          "value": 32768,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card, Best Practices: 'We recommend using an output length of 32,768 tokens for most queries.'"
+        },
+        "max_output_tokens_max": {
+          "value": 81920,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: 'For benchmarking on highly complex problems, such as those found in math and programming competitions, we suggest setting the max output length to 81,920 tokens.' A recommendation, not an API-enforced cap."
+        },
+        "extended_context": {
+          "value": 1010000,
+          "unit": "tokens",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: extensible up to 1,010,000 tokens via YaRN (rope_type yarn, factor 4.0). config.json ships rope_type 'default', so YaRN is an explicit operator override (VLLM_ALLOW_LONG_MAX_MODEL_LEN=1, --max-model-len 1010000). Static YaRN can degrade short-context quality."
+        },
+        "reasoning_tokens_count_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model emits <think>...</think> before the answer (--reasoning-parser qwen3 splits it out); reasoning tokens are generated tokens that consume the output budget and bill at the output rate."
+        }
+      },
+      "tokenization": {
+        "tokenizer_family": {
+          "value": "Qwen3.5-generation byte-level BPE (tokenizer_class Qwen2Tokenizer), vocab_size 248,320",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED at the 2026-08-19 refresh. The previous entry said '~151,643 tokens' - that figure comes from the Qwen1-era tokenization note (github.com/QwenLM/Qwen), which describes Qwen-7B ('151,643 regular tokens and 208 control tokens'), a different and much smaller vocabulary. The Qwen3.5/3.6/3.8 generation ships a new tokenizer: config.json reports vocab_size 248320, tokenizer_config.json reports tokenizer_class Qwen2Tokenizer with 33 added special tokens at ids 248,044-248,076 (<|endoftext|>, <|im_start|>/<|im_end|>, vision/video/audio pads, <think>/</think>). The model cards state 'Token Embedding: 248,320 (Padded)'. Still tiktoken-style byte-level BPE."
+        },
+        "tokenizer_public": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer.json / tokenizer_config.json are published in the public HuggingFace repo under the model's license; counts are locally reproducible."
+        },
+        "tokenizer_access": {
+          "value": "HF AutoTokenizer.from_pretrained('Qwen/Qwen3.5-35B-A3B')",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "tokenizer_config.json: tokenizer_class = Qwen2Tokenizer, model_max_length = 262144. Loadable with transformers AutoTokenizer; the chat template (which is what actually renders tool definitions into the prompt) ships in the same file, so apply_chat_template(tools=...) is the accurate way to count an MCP tool surface."
+        },
+        "count_tokens_method": {
+          "value": "from transformers import AutoTokenizer; tok = AutoTokenizer.from_pretrained('Qwen/Qwen3.5-35B-A3B'); len(tok.apply_chat_template(messages, tools=tools, tokenize=True))",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Use apply_chat_template with the tools argument rather than encoding the raw JSON: the template wraps tool definitions in a <tools> block plus format instructions, so raw-JSON counts understate the real footprint."
+        },
+        "image_token_rule": {
+          "value": "Variable: the vision encoder patches an image into a resolution-dependent number of visual tokens; no closed-form per-image formula is published",
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/vision",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Alibaba's vision reference states only that 'the total token count for all images and text must not exceed the model's maximum input' and that the number of images per request is 'determined by the model's total token limit' - it publishes no pixels-per-token constant or per-image cap. The model card gives no formula either. Count multimodal input with the model's AutoProcessor rather than estimating."
+        },
+        "audio_token_rule": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "The model card scopes this model to text, image and video input; audio is handled by the separate Qwen3-Omni / Qwen3.5-Omni line. Note that the shared tokenizer nevertheless reserves <|audio_start|>, <|audio_end|> and <|audio_pad|> ids in the 248,044-248,076 special-token block (it is one vocabulary across the generation), so the presence of those ids is not evidence of audio support in this checkpoint."
+        },
+        "chars_per_token_estimate": {
+          "value": null,
+          "confidence": "low",
+          "source_url": "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Set to null at the 2026-08-19 refresh. The previous value (3.5) was attributed to the Qwen1 tokenization note, which documents a 151,643-token vocabulary - a different tokenizer from the 248,320-vocab one this generation ships, so the ratio does not carry over. No vendor-published characters-per-token figure exists for the Qwen3.5/3.6/3.8 tokenizer; measure with the published AutoTokenizer instead of estimating."
+        }
+      },
+      "tools_mcp": {
+        "function_calling": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: the Model Studio function-calling reference lists the Qwen3.6 / Qwen3.5 / Qwen3 open-source series among the models that support function calling, using the OpenAI-shaped `tools` array. Independently confirmed at the weights level: the model's tokenizer_config.json chat template renders a <tools> block and requires 'Function calls MUST follow the specified format' inside <tool_call></tool_call> tags."
+        },
+        "native_mcp": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "MCP is supported both through the vendor's agent stack and, new since the 2026-06-21 pass, as a first-class hosted-API feature. Tier-1: the Model Studio MCP reference lets you 'add MCP server information in the tools parameter when using the Responses API', with 'Maximum 10 MCP servers', SSE transport, and 'Available through the Responses API only'; its supported list explicitly includes the 'Qwen3.6 open-source series (except qwen3.6-27b)' and the 'Qwen3.5 open-source series'. Self-hosted, the same surface is reached through Qwen-Agent (mcpServers in function_list) or Qwen Code (settings.json mcpServers over stdio/HTTP/SSE). MCP tool schemas are converted to OpenAI-shaped function definitions and injected as input tokens."
+        },
+        "parallel_tool_calls": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: Model Studio documents a `parallel_tool_calls` request parameter - 'set the parallel_tool_calls request parameter to true' - so all tool calls are returned simultaneously. The Qwen function-calling guide adds that 'the current default tool calling template natively supports Parallel Function Calls'."
+        },
+        "max_tools_hard": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No per-request numeric cap on the number of tools is documented for Qwen at the model-API layer: the Model Studio function-calling reference describes the OpenAI-style `tools` array without stating a maximum, and self-hosted vLLM/SGLang enforce no tool count. Scope note: the limits that DO bind are (1) an AGGREGATE cap of 'Maximum 10 MCP servers' per request on the Model Studio Responses API MCP path, (2) the empirical ~30-50-tool selection cliff (see max_tools_practical), and (3) the 262,144-token context window shared by tool definitions, prompt and output. There is no documented per-MCP-server tool cap."
+        },
+        "max_tools_practical": {
+          "value": 40,
+          "confidence": "low",
+          "source_url": "https://arxiv.org/abs/2606.17519",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "Empirical, not spec. No Qwen-specific published degradation point exists. Anchors: 'Scaling Enterprise Agent Routing' (arXiv 2606.17519, 2026-06-16) measured routing F1 dropping 16-23 percentage points across three frontier models as a catalog scaled from 10 agents to 110 agents / 584 tools; MCP-Atlas (arXiv 2602.00933) exposes only 10-25 tools per task by design. 40 is a conservative mid-point of the community ~30-50 range for a capable model. Aggregate scope (all connected servers + built-ins combined)."
+        },
+        "tool_definition_shape": {
+          "value": "openai_function",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1: tools are supplied as {\"type\":\"function\",\"function\":{\"name\",\"description\",\"parameters\"}} with JSON-Schema parameters, over the OpenAI-compatible Chat Completions endpoint that both Model Studio and self-hosted vLLM/SGLang expose. The Qwen function-calling guide notes the chat template 'has already included support for the Hermes-style tool use'; vLLM ships both `hermes` and `qwen3_coder` parsers, and the Qwen recipes use --tool-call-parser qwen3_coder for this generation."
+        },
+        "tool_defs_count_as_input": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1 confirmation: the Model Studio context-cache reference states that 'for function calling, if a request includes the `tools` parameter, the tool definition is included in the system message for cache calculation' and that 'tool definitions cannot be cached independently'. Tool JSON is therefore serialized into the prompt and billed as input tokens; on a self-hosted deployment it is rendered into the chat template and consumes context."
+        },
+        "tool_search_deferral": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No runtime tool-search / deferred-definition-loading mechanism (the Claude ENABLE_TOOL_SEARCH / defer_loading equivalent) is documented for Qwen. The nearest facility is static filtering in Qwen Code - per-server includeTools/excludeTools allow/deny lists and global mcp.allowed / mcp.excluded globs - which shrinks the catalog before the request, not lazily during it. Qwen Code does discover servers progressively: 'sending a prompt before MCP finishes simply means the model sees the tools that are ready at that moment'."
+        },
+        "max_tool_name_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No character-count or character-class cap on tool names is published. Model Studio only recommends: 'The name field is a custom tool function name. We recommend using the same name as the function, such as get_current_weather or get_current_time.' Long client-namespaced MCP names therefore cost tokens rather than being rejected."
+        },
+        "tool_schema_limits_notes": "No documented JSON-Schema depth, property-count or keyword restrictions for Qwen tool definitions. The Model Studio function-calling reference only recommends that the `name` field match the implementing function (e.g. get_current_weather); no length or character-class rule is published. The practical constraint is the input token budget. The chat template renders tools into a <tools> block and requires calls inside <tool_call></tool_call> tags. vLLM's Qwen3.5 recipe enables tool calling on the multimodal serving path with --enable-auto-tool-choice --tool-call-parser qwen3_coder and runs with --enable-prefix-caching, which is the practical mitigation for a large static tool-definition prefix.",
+        "max_tool_description_len": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No vendor cap on description length; the description is serialized into the <tools> block and counts against the shared 262,144-token window."
+        },
+        "max_request_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No maximum request body size in bytes/MB is documented. The Model Studio rate-limit reference governs throughput instead (600 RPM and 1,000,000-5,000,000 TPM per open-source model id); for self-hosting the bound is the serving config (--max-model-len / --max-num-batched-tokens) and GPU memory."
+        },
+        "max_tool_result_size": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "No documented ceiling on a single tool result. A result is ordinary conversation content, so it is bounded by the 262,144-token window (or --max-model-len on a self-hosted server) shared with the tool definitions and the reasoning trace."
+        },
+        "max_parallel_tool_calls_count": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "`parallel_tool_calls` is a boolean switch; no numeric ceiling on how many calls may be emitted in one turn is published. The practical bound is the remaining output budget."
+        },
+        "tool_use_per_turn_limit": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No model-level cap on tool-call/result cycles per turn. Qwen Code (the vendor's own CLI host) documents a per-tool-call `timeout` defaulting to 10 minutes and a `discoveryTimeoutMs` handshake timeout (30s stdio / 5s remote) but no cycle cap; agentic loops are bounded by the host and by context."
+        },
+        "max_connected_servers": {
+          "value": 10,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/mcp",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Tier-1 and NEW since the 2026-06-21 pass: the Model Studio MCP reference states 'Maximum 10 MCP servers.' Scope: AGGREGATE per request, enforced at the hosted-API layer on the Responses API path ('Available through the Responses API only'; 'Supports MCP servers using the SSE protocol'). It bounds the number of servers, not the number of tools. Self-hosted deployments and the Qwen-Agent / Qwen Code hosts are outside its scope and publish no equivalent server-count constraint of their own."
+        },
+        "max_total_tools": {
+          "value": null,
+          "confidence": "medium",
+          "source_url": "https://recipes.vllm.ai/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 4,
+          "as_of": "2026-08-19",
+          "notes": "RE-SOURCED 2026-08-19 from a vLLM recipe page named for Qwen3.5 to this model's own vLLM recipe. Tier 4: a serving-framework doc, not a vendor spec. It documents serving this model at '--max-model-len 262144' and documents no numeric ceiling on the number of tools. No aggregate tool-count cap is published at the model layer; the effective aggregate ceiling is derived - (262,144 - reasoning and answer headroom) / average tool-definition tokens - and is set by the operator's --max-model-len. Host layers cap lower in practice (Cursor ~40 tools, Claude Desktop ~100), and the hosted Model Studio Responses API - which does cover this id - caps connected MCP servers at 10."
+        },
+        "other_limits_notes": "Open-weight: the model API layer publishes no tool count/size cap. Binding limits, in the order they usually bite: (1) hosted Model Studio Responses API - 'Maximum 10 MCP servers' per request, SSE transport only, MCP available through the Responses API only; (2) hosted rate limits - 600 RPM and 1,000,000-5,000,000 TPM per open-source model id (Singapore/Beijing); (3) the 262,144-token context window shared by tool definitions + prompt + reasoning + output; (4) the serving stack - vLLM/SGLang --max-model-len, --max-num-batched-tokens and KV cache, plus a matching --tool-call-parser qwen3_coder (without it tool calls are emitted as plain text); (5) the agent host - Qwen Code applies includeTools/excludeTools and mcp.allowed/mcp.excluded filters and a 10-minute default tool-call timeout, and third-party hosts cap lower (Cursor ~40 tools, Claude Desktop ~100).",
+        "strict_function_schema": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No OpenAI-style `strict` structured-function mode (100-property / 5-level / no-oneOf enforcement) is documented for Qwen. Schemas are passed through as ordinary JSON Schema."
+        }
+      },
+      "skills_context": {
+        "skills_supported": {
+          "value": false,
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No packaged, model-invokable 'skill' format analogous to Anthropic Agent Skills. The vendor's agent stack is Qwen-Agent (pip install -U \"qwen-agent[gui,rag,code_interpreter,mcp]\"), which exposes a function_list of tools/plugins and mcpServers configs, and Qwen Code, which loads MCP servers from settings.json. Both are tool wiring, not a progressive-disclosure skill bundle: everything configured is injected up front."
+        },
+        "skills_loading_model": {
+          "value": "n/a",
+          "confidence": "high",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No skill system, so no loading model. Tools/plugins registered in Qwen-Agent's function_list or Qwen Code's mcpServers are always-on for the session and injected in full at request time."
+        },
+        "skills_context_cost_notes": "No skills system to cost. The context cost that matters is the tool surface: MCP tool schemas are translated to OpenAI-shaped function definitions, rendered into the chat template's <tools> block, and counted as input tokens on every request in the conversation - they are re-sent each turn, so the footprint is multiplied by turn count unless a prefix cache absorbs it.",
+        "system_prompt_overhead_notes": "System prompt is billed as input tokens. Tool definitions are folded into the system message for cache-prefix purposes (Model Studio context-cache reference), so system prompt + tool JSON form one contiguous prefix. No fixed platform-injected overhead is documented for self-hosted deployments.",
+        "prompt_caching": {
+          "value": true,
+          "confidence": "medium",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "Scope split, corrected at the 2026-08-19 refresh. (a) Self-host: vLLM's own Qwen recipe serves this generation with --enable-prefix-caching, so a stable system-prompt + tool-definition prefix is reused across turns - this is the value recorded here (tier 2). (b) Hosted Model Studio: the previous entry claimed DashScope context caching applied. It does not for the open-source model ids - the Model Studio context-cache reference lists only the commercial qwen3.7-max/plus, qwen3.6-max-preview/plus/flash and qwen3.5-plus/flash tiers for both explicit (10% of input price) and implicit (20%) caching; qwen3.6-27b, qwen3.6-35b-a3b and qwen3.5-35b-a3b appear in none of those lists. Where caching does apply, tool definitions ride in the cached system-message prefix but 'cannot be cached independently'."
+        },
+        "memory_feature": {
+          "value": false,
+          "confidence": "medium",
+          "source_url": "https://github.com/QwenLM/Qwen-Agent",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "No built-in cross-session memory in the model or in the open-source serving path. Qwen-Agent ships RAG/memory helper modules that an application can wire up, but they are application state injected as ordinary input tokens, not a model feature."
+        }
+      },
+      "cost": {
+        "input_per_mtok_usd": {
+          "value": 0.25,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED with a tier-1 source. Alibaba Cloud Model Studio pricing, 'Text generation - Qwen (open source)' table, Singapore (International): qwen3.5-35b-a3b input $0.25 per 1M tokens. The previous value came from a tier-3 aggregator."
+        },
+        "output_per_mtok_usd": {
+          "value": 2.0,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED with a tier-1 source. Model Studio open-source table, Singapore: qwen3.5-35b-a3b output $2.0 per 1M tokens, identical for Non-Thinking and Thinking modes. The previous value came from a tier-3 aggregator."
+        },
+        "cached_input_per_mtok_usd": {
+          "value": null,
+          "unit": "USD/1M tokens",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED to null. Alibaba prices explicit context cache at '10%' and implicit at '20%' of the standard input price, but the supported-model lists cover only the commercial qwen3.7-max/plus, qwen3.6-max-preview/plus/flash and qwen3.5-plus/flash tiers - qwen3.5-35b-a3b is in neither list, so no cached-input price is documented for it."
+        },
+        "batch_discount": {
+          "value": null,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "CORRECTED to null. Batch inference is '50% of the real-time inference price' for input and output, but the supported-model list is qwen-max / qwen-plus / qwen-flash / qwen-turbo (Singapore) and the commercial qwen3.7/3.6/3.5 tiers (Beijing); no open-source Qwen id, including qwen3.5-35b-a3b, appears."
+        },
+        "billing_unit": {
+          "value": "tokens (hosted API) or compute (self-host)",
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio bills per input and output token; Apache-2.0 weights are otherwise compute cost only."
+        },
+        "multimodal_billing_notes": "Image and video input bills as input tokens at a resolution-dependent count. Alibaba's vision reference publishes no pixels-per-token constant, no per-image token cap and no per-request image cap - only that 'the total token count for all images and text must not exceed the model's maximum input'. Count with the model's AutoProcessor.",
+        "reasoning_billed_as_output": {
+          "value": true,
+          "confidence": "high",
+          "source_url": "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model Studio's open-source table prices output identically for 'Non-Thinking' and 'Thinking' modes ($2.0/M for qwen3.5-35b-a3b), i.e. the <think> trace is charged as ordinary output."
+        }
+      },
+      "self_host": {
+        "weights_url": {
+          "value": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Re-verified 2026-08-19: the repository is live and the weights remain published."
+        },
+        "license": {
+          "value": "Apache-2.0",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Model card license: apache-2.0 - commercial use and redistribution permitted."
+        },
+        "param_variants": {
+          "value": "35B total / 3B activated MoE (256 experts, 8 activated per token); the Qwen3.5 open-weight line also includes 27B dense, 122B-A10B and 397B-A17B",
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json for this checkpoint: model_type qwen3_5_moe, 256 experts, 8 experts per token, vocab_size 248320, max_position_embeddings 262144. The sibling sizes are visible as separately priced ids on Alibaba's Model Studio open-source pricing table (qwen3.5-27b, qwen3.5-122b-a10b, qwen3.5-397b-a17b)."
+        },
+        "native_context_config": {
+          "value": 262144,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B/raw/main/config.json",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "config.json max_position_embeddings = 262144."
+        },
+        "max_context_documented": {
+          "value": 1010000,
+          "confidence": "high",
+          "source_url": "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+          "source_tier": 1,
+          "as_of": "2026-08-19",
+          "notes": "Card: extensible to 1,010,000 tokens via YaRN scaling; vLLM's Qwen3.5 recipe documents the override (VLLM_ALLOW_LONG_MAX_MODEL_LEN=1, --hf-overrides rope_type yarn factor 4.0, --max-model-len 1010000)."
+        },
+        "serving_frameworks": {
+          "value": "vLLM, SGLang, HuggingFace Transformers, Ollama (quantized GGUF)",
+          "confidence": "high",
+          "source_url": "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+          "source_tier": 2,
+          "as_of": "2026-08-19",
+          "notes": "vLLM ships a maintained Qwen3.5 recipe with text-only (--language-model-only), multimodal-with-tool-calling and latency-optimised variants, all using --reasoning-parser qwen3 and --enable-prefix-caching."
+        },
+        "framework_tool_calling_notes": "vLLM's Qwen3.5 recipe gives the canonical tool-calling command: '--reasoning-parser qwen3 --enable-prefix-caching --enable-auto-tool-choice --tool-call-parser qwen3_coder'. Prefix caching matters here: the tool-definition block sits at the head of every request, so caching it is what keeps a multi-turn MCP session affordable. MCP arrives via Qwen-Agent, Qwen Code, or Alibaba's hosted Responses API (the 'Qwen3.5 open-source series' is on its supported list; max 10 MCP servers, SSE only)."
+      },
+      "notes": "Qwen3.5-35B-A3B is the sparse member of the Qwen3.5 generation, open-sourced 2026-02-16 - the generation that introduced this tokenizer (248,320 vocab) and the 262,144-token native window that Qwen3.6 and Qwen3.8 inherit. TWO GENERATIONS SUPERSEDED (by Qwen3.6, April 2026, and Qwen3.8, August 2026) but still GA: Apache-2.0 weights remain published, the id is still priced on Alibaba's Model Studio open-source table ($0.25/$2.0 per M - the cheapest entry in this file), and it does not appear on Model Studio's decommissioning list (which does schedule a large batch of Qwen3-era ids for retirement on 2026-10-10). Retained here as the cheap, small-footprint baseline for MCP hosting comparisons.",
+      "sources": [
+        "https://huggingface.co/Qwen/Qwen3.5-35B-A3B",
+        "https://huggingface.co/Qwen/Qwen3.5-35B-A3B/raw/main/config.json",
+        "https://docs.vllm.ai/projects/recipes/en/stable/Qwen/Qwen3.5.html",
+        "https://www.alibabacloud.com/help/en/model-studio/model-pricing",
+        "https://www.alibabacloud.com/help/en/model-studio/mcp",
+        "https://www.alibabacloud.com/help/en/model-studio/qwen-function-calling",
+        "https://www.alibabacloud.com/help/en/model-studio/context-cache",
+        "https://www.alibabacloud.com/help/en/model-studio/batch-inference",
+        "https://www.alibabacloud.com/help/en/model-studio/rate-limit",
+        "https://www.alibabacloud.com/help/en/model-studio/model-depreciation",
+        "https://www.alibabacloud.com/help/en/model-studio/newly-released-models",
+        "https://github.com/QwenLM/Qwen-Agent",
+        "https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+        "https://github.com/QwenLM/Qwen/blob/main/tokenization_note.md",
+        "https://arxiv.org/abs/2606.17519",
+        "https://recipes.vllm.ai/Qwen/Qwen3.5-35B-A3B"
+      ]
+    }
+  ]
+}
