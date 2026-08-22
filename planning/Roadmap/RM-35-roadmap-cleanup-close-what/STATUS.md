@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T21:10:00Z"
+timestamp: "2026-08-22T21:30:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -638,6 +638,37 @@ met and — where the box touches code — the gate
 > than one applied late. The env-catalogue requirement (a) names has been relayed to the AM-OB13
 > agent with `env-vars.ts`'s `defaulted` rule spelled out, after the orchestrator verified the file
 > and `diagnostics.test.ts:164` directly rather than forwarding the claim.
+>
+> 🛑 **RM-18 WP 1.1 IS HELD — do NOT dispatch it.** Held 2026-08-22 at the RM-37 session's request:
+> its own WP 1.1 (demo seed, `demo-snapshot save|restore`, "Load demo data") has been building the
+> seeded-demo-content half for an hour, and its WP 4.3 covers illustrations in the first-run empty
+> states. RM-18 1.1 was a live candidate for the next batch here; it is now blocked on that landing.
+> **Re-scope it from what that WP actually closed, not from its description** — the same rule this
+> plan learned when §6 called RM-13 retirable after counting one file.
+>
+> ⚠️ **A DUPLICATE WAS CAUGHT MID-FLIGHT: RM-37 WP 1.4 claims to deliver RM-18 WP 1.2 and 1.3.** Its
+> spec opens by naming both as open, and it named a second design for the same feature (an
+> `apps/api/resources/docs/` build step, `GET /api/docs/*`, its own `scripts/build-docs.mjs`).
+> **Both halves of that claim were already false**: 1.3 shipped 2026-08-22, and 1.2 is this batch's
+> live agent. **Resolved — the RM-18 agent wins the docs route outright**, that session builds none
+> of it, and its 1.4 shrinks to "Report a problem", the `/api/health` filesystem paths, and the
+> pre-flight panel.
+>
+> **Two premises were corrected in the exchange, one on each side, and the second is the transferable
+> one.** Theirs: the guide is **DC-01…DC-25**, not DC-24 (`DC-25-advisor` was created when RM-01
+> retired into it), and `doc.md` is deliberately EXCLUDED from the shipped bundle — it is the
+> delivery record, written for whoever maintains the project, not the operator. Ours-in-their-reading:
+> they located "per-view help links" at `ViewToolbar.tsx`'s ⓘ. **That slot is not a help affordance.**
+> Read directly at `ViewToolbar.tsx:82-83`, `:113`, `:134-143`: `info` is D-TB1 onboarding
+> DESCRIPTION prose, passed per call site, the home `PageHeader`'s retired description moved into
+> (`:34-35`). Routing docs through it would mean editing every view and overloading a documented
+> slot. WP 1.2's design is **one control in the AppShell top-bar `end` slot** over one route→subject
+> table — **zero per-view edits**, which is exactly why it can run beside three other agents in
+> `features/**`.
+>
+> **Why this keeps being the same lesson:** their stale claim and their misread of ours would BOTH
+> have been caught by a `file:line` citation, which is why every spec in this batch opens with one.
+> A stale citation is falsifiable in seconds; a paraphrase survives into a build.
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade
