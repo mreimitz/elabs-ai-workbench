@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T19:25:00Z"
+timestamp: "2026-08-22T19:55:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -128,6 +128,25 @@ carry the pre-`finding_name` bytes to a new path and silently revert 39 lines, w
 red test. **Decision: RM-37 lands first; WP 1.1 rebases onto it.** Re-applying a move onto new content
 is cheap; re-applying a content edit onto a moved file is not. Verified 2026-08-22 that both sides of
 their branch hash identically, so their drift test is green and the field is deliberate work, not drift.
+
+**Agreed order with RM-37: `wp/rm37/0.5` lands → WP 1.1 rebases and relocates → RM-37 WP 2.9
+dispatches against `data-pack/`.** RM-37 WP 2.9 (compatibility thresholds, Phase 2, not yet dispatched)
+edits `scoring.bands` in the catalog; RM-37 has written the live-path question into that WP's own spec
+rather than relying on memory. **`apps/api/src/compatibility/data/*` is never the authoring copy in
+either regime** — `build-cli.ts` writes it verbatim from source.
+
+**That WP 2.9 change is itself evidence for this item's premise.** Its stated reason is that the
+catalog's `scoring.bands` cannot go green at all today — not one cell of the best model can read
+"Within limits". A wrong threshold in shipped reference data currently needs a code edit, the gate, an
+image rebuild and a re-deploy of every install. After RM-38 it is a pack update. Cite it in the DC
+subject (WP 3.3) as a real instance rather than a hypothetical.
+
+**Validation hygiene (three forms of the same trap, all hit in this checkout today):** (1) `git add -A`
+sweeps a peer's uncommitted edit into your commit — stage explicit paths; (2) `git checkout` in the
+shared tree moves the branch *for everyone* — use `git worktree add`; (3) a stray `cd` leaves the shell
+in the shared checkout, so you **read** the wrong branch's tree and believe it. When validating a WP
+branch, every path-sensitive command must name its worktree explicitly (`git -C <worktree>`), never
+rely on the ambient working directory.
 
 `packages/shared/src/index.ts` currently has **three** branches appending one export line each — the
 textbook clean-auto-merge-wrong case. Merge one branch at a time and re-gate between.
