@@ -240,18 +240,42 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(url()).toBe("/skills/sk-1/studio");
   });
 
-  test("the left rail is open with Files·Tools·Settings; the context panel starts COLLAPSED", async () => {
+  test("the left rail is open with Files·Components·Settings; the context panel starts COLLAPSED", async () => {
     renderStudio();
     await waitForStudio();
 
     const rail = screen.getByTestId("studio-left-rail");
+    // RM-30 WP 7.9 paid WP 7.7's recorded debt: the TAB reads "Components", matching the panel it
+    // opens. There is no tab called "Tools" any more.
     expect(within(rail).getByRole("tab", { name: "Files" })).toBeInTheDocument();
-    expect(within(rail).getByRole("tab", { name: "Tools" })).toBeInTheDocument();
+    expect(within(rail).getByRole("tab", { name: "Components" })).toBeInTheDocument();
     expect(within(rail).getByRole("tab", { name: "Settings" })).toBeInTheDocument();
+    expect(within(rail).queryByRole("tab", { name: "Tools" })).toBeNull();
+
+    // The tabs are STACKED, which is what makes the longer label fit at all: measured in Chromium at
+    // 1600×1000 the label needs 105.17px, a three-way horizontal split of this rail leaves ~54px,
+    // and the full-width stack gives 163.05px. jsdom has no layout engine, so the pixels are the
+    // browser's job — what is pinned here is the orientation those pixels depend on, so putting the
+    // strip back in a row has to be a deliberate change and not an accident.
+    expect(within(rail).getByRole("tablist")).toHaveAttribute("aria-orientation", "vertical");
 
     // Never a reserved blank column: the context panel is a slim strip until asked for.
     expect(screen.getByTestId("studio-context-panel-collapsed")).toBeInTheDocument();
     expect(screen.queryByTestId("studio-context-panel")).toBeNull();
+  });
+
+  test("a legacy ?rail=tools link still opens the Components tab", async () => {
+    renderStudio("/skills/sk-1/studio?rail=tools");
+    await waitForStudio();
+    const rail = screen.getByTestId("studio-left-rail");
+    await waitFor(() =>
+      expect(within(rail).getByRole("tab", { name: "Components" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      ),
+    );
+    // And the palette is actually mounted under it, not just the tab selected.
+    expect(await screen.findByRole("heading", { name: "Components" })).toBeInTheDocument();
   });
 
   test("the context panel opens onto the editor's OWN Node details panel, and collapses again", async () => {
@@ -281,8 +305,8 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(screen.queryByRole("heading", { name: "Components" })).toBeNull();
 
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
-    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Components" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Components" }));
 
     const palette = await screen.findByRole("heading", { name: "Components" });
     expect(rail.contains(palette)).toBe(true);
@@ -446,8 +470,8 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     // "Add section" button — creation is the Components palette now, so the dirty state is reached
     // exactly the way an author reaches it: open the palette, press a component's Add.
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
-    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Components" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Components" }));
     fireEvent.click(await screen.findByRole("button", { name: /^Add a Section/ }));
     await screen.findByText("1 unsaved change");
 

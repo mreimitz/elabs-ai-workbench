@@ -3,7 +3,7 @@
 // bookmarks it, pastes it into a message, and refreshes it. So everything that decides WHAT the
 // workbench is showing lives in the query string, never in component state:
 //
-//   /skills/:skillId/studio?file=<path> & rail=<files|tools|settings> & sel=<graph node id>
+//   /skills/:skillId/studio?file=<path> & rail=<files|components|settings> & sel=<graph node id>
 //
 // RM-30 WP 7.9 (D-UX19 #2) DELETED the view-mode axis. There is no "mode" any more: which surface
 // is showing is a consequence of which tab is open, and `?file=` alone says that.
@@ -21,17 +21,34 @@
 /** The left rail's three tabs. RM-30 WP 7.3 put this in the URL so the palette's empty state can
  *  DEEP-LINK the Settings tab ("Bind a server in Settings →") rather than reach across the tree for
  *  a callback — and so an author can share "open this skill on its settings". */
-export type StudioRail = "files" | "tools" | "settings";
+export type StudioRail = "files" | "components" | "settings";
 
-export const STUDIO_RAILS: readonly StudioRail[] = ["files", "tools", "settings"];
+export const STUDIO_RAILS: readonly StudioRail[] = ["files", "components", "settings"];
 
 /** What the left rail opens on when the URL names no tab. */
 export const STUDIO_DEFAULT_RAIL: StudioRail = "files";
+
+/**
+ * Values this param used to carry, mapped onto what they mean now. RM-30 WP 7.7 shipped the panel as
+ * **Components** while its tab (and this param) still read `tools`; WP 7.9 finished the rename, so an
+ * existing shared link must still open the right tab rather than silently falling back to Files.
+ *
+ * READ-ONLY. `writeStudioUrlState` takes a `StudioRail`, so a legacy value is not even spellable on
+ * the write side — the URL an author copies today always carries the current vocabulary.
+ */
+const LEGACY_RAIL_ALIASES: Readonly<Record<string, StudioRail>> = { tools: "components" };
 
 export function isStudioRail(value: string | null | undefined): value is StudioRail {
   return (
     value !== null && value !== undefined && (STUDIO_RAILS as readonly string[]).includes(value)
   );
+}
+
+/** Resolve a raw `?rail=` value — a current name, or a legacy alias. `null` when it is neither. */
+export function resolveStudioRail(value: string | null | undefined): StudioRail | null {
+  if (isStudioRail(value)) return value;
+  if (value === null || value === undefined) return null;
+  return LEGACY_RAIL_ALIASES[value] ?? null;
 }
 
 /** The Studio's complete, URL-carried view state. `file`/`sel` are `null` when the URL omits them —
@@ -56,7 +73,7 @@ export function readStudioUrlState(search: SearchLike): StudioUrlState {
   const file = params.get("file");
   const sel = params.get("sel");
   return {
-    rail: isStudioRail(rail) ? rail : STUDIO_DEFAULT_RAIL,
+    rail: resolveStudioRail(rail) ?? STUDIO_DEFAULT_RAIL,
     file: file !== null && file.length > 0 ? file : null,
     sel: sel !== null && sel.length > 0 ? sel : null,
   };

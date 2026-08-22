@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   isStudioRail,
   readStudioUrlState,
+  resolveStudioRail,
   skillStudioPath,
   STUDIO_DEFAULT_RAIL,
   writeStudioUrlState,
@@ -166,11 +167,51 @@ describe("the rail tab in the URL (WP 7.3)", () => {
     expect(skillStudioPath("sk-1", { rail: "settings" })).toBe("/skills/sk-1/studio?rail=settings");
   });
 
-  test("isStudioRail narrows exactly the three tabs", () => {
+  test("isStudioRail narrows exactly the three CURRENT tabs", () => {
     expect(isStudioRail("files")).toBe(true);
-    expect(isStudioRail("tools")).toBe(true);
+    expect(isStudioRail("components")).toBe(true);
     expect(isStudioRail("settings")).toBe(true);
     expect(isStudioRail("problems")).toBe(false);
+    // The pre-7.9 spelling is not a current value — it is an alias, resolved separately below.
+    expect(isStudioRail("tools")).toBe(false);
     expect(isStudioRail(null)).toBe(false);
+  });
+});
+
+// ── RM-30 WP 7.9 — `rail=tools` → `rail=components`, with the old link still working ──────────────
+// WP 7.7 shipped the panel as "Components" while its tab and this param still said "tools". Renaming
+// the param is the honest half of paying that debt; keeping the old spelling READABLE is the half
+// that stops a link someone already pasted into a chat from silently opening the wrong tab.
+
+describe("the rail rename (WP 7.9)", () => {
+  test("a legacy ?rail=tools still opens the Components tab", () => {
+    expect(readStudioUrlState("?rail=tools").rail).toBe("components");
+    expect(resolveStudioRail("tools")).toBe("components");
+  });
+
+  test("the CURRENT spelling reads as itself", () => {
+    expect(readStudioUrlState("?rail=components").rail).toBe("components");
+  });
+
+  test("the alias is READ-only — a write always emits the current vocabulary", () => {
+    expect(writeStudioUrlState("", { rail: "components" }).get("rail")).toBe("components");
+    // Re-writing any other field over a legacy URL leaves the stale value alone rather than
+    // rewriting a param this call was not asked to change…
+    expect(writeStudioUrlState("?rail=tools", { file: "SKILL.md" }).get("rail")).toBe("tools");
+    // …and it still READS as the Components tab, which is what the author sees.
+    expect(readStudioUrlState(writeStudioUrlState("?rail=tools", { file: "SKILL.md" })).rail).toBe(
+      "components",
+    );
+  });
+
+  test("an unknown value is still not an alias — it degrades to the default", () => {
+    expect(resolveStudioRail("palette")).toBeNull();
+    expect(readStudioUrlState("?rail=palette").rail).toBe(STUDIO_DEFAULT_RAIL);
+  });
+
+  test("skillStudioPath deep-links the Components tab by its current name", () => {
+    expect(skillStudioPath("sk-1", { rail: "components" })).toBe(
+      "/skills/sk-1/studio?rail=components",
+    );
   });
 });

@@ -461,8 +461,8 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
 
     // 2 — the CANVAS layer: add a component from the palette (WP 7.7's one creation path).
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
-    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Components" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Components" }));
     fireEvent.click(await screen.findByRole("button", { name: /^Add a Section/ }));
 
     const cluster = await screen.findByTestId("design-save-cluster");
