@@ -1,0 +1,894 @@
+{
+  "id": "run-turn-cycle",
+  "title": "The turn cycle of a run",
+  "summary": "A prompt starts the run. The agent then loops: decide, call a tool on the shared MCP server, observe the result, append it to the context — one lap per turn, the context growing each time — and after the last turn the run is reported.",
+  "canvas": {
+    "format": "ultra",
+    "stage": "paper",
+    "aspect": 2.333333,
+    "x": -2281.533,
+    "y": -64,
+    "width": 4563.067,
+    "height": 1955.6,
+    "viewBox": "-2281.533 -64 4563.067 1955.6"
+  },
+  "bands": [
+    {
+      "id": "process",
+      "kind": "lane",
+      "title": "The run",
+      "frame": {
+        "x": -472,
+        "y": 0,
+        "width": 944,
+        "height": 223.6
+      },
+      "baseline": 119.6,
+      "nodeIds": [
+        "ask",
+        "agent",
+        "report"
+      ]
+    },
+    {
+      "id": "loop",
+      "kind": "cycle",
+      "title": null,
+      "frame": {
+        "x": -407.138,
+        "y": 287.6,
+        "width": 814.277,
+        "height": 763.6
+      },
+      "baseline": 675.2,
+      "nodeIds": [
+        "decide",
+        "call",
+        "observe",
+        "append"
+      ],
+      "ring": {
+        "centre": {
+          "x": 0,
+          "y": 675.2
+        },
+        "radius": 272,
+        "direction": "cw",
+        "counter": "turns",
+        "entry": {
+          "x": -272,
+          "y": 675.2
+        },
+        "exit": {
+          "x": 272,
+          "y": 675.2
+        },
+        "stationAngles": [
+          255,
+          315,
+          45,
+          105
+        ]
+      }
+    },
+    {
+      "id": "shared",
+      "kind": "hub",
+      "title": null,
+      "frame": {
+        "x": -747.425,
+        "y": 1115.2,
+        "width": 1043.425,
+        "height": 424.4
+      },
+      "baseline": 1211.6,
+      "nodeIds": [
+        "hub-mcp",
+        "hub-skill"
+      ]
+    },
+    {
+      "id": "notes",
+      "kind": "annotations",
+      "title": null,
+      "frame": {
+        "x": -176,
+        "y": 1603.6,
+        "width": 352,
+        "height": 224
+      },
+      "baseline": 1603.6,
+      "nodeIds": []
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ask",
+      "component": "prompt",
+      "band": "process",
+      "placement": "row",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "user",
+      "heightUnits": 4.14,
+      "origin": {
+        "x": -336,
+        "y": 119.6
+      },
+      "frame": {
+        "x": -471.138,
+        "y": 19.36,
+        "width": 270.277,
+        "height": 204.24
+      },
+      "ports": {
+        "bottom": {
+          "x": -336,
+          "y": 119.6
+        },
+        "emit": {
+          "x": -275.032,
+          "y": 99.28
+        },
+        "left": {
+          "x": -377.569,
+          "y": 110.48
+        },
+        "right": {
+          "x": -294.431,
+          "y": 110.48
+        },
+        "top": {
+          "x": -336,
+          "y": 53.36
+        }
+      }
+    },
+    {
+      "id": "agent",
+      "component": "agent",
+      "band": "process",
+      "placement": "row",
+      "size": "m",
+      "state": "active",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 5.35,
+      "origin": {
+        "x": 0,
+        "y": 119.6
+      },
+      "frame": {
+        "x": -135.138,
+        "y": 0,
+        "width": 270.277,
+        "height": 223.6
+      },
+      "ports": {
+        "bottom": {
+          "x": 0,
+          "y": 119.6
+        },
+        "context-in": {
+          "x": -41.569,
+          "y": 100.8
+        },
+        "result-out": {
+          "x": 41.569,
+          "y": 100.8
+        },
+        "top": {
+          "x": 0,
+          "y": 34
+        }
+      }
+    },
+    {
+      "id": "report",
+      "component": "feedback-report",
+      "band": "process",
+      "placement": "row",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 2.0700000000000003,
+      "origin": {
+        "x": 336,
+        "y": 119.6
+      },
+      "frame": {
+        "x": 200.862,
+        "y": 52.48,
+        "width": 270.277,
+        "height": 171.12
+      },
+      "ports": {
+        "bottom": {
+          "x": 336,
+          "y": 119.6
+        },
+        "in": {
+          "x": 275.032,
+          "y": 115.84
+        },
+        "left": {
+          "x": 294.431,
+          "y": 127.04
+        },
+        "out": {
+          "x": 396.968,
+          "y": 115.84
+        },
+        "right": {
+          "x": 377.569,
+          "y": 127.04
+        },
+        "top": {
+          "x": 336,
+          "y": 86.48
+        }
+      }
+    },
+    {
+      "id": "decide",
+      "component": "model",
+      "band": "loop",
+      "placement": "ring",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "hosted",
+      "heightUnits": 1.72,
+      "origin": {
+        "x": -70.399,
+        "y": 412.468
+      },
+      "frame": {
+        "x": -205.537,
+        "y": 350.948,
+        "width": 270.277,
+        "height": 165.52
+      },
+      "ports": {
+        "bottom": {
+          "x": -70.399,
+          "y": 412.468
+        },
+        "context-in": {
+          "x": -131.367,
+          "y": 411.508
+        },
+        "left": {
+          "x": -111.968,
+          "y": 422.708
+        },
+        "right": {
+          "x": -28.83,
+          "y": 422.708
+        },
+        "tokens-out": {
+          "x": -9.431,
+          "y": 411.508
+        },
+        "top": {
+          "x": -70.399,
+          "y": 384.948
+        }
+      }
+    },
+    {
+      "id": "call",
+      "component": "tool",
+      "band": "loop",
+      "placement": "ring",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 1.9000000000000001,
+      "origin": {
+        "x": 192.333,
+        "y": 482.867
+      },
+      "frame": {
+        "x": 57.195,
+        "y": 418.467,
+        "width": 270.277,
+        "height": 168.4
+      },
+      "ports": {
+        "bottom": {
+          "x": 192.333,
+          "y": 482.867
+        },
+        "invoke-in": {
+          "x": 131.365,
+          "y": 480.467
+        },
+        "left": {
+          "x": 150.764,
+          "y": 491.667
+        },
+        "plug": {
+          "x": 167.392,
+          "y": 468.467
+        },
+        "result-out": {
+          "x": 253.301,
+          "y": 480.467
+        },
+        "right": {
+          "x": 233.902,
+          "y": 491.667
+        },
+        "top": {
+          "x": 192.333,
+          "y": 452.467
+        }
+      }
+    },
+    {
+      "id": "observe",
+      "component": "scan",
+      "band": "loop",
+      "placement": "ring",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 5.1,
+      "origin": {
+        "x": 192.333,
+        "y": 867.533
+      },
+      "frame": {
+        "x": 57.195,
+        "y": 751.933,
+        "width": 270.277,
+        "height": 219.6
+      },
+      "ports": {
+        "bottom": {
+          "x": 192.333,
+          "y": 867.533
+        },
+        "left": {
+          "x": 150.764,
+          "y": 850.733
+        },
+        "result-out": {
+          "x": 253.301,
+          "y": 839.533
+        },
+        "right": {
+          "x": 233.902,
+          "y": 850.733
+        },
+        "subject-under": {
+          "x": 211.732,
+          "y": 878.733
+        },
+        "top": {
+          "x": 192.333,
+          "y": 785.933
+        }
+      }
+    },
+    {
+      "id": "append",
+      "component": "run",
+      "band": "loop",
+      "placement": "ring",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "repeated",
+      "heightUnits": 1.48,
+      "origin": {
+        "x": -70.399,
+        "y": 937.932
+      },
+      "frame": {
+        "x": -205.537,
+        "y": 880.252,
+        "width": 270.277,
+        "height": 161.68
+      },
+      "ports": {
+        "bottom": {
+          "x": -70.399,
+          "y": 937.932
+        },
+        "enter": {
+          "x": -131.367,
+          "y": 938.892
+        },
+        "exit": {
+          "x": -9.431,
+          "y": 938.892
+        },
+        "left": {
+          "x": -111.968,
+          "y": 950.092
+        },
+        "right": {
+          "x": -28.83,
+          "y": 950.092
+        },
+        "top": {
+          "x": -70.399,
+          "y": 914.252
+        }
+      }
+    },
+    {
+      "id": "meter",
+      "component": "token-meter",
+      "band": "process",
+      "placement": "attached",
+      "size": "m",
+      "state": "active",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "spend",
+      "heightUnits": 4.8,
+      "origin": {
+        "x": -70.399,
+        "y": 1184.732
+      },
+      "frame": {
+        "x": -205.537,
+        "y": 1073.932,
+        "width": 270.277,
+        "height": 214.8
+      },
+      "ports": {
+        "bottom": {
+          "x": -70.399,
+          "y": 1184.732
+        },
+        "left": {
+          "x": -111.968,
+          "y": 1170.332
+        },
+        "measure-in": {
+          "x": -131.367,
+          "y": 1159.132
+        },
+        "right": {
+          "x": -28.83,
+          "y": 1170.332
+        },
+        "top": {
+          "x": -70.399,
+          "y": 1107.932
+        }
+      }
+    },
+    {
+      "id": "hub-mcp",
+      "component": "mcp-server",
+      "band": "shared",
+      "placement": "row",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "streamable-http",
+      "heightUnits": 3.9000000000000004,
+      "origin": {
+        "x": -160,
+        "y": 1211.6
+      },
+      "frame": {
+        "x": -295.138,
+        "y": 1115.2,
+        "width": 270.277,
+        "height": 200.4
+      },
+      "ports": {
+        "bottom": {
+          "x": -160,
+          "y": 1211.6
+        },
+        "bus": {
+          "x": -184.942,
+          "y": 1197.2
+        },
+        "left": {
+          "x": -201.569,
+          "y": 1204.4
+        },
+        "right": {
+          "x": -118.431,
+          "y": 1204.4
+        },
+        "top": {
+          "x": -160,
+          "y": 1149.2
+        }
+      }
+    },
+    {
+      "id": "hub-skill",
+      "component": "skill",
+      "band": "shared",
+      "placement": "row",
+      "size": "m",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": "plain",
+      "heightUnits": 2.2199999999999998,
+      "origin": {
+        "x": 160,
+        "y": 1211.6
+      },
+      "frame": {
+        "x": 24.862,
+        "y": 1142.08,
+        "width": 270.277,
+        "height": 173.52
+      },
+      "ports": {
+        "bottom": {
+          "x": 160,
+          "y": 1211.6
+        },
+        "left": {
+          "x": 118.431,
+          "y": 1217.84
+        },
+        "right": {
+          "x": 201.569,
+          "y": 1217.84
+        },
+        "top": {
+          "x": 160,
+          "y": 1176.08
+        },
+        "version-out": {
+          "x": 223.739,
+          "y": 1205.04
+        }
+      }
+    },
+    {
+      "id": "vault",
+      "component": "credentials-vault",
+      "band": null,
+      "placement": "explicit",
+      "size": "s",
+      "state": "idle",
+      "detail": "standard",
+      "facing": "upstream",
+      "variant": null,
+      "heightUnits": 3.84,
+      "origin": {
+        "x": 640,
+        "y": 128
+      },
+      "frame": {
+        "x": 532.574,
+        "y": 32.56,
+        "width": 214.851,
+        "height": 183.44
+      },
+      "ports": {
+        "bottom": {
+          "x": 640,
+          "y": 128
+        },
+        "issue": {
+          "x": 687.112,
+          "y": 102.08
+        },
+        "left": {
+          "x": 612.287,
+          "y": 113.28
+        },
+        "revoke": {
+          "x": 592.888,
+          "y": 102.08
+        },
+        "right": {
+          "x": 667.713,
+          "y": 113.28
+        },
+        "top": {
+          "x": 640,
+          "y": 66.56
+        }
+      }
+    }
+  ],
+  "annotations": [
+    {
+      "index": 0,
+      "kind": "principle-card",
+      "band": "notes",
+      "align": "center",
+      "frame": {
+        "x": -176,
+        "y": 1667.6,
+        "width": 352,
+        "height": 160
+      }
+    },
+    {
+      "index": 1,
+      "kind": "callout",
+      "band": "shared",
+      "align": "start",
+      "frame": {
+        "x": -747.425,
+        "y": 1379.6,
+        "width": 352,
+        "height": 160
+      }
+    }
+  ],
+  "endpoints": {
+    "ask.bottom": {
+      "x": -336,
+      "y": 119.6
+    },
+    "ask.emit": {
+      "x": -275.032,
+      "y": 99.28
+    },
+    "ask.left": {
+      "x": -377.569,
+      "y": 110.48
+    },
+    "ask.right": {
+      "x": -294.431,
+      "y": 110.48
+    },
+    "ask.top": {
+      "x": -336,
+      "y": 53.36
+    },
+    "agent.bottom": {
+      "x": 0,
+      "y": 119.6
+    },
+    "agent.context-in": {
+      "x": -41.569,
+      "y": 100.8
+    },
+    "agent.result-out": {
+      "x": 41.569,
+      "y": 100.8
+    },
+    "agent.top": {
+      "x": 0,
+      "y": 34
+    },
+    "report.bottom": {
+      "x": 336,
+      "y": 119.6
+    },
+    "report.in": {
+      "x": 275.032,
+      "y": 115.84
+    },
+    "report.left": {
+      "x": 294.431,
+      "y": 127.04
+    },
+    "report.out": {
+      "x": 396.968,
+      "y": 115.84
+    },
+    "report.right": {
+      "x": 377.569,
+      "y": 127.04
+    },
+    "report.top": {
+      "x": 336,
+      "y": 86.48
+    },
+    "decide.bottom": {
+      "x": -70.399,
+      "y": 412.468
+    },
+    "decide.context-in": {
+      "x": -131.367,
+      "y": 411.508
+    },
+    "decide.left": {
+      "x": -111.968,
+      "y": 422.708
+    },
+    "decide.right": {
+      "x": -28.83,
+      "y": 422.708
+    },
+    "decide.tokens-out": {
+      "x": -9.431,
+      "y": 411.508
+    },
+    "decide.top": {
+      "x": -70.399,
+      "y": 384.948
+    },
+    "call.bottom": {
+      "x": 192.333,
+      "y": 482.867
+    },
+    "call.invoke-in": {
+      "x": 131.365,
+      "y": 480.467
+    },
+    "call.left": {
+      "x": 150.764,
+      "y": 491.667
+    },
+    "call.plug": {
+      "x": 167.392,
+      "y": 468.467
+    },
+    "call.result-out": {
+      "x": 253.301,
+      "y": 480.467
+    },
+    "call.right": {
+      "x": 233.902,
+      "y": 491.667
+    },
+    "call.top": {
+      "x": 192.333,
+      "y": 452.467
+    },
+    "observe.bottom": {
+      "x": 192.333,
+      "y": 867.533
+    },
+    "observe.left": {
+      "x": 150.764,
+      "y": 850.733
+    },
+    "observe.result-out": {
+      "x": 253.301,
+      "y": 839.533
+    },
+    "observe.right": {
+      "x": 233.902,
+      "y": 850.733
+    },
+    "observe.subject-under": {
+      "x": 211.732,
+      "y": 878.733
+    },
+    "observe.top": {
+      "x": 192.333,
+      "y": 785.933
+    },
+    "append.bottom": {
+      "x": -70.399,
+      "y": 937.932
+    },
+    "append.enter": {
+      "x": -131.367,
+      "y": 938.892
+    },
+    "append.exit": {
+      "x": -9.431,
+      "y": 938.892
+    },
+    "append.left": {
+      "x": -111.968,
+      "y": 950.092
+    },
+    "append.right": {
+      "x": -28.83,
+      "y": 950.092
+    },
+    "append.top": {
+      "x": -70.399,
+      "y": 914.252
+    },
+    "meter.bottom": {
+      "x": -70.399,
+      "y": 1184.732
+    },
+    "meter.left": {
+      "x": -111.968,
+      "y": 1170.332
+    },
+    "meter.measure-in": {
+      "x": -131.367,
+      "y": 1159.132
+    },
+    "meter.right": {
+      "x": -28.83,
+      "y": 1170.332
+    },
+    "meter.top": {
+      "x": -70.399,
+      "y": 1107.932
+    },
+    "hub-mcp.bottom": {
+      "x": -160,
+      "y": 1211.6
+    },
+    "hub-mcp.bus": {
+      "x": -184.942,
+      "y": 1197.2
+    },
+    "hub-mcp.left": {
+      "x": -201.569,
+      "y": 1204.4
+    },
+    "hub-mcp.right": {
+      "x": -118.431,
+      "y": 1204.4
+    },
+    "hub-mcp.top": {
+      "x": -160,
+      "y": 1149.2
+    },
+    "hub-skill.bottom": {
+      "x": 160,
+      "y": 1211.6
+    },
+    "hub-skill.left": {
+      "x": 118.431,
+      "y": 1217.84
+    },
+    "hub-skill.right": {
+      "x": 201.569,
+      "y": 1217.84
+    },
+    "hub-skill.top": {
+      "x": 160,
+      "y": 1176.08
+    },
+    "hub-skill.version-out": {
+      "x": 223.739,
+      "y": 1205.04
+    },
+    "vault.bottom": {
+      "x": 640,
+      "y": 128
+    },
+    "vault.issue": {
+      "x": 687.112,
+      "y": 102.08
+    },
+    "vault.left": {
+      "x": 612.287,
+      "y": 113.28
+    },
+    "vault.revoke": {
+      "x": 592.888,
+      "y": 102.08
+    },
+    "vault.right": {
+      "x": 667.713,
+      "y": 113.28
+    },
+    "vault.top": {
+      "x": 640,
+      "y": 66.56
+    },
+    "loop.entry": {
+      "x": -272,
+      "y": 675.2
+    },
+    "loop.exit": {
+      "x": 272,
+      "y": 675.2
+    }
+  }
+}

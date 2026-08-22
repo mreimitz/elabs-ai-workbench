@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "registryVersion": "0.1.0",
+  "id": "run-turn-cycle",
+  "title": "The turn cycle of a run",
+  "summary": "A prompt starts the run. The agent then loops: decide, call a tool on the shared MCP server, observe the result, append it to the context — one lap per turn, the context growing each time — and after the last turn the run is reported.",
+  "canvas": { "format": "ultra", "stage": "paper" },
+  "bands": [
+    { "id": "process", "kind": "lane", "title": "The run" },
+    { "id": "loop", "kind": "cycle", "stations": 4, "direction": "cw", "counter": "turns" },
+    { "id": "shared", "kind": "hub" },
+    { "id": "notes", "kind": "annotations" }
+  ],
+  "nodes": [
+    { "id": "ask", "component": "prompt", "band": "process", "seq": 1, "variant": "user", "title": "The prompt" },
+    { "id": "agent", "component": "agent", "band": "process", "seq": 2, "state": "active", "title": "Agent" },
+    { "id": "report", "component": "feedback-report", "band": "process", "seq": 3, "title": "Run report" },
+    { "id": "decide", "component": "model", "band": "loop", "seq": 1, "variant": "hosted", "title": "decide" },
+    { "id": "call", "component": "tool", "band": "loop", "seq": 2, "title": "call a tool" },
+    { "id": "observe", "component": "scan", "band": "loop", "seq": 3, "title": "observe" },
+    { "id": "append", "component": "run", "band": "loop", "seq": 4, "variant": "repeated", "title": "append" },
+    {
+      "id": "meter",
+      "component": "token-meter",
+      "band": "process",
+      "attach": "append",
+      "variant": "spend",
+      "state": "active",
+      "title": "the context grows"
+    },
+    { "id": "hub-mcp", "component": "mcp-server", "band": "shared", "variant": "streamable-http" },
+    { "id": "hub-skill", "component": "skill", "band": "shared", "variant": "plain" },
+    { "id": "vault", "component": "credentials-vault", "size": "s", "at": { "x": 40, "y": 8 }, "title": "credentials" }
+  ],
+  "connectors": [
+    { "id": "c1", "from": "ask.emit", "to": "agent.context-in", "kind": "flow" },
+    { "id": "c2", "from": "agent.result-out", "to": "loop.entry", "kind": "flow", "label": "plan in hand" },
+    { "id": "c3", "from": "hub-skill.top", "to": "agent.bottom", "kind": "read", "label": "loads the Skill" },
+    { "id": "c4", "from": "call.plug", "to": "hub-mcp.bus", "kind": "write", "label": "tools/call, every turn, same server" },
+    { "id": "c5", "from": "append.exit", "to": "meter.measure-in", "kind": "signal" },
+    { "id": "c6", "from": "loop.exit", "to": "report.in", "kind": "flow", "label": "the last turn" }
+  ],
+  "annotations": [
+    {
+      "kind": "principle-card",
+      "band": "notes",
+      "align": "center",
+      "title": "The turn principle",
+      "items": ["decide, act, observe, append", "the context is the memory of the run"]
+    },
+    {
+      "kind": "callout",
+      "band": "shared",
+      "align": "start",
+      "title": "One server, one Skill",
+      "body": "The same pair serves the preparation and every call inside the loop.",
+      "target": "hub-mcp"
+    }
+  ],
+  "steps": [
+    { "focus": ["ask", "agent"], "connectors": ["c1", "c3"], "caption": "A prompt starts the run and the agent loads the Skill." },
+    {
+      "focus": ["decide", "call", "observe", "append", "meter"],
+      "connectors": ["c2", "c4", "c5"],
+      "caption": "Each turn decides, calls a tool, observes and appends — the context grows every lap."
+    },
+    { "focus": ["report"], "connectors": ["c6"], "caption": "After the last turn the run is reported." }
+  ]
+}

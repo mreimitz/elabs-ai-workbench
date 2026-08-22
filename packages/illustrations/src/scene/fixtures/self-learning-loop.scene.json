@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "registryVersion": "0.1.0",
+  "id": "self-learning-agentic-loop",
+  "title": "Self-Learning Agentic Loop",
+  "summary": "The owner states an intent; the agent executes it with the current Skill and the shared MCP server's tools; a validator grades the result; the feedback is written back to the Skill, which is published as a new version. One shared pair serves every station.",
+  "canvas": { "format": "hero_wide", "stage": "paper" },
+  "bands": [
+    { "id": "process", "kind": "lane", "title": "One cycle" },
+    { "id": "shared", "kind": "hub", "title": "Shared by every station" },
+    { "id": "notes", "kind": "annotations" }
+  ],
+  "nodes": [
+    {
+      "id": "owner",
+      "component": "owner",
+      "band": "process",
+      "seq": 1,
+      "title": "Owner",
+      "caption": "states the intent"
+    },
+    {
+      "id": "agent",
+      "component": "agent",
+      "band": "process",
+      "seq": 2,
+      "state": "active",
+      "facing": "upstream",
+      "title": "Agent",
+      "caption": "executes with the current Skill"
+    },
+    {
+      "id": "grader",
+      "component": "validator",
+      "band": "process",
+      "seq": 3,
+      "variant": "grader",
+      "title": "Validator",
+      "caption": "grades the answer"
+    },
+    {
+      "id": "feedback",
+      "component": "feedback-report",
+      "band": "process",
+      "seq": 4,
+      "title": "Feedback",
+      "caption": "what to change"
+    },
+    { "id": "hub-mcp", "component": "mcp-server", "band": "shared", "variant": "stdio", "size": "l" },
+    {
+      "id": "hub-skill",
+      "component": "skill",
+      "band": "shared",
+      "variant": "versioned",
+      "state": "active",
+      "size": "l"
+    }
+  ],
+  "connectors": [
+    { "id": "c1", "from": "owner.intent-out", "to": "agent.context-in", "kind": "flow", "label": "the task" },
+    { "id": "c2", "from": "hub-mcp.bus", "to": "agent.bottom", "kind": "read", "label": "tools and the current Skill" },
+    { "id": "c3", "from": "agent.result-out", "to": "grader.subject-in", "kind": "flow" },
+    { "id": "c4", "from": "grader.verdict-out", "to": "feedback.in", "kind": "flow" },
+    { "id": "c5", "from": "feedback.out", "to": "hub-skill.top", "kind": "write", "label": "the lesson" },
+    { "id": "c6", "from": "hub-skill.version-out", "to": "owner.report-in", "kind": "publish", "label": "a new Skill version" }
+  ],
+  "annotations": [
+    {
+      "kind": "principle-card",
+      "band": "notes",
+      "align": "start",
+      "title": "The loop principle",
+      "items": ["Execute with context", "Grade the result", "Write the lesson back"]
+    },
+    {
+      "kind": "callout",
+      "band": "notes",
+      "align": "end",
+      "title": "One shared pair",
+      "body": "Every station reaches the same MCP server and the same Skill.",
+      "target": "hub-skill.top"
+    }
+  ],
+  "steps": [
+    { "focus": ["owner", "agent"], "connectors": ["c1"], "caption": "The owner states what the run is for." },
+    {
+      "focus": ["agent", "hub-mcp", "hub-skill"],
+      "connectors": ["c2"],
+      "caption": "The agent loads the current Skill and the shared MCP tool surface.",
+      "detail": "cutaway"
+    },
+    { "focus": ["grader", "feedback"], "connectors": ["c3", "c4"], "caption": "The result is graded and the finding written down." },
+    { "focus": ["hub-skill", "owner"], "connectors": ["c5", "c6"], "caption": "The Skill absorbs the lesson and is published as a new version." }
+  ]
+}
