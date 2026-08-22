@@ -8,6 +8,7 @@ import type {
   SkillEditsResponse,
   SkillFileContent,
   SkillFileNode,
+  SkillFlowTokensResponse,
   SkillGraphResponse,
   SkillSuggestionsResponse,
   SkillVersion,
@@ -68,6 +69,18 @@ export const getSkillFile = (
  */
 export const getSkillGraph = (skillId: string, versionId: string): Promise<SkillGraphResponse> =>
   apiGet<SkillGraphResponse>(`/api/skills/${skillId}/versions/${versionId}/graph`);
+
+/**
+ * RM-30 WP 7.8 — what each graph node costs the model to READ, in tokens. The entry-point flow view
+ * sums these over the reachability sets to answer "when this command fires, how much does the model
+ * actually read?". Computed on read from the version's own token profile and the footprint's
+ * already-persisted per-file totals — never a second counter, never persisted.
+ */
+export const getSkillFlowTokens = (
+  skillId: string,
+  versionId: string,
+): Promise<SkillFlowTokensResponse> =>
+  apiGet<SkillFlowTokensResponse>(`/api/skills/${skillId}/versions/${versionId}/flow-tokens`);
 
 /**
  * The runs that RESOLVED this skill version (SkillFlow WP 2.1 — `GET /:id/versions/:vid/runs`,

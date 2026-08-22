@@ -2044,6 +2044,19 @@ export const skillGraphResponseSchema = z.object({
   projectorVersion: z.number().int().nonnegative(),
 });
 
+/** RM-30 WP 7.8 — per-node read cost behind the entry-point flow's token figure. */
+export const skillFlowNodeCostSchema = z.object({
+  nodeId: z.string().trim().min(1),
+  tokens: z.number().int().nonnegative(),
+});
+
+/** Flow-tokens route response (`…/versions/:vid/flow-tokens`). */
+export const skillFlowTokensResponseSchema = z.object({
+  tokenProfile: z.enum(TOKEN_PROFILES),
+  projectorVersion: z.number().int().nonnegative(),
+  nodes: z.array(skillFlowNodeCostSchema),
+});
+
 /** Trace route response (`…/versions/:vid/trace`): the aligned session trace. */
 export const skillTraceResponseSchema = sessionTraceSchema;
 

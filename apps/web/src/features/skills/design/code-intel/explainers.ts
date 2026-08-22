@@ -17,7 +17,7 @@
 // marker, and the asset/tool references — without changing any 9.3 consumer's lookup. Every anchor here
 // is one of the guide's stable top-level section anchors, so each resolves to a real heading.
 
-import { SKILL_GRAPH_NODE_KINDS } from "@mcp-token-footprint/shared";
+import { SKILL_EDGE_KINDS, SKILL_GRAPH_NODE_KINDS } from "@mcp-token-footprint/shared";
 import type {
   QualityReport,
   SkillGraph,
@@ -106,26 +106,44 @@ export const EXPLAINERS: Record<string, ExplainerEntry> = {
     guideAnchor: G_TOOLS,
   },
 
-  // ── Graph edge kinds (WP 9.4 — the connections between nodes) ─────────────────────────────────────
-  "edge:sequence": {
-    id: "edge:sequence",
-    title: "Sequence edge",
+  // ── Graph edge kinds (RM-30 WP 7.8 — the five-kind reading-order grammar) ─────────────────────────
+  // These replace WP 9.4's three (`edge:sequence` / `edge:branch` / `edge:reference`), which named a
+  // vocabulary the DATA did not carry: an arrow was anonymous, so the help text described a
+  // distinction the canvas could not draw. There is now one entry per `SKILL_EDGE_KINDS` member, and
+  // `EDGE_KIND_EXPLAINER_IDS` is derived from that tuple so the two can never drift.
+  "edge:triggers": {
+    id: "edge:triggers",
+    title: "Triggers edge",
     short:
-      "The default flow order — one step to the next down a flow. Keep the body ordered so the projected sequence matches how you want the skill run.",
+      "From a trigger — a keyword or a `/command` — to what it starts. This input is what causes the model to read the target at all.",
+    guideAnchor: G_IDENTITY,
+  },
+  "edge:then": {
+    id: "edge:then",
+    title: "Then edge",
+    short:
+      "One step to the next at the same level. Having finished the source, the model reads the target — always. Keep the body ordered so the projected sequence matches how you want the skill run.",
+    guideAnchor: G_BODY,
+  },
+  "edge:contains": {
+    id: "edge:contains",
+    title: "Contains edge",
+    short:
+      "A step to a sub-step. The target is part of the source, so reading the parent means reading this — and a contained step moves with its parent rather than reordering freely.",
     guideAnchor: G_BODY,
   },
   "edge:branch": {
     id: "edge:branch",
     title: "Branch edge",
     short:
-      "A conditional edge out of a gatekeeper, labelled with its branch condition. Keep branches mutually exclusive and pair each decision with a breadcrumb marker so a test run can verify the route.",
+      "A conditional edge out of a gatekeeper, labelled with its branch condition — the model reads exactly one of them. Keep branches mutually exclusive and pair each decision with a breadcrumb marker so a test run can verify the route.",
     guideAnchor: G_BODY,
   },
-  "edge:reference": {
-    id: "edge:reference",
-    title: "Reference edge",
+  "edge:uses": {
+    id: "edge:uses",
+    title: "Uses edge",
     short:
-      "A non-sequential link — a section referencing an asset file, or a cross-flow `see /other` pointer. Every reference must resolve; a dangling one is dead weight.",
+      "A step reaching for something while it works — a bundled file, a tool, a check, or another `/command`. It costs tokens only if it is actually opened, so it is a maybe, never a certainty.",
     guideAnchor: G_REFS,
   },
 
@@ -258,8 +276,12 @@ export function explainerHoverMarkdown(entry: ExplainerEntry): string {
 /** The graph node kinds, in the shared canonical order — each has a registry entry keyed by the kind. */
 export const NODE_KIND_EXPLAINER_IDS: readonly SkillGraphNodeKind[] = SKILL_GRAPH_NODE_KINDS;
 
-/** The graph edge kinds, in reading order — each has an `edge:*` registry entry. */
-export const EDGE_KIND_EXPLAINER_IDS = ["edge:sequence", "edge:branch", "edge:reference"] as const;
+/** The graph edge kinds, in reading order — DERIVED from the shared `SKILL_EDGE_KINDS` tuple (RM-30
+ *  WP 7.8) so the legend lists exactly the kinds the grammar admits, and adding a sixth kind fails
+ *  the coverage test until it is taught here rather than shipping untaught. */
+export const EDGE_KIND_EXPLAINER_IDS: readonly string[] = SKILL_EDGE_KINDS.map(
+  (kind) => `edge:${kind}`,
+);
 
 // ── WP 9.4 — the unified problems model (aggregated live projector + persisted quality + tool findings) ─
 // A pure, testable classifier: every problem is attributed to a registry element (→ its guide anchor +
@@ -340,7 +362,7 @@ function quotedTitle(warning: string): string | undefined {
 /** A projector warning's element when no node matched: a keyword heuristic over the warning text. */
 function warningElement(warning: string): string {
   if (/script/i.test(warning)) return "validation_gate";
-  if (/cross-flow|references command/i.test(warning)) return "edge:reference";
+  if (/cross-flow|references command/i.test(warning)) return "edge:uses";
   if (/branch|gatekeeper/i.test(warning)) return "gatekeeper";
   if (/reference|file|path|resolve|missing/i.test(warning)) return "ref:asset";
   return "subroutine";

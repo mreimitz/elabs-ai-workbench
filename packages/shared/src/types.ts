@@ -3702,6 +3702,36 @@ export type SkillGraphResponse = {
 };
 
 /**
+ * RM-30 WP 7.8 — what ONE graph node costs the model to read, in tokens.
+ *
+ * The deliverable of the entry-point flow view is a NUMBER — "always reads 4 sections, 1,240 tokens.
+ * May additionally read 1 file and call 1 tool, up to 3,900 tokens." — and this is the measurement
+ * behind it. It is not a new counter: a SECTION's cost is its own `SKILL.md` line span counted with
+ * the version's own token profile (the same `TokenCounter` the L1/L2/L3 footprint uses), and a
+ * bundled FILE's cost is the `tokenTotal` the footprint already persisted for it.
+ *
+ * A node with no measurable text of its own — a loop guard, which is a construct rather than prose —
+ * costs 0 and says so. A `tool_ref` is deliberately ABSENT from this map: a tool's definition tokens
+ * come from the bound server's scan, not from the skill, and the caller already holds them.
+ */
+export type SkillFlowNodeCost = {
+  nodeId: string;
+  tokens: number;
+};
+
+/**
+ * Response of `GET /api/skills/:id/versions/:vid/flow-tokens` (RM-30 WP 7.8). Read-only, computed on
+ * read, persisted nowhere. `projectorVersion` stamps which projector produced the node ids, so a
+ * caller holding a graph from a different version never silently sums the wrong boxes.
+ */
+export type SkillFlowTokensResponse = {
+  tokenProfile: TokenProfileId;
+  projectorVersion: number;
+  /** One entry per measurable node, in graph order. A node id absent here is NOT MEASURED, not zero. */
+  nodes: SkillFlowNodeCost[];
+};
+
+/**
  * Response of `GET /api/runs/:runId/trace` (WP 2.1) — the normalized run→trace event stream, with the
  * resolved `skillVersionId` the run exercised, but NO alignment yet (that lands in a later WP). A
  * deliberately lighter shape than {@link SessionTrace} (whose `alignment` is required).

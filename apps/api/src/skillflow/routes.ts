@@ -3,11 +3,13 @@ import {
   SKILLFLOW_PROJECTOR_VERSION,
   qualityReportSchema,
   skillEditsRequestSchema,
+  skillFlowTokensResponseSchema,
   skillSuggestionsResponseSchema,
   type QualityReport,
   type RunSummary,
   type RunTraceResponse,
   type SkillEditsResponse,
+  type SkillFlowTokensResponse,
   type SkillGraph,
   type SkillGraphResponse,
   type SkillSuggestionsResponse,
@@ -27,6 +29,7 @@ import {
 import type { RunRepository } from "../testing/run-repository.js";
 import { httpError } from "../utils/errors.js";
 import { validateEditOps } from "./edit-ops.js";
+import { computeFlowNodeCosts } from "./flow-tokens.js";
 import { projectSkillGraph } from "./projector.js";
 import { analyzeSkillQuality } from "./quality.js";
 import { applyOpsToContent } from "./roundtrip.js";
@@ -105,6 +108,34 @@ export async function registerSkillflowRoutes(
 
     return { graph, projectorVersion: SKILLFLOW_PROJECTOR_VERSION };
   });
+
+  // RM-30 WP 7.8 — GET /api/skills/:id/versions/:vid/flow-tokens → what each graph node costs the
+  // model to READ. The entry-point flow view sums these over the reachability sets to answer "when
+  // this command fires, how much does the model actually read?" — the deliverable of the work
+  // package. Read-only, computed on read, persisted nowhere: no migration, no table, no column.
+  // Reuses the version's own token profile and the footprint's already-persisted per-file totals, so
+  // there is exactly one counter in the app (see `flow-tokens.ts`'s header).
+  app.get(
+    "/api/skills/:id/versions/:vid/flow-tokens",
+    async (request): Promise<SkillFlowTokensResponse> => {
+      const { id, vid } = request.params as { id: string; vid: string };
+
+      repo.getPublic(id); // 404 if the skill is missing
+      const version = repo.getVersion(vid); // 404 if the version is missing
+      if (version.skillId !== id) throw httpError(404, "Skill version not found");
+
+      const files = repo.listFiles(vid);
+      const skillMd = loadSkillMd(repo, vid);
+      const graph = projectSkillGraph(skillMd, files);
+      const nodes = await computeFlowNodeCosts(graph, skillMd, files, version.tokenProfile);
+
+      return skillFlowTokensResponseSchema.parse({
+        tokenProfile: version.tokenProfile,
+        projectorVersion: SKILLFLOW_PROJECTOR_VERSION,
+        nodes,
+      } satisfies SkillFlowTokensResponse);
+    },
+  );
 
   // GET /api/skills/:id/versions/:vid/runs → the runs that RESOLVED this skill version (joined via
   // run_skills), newest first. 404 on an unknown skill/version (validated the same way as the graph
