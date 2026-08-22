@@ -5,6 +5,30 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — say what the run should have said, and a button that never worked
+
+**You can now write the right answer.** When a run gets something wrong, the run console and the
+review pane let you type what it *should* have said. That correction is stored alongside the run,
+appears in the exported report under its own heading, and — the part that makes it worth doing —
+pre-fills the expectation when you turn that run into a saved test. Correcting a run is now the
+short path to a regression test for it.
+
+**Fixing this uncovered a button that had never worked.** "Promote this run to a test" existed in
+the interface and had a passing test, but the endpoint behind it was never written: in a real
+browser it failed every time, and the test passed only because it was talking to a fake. The
+endpoint now exists and is exercised against a real database.
+
+**Your correction never changes your scores.** This is the rule the whole grading system rests on:
+human feedback is recorded next to a run, never folded into how it was graded. A correction leaves
+the grades, the rating document, the suite totals and the analytics exactly as they were, down to
+the byte. That is checked by a test which also proves it isn't cheating by writing nothing — and the
+check was deliberately broken during review to confirm it actually catches a violation before being
+trusted.
+
+*Not verified: no browser was opened. The new controls are covered by tests, not by a look in both
+themes or a keyboard pass — and nobody has yet clicked the promote button end to end, which is
+exactly how the broken one went unnoticed.*
+
 ## Unreleased — lines between the illustrations, and a contract that already knew where they attach
 
 **The illustration system can now draw the arrows.** Twenty-four illustration components existed and

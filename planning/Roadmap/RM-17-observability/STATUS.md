@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-22T12:30:00Z"
+timestamp: "2026-08-22T16:20:00Z"
 status: "active"
 ---
 
@@ -214,11 +214,52 @@ had one open box before the lock and now has fourteen.
       applying a view now yields a noticeably longer "copy link", deliberately, to keep it
       self-describing. A genuinely readable `?view=my-failing-runs` would need a slug column —
       i.e. a migration — and was **not** built
-- [ ] AM-OB2 — `corrected_output` as a feedback kind through the existing `putRunFeedback`
+- [x] AM-OB2 — `corrected_output` as a feedback kind through the existing `putRunFeedback`
       upsert, plus a console/review-queue affordance; the corrected answer pre-fills the
       expectation on promote-to-test, and joins the report-export `humanFeedback` block ·
       pairs with the ledger's open promote-to-test endpoint follow-up · **AR6 holds: feedback
-      never blends into grades**
+      never blends into grades** — **done 2026-08-22 · `wp/roadmap-cleanup/am-ob2` (3 commits,
+      merged `5b5cc09`) · spec:
+      [`phase-6-langfuse/WP-6.2-AM-OB2-corrected-output-feedback.md`](./phase-6-langfuse/WP-6.2-AM-OB2-corrected-output-feedback.md)
+      · 32 files, +1,843 / −149 · `apps/api/src/db/` a ZERO-line diff, no `user_version` claimed,
+      no new dependency.**
+      **Verify-at-pickup: it did NOT shrink.** Every claim in the spec's verification finding held
+      against the current tree (only line numbers had drifted) — the `run_feedback` table already
+      accepted the datum, the key space was already open (`z.string()`, no enum), the writer and
+      routes already existed — and everything the spec said was missing genuinely was. So this one
+      behaved like **AM-OB10, not AM-OB1**: the residual was the whole of it.
+      **It absorbed two of this ledger's own recorded follow-ups, and one was a LIVE DEFECT rather
+      than a gap.** `POST /api/runs/:id/promote-to-test` **did not exist anywhere in
+      `apps/api/src`** — the run console's button 404'd in production and its test passed only
+      against a mocked `fetch`. The route now exists and is proved through real Fastify against a
+      real SQLite database; the `STUBBED` marker in `apps/web/src/lib/api.ts` is gone. The second
+      was **WP 2.5's deferred `humanFeedback` block**, now in the run export as JSON and as a
+      `## Human feedback` Markdown section.
+      **AR6 is proved, not asserted.** A `corrected_output` leaves the `run_grades` rows, the
+      composed rating document, the suite aggregates and the analytics **byte-identical**, and the
+      test carries its own **non-vacuity guard** so it cannot pass by writing nothing. The
+      orchestrator broke it independently — an `UPDATE run_grades` inside the feedback upsert —
+      and watched **2 assertions go red**, green again on restore. The builder additionally ran the
+      subtler variant that leaks only into the rating document, which is **why the `humanFeedback`
+      block hangs off the run EXPORT and not the rating type**: putting it inside would have made
+      `RunReportService` read `run_feedback`, which is the violation itself.
+      **One tightening beyond the spec, and it is the right kind:** `PromoteDeps` reaches **three**
+      call sites (the watch executor, the assistant's `tests_create_draft`, and the new route), so
+      the feedback reader was made **required** on all three rather than optional — no promote path
+      can silently drop a correction. That pushed a one-line change into `AssistantToolDeps` and
+      `IssueLoopToolDeps`.
+      **A probe found a real defect in the builder's OWN test:** the step-scoped case was named for
+      a correction but its fixture helper defaulted to `key: "verdict"`, so it stayed green under
+      mutation. Fixed (`7d26f8a`) and re-probed before reporting.
+      **Deliberate deviation:** the pure `selectCorrectedOutput` lives in a new
+      `packages/shared/src/run-feedback.ts` rather than `constants.ts`, following **AM-OB10's
+      `watch-state.ts` precedent from this same phase**; the two key constants are in `constants.ts`
+      as the spec asked.
+      **NOT verified — no browser was opened.** No two-theme look and no keyboard pass over any of
+      the three new surfaces (the console's corrected-answer control, the review pane's field, the
+      promote dialog's preview). **The live promote flow has never been clicked end to end** — which
+      is exactly how the original stub survived — and the exported Markdown has never been read by a
+      human. All three belong to Owner acceptance.
 - [x] AM-OB3 — chart states URL-addressable (deep-linkable panel + time-bucket selection) · — **done 2026-08-22 ·
       `wp/roadmap-cleanup/am-ob3` (3 commits, merged) · 22 files, ALL under
       `apps/web/src/features/dashboard/`; `apps/api`, `packages/` and `apps/cli` a zero-line diff.**
