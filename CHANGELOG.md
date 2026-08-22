@@ -5,6 +5,44 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the skill diagram stopped being a picture and became a measurement
+
+**You can finally see what a skill actually makes the model read.** Pick a `/command` or a keyword
+on the skill canvas and the panel beside it tells you in plain words: *"always reads 4 sections,
+1,240 tokens. May additionally read 1 file and call 1 tool, up to 3,900 tokens."* Every box is
+marked as certainly-read or only-maybe-read. That sentence is the whole point of the work — the
+diagram was never the deliverable.
+
+This works because the arrows now mean something. Nine genuinely different relationships — a
+keyword starting a skill, one step following another, a step containing a sub-step, a decision
+branching, a step opening a file — were all drawn as the same anonymous line, so nothing could
+count anything. Each arrow now carries its type, and which types are legal is written down **once**
+and read everywhere, with a check that fails the build if a second copy of the rules ever appears.
+
+**A file mentioned by four steps is now one box with four arrows**, not four separate boxes, which
+is what makes "how many files does this command read" answerable at all.
+
+**Connecting things stopped being a guessing game.** An arrow that could never be legal simply
+doesn't attach — no error message, because nothing went wrong; you were shown the rule instead of
+told off afterwards. An obvious near-miss offers the move you meant with a one-click button. A
+genuine mistake explains the rule and links the guide. The old catch-all — *"Couldn't create that
+connection"* — is gone, and a test over every possible pair of box types stops any message that
+only says something failed.
+
+**A decision point that wasn't one is gone.** The only "unresolvable branch" anywhere in the
+registered skills turned out to be two ordinary narrative sentences being misread as conditions. The
+fork that didn't fork no longer appears.
+
+**Your layout is remembered.** Drag boxes where you want them; they stay put across reloads and
+version switches, and an **Auto-arrange** button puts them back. Deliberately, these positions are
+*not* written into the skill file — the skill's text is exactly what the model reads and what this
+app charges you for, so storing cosmetics there would inflate the very number the app exists to
+measure. A test proves the skill file is byte-for-byte untouched when you move a box.
+
+*Not verified: nobody has used this. No browser was opened at all — there is no screenshot anywhere
+in this work. Both themes, keyboard navigation, and whether the five line styles are actually
+tellable apart on screen are all unknown, and no skill has been saved against a running server.*
+
 ## Unreleased — say what the run should have said, and a button that never worked
 
 **You can now write the right answer.** When a run gets something wrong, the run console and the

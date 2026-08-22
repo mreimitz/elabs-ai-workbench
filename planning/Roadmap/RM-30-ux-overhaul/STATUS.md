@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UX Overhaul \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the ux-overhaul plan (source: /UI-UX-AUDIT-2026-07-05.md)."
 tags: ["roadmap", "RM-30"]
-timestamp: "2026-08-22T12:30:00Z"
+timestamp: "2026-08-22T17:30:00Z"
 status: "active"
 ---
 # UX Overhaul — work-package status ledger · **PRIORITY: HIGH**
@@ -164,7 +164,66 @@ keyboard behaviour is asserted, not walked.
       **NOT VERIFIED — nobody has used this.** Every visual claim is headless Chromium. Specifically
       not exercised: an actual mouse drag, a completed save, and the servers section against a real
       bound MCP server with a real scan
-- [ ] WP 7.8 — **Edge grammar + entry-point flows** (SI11, SI10-persistence, D-UX19#1): legal edges express the LLM's reading order (keyword→skill · /command→section(s) · section→sub-routine/gatekeeper/reference/asset · gate→branches); flows render EFFECTIVE use per entry (sections/tools/references/templates actually read); connect-errors become guidance; decide node-position persistence · Domain: graph model (use-edit-ops, flow derivation, api flow extraction review) · Size XL · **short design doc → owner approval BEFORE build** · **DESIGN DOC WRITTEN AND APPROVED 2026-08-22** — [`wp-7.8-edge-grammar-design.md`](./wp-7.8-edge-grammar-design.md) (`wp/roadmap-cleanup/rm30-7.8-design`, merged). All six recommended decisions accepted as written; the seventh settled as **old traces degrade with a visible notice**. So the gate this WP carried is CLEARED and it is **ready to build** — after 7.7, not beside it: both touch `use-edit-ops`. **Two constraints ride along:** the build MAY take one migration (app-side box positions, decision 5 — chosen because a position comment would live in the metered `l2_body_tokens` body and inflate the very cost this app measures) and MUST ship the Auto-arrange reset that goes with it. **The branch question is ANSWERED (2026-08-22), and it changes the answer:** the investigation the owner asked for ran the real projector over all five registered skills, and the entire corpus yields **one** unresolved branch — which is a **mis-parse**, not a branch (two narrative sentences beginning "If the answer is complete after one query…" became two condition labels on one edge). Conditionals are frequent but are intra-step rules, not routing; only three phrases in the whole corpus name a destination and none of them sits in a gatekeeper section. So the defect is a **false positive**, not a missing resolution: **tighten `extractConditions` inside WP 7.8** so prose stops becoming branch labels, and leave *Branch* defined-but-unused until an author has a real decision point. **Not its own work package.** Evidence, method and the sample-size warning (five skills, one author, one domain) are in the design doc.
+- [x] WP 7.8 — **Edge grammar + entry-point flows** (SI11, SI10-persistence, D-UX19#1): legal edges express the LLM's reading order (keyword→skill · /command→section(s) · section→sub-routine/gatekeeper/reference/asset · gate→branches); flows render EFFECTIVE use per entry (sections/tools/references/templates actually read); connect-errors become guidance; decide node-position persistence · Domain: graph model (use-edit-ops, flow derivation, api flow extraction review) · Size XL · **short design doc → owner approval BEFORE build** · **DESIGN DOC WRITTEN AND APPROVED 2026-08-22** — [`wp-7.8-edge-grammar-design.md`](./wp-7.8-edge-grammar-design.md) (`wp/roadmap-cleanup/rm30-7.8-design`, merged). All six recommended decisions accepted as written; the seventh settled as **old traces degrade with a visible notice**. So the gate this WP carried is CLEARED and it is **ready to build** — after 7.7, not beside it: both touch `use-edit-ops`. **Two constraints ride along:** the build MAY take one migration (app-side box positions, decision 5 — chosen because a position comment would live in the metered `l2_body_tokens` body and inflate the very cost this app measures) and MUST ship the Auto-arrange reset that goes with it. **The branch question is ANSWERED (2026-08-22), and it changes the answer:** the investigation the owner asked for ran the real projector over all five registered skills, and the entire corpus yields **one** unresolved branch — which is a **mis-parse**, not a branch (two narrative sentences beginning "If the answer is complete after one query…" became two condition labels on one edge). Conditionals are frequent but are intra-step rules, not routing; only three phrases in the whole corpus name a destination and none of them sits in a gatekeeper section. So the defect is a **false positive**, not a missing resolution: **tighten `extractConditions` inside WP 7.8** so prose stops becoming branch labels, and leave *Branch* defined-but-unused until an author has a real decision point. **Not its own work package.** Evidence, method and the sample-size warning (five skills, one author, one domain) are in the design doc.
+      **DONE 2026-08-22 · `wp/roadmap-cleanup/rm30-7.8` (6 commits, merged `8b423e7`) · build spec:
+      [`wp-7.8-edge-grammar.md`](./wp-7.8-edge-grammar.md) · 55 files, +4,999 / −320 · migration
+      **v62**, the one this WP was allowed · no new dependency · no second save path.**
+      Built and committed as the **four separate pieces** the spec ordered, so a session limit could
+      not destroy it the way it destroyed WP 7.7's first attempt.
+      **Piece 1** — the edge gains an optional `kind` (additive; a pre-7.8 graph still parses, proved
+      by a fixture that asserts its own premise first). The legality table is **one** frozen
+      definition in `packages/shared/src/skill-flow-grammar.ts` read by the projector, the connect
+      handler and the tests; a source scan over `packages/shared/src` + `apps/api/src` +
+      `apps/web/src` fails on a second declaration and asserts it walked >500 files so it cannot pass
+      vacuously. `addEdge`'s `kind` is a **required positional argument**, so a kindless edge is a
+      compile error, not a test failure. Duplicate file/tool boxes merged — one box, many `uses`
+      edges. `extractConditions` tightened so narrative prose stops becoming branch labels.
+      **Piece 2** — an entry-point flow is **forward reachability**, not lane membership
+      (`visibleFlowId` → `visibleEntryNodeId`); every reached node is *always read* or *maybe read*
+      **on its accessible name, not shading alone**; and the **token figure renders** —
+      `FlowReadingPanel` + `GET …/flow-tokens`, with a test that independently recounts a section
+      span using the same `TokenCounter`, so a second counting path would break the equality. A step
+      reachable from two entry points appears in both. No per-keyword subset (`wholeSkill: true`).
+      Five kinds distinguished by **dash + width**, not colour alone, with every stroke a `var(--…)`.
+      **Piece 3** — illegal targets no longer snap and raise **no** error; the tool-onto-tool
+      near-miss offers a one-click legal move; every genuine refusal's `guideAnchor` is asserted
+      `=== explainerFor(id).guideAnchor`. **The rule is gated over the message SET**: all 92 ordered
+      pairs of the 10 node kinds plus 2 degenerate inputs, no title matching a bare-failure shape,
+      every refusal citing a registry entry, the two old strings explicitly banned.
+      **Piece 4** — `skill_box_positions`, per **skill** not per version, so an arrangement survives
+      saving. An orphan is never pruned (a returning heading finds its place) and falls back to auto
+      layout for that **one** box. **Auto-arrange** clears both the table and the session's
+      un-persisted drags. The byte test asserts identical text, identical sha256, unchanged tree sha,
+      **unchanged L2 body tokens**, unchanged total footprint and no new version — *and* that the
+      positions really were written.
+      **Validated by the orchestrator with its own probes, independent of the builder's four:**
+      planting a second legality table in `apps/web` reddened the no-second-copy scan; reinstating
+      the old *"Couldn't create that connection"* string reddened the bare-failure rule. Both green
+      on restore, both trees left clean. **Full gate EXIT=0 on merged `main`** — shared 287 ·
+      illustrations 957 · cli 87 · api 3,811 · web 4,319 (+5 skipped) · build · biome 1,855 files.
+      **Two behaviour changes a reviewer should know about, neither hidden.** The trace aligner's
+      gatekeeper inference was **widened** — it keyed only on condition-carrying edges, so once the
+      mis-parse was gone a gatekeeper with one plain successor could never be implied visited and
+      reported `unvisited` on a clean run; the fallback finds nothing on a kindless graph, so old
+      behaviour is unchanged. And **`layoutSkillLanes` was deleted** rather than left as a second,
+      quietly wrong answer to "what flows does this skill have".
+      **One documented deviation from the approved design.** Its §2 says a trigger cannot be the
+      target of an arrow. True of authoring, **false of the projector**, which has emitted cross-flow
+      `see /other` references into command entry points since Skill IDE WP 1.2 — so
+      `uses → entry_point` is **legal and not authorable**. Recorded in the module header.
+      **NOT VERIFIED — and this is the THIRD Studio WP where it is true: nobody has driven it.** No
+      browser was opened, headless or otherwise; there is **no screenshot and no rendered measurement
+      anywhere in this work package**. Unknown: both themes, keyboard reach and focus, whether the
+      token sentence wraps acceptably at real widths, whether the "Maybe" badge collides with the
+      diagnostics badge, and whether five dash patterns are distinguishable at real zoom. The trace
+      coupling **was** exercised — real `run_steps` in a real database through the production route,
+      real normalizer, projector and aligner, reconstructing the actual v4→v5 break and asserting the
+      overlay would paint fewer verdicts than the run recorded — but **those rows are seeded, not
+      produced by a live model against a bound MCP server**, and no save has been completed against a
+      running API. **One a11y gap found by the builder and left open:** `Auto-arrange` uses `title=`
+      for its disabled hint rather than a tooltip; it is a text button so D-TB5 does not bind it, but
+      a keyboard user gets no accessible hint. Owner walk.
+
 - [ ] WP 7.9 — **Designer=visual vs Files=source** (D-UX19#2): Design drops Flow|Code|Split (pure visual composer); Files becomes the editable source register (absorbs WP 7.4); one draft across both; SkillDiffView label fix rides along · Depends 7.7+7.8 · Size L–XL
 
 > **Phase 7 session note (2026-07-06, Cowork PM):** 7.2 · 7.3a · 7.5 · 7.6 executed by four parallel

@@ -122,6 +122,17 @@ controls — no YAML by hand — and the skill's files open as editable tabs bes
 change there joins one set of unsaved edits that becomes a single new version. The inspector is now purely a place to read a skill; the Studio is where you
 change it.
 
+On the canvas, the arrows carry meaning: a keyword triggering the skill, one step following another,
+a step containing a sub-step, a decision branching, a step reaching for a file or a tool. That is
+what lets the Studio answer the question the rest of this app is built around — **pick an entry
+point and it tells you what the model actually reads**: *"`/analyze` always reads 4 sections, 1,240
+tokens. May additionally read 1 file and call 1 tool, up to 3,900 tokens."* Everything reached is
+marked as certainly-read or only-maybe-read, and a file cited by four steps is one box with four
+arrows, so it can be counted once. Connections you can't legally draw simply don't attach rather
+than failing after the fact; an obvious near-miss offers the move you meant. Drag the boxes where
+you like — the arrangement is remembered per skill, with an **Auto-arrange** button to undo it, and
+it is stored beside the skill rather than inside it, so your layout never costs you tokens.
+
 ![The skill inspector: frontmatter, an L1/L2/L3 token footprint totalling 1,760, the trigger configuration, and a security surface.](docs/screenshots/skill-inspector.png)
 
 ### 5 · The testing console — real agent sessions
