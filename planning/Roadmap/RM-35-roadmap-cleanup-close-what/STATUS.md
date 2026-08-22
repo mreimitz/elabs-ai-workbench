@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T17:50:00Z"
+timestamp: "2026-08-22T19:10:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -536,6 +536,40 @@ met and — where the box touches code — the gate
 > the condition under which a real regression gets waved through as "the flake". `069941e`
 > (`wp/roadmap-cleanup/ux-corrections`) is the unmerged, incomplete contention-free harness for the
 > perf half; nothing addresses the web half. **This deserves its own work package.**
+>
+> **RESOLVED 2026-08-22 — and the characterisation above was WRONG, which is why it is left standing
+> rather than edited away.** It was not contention. `pnpm -r --if-present test` runs packages
+> concurrently, and **four** of them (`apps/api`, `apps/web`, `apps/cli`, `packages/illustrations`)
+> each opened their `test` script with a bare `pnpm --filter shared build` — so several `tsc`
+> processes wrote the **same** `packages/shared/dist` while other packages' tests were importing out
+> of it. Instrumenting one run showed **three concurrent `tsc` processes** and `dist/index.js`
+> **rewritten twice**, at startup and again 33 s in, with api and web already executing. A module read
+> while it is being rewritten is truncated or briefly absent: a random file failing, a bare 5000 ms
+> vitest timeout, a stalled query.
+>
+> **Two hypotheses were tested and REFUTED before that one was accepted** — the only reason it is
+> stated as a cause rather than a fourth guess. *CPU contention:* the web suite passes **4319/4319 at
+> load average 300**, and a perf test at load average 76 moves its **CPU** time 1.2x while its **wall**
+> clock moves 2.6x. *Memory pressure:* this machine **swaps zero bytes**. Neither reproduces the
+> failure; the build race does.
+>
+> **The earlier "`packages/illustrations` reads a stale `dist`" finding was this same defect from the
+> other side** — and the fix then added a **fourth** inline build, curing the staleness and worsening
+> the race. The previous batch's most-praised discovery made this one worse, which is worth
+> remembering before praising the next one.
+>
+> Fixed by `scripts/build-shared-once.mjs`: freshness check, then an atomic `mkdir` lock: waiters wait
+> for the builder instead of starting a second build, and freshness is decided on a stamp written
+> **only after a build exits 0**, never on `dist` mtimes, because a half-failed build leaves new files
+> behind and would otherwise be handed to the tests as fresh. Before/after with the same
+> instrumentation: **peak concurrent `tsc` 3 -> 1**, dist writes during a run **2 -> 1**. **Five
+> consecutive green full-suite runs** since, against roughly four failures in the previous seven. A
+> guard test pins every call site and was broken to watch it redden.
+> The **second, independent** defect — three perf budgets measuring wall clock, which would have kept
+> flaking on any busy machine — was fixed too (`process.cpuUsage`; **ceilings unchanged, only the
+> clock**), consuming the orphaned `069941e` rescue and extending it to `search-perf`, which that
+> rescue never reached. **`069941e` is now consumed and its worktree is safe to remove.** Merged
+> `11c584f`.
 >
 > ✅ **Housekeeping:** the RM-37 near-miss the previous batch flagged is resolved — its owner committed
 > it as `05fbf04`. Ten stale worktrees remain on disk; nine are merged, and `069941e` is the one
