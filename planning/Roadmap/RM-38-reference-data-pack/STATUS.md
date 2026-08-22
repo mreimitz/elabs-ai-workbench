@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T00:05:00Z"
+timestamp: "2026-08-23T00:20:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -140,7 +140,13 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       and the RS-01 refresh report are historical records and were correctly left alone.
 - [ ] WP 1.2 — pack loader + `installDataPackSource()` boot seam; compatibility dataset/catalog read
       the resolved pack; snapshot copy replaces `copy-data.mjs` — spec:
-      [`wp-1.2-loader-seam.md`](./wp-1.2-loader-seam.md). **Depends on 1.1.**
+      [`wp-1.2-loader-seam.md`](./wp-1.2-loader-seam.md). **status: in progress** · dispatched
+      2026-08-23 from `main` at `cf99ace`.
+      **Premises re-verified against the post-merge tree before dispatch** — the standing rule, after
+      RM-37 was caught four times by a premise that quietly stopped holding: `catalog.ts:88` and
+      `dataset.ts:15` still `readFileSync(new URL(…))` a fixed path; `copy-data.mjs` still copies
+      `src/compatibility/data` → `dist`; no `apps/api/src/data-pack/` exists yet;
+      `installPricingResolver` is still at `index.ts:203`. All four hold.
 
 ## Phase 2 — Migrate the tables
 
