@@ -63,7 +63,8 @@
     "RM-34",
     "RM-35",
     "RM-36",
-    "RM-37"
+    "RM-37",
+    "RM-38"
   ],
   "allocated_rs": [
     "RS-01",
@@ -79,6 +80,6 @@
     "RS-11"
   ],
   "next_dc": 26,
-  "next_rm": 38,
+  "next_rm": 39,
   "next_rs": 12
 }
