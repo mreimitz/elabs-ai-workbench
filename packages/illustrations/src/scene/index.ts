@@ -1,12 +1,16 @@
 // ==================================================================================================
 // The scene engine (Phase 2) — one barrel, four work packages
 // ==================================================================================================
-// WP 2.1 (this): `spec-validate.ts` — every reason a spec cannot be drawn, as a list; `layout.ts` —
-// bands, nodes, ports and a canvas, deterministically; `catalog.ts` — the seam between the two and
-// the live registry.
+// WP 2.1: `spec-validate.ts` — every reason a spec cannot be drawn, as a list; `layout.ts` — bands,
+// nodes, ports and a canvas, deterministically; `catalog.ts` — the seam between the two and the live
+// registry.
 //
-// Still to come, and deliberately absent: `route.ts` (WP 2.2, the connector router), `Scene.tsx`
-// (WP 2.3, the renderer), `export.ts` (WP 2.4). The layout's `endpoints` map is what 2.2 picks up.
+// WP 2.2: `route.ts` — the layout's `endpoints` and the spec's connectors become orthogonal paths,
+// filleted corners, nudged parallel runs and placed labels. Pure geometry: it emits numbers and path
+// data, never an element and never a colour.
+//
+// Still to come, and deliberately absent: `Scene.tsx` (WP 2.3, the renderer) and `export.ts`
+// (WP 2.4). The router's output is what 2.3 paints.
 
 export {
   ILLUSTRATION_SCENE_CATALOG,
@@ -43,6 +47,37 @@ export {
   roundScene,
   rowCentres,
 } from "./layout.js";
+export {
+  CONNECTOR_CORNER_UNITS,
+  CONNECTOR_NUDGE_UNITS,
+  CONNECTOR_STUB_UNITS,
+  LABEL_ADVANCE_RATIO,
+  LABEL_ALONG_FRACTIONS,
+  LABEL_LINE_RATIO,
+  LABEL_NUDGE_LADDER,
+  LABEL_NUDGE_UNITS,
+  LABEL_PADDING_UNITS,
+  ORTHO_DIRECTIONS,
+  PORT_CENTRE_TOLERANCE_UNITS,
+  PORT_MID_BAND_FRACTION,
+  PORT_SIDE_DIRECTIONS,
+  ROUTE_SHAPES,
+  type OrthoDirection,
+  type RouteShape,
+  type RoutedConnector,
+  type RoutedLabel,
+  type RouteSceneOptions,
+  type SceneRouting,
+  type UnresolvedConnector,
+  arrivalDirection,
+  connectorPathData,
+  endpointDirectionsToward,
+  framePortDirection,
+  labelBoxSize,
+  portSideDirection,
+  routeScene,
+  routeShapeOf,
+} from "./route.js";
 export {
   CYCLE_BAND_GATES,
   SCENE_ISSUE_CODES,
