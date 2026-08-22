@@ -65,6 +65,7 @@ import { registerBoundToolProviders } from "../use-bound-tools";
 import { explainerFor } from "./code-intel/explainers";
 import { CommandDialog } from "./CommandDialog";
 import { diagnosticsInRange, NODE_KIND_META } from "./node-kind-meta";
+import { sectionBodyText } from "./skill-components";
 import { isSectionNode, type EditOpsController } from "./use-edit-ops";
 
 // Skill IDE WP 5.2 — Monaco marker plumbing. `CodeEditor.onMount(editor, monacoApi)` exposes the full
@@ -260,14 +261,10 @@ function AnchoredExcerpt({ text, node }: { text: string; node: SkillGraphNode })
   );
 }
 
-/** The section BODY only (heading excluded) — exactly the span `update_section_body`'s `body` param
- *  replaces (server: heading through the next heading of ANY level). */
-function sectionBodyText(text: string, node: SkillGraphNode): string {
-  const lines = text.split(/\r?\n/);
-  const start = Math.max(0, node.anchor.startLine); // 0-based index right AFTER the heading line
-  const end = Math.min(lines.length, node.anchor.endLine);
-  return lines.slice(start, end).join("\n");
-}
+// RM-30 WP 7.7: `sectionBodyText` used to be defined here AND, byte-identically, in
+// `skill-components.ts`. Two copies is a real hazard on this surface, because the loop-guard
+// component APPENDS to the body this editor edits — if the two ever disagreed about where a body
+// starts, an append would eat or duplicate a line. There is now one definition, imported above.
 
 /** Editable section-body editor (edit mode): a non-read-only Monaco `CodeEditor` seeded from the
  *  current body (or a staged `update_section_body` op's body, if one is already pending) — "Apply"
