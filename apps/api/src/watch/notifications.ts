@@ -29,6 +29,7 @@ import type { AppDatabase } from "../db/database.js";
 import type { NotificationRow } from "../db/rows.js";
 import { httpError } from "../utils/errors.js";
 import type { WatchNotifyRequest } from "./actions.js";
+import { appPath } from "./outbound-link.js";
 
 /** Fields {@link NotificationRepository.create} accepts — the already-decided content of one
  *  notification (severity/title/body/link + optional rule/run identity + the late flag). */
@@ -235,9 +236,14 @@ export function createNotifySink(deps: NotifySinkDeps): (request: WatchNotifyReq
  * identity (the seam's `ctx` never threaded rule id/name through to the action — see `engine.ts`
  * `onRunSettled`), so the title there is enriched from the run's own summary instead. `template`, when
  * given, is used as the body verbatim (the operator's own wording); otherwise a readable default is
- * derived from whichever context is present. `linkPath` mirrors the app routes the existing webhook
- * payload already links to (`executeWebhook`/windowed webhook in `actions.ts`) so both channels point
- * at the same place.
+ * derived from whichever context is present.
+ *
+ * AM-OB13 — `linkPath` now comes from the SHARED path vocabulary (`outbound-link.ts`'s {@link appPath}),
+ * the same one the webhook bodies build from, so there is ONE definition of "where a run lives" rather
+ * than two that can drift. It is deliberately NOT run through `outboundUrl`: this field is consumed by
+ * `apps/web/src/features/notifications/NotificationBell.tsx` as `navigate(notification.linkPath)` — a
+ * react-router IN-APP navigation, which treats an absolute URL as a path and lands nowhere useful. A
+ * notification stays inside the app; only a webhook body leaves it.
  */
 function buildNotification(
   request: WatchNotifyRequest,
@@ -257,7 +263,7 @@ function buildNotification(
       severity: request.severity,
       title: w.ruleName,
       body: request.template ?? defaultBody,
-      linkPath: "/testing/observability/rules",
+      linkPath: appPath.watchRules(),
       ruleId: w.ruleId,
       late: w.late,
     };
@@ -272,7 +278,7 @@ function buildNotification(
       severity: request.severity,
       title,
       body: request.template ?? defaultBody,
-      linkPath: `/testing/runs/${request.runId}`,
+      linkPath: appPath.run(request.runId),
       runId: request.runId,
       late: false,
     };

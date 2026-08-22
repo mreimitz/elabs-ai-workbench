@@ -11,25 +11,24 @@
 
 import {
   WATCH_WEBHOOK_TIMEOUT_MS,
+  type WatchRunSummaryView,
   type WatchAction,
   type WatchNotifySeverity,
   type WatchRuleEventResult,
   type WatchWindowLevel,
   type WatchWorkflowDispatchTarget,
 } from "@mcp-token-footprint/shared";
+import { appPath, outboundUrl } from "./outbound-link.js";
 
-/** The compact run view the webhook payload carries (no secrets — a summary of the terminal run). */
-export interface WatchRunSummaryView {
-  id: string;
-  status: string;
-  outcome?: string;
-  scenarioId: string;
-  testId: string;
-  costUsd: number;
-  tokensIn: number;
-  tokensOut: number;
-  startedAt: string;
-}
+/**
+ * The compact run view the webhook payload carries (no secrets — a summary of the terminal run).
+ *
+ * AM-OB13 moved the DEFINITION to `packages/shared/src/manual-send.ts`, because the hand-driven send
+ * previews the same payload in the browser, so the shape is genuinely on the wire. Re-exported from
+ * here so every existing importer (`engine.ts`, the tests) is unchanged — and so a manual send and a
+ * rule fire can never describe the same run with two different shapes.
+ */
+export type { WatchRunSummaryView };
 
 /**
  * The compact window view a windowed rule's alert carries (WP4.2). A windowed rule fires on an
@@ -184,7 +183,9 @@ async function executeWebhook(
   const body = {
     // Appended fields (WP4.1): rule/run/link — plus the caller's opaque template string, if any.
     run: ctx.run,
-    link: `/testing/runs/${ctx.runId}`,
+    // AM-OB13 — ABSOLUTE when the deployment set `APP_BASE_URL`, the same bare path as before when
+    // it did not. The path itself comes from the one vocabulary (`outbound-link.ts`), never inline.
+    link: outboundUrl(appPath.run(ctx.runId)),
     ...(action.template !== undefined ? { template: action.template } : {}),
   };
   return postWebhook(url, body, services.fetchImpl);
@@ -261,7 +262,7 @@ export async function executeWatchWindowAction(
         if (!url) return { ok: false, error: "webhook secret not found" };
         const body = {
           window: ctx.window,
-          link: "/testing/observability/rules",
+          link: outboundUrl(appPath.watchRules()),
           ...(action.template !== undefined ? { template: action.template } : {}),
         };
         return postWebhook(url, body, services.fetchImpl);
