@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T12:40:00Z"
+timestamp: "2026-08-22T13:20:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -218,6 +218,28 @@ met and — where the box touches code — the gate
 > risk for anyone validating a gate run: the pre-existing rating-verdict perf case is one bad
 > scheduling slice from red, so a single perf failure in an agent's gate output is a known flake,
 > not that agent's defect.
+
+> **BATCH DISPATCHED 2026-08-22 (second batch of the day) — four agents, four different items,
+> one WP each.** Chosen for minimal file overlap: **RM-30 WP 7.8** (edge grammar + entry-point flows ·
+> `packages/shared` skill-graph + `apps/api/src/skillflow/**` + `apps/web/src/features/skills/design/**`)
+> · **RM-14 WP 2.2** (connector router · `packages/illustrations/src/scene/**`) · **RM-17 AM-OB2**
+> (`corrected_output` feedback · `apps/api/src/observability/**` + `apps/web/src/features/testing/**`)
+> · **RM-18 WP 1.3** (diagnostics bundle · new `apps/api/src/diagnostics/**` +
+> `apps/web/src/features/settings/**`). The only shared touch points are the two barrel files
+> (`packages/shared/src/index.ts`, `apps/api/src/index.ts`), where AM-OB2 and WP 1.3 each append one
+> line; both agents were told so, and the orchestrator merges one branch at a time.
+>
+> Three of the four again had **no build spec of their own** — 7.8 had only its approved *design*
+> doc, and RM-14 2.2 / RM-18 1.3 lived only as a ledger line — so
+> `wp-7.8-edge-grammar.md`, `wp-2.2-connector-router.md` and `wp-1.3-diagnostics-bundle.md` were
+> written, validated (`pnpm okf:validate` PASS) and committed **before** dispatch, and each agent was
+> given its spec's absolute path. Only AM-OB2 already had one
+> (`phase-6-langfuse/WP-6.2-AM-OB2-corrected-output-feedback.md`).
+>
+> **WP 7.8 is XL and is briefed as four separately-committed pieces** (contract+projector ·
+> reachability flows · connect grammar · box positions). That is a recovery requirement, not a
+> style: this plan has twice lost an agent to a session limit, and once the rescued work had no
+> commits of its own and came within a routine worktree cleanup of being destroyed silently.
 
 - [ ] WP 3.1 — **RM-26 WP 4.4** end-to-end verification: a real run through the built Docker
       image. 1 WP, needs a provider key. Highest value per hour on this list — it exercises
