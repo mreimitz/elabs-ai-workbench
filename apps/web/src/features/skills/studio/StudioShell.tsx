@@ -3,19 +3,18 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Button,
   Heading,
-  ToggleGroup,
-  ToggleGroupItem,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
   Text,
   cn,
 } from "@elabs-ai/components-ui";
-import { ArrowLeft, Code2, Columns2, TriangleAlert, Workflow } from "lucide-react";
+import { ArrowLeft, TriangleAlert } from "lucide-react";
 import { PageShell } from "../../../components/PageShell";
 import { ViewToolbar } from "../../../components/ViewToolbar";
 import { DiscardChangesDialog } from "../../../components/UnsavedChangesGuard";
 import { SkillDesignView } from "../design/SkillDesignView";
+import type { EditorMode } from "../design/UnifiedEditor";
 import type { SkillProblemsSummary } from "../design/ProblemsPanel";
 import { WorkspaceEditor } from "../workspace/WorkspaceEditor";
 import { StudioContextPanel } from "./StudioContextPanel";
@@ -24,24 +23,37 @@ import { StudioRail } from "./StudioRail";
 import { StudioDraftContext, useStudioDraftController } from "./draft";
 import { StudioFileTabs, studioTabDomId, studioTabPanelDomId } from "./files/StudioFileTabs";
 import { SKILL_MD } from "./files/file-ops";
-import { activeTab, closeTab, liveTabs, openTab, remapPath, remapTabs } from "./files/tab-model";
+import {
+  activeTab,
+  closeTab,
+  DESIGNER_TAB,
+  liveTabs,
+  openTab,
+  remapPath,
+  remapTabs,
+} from "./files/tab-model";
 import { readStudioRailCollapsed, writeStudioRailCollapsed } from "./studio-layout";
 import {
-  isStudioMode,
   readStudioUrlState,
-  STUDIO_DEFAULT_FILE,
   writeStudioUrlState,
-  type StudioMode,
   type StudioRail as StudioRailTab,
 } from "./studio-url";
 
-// ── Skill Studio (RM-30 WP 7.1) — the workbench frame ─────────────────────────────────────────────
-// One full-viewport surface: a slim, never-scrolling toolbar
-// (`[← Exit] [Flow | Code | Split] [Problems n] … [dirty] [Save…]`), a collapsible left rail
-// (Files · Tools · Settings), the editor as the CENTRE surface, a collapsible right context panel
-// that starts collapsed — never a reserved blank column — and the unified Problems strip along the
-// bottom. `PageShell scroll="fill" bodyGutter="none"` gives it a viewport-filling frame with no
-// outer scroll, so the toolbar cannot scroll away and each region owns its own overflow.
+// ── Skill Studio (RM-30 WP 7.1, reworked by WP 7.9) — the workbench frame ─────────────────────────
+// One full-viewport surface: a slim, never-scrolling toolbar (`[← Exit] [Problems n] … [dirty]
+// [Save…]`), a collapsible left rail (Files · Tools · Settings), the editor as the CENTRE surface, a
+// collapsible right context panel that starts collapsed — never a reserved blank column — and the
+// unified Problems strip along the bottom. `PageShell scroll="fill" bodyGutter="none"` gives it a
+// viewport-filling frame with no outer scroll, so the toolbar cannot scroll away and each region
+// owns its own overflow.
+//
+// RM-30 WP 7.9 (D-UX19 #2 — "Designer = visual, Files = source") took the view control OUT of that
+// toolbar and did not put it anywhere else: it stopped existing. The centre surface is a tab strip,
+// and the tab decides the surface —
+//
+//   Designer tab  ⇒ the editor's visual composer (`mode="flow"`)
+//   SKILL.md tab  ⇒ the editor's source pane over the SAME `content` buffer (`mode="code"`)
+//   any other tab ⇒ `WorkspaceEditor`, exactly as WP 7.4 shipped it
 //
 // The editing itself is the SAME `SkillDesignView` → `UnifiedEditor` chain the inspector used to
 // mount; it is moved here rather than re-implemented, and it hands its chrome (the save cluster, the
@@ -81,7 +93,7 @@ export function StudioShell({
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlState = readStudioUrlState(searchParams);
-  const { mode, rail: leftTab, sel } = urlState;
+  const { rail: leftTab, sel } = urlState;
   void sel; // read below, once, for the mount-time selection seed
 
   const applyUrlState = useCallback(
@@ -91,13 +103,14 @@ export function StudioShell({
     [setSearchParams],
   );
 
-  const setMode = useCallback((next: StudioMode) => applyUrlState({ mode: next }), [applyUrlState]);
   const setLeftTab = useCallback(
     (next: StudioRailTab) => applyUrlState({ rail: next }),
     [applyUrlState],
   );
+  // The Designer is the URL's ABSENT `?file=` (D-TB10: a zero-param Studio URL is a usable
+  // workbench). Every real path — SKILL.md included, since WP 7.9 — is written out explicitly.
   const setFile = useCallback(
-    (next: string) => applyUrlState({ file: next === STUDIO_DEFAULT_FILE ? null : next }),
+    (next: string) => applyUrlState({ file: next === DESIGNER_TAB ? null : next }),
     [applyUrlState],
   );
   // Stable by construction — `UnifiedEditor` publishes the selection through this on every change,
@@ -152,12 +165,12 @@ export function StudioShell({
   const draft = useStudioDraftController(skillId, versionId, nextVersionLabel);
   const dirty = draft.dirty;
 
-  // ── RM-30 WP 7.4 — the centre surface's editor tabs ───────────────────────────────────────────
-  // `?file=` names the ACTIVE tab (WP 7.1's param, unchanged); the OPEN SET is session state. The
-  // rendered set is `open ∩ what the working tree actually holds`, so a file that disappears by any
-  // route — a delete, a folder delete, a discard — can never leave a tab pointing at nothing.
+  // ── RM-30 WP 7.4 (reworked by WP 7.9) — the centre surface's editor tabs ──────────────────────
+  // `?file=` names the ACTIVE tab; the OPEN SET is session state. The rendered set is
+  // `open ∩ what the working tree actually holds`, so a file that disappears by any route — a
+  // delete, a folder delete, a discard — can never leave a tab pointing at nothing.
   const [openPaths, setOpenPaths] = useState<string[]>(() =>
-    urlState.file !== null && urlState.file !== SKILL_MD ? [urlState.file] : [],
+    urlState.file !== null && urlState.file !== DESIGNER_TAB ? [urlState.file] : [],
   );
   const existingPaths = useMemo(
     () => new Set(draft.files.entries.map((entry) => entry.path)),
@@ -172,10 +185,10 @@ export function StudioShell({
     [openPaths, existingPaths, draft.files],
   );
   // While the draft is still loading the working tree is empty, so `activeTab` would fall back to
-  // SKILL.md and overwrite a cold-loaded `?file=`. Hold the URL's word until there is a tree to
+  // the Designer and overwrite a cold-loaded `?file=`. Hold the URL's word until there is a tree to
   // check it against.
   const active = draft.loading
-    ? (urlState.file ?? SKILL_MD)
+    ? (urlState.file ?? DESIGNER_TAB)
     : activeTab(urlState.file, existingPaths);
 
   const openFile = useCallback(
@@ -207,8 +220,32 @@ export function StudioShell({
     [active, setFile],
   );
 
-  const activeEntry = active === SKILL_MD ? undefined : draft.files.entryByPath(active);
+  // The Designer and the SKILL.md source tab are BOTH served by the one mounted editor, so neither
+  // goes through `WorkspaceEditor`. That is not a nicety: the save route builds the new tree as "the
+  // base tree with SKILL.md ← content" and THEN applies `treeOps`, so a second writer for the
+  // manifest would silently win over the draft text the author just typed (`files/file-ops.ts`).
+  const editorVisible = active === DESIGNER_TAB || active === SKILL_MD;
+  const activeEntry = editorVisible ? undefined : draft.files.entryByPath(active);
   const manifestDirty = draft.manifestDirty;
+
+  // WHICH surface the one editor paints. Held as state rather than derived from `active` so that
+  // opening a plain file tab leaves the hidden editor exactly as it was — deriving it would flip the
+  // hidden pane to the canvas, remounting Monaco (and re-fitting the canvas on the way back) for a
+  // tab the author isn't even looking at.
+  const [editorMode, setEditorMode] = useState<EditorMode>(
+    urlState.file === SKILL_MD ? "code" : "flow",
+  );
+  useEffect(() => {
+    if (active === DESIGNER_TAB) setEditorMode("flow");
+    else if (active === SKILL_MD) setEditorMode("code");
+  }, [active]);
+
+  // The editor asking for the other surface (a problems-panel line link, a canvas selection while
+  // the source is showing) is the SAME action as opening that tab — there is no second mechanism.
+  const requestMode = useCallback(
+    (next: EditorMode) => openFile(next === "code" ? SKILL_MD : DESIGNER_TAB),
+    [openFile],
+  );
 
   // ── exit, guarded by the shared discard dialog when the draft is dirty ───────────────────────
   const [exitConfirming, setExitConfirming] = useState(false);
@@ -236,38 +273,8 @@ export function StudioShell({
           </Button>
           <span aria-hidden className="h-5 w-px shrink-0 bg-border" />
 
-          {/* RM-30 WP 7.4 — Flow and Split are views of the SKILL.md DOCUMENT; a resource file has
-              no graph to project. On a file tab the control is therefore code-only, and says why,
-              rather than offering two views that would change nothing on screen. */}
-          <ToggleGroup
-            type="single"
-            variant="segmented"
-            value={active === SKILL_MD ? mode : "code"}
-            onValueChange={(value) => {
-              if (isStudioMode(value)) setMode(value);
-            }}
-            aria-label="Editor view"
-          >
-            <ToggleGroupItem
-              value="flow"
-              aria-label="Show flow"
-              disabled={active !== SKILL_MD}
-              title={active === SKILL_MD ? undefined : "Flow is a view of SKILL.md"}
-            >
-              <Workflow className="size-4" aria-hidden /> Flow
-            </ToggleGroupItem>
-            <ToggleGroupItem value="code" aria-label="Show code">
-              <Code2 className="size-4" aria-hidden /> Code
-            </ToggleGroupItem>
-            <ToggleGroupItem
-              value="split"
-              aria-label="Split view"
-              disabled={active !== SKILL_MD}
-              title={active === SKILL_MD ? undefined : "Split is a view of SKILL.md"}
-            >
-              <Columns2 className="size-4" aria-hidden /> Split
-            </ToggleGroupItem>
-          </ToggleGroup>
+          {/* RM-30 WP 7.9 — the view control that used to sit here is GONE, not moved. Which surface
+              is showing is decided by the tab strip below, so there is nothing to pick. */}
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -328,7 +335,7 @@ export function StudioShell({
                 isHeadVersion={isHeadVersion}
                 tab={leftTab}
                 onTabChange={setLeftTab}
-                selectedFile={active}
+                selectedFile={active === DESIGNER_TAB ? undefined : active}
                 onSelectFile={openFile}
                 onPathMoved={handlePathMoved}
                 toolsContainerRef={setToolsContainer}
@@ -349,27 +356,28 @@ export function StudioShell({
                 manifestDirty={manifestDirty}
               />
 
-              {/* RM-30 WP 7.4 — the SKILL.md surface stays MOUNTED behind another file's tab, hidden
-                  rather than unmounted. Two things depend on that: the toolbar's one save cluster is
-                  registered BY this editor and cleared on its unmount, so unmounting it would take
-                  the Save button away exactly when an author has a file edit to save; and remounting
-                  would re-fit the canvas and re-fetch its bound tools on every tab switch. Monaco and
-                  the flow canvas both run `automaticLayout`/`ResizeObserver`, so they re-measure when
-                  the pane is shown again. */}
+              {/* ONE editor, TWO tabs. The Designer and the SKILL.md source tab are two views of the
+                  same document served by the same mounted `UnifiedEditor`, so the panel element is
+                  shared and takes the identity of whichever of the two is active. It also stays
+                  MOUNTED behind another file's tab, hidden rather than unmounted. Two things depend
+                  on that: the toolbar's one save cluster is registered BY this editor and cleared on
+                  its unmount, so unmounting it would take the Save button away exactly when an
+                  author has a file edit to save; and remounting would re-fit the canvas and re-fetch
+                  its bound tools on every tab switch. Monaco and the flow canvas both run
+                  `automaticLayout`/`ResizeObserver`, so they re-measure when the pane is shown
+                  again. */}
               <div
                 role="tabpanel"
-                id={studioTabPanelDomId(SKILL_MD)}
-                aria-labelledby={studioTabDomId(SKILL_MD)}
-                className={cn(
-                  "min-h-0 flex-1 flex-col p-3",
-                  active === SKILL_MD ? "flex" : "hidden",
-                )}
-                data-testid="studio-pane-skill-md"
+                id={studioTabPanelDomId(editorMode === "code" ? SKILL_MD : DESIGNER_TAB)}
+                aria-labelledby={studioTabDomId(editorMode === "code" ? SKILL_MD : DESIGNER_TAB)}
+                className={cn("min-h-0 flex-1 flex-col p-3", editorVisible ? "flex" : "hidden")}
+                data-testid="studio-pane-editor"
               >
                 <SkillDesignView
                   skillId={skillId}
                   versionId={versionId}
-                  hideModeToggle
+                  mode={editorMode}
+                  onRequestMode={requestMode}
                   onVersionSaved={onVersionSaved}
                   onOpenServerSettings={() => setLeftTab("settings")}
                   onOpenDiff={() => navigate(`${exitTo}?tab=diff`)}

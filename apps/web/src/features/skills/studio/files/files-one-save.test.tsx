@@ -286,8 +286,11 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
 
     await waitFor(() => expect(url()).toContain("file=references%2Fapi.md"));
     const tabs = await screen.findByRole("tablist", { name: "Open files" });
-    expect(within(tabs).getByRole("tab", { name: /SKILL\.md/ })).toBeInTheDocument();
+    // The pinned Designer stays first; the picked file joins it. SKILL.md is NOT there — it is a
+    // file tab now (WP 7.9), so it appears only once someone opens it.
+    expect(within(tabs).getByRole("tab", { name: "Designer" })).toBeInTheDocument();
     expect(within(tabs).getByRole("tab", { name: /api\.md/ })).toBeInTheDocument();
+    expect(within(tabs).queryByRole("tab", { name: /SKILL\.md/ })).toBeNull();
     // The file's own editor is on screen, and it is EDITABLE — no read-only badge in the Studio.
     expect(await screen.findByTestId("editor:references/api.md")).toHaveAttribute(
       "data-readonly",
@@ -296,7 +299,7 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     expect(screen.queryByText("Read-only")).toBeNull();
   });
 
-  test("a new file opens as an editable buffer immediately, and closes back to SKILL.md", async () => {
+  test("a new file opens as an editable buffer immediately, and closes back to the Designer", async () => {
     renderStudio();
     await waitForStudio();
 
@@ -307,46 +310,45 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
 
     fireEvent.click(screen.getByRole("button", { name: "Close limits.md" }));
     await waitFor(() => expect(url()).not.toContain("file="));
-    // …and the manifest surface is back, without ever having been unmounted.
-    expect(screen.getByTestId("studio-pane-skill-md")).toBeInTheDocument();
+    // …and the editor surface is back, without ever having been unmounted.
+    expect(screen.getByTestId("studio-pane-editor")).toBeInTheDocument();
   });
 
-  test("SKILL.md's tab can never be closed — it IS the skill", async () => {
+  test("the Designer tab can never be closed, and is always first", async () => {
     renderStudio();
     await waitForStudio();
     const tabs = await screen.findByRole("tablist", { name: "Open files" });
 
-    // Every file tab carries its own × (owner decision 2026-08-22) — the pinned manifest tab carries
-    // NONE at all, not a disabled one, so with only SKILL.md open there is no close control anywhere
-    // in the strip.
+    // Every FILE tab carries its own × (owner decision 2026-08-22); the pinned Designer carries NONE
+    // at all, not a disabled one, so with no file open there is no close control in the strip.
     expect(within(tabs).queryByRole("button", { name: /^Close/ })).toBeNull();
+    expect(within(tabs).getAllByRole("tab")[0]).toHaveAccessibleName("Designer");
 
     // …and the strip's keyboard close shortcut is inert on it.
-    const manifestTab = within(tabs).getByRole("tab", { name: /SKILL\.md/ });
-    fireEvent.keyDown(manifestTab, { key: "Delete" });
-    expect(within(tabs).getByRole("tab", { name: /SKILL\.md/ })).toBeInTheDocument();
-    expect(screen.getByTestId("studio-pane-skill-md")).toBeInTheDocument();
+    const designerTab = within(tabs).getByRole("tab", { name: "Designer" });
+    fireEvent.keyDown(designerTab, { key: "Delete" });
+    expect(within(tabs).getByRole("tab", { name: "Designer" })).toBeInTheDocument();
+    expect(screen.getByTestId("studio-pane-editor")).toBeInTheDocument();
   });
 
-  test("Flow and Split are offered for SKILL.md and DISABLED on a plain file tab", async () => {
+  test("SKILL.md is a SOURCE tab: it opens from the rail, is editable, and closes like a file", async () => {
     renderStudio();
     await waitForStudio();
 
-    expect(screen.getByRole("radio", { name: "Show flow" })).not.toBeDisabled();
-    expect(screen.getByRole("radio", { name: "Split view" })).not.toBeDisabled();
-
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.click(within(rail).getByText("api.md"));
-    await screen.findByTestId("editor:references/api.md");
+    fireEvent.click(within(rail).getByText("SKILL.md"));
+    await waitFor(() => expect(url()).toContain("file=SKILL.md"));
 
-    // A resource file has no graph to project — the control is code-only rather than offering two
-    // views that would change nothing on screen.
-    await waitFor(() => expect(screen.getByRole("radio", { name: "Show flow" })).toBeDisabled());
-    expect(screen.getByRole("radio", { name: "Split view" })).toBeDisabled();
-    expect(screen.getByRole("radio", { name: "Show code" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+    // It renders as TEXT in the centre surface, through the editor's own code pane (not through
+    // `WorkspaceEditor`, which would be a second writer for the manifest).
+    const editor = await screen.findByTestId("editor:SKILL.md");
+    expect(editor).toHaveAttribute("data-readonly", "false");
+    expect(editor.textContent).toContain("# Demo skill");
+
+    // And it closes like any other file, handing back to the Designer.
+    fireEvent.click(screen.getByRole("button", { name: "Close SKILL.md" }));
+    await waitFor(() => expect(url()).not.toContain("file="));
+    expect(await screen.findByTestId("canvas")).toBeInTheDocument();
   });
 
   test("create + type + reference, then ONE save carrying BOTH halves", async () => {
@@ -361,11 +363,9 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     fireEvent.click(screen.getByTestId("type:references/limits.md"));
 
     // 3 — reference it from SKILL.md, in the Code view.
-    // Back to the manifest first: Flow|Code|Split are ITS views, so the control only accepts a
-    // change while the manifest tab is the active one (WP 7.4).
+    // Open the manifest's SOURCE tab — RM-30 WP 7.9: that IS how you get the code surface now.
     const rail = screen.getByTestId("studio-left-rail");
     fireEvent.click(within(rail).getByText("SKILL.md"));
-    fireEvent.click(screen.getByRole("radio", { name: "Show code" }));
     fireEvent.click(await screen.findByTestId("type:SKILL.md"));
 
     // ONE dirty count over both halves, and still nothing saved.
@@ -399,11 +399,9 @@ describe("§I8 — create a resource file, type it, reference it, save ONE versi
     await createFile("limits.md", "references");
     fireEvent.click(await screen.findByTestId("type:references/limits.md"));
 
-    // Back to the manifest first: Flow|Code|Split are ITS views, so the control only accepts a
-    // change while the manifest tab is the active one (WP 7.4).
+    // Open the manifest's SOURCE tab — RM-30 WP 7.9: that IS how you get the code surface now.
     const rail = screen.getByTestId("studio-left-rail");
     fireEvent.click(within(rail).getByText("SKILL.md"));
-    fireEvent.click(screen.getByRole("radio", { name: "Show code" }));
     fireEvent.click(await screen.findByTestId("type:SKILL.md"));
 
     const cluster = await screen.findByTestId("design-save-cluster");

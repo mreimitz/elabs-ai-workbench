@@ -26,8 +26,9 @@ export type StudioLeftRailProps = {
   isHeadVersion: boolean;
   tab: StudioLeftRailTab;
   onTabChange: (tab: StudioLeftRailTab) => void;
-  /** The file the centre surface has open — the Studio's `?file=` param. */
-  selectedFile: string;
+  /** The file the centre surface has open — the Studio's `?file=` param, or `undefined` while the
+   *  Designer (which is not a file) is showing. */
+  selectedFile: string | undefined;
   onSelectFile: (path: string) => void;
   /** A path (a file, or a folder and everything under it) was renamed or moved in the draft. */
   onPathMoved: (from: string, to: string) => void;

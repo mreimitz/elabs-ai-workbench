@@ -394,7 +394,7 @@ export function resolveSeededFocus(
 
 /**
  * SI14 — bring a CALLER-seeded (external) selection into view: the problems panel's "Show node",
- * a `?node=` deep link, or split-mode code-cursor sync selects a node by re-seeding the `nodes`
+ * a `?node=` deep link, or code-cursor sync selects a node by re-seeding the `nodes`
  * prop's `selected` flags, which says nothing about visibility. Render-null helper mounted as a
  * CHILD of {@link SkillGraphCanvas} (children render inside the React Flow context — the same
  * contract `FitViewOnChange` and the Trace tab's `TraceFocusNode` use). Pans ONLY when the node's
@@ -715,8 +715,9 @@ export function buildFlow(
  * Skill IDE WP 9.4 (I10.5) — the graph legend popover: every node kind + edge kind with its explainer
  * (title + one-line teaching + guide anchor), resolved through the SINGLE `explainers.ts` registry — the
  * SAME source the code hovers, the node panel's "What is this?", and the problems panel read. So the
- * legend can never teach a kind differently from the rest of the IDE. Position-agnostic (the caller
- * places it — the unified editor's toolbar, next to the Flow/Code/Split control).
+ * legend can never teach a kind differently from the rest of the IDE. Position-agnostic — the caller
+ * places it. RM-30 WP 7.7 removed the last such caller (the editor toolbar's Legend popover); the
+ * vocabulary now lives on the Components palette rows, off the same registry.
  */
 export function ExplainerLegend() {
   return (

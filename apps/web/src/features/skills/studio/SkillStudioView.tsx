@@ -10,7 +10,7 @@ import { StudioShell } from "./StudioShell";
 // ── Skill Studio (RM-30 WP 7.1) — the route ───────────────────────────────────────────────────────
 // `/skills/:skillId/studio` — a full-viewport authoring workbench for ONE skill. It is a route, not a
 // dialog (D-TB10): an author bookmarks it, shares it, and reloads it, and everything that decides
-// what it is showing rides in the query string (`?mode=&file=&sel=` — see `studio-url.ts`).
+// what it is showing rides in the query string (`file` · `rail` · `sel` — see `studio-url.ts`).
 //
 // It always authors the skill's CURRENT version: a save produces a new immutable version and the
 // route re-points onto it. Older versions are read at `/skills/:skillId` (the inspector), which is
