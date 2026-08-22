@@ -29,6 +29,8 @@ import {
   Download,
   Grid3x3,
   Loader2,
+  MoreHorizontal,
+  Send,
   StopCircle,
   WifiOff,
 } from "lucide-react";
@@ -40,6 +42,8 @@ import { GRADER_LABELS, scoreTone } from "../grade-format";
 import { isReviewInFlight, REVIEWING_BADGE } from "../RunBar";
 import { InlineError } from "../../../components/InlineError";
 import { StatusBadge } from "../../../components/StatusBadge";
+import { IconButton } from "../../../components/IconButton";
+import { SendToWebhookDialog } from "../../watch/SendToWebhookDialog";
 // One tab shell everywhere (audit §S21/§S22) — the suite console uses the SAME TabPanel as the
 // run console and every detail page: text-only triggers, pinned strip, default-scroll tab bodies.
 import { TabPanel, TabPanelContent } from "../../../components/TabPanel";
@@ -344,6 +348,10 @@ export function SuiteRunConsole({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            {/* RM-17 Phase 6 (AM-OB13) — the suite-run equivalent of the run console's overflow
+                menu: push this suite run's summary + report link to a webhook by hand. Its own
+                component so the open state does not join this console's already-large state. */}
+            <SuiteRunActionsMenu suiteRunId={suiteRunId} />
             {!isTerminal ? (
               <Button
                 variant="destructive"
@@ -576,4 +584,40 @@ function axisRefs(
 /** A readable fallback label for an id whose entity no longer resolves (deleted since the run). */
 function shortId(id: string): string {
   return `#${id.slice(0, 6)}`;
+}
+
+/**
+ * RM-17 Phase 6 (AM-OB13) — the suite-run console's overflow menu. One item today ("Send to
+ * webhook…"), mirroring `RunBar`'s `RunActionsMenu` so the two consoles offer the same affordance
+ * in the same shape. Self-contained: it owns its own open state, so `SuiteRunConsole` gains one
+ * element and no new state.
+ *
+ * Shown at every lifecycle stage on purpose, unlike the run console's menu (which waits for a
+ * terminal run): a suite run that is still going is exactly the thing an operator wants to hand
+ * someone — "this is running now, here it is" — and the payload says its status either way.
+ */
+function SuiteRunActionsMenu({ suiteRunId }: { suiteRunId: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <IconButton variant="ghost" size="icon-sm" label="More actions for this suite run">
+            <MoreHorizontal aria-hidden />
+          </IconButton>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => setOpen(true)}>
+            <Send aria-hidden />
+            <span>Send to webhook…</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <SendToWebhookDialog
+        open={open}
+        onOpenChange={setOpen}
+        subject={{ kind: "suite-run", id: suiteRunId }}
+      />
+    </>
+  );
 }
