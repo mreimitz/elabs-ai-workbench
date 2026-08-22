@@ -202,6 +202,30 @@ export const ASSISTANT_ROUTE_MANIFEST: readonly AssistantRouteManifestEntry[] = 
     exempt:
       "Asset-repository catalog; the operable illustration surface arrives with the `illustration` addressable view and the illustrations_* tools in RM-14 WP 4.1.",
   },
+  // The in-app user guide (planning/Roadmap/RM-18-platform/ WP 1.2) — three read-only document routes over
+  // STATIC BUILD OUTPUT (`/doc-content/`, written by `scripts/build-docs-bundle.mjs`). There is no
+  // documentation entity in `ASSISTANT_ENTITY_KINDS` and no doc-aware assistant read tool, so there
+  // is nothing for the dock to operate here and nothing honest to pin — the same shape as
+  // `/illustrations` above, whose catalog is likewise a build-time constant rather than app data.
+  // Fabricating a pin would widen the dock's write scope over content it cannot write.
+  {
+    pattern: "/docs",
+    surface: "global",
+    exempt:
+      "User-guide index over static build output; no documentation entity kind and no doc-aware assistant read tool exists, so there is nothing page-specific for the dock to operate. A real `docs` surface would need a doc search/read tool, which WP 1.2 explicitly excludes (its non-goals name search as its own piece of work).",
+  },
+  {
+    pattern: "/docs/changelog",
+    surface: "global",
+    exempt:
+      "The rendered repository CHANGELOG — a single static document with no entity and no per-page action. Same reasoning as /docs.",
+  },
+  {
+    pattern: "/docs/:subject",
+    surface: "global",
+    exempt:
+      "One section of the user guide. The `:subject` param names a documentation SUBJECT, which is not an AssistantEntityKind (D-AO3 freezes that vocabulary), so it is deliberately unpinned rather than pinned to a fabricated kind.",
+  },
   { pattern: "*", surface: "global", exempt: "404 catch-all." },
 
   // ── Hub routes — real, route-keyed surfaces (assistant-operability WP 2.1, D-AO3). Flipped from the

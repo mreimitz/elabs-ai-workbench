@@ -74,6 +74,7 @@ import {
   Users,
 } from "lucide-react";
 import { NotificationBell } from "../features/notifications/NotificationBell";
+import { HelpButton } from "./HelpButton";
 import { THEME_PREFERENCE_ORDER, type ThemePreference } from "../lib/theme";
 import { BreadcrumbSlotProvider } from "./breadcrumb-slot";
 import { IconButton } from "./IconButton";
@@ -498,6 +499,11 @@ export function AppShell({
           {/* Observability WP4.3 (D-OB19) — the notification center bell: unread badge, a popover of
               recent notifications, deep-link + mark-read on click, "mark all read". Always mounted
               (no auth gate, unlike the Assistant dock below) — every install has watch rules. */}
+          {/* RM-18 WP 1.2 — the ONE help affordance. It reads the current route and opens that
+              view's page of the shipped user guide (`/docs`), falling back to the index rather than
+              vanishing. Deliberately here and nowhere else: one insertion into the shell means zero
+              per-view edits, and a new route gets help by adding a line to `features/docs/help-map.ts`. */}
+          <HelpButton />
           <NotificationBell />
           {/* F0/ST2: the theme control lives here — reachable in two clicks from ANY route.
               Driven by the app's theme PREFERENCE (the single source `useThemePreference` owns),
