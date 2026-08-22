@@ -38,6 +38,18 @@ export type PaperStageProps = {
   registration?: boolean;
   /** One grid cell, in px. Defaults to one iso unit. */
   cell?: number;
+  /**
+   * A stable prefix for the grid pattern's id. Defaults to React's `useId`, which is unique per
+   * INSTANCE — see the header for why that default is the right one.
+   *
+   * Pass one explicitly when byte-identical output ACROSS TREES matters: the scene renderer does, so
+   * that a scene rendered alone and the same scene rendered beside another emit the same bytes, which
+   * is what the WP 2.4 export path is built on. The caller then owns the uniqueness promise the
+   * default was making, and the scene renderer keeps it by deriving the prefix from the scene id.
+   * Two stages sharing a prefix paint the FIRST one's grid — harmless only when they are the same
+   * size, which two renders of one scene are by construction, and a defect otherwise.
+   */
+  idPrefix?: string;
 };
 
 /** Length of a registration mark's arms, in px. */
@@ -53,6 +65,7 @@ export function PaperStage({
   crosshair = true,
   registration = true,
   cell = ISO_UNIT,
+  idPrefix,
 }: PaperStageProps): ReactElement {
   // The instance half comes from React, the geometry half stays because it is what makes the markup
   // readable — `illus-paper-grid-_R_1_-c16-m4` still says which grid it defines. The filter keeps
@@ -60,7 +73,8 @@ export function PaperStage({
   // nothing, which is the point — it is a floor, not a rewrite, so two ids that differ cannot be
   // flattened into one by the sanitiser itself. The leading run is `illus`, never hexadecimal, so no
   // id here can be mistaken for a color literal by the package's no-literals guard.
-  const instance = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const generated = useId().replace(/[^a-zA-Z0-9_-]/g, "");
+  const instance = idPrefix === undefined ? generated : idPrefix.replace(/[^a-zA-Z0-9_-]/g, "");
   const patternId = `illus-paper-grid-${instance}-c${fmt(cell)}-m${majorEvery}`.replace(/\./g, "p");
   const majorCell = cell * majorEvery;
   const cx = x + width / 2;
