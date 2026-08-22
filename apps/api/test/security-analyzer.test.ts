@@ -487,6 +487,61 @@ test("rule 6 · `set`/`put` fire only where they LEAD a verb phrase", () => {
   assert.equal(fires("get_set_expression"), 0);
 });
 
+test("rule 6 · a name that LEADS with a read verb is not second-guessed by its prose", () => {
+  // The second false positive found by triaging the owner's servers: `qlik_get_script` is a getter
+  // whose description explains how a DIFFERENT tool rejects stale edits. "writes" there is a plural
+  // noun, and the description matcher read it as the verb.
+  assert.deepEqual(
+    ruleReadonlyContradiction(
+      tool({
+        toolName: "qlik_get_script",
+        description:
+          "Get the data load script for a Qlik app. Pass baseVersionId back to qlik_update_script so the server can reject writes against a stale view of the script.",
+        annotations: { readOnlyHint: true },
+      }),
+    ),
+    [],
+  );
+
+  // The guard is the NAME leading with a read verb — not the word "writes" being forgiven. A tool
+  // that does not claim to be a getter still fires on the same description.
+  assert.equal(
+    ruleReadonlyContradiction(
+      tool({
+        toolName: "sync_script",
+        description: "Writes the script back to the app.",
+        annotations: { readOnlyHint: true },
+      }),
+    ).length,
+    1,
+  );
+});
+
+test("rule 6 · the owner's three REAL contradictions still fire (RM-37 WP 0.5 triage)", () => {
+  // Regression fixtures taken verbatim from the triage of the owner's own servers. If a future
+  // tightening of this rule silences these, it has stopped earning its `error`.
+  const fires = (toolName: string, description: string) =>
+    ruleReadonlyContradiction(tool({ toolName, description, annotations: { readOnlyHint: true } }))
+      .length;
+
+  // A genuinely destructive tool declaring itself read-only — the case the rule exists for.
+  assert.equal(
+    fires("qlik_predict_quick_delete_model", "Remove a trained model from the server registry."),
+    1,
+  );
+  // Mutates session state; a host that auto-runs read-only tools would silently change the
+  // operator's filters.
+  assert.equal(
+    fires("qlik_clear_selections", "Clearing selections removes filters and shows all data again."),
+    1,
+  );
+  // Creates server-side state, even though that state is session-scoped and transient.
+  assert.equal(
+    fires("qlik_create_data_object", "Create a temporary calculation object (session object)."),
+    1,
+  );
+});
+
 test("rule 6 · a read verb earlier in the name suppresses a STRONG mutating token too", () => {
   const fires = (toolName: string) =>
     ruleReadonlyContradiction(tool({ toolName, annotations: { readOnlyHint: true } })).length;

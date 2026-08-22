@@ -62,8 +62,17 @@ import { z } from "zod";
  * `error` and zero `warning` findings and 49 hygiene `info` findings, scored 51/`high`. See
  * {@link SECURITY_SEVERITY_DEDUCTION_CAP}. Every score changes, so version 2 and version 3 reports
  * are not comparable.
+ *
+ * **Version 4 (2026-08-22, RM-37 WP 0.5) — `annotation.readonly-contradiction` became positional.**
+ * The rule matched a mutating verb ANYWHERE in a tool's name, so `qlik_get_set_expression` — a
+ * plain getter on three of the owner's own Qlik servers — scored the analyzer's one `error` out of
+ * the noun "set expression". Two guards now decide it: a read verb earlier in the name wins, and
+ * `set`/`put` fire only from the leading verb position. The rule asks the same question; it asks it
+ * of the right token. A finding produced under version 3 may be absent under version 4, which is
+ * exactly the "not comparable" condition this constant exists to make visible — a diff across the
+ * change is refused rather than reporting an `error` as resolved that nobody fixed.
  */
-export const SECURITY_ANALYZER_VERSION = 3;
+export const SECURITY_ANALYZER_VERSION = 4;
 
 /**
  * Ordered worst-first, which is also the order findings are emitted in (D-SP6) and the order the
@@ -1199,6 +1208,24 @@ export const securityDiffQuerySchema = z.object({ baseline: z.string().trim().mi
 // accessible detail, and anyone who wants the findings drills into `GET /api/scans/:scanId/security`
 // with the `scanId` this row already names. Deliberately NOT a `SecurityReport` per server — a list
 // endpoint that shipped forty full finding lists to paint forty chips would be the wrong trade.
+
+/**
+ * **Has the owner accepted this analyzer's risk banding for the fleet list?** (RM-37 WP 0.5)
+ *
+ * `false` until RM-20's `STATUS.md` box *"the false-positive rate on YOUR real servers"* is ticked.
+ * While it is `false`, `/servers` cards state a COUNT — "12 findings · 1 error" — and never a band
+ * word. The reason is narrow and specific: a band is a judgement ("High risk"), a count is a
+ * measurement, and this analyzer had just been caught calling a getter a mutation. Announcing an
+ * unreviewed judgement across a whole fleet list is how an operator learns to stop reading the
+ * loudest thing on the page.
+ *
+ * The band words are NOT hidden — they stay on the scan Security tab, where the findings that
+ * produced them are one scroll away and can be judged. This gates the summary surface only.
+ *
+ * Flipping this to `true` is a one-line change with no schema, wire or migration behind it, and it
+ * belongs in the same commit that ticks RM-20's box.
+ */
+export const FLEET_POSTURE_BAND_ACCEPTED = false;
 
 /**
  * One server's posture, as of its latest **`success`** scan.

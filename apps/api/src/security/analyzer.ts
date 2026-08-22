@@ -507,8 +507,133 @@ export const MUTATING_VERBS_IN_DESCRIPTION = [
   "sends",
 ] as const;
 
-export const MUTATING_NAME_PATTERN = tokenPattern(MUTATING_VERBS_IN_NAME);
+// NOTE — there is deliberately no `MUTATING_NAME_PATTERN` any more. A single first-match regex over
+// the whole name is what produced this rule's false positives, so leaving it exported beside
+// {@link findMutatingNameToken} would leave a second, quietly wrong answer for the next caller to
+// reach for. The vocabulary lives in {@link MUTATING_VERBS_IN_NAME}; the matching is positional.
 export const MUTATING_DESCRIPTION_PATTERN = tokenPattern(MUTATING_VERBS_IN_DESCRIPTION);
+
+/**
+ * Tokens that declare the name a READ (RM-37 WP 0.5).
+ *
+ * When one of these precedes a mutating token in the SAME name, the mutating token is part of the
+ * noun being read, not the action being performed: `qlik_get_set_expression` reads *a set
+ * expression*, `get_delete_policy` reads *a delete policy*. The leading verb is what the tool does.
+ */
+// biome-ignore format: one token per line — the list IS the review surface
+export const READ_VERBS_IN_NAME = [
+  "get",
+  "list",
+  "read",
+  "fetch",
+  "describe",
+  "search",
+  "query",
+  "find",
+  "show",
+] as const;
+
+/**
+ * The two inflection families that are as often a NOUN or a trailing modifier as they are a verb.
+ *
+ * `set` and `put` are the weakest tokens in {@link MUTATING_VERBS_IN_NAME}, and they produced this
+ * rule's only measured false positives: on the owner's three Qlik servers,
+ * `qlik_get_set_expression` and `qlik_generate_set_expression` are both getters whose names carry
+ * the noun "set expression". They therefore fire only from the LEADING verb position — see
+ * {@link findMutatingNameToken}.
+ */
+export const WEAK_MUTATING_VERBS_IN_NAME = ["set", "sets", "put", "puts"] as const;
+
+/**
+ * How many tokens may precede a weak verb and still leave it "leading".
+ *
+ * **One**, because that is how MCP servers namespace a tool: `qlik_set_session_mutation_mode`,
+ * `github_put_file`. Anything deeper and the verb is sitting inside a noun phrase — which is
+ * exactly the shape of both measured false positives (`qlik_get_set_expression`,
+ * `qlik_generate_set_expression`, both at index 2).
+ */
+const WEAK_VERB_MAX_LEADING_OFFSET = 1;
+
+const READ_NAME_TOKENS = new Set<string>(READ_VERBS_IN_NAME);
+const MUTATING_NAME_TOKENS = new Set<string>(MUTATING_VERBS_IN_NAME);
+const WEAK_MUTATING_NAME_TOKENS = new Set<string>(WEAK_MUTATING_VERBS_IN_NAME);
+
+/** Every alphanumeric run in a name, in order — the same token boundary {@link tokenPattern} uses. */
+function tokenizeName(name: string): TokenMatch[] {
+  const tokens: TokenMatch[] = [];
+  const pattern = /[a-zA-Z0-9]+/g;
+  let match = pattern.exec(name);
+  while (match !== null) {
+    tokens.push({ index: match.index, length: match[0].length, text: match[0] });
+    match = pattern.exec(name);
+  }
+  return tokens;
+}
+
+/**
+ * The mutating token a tool NAME actually claims — or `null` when every candidate is a noun.
+ *
+ * Two guards, both added by RM-37 WP 0.5 after `qlik_get_set_expression` scored an `error` on the
+ * owner's own servers. Both are about POSITION, which is the only signal a name carries:
+ *
+ *   1. **A read verb earlier in the name wins.** `get`, `list`, `read`, … announce what the tool
+ *      does; a mutating token after one of them names the thing being read.
+ *   2. **`set`/`put` must lead the verb phrase.** They are as often nouns ("the config set", "a set
+ *      expression") as verbs, so they fire from index 0 — or index 1 behind a single namespace
+ *      token — and never from deeper in a noun phrase.
+ *
+ * The deliberate cost, stated rather than hidden: a genuine mutation named `search_and_delete_all`
+ * no longer fires. Measured against the owner's 198-tool corpus that costs **nothing** (no name
+ * puts a read verb in front of a real mutation), and this is the analyzer's ONE `error` rule — an
+ * `error` an operator learns to ignore is worse than no rule at all.
+ */
+/**
+ * Does this name LEAD with a read verb — `get_script`, `qlik_list_apps`, `fetch_report`?
+ *
+ * A tool name is an identifier its author chose; a description is prose written for a model. When
+ * the two disagree, the name wins, because the name is the only part the author had to be precise
+ * about. `qlik_get_script` on the owner's servers is the case: its description ends *"so the server
+ * can reject **writes** against a stale view of the script"* — a plural NOUN, naming what a
+ * different tool does — and the description matcher read it as a mutation verb.
+ *
+ * One namespace token may precede the read verb, for the same reason it may precede a weak mutating
+ * verb: `qlik_get_script` and `get_script` are the same claim.
+ */
+function nameLeadsWithReadVerb(name: string): boolean {
+  const tokens = tokenizeName(name);
+  for (let index = 0; index < tokens.length && index <= WEAK_VERB_MAX_LEADING_OFFSET; index += 1) {
+    const token = tokens[index];
+    if (token !== undefined && READ_NAME_TOKENS.has(token.text.toLowerCase())) return true;
+  }
+  return false;
+}
+
+export function findMutatingNameToken(name: string): TokenMatch | null {
+  const tokens = tokenizeName(name);
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token === undefined) continue;
+    const lower = token.text.toLowerCase();
+    if (!MUTATING_NAME_TOKENS.has(lower)) continue;
+
+    // Guard 1 — a read verb anywhere before this token. (Any LATER mutating token is behind the
+    // same read verb, so this could equally `return null`; the `continue` keeps the loop uniform.)
+    const readVerbPrecedes = tokens
+      .slice(0, index)
+      .some((earlier) => READ_NAME_TOKENS.has(earlier.text.toLowerCase()));
+    if (readVerbPrecedes) continue;
+
+    // Guard 2 — a weak verb has to LEAD a verb phrase: at most one namespace token in front of it,
+    // and at least one token after it for it to act on.
+    if (WEAK_MUTATING_NAME_TOKENS.has(lower)) {
+      const leads = index <= WEAK_VERB_MAX_LEADING_OFFSET && index < tokens.length - 1;
+      if (!leads) continue;
+    }
+
+    return token;
+  }
+  return null;
+}
 
 /**
  * The one `error` in the annotation family: the server is asserting `readOnlyHint: true` while its
@@ -521,7 +646,17 @@ export function ruleReadonlyContradiction(tool: ToolScan): SecurityFinding[] {
 
   const name = readText(tool.toolName);
   const description = readText(tool.description);
-  const inName = matchToken(MUTATING_NAME_PATTERN, name);
+
+  // RM-37 WP 0.5 — a tool whose NAME leads with a read verb is a read tool, and this rule does not
+  // second-guess that from prose. `qlik_get_script` scored an `error` because its description
+  // mentions "writes" while explaining how ANOTHER tool rejects stale ones. The name is the
+  // author's own identifier; the description is prose written for a model. When they disagree, the
+  // one that had to be precise wins.
+  if (nameLeadsWithReadVerb(name)) return [];
+
+  // Position-aware — a name is an ordered claim, so where the token sits decides whether it is the
+  // verb or part of the noun. The vocabulary is still {@link MUTATING_VERBS_IN_NAME}.
+  const inName = findMutatingNameToken(name);
   const inDescription =
     inName === null ? matchToken(MUTATING_DESCRIPTION_PATTERN, description) : null;
   const hit = inName ?? inDescription;
