@@ -54,8 +54,84 @@ export function runGit(
     cwd,
     timeout: options.timeoutMs,
     maxBuffer: 16 * 1024 * 1024,
-    env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", ...options.env },
+    env: { ...buildGitSpawnEnv(), GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "", ...options.env },
   });
+}
+
+/**
+ * Variables a `git` child genuinely needs, in the order a reader should think about them.
+ *
+ * `PATH` (find the binary and its helpers), `HOME`/`USERPROFILE` (`~/.gitconfig`, `~/.ssh`, the
+ * per-user cert store), locale, the Windows machinery `git` shells out through, every `GIT_*` /
+ * `GIT_SSH*` knob, and the proxy variables an operator behind a corporate proxy has to set for a
+ * clone to work at all.
+ */
+const GIT_ENV_PASSTHROUGH = [
+  "PATH",
+  "HOME",
+  "USERPROFILE",
+  "HOMEDRIVE",
+  "HOMEPATH",
+  "SYSTEMROOT",
+  "WINDIR",
+  "COMSPEC",
+  "TEMP",
+  "TMP",
+  "TMPDIR",
+  "LANG",
+  "LC_ALL",
+  "LC_CTYPE",
+  "SSH_AUTH_SOCK",
+  "TZ",
+] as const;
+
+/** Prefixes whose whole family is forwarded (`GIT_DIR`, `GIT_SSH_COMMAND`, `GIT_CONFIG_*`, …). */
+const GIT_ENV_PREFIXES = ["GIT_", "GIT-"] as const;
+
+/** Proxy variables, both spellings — `curl`/`git` read the lowercase ones on most platforms. */
+const GIT_PROXY_VARS = [
+  "HTTP_PROXY",
+  "HTTPS_PROXY",
+  "ALL_PROXY",
+  "NO_PROXY",
+  "http_proxy",
+  "https_proxy",
+  "all_proxy",
+  "no_proxy",
+] as const;
+
+/**
+ * The MINIMAL environment for a `git` child (RM-37 WP 0.4), mirroring
+ * `assistant/spawn-env.ts`'s `buildAssistantSpawnEnv`.
+ *
+ * This used to be `{ ...process.env, … }`. A `git` subprocess therefore inherited **`MCP_SECRET_KEY`**
+ * — the key that decrypts every stored MCP credential and OAuth token in the database — along with
+ * `DATABASE_PATH`, every provider-adjacent variable and everything else the API process happens to
+ * carry. That is a real exposure, not a hypothetical one: `git` runs hooks, `core.askpass` helpers,
+ * `GIT_SSH_COMMAND`, filters and diff drivers, and a repository being cloned from GitHub gets a say
+ * in some of those. The blast radius of a hostile repository should not include the app's master key.
+ *
+ * The list is an **allow-list on purpose.** A deny-list ("drop MCP_SECRET_KEY") is only ever correct
+ * until the next variable is added, and nobody re-reads a deny-list when they add one.
+ * `apps/api/test/git-spawn-env.test.ts` pins both directions.
+ */
+export function buildGitSpawnEnv(
+  source: NodeJS.ProcessEnv = process.env,
+): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  const copy = (name: string): void => {
+    const value = source[name];
+    if (typeof value === "string") env[name] = value;
+  };
+
+  for (const name of GIT_ENV_PASSTHROUGH) copy(name);
+  for (const name of GIT_PROXY_VARS) copy(name);
+  for (const name of Object.keys(source)) {
+    if (GIT_ENV_PREFIXES.some((prefix) => name.startsWith(prefix))) copy(name);
+  }
+
+  return env;
 }
 
 /**

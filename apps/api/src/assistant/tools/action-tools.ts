@@ -21,6 +21,8 @@
 // added to `ASSISTANT_READ_TOOL_NAMES` (auto-allow) directly, like every other read.
 import { tool } from "@anthropic-ai/claude-agent-sdk";
 import {
+  RATE_LIMIT_ASSISTANT_TOOL_CALL_KEY,
+  RATE_LIMIT_EXPENSIVE_PER_MINUTE,
   RATING_ISSUE_SEVERITIES,
   RATING_ISSUE_STATUSES,
   RATING_ISSUE_TARGET_KINDS,
@@ -57,6 +59,20 @@ export interface ActionToolDeps {
   skills: SkillRepository;
   servers: ServerRepository;
   runs: RunRepository;
+  /**
+   * RM-37 WP 0.4 — the shared in-memory rate budget, so `mcp_tool_call` cannot be turned into an
+   * unbounded outbound-request loop by an agent that gets stuck (or by a hostile tool RESULT that
+   * talks it into one — the tool's own description already warns that its output is untrusted).
+   *
+   * Optional and injected: a tool call has no socket peer to attribute a budget to, so it is counted
+   * process-wide under one key. Every existing test harness keeps its current deps bag; when it is
+   * absent the tool behaves exactly as before.
+   */
+  rateLimiter?: {
+    hit(key: string, limit: number): { limited: boolean; retryAfterSeconds: number };
+  };
+  /** The per-window budget for `mcp_tool_call`. Defaults to the shared constant. */
+  rateLimitPerMinute?: number;
 }
 
 // ── Compaction defaults (mirror ./index.ts's discipline: cap + explicit truncated marker) ────────────
@@ -131,6 +147,18 @@ export function buildActionToolDefinitions(deps: ActionToolDeps) {
       },
       async (args) =>
         safeTool(async () => {
+          // RM-37 WP 0.4 — the expensive-action budget. Every call here opens (or reuses) a real MCP
+          // connection to a third-party server; a stuck loop is a denial-of-service on somebody
+          // else's endpoint as much as on this app.
+          const budget = deps.rateLimiter?.hit(
+            RATE_LIMIT_ASSISTANT_TOOL_CALL_KEY,
+            deps.rateLimitPerMinute ?? RATE_LIMIT_EXPENSIVE_PER_MINUTE,
+          );
+          if (budget?.limited) {
+            throw new Error(
+              `Too many MCP tool calls in the last minute. Wait ${budget.retryAfterSeconds}s and try again.`,
+            );
+          }
           const result = await deps.scanService.callTool(
             args.serverId,
             args.toolName,

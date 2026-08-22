@@ -1,3 +1,4 @@
+export * from "./api-hardening.js";
 export * from "./api-tokens.js";
 export * from "./assistant-route-manifest.js";
 export * from "./assistant-scope.js";

@@ -3,6 +3,7 @@ import {
   API_TOKEN_INVALID_ERROR_CODE,
   API_TOKEN_SCOPE_FORBIDDEN_ERROR_CODE,
   type ApiTokenScope,
+  RATE_LIMITED_ERROR_CODE,
   readBearerToken,
   requiredScopesForRoute,
 } from "@mcp-token-footprint/shared";
@@ -247,9 +248,27 @@ function scopeCheck(
 export function registerApiTokenGuard(
   app: FastifyInstance,
   service: ApiTokenService,
-  options: { authRequired: boolean },
+  options: {
+    authRequired: boolean;
+    /**
+     * RM-37 WP 0.4 — the auth-failure budget. Optional so every existing test harness keeps its
+     * two-argument call, and injected rather than imported so the guard stays a pure decision plus a
+     * thin hook. `record` is called ONLY on a 401 (a credential was presented and it was bad); once
+     * it reports `limited`, the same peer gets 429 instead of 401 for the rest of the window.
+     *
+     * A 401 is what an attacker probes with, so this is where the counter belongs. A 403 (a valid
+     * token, wrong scope) is a misconfiguration by someone who already holds a real credential and
+     * is deliberately NOT counted.
+     */
+    authFailureLimiter?: {
+      record: (remoteAddress: string | undefined) => {
+        limited: boolean;
+        retryAfterSeconds: number;
+      };
+    };
+  },
 ): void {
-  app.addHook("onRequest", async (request) => {
+  app.addHook("onRequest", async (request, reply) => {
     const decision = decideApiTokenAccess({
       method: request.method,
       // The RAW target — `decideApiTokenAccess` strips the query and decodes it itself, so this call
@@ -262,6 +281,17 @@ export function registerApiTokenGuard(
     });
 
     if (decision.kind === "refused") {
+      if (decision.code === API_TOKEN_INVALID_ERROR_CODE && options.authFailureLimiter) {
+        const budget = options.authFailureLimiter.record(request.socket.remoteAddress);
+        if (budget.limited) {
+          reply.header("retry-after", String(budget.retryAfterSeconds));
+          throw httpError(
+            429,
+            `Too many failed authentication attempts. Wait ${budget.retryAfterSeconds}s and try again.`,
+            RATE_LIMITED_ERROR_CODE,
+          );
+        }
+      }
       throw httpError(decision.status, decision.message, decision.code);
     }
     if (decision.kind === "authenticated") {

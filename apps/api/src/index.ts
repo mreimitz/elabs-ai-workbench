@@ -1,7 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import fastifyStatic from "@fastify/static";
-import { type GraderId, type HealthPayload } from "@mcp-token-footprint/shared";
+import {
+  type GraderId,
+  type HealthPayload,
+  type RuntimePathsPayload,
+} from "@mcp-token-footprint/shared";
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { registerAdvisorRoutes } from "./advisor/routes.js";
@@ -37,6 +41,16 @@ import { config } from "./config/env.js";
 import { openDatabase } from "./db/database.js";
 import { registerMaintenanceRoutes } from "./db/maintenance.js";
 import { registerDiagnosticsRoutes } from "./diagnostics/routes.js";
+// RM-37 WP 0.4 — the browser-facing guards: Host allow-list + cross-site refusal + browser CSRF
+// token, the security response headers, and the in-memory rate budgets.
+import { resolveCsrfToken } from "./security/csrf-token.js";
+import { registerOriginGuard } from "./security/origin-guard.js";
+import {
+  FixedWindowRateLimiter,
+  rateLimitPeerKey,
+  registerRateLimitGuard,
+} from "./security/rate-limit.js";
+import { registerSecurityHeaders } from "./security/security-headers.js";
 // CI & headless automation — Phase MCP WP M.1 (planning/Roadmap/RM-08-ci/mcp-server.md): the workbench's OWN
 // read-only MCP server, mounted on this same Fastify instance at `/api/mcp` (D-MCP1) behind the
 // `mcp_server` feature flag (D-MCP6). It re-projects the repositories constructed below — it never
@@ -361,6 +375,31 @@ const appSettings = new AppSettingsRepository(db);
 // curl would still start sessions and spend provider tokens.
 const featureFlags = new FeatureFlagsService(appSettings);
 registerFeatureRoutes(server, featureFlags);
+// RM-37 WP 0.4 — the BROWSER-facing half of the auth posture, registered between the feature guard
+// and the token guard. `api-tokens/guard.ts` decides on the socket peer, which is the right answer
+// for a caller on the network and no answer at all for a page in the operator's own browser: a
+// DNS-rebound page and a cross-site form POST both arrive over a genuine loopback socket. What
+// separates them from the real UI is the `Host` header, `Origin`/`Sec-Fetch-Site`, and a
+// `SameSite=Strict` cookie an attacker's page cannot read. See `security/origin-guard.ts`.
+//
+// The install's CSRF token lives in the SAME `app_settings` KV (key `app.csrfToken`; no table, no
+// migration) so it survives a restart — a per-process token would 403 every open tab on every
+// `docker compose restart`.
+const csrfToken = resolveCsrfToken(appSettings);
+if (csrfToken === undefined) {
+  server.log.warn(
+    "Could not read or mint the browser CSRF token; the CSRF check is inactive (the Host and cross-site checks still apply)",
+  );
+}
+registerOriginGuard(server, {
+  allowedHosts: config.apiAllowedHosts,
+  csrfToken: () => csrfToken,
+});
+registerSecurityHeaders(server, { csrfToken: () => csrfToken });
+// The expensive-action budget (scan / server test / run + suite launch). Ahead of the token guard so
+// a budgeted request is counted before the API spends a hash and a SQLite lookup on its credential.
+const rateLimiter = new FixedWindowRateLimiter();
+registerRateLimitGuard(server, rateLimiter, config.apiRateLimitExpensivePerMinute);
 // Service tokens (planning/Roadmap/RM-08-ci/ WP 1.1, D-C2) — the credential a headless caller (CI, the mcpfp CLI, an
 // external agent on the MCP mount) presents instead of a browser session. The guard is a root
 // `onRequest` hook, registered right AFTER the feature guard on purpose: a switched-off feature should
@@ -370,7 +409,19 @@ registerFeatureRoutes(server, featureFlags);
 // an off-switch on an auth check is a foot-gun.
 const apiTokenRepository = new ApiTokenRepository(db);
 const apiTokenService = new ApiTokenService(apiTokenRepository);
-registerApiTokenGuard(server, apiTokenService, { authRequired: config.apiAuthRequired });
+registerApiTokenGuard(server, apiTokenService, {
+  authRequired: config.apiAuthRequired,
+  // RM-37 WP 0.4 — an unthrottled auth check is a free oracle and a free amplifier. From the 21st
+  // failed token in a minute the same peer gets 429 instead of 401. Shares the ONE limiter instance
+  // above, so a caller cannot dodge one budget by exhausting the other.
+  authFailureLimiter: {
+    record: (remoteAddress) =>
+      rateLimiter.hit(
+        `auth-failure:${rateLimitPeerKey(remoteAddress)}`,
+        config.apiRateLimitAuthFailuresPerMinute,
+      ),
+  },
+});
 registerApiTokenRoutes(server, apiTokenService);
 // Auto-Rating (WP 2.3, AR2/AR3/AR16) — the ONE judge resolution chain shared by ALL FIVE LLM graders
 // (outcome/trajectory judges + the three mandatory base-rating graders): Claude CLI (subscription, if
@@ -1366,6 +1417,9 @@ const assistantToolDeps: Omit<AssistantToolDeps, "threadId"> = {
   // `rating_issues_list`. Both already exist above for the scan/grading routes. See action-tools.ts.
   scanService,
   issues: ratingIssueRepository,
+  // RM-37 WP 0.4 — the SAME limiter instance the HTTP guards use, so `mcp_tool_call` draws on one
+  // budget with the scan/run/suite routes rather than a private one nobody can see.
+  rateLimiter: { hit: (key, limit) => rateLimiter.hit(key, limit) },
   // Observability WP5.4 — the issue-loop tools' two extra deps: `runService` (the live launcher
   // `runs_rerun` forks a linked run through) and `verification` (the app_settings-backed issue⇆run link
   // store the fork run is recorded on). Both already exist above; reused here, not recreated.
@@ -1438,16 +1492,35 @@ server.setErrorHandler((error, _request, reply) => {
   return reply.code(statusCode).send({ error: toErrorMessage(error), ...(code ? { code } : {}) });
 });
 
+// `/api/health` is the ONE route the service-token guard exempts (the Docker healthcheck, the
+// release launchers and the Playwright webServer gate all poll it before anything else exists), so
+// whatever it answers with is readable by anyone who can reach the port.
+//
+// RM-37 WP 0.4 — which is why `databasePath` and `dataDirectory` are no longer in it. They name the
+// operator's home directory, and therefore their username. They now live on `/api/diagnostics/paths`
+// below, behind the guard.
 server.get(
   "/api/health",
   async (): Promise<HealthPayload> => ({
     ok: true,
     service: "mcp-token-footprint",
     version: config.appVersion,
-    databasePath: config.databasePath,
-    dataDirectory: config.dataDirectory,
     dockerMode: config.dockerMode,
     defaultTokenProfile: config.defaultTokenProfile,
+  }),
+);
+
+// Where this instance keeps its data — Settings › About reads it. A GOVERNED read (a remote caller
+// needs a `read`-scoped service token), unlike `/api/health` above.
+//
+// Deliberately NOT folded into `DiagnosticsBundle`: that document's contract is structural
+// secret-freedom, proved by a sentinel sweep over every recognised environment variable, and
+// `DATABASE_PATH` / `DATA_DIR` are two of them. See `RuntimePathsPayload`.
+server.get(
+  "/api/diagnostics/paths",
+  async (): Promise<RuntimePathsPayload> => ({
+    databasePath: config.databasePath,
+    dataDirectory: config.dataDirectory,
   }),
 );
 

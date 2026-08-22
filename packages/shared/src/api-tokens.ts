@@ -156,6 +156,39 @@ export type ApiTokenCreateResponse = { token: ApiToken; secret: string };
 /** The maximum length of an operator-supplied label (a name, not a description). */
 export const API_TOKEN_LABEL_MAX_LENGTH = 120;
 
+/**
+ * How long a token lasts when the operator does not say otherwise (RM-37 WP 0.4).
+ *
+ * The create form used to default to "Never", so the overwhelmingly likely outcome of pasting a
+ * token into a CI secret was a credential that outlived the job, the branch and the laptop it was
+ * minted on. A bounded default turns "forget about it" into the *safe* outcome; "Never" is still
+ * available, but as a choice someone made rather than one nobody was asked about.
+ *
+ * Applied by the API in {@link defaultApiTokenExpiry}, not only by the form, so a token minted with
+ * `curl` gets the same bound. Passing an explicit `expiresAt: null` still means never.
+ */
+export const API_TOKEN_DEFAULT_EXPIRY_DAYS = 90;
+
+/**
+ * The expiry to store for a create request, honouring the three distinguishable inputs:
+ *
+ *   • an ISO instant  ⇒ that instant;
+ *   • explicit `null` ⇒ never (the operator chose it — {@link apiTokenCreateSchema} keeps `null` and
+ *     `undefined` distinct with `.nullish()` precisely so this can be told apart);
+ *   • omitted         ⇒ {@link API_TOKEN_DEFAULT_EXPIRY_DAYS} from now.
+ */
+export function defaultApiTokenExpiry(
+  requested: string | null | undefined,
+  now: Date,
+): string | null {
+  if (requested === undefined) {
+    return new Date(
+      now.getTime() + API_TOKEN_DEFAULT_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+  }
+  return requested;
+}
+
 export const apiTokenScopeSchema = z.enum(API_TOKEN_SCOPES);
 
 /**

@@ -57,7 +57,7 @@ import { buildWriteToolDefinitions } from "./write-tools.js";
 // Cross-entity ACTION tools (owner refinement) — invoke a registered MCP server's tools + file a rating
 // issue against a skill/server a run used. A SEPARATE module (same one-import-one-spread pattern); its
 // two WRITE-shaped tools are scope-EXEMPT (see `action-tools.ts` + `SCOPE_EXEMPT_ACTION_TOOLS` in shared).
-import { buildActionToolDefinitions } from "./action-tools.js";
+import { buildActionToolDefinitions, type ActionToolDeps } from "./action-tools.js";
 // Observability WP5.4 — the assistant ISSUE LOOP tools (analyze → fix draft → regression test → fork
 // rerun). A SEPARATE module (same one-import-one-spread pattern); its READ tools auto-allow, its three
 // gated action tools ride an apps/api-local scope exemption (SHARED-FREE — see `issue-loop-tools.ts` +
@@ -111,6 +111,12 @@ export interface AssistantToolDeps {
    */
   scanService: ScanService;
   issues: RatingIssueRepository;
+  /**
+   * RM-37 WP 0.4 — the shared expensive-action rate budget, passed straight through to
+   * `mcp_tool_call` (see `action-tools.ts`). OPTIONAL: absent means unbudgeted, which is what every
+   * existing test harness gets, and what the tool did before this WP.
+   */
+  rateLimiter?: ActionToolDeps["rateLimiter"];
   /**
    * Observability WP5.4 — the assistant issue-loop tools' two extra deps. `runService` is the live run
    * launcher `runs_rerun` forks a linked run through (structural — a fake in tests, never a real run);
@@ -646,6 +652,7 @@ export function buildAssistantToolDefinitions(deps: AssistantToolDeps) {
       skills: deps.skills,
       servers: deps.servers,
       runs: deps.runs,
+      ...(deps.rateLimiter ? { rateLimiter: deps.rateLimiter } : {}),
     }),
     // Observability WP5.4 — the assistant issue-loop tools; see ./issue-loop-tools.ts.
     ...buildIssueLoopToolDefinitions({

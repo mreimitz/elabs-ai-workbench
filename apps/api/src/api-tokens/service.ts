@@ -9,6 +9,7 @@ import {
   type ApiTokenCreateInput,
   type ApiTokenCreateResponse,
   type ApiTokenScope,
+  defaultApiTokenExpiry,
   looksLikeApiToken,
 } from "@mcp-token-footprint/shared";
 import { nanoid } from "nanoid";
@@ -88,14 +89,19 @@ export class ApiTokenService {
    */
   create(input: ApiTokenCreateInput): ApiTokenCreateResponse {
     const secret = generateToken();
+    const now = this.now();
     const token = this.repository.insert({
       id: nanoid(),
       label: input.label.trim(),
       hash: hashToken(secret),
       tokenPrefix: tokenPrefixOf(secret),
       scopes: [...new Set(input.scopes)],
-      createdAt: this.now().toISOString(),
-      expiresAt: input.expiresAt ?? null,
+      createdAt: now.toISOString(),
+      // RM-37 WP 0.4 — an OMITTED expiry now means 90 days, not forever. `null` still means
+      // forever, because that is a choice the operator made; the shared helper is what keeps the
+      // two apart, and it is applied HERE rather than only in the form so a token minted with
+      // `curl` gets the same bound.
+      expiresAt: defaultApiTokenExpiry(input.expiresAt, now),
     });
     return { token, secret };
   }

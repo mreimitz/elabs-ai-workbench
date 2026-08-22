@@ -597,14 +597,38 @@ export type ScanComparison = {
   promptCounts: { matched: number; onlyInA: number; onlyInB: number };
 };
 
+/**
+ * `GET /api/health` — the liveness probe. Reachable **without a service token**, by design: the
+ * Docker healthcheck, `scripts/release/run.{sh,ps1}` and the Playwright webServer gate all poll it
+ * before anything else exists, and they must keep working under `API_AUTH_REQUIRED=true`.
+ *
+ * That is exactly why it carries no filesystem paths (RM-37 WP 0.4). It used to answer with
+ * `databasePath` and `dataDirectory`, which name the operator's home directory — and therefore their
+ * username — to anyone who can reach the port. The paths moved to {@link RuntimePathsPayload}, behind
+ * the guard. Keep this payload to facts that are already public the moment the port answers at all.
+ */
 export type HealthPayload = {
   ok: true;
   service: "mcp-token-footprint";
   version: string;
-  databasePath: string;
-  dataDirectory: string;
   dockerMode: boolean;
   defaultTokenProfile: TokenProfileId;
+};
+
+/**
+ * `GET /api/diagnostics/paths` — where this instance keeps its data, for Settings › About.
+ *
+ * A **governed** route (the service-token guard covers it; a remote caller needs `read`), which is
+ * the whole reason it exists separately from {@link HealthPayload}.
+ *
+ * It is deliberately NOT part of `DiagnosticsBundle`. That document's contract is structural
+ * secret-freedom — counts and shapes, never values, proved by a sentinel sweep over every recognised
+ * environment variable — and `DATABASE_PATH` / `DATA_DIR` are two of those variables. Folding paths
+ * into the pasteable bug-report bundle would quietly falsify a claim the README makes in print.
+ */
+export type RuntimePathsPayload = {
+  databasePath: string;
+  dataDirectory: string;
 };
 
 export type ToolCallResult = {

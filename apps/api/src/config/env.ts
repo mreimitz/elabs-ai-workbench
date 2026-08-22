@@ -16,6 +16,9 @@ import {
   HUB_MISSION_MAX_DEPTH,
   HUB_MISSION_MAX_TOTAL_AGENTS,
   HUB_WS_MAX_FILE_BYTES,
+  parseAllowedHosts,
+  RATE_LIMIT_AUTH_FAILURES_PER_MINUTE,
+  RATE_LIMIT_EXPENSIVE_PER_MINUTE,
   SKILL_MAX_FILES,
   SKILL_MAX_FILE_BYTES,
   SKILL_MAX_TOTAL_BYTES,
@@ -189,6 +192,24 @@ export const config = {
   // Settings › API tokens unreachable, since a token may never manage tokens: mint the tokens you
   // need first, then switch this on. See apps/api/src/api-tokens/guard.ts.
   apiAuthRequired: readBoolean(process.env.API_AUTH_REQUIRED, false),
+  // RM-37 WP 0.4 — the Host allow-list that closes DNS rebinding. Comma-separated, DEFAULT EMPTY:
+  // `localhost`, `127.0.0.0/8` and `::1` are always allowed and cannot be removed, so every launcher
+  // and the Docker healthcheck work with nothing set. Add an entry only when you genuinely reach this
+  // instance under another name (a LAN hostname, a reverse proxy) — a name that is NOT listed is
+  // refused with 403 `host_not_allowed` before routing, which is the point.
+  apiAllowedHosts: parseAllowedHosts(process.env.API_ALLOWED_HOSTS),
+  // RM-37 WP 0.4 — the in-memory rate budgets, per peer per minute. Failed token authentications
+  // (an unthrottled auth check is a free oracle) and expensive actions (scan / server test / run /
+  // suite launch — each spawns a child process or spends provider tokens). Both apply to tokenless
+  // loopback too: the runaway being guarded against is a retry storm on this very machine.
+  apiRateLimitAuthFailuresPerMinute: readNonNegativeInt(
+    process.env.API_RATE_LIMIT_AUTH_FAILURES,
+    RATE_LIMIT_AUTH_FAILURES_PER_MINUTE,
+  ),
+  apiRateLimitExpensivePerMinute: readNonNegativeInt(
+    process.env.API_RATE_LIMIT_EXPENSIVE,
+    RATE_LIMIT_EXPENSIVE_PER_MINUTE,
+  ),
   // Assistant (planning/Roadmap/RM-02-assistant/, WP 0.3) — the embedded Claude agent chat. All agent state
   // (SDK CLAUDE_CONFIG_DIR, HOME, materialized skill workspaces) lives under this dir so it
   // persists on the same /data volume as the DB in Docker and never touches the operator's real
