@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Platform hardening \u2014 work-package status ledger \u00b7 PRIORITY: MEDIUM (rolling)"
 description: "Living state for the platform plan, read and updated by /next-wp platform. A box is ticked"
 tags: ["roadmap", "RM-18"]
-timestamp: "2026-08-22T22:20:00Z"
+timestamp: "2026-08-22T21:15:00Z"
 status: "active"
 ---
 # Platform hardening — work-package status ledger · **PRIORITY: MEDIUM (rolling)**
@@ -27,7 +27,65 @@ Living state for the **platform** plan, read and updated by `/next-wp platform`.
 > flag was found stale the same way on 2026-08-18.
 
 - [ ] WP 1.1 — first-run onboarding: seeded demo content + guided empty states
-- [ ] WP 1.2 — docs & changelog: in-app docs route, CHANGELOG discipline, per-view help links
+- [x] WP 1.2 — docs & changelog: in-app docs route, CHANGELOG discipline, per-view help links
+      — **done 2026-08-22 · `wp/roadmap-cleanup/rm18-1.2` (3 commits, merged) · spec:
+      [`wp-1.2-in-app-docs.md`](./wp-1.2-in-app-docs.md) · 21 files, +2,107 / −3 · no `apps/api` diff,
+      no migration, NO NEW DEPENDENCY.**
+      The shipped guide is now readable **inside the running app**. A build-time generator bakes
+      `planning/user-guide/DC-*/` + `CHANGELOG.md` into the web dist at `/doc-content/` (gitignored,
+      never committed); routes `/docs` · `/docs/:subject` · `/docs/changelog`; and **one route-aware
+      Help control in the AppShell top bar** resolves to the current view's page — **zero per-view
+      file edits**, which is why it could run beside three other agents. The ship rule is structural,
+      not a list: a document ships iff its OKF frontmatter is `type: "Guide Page"`, so `doc.md` (the
+      delivery record) never ships without a second rule saying so.
+      **⚠️ THE CONTAINER CHECK — the item that proves the whole approach — WAS RE-RUN BY THE
+      ORCHESTRATOR, not accepted.** Image built from the merged tree: `ls /app/planning` → *No such
+      file or directory*; `/api/health` 200; `/docs` → **200 `text/html`**;
+      `/doc-content/manifest.json` → **200 `application/json`, 22 real subjects**;
+      `/docs/manifest.json` → **200 `text/html`** (the SPA not-found, so the two paths provably do not
+      collide); and a real document fetched by the manifest's own path →
+      **200 `text/markdown`, 7,099 bytes**, opening "# AI Workbench". Container and volume destroyed
+      afterwards; the live `:8081` instance was never touched.
+      **THREE DEFECTS A BROWSER FOUND THAT NO UNIT TEST COULD** — all three passed every jsdom
+      assertion. (1) **Every guide link was dead**: the markdown renderer emits a link as
+      `<button data-streamdown="link">` with no `href` (its AI-content link-safety behaviour), so ~124
+      cross-references looked like links and did nothing — 47 anchors on one page, 0 navigable.
+      (2) Once fixed, **all of them opened in a new tab** (the pipeline injects `target="_blank"`).
+      (3) **Link text failed WCAG contrast in light theme: `text-primary` measured 1.36:1** against
+      1.4.3's 4.5:1, and **12.41:1 in dark** — which is precisely why one-theme testing hides it. Now
+      `text-foreground`: 13.1:1 light / 15.31:1 dark, re-measured on a rebuilt image.
+      **Defect (3) is NOT confined to the docs, and it is now assigned.** The same `text-primary`
+      markdown-link colour ships in `features/skills/SkillOverview.tsx:55` (rendered `SKILL.md`) and
+      `features/assistant/AssistantMessageBody.tsx:117` (dock replies) — both live. Flagged across the
+      boundary rather than edited; the RM-37 session verified both call sites and **took them as its
+      WP 2.6 and WP 2.10**. Same root cause as the `app.css` light-theme `--ring` override (upstream's
+      lime measures 1.30–1.42:1) — that override was never extended to link *text*.
+      **A guard bug found by breaking its own guard:** the generator's direct-run check compared
+      `import.meta.url` to `process.argv[1]` verbatim; macOS `tmpdir` is a symlink, so a copy run from
+      a temp directory did nothing and **exited 0** — the CLI-failure test would have passed against a
+      script that never ran. Now compares real paths.
+      **Premise corrections:** the guide is **22 shippable subjects, not 25** — DC-20, DC-24 and DC-25
+      hold a delivery record and no `Guide Page`, so they are named on stdout and left out rather than
+      rendered blank; and the runtime image also carries `apps/api/resources` (`Dockerfile:104`), so
+      "only the three dist folders" was very slightly off. **`.dockerignore` does not exclude
+      `planning/`** — load-bearing, since the generator reads it inside the build stage; excluding it
+      later fails the build loudly, which is the intended mode.
+      **CSP addendum, measured on the container:** `offOrigin: []`, `scripts: 0`, `dataUris: 0`, all
+      fetches relative same-origin. **20 inline `style=` attributes DO appear and none are ours** —
+      the syntax highlighter's per-token custom properties plus `content-visibility` virtualization,
+      a pre-existing property of every markdown surface in the app. Raised with the RM-37 session,
+      which **verified its policy already carries `style-src 'self' 'unsafe-inline'`** so nothing
+      breaks, and recorded it as a thing not to tighten — the failure mode is silent, just colourless
+      code. The renderer also parses raw HTML then sanitizes it, with `allowDataImages: true`; the
+      guide uses none today.
+      **NOT VERIFIED:** no human has used it; every visual claim is headless Chromium at 1440×950.
+      Not checked: viewports < 768px, real zoom, a screen reader, the `system` theme setting.
+      **Tab depth to the Help control is 23** from the top of `/dashboard` — whether that is
+      acceptable is an owner judgement, not made. The version badge reads `apps/api/package.json`'s
+      `0.1.0`, not the root `1.1.0` (pre-existing disagreement, untouched), and is absent in the
+      container because the health fetch 401s for a non-loopback caller — it renders nothing rather
+      than a fake version. **10 MB of DC-23 screenshots now ship in the dist and image** — a
+      deliberate call against 36 broken images, and an owner may reverse it.
 - [x] WP 1.3 — diagnostics bundle: redacted export, secret-free proven by test — **done 2026-08-22 ·
       `wp/roadmap-cleanup/rm18-1.3` (2 commits, merged `98c4ca8`) · spec:
       [`wp-1.3-diagnostics-bundle.md`](./wp-1.3-diagnostics-bundle.md) · 12 files, +1,893, no

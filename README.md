@@ -114,13 +114,15 @@ triggers and command entry points, and a **security surface** (script files and 
 references, file and byte totals). Skills can be attached to test scenarios — exposed to the agent
 read-only and metered, **never executed**.
 
-Editing a skill happens in the **Studio** — a full-screen workbench at `/skills/<id>/studio` with the
-flow canvas, the source, or both side by side in the middle, the files/tools/settings rails you want
-folded away when you don't, and one problems strip along the bottom. A settings panel edits the
+Editing a skill happens in the **Studio** — a full-screen workbench at `/skills/<id>/studio`. There
+is **no view mode to choose**: the first tab is the **Designer**, the visual composer, and every file
+in the skill — `SKILL.md` included — opens as a source tab beside it, so editing the manifest as text
+and editing a resource file are the same gesture. Rails for files, components and settings fold away
+when you don't want them, and one problems strip runs along the bottom. A settings panel edits the
 skill's name, description, bound servers, trigger keywords and `/command` entry points as form
-controls — no YAML by hand — and the skill's files open as editable tabs beside them. Everything you
-change there joins one set of unsaved edits that becomes a single new version. The inspector is now purely a place to read a skill; the Studio is where you
-change it.
+controls — no YAML by hand. Everything you change, on the canvas or in any file, joins **one** set of
+unsaved edits that becomes a **single** new version. The inspector is purely a place to read a skill;
+the Studio is where you change it.
 
 On the canvas, the arrows carry meaning: a keyword triggering the skill, one step following another,
 a step containing a sub-step, a decision branching, a step reaching for a file or a tool. That is
@@ -327,13 +329,31 @@ A second tab shows the drawing vocabulary the entities are composed from: the pa
 platform and housing solids, the glyph frame, the construction ghost, the six connector kinds and
 the calibration cube.
 
-This is the foundation, not the finished system. There is **no scene composition yet** — the
-declarative scene spec, the step-by-step explainers, and describing a workflow to the assistant and
-getting a diagram back are all still planned. Route only, no nav item: reach it by typing the address
-(the breadcrumb's Home is the way back out).
+This is the foundation, not the finished system — but a **scene** is no longer only a plan. A
+declarative scene description now becomes an actual drawing: bands, lanes, hubs and cycle rings laid
+out deterministically, connectors routed as orthogonal paths with placed labels, and the whole thing
+painted in a fixed layer order with a `role="img"` title and description taken from the scene itself.
+The same description renders byte-identically every time, so a scene can be stored and trusted. Two
+honesty rules are built in: a connector the router cannot honour is **drawn and reported**, never
+quietly dropped, and a scene that cannot be drawn renders a readable failure carrying the reasons
+rather than a blank canvas.
+
+Still to come: the acceptance scene and standalone SVG export, the step-by-step explainers, and
+describing a workflow to the assistant and getting a diagram back. Nothing here has been looked at in
+a browser yet — the markup is asserted by tests; the *picture* is unreviewed. Route only, no nav item:
+reach it by typing the address (the breadcrumb's Home is the way back out).
 
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](planning/user-guide/DC-01-getting-started/00-guide-map.md) for the full picture.
+
+### 13 · The user guide, inside the app
+
+`/docs` is the shipped user guide, readable in the running app — the same 22 subjects that live in
+the repository, plus the changelog, baked into the web build. It works in the container with no
+repository present, which is the point: someone handed the image can read how the thing works.
+
+A **Help** control in the top bar opens the page for whatever you are looking at, and falls back to
+the guide's index where a view has no page of its own yet.
 
 ### Two themes
 

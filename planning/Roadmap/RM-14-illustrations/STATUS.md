@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Illustrations \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Driven by /next-wp illustrations. This ledger is the single source of truth for"
 tags: ["roadmap", "RM-14"]
-timestamp: "2026-08-22T15:40:00Z"
+timestamp: "2026-08-22T21:15:00Z"
 status: "active"
 ---
 # Illustrations — work-package status ledger · **PRIORITY: HIGH**
@@ -628,7 +628,68 @@ and an explicit "Not verified:" tail.
       neither alone does.
       **Nothing here renders** — no SVG produced, no browser opened, no theme checked. That is WP 2.3,
       and no visual claim is made or implied.
-- [ ] WP 2.3 — `<IllustrationScene>` deterministic renderer + annotations + accent-ratio dev warning
+- [x] WP 2.3 — `<IllustrationScene>` deterministic renderer + annotations + accent-ratio dev warning
+      — **done 2026-08-22 · `wp/roadmap-cleanup/rm14-2.3` (3 commits, merged) · spec:
+      [`wp-2.3-scene-renderer.md`](./wp-2.3-scene-renderer.md) · 11 files, +1,918 / −13, ALL inside
+      `packages/illustrations` (`apps/**` and `packages/shared/**` a zero-line diff) · no dependency ·
+      `REGISTRY_VERSION` unchanged.**
+      **A validated spec is finally a picture.** The renderer consumes WP 2.1's layout and WP 2.2's
+      routing and computes **no geometry of its own**; paint order is the D-IL16 layer array, asserted
+      by walking the emitted markup at depth rather than by reading the JSX. Determinism is proved
+      three ways (twice · JSON round-trip · reversed registry+catalog) over three fixtures, plus a
+      source scan banning `Math.random`/`Date`/`useId`/`getBBox`/`getBoundingClientRect`.
+      **Orchestrator probes — broken here, watched go red, restored** (not a re-read of the agent's
+      table): silently dropping `doublesBack` connectors → **3 red**; mislabelling the connectors
+      layer as `shadows` → **2 red**; and one the agent never tried — forcing `withinBand: true` on
+      the accent budget → **4 red**. Unmodified suite back to 70/70.
+      **⚠️ TWO SPEC DEFECTS THE BUILDER MEASURED RATHER THAN CONFORMED TO. Both are the spec's, not
+      the code's, and both are recorded as follow-ups rather than silently accepted.**
+      **(a) Acceptance 6 cannot be met by the renderer, and the defect is in the SHIPPED connector
+      table.** The spec required all six connector kinds to separate *without hue*. Over all 15 pairs,
+      **13 do and 2 do not** — `flow`/`publish` and `write`/`loop`. **Verified independently by the
+      orchestrator** from `Connector.tsx:53-90`: ignoring colour, `flow` and `publish` are both
+      `(width 2.5, no dash, arrowhead, sharp)` and `write` and `loop` are both
+      `(width 2, dashed 6 4, arrowhead, sharp)` — identical signatures. That table is
+      `01-system-design.md` §2.3, a locked design artifact, and `Connector.test.tsx` deliberately keeps
+      a hand-transcribed second copy so it cannot be edited casually. **The renderer paints the table
+      faithfully; this WP is what first drew it and therefore what first exposed it.** The minimum fix
+      is written down (give `loop` the `construction` dash — it already strokes `--illus-guide`, which
+      is what that dash is for — and `publish` a second chevron) and the measurement is pinned by a
+      test naming both pairs. **This is an accessibility defect with a precedent in this repo:**
+      **D-DB4** (RM-11) already ruled that fleet-footprint lines are differentiated by *stroke
+      pattern, not colour alone*. Same principle, second surface. **Blocks WP 2.4**, which is the
+      first WP to render a real scene and the owner-visible milestone — fix it there, with a browser
+      open, since the change is visual and nobody has ever looked at these lines.
+      **(b) The D-IL6 accent band is arithmetically unreachable by the measure the spec names.** The
+      spec defines it as a **part count** — accent-carrying nodes/connectors/annotations over the
+      total. For `k/n ∈ [0.02, 0.06]` you need **n ≥ 17**: below that the reachable values are `0`
+      (under) and `1/n ≥ 1/16 = 6.25%` (over), with nothing in between. Arithmetic re-checked by the
+      orchestrator. Measured on all three fixtures — `self-learning-loop` **4/14 = 28.6%**,
+      `run-turn-cycle` **4/19 = 21.1%**, `crowded-labels` **3/10 = 30.0%** — **all three warn on every
+      render**, and two could not have passed at any content. D-IL6's band is an **ink-area** budget;
+      a count is not that quantity, and a spec-level count cannot see inside a component (most of the
+      24 entities light one accent mark even at `idle` — that IS D-IL6's "one accent moment per
+      station"), so counting those would make every scene 100%. It was implemented **literally** and
+      the warning text names the quantity it measured. **A warning that fires on every render is one
+      people learn to ignore** — this item's own decision log says exactly that about
+      `REGISTRY_VERSION`. **Amend before Phase 3**, and treat it as blocking WP 2.4's accent check.
+      **Deviations a reviewer should see:** the renderer paints `RoutedConnector.d` rather than going
+      through the `Connector` primitive (rebuilding as a sharp polyline would discard WP 2.2's clamped
+      corner radii), so the primitive's style table and arrow fills were **exported, not copied**,
+      with a package-wide scan failing on a second declaration; `<IllustrationScene>` gained
+      `catalog?`/`registry?` props defaulting to the live ones (required by the spec's own determinism
+      test #3, and the only way to reach the `unresolved` path from a spec that validates);
+      `PaperStage` gained `idPrefix` (without it a scene's bytes change when it moves on a page, which
+      WP 2.4's export cannot use); node and band `title`s are painted, which acceptance 1 did not list
+      but leaving unpainted would be the same silent drop the WP forbids elsewhere; and annotation
+      card sizes were NOT changed, so WP 2.1's goldens did not move.
+      **NOT VERIFIED — no browser, no theme, nothing rendered visually at any zoom.** Every claim is
+      markup asserted through `renderToStaticMarkup`. Specifically unknown: whether the picture
+      **reads** in either theme; whether the station headings and band titles collide (the arithmetic
+      says they clear, nobody has looked); whether five dash/width treatments are distinguishable at
+      real zoom; whether wrapped annotation body lines look right (the wrap is a character-count
+      estimate, never a measurement); and how the root `<svg>` sizes in a page — it carries a
+      `viewBox` and no width/height, deliberately left to WP 2.4.
 - [ ] WP 2.4 — Acceptance scene (Self-Learning Agentic Loop as spec fixture, one shared hub) +
       standalone-SVG export — **owner-visible milestone**
 

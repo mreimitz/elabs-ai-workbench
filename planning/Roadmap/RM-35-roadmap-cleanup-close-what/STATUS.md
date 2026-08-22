@@ -303,6 +303,57 @@ met and — where the box touches code — the gate
       count had been masking. So WP 3.2 is now **validate-and-integrate `71d7b60`**, then decide
       whether the newly-exposed tokens-per-turn error is in RM-34's scope or a new item — not
       "re-measure the band"
+> **BATCH RESULT 2026-08-22 (third batch) — ALL FOUR WPs LANDED, and the combined gate was green
+> with every count reconciled to the test.** Each was validated by the orchestrator against its
+> acceptance rather than ticked on the agent's report, and in each case the orchestrator **broke a
+> guard itself and watched it redden** — including probes the agents never tried.
+>
+> - **RM-30 WP 7.9** (WP 3.3) — Designer=visual vs Files=source. **PHASE 7 IS CLOSED.**
+> - **RM-14 WP 2.3** (WP 3.8) — the scene renderer. Phase 2 is 3 of 4.
+> - **RM-17 AM-OB13** (WP 3.7) — manual send-to-webhook. **Phase 6 is 8 of 13**, so with WP 3.5 the
+>   amendment's fourteen boxes are down to **5**.
+> - **RM-18 WP 1.2** (WP 4.1) — the in-app guide. **RM-18 is 4 of 6.**
+>
+> **Gate on the merged four, at load 61 falling to 39** — the cleanest conditions of the session:
+> typecheck · test · build · lint all **EXIT=0**; shared **287** · illustrations **1032** · cli **87**
+> · api **3832** · web **391 files / 4,425 passed + 5 skipped**.
+> **Counts were reconciled, not glanced at.** 382 files → +1 (AM-OB13) → +2 (7.9) → +6 (docs) = 391,
+> exact. Tests 4,319 → +18 → +26 → +59 = 4,422 against an observed **4,425**, and the missing 3 were
+> chased rather than waved at: the route-operability gate iterates `ASSISTANT_ROUTE_MANIFEST`, which
+> grew 45 → 48 entries for the three new `/docs` routes, so **the gate itself expanded to cover
+> them**. Nothing unexplained.
+>
+> ⚠️ **FIVE SPEC DEFECTS were caught by builders MEASURING instead of complying — every one the
+> orchestrator's error, not an agent's.** (1) The connector style table cannot separate all six kinds
+> without hue (2 of 15 pairs identical), verified independently from `Connector.tsx:53-90`. (2) The
+> D-IL6 accent band is arithmetically unreachable below 17 parts by the count the spec named. (3)
+> Routing notification links through the absolute-URL helper would have **broken in-app navigation** —
+> `NotificationBell.tsx:63` feeds that field to `navigate()`, which treats an absolute URL as a path.
+> (4) `isTabbableFile` was cited as keeping SKILL.md out of the tab strip and had **zero production
+> call sites**. (5) The guide is **22 shippable subjects, not 25**. Each is recorded on its own
+> ledger line rather than quietly conformed to.
+>
+> **The container check was re-run by the orchestrator rather than accepted**, because RM-37's Phase 1
+> depends on the same fact: image built from the merged tree, `ls /app/planning` → *no such file*,
+> `/docs` → 200, manifest → 200 with 22 subjects, a document → 200 `text/markdown` 7,099 B, and
+> `/docs/manifest.json` → the SPA not-found, proving the two paths do not collide. Container and
+> volume destroyed; the live `:8081` instance untouched.
+>
+> **THREE SESSIONS share this checkout, not two** — confirmed by `ListAgents`, after both RM-35 and
+> RM-37 had spent hours reasoning as though there were two. A "peer agent" RM-37 dismissed as its own
+> subagent was neither session's. **Git authorship cannot disambiguate us**: all three commit as the
+> same author, so provenance is by branch, never by `%an`. Three silent traps were paid for in
+> practice and are now shared rules: `git add -A` over a shared directory sweeps a peer's edit into
+> your commit; **the branch the shared tree is on is shared state too** (a peer's commit can land on
+> your branch); and generic `/tmp` paths collide in **two** forms — stale (you read an old file as
+> yours) and **clobbered mid-run** (a correct read is overwritten underneath you, and two reads
+> disagree with nothing erroring).
+>
+> **A measured correction that saved real time:** starvation causes false **failures**, never false
+> passes, so a green under load is *stronger* evidence than a quiet one. The real risk is a
+> **truncated** run — fewer files collected, exit 0 over the subset — so validation is on **counts**,
+> not exit codes. Adopted by both other sessions; RM-37 retired a plan to re-run every green.
+
 - [ ] WP 3.3 — **RM-30 Phase 7** Skill Studio: WP 7.1, 7.3, 7.4 then 7.7, 7.8, 7.9. Three batches,
       dependency chain `7.1 ∥ 7.2 → 7.3 → (7.4 ∥ 7.6) → 7.5`; round 2's 7.7–7.9 revise the same
       surface so they land after. Owner-directed rework of a surface the owner has already

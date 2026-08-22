@@ -5,6 +5,54 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the guide you shipped is readable inside the app you shipped
+
+**The user guide now lives in the product.** Open **`/docs`** and you get the same 22 subjects that
+live in the repository, plus the changelog — and it works in the container with no repository
+anywhere near it, which is the point: hand someone the image and they can read how the thing works.
+
+A **Help** control in the top bar opens the page for whatever view you are on, and falls back to the
+index where a view has no page yet. One control, one route-to-subject table; no page had to be edited
+to gain help.
+
+Three faults turned up only because someone opened a browser, and all three had passed every
+automated check: every link in the guide was **dead** (the markdown renderer emits links as buttons
+with no address), then every link **opened in a new tab**, and link text failed **WCAG contrast in the
+light theme** — measured at 1.36:1 against a required 4.5:1, and a perfectly fine 12.41:1 in dark,
+which is exactly why testing one theme hides it. All three fixed and pinned by tests. The contrast
+fault is not confined to the guide: the same colour is used for links in rendered skill documents and
+in the assistant's replies, both already shipped, and both are now assigned for repair.
+
+## Unreleased — the skill Studio stopped asking which view you wanted
+
+**There is no Flow / Code / Split switch any more.** It is gone, not moved and not made smaller. The
+Studio's first tab is the **Designer** — the visual composer — and every file in the skill, including
+`SKILL.md` itself, opens as an ordinary source tab beside it. Editing the manifest as text and editing
+a resource file are now the same gesture, and the canvas, the manifest and any file still add up to
+**one** set of unsaved changes and **one** new version.
+
+The left rail's tab finally reads **Components**, matching the panel it opens — it fits because the
+three tabs now stack down the rail instead of splitting its width three ways. Old links keep working:
+a shared `?rail=tools` address still opens it, and a bookmark carrying the deleted `?mode=split` lands
+on the Designer rather than breaking. The version pickers in the Diff view stopped saying `v5 · v5`.
+
+## Unreleased — a scene description finally became a drawing
+
+**The illustration system can compose.** Twenty-four drawable components existed and nothing put them
+together; now a declarative scene description becomes an actual picture — bands, lanes, hubs and cycle
+rings laid out deterministically, connectors routed as orthogonal paths with placed labels, painted in
+a fixed layer order, carrying a title and description for screen readers taken from the scene itself.
+The same description renders byte-identically every time, so a scene can be stored and trusted.
+
+Two honesty rules ship with it: a connector the router cannot honestly express is **drawn and
+reported**, never silently dropped, and a scene that cannot be drawn shows a readable failure with the
+reasons rather than a blank canvas.
+
+Drawing them for the first time exposed a flaw in the connector styles themselves: of the six kinds of
+line, two pairs are distinguishable **only by colour**. That is an accessibility problem the app has
+already ruled on elsewhere — dashboard lines are differentiated by stroke pattern, not colour alone —
+and it is recorded for the work package that will first put a real scene on screen.
+
 ## Unreleased — you can hand a run to someone else without copying the address bar
 
 **A run worth showing someone can now leave the app in one action.** Open the run — or the suite

@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "UX Overhaul \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the ux-overhaul plan (source: /UI-UX-AUDIT-2026-07-05.md)."
 tags: ["roadmap", "RM-30"]
-timestamp: "2026-08-22T17:30:00Z"
+timestamp: "2026-08-22T21:15:00Z"
 status: "active"
 ---
 # UX Overhaul — work-package status ledger · **PRIORITY: HIGH**
@@ -224,7 +224,57 @@ keyboard behaviour is asserted, not walked.
       for its disabled hint rather than a tooltip; it is a text button so D-TB5 does not bind it, but
       a keyboard user gets no accessible hint. Owner walk.
 
-- [ ] WP 7.9 — **Designer=visual vs Files=source** (D-UX19#2): Design drops Flow|Code|Split (pure visual composer); Files becomes the editable source register (absorbs WP 7.4); one draft across both; SkillDiffView label fix rides along · Depends 7.7+7.8 · Size L–XL
+- [x] WP 7.9 — **Designer=visual vs Files=source** (D-UX19#2): Design drops Flow|Code|Split (pure visual composer); Files becomes the editable source register (absorbs WP 7.4); one draft across both; SkillDiffView label fix rides along · Depends 7.7+7.8 · Size L–XL
+      — **done 2026-08-22 · `wp/roadmap-cleanup/rm30-7.9` (4 commits, merged) · spec:
+      [`wp-7.9-designer-and-source.md`](./wp-7.9-designer-and-source.md) · 24 files, +991 / −502, ALL
+      inside `apps/web/src/features/skills/**` (`packages/**` and `apps/api/**` a zero-line diff) · no
+      wire change, no migration, no dependency. THIS CLOSES PHASE 7.**
+      The Studio no longer asks an author to pick a view. **`Flow | Code | Split` is gone — not moved,
+      not shrunk** — and the surface follows from the open tab: the **Designer** (pinned first,
+      unclosable) or a **source tab**. `SKILL.md` joined the Files register as one of those tabs, so
+      editing the manifest as text and editing a resource file are the same gesture. Canvas + manifest
+      text + resource file still add up to **one** dirty count, **one** `Save as vN`, **one** version.
+      `?mode=` left the URL; a legacy `?mode=split` bookmark lands on the Designer. The rail tab reads
+      **Components**, matching its panel — WP 7.7's recorded debt, paid.
+      **Orchestrator probes — broken here, watched go red, restored** (independent of the agent's own):
+      emptying `LEGACY_RAIL_ALIASES` so a shared `?rail=tools` link stops working → **2 red**;
+      re-adding `| "split"` to `EditorMode` against the source-walk guardrail → **2 red**.
+      **The rail measurement is real, not asserted.** Headless Chromium at 1600×1000 against the built
+      app: rail **183.67px unchanged**, tablist now vertical (`aria-orientation="vertical"`), each
+      trigger 163.05px wide; *Components* needs **105.17px** and gets it, `scrollWidth === clientWidth`
+      on all three, **identical in light and dark**. The counterfactual — a 3-way horizontal split of
+      this rail — leaves ~54.34px, which is why 7.7 reverted the rename. Centre surface 70.47%, so WP
+      7.1's ≥60% bar is untouched; the cost was ~61px of rail *height*, not width.
+      **⚠️ A SPEC PREMISE WAS WRONG AND THE BUILDER MEASURED IT.** The spec cited
+      `file-ops.ts:53-58` `isTabbableFile` as what kept SKILL.md out of the tab strip. **Verified
+      independently by the orchestrator on `main`: it had ZERO production call sites** — referenced
+      only by its own test. What actually kept the manifest out was `tab-model.ts` plus
+      `StudioFileTabs` prepending it. It was **deleted** rather than rewritten to `return true`, with
+      the correction written into `file-ops.ts`.
+      **Count reconciliation, the most rigorous of the batch:** zero test FILES deleted
+      (`--diff-filter=D` empty); the removed suites were inline `test()` blocks in surviving files.
+      Predicted +26 tests / +2 files from a line-by-line accounting, produced exactly 384 / 4350 on its
+      own branch, and **385 / 4363 in the orchestrator's three-way gate** — baseline + this WP's
+      declared delta, to the test.
+      **Two deviations a reviewer should see:** commit 1 is larger than the spec's §7 describes,
+      because deleting the mode axis cannot land green without the Designer tab existing to derive the
+      surface from; and the Designer and the SKILL.md source are the **same mounted `UnifiedEditor`**
+      (unmounting would re-fit the canvas, re-fetch bound tools and take the Save button away
+      mid-edit), so the inactive one's `aria-controls` points at no element — pre-existing for
+      background file tabs, now true for this pair too, and flagged rather than passed off as new
+      correctness.
+      **Adjacent findings, not fixed, not this WP's:** the **Components palette clips its own row
+      labels** in the 184px rail ("Validation g…", "Tool refere…", "Asset refer…") — WP 7.7's palette,
+      the same width pressure one level down; and pre-existing raw type-scale utilities in
+      `UnifiedEditor.tsx`, `SkillGraphCanvas.tsx`, `SkillDiffView.tsx`.
+      **NOT VERIFIED, and this is the fifth Studio WP to say it: NO HUMAN HAS USED ANY OF IT.** Every
+      visual claim is headless Chromium — a measurement, not a walk. **No save has ever been completed
+      against a running API** by this WP or the four before it; acceptance #5 is proved through the
+      real route with the fetch seam mocked. Never exercised against a bound MCP server. Keyboard only
+      partially driven (centre-tab arrows in a real browser; the stacked rail's Up/Down is Radix's
+      `orientation="vertical"` contract, asserted via `aria-orientation`, not a real key press). No
+      contrast measurement on the active rail trigger. One viewport (1600×1000), not the ~1100px the
+      conventions also ask for.
 
 > **Phase 7 session note (2026-07-06, Cowork PM):** 7.2 · 7.3a · 7.5 · 7.6 executed by four parallel
 > sub-agents **directly on the working tree** (owner-approved: .git lies outside the session mount —

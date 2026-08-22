@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "observability — work-package status ledger"
 description: "Living state for the observability plan, read and updated by the next-wp skill (and the"
 tags: ["roadmap", "RM-17"]
-timestamp: "2026-08-22T16:20:00Z"
+timestamp: "2026-08-22T21:15:00Z"
 status: "active"
 ---
 
@@ -537,8 +537,43 @@ had one open box before the lock and now has fourteen.
       second place).
       **Still owner-acceptance, not done:** the two-theme and keyboard walk (#9), and nothing here
       has ever met a rating a real grader produced
-- [ ] AM-OB13 — per-run/suite-run manual "send to webhook" (ids + report link) to an
+- [x] AM-OB13 — per-run/suite-run manual "send to webhook" (ids + report link) to an
       admin-configured endpoint, reusing WP 4.3's webhook config + signing · day-scale
+      — **done 2026-08-22 · `wp/roadmap-cleanup/am-ob13` (7 commits, merged) · spec:
+      [`phase-6-langfuse/WP-6.12-AM-OB13-manual-send-to-webhook.md`](./phase-6-langfuse/WP-6.12-AM-OB13-manual-send-to-webhook.md)
+      · 27 files, +2,021 / −53 · recommended path taken: `apps/api/src/db/**` is a **zero-line diff**,
+      no `user_version`, no migration, no new dependency.**
+      An operator looking at an interesting run can push it to a webhook in one action, and **what
+      lands on the other end contains a link that opens.** Destination is a rule's own encrypted
+      `watch_secrets` entry via a picker — **no registry, no second secret lifecycle** (the decision
+      the spec asked to be recorded). Audited as `manual_send`, shown where `test_fire` is shown, and
+      deliberately NOT counted as the rule firing.
+      **Orchestrator probe — broken here, watched go red, restored:** leaking the resolved webhook URL
+      into the success detail reddened the "no URL in the response" assertion. The scrub discipline is
+      real, not asserted.
+      **⚠️ THE SPEC WAS WRONG ON THE NOTIFICATION LINKS AND THE BUILDER MEASURED IT.** The spec told it
+      to route `notifications.ts` through the absolute-URL helper. **Verified independently by the
+      orchestrator:** `NotificationBell.tsx:63` consumes that field as `navigate(notification.linkPath)`
+      — react-router in-app navigation, which treats an absolute URL as a *path*. Doing what the spec
+      said would have broken every in-app notification link. So notifications share the **path
+      vocabulary** (which is what "one link-building path" actually buys) and stay relative;
+      documented at both ends.
+      **A pre-existing test defect it exposed and fixed:** `RunsView.test.tsx:493-494`/`:519-520`
+      (AM-OB1, `24a4901`) waited on the location element then *synchronously* queried a different one.
+      Adding one web test file shifted vitest's file→worker distribution and it went red. **The
+      orchestrator checked the fix is not a weakening** — repointed the softened assertion at a
+      control that does not exist and watched **2 tests fail**. Changed to `await findByRole`.
+      **One file outside its declared domain, correctly:** `apps/api/src/diagnostics/env-vars.ts`, one
+      catalogue line for `APP_BASE_URL` (`defaulted: false` — bare read, meaningful absence). That is
+      RM-18 WP 1.3's drift gate doing its job; removing the line reddens `diagnostics.test.ts:164`
+      naming the variable.
+      **An adjacent instance deliberately NOT fixed, outside its domain and flagged to the owning
+      session:** `apps/api/src/reports/digest.ts:267,279` build bare relative paths that are rendered
+      into the **digest Markdown report** — a document meant to be read outside the app, where a bare
+      path is unclickable. Same defect class this WP fixed for webhooks. Accepted by the RM-37 session
+      against its WP 3.3/3.4.
+      **NOT VERIFIED — owner-acceptance:** both themes, a hand keyboard walk, and any send to a real
+      endpoint. No browser was opened.
 - [ ] AM-OB14 — per-bucket distribution bars on the issue list · _verify-at-pickup: the
       occurrence-over-time chart already ships_ · **explicitly out of scope: embedding-scatter
       topic visuals — clustering stays deterministic over forensics buckets** · ⚠ chart
