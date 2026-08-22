@@ -33,3 +33,4 @@
 * [Roadmap cleanup — close what is already started](RM-35-roadmap-cleanup-close-what/) - Browse roadmap cleanup — close what is already started.
 * [UI/UX audit remediation 2026-08](RM-36-ui-ux-audit-remediation/) - Browse ui/ux audit remediation 2026-08.
 * [Announcement readiness — multi-persona review remediation (2026-08)](RM-37-announcement-readiness/) - Browse announcement readiness — multi-persona review remediation (2026-08).
+* [Reference data pack](RM-38-reference-data-pack/) - Browse reference data pack.

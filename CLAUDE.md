@@ -46,7 +46,8 @@ talks to MCP servers over **stdio** and **streamable HTTP**.
 > [`planning/Roadmap/RM-27-testing-ia/STATUS.md`](./planning/Roadmap/RM-27-testing-ia/STATUS.md),
 > [`planning/Roadmap/RM-32-overview-detail/STATUS.md`](./planning/Roadmap/RM-32-overview-detail/STATUS.md),
 > [`planning/Roadmap/RM-34-estimator-turn-model-calibrate/STATUS.md`](./planning/Roadmap/RM-34-estimator-turn-model-calibrate/STATUS.md),
-> [`planning/Roadmap/RM-35-roadmap-cleanup-close-what/STATUS.md`](./planning/Roadmap/RM-35-roadmap-cleanup-close-what/STATUS.md), and
+> [`planning/Roadmap/RM-35-roadmap-cleanup-close-what/STATUS.md`](./planning/Roadmap/RM-35-roadmap-cleanup-close-what/STATUS.md),
+> [`planning/Roadmap/RM-38-reference-data-pack/STATUS.md`](./planning/Roadmap/RM-38-reference-data-pack/STATUS.md), and
 > [`planning/Roadmap/completed/RM-29-unified-sessions/STATUS.md`](./planning/Roadmap/completed/RM-29-unified-sessions/STATUS.md)) are **authoritative** for what is
 > in-progress / done / owner-pending. This table and every other doc **link** to them rather than
 > restate per-WP state, so status lives in exactly one place. The older narrative roadmap docs
