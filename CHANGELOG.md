@@ -5,6 +5,45 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — you can hand a run to someone else without copying the address bar
+
+**A run worth showing someone can now leave the app in one action.** Open the run — or the suite
+run — pick "Send to webhook…" from its overflow menu, and it goes to whatever is on the other end:
+a Slack channel, a ticket, a script of your own.
+
+Until now the only automatic way out was a watch rule, which decides for itself when something is
+interesting. There was one manual button, but it deliberately sends made-up data — its job is to
+prove the plumbing works, not to share a result. So the actual answer to "send this run to Ana" was
+to select the URL out of the address bar and paste it into a message.
+
+You pick the destination **by name**, not by URL. A destination is a webhook you already set up on a
+watch rule, which is the one place its address was ever typed; that address stays encrypted on the
+server and is never shown back to you or to anyone reading over your shoulder. And before anything
+is sent, you see exactly what will be sent — the run's status, its cost, its tokens, and two links —
+so it is never a blind action. Afterwards the send appears in that rule's own history, marked as
+something a person did rather than something the rule decided, so "did that actually go out, and did
+it work" stays answerable a week later.
+
+**The links in those messages used to be broken, and not only in this feature.** Every alert this
+app has ever sent out carried something like `/testing/runs/abc123` — correct inside the app,
+useless in a Slack message, because it names no machine. Nothing was ever added in front of it. For
+a rule's alert that was merely poor; for "here, look at this run" it defeats the whole point.
+
+There is now one place that decides what URL the outside world gets told, and everything that sends
+one goes through it. To make those links complete, tell the app the address you actually reach it at
+by setting `APP_BASE_URL` — for example `http://localhost:8081`, or your real hostname. If you do
+not, the links go out as plain paths exactly as they always have, and the send dialog says so up
+front. **The app will not guess.** It knows which port it is listening on, but that is not the same
+as an address someone else can open, and a confident `http://127.0.0.1:8080/...` in a colleague's
+ticket is worse than an obviously incomplete path — it looks clickable and opens nothing.
+
+One small thing that came with it: the existing "test this webhook" button still sends its made-up
+sample, on purpose, but its link is now shaped like a real one. A test that proved the plumbing with
+a differently-shaped link was quietly proving the wrong thing.
+
+Not verified: nobody has clicked this in a browser, in either theme, and no send has ever been made
+to a real endpoint outside the tests.
+
 ## Unreleased — the test suite stopped failing at random
 
 For a while the checks failed on a different file almost every run, and passed
