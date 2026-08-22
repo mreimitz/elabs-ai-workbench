@@ -594,7 +594,10 @@ and stops nothing that runs in your own browser.
 - **Not on behalf of another website.** A request that the browser says came from another site
   (`Origin`, `Referer`, `Sec-Fetch-Site`) is refused, and anything that changes state additionally
   has to echo back a token from a cookie only this app's own pages can read. Following a link to the
-  app still works; so does the sign-in redirect an MCP provider sends you back on.
+  app still works; so does the sign-in redirect an MCP provider sends you back on. That second check
+  applies only to requests a **browser** sent — a local script, `mcpfp`, or an MCP client talking to
+  `/api/mcp` from this machine needs no token and no cookie, exactly as before. A page cannot pretend
+  to be one of those: the headers that give a browser away are ones its own scripts may not remove.
 - **Not faster than a person could mean it.** Failed token attempts are capped at 20 a minute, and
   the expensive actions — starting a scan, testing a server, launching a run or a suite — at 60.
 

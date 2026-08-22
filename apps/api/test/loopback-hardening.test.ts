@@ -323,6 +323,7 @@ test("cross-site: Referer is consulted only when Origin is absent, and an opaque
     csrfHeader: undefined,
     secFetchSite: undefined,
     secFetchMode: undefined,
+    secFetchDest: undefined,
     origin: undefined,
     referer: undefined,
   };
@@ -442,6 +443,42 @@ test("CSRF: a Bearer service token is exempt — the CLI, CI and the MCP mount h
     headers: { host: "127.0.0.1:8080", authorization: `Bearer ${secret}` },
   });
   assert.equal(response.statusCode, 200, "no Origin, no cookie, no CSRF header — and no 403");
+});
+
+test("CSRF: a tokenless NON-browser caller is exempt — mcpfp and a local MCP client keep working", async () => {
+  // D-C2 and the CLI's own help say a loopback instance needs no token, and `mcpfp scan` is a POST.
+  // D-MCP7 says a tokenless loopback caller reaches the MCP mount. Neither has a cookie jar. If the
+  // CSRF check refused them, this WP would have broken two shipped, documented paths.
+  const h = await makeApp();
+  const response = await h.app.inject({
+    method: "POST",
+    url: "/api/servers/s1/scan",
+    headers: { host: "127.0.0.1:8080", accept: "application/json" },
+  });
+  assert.equal(response.statusCode, 200);
+});
+
+test("CSRF: the non-browser exemption cannot be reached from a page", async () => {
+  // Each header below is one a browser attaches and a script CANNOT strip — `Sec-Fetch-*` are
+  // forbidden header names, and `Cookie` is ambient. Any ONE of them present means the CSRF pair is
+  // required, so "just omit Origin" is not an escape route.
+  const h = await makeApp();
+  for (const [name, value] of [
+    ["origin", "http://localhost:8081"],
+    ["referer", "http://localhost:8081/servers"],
+    ["sec-fetch-site", "same-origin"],
+    ["sec-fetch-mode", "cors"],
+    ["sec-fetch-dest", "empty"],
+    ["cookie", "theme=light"],
+  ] as const) {
+    const response = await h.app.inject({
+      method: "POST",
+      url: "/api/servers/s1/scan",
+      headers: { host: "127.0.0.1:8080", [name]: value },
+    });
+    assert.equal(response.statusCode, 403, `a request carrying ${name} must still need the token`);
+    assert.equal(response.json().code, CSRF_TOKEN_INVALID_ERROR_CODE, name);
+  }
 });
 
 test("CSRF: with no install token available the check is skipped, not failed closed", async () => {

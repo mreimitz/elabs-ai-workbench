@@ -82,6 +82,7 @@ export type OriginGuardRequest = {
   referer: string | undefined;
   secFetchSite: string | undefined;
   secFetchMode: string | undefined;
+  secFetchDest: string | undefined;
   authorization: string | undefined;
   cookie: string | undefined;
   csrfHeader: string | undefined;
@@ -151,6 +152,10 @@ export function decideOriginAccess(request: OriginGuardRequest): OriginGuardDeci
   // No install token available (a read-only or unavailable settings store). Refusing here would
   // brick the UI over a degraded side-table; the Host and cross-site checks above still stand.
   if (request.csrfToken === undefined) return { kind: "pass" };
+  // A caller that is not a browser at all. See {@link carriesBrowserFingerprint}: this is what keeps
+  // `mcpfp scan` on a tokenless loopback instance (D-C2, documented in the CLI's own help) and a
+  // tokenless local MCP client on `POST /api/mcp` (D-MCP7) working exactly as they did.
+  if (!carriesBrowserFingerprint(request)) return { kind: "pass" };
 
   const cookie = readCookie(request.cookie, CSRF_COOKIE_NAME);
   const header = request.csrfHeader?.trim();
@@ -170,6 +175,40 @@ export function decideOriginAccess(request: OriginGuardRequest): OriginGuardDeci
   }
 
   return { kind: "pass" };
+}
+
+/**
+ * Did a BROWSER send this request?
+ *
+ * The CSRF check exists to stop a browser being made to act on another site's behalf. A request no
+ * browser produced is outside its remit — and refusing those would break, with certainty, three
+ * shipped tokenless-loopback paths this app documents in print: `mcpfp scan` (the CLI's help says a
+ * loopback instance needs no token), `POST /api/mcp` from a local MCP client (D-MCP7), and any
+ * `curl -X POST http://127.0.0.1:8080/api/…` an operator runs.
+ *
+ * **The exemption cannot be forged from a page**, which is the only property that matters:
+ *
+ *   • `Sec-Fetch-Site` / `-Mode` / `-Dest` are *forbidden header names*. Script cannot set them and
+ *     script cannot remove them; every current engine attaches them to every request it makes.
+ *   • `Origin` is mandatory on a request whose method is not CORS-safelisted — which is exactly the
+ *     verbs this branch governs — same-origin included.
+ *   • `Cookie` is listed too, so even a hypothetical engine that sent none of the above but did
+ *     attach ambient cookie authority is still held to the check.
+ *
+ * So this is a narrower exemption than the common "no `Origin` ⇒ not a browser" rule, not a wider
+ * one. And it is defence in DEPTH either way: for this branch to be reached at all, the cross-site
+ * check above must already have passed, which a real cross-site request from any shipping browser
+ * does not do.
+ */
+function carriesBrowserFingerprint(request: OriginGuardRequest): boolean {
+  return [
+    request.origin,
+    request.referer,
+    request.secFetchSite,
+    request.secFetchMode,
+    request.secFetchDest,
+    request.cookie,
+  ].some((value) => typeof value === "string" && value.trim().length > 0);
 }
 
 function crossSiteRefusal(): OriginGuardDecision {
@@ -201,6 +240,7 @@ export function registerOriginGuard(
       referer: headerValue(request.headers.referer),
       secFetchSite: headerValue(request.headers["sec-fetch-site"]),
       secFetchMode: headerValue(request.headers["sec-fetch-mode"]),
+      secFetchDest: headerValue(request.headers["sec-fetch-dest"]),
       authorization: request.headers.authorization,
       cookie: headerValue(request.headers.cookie),
       csrfHeader: headerValue(request.headers[CSRF_HEADER_NAME]),
