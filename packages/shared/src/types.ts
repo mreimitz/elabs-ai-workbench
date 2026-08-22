@@ -88,6 +88,7 @@ import type {
   SESSION_COST_BASES,
   SESSION_LIVE_REASONING,
   SESSION_TOKEN_ACCOUNTING,
+  SKILL_EDGE_KINDS,
   SKILL_EDIT_OP_TYPES,
   SKILL_FILE_ENCODINGS,
   SKILL_FILE_KINDS,
@@ -3559,10 +3560,18 @@ export type SkillGraphNode =
   // references projects no `tool_ref` node (regression-locked).
   | (SkillGraphNodeCommon & { kind: "tool_ref"; toolName: string; serverName?: string });
 
+/** RM-30 WP 7.8 — what an arrow MEANS at read time. See `SKILL_EDGE_KINDS` in `constants.ts` for the
+ *  five kinds and `skill-flow-grammar.ts` for the one frozen legality table over them. */
+export type SkillEdgeKind = (typeof SKILL_EDGE_KINDS)[number];
+
 /**
  * A directed edge in the skill graph. `condition` labels a gatekeeper branch; `anchor` is optional.
  * `flowId` (Skill IDE WP 1.1/I1) is ADDITIVE — absent ⇒ `DEFAULT_SKILL_FLOW_ID` (`'main'`); a
  * cross-flow edge (e.g. "see /other") carries the source flow's id.
+ *
+ * `kind` (RM-30 WP 7.8) is ADDITIVE/optional — a graph serialized before that work package carries no
+ * kind anywhere and still parses. Absent means UNKNOWN, never "sequence": reachability treats an
+ * unkinded edge as only-maybe-traversed rather than promising a reading floor it cannot prove.
  */
 export type SkillGraphEdge = {
   id: string;
@@ -3571,6 +3580,7 @@ export type SkillGraphEdge = {
   condition?: string;
   anchor?: SkillGraphAnchor;
   flowId?: string;
+  kind?: SkillEdgeKind;
 };
 
 /**

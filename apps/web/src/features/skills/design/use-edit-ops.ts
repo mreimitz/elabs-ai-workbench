@@ -193,6 +193,24 @@ function previewFlowOf(item: { flowId?: string }): string {
 }
 
 /**
+ * Find the ONE asset box for `path`, preferring the citing section's own flow.
+ *
+ * RM-30 WP 7.8 — the projector now emits one box per file rather than one per mention, and that box
+ * carries the flow of the FIRST section to cite it. So a strict same-flow match (what this used to
+ * do) silently found nothing whenever a second flow referenced a file the first flow had already
+ * cited, and the staged connect/disconnect vanished from the preview. Prefer the same flow, then fall
+ * back to the single box wherever it lives.
+ */
+function findAssetBox(
+  graph: SkillGraph,
+  path: string,
+  sectionFlowId: string,
+): SkillGraphNode | undefined {
+  const candidates = graph.nodes.filter((node) => node.kind === "asset" && node.path === path);
+  return candidates.find((node) => previewFlowOf(node) === sectionFlowId) ?? candidates[0];
+}
+
+/**
  * Apply the ops buffer to `graph` for CLIENT-SIDE PREVIEW ONLY (never sent anywhere; the API is the
  * only authority on the saved result — a save always re-projects from the real, edited `SKILL.md`).
  * Covers exactly the transforms with a graph-visual effect:
@@ -252,10 +270,7 @@ export function applyPreviewOps(graph: SkillGraph, ops: SkillEditOp[]): SkillGra
     if (op.op !== "disconnect_asset") continue;
     const section = graph.nodes.find((n) => n.id === op.nodeId);
     if (!section) continue;
-    const asset = graph.nodes.find(
-      (n) =>
-        n.kind === "asset" && n.path === op.path && previewFlowOf(n) === previewFlowOf(section),
-    );
+    const asset = findAssetBox(graph, op.path, previewFlowOf(section));
     if (!asset) continue;
     const edge = graph.edges.find((e) => e.from === section.id && e.to === asset.id);
     if (edge) droppedEdgeIds.add(edge.id);
@@ -292,16 +307,16 @@ export function applyPreviewOps(graph: SkillGraph, ops: SkillEditOp[]): SkillGra
     if (op.op !== "connect_asset") continue;
     const section = graph.nodes.find((n) => n.id === op.nodeId);
     if (!section || droppedNodeIds.has(section.id)) continue;
-    const asset = graph.nodes.find(
-      (n) =>
-        n.kind === "asset" && n.path === op.path && previewFlowOf(n) === previewFlowOf(section),
-    );
+    const asset = findAssetBox(graph, op.path, previewFlowOf(section));
     if (!asset || droppedNodeIds.has(asset.id)) continue;
     if (edges.some((e) => e.from === section.id && e.to === asset.id)) continue;
     edges.push({
       id: `${PREVIEW_NODE_PREFIX}edge:${connectIndex}`,
       from: section.id,
       to: asset.id,
+      // RM-30 WP 7.8 — the preview edge carries the same kind the projector will stamp on re-project,
+      // so the canvas draws it in the right grammar BEFORE the save rather than as an unknown line.
+      kind: "uses",
       ...(section.flowId !== undefined ? { flowId: section.flowId } : {}),
     });
     connectIndex += 1;
@@ -337,6 +352,7 @@ export function applyPreviewOps(graph: SkillGraph, ops: SkillEditOp[]): SkillGra
       id: `${PREVIEW_NODE_PREFIX}edge:toolref:${toolRefIndex}`,
       from: section.id,
       to: refId,
+      kind: "uses",
       ...(section.flowId !== undefined ? { flowId: section.flowId } : {}),
     });
     toolRefIndex += 1;

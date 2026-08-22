@@ -402,7 +402,10 @@ test("SkillFlow constants carry the WP 1.0 defaults", () => {
   // `flowId`s + `SkillGraph.flows` + keyword triggers (flow semantics change what a graph MEANS).
   // Bumped -> 4 in Skill IDE WP 8.1: the projector emits text-projected `tool_ref` accessory nodes
   // + `calls` edges (a skill citing no tool projects identically to v3 — regression-locked).
-  assert.equal(SKILLFLOW_PROJECTOR_VERSION, 4);
+  // Bumped -> 5 in RM-30 WP 7.8: every edge carries a `kind` (the reading-order grammar), duplicate
+  // file/tool boxes MERGE (one box per path / per tool name, so node IDS moved), and narrative prose
+  // no longer becomes a branch label. All three change what a graph means and what its ids are.
+  assert.equal(SKILLFLOW_PROJECTOR_VERSION, 5);
   // Bumped 1 -> 2 in WP 3.2: verdicts gained the additive `confidence` field (conventions.md's
   // version-stamp rule — a real change to what a TraceAlignment's verdicts mean, never silently
   // compared against pre-WP-3.2 alignments).

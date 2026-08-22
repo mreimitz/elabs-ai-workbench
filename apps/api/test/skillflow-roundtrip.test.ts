@@ -222,8 +222,29 @@ test("github-style: representative ops round-trip with byte-exact untouched pros
   assert.ok(nested, "nested subsection untouched");
 });
 
+/**
+ * RM-30 WP 7.8 — the shared `annotated` fixture's "If the input is CSV … Otherwise if JSON …" is an
+ * INTRA-STEP rule, not routing, and the tightened `extractConditions` correctly stops lifting it into
+ * branch labels. This test is specifically about `set_edge_condition` on an ANCHORED, CONDITION-
+ * LABELLED edge, so it rewrites that one sentence in memory into a real routing branch. The fixture
+ * FILE stays byte-unchanged — every other suite reading it keeps the honest, branch-free graph.
+ */
+function routingAnnotated(): { skillMd: string; files: SkillFileNode[]; graph: SkillGraph } {
+  const base = loadFixture("annotated");
+  const skillMd = base.skillMd.replace(
+    "If the input is CSV, parse it with the header-row convention. Otherwise if JSON, parse it as an\narray of records.",
+    "If the input is CSV, go to Run the check. Otherwise if JSON, go to Run the check.",
+  );
+  assert.notEqual(
+    skillMd,
+    base.skillMd,
+    "the fixture was actually rewritten into a routing branch",
+  );
+  return { skillMd, files: base.files, graph: projectSkillGraph(skillMd, base.files) };
+}
+
 test("annotated: composing ops + set_edge_condition on an anchored gatekeeper edge", () => {
-  const fixture = loadFixture("annotated");
+  const fixture = routingAnnotated();
   const csvEdge = fixture.graph.edges.find((e) => e.condition === "the input is CSV");
   assert.ok(csvEdge?.anchor, "fixture projects an anchored, condition-labelled gatekeeper edge");
 

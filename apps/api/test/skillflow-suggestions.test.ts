@@ -354,8 +354,30 @@ test("gate-failed-consistently does NOT fire on the tool-error degradation path 
 
 // --- Rule 5: marker-route-mismatch ------------------------------------------------------------------
 
+/**
+ * RM-30 WP 7.8 — the shared `zero-annotation` fixture's "If the input is CSV … Otherwise if JSON …"
+ * is an INTRA-STEP rule, not routing, and the tightened `extractConditions` correctly stops lifting
+ * it into branch labels. This helper rewrites that one sentence in memory into a REAL routing branch
+ * (each arm names a destination) so the branch-shaped rules below still exercise what they were
+ * written to exercise. The fixture FILE is deliberately left byte-unchanged — every other suite that
+ * reads it keeps seeing the honest, branch-free graph.
+ */
+function routingZeroAnnotation(): { skillMd: string; files: SkillFileNode[]; graph: SkillGraph } {
+  const base = loadFixture("zero-annotation");
+  const skillMd = base.skillMd.replace(
+    "If the input is CSV, treat the first row as a header and every other row as a record. Otherwise if\nJSON, expect a top-level array of objects with consistent keys.",
+    "If the input is CSV, go to Validate the data. Otherwise if JSON, go to Validate the data.",
+  );
+  assert.notEqual(
+    skillMd,
+    base.skillMd,
+    "the fixture was actually rewritten into a routing branch",
+  );
+  return { skillMd, files: base.files, graph: projectSkillGraph(skillMd, base.files) };
+}
+
 test("marker-route-mismatch: a bogus marker route is advisory-only (no deterministic replacement to draft)", () => {
-  const fixture = loadFixture("zero-annotation");
+  const fixture = routingZeroAnnotation();
   const events: TraceEvent[] = [
     {
       type: "marker",

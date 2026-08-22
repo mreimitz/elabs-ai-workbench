@@ -1,5 +1,6 @@
 import {
   DEFAULT_SKILL_FLOW_ID,
+  type SkillEdgeKind,
   type SkillFileNode,
   type SkillGraph,
   type SkillGraphAnchor,
@@ -84,19 +85,39 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
   const nodes: SkillGraphNode[] = [];
   const edges: SkillGraphEdge[] = [];
   const edgeIds = new IdGenerator();
+  // RM-30 WP 7.8 — `kind` is a REQUIRED argument, not an option: every edge the projector emits says
+  // what it MEANS at read time, and the type system is what stops a tenth site from being added
+  // anonymously. `apps/api/test/skillflow-edge-grammar.test.ts` re-asserts it over real output.
   const addEdge = (
     from: string,
     to: string,
     flowId: string,
+    kind: SkillEdgeKind,
     extra?: { condition?: string; anchor?: SkillGraphAnchor },
   ) => {
-    edges.push({ id: edgeIds.make(`e-${from}-${to}`), from, to, flowId, ...extra });
+    // A condition-labelled branch is deliberately NOT deduped: a gatekeeper's several conditions each
+    // deserve their own labelled edge. Everything else is a relationship, and a relationship stated
+    // twice (the same tool cited twice inside one section) is still one relationship.
+    if (extra?.condition === undefined) {
+      const key = `${from} ${to} ${kind}`;
+      if (emittedEdges.has(key)) return;
+      emittedEdges.add(key);
+    }
+    edges.push({ id: edgeIds.make(`e-${from}-${to}`), from, to, flowId, kind, ...extra });
   };
 
-  // Per section index: its node id, the flow it belongs to, and whether it's a gatekeeper.
+  // Per section index: its node id, the flow it belongs to, whether it's a gatekeeper, and whether
+  // the heading itself projected as an `entry_point` (a `/command`) rather than a body section.
   const sectionNodeIds: string[] = [];
   const sectionFlowIds: string[] = [];
   const isGatekeeper: boolean[] = [];
+  const isEntryPoint: boolean[] = [];
+  // RM-30 WP 7.8 (design decision 3) — ONE BOX PER FILE / PER TOOL. The first citation creates the
+  // box; every later citation adds another `uses` edge INTO it instead of a duplicate box.
+  const fileBoxByPath = new Map<string, string>();
+  const toolBoxByName = new Map<string, string>();
+  // Edges deduped on (from, to, kind) — see `addEdge`.
+  const emittedEdges = new Set<string>();
   // Command entry points keyed by trigger value (e.g. `/analyze` → node id) for cross-flow refs.
   const commandEntryByValue = new Map<string, string>();
   // Ordered command flows for `SkillGraph.flows` (document order).
@@ -165,14 +186,22 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
     sectionNodeIds.push(sectionNodeId);
     sectionFlowIds.push(flowId);
     isGatekeeper.push(gatekeeper);
+    isEntryPoint.push(command !== undefined);
 
-    // Reference nodes (assets + inferred validation gates), in a stable path order — all on `flowId`.
+    // Reference nodes (assets + inferred validation gates), in a stable path order.
+    //
+    // RM-30 WP 7.8 — ONE BOX PER FILE, not per MENTION. Before this, a file cited by four steps
+    // produced four boxes, so "how many files does this command read" could not be counted and the
+    // canvas was cluttered for no gain. Now the FIRST citation creates the box (on that section's
+    // flow, with that section's anchor) and every later citation only adds a `uses` edge into it.
     for (const file of refs) {
-      if (isScript(file)) {
-        // Skip a script the section's own annotated gate already consumed (no duplicate node).
-        if (gateScript === file.path) continue;
-        if (hasVerifyLanguage(section.body)) {
-          const gateNode: SkillGraphNode = {
+      // Skip a script the section's own annotated gate already consumed (no duplicate node).
+      if (isScript(file) && gateScript === file.path) continue;
+      let boxId = fileBoxByPath.get(file.path);
+      if (boxId === undefined) {
+        let node: SkillGraphNode;
+        if (isScript(file) && hasVerifyLanguage(section.body)) {
+          node = {
             id: ids.make(`gate-${basename(file.path)}`),
             kind: "validation_gate",
             label: basename(file.path),
@@ -182,17 +211,15 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
             script: file.path,
             expectation: sentenceMentioning(section.body, file.path),
           };
-          nodes.push(gateNode);
-          addEdge(sectionNodeId, gateNode.id, flowId);
         } else {
           // A referenced script with no verification language is just a bundled asset.
-          nodes.push(makeAssetNode(file, section.anchor, ids, flowId));
-          addEdge(sectionNodeId, nodes[nodes.length - 1]!.id, flowId);
+          node = makeAssetNode(file, section.anchor, ids, flowId);
         }
-      } else {
-        nodes.push(makeAssetNode(file, section.anchor, ids, flowId));
-        addEdge(sectionNodeId, nodes[nodes.length - 1]!.id, flowId);
+        nodes.push(node);
+        boxId = node.id;
+        fileBoxByPath.set(file.path, boxId);
       }
+      addEdge(sectionNodeId, boxId, flowId, "uses");
     }
 
     // Loop-guard hint attached to the section.
@@ -208,7 +235,7 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
         ...(loop.maxIterations !== undefined ? { maxIterations: loop.maxIterations } : {}),
       };
       nodes.push(loopNode);
-      addEdge(sectionNodeId, loopNode.id, flowId);
+      addEdge(sectionNodeId, loopNode.id, flowId, "uses");
     }
 
     if (ownScript) lastScriptRef = ownScript;
@@ -231,26 +258,31 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
       const conditions = extractConditions(from.section.body);
       if (conditions.length > 0) {
         for (const condition of conditions) {
-          addEdge(fromId, toId, DEFAULT_SKILL_FLOW_ID, { condition, anchor: from.section.anchor });
+          addEdge(fromId, toId, DEFAULT_SKILL_FLOW_ID, "branch", {
+            condition,
+            anchor: from.section.anchor,
+          });
         }
         warnings.push(
           `gatekeeper "${from.section.title}" branch targets are not resolvable to sections; routed to the next section with condition labels.`,
         );
       } else {
-        addEdge(fromId, toId, DEFAULT_SKILL_FLOW_ID);
+        addEdge(fromId, toId, DEFAULT_SKILL_FLOW_ID, "then");
       }
     } else {
-      addEdge(fromId, toId, DEFAULT_SKILL_FLOW_ID);
+      addEdge(fromId, toId, DEFAULT_SKILL_FLOW_ID, "then");
     }
   }
 
   // Parent → subsection edges (the entry_point → first content node fall out of this for commands).
+  // A `/command` parent STARTS its subsection (`triggers`); a body section CONTAINS it (`contains`).
   for (const section of sections) {
     if (section.level >= 3 && section.parentIndex >= 0) {
       addEdge(
         sectionNodeIds[section.parentIndex]!,
         sectionNodeIds[section.index]!,
         sectionFlowIds[section.index]!,
+        isEntryPoint[section.parentIndex] ? "triggers" : "contains",
       );
     }
   }
@@ -270,7 +302,7 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
       trigger: { type: "keyword", value: keyword },
     });
     if (firstMainNodeId >= 0)
-      addEdge(entryId, sectionNodeIds[firstMainNodeId]!, DEFAULT_SKILL_FLOW_ID);
+      addEdge(entryId, sectionNodeIds[firstMainNodeId]!, DEFAULT_SKILL_FLOW_ID, "triggers");
   }
 
   // Cross-flow references: a section that mentions ANOTHER command's `/value` (e.g. "see /analyze")
@@ -289,7 +321,7 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
       const key = `${fromId}->${targetEntry}`;
       if (crossFlowSeen.has(key)) continue;
       crossFlowSeen.add(key);
-      addEdge(fromId, targetEntry, fromFlow);
+      addEdge(fromId, targetEntry, fromFlow, "uses");
       warnings.push(
         `cross-flow reference: "${section.title}" (flow ${fromFlow}) references command ${value} (flow ${targetEntry}).`,
       );
@@ -303,6 +335,11 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
   // evidence. A skill with zero references touches nothing here (the loop body never runs), so its
   // graph is byte-identical to v3 (regression-locked). `toolName` is the citation verbatim; the id is
   // pinned by (line + name) so it is stable across re-projection and document reorders.
+  //
+  // RM-30 WP 7.8 — ONE BOX PER TOOL, mirroring the file merge above: the first citation creates the
+  // leaf (id `tool-ref-<name>`, no longer line-suffixed, because the box is no longer per-mention),
+  // and every later citation adds another `uses` edge into it. A tool's definition rides into context
+  // ONCE however many times the document names it, so a per-mention box over-counted the cost.
   for (const reference of extractToolReferences(skillMd)) {
     const ownerIndex = sections.findIndex(
       (section) => reference.line >= section.startLine && reference.line <= section.endLine,
@@ -310,17 +347,22 @@ export function projectSkillGraph(skillMd: string, files: SkillFileNode[]): Skil
     if (ownerIndex < 0) continue; // a reference before the first heading has no owning section to cite from
     const ownerId = sectionNodeIds[ownerIndex]!;
     const flowId = sectionFlowIds[ownerIndex]!;
-    const toolNode: SkillGraphNode = {
-      id: ids.make(`tool-ref-${reference.name}-l${reference.line}`),
-      kind: "tool_ref",
-      label: reference.name,
-      anchor: reference.anchor,
-      source: "inferred",
-      flowId,
-      toolName: reference.name,
-    };
-    nodes.push(toolNode);
-    addEdge(ownerId, toolNode.id, flowId);
+    let boxId = toolBoxByName.get(reference.name);
+    if (boxId === undefined) {
+      const toolNode: SkillGraphNode = {
+        id: ids.make(`tool-ref-${reference.name}`),
+        kind: "tool_ref",
+        label: reference.name,
+        anchor: reference.anchor,
+        source: "inferred",
+        flowId,
+        toolName: reference.name,
+      };
+      nodes.push(toolNode);
+      boxId = toolNode.id;
+      toolBoxByName.set(reference.name, boxId);
+    }
+    addEdge(ownerId, boxId, flowId, "uses");
   }
 
   return { nodes, edges, warnings, flows: [mainFlow, ...commandFlows] };
@@ -575,16 +617,50 @@ function hasBranching(body: string): boolean {
   return false;
 }
 
-/** Extract the condition clauses from branching prose (`if X`, `otherwise if Y`). */
-function extractConditions(body: string): string[] {
+/**
+ * A phrase that names a DESTINATION — the thing that separates a routing condition from an ordinary
+ * conditional sentence. Deliberately a small closed set of explicit "go somewhere" constructions plus
+ * an arrow, not a general verb list, because the corpus evidence (below) says the failure mode is
+ * over-matching, not under-matching.
+ */
+const ROUTING_DESTINATION =
+  /\b(?:go|goes|proceed|proceeds|continue|continues|skip|skips|jump|jumps|move|moves|route|routes|switch|switches|head|return|returns|fall\s+back)\s+(?:straight\s+|directly\s+|back\s+|right\s+)?to\b|\bgoto\b|(?:→|-->|->)/i;
+
+/**
+ * Extract the ROUTING condition clauses from a gatekeeper's prose (`if X, go to Y`).
+ *
+ * RM-30 WP 7.8 — this used to be `/\b(?:otherwise if|else if|if)\b\s+([^,.;:]+)/gi` and nothing else,
+ * so the mere word "if" made a branch. That is measurably wrong. The whole registered corpus (five
+ * skills, 47 versions, run through this very function) produced exactly ONE "branch targets are not
+ * resolvable" warning, and it was a MIS-PARSE, not a branch: two narrative sentences —
+ *
+ *   "If the answer is complete after one query, deliver it. If it takes twenty queries because one
+ *    finding kept leading somewhere else, that's fine too."
+ *
+ * — became two condition labels on one edge, drawing a fork that does not fork. Conditionals are
+ * everywhere in real skills (4–44 lines per skill) but they are INTRA-STEP RULES — retry policy,
+ * field validation, timeout handling — not routing. So a clause now only counts as a branch condition
+ * when its own sentence NAMES A DESTINATION ({@link ROUTING_DESTINATION}).
+ *
+ * Sample-size warning, stated rather than buried: five skills, one author, one domain. That is far too
+ * small to generalize about how skill authors write branches. Do not tune this regex to that corpus —
+ * if a real decision point is missed, widen {@link ROUTING_DESTINATION} deliberately, with evidence.
+ */
+export function extractConditions(body: string): string[] {
   const conditions: string[] = [];
-  const re = /\b(?:otherwise if|else if|if)\b\s+([^,.;:]+)/gi;
-  let match: RegExpExecArray | null = re.exec(body);
-  while (match !== null) {
-    const clause = (match[1] ?? "").trim();
-    if (clause) conditions.push(clause);
-    if (conditions.length >= 6) break;
-    match = re.exec(body);
+  // Sentence-scoped: the destination has to sit in the SAME sentence as the condition, otherwise the
+  // next sentence's "proceed to Step 2" would launder every "if" before it into a branch.
+  const sentences = body.split(/(?<=[.!?])\s+|\n{2,}/);
+  for (const sentence of sentences) {
+    if (!ROUTING_DESTINATION.test(sentence)) continue;
+    const re = /\b(?:otherwise if|else if|if|when)\b\s+([^,.;:]+)/gi;
+    let match: RegExpExecArray | null = re.exec(sentence);
+    while (match !== null) {
+      const clause = (match[1] ?? "").trim();
+      if (clause) conditions.push(clause);
+      if (conditions.length >= 6) return conditions;
+      match = re.exec(sentence);
+    }
   }
   return conditions;
 }

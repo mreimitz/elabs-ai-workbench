@@ -803,6 +803,28 @@ export const SKILL_GRAPH_NODE_KINDS = [
 // `<!-- skillflow:… -->` HTML comment that refines the inference (never required, inert to the agent).
 export const SKILL_GRAPH_SOURCES = ["inferred", "annotated"] as const;
 
+// RM-30 WP 7.8 — the EDGE grammar. Until this work package an arrow carried no meaning at all: nine
+// genuinely different relationships (a keyword starting the skill, one step following another, a step
+// containing a sub-step, a decision branching, a step opening a file / calling a tool / naming another
+// `/command`, and two kinds of check attached to a step) were all drawn as the same anonymous line, so
+// nothing downstream could answer "when this skill fires, what does the model actually read?".
+//
+//   `triggers` — a trigger (keyword or `/command`) → what it starts. Always read.
+//   `then`     — a step → the next step at the same level. Always read.
+//   `contains` — a step → a sub-step. Always read. (Deliberately NOT merged into `then`: a `then`
+//                chain reorders freely, a `contains` child moves with its parent — collapsing the two
+//                would make nesting inexpressible, and nesting is how every real skill is written.)
+//   `branch`   — a decision point → ONE of several steps, whichever condition holds. Conditionally
+//                read; carries the condition text.
+//   `uses`     — a step → a file, a tool, a check, a loop guard, or another command's entry point.
+//                Conditionally read, and it costs tokens only if it is actually opened. (Deliberately
+//                MERGES four things the projector distinguishes as NODES — they differ in what the
+//                BOX is, not in what the arrow means.)
+//
+// The legality table over these kinds is `SKILL_EDGE_RULES` in `skill-flow-grammar.ts` — ONE frozen
+// definition read by the projector, the connect handler and the tests.
+export const SKILL_EDGE_KINDS = ["triggers", "then", "contains", "branch", "uses"] as const;
+
 // The normalized trace-event vocabulary (D6) — the alphabet the trace normalizer speaks over this
 // app's own internal `run_steps` (Phase 2). A `skill_file_read` is a read of a bundled file (drives
 // asset-node visits); a `script_result` carries an exit code (drives validation-gate verdicts); a
@@ -858,7 +880,7 @@ export const ASSERTION_KINDS = ["skillGate", "skillRoute", "noFractures"] as con
 
 // Version stamps mirroring `TOKEN_COUNTING_VERSION`: alignments computed under different projector /
 // aligner algorithm versions are never silently compared (bump when the algorithm changes).
-export const SKILLFLOW_PROJECTOR_VERSION = 4;
+export const SKILLFLOW_PROJECTOR_VERSION = 5;
 // Bumped 1 -> 2 in WP 3.2: every verdict now carries the additive `confidence` field ('exact' vs
 // 'inferred') and gatekeeper verdicts are exact-matched against breadcrumb markers end-to-end (both
 // normalizers now emit `marker` events) — a real change to what a `TraceAlignment`'s verdicts MEAN,
@@ -876,6 +898,15 @@ export const SKILLFLOW_ALIGNER_VERSION = 2;
 // node + a `calls` edge from the referencing section — TEXT EVIDENCE ONLY (the projector never reads
 // scans). A skill with zero tool references projects IDENTICALLY to v3 (no new nodes/edges), so the
 // bump only guards graphs that actually cite tools (regression-locked in skill-ide-projector.test.ts).
+// Bumped -> 5 in RM-30 WP 7.8: (a) every edge the projector emits now carries a `kind` from
+// `SKILL_EDGE_KINDS` (the reading-order grammar), (b) duplicate file and tool boxes are MERGED — one
+// box per path / per tool name, with many `uses` edges into it, where v4 emitted one box per MENTION,
+// and (c) `extractConditions` no longer lifts narrative prose into branch labels (a measured false
+// positive: the whole registered corpus produced exactly one "unresolvable branch" and it was a
+// mis-parse of two ordinary sentences). All three change what a graph MEANS and what its node ids
+// ARE, so a v5 graph must never be silently compared against a v4 one — and a trace verdict recorded
+// against v4 node ids may no longer resolve (RM-30 WP 7.8 decision 7: it DEGRADES with a visible
+// notice, it is not migrated and never silently misaligned).
 
 // The prefix that marks an in-file SkillFlow annotation, e.g. `<!-- skillflow:gate id=check-output -->`.
 export const SKILLFLOW_ANNOTATION_PREFIX = "skillflow:";

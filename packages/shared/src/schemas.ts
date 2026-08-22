@@ -105,6 +105,7 @@ import {
   SESSION_COST_BASES,
   SESSION_LIVE_REASONING,
   SESSION_TOKEN_ACCOUNTING,
+  SKILL_EDGE_KINDS,
   SKILL_FILE_ENCODINGS,
   SKILL_FILE_KINDS,
   SKILL_GATE_EXPECTATIONS,
@@ -1300,10 +1301,7 @@ function watchWorkflowDispatchActionSchema() {
   return z
     .object({
       type: z.literal("workflow_dispatch"),
-      owner: z
-        .string()
-        .trim()
-        .refine(isWatchWorkflowOwner, { message: "invalid GitHub owner" }),
+      owner: z.string().trim().refine(isWatchWorkflowOwner, { message: "invalid GitHub owner" }),
       repo: z.string().trim().refine(isWatchWorkflowRepo, { message: "invalid repository name" }),
       workflow: z
         .string()
@@ -1420,7 +1418,11 @@ export const watchWindowConfigSchema = z
   .superRefine((config, ctx) => {
     const check = validateWatchThresholds(config);
     if (!check.ok) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["warnThreshold"], message: check.message });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["warnThreshold"],
+        message: check.message,
+      });
     }
     // AM-OB4 — the SAME rule the chart config runs, so an editor's inline message, a chart 400 and a
     // rule 400 all say the same thing about a half-configured ratio.
@@ -1893,6 +1895,9 @@ export const skillGraphEdgeSchema = z.object({
   condition: z.string().optional(),
   anchor: skillGraphAnchorSchema.optional(),
   flowId: z.string().trim().min(1).optional(),
+  // RM-30 WP 7.8 — the reading-order grammar. ADDITIVE/optional: a graph serialized before that work
+  // package carries no kind anywhere and still parses (fixture-locked in skill-ide-projector.test.ts).
+  kind: z.enum(SKILL_EDGE_KINDS).optional(),
 });
 
 /** One flow in a graph (Skill IDE I1): its id/label + the entry-point node heading it (if any). */

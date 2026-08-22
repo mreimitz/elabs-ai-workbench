@@ -17,6 +17,7 @@ export * from "./report-derive.js";
 export * from "./run-filter.js";
 export * from "./schemas.js";
 export * from "./security-posture.js";
+export * from "./skill-flow-grammar.js";
 export * from "./skill-security.js";
 export * from "./token-usage.js";
 export * from "./types.js";
