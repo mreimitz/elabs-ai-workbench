@@ -226,14 +226,19 @@ describe("determinism — the same layout and connectors give byte-identical out
   // §1: "The one thing you must not do: give the router a stroke, fill, color, className or
   // opacity." The output type has to stay colour-free BY CONSTRUCTION, so that a future author
   // cannot smuggle paint through the geometry layer on the way to the renderer.
-  it("the router's source paints nothing — no stroke, fill, colour, class or opacity", () => {
+  //
+  // The patterns are SUBSTRINGS on purpose, not `\b`-anchored words: `strokeWidth`, `fillOpacity`
+  // and `colorScheme` are exactly how paint would arrive, and every one of them would walk straight
+  // through a word-boundary match. Nothing in this file's own code contains any of them.
+  it("the router's source paints nothing — no stroke, fill, colour, class, opacity or dash", () => {
     const source = strippedRouteSource();
     for (const pattern of [
-      /\bstroke\b/i,
-      /\bfill\b/i,
-      /\bcolor\b/i,
-      /\bclassName\b/,
-      /\bopacity\b/i,
+      /stroke/i,
+      /fill/i,
+      /colou?r/i,
+      /classname/i,
+      /opacity/i,
+      /dash/i,
       /from\s+"react"/,
       /<svg/,
       /<path/,
