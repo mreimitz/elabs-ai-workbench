@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 1.1 — data-pack/: manifest, JSON Schemas, shared contract, and the model data moved in"
 description: "Phase 1 of item.md. Ledger: STATUS.md. Mechanical relocation plus the pack contract — no behaviour change."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T18:35:00Z"
+timestamp: "2026-08-22T19:25:00Z"
 status: "final"
 ---
 # WP 1.1 — `data-pack/`: manifest, JSON Schemas, shared contract, and the model data moved in
@@ -73,6 +73,13 @@ Do not touch `security-posture.ts`, the analyzers, the advisor rules, or any thr
       *shipped file* does not live there any more. `okf:validate` passes.
 - [ ] `pnpm build:data-pack` regenerates `all-models.json` + `model-data.generated.ts` **byte-identical**
       to what is committed today. This is the proof the relocation is a move.
+- [ ] **Every relocation is verified by hash, not by eye.** For each `git mv`, `git hash-object` the
+      path before and after and assert equality, as a checked-in test or script — not a one-off shell
+      command. The drift test proves only that the *generated* artifacts are unchanged; it says nothing
+      about the hand-curated *inputs*, where a stray formatter or a normalised trailing newline would
+      pass unnoticed. A differing hash is a finding to report, never something to fix by normalising the
+      file. This is also how the RM-37 rebase (see STATUS.md's sequencing note) is mechanically confirmed
+      to have landed on the post-`finding_name` bytes rather than silently reinstating the pre- ones.
 - [ ] `manifest.json` validates against `manifest.schema.json`; every listed digest matches disk.
 - [ ] Every `models/**/*.json` validates against `model-entry.schema.json`; `limits/cross-cutting.json`
       against the new `cross-cutting.schema.json`; `compatibility/test-catalog.json` against its schema.

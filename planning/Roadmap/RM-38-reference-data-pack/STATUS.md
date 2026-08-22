@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T19:15:00Z"
+timestamp: "2026-08-22T19:25:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -135,6 +135,14 @@ textbook clean-auto-merge-wrong case. Merge one branch at a time and re-gate bet
 **WP 2.1 will collide harder.** RM-37 adds `packages/shared/src/severity-ramp.ts`, a
 `risk-vocabulary.guardrail.test.ts` and 65 lines to `security-posture.ts` — the file WP 2.1 empties of
 literals. Sequence, do not race, and announce before dispatch.
+
+## Test-count baselines (measured by the RM-35 session, 2026-08-22, gate green)
+
+Check **counts**, not just the exit code — the failure mode under this machine's load is a truncated
+run that exits 0 over fewer files. shared **287** · illustrations **1032** · cli **87** · api **3832** ·
+web **383 files / 4337 passed + 5 skipped**. A bare `Test timed out in 5000ms` in the web suite under
+load is a **false red** (a different file each run, all pass in isolation); a green under load is still
+a green. Below baseline must be reconciled, never assumed to be either.
 
 ## Owner-acceptance (nothing below is verified)
 
