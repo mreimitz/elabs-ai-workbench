@@ -22,6 +22,7 @@ import { FeatureFlagsService } from "../features/service.js";
 import { AppSettingsRepository } from "../grading/app-settings-repository.js";
 import { GradeRepository } from "../grading/grade-repository.js";
 import { RunReportService } from "../grading/run-report.js";
+import { RunFeedbackRepository } from "../observability/feedback.js";
 import { OAuthRepository } from "../oauth/repository.js";
 import { OAuthService } from "../oauth/service.js";
 import { createMarkdownReport } from "../reports/reports.js";
@@ -204,6 +205,7 @@ export async function runWorkbenchSelfScan(
       tests,
       scenarios: new ScenarioService(scenarioRepository, scans, skills),
       runReports: new RunReportService(grades, runs),
+      feedback: new RunFeedbackRepository(db),
     },
     ...refusingWriteDeps(),
   });

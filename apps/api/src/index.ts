@@ -127,6 +127,7 @@ import { getTokenCounter } from "./token-counting/profiles.js";
 import { OAuthRepository } from "./oauth/repository.js";
 import { registerOAuthRoutes } from "./oauth/routes.js";
 import { OAuthService } from "./oauth/service.js";
+import { RunFeedbackRepository } from "./observability/feedback.js";
 import { registerObservabilityRoutes } from "./observability/routes.js";
 import { PricingRepository } from "./providers/pricing-repository.js";
 import { registerPricingRoutes } from "./providers/pricing-routes.js";
@@ -289,6 +290,10 @@ const scenarioRepository = new ScenarioRepository(db);
 const scenarioService = new ScenarioService(scenarioRepository, scans, skills);
 const testRepository = new TestRepository(db);
 const testService = new TestService(testRepository);
+// RM-17 Phase 6 (AM-OB2) — the human-feedback ledger, read by the run export and the promote-to-test
+// builder. `registerObservabilityRoutes` builds its own instance for the feedback routes; both are
+// stateless over the same table, so the two can never drift.
+const runFeedbackRepository = new RunFeedbackRepository(db);
 
 // --- Testing (WP 1.6): run persistence (full replay) ---
 // The RunRepository is the persistence sink fed every RunEvent by the RunManager fan-out, so a run is
@@ -1135,7 +1140,12 @@ const watchActionServices: WatchActionServices = {
   },
   promoteRunToTest: (runId, collectionId) =>
     promoteRunToTest(
-      { runs: runRepository, tests: testService, testRepo: testRepository },
+      {
+        runs: runRepository,
+        tests: testService,
+        testRepo: testRepository,
+        feedback: runFeedbackRepository,
+      },
       runId,
       collectionId,
     ),
@@ -1360,6 +1370,9 @@ const assistantToolDeps: Omit<AssistantToolDeps, "threadId"> = {
   // store the fork run is recorded on). Both already exist above; reused here, not recreated.
   runService,
   verification: issueVerificationStore,
+  // RM-17 Phase 6 (AM-OB2) — the human-feedback ledger `tests_create_draft` promotes through, so a
+  // draft the assistant creates carries the operator's corrected answer just like a hand-driven one.
+  feedback: runFeedbackRepository,
   // Assistant-operability WP 3.1 — the Hub read tools' one dependency (hub_agents_list/
   // hub_crews_list/hub_usage_summary). The SAME `hubRepository` instance constructed above for the
   // Hub routes; reused here, not recreated.
@@ -1553,6 +1566,9 @@ await registerReportRoutes(
   // about one scan's posture (D-MCP4/D-SP7). Nothing is persisted (D-SP8) — it is computed on read,
   // per request, exactly like `GET /api/scans/:scanId/security`.
   { analyze: (scanId) => analyzeScan({ scans, servers, oauth: oauthRepository }, scanId) },
+  // RM-17 Phase 6 (AM-OB2) — the human-feedback ledger behind the run export's `humanFeedback` block.
+  // Read separately from the rating (D-OB15/AR6: grading never reads `run_feedback`).
+  runFeedbackRepository,
 );
 // Workbench MCP server (Phase MCP, WP M.1 reads + WP M.3 writes) — tools + report resources over the
 // SAME repositories and services every route above uses. `runReports` is the run-report assembly the
@@ -1575,6 +1591,7 @@ registerWorkbenchMcpRoutes(server, {
     tests: testService,
     scenarios: scenarioService,
     runReports: runReportService,
+    feedback: runFeedbackRepository,
   },
   scanService,
   suiteOrchestrator,
@@ -1598,6 +1615,15 @@ await registerTestingRoutes(
   runService,
   runRepository,
   runManager,
+  // RM-17 Phase 6 (AM-OB2) — `POST /api/runs/:id/promote-to-test`. The SAME builder the watch
+  // action executor above is wired with, so a rule-fired promotion and a hand-driven one produce
+  // the same draft (D-MCP4).
+  {
+    runs: runRepository,
+    tests: testService,
+    testRepo: testRepository,
+    feedback: runFeedbackRepository,
+  },
 );
 await registerSuiteRoutes(
   server,

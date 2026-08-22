@@ -14,6 +14,7 @@ export * from "./illustration-registry.js";
 export * from "./illustration-scene.js";
 export * from "./model-data.generated.js";
 export * from "./report-derive.js";
+export * from "./run-feedback.js";
 export * from "./run-filter.js";
 export * from "./schemas.js";
 export * from "./security-posture.js";

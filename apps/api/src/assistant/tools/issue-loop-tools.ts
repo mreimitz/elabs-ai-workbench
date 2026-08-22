@@ -36,7 +36,7 @@ import {
 } from "@mcp-token-footprint/shared";
 import { z } from "zod";
 import type { CollectionRepository } from "../../collections/repository.js";
-import { promoteRunToTest } from "../../watch/promote.js";
+import { promoteRunToTest, type PromoteFeedbackReader } from "../../watch/promote.js";
 import type { IssueVerificationStore } from "../../grading/issue-verification.js";
 import type { RatingIssueRepository } from "../../grading/issue-repository.js";
 import type { RunRepository } from "../../testing/run-repository.js";
@@ -107,6 +107,13 @@ export interface IssueLoopToolDeps {
   collections: CollectionRepository;
   runService: IssueLoopRunLauncher;
   verification: IssueVerificationStore;
+  /**
+   * RM-17 Phase 6 (AM-OB2) — `RunFeedbackRepository`, narrowed to its one read: `promoteRunToTest`
+   * overlays the run's human `corrected_output` onto the draft's `expectations.expectedInsight`.
+   * Required so an assistant-created draft can never quietly drop a correction a hand-created one
+   * would carry.
+   */
+  feedback: PromoteFeedbackReader;
 }
 
 // ── Compaction defaults (mirror action-tools.ts's discipline: cap + explicit truncated marker) ────────
@@ -328,7 +335,12 @@ export function buildIssueLoopToolDefinitions(deps: IssueLoopToolDeps) {
         safeTool(() => {
           deps.collections.get(args.collectionId); // typed 404 if the collection is gone
           const draftId = promoteRunToTest(
-            { runs: deps.runs, tests: deps.testService, testRepo: deps.tests },
+            {
+              runs: deps.runs,
+              tests: deps.testService,
+              testRepo: deps.tests,
+              feedback: deps.feedback,
+            },
             args.runId,
             args.collectionId,
           );

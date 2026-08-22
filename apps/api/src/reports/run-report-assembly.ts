@@ -1,4 +1,10 @@
-import type { RunDetail, Scenario, Test } from "@mcp-token-footprint/shared";
+import {
+  buildRunReportHumanFeedback,
+  type RunDetail,
+  type RunFeedback,
+  type Scenario,
+  type Test,
+} from "@mcp-token-footprint/shared";
 import type { RunReportService } from "../grading/run-report.js";
 import { computeCostBreakdown } from "../providers/pricing.js";
 import type { RunRepository } from "../testing/run-repository.js";
@@ -29,6 +35,15 @@ export type RunReportSources = {
   /** `ScenarioService` in the app (the wire entity is still "scenario"; the UI label is Environment). */
   scenarios: { get(id: string): Scenario };
   runReports: Pick<RunReportService, "compose">;
+  /**
+   * RM-17 Phase 6 (AM-OB2) — `RunFeedbackRepository`, narrowed to its one read. REQUIRED, mirroring
+   * the `security: ReportSecurityPorts` decision in `reports/routes.ts`: an export that quietly lost
+   * its human-feedback block would read as "nobody said anything", and a caller must decide rather
+   * than inherit a default. The BUILDERS still take it optionally — that is how an intentionally
+   * cheap caller (the assistant's `run_report` tool, an embedded suite-member report) omits the
+   * block honestly — but anything assembled through here always carries it.
+   */
+  feedback: { list(runId: string): RunFeedback[] };
 };
 
 /**
@@ -68,17 +83,20 @@ function assemble(sources: RunReportSources, runId: string) {
     run,
     enrich: buildRunReportEnrichment(run, test, scenario),
     rating: sources.runReports.compose(runId),
+    // AM-OB2 — read SEPARATELY from `compose`, deliberately: `RunReportService` is the grading
+    // module, and D-OB15/AR6 says nothing in grading reads `run_feedback`. Two reads, two ledgers.
+    humanFeedback: buildRunReportHumanFeedback(sources.feedback.list(runId)),
   } as const;
 }
 
 /** The run's JSON export document. */
 export function buildRunJsonReport(sources: RunReportSources, runId: string) {
-  const { run, enrich, rating } = assemble(sources, runId);
-  return createRunJsonReport(run, enrich, rating);
+  const { run, enrich, rating, humanFeedback } = assemble(sources, runId);
+  return createRunJsonReport(run, enrich, rating, humanFeedback);
 }
 
 /** The run's Markdown export document. */
 export function buildRunMarkdownReport(sources: RunReportSources, runId: string): string {
-  const { run, enrich, rating } = assemble(sources, runId);
-  return createRunMarkdownReport(run, enrich, rating);
+  const { run, enrich, rating, humanFeedback } = assemble(sources, runId);
+  return createRunMarkdownReport(run, enrich, rating, humanFeedback);
 }

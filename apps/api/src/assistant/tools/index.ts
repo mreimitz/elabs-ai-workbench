@@ -62,7 +62,7 @@ import { buildActionToolDefinitions } from "./action-tools.js";
 // rerun). A SEPARATE module (same one-import-one-spread pattern); its READ tools auto-allow, its three
 // gated action tools ride an apps/api-local scope exemption (SHARED-FREE — see `issue-loop-tools.ts` +
 // `isIssueLoopActionTool` in session-manager.ts). All still approval-gated by the D-AS4 classifier.
-import type { IssueLoopRunLauncher } from "./issue-loop-tools.js";
+import type { IssueLoopRunLauncher, IssueLoopToolDeps } from "./issue-loop-tools.js";
 import { buildIssueLoopToolDefinitions } from "./issue-loop-tools.js";
 import type { IssueVerificationStore } from "../../grading/issue-verification.js";
 // Assistant-operability WP 3.1 — the Hub READ tools (hub_agents_list/hub_crews_list/
@@ -119,6 +119,12 @@ export interface AssistantToolDeps {
    */
   runService: IssueLoopRunLauncher;
   verification: IssueVerificationStore;
+  /**
+   * RM-17 Phase 6 (AM-OB2) — the human-feedback ledger `tests_create_draft` promotes through, so an
+   * assistant-created draft carries the operator's `corrected_output` exactly as a hand-driven
+   * promotion does. The SAME `RunFeedbackRepository` instance `index.ts` constructs.
+   */
+  feedback: IssueLoopToolDeps["feedback"];
   /**
    * Assistant-operability WP 3.1 — the Hub read tools' dependency. The SAME `HubRepository`
    * instance `index.ts` already constructs for the Hub routes (`hubRepository`); reused here, not
@@ -650,6 +656,7 @@ export function buildAssistantToolDefinitions(deps: AssistantToolDeps) {
       collections: deps.collections,
       runService: deps.runService,
       verification: deps.verification,
+      feedback: deps.feedback,
     }),
     // Assistant-operability WP 3.1 — the Hub read tools; see ./hub-read-tools.ts.
     ...buildHubReadToolDefinitions({ hub: deps.hub, providers: deps.providers }),

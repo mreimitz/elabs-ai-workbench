@@ -11,6 +11,7 @@ import type {
   RunDetail,
   RunGrade,
   RunReport,
+  RunReportHumanFeedback,
   RunReportStatistics,
   RunStep,
   ScanDetail,
@@ -189,6 +190,7 @@ export function createRunJsonReport(
   run: RunDetail,
   enrich: RunReportEnrichment,
   rating?: RunReport,
+  humanFeedback?: RunReportHumanFeedback,
 ) {
   const { test, scenario } = enrich;
   const limit = MODEL_CONTEXT_LIMITS[scenario.model];
@@ -203,6 +205,11 @@ export function createRunJsonReport(
     // absent when the caller didn't pass one (e.g. an older caller, or Auto-Rating disabled and no
     // report was composable).
     ...(rating ? { rating } : {}),
+    // Human feedback (RM-17 Phase 6, AM-OB2) — a SIBLING of `rating`, never a member of it: the
+    // rating is what the JUDGES said, this is what a PERSON said, and D-OB15/AR6 keeps the two
+    // ledgers apart. Omitted entirely when the caller supplied no feedback source (unknown);
+    // `{ entries: [] }` when the run genuinely has none.
+    ...(humanFeedback ? { humanFeedback } : {}),
     // Session setup — the verbatim test + scenario config the run executed under.
     test: {
       id: test.id,
@@ -245,6 +252,7 @@ export function createRunMarkdownReport(
   run: RunDetail,
   enrich: RunReportEnrichment,
   rating?: RunReport,
+  humanFeedback?: RunReportHumanFeedback,
 ): string {
   const { test, scenario } = enrich;
   const limit = MODEL_CONTEXT_LIMITS[scenario.model];
@@ -254,6 +262,10 @@ export function createRunMarkdownReport(
 
   // Insights first, raw session log last: rating → summary → statistics → setup (reference) → steps.
   renderRating(lines, rating);
+  // AM-OB2 — deliberately UNNUMBERED and placed right after the rating: it is the human counterpart
+  // to §1's judge verdicts, and numbering it would renumber §2–§5 in every previously exported
+  // document. Omitted entirely when the caller supplied no feedback source, exactly like the JSON key.
+  renderHumanFeedback(lines, humanFeedback);
   renderSummary(lines, run, test, scenario, limit);
   renderStatistics(lines, run, enrich, limit);
   renderSessionHeader(lines, run, test, scenario, limit);
@@ -682,6 +694,50 @@ function renderRating(lines: string[], rating: RunReport | undefined): void {
     `- Judge: ${rating.judgeProvenance.judgeProviderId ?? "none"}${rating.judgeProvenance.judgeModel ? ` (${rating.judgeProvenance.judgeModel})` : ""}`,
     `- Rating version: ${rating.ratingVersion}`,
     `- Generated: ${rating.generatedAt}`,
+    "",
+  );
+}
+
+// ── Human feedback (RM-17 Phase 6, AM-OB2) ──────────────────────────────────────────────────────────
+// What a PERSON said about this run, beside §1's judge verdicts and deliberately never inside them
+// (D-OB15/AR6). The corrected answer gets its own labelled sub-block, distinct from the verdict and
+// from any free-text note, because it is the one piece of feedback with a downstream consumer: it
+// pre-fills the expectation of a test promoted from this run.
+//
+// The three honest states, matching the JSON key exactly:
+//   - `humanFeedback` undefined      → no section at all (the caller carried no feedback source).
+//   - `entries: []`                  → the section renders "No human feedback was recorded…".
+//   - no `correctedOutput`           → "No corrected answer was captured." NOT "the answer was fine".
+
+function renderHumanFeedback(
+  lines: string[],
+  humanFeedback: RunReportHumanFeedback | undefined,
+): void {
+  if (!humanFeedback) return;
+  lines.push("## Human feedback", "");
+
+  lines.push("### Corrected answer", "");
+  if (humanFeedback.correctedOutput !== undefined) {
+    // Fenced: operator-authored prose is untrusted Markdown and must not restyle the document.
+    pushFenced(lines, boundString(humanFeedback.correctedOutput, MAX_PROSE_CHARS));
+    lines.push("");
+  } else {
+    // Absence is not a verdict — say which absence this is.
+    lines.push("_No corrected answer was captured for this run._", "");
+  }
+
+  lines.push("### Recorded feedback", "");
+  if (humanFeedback.entries.length === 0) {
+    lines.push("_No human feedback was recorded for this run._", "");
+    return;
+  }
+  lines.push(
+    "| Key | Scope | Score | Note | Source | Recorded |",
+    "|---|---|---|---|---|---|",
+    ...humanFeedback.entries.map(
+      (entry) =>
+        `| ${escapeMarkdownTable(entry.key)} | ${entry.stepId ? `step ${escapeMarkdownTable(entry.stepId)}` : "run"} | ${entry.score ?? "—"} | ${escapeMarkdownTable(entry.comment ?? "—")} | ${entry.source} | ${entry.createdAt} |`,
+    ),
     "",
   );
 }

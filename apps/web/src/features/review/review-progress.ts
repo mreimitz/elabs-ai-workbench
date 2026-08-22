@@ -1,4 +1,9 @@
-import type { ReviewRubric, RunFeedbackSummary, RunSummary } from "@mcp-token-footprint/shared";
+import type {
+  ReviewRubric,
+  RunFeedback,
+  RunFeedbackSummary,
+  RunSummary,
+} from "@mcp-token-footprint/shared";
 
 /**
  * Observability WP4.5 (D-OB22) — review-queue progress, DERIVED (never persisted): a "review session"
@@ -37,13 +42,23 @@ export function missingKeys(run: RunSummary, rubric: ReviewRubric): string[] {
 }
 
 /**
- * Immutable optimistic update: return a COPY of `run` with its `feedback` aggregate reflecting a fresh
- * write to `key` (upsert — replaces any existing entry for that key, mirroring the server's own upsert
- * semantics) — so the queue's progress footer updates INSTANTLY after a commit without a full re-fetch
- * of every run in the queue.
+ * Immutable optimistic update: return a COPY of `run` with its `feedback` aggregate reflecting the
+ * freshly saved row (upsert — replaces any existing entry for that key, mirroring the server's own
+ * upsert semantics) — so the queue's progress footer updates INSTANTLY after a commit without a full
+ * re-fetch of every run in the queue.
+ *
+ * It takes the whole saved {@link RunFeedback} row rather than a `(key, score)` pair (AM-OB2) so the
+ * derived `hasComment` can never drift from what the server persisted — a comment-only row must
+ * still show up as feedback, which is exactly what a score-shaped argument would have lost.
  */
-export function withUpsertedFeedback(run: RunSummary, key: string, score: number | null): RunSummary {
-  const next: RunFeedbackSummary[] = (run.feedback ?? []).filter((entry) => entry.key !== key);
-  next.push({ key, score });
+export function withUpsertedFeedback(run: RunSummary, saved: RunFeedback): RunSummary {
+  const next: RunFeedbackSummary[] = (run.feedback ?? []).filter(
+    (entry) => entry.key !== saved.key,
+  );
+  next.push({
+    key: saved.key,
+    score: saved.score ?? null,
+    hasComment: (saved.comment ?? "").trim().length > 0,
+  });
   return { ...run, feedback: next };
 }

@@ -5,6 +5,7 @@ import {
   parseRunFilterFromQuery,
   parseRunPagination,
   parseRunSort,
+  promoteRunToTestSchema,
   runAnswerSchema,
   runRerunSchema,
   runStartSchema,
@@ -12,12 +13,14 @@ import {
   scenarioInputSchema,
   testAttachmentInputSchema,
   testInputSchema,
+  type PromoteRunToTestResult,
   type RunDetail,
   type RunEvent,
   type RunPinResult,
   type RunStartResponse,
 } from "@mcp-token-footprint/shared";
 import { httpError } from "../utils/errors.js";
+import { promoteRunToTestDetailed, type PromoteDeps } from "../watch/promote.js";
 import type { RunManager } from "./run-manager.js";
 import { isTerminalStatus } from "./run-manager.js";
 import type { RunRepository } from "./run-repository.js";
@@ -39,10 +42,17 @@ export async function registerTestingRoutes(
   runService: RunService,
   runs: RunRepository,
   runManager: RunManager,
+  /**
+   * RM-17 Phase 6 (AM-OB2) — the WP4.1 draft-test builder's dependencies, for the on-demand
+   * `POST /api/runs/:id/promote-to-test`. REQUIRED so the compiler forces the production wiring: the
+   * console's "Promote to test…" button already existed and 404'd because nothing made anyone
+   * register the route, and an optional parameter would let that happen again.
+   */
+  promote: PromoteDeps,
 ) {
   registerScenarioRoutes(app, scenarioService, runService, runs);
   registerTestRoutes(app, testService, runService, runs);
-  registerRunRoutes(app, runService, runs, runManager);
+  registerRunRoutes(app, runService, runs, runManager, promote);
 }
 
 /**
@@ -170,6 +180,7 @@ function registerRunRoutes(
   runService: RunService,
   runs: RunRepository,
   runManager: RunManager,
+  promote: PromoteDeps,
 ) {
   // Start a run: validate, create the row + kick the engine ASYNC (do NOT await completion), return
   // the run id + the stream URL immediately. Errors during the async run surface as RunEvents / a
@@ -351,6 +362,23 @@ function registerRunRoutes(
   app.delete("/api/runs/:id/pin", async (request): Promise<RunPinResult> => {
     const { id } = request.params as { id: string };
     return runs.setPinned(id, false);
+  });
+
+  // Observability Phase 6 (AM-OB2) — promote ONE run into a draft test ON DEMAND. This closes the
+  // ledger's own recorded follow-up: `promoteRunToTest` shipped with WP4.1 but was reachable only
+  // from a watch rule firing at the post-terminal choke point of a NEW run, so the console's
+  // "Promote to test…" button called a route that was never registered and 404'd in production
+  // (`apps/web/src/lib/api.ts` marked itself STUBBED).
+  //
+  // It calls the EXISTING builder rather than re-implementing it (D-MCP4), so a rule-driven promotion
+  // and a hand-driven one produce the same draft. The response reports `usedCorrectedOutput` so the
+  // operator learns which expectation the draft actually carries — a silent `false` would be
+  // indistinguishable from "your correction was used".
+  app.post("/api/runs/:id/promote-to-test", async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const { collectionId } = promoteRunToTestSchema.parse(request.body);
+    const body: PromoteRunToTestResult = promoteRunToTestDetailed(promote, id, collectionId);
+    return reply.code(201).send(body);
   });
 }
 

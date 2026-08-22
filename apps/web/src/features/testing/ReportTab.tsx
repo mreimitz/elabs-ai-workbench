@@ -16,7 +16,11 @@ import type {
   RunReport as RunRatingReport,
   RunStep,
 } from "@mcp-token-footprint/shared";
-import { CLAUDE_CLI_PROVIDER_ID } from "@mcp-token-footprint/shared";
+import {
+  CLAUDE_CLI_PROVIDER_ID,
+  RUN_FEEDBACK_KEY_VERDICT,
+  selectCorrectedOutput,
+} from "@mcp-token-footprint/shared";
 import {
   Badge,
   Button,
@@ -1114,13 +1118,18 @@ function judgeProvenanceLabel(provenance: RunRatingReport["judgeProvenance"]): s
  * key). Best-effort/supplementary (mirrors the judge-reasoning fetch above it) — a failed fetch just
  * renders nothing rather than an error, and a run with no feedback yet renders nothing at all (never
  * a fake "Not rated" line — that phrasing belongs to the base-rating verdicts, a DIFFERENT dimension).
- * The exported-report JSON/Markdown carrying this same line is explicitly DEFERRED (WP 2.5 scope note)
- * — this is web-only rendering of the already-persisted feedback, not a new API/report field.
+ *
+ * RM-17 Phase 6 (AM-OB2) — the exported JSON/Markdown report now carries this same feedback as its
+ * own `humanFeedback` block (WP 2.5's deferral is closed), and the corrected answer is rendered here
+ * on its own line rather than folded in with the verdict's note: it is the one piece of feedback with
+ * a downstream consumer (promote-to-test), so a reader must be able to tell the two apart.
  */
 function YourFeedbackLine({ runId }: { runId: string }) {
-  const [state, setState] = useState<{ entries: RunFeedbackSummary[]; comment: string | null } | null>(
-    null,
-  );
+  const [state, setState] = useState<{
+    entries: RunFeedbackSummary[];
+    comment: string | null;
+    correctedOutput: string | undefined;
+  } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -1132,10 +1141,20 @@ function YourFeedbackLine({ runId }: { runId: string }) {
         const latestByKey = new Map<string, RunFeedbackSummary>();
         let comment: string | null = null;
         for (const row of runLevel) {
-          latestByKey.set(row.key, { key: row.key, score: row.score ?? null });
-          if (row.key === "verdict") comment = row.comment ?? null;
+          latestByKey.set(row.key, {
+            key: row.key,
+            score: row.score ?? null,
+            hasComment: (row.comment ?? "").trim().length > 0,
+          });
+          if (row.key === RUN_FEEDBACK_KEY_VERDICT) comment = row.comment ?? null;
         }
-        setState({ entries: [...latestByKey.values()], comment });
+        // The ONE shared definition of "the run's corrected answer" — same function the API's
+        // promote-to-test builder and report export call, over the full (unfiltered) row list.
+        setState({
+          entries: [...latestByKey.values()],
+          comment,
+          correctedOutput: selectCorrectedOutput(rows),
+        });
       })
       .catch(() => {
         /* supplementary — the line simply stays absent, like the judge-reasoning fetch above it */
@@ -1147,15 +1166,27 @@ function YourFeedbackLine({ runId }: { runId: string }) {
 
   if (!state || state.entries.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <Text variant="meta" tone="muted">
-        Your feedback:
-      </Text>
-      <FeedbackChips feedback={state.entries} />
-      {state.comment ? (
-        <Text variant="meta" className="italic">
-          “{state.comment}”
+    <div className="flex flex-col gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Text variant="meta" tone="muted">
+          Your feedback:
         </Text>
+        <FeedbackChips feedback={state.entries} />
+        {state.comment ? (
+          <Text variant="meta" className="italic">
+            “{state.comment}”
+          </Text>
+        ) : null}
+      </div>
+      {state.correctedOutput !== undefined ? (
+        <div className="flex flex-col gap-0.5">
+          <Text variant="meta" tone="muted">
+            Your corrected answer:
+          </Text>
+          <Text variant="meta" className="whitespace-pre-wrap break-words">
+            {state.correctedOutput}
+          </Text>
+        </div>
       ) : null}
     </div>
   );

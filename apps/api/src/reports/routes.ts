@@ -70,6 +70,11 @@ export async function registerReportRoutes(
   // export that quietly lost its posture section would read as "nothing found", which is the one
   // outcome D-SP24 exists to prevent — so a caller must decide, and the compiler asks.
   security: ReportSecurityPorts,
+  // RM-17 Phase 6 (AM-OB2) — the run export's `humanFeedback` block. **Required**, for the same
+  // reason `security` above is: an export that quietly lost this block would read as "nobody said
+  // anything", which is exactly the absence-as-a-result failure the amendment exists to remove. It is
+  // read here, NOT through `RunReportService` — grading never touches `run_feedback` (D-OB15/AR6).
+  runFeedback: RunReportSources["feedback"],
 ) {
   // The suite-run report reads only DERIVED state (child runs + grades + test/scenario/suite names) PLUS
   // (Auto-Rating WP 4.3) the persisted cross-run `SuiteReport`, if one has landed — additive, absent when
@@ -159,6 +164,7 @@ export async function registerReportRoutes(
     tests: testService,
     scenarios: scenarioService,
     runReports,
+    feedback: runFeedback,
   };
 
   app.get("/api/reports/run/:id/json", async (request) => {

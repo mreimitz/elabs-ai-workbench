@@ -16,6 +16,7 @@
 
 import { nanoid } from "nanoid";
 import {
+  RUN_FEEDBACK_KEY_VERDICT,
   runFeedbackInputSchema,
   type RunFeedback,
   type RunFeedbackInput,
@@ -26,7 +27,7 @@ import type { AppDatabase } from "../db/database.js";
 import type { RunFeedbackRow } from "../db/rows.js";
 import { httpError } from "../utils/errors.js";
 
-const DEFAULT_KEY = "verdict";
+const DEFAULT_KEY = RUN_FEEDBACK_KEY_VERDICT;
 // The only source this API writes today; 'auto' exists on the wire for a FUTURE rule-written row
 // (WP4.1's run-grader action does NOT write here — grades stay grades).
 const WRITE_SOURCE: RunFeedbackSource = "human";
@@ -163,6 +164,12 @@ function toPublic(row: RunFeedbackRow): RunFeedback {
  * key, the LATEST write (by `created_at`) wins across sources. Batched — one query for the whole page
  * — mirroring `observability/search.ts`'s `fetchSnippets`. Consumed ONLY by `RunRepository`'s summary
  * builder; never by grading/suites/compare (the D-OB15/AR6 separation this WP's regression test proves).
+ *
+ * RM-17 Phase 6 (AM-OB2) — each entry also reports `hasComment`, a BOOLEAN and never the text: a
+ * comment-only row (`corrected_output`, a `note` rubric key) has `score: null`, and a chip that keys
+ * only off the score renders nothing for it, so a captured correction looked exactly like no
+ * feedback at all. The summary stays cheap on purpose — a surface that needs the text calls the full
+ * `GET /api/runs/:id/feedback` list.
  */
 export function fetchRunFeedbackSummaries(
   db: AppDatabase,
@@ -173,7 +180,7 @@ export function fetchRunFeedbackSummaries(
   const placeholders = runIds.map(() => "?").join(", ");
   const rows = db
     .prepare(
-      `SELECT run_id, key, score, created_at FROM run_feedback
+      `SELECT run_id, key, score, comment, created_at FROM run_feedback
         WHERE step_id IS NULL AND run_id IN (${placeholders})
         ORDER BY created_at ASC`,
     )
@@ -181,24 +188,33 @@ export function fetchRunFeedbackSummaries(
     run_id: string;
     key: string;
     score: number | null;
+    comment: string | null;
     created_at: string;
   }>;
 
   // Ascending created_at, last-write-wins per (run_id, key) — handles the (currently theoretical)
   // case of both a 'human' and an 'auto' row under the same key.
-  const perRun = new Map<string, Map<string, number | null>>();
+  const perRun = new Map<string, Map<string, { score: number | null; hasComment: boolean }>>();
   for (const row of rows) {
     let keyMap = perRun.get(row.run_id);
     if (!keyMap) {
       keyMap = new Map();
       perRun.set(row.run_id, keyMap);
     }
-    keyMap.set(row.key, row.score);
+    keyMap.set(row.key, {
+      score: row.score,
+      // Whitespace-only text is not text — it would make the chip claim a note nobody can read.
+      hasComment: (row.comment ?? "").trim().length > 0,
+    });
   }
   for (const [runId, keyMap] of perRun) {
     out.set(
       runId,
-      [...keyMap.entries()].map(([key, score]) => ({ key, score })),
+      [...keyMap.entries()].map(([key, value]) => ({
+        key,
+        score: value.score,
+        hasComment: value.hasComment,
+      })),
     );
   }
   return out;

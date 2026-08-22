@@ -23,6 +23,7 @@ import type { RunFeedback } from "@mcp-token-footprint/shared";
 import { applyMigrations, type AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
 import { GradeRepository } from "../src/grading/grade-repository.js";
+import { RunReportService } from "../src/grading/run-report.js";
 import { registerObservabilityRoutes } from "../src/observability/routes.js";
 import { RunFeedbackRepository } from "../src/observability/feedback.js";
 import { collectAnalyticsChildren, computeSuiteAnalytics } from "../src/suites/analytics.js";
@@ -336,7 +337,7 @@ test("a POSTed feedback row is immediately findable via RunFilter.feedback", asy
 
   // The RunSummary aggregate chip reflects it too.
   const summary = runs.getSummary(withFeedback);
-  assert.deepEqual(summary.feedback, [{ key: "verdict", score: 1 }]);
+  assert.deepEqual(summary.feedback, [{ key: "verdict", score: 1, hasComment: false }]);
   assert.equal(runs.getSummary(without).feedback, undefined, "a run with no feedback carries none");
 });
 
@@ -386,12 +387,96 @@ test("SEPARATION: suite aggregates + analytics are BYTE-IDENTICAL with vs withou
   );
 
   // Prove the assertion isn't vacuous: the feedback WAS actually persisted and IS readable elsewhere.
-  assert.deepEqual(runs.getSummary(runA).feedback, [{ key: "verdict", score: 1 }]);
-  assert.deepEqual(runs.getSummary(runB).feedback, [{ key: "verdict", score: -1 }]);
+  assert.deepEqual(runs.getSummary(runA).feedback, [{ key: "verdict", score: 1, hasComment: false }]);
+  assert.deepEqual(runs.getSummary(runB).feedback, [
+    { key: "verdict", score: -1, hasComment: true },
+  ]);
 
   // And the aggregates/analytics numbers are the expected REAL (grade-only) numbers — not accidentally
   // empty/zeroed in a way that would make the byte-identity trivially true.
   assert.equal(aggregatesBefore.meanGrade, 0.6);
   assert.equal(aggregatesBefore.execCostUsd, 3.0);
   assert.equal(analyticsBefore.scatter.length, 2);
+});
+
+/**
+ * AM-OB2's own AR6 guard. `corrected_output` is the first feedback key with a DOWNSTREAM CONSUMER
+ * (promote-to-test reads it), which is exactly the shape of change that erodes D-OB15 by accident.
+ * So the same byte-identity is asserted for it specifically, across all four surfaces a grade can
+ * reach: the `run_grades` rows, the composed RATING document (`RunReportService.compose` — the
+ * `GET /api/runs/:id/report` payload and the export's `rating` block), the suite aggregates
+ * (`meanGrade`), and the suite analytics.
+ *
+ * If a grader — or the rating composer — is ever wired to read `run_feedback`, this test goes red.
+ */
+test("SEPARATION: a corrected_output leaves grades, the RATING document and suite aggregates byte-identical", async () => {
+  const { db, runs } = await setup();
+  const grades = new GradeRepository(db);
+  const tests = new TestService(new TestRepository(db));
+  const runReports = new RunReportService(grades, runs);
+
+  const runA = seedRun(db, { costUsd: 1.0, tokens: 150 });
+  const runB = seedRun(db, { costUsd: 2.0, tokens: 300 });
+  const runIds = [runA, runB];
+
+  db.prepare(
+    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, grading_version, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
+  ).run("gc1", runA, "outcome_judge", "llm", "graded", 0.7, "test", 1, NOW);
+  db.prepare(
+    `INSERT INTO run_grades (id, run_id, grader_id, kind, status, score, method, grading_version, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
+  ).run("gc2", runB, "outcome_judge", "llm", "graded", 0.5, "test", 1, NOW);
+
+  // `RunReport.generatedAt` is `new Date().toISOString()` — a clock stamp, provably not derived
+  // from anything in `run_feedback`. It is pinned to a sentinel so the comparison below is about
+  // the rating's CONTENT; every other field, including every grade, is compared verbatim.
+  const composeStable = (id: string) => ({ ...runReports.compose(id), generatedAt: "PINNED" });
+
+  const gradeRowsBefore = JSON.stringify(
+    runIds.map((id) => grades.latestByGrader(id)),
+  );
+  const ratingBefore = JSON.stringify(runIds.map(composeStable));
+  const aggregatesBefore = JSON.stringify(
+    computeSuiteAggregates(collectChildData(runs, grades, runIds), runIds.length),
+  );
+  const analyticsBefore = JSON.stringify(
+    computeSuiteAnalytics(collectAnalyticsChildren(runs, grades, tests, runIds)),
+  );
+
+  // The corrected answer — a human saying what the run SHOULD have said. It changes what a newly
+  // created test expects; it must change nothing about how this run was scored.
+  const feedback = new RunFeedbackRepository(db);
+  feedback.upsert(runA, { key: "corrected_output", comment: "It should have said 42." });
+  feedback.upsert(runB, { key: "corrected_output", comment: "It should have refused." });
+
+  assert.equal(
+    JSON.stringify(runIds.map((id) => grades.latestByGrader(id))),
+    gradeRowsBefore,
+    "the run_grades ROWS are byte-identical",
+  );
+  assert.equal(
+    JSON.stringify(runIds.map(composeStable)),
+    ratingBefore,
+    "the composed RATING document is byte-identical (grading never reads run_feedback)",
+  );
+  assert.equal(
+    JSON.stringify(computeSuiteAggregates(collectChildData(runs, grades, runIds), runIds.length)),
+    aggregatesBefore,
+    "suite AGGREGATES (incl. meanGrade) are byte-identical",
+  );
+  assert.equal(
+    JSON.stringify(computeSuiteAnalytics(collectAnalyticsChildren(runs, grades, tests, runIds))),
+    analyticsBefore,
+    "suite ANALYTICS are byte-identical",
+  );
+
+  // Not vacuous: the corrections WERE persisted, ARE readable through the feedback ledger, and the
+  // numbers above are the real grade-only figures rather than an accidentally empty set.
+  assert.equal(
+    feedback.list(runA).find((row) => row.key === "corrected_output")?.comment,
+    "It should have said 42.",
+  );
+  assert.equal(ratingBefore.includes("42."), false);
+  assert.match(aggregatesBefore, /"meanGrade":0\.6/);
 });

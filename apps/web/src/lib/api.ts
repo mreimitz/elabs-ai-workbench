@@ -62,6 +62,9 @@ import type {
   ReviewRubric,
   ReviewRubricInput,
   ReviewRubricPatch,
+  // RM-17 Phase 6 (AM-OB2) — the on-demand promote-to-test response (a draft test id + whether the
+  // run's captured corrected answer became its expectation).
+  PromoteRunToTestResult,
   ScanMetricsResponse,
   ServerConfig,
   // Observability WP4.4 (rules UI) — the watch-rule CRUD/audit/preview/test-fire wire (WP4.1–4.3).
@@ -1714,20 +1717,21 @@ export const testFireWatchRule = (id: string): Promise<WatchRuleEventResult> =>
  * `collectionId`, via the SAME domain logic WP4.1's `promote_to_test` watch action already uses
  * (`apps/api/src/watch/promote.ts`), reached here on-demand rather than via a recurring rule fire.
  *
- * ⚠️ STUBBED (WP4.4 is web-only; this WP does not touch `apps/api`): `POST /api/runs/:id/promote-
- * to-test` is not registered by any merged API route yet — a rule today only promotes a run
- * automatically, at the post-terminal choke point of a NEW run finishing, matching a saved
- * `on_terminal` rule's filter (it cannot reach back and act on an already-terminal historical run
- * on demand). Wiring this on-demand endpoint is a small API follow-up. The web-side flow (dialog,
- * this client call, the success toast + collection link) is built and tested against a MOCKED
- * fetch so the console affordance is ready the moment that route lands — see
- * `apps/web/src/features/watch/PromoteToTestDialog.test.tsx`.
+ * The backing route is `POST /api/runs/:id/promote-to-test`, registered by
+ * `apps/api/src/testing/routes.ts` since RM-17 Phase 6 (AM-OB2). It was a documented STUB before
+ * then: WP4.4 shipped this dialog + client call web-only, so the console button 404'd in production
+ * and passed only against a mocked fetch. AM-OB2 registered the route and this note replaces that
+ * warning.
+ *
+ * `usedCorrectedOutput` reports whether the run's human `corrected_output` feedback became the
+ * draft's expected answer — `false` means none was captured, never that the source expectation was
+ * judged good enough.
  */
 export const promoteRunToTest = (
   runId: string,
   collectionId: string,
-): Promise<{ testId: string }> =>
-  apiPost<{ testId: string }>(`/api/runs/${runId}/promote-to-test`, { collectionId });
+): Promise<PromoteRunToTestResult> =>
+  apiPost<PromoteRunToTestResult>(`/api/runs/${runId}/promote-to-test`, { collectionId });
 
 // ── Observability (WP2.7, D-OB22) — custom chart composer: CRUD, clone, reorder ────────────────────
 // Thin wrappers over `/api/dashboard-charts*` (apps/api/src/observability/{dashboard-charts,routes}.ts).
