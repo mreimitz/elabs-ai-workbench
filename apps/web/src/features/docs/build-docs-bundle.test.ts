@@ -127,7 +127,7 @@ describe("collectSubjects — the two refusals the WP names", () => {
       "00-page.md": guidePage("A page", "# A page"),
     });
     expect(() => collectSubjects(join(fixture, "planning", "user-guide"))).toThrow(
-      new RegExp(`reserved for the repository CHANGELOG`),
+      /reserved for the repository CHANGELOG/,
     );
     expect(RESERVED_SUBJECT_ID).toBe("changelog");
   });
