@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T13:35:00Z"
+timestamp: "2026-08-22T16:35:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -464,6 +464,65 @@ met and — where the box touches code — the gate
 > RM-37 announcement readiness"*, which is the parent of this session's first commit. The warning is
 > kept rather than deleted because it is the record of a near-miss being handled correctly — but it no
 > longer describes the working tree, and nothing in RM-37 is at risk.
+
+> **BATCH RESULT 2026-08-22 (second batch) — three of four merged and ticked; RM-30 WP 7.8 still
+> building.** Each was validated by the orchestrator against its acceptance rather than ticked on the
+> agent's report, and in each case the orchestrator **broke at least one guard itself and watched it
+> go red** before merging — not re-reading the agent's probe table, but re-running the mutation.
+>
+> - **RM-18 WP 1.3** (WP 4.1) — the diagnostics bundle. Secret-freedom made **structural** (a
+>   78-entry hard-coded env catalogue emitting `{name,status}`, so no code path carries a value into
+>   the document). Orchestrator probe: emitted one variable's value → **3 assertions red** with the
+>   exact sentinel message. **RM-18 is now 3 of 6.**
+> - **RM-14 WP 2.2** (WP 3.8) — the connector router. Orchestrator probes: removing the radius clamp
+>   → **5 red**; bypassing label collision → **4 red**; mapping the `bottom` side to north → **3
+>   red**. **Phase 2 is 2 of 4.**
+> - **RM-17 AM-OB2** (WP 3.7) — corrected-answer feedback. Orchestrator probe: an `UPDATE run_grades`
+>   inside the feedback upsert → **2 AR6 assertions red**. **Phase 6 is 7 of 13**, so with WP 3.5 the
+>   amendment's fourteen boxes are down to **6**.
+>
+> ⚠️ **TWO SPECS WERE WRONG, AND BOTH WERE CAUGHT BY A BUILDER MEASURING RATHER THAN COMPLYING.** This
+> is the batch's most transferable outcome, and both failures were the orchestrator's, not the
+> agents'.
+>
+> **RM-14 WP 2.2's spec asserted that a port declares no normal.** It does —
+> `ILLUSTRATION_PORT_SIDES`, whose own contract calls it *"the coarse attachment hint the connector
+> router needs"*. The builder followed the erroneous instruction, measured the cost over all 93
+> catalogued ports (**72/93** literal, **89/93** with a centre-line clause, **93/93** declared), and
+> **reported instead of widening the seam** — which was the instruction. The orchestrator made the
+> call, the rule now reads the declared side, and [`the spec was amended on the
+> record`](../RM-14-illustrations/wp-2.2-connector-router.md) rather than quietly conformed to what
+> shipped.
+>
+> **RM-18 WP 1.3's acceptance list was self-contradictory.** It demanded an errors group quoting
+> system error text verbatim **and** that no MCP command ever appear. Those cannot both hold without
+> a path-stripping redactor, which the same spec forbids. A live failing scan put the operator's
+> configured command path into the bundle through a `spawn … ENOENT`; the builder scoped it exactly
+> (only there — server name, args, env secret and env var value all stayed out), **did not strip
+> it**, deleted the false *"no user-typed names"* claim, and pinned the boundary in **both**
+> directions so neither the behaviour nor the honest wording can drift.
+>
+> **The lesson for the next batch:** a spec that states a premise about the codebase should say where
+> it read it. Both of these were assertions the orchestrator made from partial reading, and both cost
+> a build-then-correct round trip that a one-line citation would have prevented.
+>
+> ⚠️ **A gate-reliability problem is now measured, and it is worse than "the rating-verdict perf case
+> is one slice from red".** Across five full `pnpm test` runs today the suite failed **six different
+> files**, never the same pair twice, always as a bare `Error: Test timed out in 5000ms` or a p95
+> budget miss: `metrics-perf`, `search-perf`, `SkillStudioView`, `AgentProfileModal`, `RunsView`,
+> `UsageTab`, `settings-one-save`, `AssistantView`. **Every one passes in isolation** — `AssistantView`
+> 21/21, both perf files green standalone AND green as a pair — and one failure landed on a
+> **pristine stashed baseline**, so it is not any agent's code. The web suite reports ~216s wall
+> against ~204s of setup, so it is sitting on the 5s per-test limit under parallel load.
+> **Consequence for this plan: a red gate is no longer self-evidently a defect**, which is exactly
+> the condition under which a real regression gets waved through as "the flake". `069941e`
+> (`wp/roadmap-cleanup/ux-corrections`) is the unmerged, incomplete contention-free harness for the
+> perf half; nothing addresses the web half. **This deserves its own work package.**
+>
+> ✅ **Housekeeping:** the RM-37 near-miss the previous batch flagged is resolved — its owner committed
+> it as `05fbf04`. Ten stale worktrees remain on disk; nine are merged, and `069941e` is the one
+> holding unmerged work. **None were deleted** — this plan has twice nearly lost rescued work to
+> routine cleanup.
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade
