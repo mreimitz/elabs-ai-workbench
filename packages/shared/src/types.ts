@@ -3732,6 +3732,37 @@ export type SkillFlowTokensResponse = {
 };
 
 /**
+ * RM-30 WP 7.8 (design decision 5) — where ONE box sits on the canvas, after someone dragged it.
+ *
+ * Stored APP-SIDE, per skill, NOT written into `SKILL.md`. The reason is this project's whole
+ * subject: `SKILL.md`'s body is what the model reads, and this app meters it as the L2 footprint. A
+ * position comment is invisible to a reader and fully visible to the tokenizer — a tool whose purpose
+ * is measuring context cost should not inflate that cost to store cosmetics. Two further consequences
+ * ruled the in-file option out: every version is an immutable snapshot, so nudging a box would either
+ * dirty the draft or be discarded; and layout churn would appear in every version diff.
+ *
+ * Kept per SKILL rather than per VERSION, so the arrangement survives saving a new version. Box
+ * identity is derived from the document, so heavily restructuring a skill orphans some positions —
+ * an orphan falls back to automatic layout FOR THAT ONE BOX, never a broken canvas.
+ */
+export type SkillBoxPosition = {
+  nodeId: string;
+  x: number;
+  y: number;
+};
+
+/** Response of `GET /api/skills/:id/box-positions` — every saved position for the skill. */
+export type SkillBoxPositionsResponse = {
+  skillId: string;
+  positions: SkillBoxPosition[];
+};
+
+/** Body of `PUT /api/skills/:id/box-positions` — upsert these positions (others are left alone). */
+export type PutSkillBoxPositionsRequest = {
+  positions: SkillBoxPosition[];
+};
+
+/**
  * Response of `GET /api/runs/:runId/trace` (WP 2.1) — the normalized run→trace event stream, with the
  * resolved `skillVersionId` the run exercised, but NO alignment yet (that lands in a later WP). A
  * deliberately lighter shape than {@link SessionTrace} (whose `alignment` is required).

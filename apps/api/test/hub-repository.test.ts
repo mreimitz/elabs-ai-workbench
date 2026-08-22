@@ -90,10 +90,10 @@ test("migration v47 — a fresh DB carries every hub_* table (schema.ts baseline
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    61,
-    "LATEST_SCHEMA_VERSION auto-derived to 61 (v47 = the 13 Assistant Hub hub_* tables, WP0.2; v48 = hub_session_skills, WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10)",
+    62,
+    "LATEST_SCHEMA_VERSION auto-derived to 62 (v47 = the 13 Assistant Hub hub_* tables, WP0.2; v48 = hub_session_skills, WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10; v62 = skill_box_positions, canvas box positions kept APP-SIDE per skill so a position comment never inflates the metered SKILL.md body, planning/Roadmap/RM-30-ux-overhaul WP 7.8 decision 5)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
   for (const table of HUB_TABLES) {
     assert.ok(tableExists(db, table), `fresh DB has ${table}`);
   }
@@ -143,7 +143,7 @@ test("migration v47 — a pre-v47 (v46) DB gains every hub_* table; neighboring 
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    "stamped to LATEST (61) after v47…v55",
+    "stamped to LATEST (62) after v47…v55",
   );
   for (const table of HUB_TABLES) {
     assert.ok(tableExists(db, table), `v47/v48 created ${table} on the existing (v46) DB`);
@@ -214,10 +214,10 @@ test("migration v49 — a fresh DB carries the 4 Wave-1 hub_* columns (schema.ts
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    61,
-    "LATEST_SCHEMA_VERSION auto-derived to 61 (v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10)",
+    62,
+    "LATEST_SCHEMA_VERSION auto-derived to 62 (v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10; v62 = skill_box_positions, canvas box positions kept APP-SIDE per skill so a position comment never inflates the metered SKILL.md body, planning/Roadmap/RM-30-ux-overhaul WP 7.8 decision 5)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
 
   assert.ok(columns(db, "hub_memory").includes("scope"), "fresh DB hub_memory has scope");
   assert.ok(columns(db, "hub_memory").includes("scope_id"), "fresh DB hub_memory has scope_id");
@@ -327,7 +327,7 @@ test("migration v49 — a pre-v49 (v48) DB gains the 4 columns; existing hub_mem
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    "stamped to LATEST (61) after v49…v55",
+    "stamped to LATEST (62) after v49…v55",
   );
   assert.ok(columns(db, "hub_memory").includes("scope"), "v49 added hub_memory.scope");
   assert.ok(columns(db, "hub_memory").includes("scope_id"), "v49 added hub_memory.scope_id");
@@ -405,7 +405,7 @@ test("migration v50 — a fresh DB carries hub_sessions.tool_scope_json; upgrade
   );
 
   applyMigrations(db);
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "stamped to LATEST (61) after v50");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "stamped to LATEST (62) after v50");
   assert.ok(
     columns(db, "hub_sessions").includes("tool_scope_json"),
     "v50 added hub_sessions.tool_scope_json on the existing (v49) DB",
@@ -962,10 +962,10 @@ test("migration v54 — a fresh DB carries hub_missions.parent_mission_id/depth/
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    61,
-    "LATEST_SCHEMA_VERSION auto-derived to 61 (v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10)",
+    62,
+    "LATEST_SCHEMA_VERSION auto-derived to 62 (v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10; v62 = skill_box_positions, canvas box positions kept APP-SIDE per skill so a position comment never inflates the metered SKILL.md body, planning/Roadmap/RM-30-ux-overhaul WP 7.8 decision 5)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
   const cols = columns(db, "hub_missions");
   assert.ok(cols.includes("parent_mission_id"), "fresh DB hub_missions has parent_mission_id");
   assert.ok(cols.includes("depth"), "fresh DB hub_missions has depth");
@@ -1019,7 +1019,7 @@ test("migration v54 — a pre-v54 (v53) DB gains the 3 lineage columns; a legacy
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "stamped to LATEST (61) after v54");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "stamped to LATEST (62) after v54");
   const cols = columns(db, "hub_missions");
   assert.ok(cols.includes("parent_mission_id"), "v54 added parent_mission_id on the existing DB");
   assert.ok(cols.includes("depth"), "v54 added depth");

@@ -1705,9 +1705,7 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
         const scenarioIds = hasTable("scenarios")
           ? (
               db
-                .prepare(
-                  `SELECT id FROM scenarios WHERE provider_id IN (${credentialList})`,
-                )
+                .prepare(`SELECT id FROM scenarios WHERE provider_id IN (${credentialList})`)
                 .all(...doomedCredentials) as Array<{ id: string }>
             ).map((row) => row.id)
           : [];
@@ -2005,6 +2003,44 @@ const MIGRATIONS: Array<{ version: number; up: (db: AppDatabase) => void }> = [
       ensureColumn(db, "watch_rules", "min_interval_minutes", "INTEGER");
     },
   },
+  {
+    // v62 — RM-30 WP 7.8 (design decision 5): the `skill_box_positions` table, ONE new table and
+    // nothing else. THE ONLY MIGRATION THIS WORK PACKAGE TAKES, and it exists for one reason.
+    //
+    // You can already drag a box on the skill canvas; what does not exist is any memory of it. The
+    // alternative considered was writing positions into `SKILL.md` as hidden comments, which would
+    // travel with the skill — and was rejected because the body of `SKILL.md` is EXACTLY what the
+    // model reads, and this app meters it as the skill's L2 footprint. Hidden comments are invisible
+    // to a reader and fully visible to the tokenizer: a tool whose purpose is measuring context cost
+    // must not inflate that cost to store cosmetics. (Also: every version is an immutable snapshot,
+    // so nudging a box would either dirty the draft or be silently thrown away; and the layout churn
+    // would appear in every version diff, interleaved with real changes to the instructions.)
+    //
+    // Per SKILL, not per version, so the arrangement survives saving. No index beyond the primary
+    // key: every read is `WHERE skill_id = ?`, which the PK's leading column already serves.
+    //
+    // The DDL is IDENTICAL to schema.ts's baseline (`CREATE TABLE IF NOT EXISTS`), so a FRESH DB
+    // (whose applyMigrations no-ops every step) and an UPGRADED DB land the same shape — the
+    // v36/v43/v60 pattern. Guarded on `skills` existing, for MINIMAL migration-test fixtures stamped
+    // below LATEST that never created it. Bumps LATEST_SCHEMA_VERSION (auto-derived below) to 62.
+    version: 62,
+    up: (db) => {
+      const tableExists = (name: string): boolean =>
+        db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name) !==
+        undefined;
+      if (!tableExists("skills")) return;
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS skill_box_positions (
+          skill_id   TEXT NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+          node_id    TEXT NOT NULL,
+          x          REAL NOT NULL,
+          y          REAL NOT NULL,
+          updated_at TEXT NOT NULL,
+          PRIMARY KEY (skill_id, node_id)
+        );
+      `);
+    },
+  },
 ];
 
 /** The baseline schema version: the current full schema (schema.ts + every migration step above). */
@@ -2174,11 +2210,36 @@ function rebuildHubSessionsForAutoMode(db: AppDatabase): void {
   // The columns to carry across, by NAME (order-independent): every live column that also exists in the
   // rebuilt table. `hub_sessions` at v50 already has all of these; the intersection is defensive.
   const newColumns = new Set([
-    "id", "project_id", "kind", "parent_session_id", "mission_id", "title", "title_state", "mode",
-    "topology", "autonomy", "crew_id", "model", "status", "phase", "stop_reason_code",
-    "capabilities_json", "budgets_json", "prompt_version", "tool_scope_json", "cost_usd", "tokens_in",
-    "tokens_out", "active_duration_ms", "total_duration_ms", "wait_deadline_at", "created_at",
-    "updated_at", "ended_at", "seen", "archived_at",
+    "id",
+    "project_id",
+    "kind",
+    "parent_session_id",
+    "mission_id",
+    "title",
+    "title_state",
+    "mode",
+    "topology",
+    "autonomy",
+    "crew_id",
+    "model",
+    "status",
+    "phase",
+    "stop_reason_code",
+    "capabilities_json",
+    "budgets_json",
+    "prompt_version",
+    "tool_scope_json",
+    "cost_usd",
+    "tokens_in",
+    "tokens_out",
+    "active_duration_ms",
+    "total_duration_ms",
+    "wait_deadline_at",
+    "created_at",
+    "updated_at",
+    "ended_at",
+    "seen",
+    "archived_at",
   ]);
   const liveCols = (db.prepare("PRAGMA table_info(hub_sessions)").all() as Array<{ name: string }>)
     .map((c) => c.name)

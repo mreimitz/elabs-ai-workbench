@@ -540,8 +540,8 @@ function columns(db: AppDatabase, table: string): string[] {
 
 test("migration v61 — a fresh DB carries watch_rules.paused_until + min_interval_minutes", () => {
   const db = openFresh();
-  assert.equal(LATEST_SCHEMA_VERSION, 61, "LATEST_SCHEMA_VERSION auto-derived to 61 (AM-OB10)");
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(LATEST_SCHEMA_VERSION, 62, "LATEST_SCHEMA_VERSION auto-derived to 62 (AM-OB10)");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
   const cols = columns(db, "watch_rules");
   assert.ok(cols.includes("paused_until"), "fresh DB has watch_rules.paused_until");
   assert.ok(cols.includes("min_interval_minutes"), "fresh DB has watch_rules.min_interval_minutes");

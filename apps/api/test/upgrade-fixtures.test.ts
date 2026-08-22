@@ -483,6 +483,41 @@ const EXPECTATIONS: Readonly<Record<string, FixtureExpectation>> = {
       assert.deepEqual(defaults, [{ id: "col-local-fixture" }]);
     },
   },
+
+  // The PREVIOUS at-capture file, kept exactly as the README says to keep it: "the moment a
+  // migration lands, this file sits below the new latest and becomes a free pre-vNEXT fixture". It is
+  // now the pre-v62 case, and — because it was captured rather than authored — it carries EVERY table
+  // as of v61, so the migrated-vs-fresh comparison after v62 covers the whole schema, not just the
+  // handful of tables an authored fixture happens to contain.
+  //
+  // Its entry is a LITERAL key from here on, not `v${LATEST_SCHEMA_VERSION}`: it is pinned to the
+  // version it was captured at and must not follow the latest around.
+  "v61-at-capture": {
+    probes: [
+      { table: "mcp_scans", id: "scan-ok" },
+      { table: "runs", id: "run-completed" },
+      { table: "collections", id: "col-local-fixture" },
+    ],
+    alsoProve: (db) => {
+      // RM-30 WP 7.8 / v62 — a v61 database gains `skill_box_positions`, empty, and nothing else
+      // about it moves. The table is the migration's ENTIRE effect, so an empty table plus untouched
+      // neighbours is the whole claim.
+      const table = db
+        .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='skill_box_positions'")
+        .get() as { name: string } | undefined;
+      assert.ok(table, "v62 created skill_box_positions on a v61 database");
+      assert.equal(
+        (db.prepare("SELECT COUNT(*) AS n FROM skill_box_positions").get() as { n: number }).n,
+        0,
+        "…and created it EMPTY — v62 backfills nothing",
+      );
+
+      // The Local collection is still the one default (nothing about v62 touches collections).
+      assert.deepEqual(db.prepare("SELECT id FROM collections WHERE is_default = 1").all(), [
+        { id: "col-local-fixture" },
+      ]);
+    },
+  },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────────

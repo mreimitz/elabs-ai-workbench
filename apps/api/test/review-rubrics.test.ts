@@ -400,10 +400,10 @@ test("migration v46 — a fresh DB carries review_rubrics (schema.ts baseline)",
   const db = openFresh();
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    61,
-    "LATEST_SCHEMA_VERSION auto-derived to 61 (v46 = review_rubrics, review queue lite; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10)",
+    62,
+    "LATEST_SCHEMA_VERSION auto-derived to 62 (v46 = review_rubrics, review queue lite; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, end-user UX pass; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions/hub_agents.provider_credential_id, model identity D-MI1; v56 = the acme_answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10; v62 = skill_box_positions, canvas box positions kept APP-SIDE per skill so a position comment never inflates the metered SKILL.md body, planning/Roadmap/RM-30-ux-overhaul WP 7.8 decision 5)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
   assert.ok(tableExists(db, "review_rubrics"), "fresh DB has the review_rubrics table");
 
   // Immediately usable + the case-insensitive UNIQUE name constraint holds.
@@ -437,7 +437,7 @@ test("migration v46 — a pre-v46 (v45) DB gains review_rubrics; neighboring row
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "stamped to LATEST (61) after v46");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "stamped to LATEST (62) after v46");
   assert.ok(tableExists(db, "review_rubrics"), "v46 created review_rubrics on the existing (v45) DB");
   const provider = db.prepare("SELECT label FROM provider_credentials WHERE id = 'prov-pre46'").get() as
     | { label: string }
@@ -455,5 +455,5 @@ test("migration v46 — a pre-v46 (v45) DB gains review_rubrics; neighboring row
 
   // Idempotent: re-running is a no-op and leaves the version unchanged.
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v46 is a no-op");
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "version unchanged after the re-run");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "version unchanged after the re-run");
 });

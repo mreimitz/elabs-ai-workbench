@@ -51,6 +51,7 @@ import {
   CheckCircle2,
   Code2,
   Columns2,
+  LayoutGrid,
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
@@ -68,7 +69,13 @@ import { AdaptivePanelGroup } from "../../../components/AdaptivePanelGroup";
 import { IconButton } from "../../../components/IconButton";
 import { DiscardChangesDialog } from "../../../components/UnsavedChangesGuard";
 import { useBoundTools } from "../use-bound-tools";
-import { getSkillFiles, getSkillFlowTokens } from "../skills-inspector-api";
+import {
+  clearSkillBoxPositions,
+  getSkillBoxPositions,
+  getSkillFiles,
+  getSkillFlowTokens,
+  putSkillBoxPositions,
+} from "../skills-inspector-api";
 import { registerCodeIntel, type CodeIntelController } from "./code-intel";
 import { findUnknownToolReferences, formatUnknownToolWarning } from "./code-intel/tool-references";
 import "./code-intel/decorations.css";
@@ -457,6 +464,61 @@ function UnifiedEditorBody({
         : { nodes: [] as SkillCanvasNode[], edges: [] as Edge[], droppedEdges: 0 },
     [flowGraph, visibleEntryNodeId],
   );
+
+  // ── RM-30 WP 7.8 (design decision 5) — the arrangement, remembered ───────────────────────────────
+  // Positions live in the app's own database, per SKILL (not per version, so they survive saving),
+  // and never in `SKILL.md` — its body is what the model reads and this app meters it as the L2
+  // footprint, so storing cosmetics there would inflate the very cost this tool exists to measure.
+  // A saved id the graph no longer has matches nothing, so that ONE box lays out automatically.
+  const [boxPositions, setBoxPositions] = useState<ReadonlyMap<string, { x: number; y: number }>>(
+    () => new Map(),
+  );
+  const [autoArrangeToken, setAutoArrangeToken] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    setBoxPositions(new Map());
+    getSkillBoxPositions(skillId)
+      .then((report) => {
+        if (cancelled) return;
+        setBoxPositions(
+          new Map(report.positions.map((p) => [p.nodeId, { x: p.x, y: p.y }] as const)),
+        );
+      })
+      .catch(() => {
+        // Cosmetic state: a failed read degrades to automatic layout, never to a broken canvas.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [skillId]);
+
+  const handleNodeMoved = useCallback(
+    (nodeId: string, position: { x: number; y: number }) => {
+      setBoxPositions((current) => new Map(current).set(nodeId, position));
+      // Fire-and-forget: the box is already where the author put it, and a failed write must not
+      // interrupt authoring. The arrangement simply is not remembered — nothing is corrupted.
+      void putSkillBoxPositions(skillId, [{ nodeId, x: position.x, y: position.y }]).catch(
+        () => {},
+      );
+    },
+    [skillId],
+  );
+
+  const handleAutoArrange = useCallback(() => {
+    setBoxPositions(new Map());
+    setAutoArrangeToken((token) => token + 1);
+    clearSkillBoxPositions(skillId)
+      .then(() => {
+        toast.success("Auto-arranged", {
+          description: "Saved box positions were cleared — the diagram is laid out automatically.",
+        });
+      })
+      .catch((error: unknown) => {
+        notifyError("Couldn’t forget the saved arrangement", {
+          description: `${getErrorMessage(error, "The positions are still stored")}. The canvas is auto-arranged for now; they will come back on reload.`,
+        });
+      });
+  }, [skillId]);
 
   // RM-30 WP 7.8 — the per-node read cost behind the flow's token figure. Fetched once per
   // (skill, version) and only when there is an entry point worth measuring; a failure degrades to
@@ -1019,6 +1081,9 @@ function UnifiedEditorBody({
       onEdgesDelete={handleEdgesDelete}
       onToolDrop={handleToolDrop}
       onPlaceComponent={handlePlaceComponent}
+      boxPositions={boxPositions}
+      onNodeMoved={handleNodeMoved}
+      autoArrangeToken={autoArrangeToken}
       previewOnlyLabel={previewOnlyLabel}
       edit={edit}
       boundTools={boundTools}
@@ -1094,6 +1159,27 @@ function UnifiedEditorBody({
                 </SelectContent>
               </Select>
             </div>
+          ) : null}
+
+          {/* RM-30 WP 7.8 (design decision 5) — the way back. Positions are remembered, so an author
+              who has made a mess needs one visible control that forgets them. It ships WITH the
+              persistence, not after it: the approval names both. */}
+          {flowVisible ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={handleAutoArrange}
+              disabled={boxPositions.size === 0}
+              title={
+                boxPositions.size === 0
+                  ? "Nothing to reset — no box has been moved"
+                  : "Forget the saved box positions and lay the diagram out automatically"
+              }
+            >
+              <LayoutGrid className="size-4" aria-hidden />
+              Auto-arrange
+            </Button>
           ) : null}
         </div>
 
@@ -1372,6 +1458,10 @@ type FlowPaneProps = {
   onToolDrop: (payload: { server: string; tool: string; nodeId: string | null }) => void;
   /** RM-30 WP 7.7 — one entry point for both gestures: the canvas drop and the palette's Add. */
   onPlaceComponent: (component: SkillComponentId, targetNodeId: string | null) => void;
+  /** RM-30 WP 7.8 — the arrangement loaded from the app's database, merged over automatic layout. */
+  boxPositions: ReadonlyMap<string, { x: number; y: number }>;
+  onNodeMoved: (nodeId: string, position: { x: number; y: number }) => void;
+  autoArrangeToken: number;
   previewOnlyLabel: string | undefined;
   edit: ReturnType<typeof useSkillDraft>["edit"];
   boundTools: BoundTool[];
@@ -1401,6 +1491,9 @@ function FlowPane({
   onEdgesDelete,
   onToolDrop,
   onPlaceComponent,
+  boxPositions,
+  onNodeMoved,
+  autoArrangeToken,
   previewOnlyLabel,
   edit,
   boundTools,
@@ -1496,6 +1589,11 @@ function FlowPane({
           onEdgesDelete={onEdgesDelete}
           onToolDrop={onToolDrop}
           onComponentDrop={({ component, nodeId }) => onPlaceComponent(component, nodeId)}
+          skillId={skillId}
+          versionId={versionId}
+          savedPositions={boxPositions}
+          onNodeMoved={onNodeMoved}
+          positionsResetToken={autoArrangeToken}
         />
       )}
     </div>

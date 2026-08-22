@@ -890,6 +890,18 @@ export type SkillGraphCanvasProps = {
    */
   skillId?: string;
   versionId?: string;
+  /**
+   * RM-30 WP 7.8 (design decision 5) — positions the author dragged, loaded from the app's own
+   * database (per skill, never from `SKILL.md`). Merged OVER the automatic layout. A node id absent
+   * from this map keeps its automatic position, which is also what makes an ORPHANED position
+   * harmless: it simply matches nothing and that one box lays out automatically. Omitted (the Trace
+   * tab) ⇒ dragging stays session-local exactly as before.
+   */
+  savedPositions?: ReadonlyMap<string, { x: number; y: number }>;
+  /** Fired when a drag settles, so the caller can persist it. Omitted ⇒ nothing is persisted. */
+  onNodeMoved?: (nodeId: string, position: { x: number; y: number }) => void;
+  /** Bump to forget the session's un-persisted drags — the Auto-arrange reset. */
+  positionsResetToken?: number;
 };
 
 /**
@@ -921,6 +933,9 @@ export function SkillGraphCanvas({
   onComponentDrop,
   skillId,
   versionId,
+  savedPositions,
+  onNodeMoved,
+  positionsResetToken = 0,
 }: SkillGraphCanvasProps) {
   const [liveNodes, setLiveNodes, onNodesChange] = useNodesState<SkillCanvasNode>(nodes);
 
@@ -1029,15 +1044,22 @@ export function SkillGraphCanvas({
   // drag can never trigger a refit (or reset itself).
   const geometrySignature = useMemo(() => nodeGeometrySignature(decoratedNodes), [decoratedNodes]);
 
-  // ── SI10 — session-local node dragging ───────────────────────────────────────────────────────────
-  // Manual positions are VIEW state only: stored here (never in the draft — no op, no dirty flag,
-  // nothing persisted) and merged over the auto-layout output on every re-seed, so a dragged node
-  // keeps its place through selection re-seeds and diagnostic repaints. The overrides are keyed to
-  // the layout they were dragged on (`skillId | versionId | geometry signature`): the moment the
-  // structural layout changes — a node added/removed/re-ranked, or a skill/version switch — the key
-  // no longer matches and the stale positions are ignored (auto-layout wins again), exactly in step
-  // with the `FitViewOnChange` refit that fires on the same signature.
-  const layoutKey = `${skillId ?? ""} ${versionId ?? ""} ${geometrySignature}`;
+  // ── SI10 — session-local node dragging, and RM-30 WP 7.8's persisted arrangement ────────────────
+  //
+  // SI10 stored a drag in component state keyed to the exact layout it was dragged on, and threw it
+  // away the moment the structural layout changed or the page reloaded — so the arrangement you made
+  // was gone by the time you came back to it. WP 7.8 (decision 5) gives it a memory in the APP'S OWN
+  // DATABASE, per skill, never in `SKILL.md` (whose body is what the model reads and what this app
+  // meters as the L2 footprint — cosmetics must not inflate the very cost the tool exists to measure).
+  //
+  // Two layers, in this order:
+  //   1. `savedPositions` — what the caller loaded from the database. Survives a reload, a version
+  //      switch, and adding a section. An id in here that the graph no longer has simply matches
+  //      nothing, so that ONE box falls back to automatic layout; the canvas is never broken by it.
+  //   2. the SESSION map below — the drag that just happened, held so the box does not jump back
+  //      while the save is in flight. Still keyed to its layout, and still never touches the draft:
+  //      no op, no dirty flag. Persistence leaves through `onNodeMoved`, not through the buffer.
+  const layoutKey = `${skillId ?? ""} ${versionId ?? ""} ${geometrySignature}`;
   const layoutKeyRef = useRef(layoutKey);
   layoutKeyRef.current = layoutKey;
   const [dragOverrides, setDragOverrides] = useState<{
@@ -1049,23 +1071,42 @@ export function SkillGraphCanvas({
       ? dragOverrides.positions
       : null;
 
+  // Auto-arrange: the caller cleared the saved positions, so the session's drags must go too —
+  // otherwise the box the author just moved would stubbornly stay put after asking for a reset.
+  useEffect(() => {
+    setDragOverrides(null);
+  }, [positionsResetToken]);
+
+  const mergedOverrides = useMemo(() => {
+    if (!savedPositions?.size && !activeOverrides?.size) return null;
+    const merged = new Map(savedPositions ?? []);
+    for (const [id, position] of activeOverrides ?? []) merged.set(id, position);
+    return merged;
+  }, [savedPositions, activeOverrides]);
+
   const positionedNodes = useMemo(
     () =>
-      activeOverrides ? applyPositionOverrides(decoratedNodes, activeOverrides) : decoratedNodes,
-    [decoratedNodes, activeOverrides],
+      mergedOverrides ? applyPositionOverrides(decoratedNodes, mergedOverrides) : decoratedNodes,
+    [decoratedNodes, mergedOverrides],
   );
 
-  /** Record where a drag left a node. STRICTLY view state — no callback prop fires, so nothing can
-   *  reach the edit buffer / draft store from here. Stable identity (reads the layout key via ref). */
+  /** Record where a drag left a node, and hand it up to be persisted. Nothing here can reach the edit
+   *  buffer / draft store: `onNodeMoved` writes a cosmetic row, never a skill edit. */
+  const onNodeMovedRef = useRef(onNodeMoved);
+  onNodeMovedRef.current = onNodeMoved;
   const handleNodeDragStop = useCallback((_event: unknown, node: SkillCanvasNode) => {
     const key = layoutKeyRef.current;
+    const position = { x: node.position.x, y: node.position.y };
     setDragOverrides((current) => {
       const positions = new Map(
         current !== null && current.layoutKey === key ? current.positions : [],
       );
-      positions.set(node.id, { x: node.position.x, y: node.position.y });
+      positions.set(node.id, position);
       return { layoutKey: key, positions };
     });
+    // Helper nodes (a condition label, a lane header) are not real graph boxes and are not draggable,
+    // but guard anyway so nothing cosmetic-only ever reaches the database.
+    if (node.type === "brand") onNodeMovedRef.current?.(node.id, position);
   }, []);
 
   // Re-seed when the caller rebuilds the flow (new graph / overlay), the diagnostic decoration

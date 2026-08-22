@@ -452,15 +452,15 @@ test("migration v18 — pre-v18 DB gains skill_versions.intent_log_json (additiv
 // v21 (assistant_settings), v22 (suite_run_reports), v23 (provider_credentials server link), and v24
 // (scenarios.answers_mode — both later reverted by v56).
 
-test("migration v20 — a fresh DB stamps LATEST (61) and carries the 3 assistant tables", () => {
+test("migration v20 — a fresh DB stamps LATEST (62) and carries the 3 assistant tables", () => {
   const db = openFresh();
 
   assert.equal(
     LATEST_SCHEMA_VERSION,
-    61,
-    "LATEST_SCHEMA_VERSION auto-derived to 61 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10)",
+    62,
+    "LATEST_SCHEMA_VERSION auto-derived to 62 (v20 = Assistant tables; v21 = assistant_settings; v22 = suite_run_reports; v23 = provider_credentials server link; v24 = scenarios.answers_mode; v25 = server_types; v26 = rating_issues; v27 = rating_state; v28 = provider_credentials claude_subscription kind; v29 = runs.cost_basis; v30 = rating_issue_occurrences concrete evidence; v31 = unified-sessions runs columns; v32 = observability metrics indexes; v33 = observability FTS5 search index + v34 run_views + v35 runs.pinned + v36 run_feedback + v37 run_steps hierarchy + v38 watch_rules + v39 watch_rules.last_evaluated_at + v40 notifications + v41 fleet issue aggregation + v42 runs fork lineage + v43 digest reports + v44 model pricing + v45 dashboard charts + v46 review_rubrics; v47 = hub_* tables, Assistant Hub WP0.2; v48 = hub_session_skills, Assistant Hub WP2.4; v49 = hub_memory.scope/scope_id + hub_agents.display_name + hub_crews.color + hub_sessions.archived_at, Assistant Hub UX WP1.0s; v50 = hub_sessions.tool_scope_json, Assistant Hub end-user UX pass; v51 = hub_sessions.mode auto, Assistant Hub hub-fixes WP6.1; v52 = hub_sessions.roster_json, Assistant Hub end-user UX pass; v53 = hub_crews.icon, agent/crew avatar icons; v54 = hub_missions.parent_mission_id/depth/root_mission_id, crew-nesting mission-tree lineage; v55 = hub_sessions.provider_credential_id + hub_agents.provider_credential_id, model identity D-MI1; v56 = the retired Answers provider kind removed (purge + narrowed kind CHECK, mcp_server_id + scenarios.answers_mode dropped); v57 = notification/digest deep-link repair (stale /assistant/s/ + /testing/observability/issues/ paths rewritten); v58 = api_tokens, service tokens for headless/CI callers, planning/Roadmap/RM-08-ci WP 1.1; v59 = runs.cache_read_tokens/cache_write_tokens, the prompt-cache split on the run row, planning/Roadmap/RM-33-cache-aware-token-accounting WP 1.2; v60 = grade_feedback, human verdicts ON grades + the derived calibration set, planning/Roadmap/RM-07-benchmarks WP 6.1; v61 = watch_rules.paused_until + min_interval_minutes, watch-rule pause + on-terminal renotification interval, planning/Roadmap/RM-17-observability Phase 6 AM-OB10; v62 = skill_box_positions, canvas box positions kept APP-SIDE per skill so a position comment never inflates the metered SKILL.md body, planning/Roadmap/RM-30-ux-overhaul WP 7.8 decision 5)",
   );
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
   for (const table of ["assistant_credentials", "assistant_threads", "assistant_events"]) {
     assert.ok(tableExists(db, table), `fresh DB has ${table}`);
   }
@@ -551,8 +551,8 @@ test("migration v43 — a pre-v43 (v42) DB gains digest_reports; idempotent, imm
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    61,
-    "stamped to LATEST (61) after v43…v61",
+    62,
+    "stamped to LATEST (62) after v43…v61",
   );
   assert.ok(
     tableExists(db, "digest_reports"),
@@ -609,8 +609,8 @@ test("migration v44 — a pre-v44 (v43) DB gains model_pricing seeded from the c
 
   assert.equal(
     db.pragma("user_version", { simple: true }),
-    61,
-    "stamped to LATEST (61) after v44…v61",
+    62,
+    "stamped to LATEST (62) after v44…v61",
   );
   assert.ok(tableExists(db, "model_pricing"), "v44 created model_pricing on the existing (v43) DB");
   assert.ok(indexExists(db, "idx_model_pricing_match"), "v44 added idx_model_pricing_match");
@@ -1082,7 +1082,9 @@ test("migrations v23…v56 — a pre-v23 DB replays the whole chain: rows + fall
 
   // Every pre-existing row survived with its SAME id, so the fallback FK is still valid.
   const keep = db
-    .prepare("SELECT kind, label, api_key_encrypted AS key FROM provider_credentials WHERE id = 'prov-keep'")
+    .prepare(
+      "SELECT kind, label, api_key_encrypted AS key FROM provider_credentials WHERE id = 'prov-keep'",
+    )
     .get() as { kind: string; label: string; key: string } | undefined;
   assert.deepEqual(
     keep,
@@ -1176,7 +1178,11 @@ test("migration v56 — a retired-kind credential is purged together with its en
   applyMigrations(db);
 
   const ids = (sql: string) => (db.prepare(sql).all() as Array<{ id: string }>).map((r) => r.id);
-  assert.deepEqual(ids("SELECT id FROM provider_credentials"), ["prov-keep"], "the retired-kind credential is gone");
+  assert.deepEqual(
+    ids("SELECT id FROM provider_credentials"),
+    ["prov-keep"],
+    "the retired-kind credential is gone",
+  );
   assert.deepEqual(ids("SELECT id FROM scenarios"), ["scn-keep"], "its environment went with it");
   assert.deepEqual(ids("SELECT id FROM runs"), ["run-keep"], "and its runs");
   assert.deepEqual(ids("SELECT id FROM run_steps"), ["step-keep"], "and their steps (no orphans)");
@@ -1184,7 +1190,11 @@ test("migration v56 — a retired-kind credential is purged together with its en
     .prepare("SELECT fallback_provider_credential_id AS f FROM assistant_settings WHERE id = 1")
     .get() as { f: string | null };
   assert.equal(settings.f, null, "the ON DELETE SET NULL pointer was nulled by hand (FKs are OFF)");
-  assert.deepEqual(db.pragma("foreign_key_check"), [], "nothing dangling after the purge + rebuild");
+  assert.deepEqual(
+    db.pragma("foreign_key_check"),
+    [],
+    "nothing dangling after the purge + rebuild",
+  );
 });
 
 // ── Migration v28 (Claude subscription WP 0.2, D-CS6) — provider_credentials: widen kind CHECK to admit
@@ -2407,7 +2417,9 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
   assert.throws(
     () =>
       db
-        .prepare(`INSERT INTO hub_sessions (id,kind,title,mode,model,created_at,updated_at) VALUES ('x','chat','X','auto',@m,@now,@now)`)
+        .prepare(
+          `INSERT INTO hub_sessions (id,kind,title,mode,model,created_at,updated_at) VALUES ('x','chat','X','auto',@m,@now,@now)`,
+        )
         .run({ m: "gpt-4o", now: NOW }),
     /CHECK constraint failed/,
     "the pre-v51 CHECK rejects an auto session (guards the rebuild's purpose)",
@@ -2415,8 +2427,16 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest after v51");
-  assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean after the rebuild");
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    LATEST_SCHEMA_VERSION,
+    "stamped to latest after v51",
+  );
+  assert.equal(
+    (db.pragma("foreign_key_check") as unknown[]).length,
+    0,
+    "foreign_key_check clean after the rebuild",
+  );
   assert.ok(tableDdl(db, "hub_sessions").includes("'auto'"), "the mode CHECK now lists 'auto'");
 
   // Every row survived, and the self-referencing child still points at its parent.
@@ -2426,7 +2446,11 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
     "all three rows preserved across the rebuild",
   );
   assert.equal(
-    (db.prepare("SELECT parent_session_id AS p FROM hub_sessions WHERE id='c1'").get() as { p: string }).p,
+    (
+      db.prepare("SELECT parent_session_id AS p FROM hub_sessions WHERE id='c1'").get() as {
+        p: string;
+      }
+    ).p,
     "p1",
     "the self-FK (parent_session_id) survives the rebuild",
   );
@@ -2435,7 +2459,9 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
   assert.doesNotThrow(
     () =>
       db
-        .prepare(`INSERT INTO hub_sessions (id,kind,title,mode,model,created_at,updated_at) VALUES ('a1','chat','Auto','auto',@m,@now,@now)`)
+        .prepare(
+          `INSERT INTO hub_sessions (id,kind,title,mode,model,created_at,updated_at) VALUES ('a1','chat','Auto','auto',@m,@now,@now)`,
+        )
         .run({ m: "gpt-4o", now: NOW }),
     "the widened CHECK admits an auto session",
   );
@@ -2443,7 +2469,9 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
   assert.throws(
     () =>
       db
-        .prepare(`INSERT INTO hub_sessions (id,kind,title,mode,model,created_at,updated_at) VALUES ('b','chat','B','bogus',@m,@now,@now)`)
+        .prepare(
+          `INSERT INTO hub_sessions (id,kind,title,mode,model,created_at,updated_at) VALUES ('b','chat','B','bogus',@m,@now,@now)`,
+        )
         .run({ m: "gpt-4o", now: NOW }),
     /CHECK constraint failed/,
     "an out-of-union mode is still rejected",
@@ -2461,8 +2489,16 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
 
   // Idempotent: re-running is a no-op and leaves the FK graph clean + the version unchanged.
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v51 is a no-op");
-  assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check still clean after a re-run");
-  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "version unchanged after the re-run");
+  assert.equal(
+    (db.pragma("foreign_key_check") as unknown[]).length,
+    0,
+    "foreign_key_check still clean after a re-run",
+  );
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    LATEST_SCHEMA_VERSION,
+    "version unchanged after the re-run",
+  );
 });
 
 // ── Migration v55 (model identity, D-MI1) — hub_sessions/hub_agents.provider_credential_id ──────────
@@ -2477,7 +2513,7 @@ test("migration v51 — pre-v51 DB widens hub_sessions.mode to admit 'auto'; row
 
 test("migration v55 — a fresh DB carries hub_sessions/hub_agents.provider_credential_id (schema.ts baseline)", () => {
   const db = openFresh();
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
   assert.ok(
     columnExists(db, "hub_sessions", "provider_credential_id"),
     "the baseline DDL carries hub_sessions.provider_credential_id (a fresh DB SKIPS every migration)",
@@ -2529,10 +2565,12 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
   assert.equal(
+    db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
-    61, "and latest is 61");
+    "stamped to latest",
+  );
+  assert.equal(LATEST_SCHEMA_VERSION, 62, "and latest is 62");
   assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
   assert.ok(columnExists(db, "hub_sessions", "provider_credential_id"), "hub_sessions gained it");
   assert.ok(columnExists(db, "hub_agents", "provider_credential_id"), "hub_agents gained it");
@@ -2545,9 +2583,9 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
   ] as const) {
     assert.equal(
       (
-        db
-          .prepare(`SELECT provider_credential_id AS p FROM ${table} WHERE id = ?`)
-          .get(id) as { p: string | null }
+        db.prepare(`SELECT provider_credential_id AS p FROM ${table} WHERE id = ?`).get(id) as {
+          p: string | null;
+        }
       ).p,
       null,
       `the pre-v55 ${table} row reads back NULL (⇒ the unchanged heuristic path)`,
@@ -2555,10 +2593,14 @@ test("migration v55 — a v54-stamped DB gains both columns; pre-v55 rows read b
   }
 
   // A newly pinned row round-trips, and the ALTER-added REFERENCES clause is a REAL, enforced FK.
-  db.prepare("UPDATE hub_sessions SET provider_credential_id = 'prov-1' WHERE id = 's-legacy'").run();
+  db.prepare(
+    "UPDATE hub_sessions SET provider_credential_id = 'prov-1' WHERE id = 's-legacy'",
+  ).run();
   assert.throws(
     () =>
-      db.prepare("UPDATE hub_agents SET provider_credential_id = 'nope' WHERE id = 'a-legacy'").run(),
+      db
+        .prepare("UPDATE hub_agents SET provider_credential_id = 'nope' WHERE id = 'a-legacy'")
+        .run(),
     /FOREIGN KEY constraint failed/,
     "a pin to a non-existent credential is rejected by the FK",
   );
@@ -2611,7 +2653,12 @@ function seedPreV57Database(): AppDatabase {
     `INSERT INTO notifications (id,at,severity,title,body,link_path) VALUES (@id,@at,'info',@title,'b',@link)`,
   );
   insert.run({ id: "n-mission", at: NOW, title: "Mission completed", link: "/assistant/s/sess-1" });
-  insert.run({ id: "n-issue", at: NOW, title: "Issue regressed", link: "/testing/observability/issues/iss-1" });
+  insert.run({
+    id: "n-issue",
+    at: NOW,
+    title: "Issue regressed",
+    link: "/testing/observability/issues/iss-1",
+  });
   insert.run({ id: "n-run", at: NOW, title: "Run failed", link: "/testing/runs/run-1" });
   insert.run({ id: "n-none", at: NOW, title: "No link", link: null });
   db.prepare(
@@ -2620,7 +2667,9 @@ function seedPreV57Database(): AppDatabase {
   ).run({
     a: NOW,
     b: NOW,
-    json: JSON.stringify({ newIssues: [{ id: "iss-1", linkPath: "/testing/observability/issues/iss-1" }] }),
+    json: JSON.stringify({
+      newIssues: [{ id: "iss-1", linkPath: "/testing/observability/issues/iss-1" }],
+    }),
   });
   db.pragma("user_version = 56");
   return db;
@@ -2631,9 +2680,17 @@ test("migration v57 — stale notification/digest deep links are rewritten to ro
   applyMigrations(db);
 
   const linkOf = (id: string) =>
-    (db.prepare("SELECT link_path AS l FROM notifications WHERE id = ?").get(id) as { l: string | null }).l;
+    (
+      db.prepare("SELECT link_path AS l FROM notifications WHERE id = ?").get(id) as {
+        l: string | null;
+      }
+    ).l;
 
-  assert.equal(linkOf("n-mission"), "/assistant?session=sess-1", "a hub session link points at the workspace route");
+  assert.equal(
+    linkOf("n-mission"),
+    "/assistant?session=sess-1",
+    "a hub session link points at the workspace route",
+  );
   assert.equal(
     linkOf("n-issue"),
     "/dashboard?tab=issues&issue=iss-1",
@@ -2645,11 +2702,23 @@ test("migration v57 — stale notification/digest deep links are rewritten to ro
   const payload = (
     db.prepare("SELECT report_json AS j FROM digest_reports WHERE id = 'd1'").get() as { j: string }
   ).j;
-  assert.match(payload, /\/dashboard\?tab=issues&issue=iss-1/, "the stored digest payload is rewritten too");
-  assert.doesNotMatch(payload, /observability\/issues/, "no legacy issue path survives in the payload");
+  assert.match(
+    payload,
+    /\/dashboard\?tab=issues&issue=iss-1/,
+    "the stored digest payload is rewritten too",
+  );
+  assert.doesNotMatch(
+    payload,
+    /observability\/issues/,
+    "no legacy issue path survives in the payload",
+  );
 
   assert.doesNotThrow(() => applyMigrations(db), "re-applying v57 is a no-op");
-  assert.equal(linkOf("n-mission"), "/assistant?session=sess-1", "the rewrite is not applied twice");
+  assert.equal(
+    linkOf("n-mission"),
+    "/assistant?session=sess-1",
+    "the rewrite is not applied twice",
+  );
   assert.equal(
     db.pragma("user_version", { simple: true }),
     LATEST_SCHEMA_VERSION,
@@ -2663,8 +2732,8 @@ test("migration v57 — stale notification/digest deep links are rewritten to ro
 
 test("migration v58 — a fresh DB carries api_tokens from the schema.ts baseline and stamps LATEST", () => {
   const db = openFresh();
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
-  assert.equal(LATEST_SCHEMA_VERSION, 61, "LATEST_SCHEMA_VERSION auto-derived to 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
+  assert.equal(LATEST_SCHEMA_VERSION, 62, "LATEST_SCHEMA_VERSION auto-derived to 61");
   assert.ok(tableExists(db, "api_tokens"), "the baseline DDL carries api_tokens");
   assert.deepEqual(columns(db, "api_tokens"), [
     "id",
@@ -2703,7 +2772,11 @@ test("migration v58 — a pre-v58 (v57) DB gains api_tokens with its other data 
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    LATEST_SCHEMA_VERSION,
+    "stamped to latest",
+  );
   assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
   assert.ok(tableExists(db, "api_tokens"), "v58 created api_tokens on the existing (v57) DB");
   assert.ok(indexExists(db, "idx_api_tokens_created_at"), "…and its index");
@@ -2755,7 +2828,7 @@ test("migration v59 — a fresh DB carries runs.cache_read_tokens/cache_write_to
   const db = openFresh();
   assert.ok(columnExists(db, "runs", "cache_read_tokens"), "fresh DB has cache_read_tokens");
   assert.ok(columnExists(db, "runs", "cache_write_tokens"), "fresh DB has cache_write_tokens");
-  assert.equal(db.pragma("user_version", { simple: true }), 61, "fresh DB stamped at 61");
+  assert.equal(db.pragma("user_version", { simple: true }), 62, "fresh DB stamped at 62");
 });
 
 test("migration v59 — the backfill recovers the split from run_steps, and leaves the unknowable NULL", () => {
@@ -2854,7 +2927,11 @@ test("migration v59 — the backfill recovers the split from run_steps, and leav
 
   applyMigrations(db);
 
-  assert.equal(db.pragma("user_version", { simple: true }), LATEST_SCHEMA_VERSION, "stamped to latest");
+  assert.equal(
+    db.pragma("user_version", { simple: true }),
+    LATEST_SCHEMA_VERSION,
+    "stamped to latest",
+  );
   assert.equal((db.pragma("foreign_key_check") as unknown[]).length, 0, "foreign_key_check clean");
 
   const read = (id: string) =>
@@ -2862,16 +2939,27 @@ test("migration v59 — the backfill recovers the split from run_steps, and leav
       .prepare("SELECT cache_read_tokens AS r, cache_write_tokens AS w FROM runs WHERE id = ?")
       .get(id) as { r: number | null; w: number | null };
 
-  assert.deepEqual(read("run-cached"), { r: 1100, w: 100 }, "(a) recovered from the persisted steps");
-  assert.deepEqual(read("run-nocache"), { r: 0, w: 0 }, "(b) usage but no cache keys is a real zero");
+  assert.deepEqual(
+    read("run-cached"),
+    { r: 1100, w: 100 },
+    "(a) recovered from the persisted steps",
+  );
+  assert.deepEqual(
+    read("run-nocache"),
+    { r: 0, w: 0 },
+    "(b) usage but no cache keys is a real zero",
+  );
   assert.deepEqual(
     read("run-merged"),
     { r: null, w: null },
     "(b2) a merged-only run's SPLIT is unknowable — 0/0 here would deny cache that demonstrably happened",
   );
   assert.equal(
-    (db.prepare("SELECT cached_tokens AS c FROM runs WHERE id = 'run-merged'").get() as { c: number })
-      .c,
+    (
+      db.prepare("SELECT cached_tokens AS c FROM runs WHERE id = 'run-merged'").get() as {
+        c: number;
+      }
+    ).c,
     0,
     "…and the merged column is untouched by this migration (the run engine owns it)",
   );
@@ -2881,7 +2969,11 @@ test("migration v59 — the backfill recovers the split from run_steps, and leav
     "(c) no usage-bearing step ⇒ UNKNOWN, and NULL is the only honest value — a 0 here would tell the " +
       "metrics layer this run demonstrably had no cache",
   );
-  assert.deepEqual(read("run-empty"), { r: null, w: null }, "(d) a run with no steps is also unknown");
+  assert.deepEqual(
+    read("run-empty"),
+    { r: null, w: null },
+    "(d) a run with no steps is also unknown",
+  );
 
   // The upgraded table must be shaped exactly like the fresh-DB one — the classic v-N drift bug.
   assert.deepEqual(tableShape(db, "runs"), tableShape(openFresh(), "runs"));

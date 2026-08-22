@@ -2057,6 +2057,28 @@ export const skillFlowTokensResponseSchema = z.object({
   nodes: z.array(skillFlowNodeCostSchema),
 });
 
+/**
+ * RM-30 WP 7.8 — one saved canvas position. Coordinates are FINITE and bounded: a position is
+ * cosmetic state written from a drag gesture, so `NaN`/`Infinity`/an absurd magnitude is a bug or a
+ * hostile body, never a real arrangement, and it is refused at the door rather than persisted.
+ */
+export const skillBoxPositionSchema = z.object({
+  nodeId: z.string().trim().min(1).max(512),
+  x: z.number().finite().min(-1_000_000).max(1_000_000),
+  y: z.number().finite().min(-1_000_000).max(1_000_000),
+});
+
+/** `GET /api/skills/:id/box-positions`. */
+export const skillBoxPositionsResponseSchema = z.object({
+  skillId: z.string().trim().min(1),
+  positions: z.array(skillBoxPositionSchema),
+});
+
+/** `PUT /api/skills/:id/box-positions` — capped so one request cannot write an unbounded table. */
+export const putSkillBoxPositionsRequestSchema = z.object({
+  positions: z.array(skillBoxPositionSchema).max(2000),
+});
+
 /** Trace route response (`…/versions/:vid/trace`): the aligned session trace. */
 export const skillTraceResponseSchema = sessionTraceSchema;
 
