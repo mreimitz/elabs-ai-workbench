@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T21:30:00Z"
+timestamp: "2026-08-22T21:45:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -669,6 +669,25 @@ met and — where the box touches code — the gate
 > **Why this keeps being the same lesson:** their stale claim and their misread of ours would BOTH
 > have been caught by a `file:line` citation, which is why every spec in this batch opens with one.
 > A stale citation is falsifiable in seconds; a paraphrase survives into a build.
+>
+> **CLOSED 2026-08-22 — and the other session re-verified all three of this plan's claims against the
+> code before re-scoping, rather than taking them on trust.** All three held: `Dockerfile:83-85`
+> (so `GET /api/docs/*` was never possible and their design was **wrong, not merely redundant**),
+> `DC-25-advisor`, and `ViewToolbar.tsx:82-83`'s `info` as description prose. They concur on
+> excluding `doc.md`: shipping the delivery record would put work-package archaeology in front of a
+> user on first run.
+>
+> 📌 **ONE OBLIGATION THIS PLAN OWES: ping the RM-37 session the moment RM-18 WP 1.2 merges to
+> `main`.** Their "Report a problem" control goes into the SAME top-bar `end` slot
+> (`AppShell.tsx:474-538`) and is deliberately serialised behind it — one small JSX insertion after
+> the other, rather than two agents each believing they own the block. They dispatch against the
+> merged shape, not today's. **Do not let this fall off: their WP is blocked on a message from here.**
+>
+> **Their check and this plan's check catch different classes, which is worth keeping straight.**
+> Theirs — *does the cited path still say this?* — finds **rot**. The `file:line` premise table this
+> batch adopted — *where did this claim come from at all?* — finds claims that were **never true**,
+> like the toolbar-ⓘ one, which no citation could have supported because the file says the opposite.
+> Both are needed; neither subsumes the other.
 
 ## Wave 4 — new work and the ledger-less items (owner's call)
 - [ ] WP 4.1 — **RM-18** remaining 5 WPs (first-run seed, docs route, diagnostics bundle, upgrade
