@@ -9,7 +9,7 @@ import {
  * WP 1.5 / Phase 5 — best-effort model pricing for the **spend-cap guardrail** and the run cost KPI.
  *
  * Current-generation prices are DERIVED from the research dataset (`GENERATED_MODEL_PRICING`,
- * regenerate with `pnpm build:model-data`) — the single source of truth (Decision 1). The legacy
+ * regenerate with `pnpm build:data-pack`) — the single source of truth (Decision 1). The legacy
  * map below is the **fallback** for previous-generation ids the dataset does not cover (e.g.
  * `gpt-4o`, `claude-opus-4-1`) and for local/Ollama models (priced at 0 so they never trip the spend
  * cap). Dataset prices win on overlap; the legacy entries are retained so swapping to the dataset

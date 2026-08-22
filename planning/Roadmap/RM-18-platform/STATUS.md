@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Platform hardening \u2014 work-package status ledger \u00b7 PRIORITY: MEDIUM (rolling)"
 description: "Living state for the platform plan, read and updated by /next-wp platform. A box is ticked"
 tags: ["roadmap", "RM-18"]
-timestamp: "2026-08-22T21:15:00Z"
+timestamp: "2026-08-22T22:20:00Z"
 status: "active"
 ---
 # Platform hardening — work-package status ledger · **PRIORITY: MEDIUM (rolling)**

@@ -7,7 +7,8 @@
   "scripts": {
     "build": "pnpm docs:bundle && pnpm -r --sort build",
     "docs:bundle": "node scripts/build-docs-bundle.mjs",
-    "build:model-data": "pnpm --filter @mcp-token-footprint/api exec tsx src/compatibility/build-cli.ts",
+    "build:data-pack": "pnpm --filter @mcp-token-footprint/data-pack exec tsx build/build-cli.ts",
+    "build:model-data": "echo '[deprecated] `pnpm build:model-data` is now `pnpm build:data-pack` (RM-38 WP 1.1); this alias is kept for one release.' && pnpm build:data-pack",
     "mcp:self-scan": "pnpm --filter @mcp-token-footprint/shared build && pnpm --filter @mcp-token-footprint/api exec tsx src/mcp-server/self-scan-cli.ts",
     "dev": "pnpm docs:bundle && pnpm --filter @mcp-token-footprint/shared build && pnpm --parallel --filter @mcp-token-footprint/api --filter @mcp-token-footprint/web dev",
     "dev:api": "pnpm --filter @mcp-token-footprint/shared build && pnpm --filter @mcp-token-footprint/api dev",

@@ -246,7 +246,9 @@ function EntryDetail({
         </Badge>
       </div>
 
-      <p className="text-sm text-muted-foreground">{entry.whatItDoes}</p>
+      <Text variant="body" tone="muted">
+        {entry.whatItDoes}
+      </Text>
 
       {entry.recommendation ? (
         <div className="flex flex-col gap-1 rounded-md border border-border bg-muted/40 p-3">
@@ -597,7 +599,7 @@ export function ServerFindings({
       out.push({
         key: `srv:${entry.testId}`,
         severity: worst,
-        name: entry.userFacingName,
+        name: entry.findingName,
         recommendation: entry.recommendation,
         detail: `${affected} of ${modelCount} models affected`,
         serverTools,
@@ -614,7 +616,7 @@ export function ServerFindings({
       out.push({
         key: `tool:${entry.testId}`,
         severity: entry.worstSeverity,
-        name: entry.userFacingName,
+        name: entry.findingName,
         recommendation: entry.recommendation,
         detail: `${entry.tools.length} tool${entry.tools.length === 1 ? "" : "s"} affected`,
         tools: entry.tools,

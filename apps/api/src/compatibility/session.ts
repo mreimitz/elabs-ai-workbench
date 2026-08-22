@@ -20,7 +20,7 @@ import type {
 import { estimateCost } from "../providers/pricing.js";
 import { getCatalog, type CatalogTest } from "./catalog.js";
 import { getCrossCutting, getModel } from "./dataset.js";
-import type { FlatModel } from "./build.js";
+import type { FlatModel } from "@mcp-token-footprint/shared";
 import { resolveSeverity } from "./resolve.js";
 
 /** One MCP tool result, sized + timed (for SESSION_TOOL_RESULT_SIZE / SESSION_TOOL_TIMEOUT). */
@@ -431,6 +431,7 @@ function toResult(
     testId: test.id,
     techName: test.tech_name,
     userFacingName: test.user_facing_name,
+    findingName: test.finding_name,
     level: test.level,
     subjectType: "session",
     subjectId: run.runId,

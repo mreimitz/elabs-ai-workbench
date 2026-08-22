@@ -29,6 +29,7 @@
         "id",
         "tech_name",
         "user_facing_name",
+        "finding_name",
         "level",
         "scope",
         "category",
@@ -50,7 +51,14 @@
           "type": "string",
           "description": "dotted machine name, e.g. tool.name.length"
         },
-        "user_facing_name": { "type": "string" },
+        "user_facing_name": {
+          "type": "string",
+          "description": "Names the CHECK, for a list of checks: 'Namespaced tool names stay within length limit'."
+        },
+        "finding_name": {
+          "type": "string",
+          "description": "Names the FINDING, for a list of problems: 'Namespaced tool names exceed the length limit'. A findings card that printed user_facing_name would read as though the check itself were the bad news."
+        },
         "level": {
           "type": "string",
           "enum": ["server", "tool", "session", "environment"],

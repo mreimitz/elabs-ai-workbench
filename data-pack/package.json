@@ -1,0 +1,19 @@
+{
+  "name": "@mcp-token-footprint/data-pack",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The reference data pack (RM-38): versioned, schema-validated external facts and judgement tables. The `version` field above IS the packVersion stamped into manifest.json — bump it when pack content changes.",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@mcp-token-footprint/shared": "workspace:*",
+    "@types/node": "^22.20.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

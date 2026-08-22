@@ -1,3 +1,8 @@
+import {
+  SEVERITY_RAMP,
+  type SeverityRampStep,
+  type SeverityRampTone,
+} from "@mcp-token-footprint/shared";
 import type {
   FixTarget,
   RatingIssue,
@@ -168,8 +173,25 @@ export const FIX_TARGET_META: Record<FixTarget, { label: string; variant: BadgeV
   none: { label: "No fix target", variant: "outline" },
 };
 
-export const SEVERITY_META: Record<RatingIssueSeverity, { label: string; variant: BadgeVariant }> = {
-  high: { label: "High", variant: "destructive" },
-  medium: { label: "Medium", variant: "warning" },
-  low: { label: "Low", variant: "secondary" },
+// RM-37 WP 0.5 (action 8) — this map used to hand-write its own three tones, and Advisor's
+// hand-written map called its OWN "high" a different chip (red `destructive` here and there too,
+// by coincidence — nothing forced the two literals to agree). The TONE now comes from the one
+// shared ramp (`@mcp-token-footprint/shared` `severity-ramp.ts`); this table only says which rung
+// of that ramp a wire severity stands on. `low` used to render `secondary` (a filled neutral); the
+// ramp's own `low` rung is `outline`, so that chip is now visually lighter than before — this is
+// the whole point of collapsing four independent maps onto one ramp, not a regression.
+const ISSUE_SEVERITY_RAMP_STEP: Record<RatingIssueSeverity, SeverityRampStep> = {
+  high: "high",
+  medium: "medium",
+  low: "low",
 };
+
+export const SEVERITY_META: Record<
+  RatingIssueSeverity,
+  { label: string; variant: SeverityRampTone }
+> = Object.fromEntries(
+  Object.entries(ISSUE_SEVERITY_RAMP_STEP).map(([severity, step]) => [
+    severity,
+    { label: SEVERITY_RAMP[step].label, variant: SEVERITY_RAMP[step].variant },
+  ]),
+) as Record<RatingIssueSeverity, { label: string; variant: SeverityRampTone }>;

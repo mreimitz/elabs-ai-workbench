@@ -2,12 +2,19 @@
 // typechecked + unit-testable). The CLI wrapper (`build-cli.ts`) does the fs read/write; the drift
 // test re-runs these functions in-memory and asserts the committed assets match.
 //
-// This is the TypeScript port of the research reference `comparison/build_comparison.py` (Decision 2:
-// no Python in the runtime or quality gate). The per-provider JSON files under
-// `planning/Research/RS-01-token-context-comparison/outputs/data/**` remain the human-curated source of truth; this code
-// merges them into the flat `all-models.json` index the compatibility engine reads, and derives the
-// model-context-window + pricing maps the run engine consumes (Decision 1: unify on the dataset).
+// This is the TypeScript port of the research reference
+// `planning/Research/RS-01-token-context-comparison/outputs/comparison/build_comparison.py`
+// (Decision 2: no Python in the runtime or quality gate). The per-provider JSON files under
+// `data-pack/models/**` remain the human-curated source of truth; this code merges them into the
+// flat `all-models.json` index the compatibility engine reads, and derives the model-context-window
+// + pricing maps the run engine consumes (Decision 1: unify on the dataset).
 
+import type {
+  AllModels,
+  DerivedPrice,
+  FlatModel,
+  ModelDatasetEntry,
+} from "@mcp-token-footprint/shared";
 import { z } from "zod";
 
 // --- Provenanced value (mirror of schema/model-entry.schema.json `$defs/provenanced`) ------------
@@ -60,6 +67,12 @@ const ProviderFileSchema = z
 export type ProviderFile = z.infer<typeof ProviderFileSchema>;
 export type ModelEntry = z.infer<typeof ModelSchema>;
 
+// A parsed model entry must satisfy the shared dataset shape — if the zod schema and
+// `packages/shared/src/model-dataset.ts` ever drift, this line stops compiling.
+type _ModelEntryMatchesShared = ModelEntry extends ModelDatasetEntry ? true : never;
+const _modelEntryMatchesShared: _ModelEntryMatchesShared = true;
+void _modelEntryMatchesShared;
+
 /** A provenanced node carries `{ value, confidence, ... }`; tolerate plain values / nullish. */
 function pv(node: unknown): { value: unknown; confidence?: string } {
   if (node && typeof node === "object" && "value" in (node as Record<string, unknown>)) {
@@ -88,36 +101,9 @@ function num(node: unknown): number | null {
   return typeof v === "number" ? v : null;
 }
 
-/** The flat per-model row (mirror of `build_comparison.py:flat`), with the full model as `detail`. */
-export type FlatModel = {
-  provider_id: string;
-  provider_name: string;
-  group: string;
-  model_id: string;
-  display_name: string | null;
-  family: string | null;
-  status: string | null;
-  context_window_tokens: number | null;
-  max_input_tokens: number | null;
-  max_output_tokens_max: number | null;
-  tokenizer_family: unknown;
-  function_calling: unknown;
-  native_mcp: unknown;
-  max_tools_hard: number | null;
-  max_tools_practical: number | null;
-  tool_definition_shape: unknown;
-  tool_search_deferral: unknown;
-  tool_defs_count_as_input: unknown;
-  skills_supported: unknown;
-  prompt_caching: unknown;
-  input_per_mtok_usd: number | null;
-  output_per_mtok_usd: number | null;
-  cached_input_per_mtok_usd: number | null;
-  billing_unit: unknown;
-  reasoning_billed_as_output: unknown;
-  source_file: string;
-  detail: ModelEntry;
-};
+// `FlatModel` (the flat per-model row, mirror of `build_comparison.py:flat`) and `AllModels` are
+// defined once in `packages/shared/src/model-dataset.ts`; this builder is held to them by the
+// return types below.
 
 function flat(provider: ProviderFile, m: ModelEntry, sourceFile: string): FlatModel {
   const p = provider.provider;
@@ -153,15 +139,6 @@ function flat(provider: ProviderFile, m: ModelEntry, sourceFile: string): FlatMo
 }
 
 const GROUP_ORDER: Record<string, number> = { saas: 0, open_weight: 1 };
-
-export type AllModels = {
-  schema_version: string;
-  as_of: string;
-  generator: string;
-  provider_count: number;
-  model_count: number;
-  models: FlatModel[];
-};
 
 /**
  * Validate + merge the per-provider files into the flat `all-models.json` index. `as_of` is taken
@@ -206,7 +183,7 @@ export function buildAllModels(files: { relPath: string; data: unknown }[]): All
   return {
     schema_version: "1.0",
     as_of: asOf,
-    generator: "apps/api/src/compatibility/build.ts",
+    generator: "data-pack/build/build.ts",
     provider_count: parsed.length,
     model_count: models.length,
     models,
@@ -223,8 +200,6 @@ export function deriveContextLimits(all: AllModels): Record<string, number> {
   }
   return out;
 }
-
-export type DerivedPrice = { inPer1M: number; outPer1M: number; cachedInPer1M?: number };
 
 /** Pricing map (model id → per-1M USD) for every model with documented input+output prices. */
 export function derivePricing(all: AllModels): Record<string, DerivedPrice> {
@@ -251,7 +226,7 @@ export function renderSharedGenerated(all: AllModels): string {
     .map((k) => `  ${JSON.stringify(k)}: ${JSON.stringify(pricing[k])}`)
     .join(",\n");
   return `// GENERATED — do not edit by hand.
-// Source of truth: planning/Research/RS-01-token-context-comparison/outputs/data/**; regenerate with \`pnpm build:model-data\`.
+// Source of truth: data-pack/models/**; regenerate with \`pnpm build:data-pack\`.
 // Derived from the model-comparison dataset (as-of ${all.as_of}; ${all.model_count} models).
 
 /** Context window (tokens) per model id, for every model with a documented window. */

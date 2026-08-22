@@ -242,6 +242,25 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.20.0)(jsdom@25.0.1)(lightningcss@1.32.0)
 
+  data-pack:
+    dependencies:
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@mcp-token-footprint/shared':
+        specifier: workspace:*
+        version: link:../packages/shared
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.0
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+
   packages/illustrations:
     dependencies:
       '@mcp-token-footprint/shared':

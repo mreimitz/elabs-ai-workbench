@@ -4,6 +4,9 @@ import {
   type AdvisorSavings,
   type AdvisorScopeKind,
   type AdvisorSeverity,
+  SEVERITY_RAMP,
+  type SeverityRampStep,
+  type SeverityRampTone,
 } from "@mcp-token-footprint/shared";
 import { formatCostUsd, formatNumber } from "../../lib/format";
 
@@ -18,15 +21,33 @@ import { formatCostUsd, formatNumber } from "../../lib/format";
 //   • invariant 2 — units are never converted into one another (no pricing applied behind the
 //     operator's back), so each unit keeps its own suffix and its own formatter.
 
-/** Severity → the chip a card leads with. Text + variant, never colour alone (Badge anti-pattern). */
+// RM-37 WP 0.5 (action 8) — Advisor used to declare its own three-tone map, and it disagreed with
+// Issues over the loudest word both features share ("High" was red here, red there too, but by two
+// independently hand-written literals that could drift the moment either file was touched). The
+// TONE now comes from the single shared ramp (`@mcp-token-footprint/shared` `severity-ramp.ts`):
+// this map only says which RUNG of that ramp each wire value stands on. Advisor's own values never
+// reach `critical` — see the ramp's own doc comment for why a heuristic is capped at `high`/amber.
+//
+// `info` is deliberately placed at ramp step `low`, not a fourth bespoke tone: Advisor's `info` is
+// "the mildest finding worth mentioning", i.e. the bottom of the SAME severity ranking `high` and
+// `medium` sit on, not a different kind of statement — so it renders as "Low", not "Info". That is
+// intended by the WP 0.5 spec, not a leftover mismatch.
+const ADVISOR_SEVERITY_RAMP_STEP: Record<AdvisorSeverity, SeverityRampStep> = {
+  high: "high",
+  medium: "medium",
+  info: "low",
+};
+
+/** Severity → the chip a card leads with. Text + variant, both read from the one shared ramp. */
 export const ADVISOR_SEVERITY_META: Record<
   AdvisorSeverity,
-  { label: string; variant: "destructive" | "warning" | "info" }
-> = {
-  high: { label: "High", variant: "destructive" },
-  medium: { label: "Medium", variant: "warning" },
-  info: { label: "Info", variant: "info" },
-};
+  { label: string; variant: SeverityRampTone }
+> = Object.fromEntries(
+  Object.entries(ADVISOR_SEVERITY_RAMP_STEP).map(([severity, step]) => [
+    severity,
+    { label: SEVERITY_RAMP[step].label, variant: SEVERITY_RAMP[step].variant },
+  ]),
+) as Record<AdvisorSeverity, { label: string; variant: SeverityRampTone }>;
 
 /** How one savings unit is spoken. `≈` + the unit suffix; `usd_per_run` keeps sub-cent precision. */
 function formatSavingsValue(savings: AdvisorSavings): string {

@@ -426,6 +426,168 @@ test("rule 6 · NEAR-MISS NEGATIVE — a read tool ABOUT deleted things does not
   );
 });
 
+// ── RM-37 WP 0.5 · the getter-flagged-as-a-mutation false positive ──────────────────────────────
+//
+// `qlik_get_set_expression` on the owner's own Qlik servers scored the analyzer's ONE `error` while
+// being a plain getter: the name carries the token `set`, so the pre-WP-0.5 rule read "this tool
+// mutates" out of the NOUN "set expression". An `error` an operator has to learn to ignore is worse
+// than no rule at all, so the two guards below are fixtures, not comments.
+
+test("rule 6 · FALSE POSITIVE — a getter whose name contains a mutating NOUN does not fire", () => {
+  // The exact tool from the owner's instance (barc-benchmark, qlik-mreimitz, qlik-stage).
+  assert.deepEqual(
+    ruleReadonlyContradiction(
+      tool({
+        toolName: "qlik_get_set_expression",
+        description: "Returns the set expression behind a master measure.",
+        annotations: { readOnlyHint: true },
+      }),
+    ),
+    [],
+  );
+  // The same shape without the namespace prefix.
+  assert.deepEqual(
+    ruleReadonlyContradiction(
+      tool({ toolName: "get_set_expression", annotations: { readOnlyHint: true } }),
+    ),
+    [],
+  );
+  // ...and its sibling on the same servers, whose leading verb is NOT in the read list at all —
+  // `set` still sits inside the noun phrase, so position alone has to carry that one.
+  assert.deepEqual(
+    ruleReadonlyContradiction(
+      tool({
+        toolName: "qlik_generate_set_expression",
+        description: "Builds a set expression from a selection.",
+        annotations: { readOnlyHint: true },
+      }),
+    ),
+    [],
+  );
+});
+
+test("rule 6 · `set`/`put` fire only where they LEAD a verb phrase", () => {
+  const fires = (toolName: string) =>
+    ruleReadonlyContradiction(tool({ toolName, annotations: { readOnlyHint: true } })).length;
+
+  // Leading verb → a real contradiction, still caught.
+  assert.equal(fires("set_config"), 1);
+  assert.equal(fires("put_object"), 1);
+  // ONE namespace token in front is how MCP servers name tools; the verb still leads its object.
+  assert.equal(fires("qlik_set_session_mutation_mode"), 1);
+
+  // A trailing `set` is a noun ("the config set"), never the action.
+  assert.equal(fires("config_set"), 0);
+  // `settings` is a single token and never contained the token `set` — pinned so a future "just use
+  // substring matching" refactor goes red HERE rather than on the owner's servers.
+  assert.equal(fires("settings_get"), 0);
+  // `reset` likewise is its own token.
+  assert.equal(fires("reset_cache"), 0);
+  // And the name that started this WP, restated as a position fact.
+  assert.equal(fires("get_set_expression"), 0);
+});
+
+test("rule 6 · a name that LEADS with a read verb is not second-guessed by its prose", () => {
+  // The second false positive found by triaging the owner's servers: `qlik_get_script` is a getter
+  // whose description explains how a DIFFERENT tool rejects stale edits. "writes" there is a plural
+  // noun, and the description matcher read it as the verb.
+  assert.deepEqual(
+    ruleReadonlyContradiction(
+      tool({
+        toolName: "qlik_get_script",
+        description:
+          "Get the data load script for a Qlik app. Pass baseVersionId back to qlik_update_script so the server can reject writes against a stale view of the script.",
+        annotations: { readOnlyHint: true },
+      }),
+    ),
+    [],
+  );
+
+  // The guard is the NAME leading with a read verb — not the word "writes" being forgiven. A tool
+  // that does not claim to be a getter still fires on the same description.
+  assert.equal(
+    ruleReadonlyContradiction(
+      tool({
+        toolName: "sync_script",
+        description: "Writes the script back to the app.",
+        annotations: { readOnlyHint: true },
+      }),
+    ).length,
+    1,
+  );
+});
+
+test("rule 6 · the owner's three REAL contradictions still fire (RM-37 WP 0.5 triage)", () => {
+  // Regression fixtures taken verbatim from the triage of the owner's own servers. If a future
+  // tightening of this rule silences these, it has stopped earning its `error`.
+  const fires = (toolName: string, description: string) =>
+    ruleReadonlyContradiction(tool({ toolName, description, annotations: { readOnlyHint: true } }))
+      .length;
+
+  // A genuinely destructive tool declaring itself read-only — the case the rule exists for.
+  assert.equal(
+    fires("qlik_predict_quick_delete_model", "Remove a trained model from the server registry."),
+    1,
+  );
+  // Mutates session state; a host that auto-runs read-only tools would silently change the
+  // operator's filters.
+  assert.equal(
+    fires("qlik_clear_selections", "Clearing selections removes filters and shows all data again."),
+    1,
+  );
+  // Creates server-side state, even though that state is session-scoped and transient.
+  assert.equal(
+    fires("qlik_create_data_object", "Create a temporary calculation object (session object)."),
+    1,
+  );
+});
+
+// Two DIFFERENT mechanisms suppress a mutating token behind a read verb, and their coverage overlaps
+// only PARTIALLY. Splitting the fixtures across tests is the point: one test spanning both regions
+// stays green while either mechanism is broken, which is exactly how guard 1 shipped unprotected.
+//
+//   • `nameLeadsWithReadVerb` — the early return in `ruleReadonlyContradiction`, token index 0..1.
+//     Uniquely load-bearing for the DESCRIPTION path, pinned by "is not second-guessed by its prose".
+//   • guard 1 inside `findMutatingNameToken` — a read verb at any earlier index. Uniquely
+//     load-bearing for a read verb at index >= 2, pinned by the second test below.
+//
+// The region they SHARE — the name path with a read verb at index 0..1 — is covered twice, so the
+// first test below documents behaviour but pins neither mechanism. That is stated rather than left
+// for the next person to discover by breaking something and seeing nothing go red.
+
+test("rule 6 · a name that LEADS with a read verb never fires (the early return)", () => {
+  const fires = (toolName: string) =>
+    ruleReadonlyContradiction(tool({ toolName, annotations: { readOnlyHint: true } })).length;
+
+  // `list_deleted_items` never fired (`deleted` is not in the list); these are the ones that DID.
+  assert.equal(fires("get_delete_policy"), 0);
+  assert.equal(fires("list_remove_rules"), 0);
+  assert.equal(fires("search_create_templates"), 0);
+  assert.equal(fires("describe_update_channel"), 0);
+  // One namespace token in front still counts as leading.
+  assert.equal(fires("qlik_get_delete_policy"), 0);
+
+  // The read verb has to come FIRST. A mutation that merely mentions a read afterwards still fires.
+  assert.equal(fires("delete_and_list_orphans"), 1);
+  // And an unguarded mutation is untouched by this WP.
+  assert.equal(fires("create_issue"), 1);
+  assert.equal(fires("qlik_create_data_object"), 1);
+});
+
+test("rule 6 · a read verb DEEPER than the leading position still suppresses (guard 1)", () => {
+  const fires = (toolName: string) =>
+    ruleReadonlyContradiction(tool({ toolName, annotations: { readOnlyHint: true } })).length;
+
+  // Every name here puts its read verb at token index >= 2, past what the early return inspects, so
+  // these assertions are carried by guard 1 ALONE. Break that guard and only this test goes red.
+  assert.equal(fires("qlik_app_get_delete_policy"), 0);
+  assert.equal(fires("mcp_server_list_remove_rules"), 0);
+  assert.equal(fires("acme_widgets_search_create_templates"), 0);
+
+  // The guard reads BEFORE the token only — a read verb after the mutation is no excuse.
+  assert.equal(fires("acme_widgets_create_from_get_template"), 1);
+});
+
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 // Rule 7 — annotation.open-world-unmarked
 // ══════════════════════════════════════════════════════════════════════════════════════════════

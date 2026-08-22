@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Security posture \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the security-posture plan, read and updated by /next-wp security-posture."
 tags: ["roadmap", "RM-20"]
-timestamp: "2026-08-20T21:10:00Z"
+timestamp: "2026-08-22T19:25:00Z"
 status: "active"
 ---
 # Security posture — work-package status ledger · **PRIORITY: HIGH**
@@ -713,6 +713,36 @@ _Entries: date · decision · rationale._
       of these findings would I roll my eyes at?" Anything that fires on an honest server is a
       matcher to tighten (WP 1.2's near-miss fixtures are where the tightening goes), not a severity
       to lower — accepted: ____
+
+      **The `error`-severity triage was done for you on 2026-08-22 by RM-37 WP 0.5.** It ran the
+      real analyzer over the latest `success` scan of all 8 registered servers, on an **isolated
+      copy** of `data/app.sqlite` (live file untouched — md5 `1762bcdadae99f6aedc37bd955b44d8d`
+      before and after). `mcp-powerbi-fabric` has no successful scan and is therefore absent; 7
+      servers were scored. Two false positives were found and **fixed as rule changes with
+      fixtures**, exactly as this box asks, taking the fleet from **10 `error` findings to 6**.
+      `SECURITY_ANALYZER_VERSION` went 3 → 4.
+
+      | Rule · tool | Server(s) | Classification |
+      | --- | --- | --- |
+      | `annotation.readonly-contradiction` · `qlik_get_set_expression` | barc-benchmark, qlik-stage | **FALSE POSITIVE → rule change.** A getter. The name carries the token `set` from the NOUN "set expression". Fixed: a read verb earlier in the name suppresses a later mutating token, and `set`/`put` fire only from the leading verb position. Fixtures: `get_set_expression`, `qlik_generate_set_expression`, `config_set`, `settings_get`, `reset_cache`. |
+      | `annotation.readonly-contradiction` · `qlik_get_script` | barc-benchmark, qlik-stage | **FALSE POSITIVE → rule change.** A getter whose description explains that *another* tool "can reject **writes** against a stale view" — a plural noun read as a verb. Fixed: a name that leads with a read verb ends the rule outright. Fixture added. |
+      | `annotation.readonly-contradiction` · `qlik_predict_quick_delete_model` | qlik-stage | **TRUE POSITIVE.** *"Remove a trained model from the server registry"* declared `readOnlyHint: true`. A real defect in that MCP server — a host that auto-runs read-only tools would delete a model unattended. |
+      | `annotation.readonly-contradiction` · `qlik_clear_selections` | barc-benchmark, qlik-mreimitz | **TRUE POSITIVE.** Mutates session selection state while declaring `readOnlyHint: true`. |
+      | `annotation.readonly-contradiction` · `qlik_create_data_object` | barc-benchmark, qlik-mreimitz, qlik-stage | **TRUE POSITIVE (arguable) — your call.** It creates a *session-scoped* object that never persists, so the server's `readOnlyHint: true` is defensible. Left firing deliberately: it does create server-side state. If you judge this noise, it is a fourth rule change, not a severity drop. |
+
+      Per-server scores after the fix: QSoW-MCP 80, barc-benchmark 55, mcp-assets 85,
+      mcp-sql-local 98, mcp-textops 90, qlik-mreimitz 60, qlik-stage 45.
+
+      **Two caveats on the measurement, so it is not read as more than it is.** (1) It covers
+      `error` severity only — the 270-odd `warning`/`info` findings on these same servers were
+      **not** triaged. (2) `oauth.broad-scope` could not run: the triage stubbed the OAuth port to
+      keep the owner's encryption key out of the script, and that rule's port returned `null`, which
+      the analyzer treats as "we could not tell". No `oauth.broad-scope` finding is therefore
+      claimed either way.
+
+      Until this box is ticked, `/servers` states a finding COUNT rather than a risk band
+      (`FLEET_POSTURE_BAND_ACCEPTED` in `packages/shared/src/security-posture.ts`). Ticking it and
+      flipping that constant belong in the same commit.
 - [ ] **D-SP9 — the one decryption-path touch, for your explicit sign-off.**
       `OAuthRepository.listGrantedScopes` reads the encrypted OAuth blob and returns granted scope
       **names** so `oauth.broad-scope` can judge them. 28 insertion-only lines, `string[] | null`, no

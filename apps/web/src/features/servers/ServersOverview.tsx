@@ -6,6 +6,7 @@ import type {
   ServerConfig,
   ServerType,
 } from "@mcp-token-footprint/shared";
+import { FLEET_POSTURE_BAND_ACCEPTED } from "@mcp-token-footprint/shared";
 import {
   Badge,
   Button,
@@ -186,11 +187,13 @@ export function ServersOverview(props: {
       }),
       col<ServerConfig>({
         id: "posture",
-        header: "Posture",
+        header: "Findings",
+        // Sorting still keys on the SCORE, which ranks a server by how bad its findings are rather
+        // than by how many it has — a hundred hygiene notes must not outrank one real error.
         value: (server) => postureByServer.get(server.id)?.score.value ?? -1,
         cell: (server) => {
           const posture = postureByServer.get(server.id);
-          return posture ? <PostureScore score={posture.score} variant="chip" /> : "—";
+          return posture ? <PostureFindingCount counts={posture.counts} /> : "—";
         },
       }),
       col<ServerConfig>({
@@ -396,10 +399,9 @@ function ServerOverviewCard(props: {
       /* P2-2 — the chips moved OFF the title row onto their own line below it. They used to sit in
          `status` (top-right, `shrink-0`), which squeezed the title: `mcp-assets` clipped to
          `mcp-ass…` at 81px against the 90px it needed — the name clipped exactly on the card whose
-         name most needs reading, because `Scan failed` + `Medium risk` took the row. With only the
-         per-card actions left up there, the title gets that width back. The RISK chip stays (it
-         varies within a group); the type + type-status chips drop when the group heading already
-         names them. */
+         name most needs reading, because two chips took the row. With only the per-card actions
+         left up there, the title gets that width back. The FINDINGS chip stays (it varies within a
+         group); the type + type-status chips drop when the group heading already names them. */
       badges={
         <>
           {/* Health DOT: aria-labelled only when it's the sole cue (healthy/scanning have no chip);
@@ -498,9 +500,44 @@ function Metric(props: { label: string; value: string }) {
 }
 
 /**
- * One card's security-posture badge (D-SP22) — the BAND, with the score as its accessible detail.
- * Three states, and the third is the one worth being careful about:
- *   • a posture → the band chip, rendered by the same `PostureScore` the Security tab uses;
+ * One server's findings, as a COUNT rather than a risk band (RM-37 WP 0.5, action 4).
+ * =============================================================================================
+ * `n findings · x error`. A count is a measurement an operator can check against the Security tab;
+ * a band ("High risk") is a judgement, and this analyzer had just been caught calling a getter a
+ * mutation. Announcing an unreviewed judgement across a whole fleet list is how somebody learns to
+ * stop reading the loudest thing on the page.
+ *
+ * The tone is `danger` **only** where an `error` finding actually remains — after the WP 0.5 triage
+ * that is three of the owner's seven scanned servers, and each of those three is a real
+ * contradiction, not a heuristic. Everything else is the neutral outline.
+ *
+ * The band words are not hidden, they are relocated: `/scans/:id` → Security still leads with the
+ * score and its band, one scroll above the findings that produced them.
+ */
+function PostureFindingCount({ counts }: { counts: SecurityFleetSummary["counts"] }) {
+  const hasError = counts.error > 0;
+  const findings = `${formatNumber(counts.total)} ${counts.total === 1 ? "finding" : "findings"}`;
+  const label = hasError ? `${findings} · ${formatNumber(counts.error)} error` : findings;
+  return (
+    <StatusBadge
+      className="shrink-0"
+      view={{
+        kind: "chip",
+        label,
+        tone: hasError ? "danger" : "neutral",
+        spinner: false,
+        dashed: false,
+      }}
+    />
+  );
+}
+
+/**
+ * One card's security-posture badge (D-SP22). Three states, and the third is the one worth being
+ * careful about:
+ *   • a posture → a finding COUNT while {@link FLEET_POSTURE_BAND_ACCEPTED} is false, the band chip
+ *     once the owner has accepted this analyzer's banding on their own servers (RM-20's
+ *     "false-positive rate on YOUR real servers" box);
  *   • no posture, on a card that already carries a health chip ("Not scanned", "Scan failed") →
  *     nothing, because that chip has already said why there is no posture;
  *   • no posture otherwise → the muted em dash this surface already uses for a missing measurement.
@@ -510,7 +547,13 @@ function PostureCell(props: {
   settled: boolean;
   healthChipShown: boolean;
 }) {
-  if (props.posture) return <PostureScore score={props.posture.score} variant="chip" />;
+  if (props.posture) {
+    return FLEET_POSTURE_BAND_ACCEPTED ? (
+      <PostureScore score={props.posture.score} variant="chip" />
+    ) : (
+      <PostureFindingCount counts={props.posture.counts} />
+    );
+  }
   if (!props.settled || props.healthChipShown) return null;
   return (
     <Text variant="caption" tone="muted" className="shrink-0">

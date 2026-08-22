@@ -3,12 +3,13 @@
 // exposes the lookups the compatibility engine + run engine need: by model id, the research
 // `provider.id` per model, and a hand-maintained run-engine-id → dataset-id crosswalk.
 //
-// Assets are produced by `pnpm build:model-data` and committed under ./data; read via fs from a path
+// Assets are produced by `pnpm build:data-pack` from `data-pack/` and committed under ./data; read
+// via fs from a path
 // relative to this module so it works under both tsx (from src) and `node dist` (the build copies
 // ./data into dist — see apps/api/scripts/copy-data.mjs).
 
 import { readFileSync } from "node:fs";
-import type { AllModels, FlatModel } from "./build.js";
+import type { AllModels, FlatModel } from "@mcp-token-footprint/shared";
 
 function readJson<T>(relative: string): T {
   return JSON.parse(readFileSync(new URL(relative, import.meta.url), "utf8")) as T;

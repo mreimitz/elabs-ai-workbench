@@ -1,0 +1,98 @@
+{
+  "packVersion": "1.0.0",
+  "schemaVersion": 1,
+  "asOf": "2026-08-19",
+  "generator": "data-pack/build/build-cli.ts",
+  "files": [
+    {
+      "path": "compatibility/test-catalog.json",
+      "sha256": "da516d41d53624b200338cb66a9445bc076d9bf2a8d51e113f037b90ea517858",
+      "bytes": 122956
+    },
+    {
+      "path": "generated/all-models.json",
+      "sha256": "a8b732e9b49c5015f4580f6e824caf5a6b4400f421f1554ff11b80569542bbc1",
+      "bytes": 1910812
+    },
+    {
+      "path": "limits/cross-cutting.json",
+      "sha256": "5c14f69f5f2b93adc2f38a2f94d6d8c13dcebb30c644bf6cbe01b759a1e5eb67",
+      "bytes": 13787
+    },
+    {
+      "path": "models/open-weight/alibaba-qwen.json",
+      "sha256": "fc573330c546a8d8263712a76baf6e27dd621923fc982dcabc56a643c30463e3",
+      "bytes": 189022
+    },
+    {
+      "path": "models/open-weight/deepseek.json",
+      "sha256": "040875388dcb0f53c826601ffbceae6206b6e801a193e92242848f5d5637ba89",
+      "bytes": 164447
+    },
+    {
+      "path": "models/open-weight/google-gemma.json",
+      "sha256": "a92919ec114502111ea09a46d73fdc32b66b87b3897459992264d893144768b8",
+      "bytes": 111324
+    },
+    {
+      "path": "models/open-weight/meta-llama.json",
+      "sha256": "a8718027e04a22455baa14d8f35ac21634d5ae69852034dcae916ca995e2181a",
+      "bytes": 157499
+    },
+    {
+      "path": "models/open-weight/microsoft-phi.json",
+      "sha256": "6d40c808eb748e8ac1dd9b1ffc8081e73611532ed38c17fca74fd4ea1c558065",
+      "bytes": 124438
+    },
+    {
+      "path": "models/saas/anthropic.json",
+      "sha256": "13e69b6eb3054409bc709ed7fb39789001724e195a35586a59044bf70302db7e",
+      "bytes": 239019
+    },
+    {
+      "path": "models/saas/google-gemini.json",
+      "sha256": "1e2cae94f7a366a81d8ef7ba7ddec81a001d6a7a08e80bf31d19aecb484dfdc9",
+      "bytes": 196372
+    },
+    {
+      "path": "models/saas/microsoft-copilot.json",
+      "sha256": "2d4e200ebad15b8d3c118630c1c0076de9a4b9075c99a3da0f0ae92bac472332",
+      "bytes": 184765
+    },
+    {
+      "path": "models/saas/mistral.json",
+      "sha256": "2440ba6846d4ee137caa4326cfcd3cab2a778ed1b28bc27e9edba7db0f32307e",
+      "bytes": 105147
+    },
+    {
+      "path": "models/saas/openai.json",
+      "sha256": "afcf83227c5ff4b78d5697cd8bd31a849c67184e1882d107fa245a944bab3ef4",
+      "bytes": 210398
+    },
+    {
+      "path": "models/saas/xai-grok.json",
+      "sha256": "2af7708245fa931886aaf6eb9b9c7f0cec9d6088eb57c96843f22b0b619597b7",
+      "bytes": 150683
+    },
+    {
+      "path": "schema/cross-cutting.schema.json",
+      "sha256": "fe37590ea48b76315ca249bd2fc1424252cdc469527db6496c94102f2d757c5b",
+      "bytes": 3348
+    },
+    {
+      "path": "schema/manifest.schema.json",
+      "sha256": "c058b5ec65f6a5629d48835a234c03c2103905916ffd8e7e588fdf6c904a347e",
+      "bytes": 2245
+    },
+    {
+      "path": "schema/model-entry.schema.json",
+      "sha256": "dd08faf81ead8d6c9015494e451b16b07ddfb203a094901b4025791125e286ed",
+      "bytes": 7845
+    },
+    {
+      "path": "schema/test-catalog.schema.json",
+      "sha256": "f9934d11a62346b283671c3f6d1e25a44b2db282b1c6c58f7a2fcd94e3e9c34b",
+      "bytes": 11480
+    }
+  ]
+}

@@ -3,7 +3,7 @@ type: "Research Topic"
 title: "Token & Context Comparison — LLM Baseline Dataset"
 description: "Establish a per-model baseline of context limits, tokenization, tool/MCP behavior, skills handling and token-cost accounting for the leading LLMs, and turn it into an executable MCP x model compatibility test suite."
 tags: ["research", "RS-01"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-22T21:05:00Z"
 status: "active"
 ---
 
@@ -44,12 +44,12 @@ recommendation engine, token-counting adapters, and session/cost analysis build 
 1. [`00-methodology.md`](./notes/00-methodology.md) — how we compare, source hierarchy, definitions, the seven axes.
 2. [`01-information-structure.md`](./notes/01-information-structure.md) — the schema concept + full field dictionary.
 3. [`02-mcp-limits-taxonomy.md`](./notes/02-mcp-limits-taxonomy.md) — every MCP/tool **limit type**, which of the 4 layers enforces it, and the less-obvious "rumored" ones (resources/prompts, timeouts, cache breakpoints, schema micro-limits, rate-limit interaction, agent-loop caps).
-4. [`03-compatibility-test-suite.md`](./outputs/03-compatibility-test-suite.md) — the **MCP × Model compatibility test suite**: 31 server/tool/session/environment tests (8 server · 11 tool · 8 session · 4 environment), verdict+scoring, the heatmap design, and implementation notes for a coding agent. Machine-readable in [`tests/test-catalog.json`](./outputs/tests/test-catalog.json).
+4. [`03-compatibility-test-suite.md`](./outputs/03-compatibility-test-suite.md) — the **MCP × Model compatibility test suite**: 31 server/tool/session/environment tests (8 server · 11 tool · 8 session · 4 environment), verdict+scoring, the heatmap design, and implementation notes for a coding agent. Machine-readable in `data-pack/compatibility/test-catalog.json` (moved there by RM-38 — see [`07-dataset-moved-to-data-pack.md`](./outputs/07-dataset-moved-to-data-pack.md)).
 5. [`04-mcp-builder-skill-gap-analysis.md`](./outputs/04-mcp-builder-skill-gap-analysis.md) — review of the external `mcp-builder` skill: what it covers that our suite would miss (design-quality + agentic-effectiveness) and what to borrow.
 6. [`05-test-execution-modes.md`](./outputs/05-test-execution-modes.md) — the **access taxonomy**: which tests run `static_connection` (no execution) vs `single_tool_exec` vs `live_session` (backlog), plus what's out of scope without source code.
 7. [`06-impact-and-model-severity.md`](./outputs/06-impact-and-model-severity.md) — the **impact + per-model severity** layer: what breaks on non-compliance, and how severe that is for each LLM/model, resolved from the dataset with rationale + evidence (a test can be a hard no-go on one model, advisory on another).
 8. [`schema/`](./outputs/schema/) — `model-entry.schema.json` (validation) + `template.provider.json` (blank).
-9. [`data/`](./outputs/data/) — structured source of truth: one JSON per provider, plus [`data/cross-cutting-limits.json`](./outputs/data/cross-cutting-limits.json) for protocol/client/SDK-level limits that aren't per-model.
+9. `data-pack/models/**` — structured source of truth: one JSON per provider, plus `data-pack/limits/cross-cutting.json` for protocol/client/SDK-level limits that aren't per-model. These files were maintained in this topic until RM-38 WP 1.1 relocated them to the repository root; see [`07-dataset-moved-to-data-pack.md`](./outputs/07-dataset-moved-to-data-pack.md).
 10. [`docs/`](./notes/per-provider/) — human-readable write-up per provider.
 11. [`comparison/`](./outputs/comparison/) — `all-models.json` (merged) + `comparison-matrix.md` (cross-model tables, incl. §3 tools + §3b extended limits).
 12. [`tests/`](./outputs/tests/) — `test-catalog.json` (31 tests + impact/severity) + `test-catalog.schema.json` + `resolve_model_severity.py` (reference resolver; ported to TS in `apps/api/src/compatibility/resolve.ts`).

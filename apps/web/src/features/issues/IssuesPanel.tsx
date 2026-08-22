@@ -27,6 +27,7 @@ import { getErrorMessage } from "../../lib/errors";
 import { formatDateTime, formatNumber } from "../../lib/format";
 import type { Loadable } from "../../lib/loadable";
 import { notifyError } from "../../lib/notify";
+import { SEVERITY_META } from "../issues-fleet/issue-lib";
 
 /**
  * IssuesPanel — the ONE Issues-tab surface, shared by the MCP-server detail view and the skill
@@ -342,11 +343,13 @@ const STATUS_META: Record<RatingIssue["status"], { label: string; variant: Badge
   resolved: { label: "Resolved", variant: "success" },
 };
 
-const SEVERITY_META: Record<RatingIssueSeverity, { label: string; variant: BadgeVariant }> = {
-  high: { label: "High", variant: "destructive" },
-  medium: { label: "Medium", variant: "warning" },
-  low: { label: "Low", variant: "secondary" },
-};
+// RM-37 WP 0.5 (action 8) — severity used to be a THIRD hand-written copy of this exact map (the
+// fleet Issues tab in `../issues-fleet/issue-lib.ts` carried an identical one), and neither file
+// forced the two to agree — Advisor's own copy disagreed with both on top. `SEVERITY_META` is now
+// imported from `issue-lib.ts`, which itself reads label + variant off the one shared
+// `SEVERITY_RAMP` (`@mcp-token-footprint/shared`), so this panel and the fleet Issues tab render
+// the SAME severity as the SAME chip by construction — there is no cycle: `issue-lib.ts` imports
+// only from `@mcp-token-footprint/shared`, never from this feature.
 
 // Mirrors the run console ReportTab's bucket/fixTarget chip vocabulary EXACTLY (those maps are
 // module-private there) — one finding must read identically per-run and rolled up here.

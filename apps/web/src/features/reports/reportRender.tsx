@@ -94,7 +94,7 @@ export function AffectedToolsList({
   );
 }
 
-/** Severity-count chips (e.g. "2 Blocker · 1 High"), worst-first. */
+/** Severity-count chips (e.g. "2 Exceeds limit · 1 Near limit"), worst-first. */
 export function SeverityTally({
   counts,
 }: { counts: Partial<Record<CompatibilitySeverity, number>> }) {
@@ -209,7 +209,7 @@ export function PerModelReasoning({
   );
 }
 
-/** The full outcome legend chip row (Pass / Blocker / High / Medium / Low / N/A). */
+/** The full outcome legend chip row (Pass / Exceeds limit / Near limit / Within limit / Advice / N/A). */
 export function OutcomeLegend() {
   return (
     <span className="flex flex-wrap items-center gap-1.5">

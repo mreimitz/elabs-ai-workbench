@@ -12,6 +12,7 @@ import type {
   CompatibilityTestEntry,
 } from "./types.js";
 import { formatBytes } from "./format.js";
+import type { SeverityRampStep } from "./severity-ramp.js";
 
 export type StatusKey = "pass" | "na" | CompatibilitySeverity;
 
@@ -27,10 +28,39 @@ export type DetailLevel = "all" | "medium" | "high" | "blocker";
 
 export const DETAIL_OPTIONS: { value: DetailLevel; label: string }[] = [
   { value: "all", label: "All findings" },
-  { value: "medium", label: "Medium & above" },
-  { value: "high", label: "High & above" },
-  { value: "blocker", label: "Blocker only" },
+  { value: "medium", label: "Within limit & above" },
+  { value: "high", label: "Near limit & above" },
+  { value: "blocker", label: "Exceeds limit only" },
 ];
+
+// ── RM-37 WP 0.5 (action 7) · compatibility severities, in LIMIT language ────────────────────────
+//
+// The wire values are frozen — `blocker`/`high`/`medium`/`low` still travel on `CompatibilityResult`,
+// still weight the score in `apps/api/src/compatibility/runner.ts`, still gate the heatmap band.
+// Only the WORDS change, and they change because the old ones described a mood rather than a
+// measurement: the old `blocker` label told an operator to panic, where what the check established is
+// that a number crossed a published model limit. "Exceeds limit" says the same thing and can be
+// checked against the number printed beside it.
+//
+// The tones are NOT declared here. They come from `severity-ramp.ts`, so an "Exceeds limit" chip is
+// the same red as a Critical chip elsewhere and a "Near limit" chip is the same amber as a High —
+// which is the whole point of having one ramp.
+
+/** The word for a compatibility severity. Wire value in, operator-facing phrase out. */
+export const COMPATIBILITY_SEVERITY_LABEL: Record<CompatibilitySeverity, string> = {
+  blocker: "Exceeds limit",
+  high: "Near limit",
+  medium: "Within limit",
+  low: "Advice",
+};
+
+/** Compatibility severity → its step on the app's one {@link SEVERITY_RAMP}. */
+export const COMPATIBILITY_SEVERITY_RAMP_STEP: Record<CompatibilitySeverity, SeverityRampStep> = {
+  blocker: "critical",
+  high: "high",
+  medium: "medium",
+  low: "low",
+};
 
 export const SEVERITY_RANK: Record<CompatibilitySeverity, number> = {
   blocker: 4,

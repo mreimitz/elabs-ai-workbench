@@ -290,16 +290,34 @@ definitions exceed their budget (currently **24 tools · 3,183 tokens** against 
 
 Every scan and every skill version carries a **Security** tab: findings ranked worst-first, each
 naming the rule that fired, what it fired on, and the matched evidence — with invisible characters
-made visible and anything credential-shaped masked before it reaches the screen. A 0–100 score and a
-risk band sit above them, and the servers list carries a posture badge per server so a fleet-level
-problem is visible before you drill in.
+made visible and anything credential-shaped masked before it reaches the screen. A score out of 100
+sits above them, with the band thresholds a hover away, and the servers list states **how many
+findings each server has** — "12 findings · 1 error" — so a fleet-level problem is visible before you
+drill in.
 
-Eighteen deterministic rules run over data the app has **already stored** — no MCP call, no skill
-execution, no network. Eleven look at a server's tool surface: injection phrasing and hidden
-instruction blocks in descriptions, invisible unicode, annotations that contradict the tool they
-describe, credential-shaped parameters, unconstrained schemas, and OAuth grants broader than the job
-needs. Seven look at a skill: the same steering heuristics over `SKILL.md`, a credential committed
-into the body, a wildcard `allowed-tools` grant, and the scripts and network references it ships.
+That list deliberately shows a **count, not a band.** A count is a measurement you can check against
+the tab; a band is a judgement, and these are heuristics. The band words stay on the Security tab
+itself, one scroll above the findings that produced them. When the analyzer's banding has been
+reviewed against a real fleet, one constant
+(`FLEET_POSTURE_BAND_ACCEPTED`) puts them back on the list.
+
+Eighteen deterministic checks run over **definitions the app has already stored** — no MCP call, no
+skill execution, no network, nothing re-fetched. Eleven read a server's tool surface: injection
+phrasing and hidden instruction blocks in descriptions, invisible unicode, annotations that
+contradict the tool they describe, credential-shaped parameters, unconstrained schemas, and OAuth
+grants broader than the job needs. Seven read a skill: the same steering heuristics over `SKILL.md`,
+a credential committed into the body, a wildcard `allowed-tools` grant, and the scripts and network
+references it ships.
+
+**They are heuristics over text, so they can be wrong, and the fix is a rule change with a
+fixture — never a quieter severity.** Every report names the analyzer version that produced it, and
+that version moves whenever a rule's meaning changes, so two reports either compare honestly or
+refuse to compare at all. The most recent example is on the record: `annotation.readonly-contradiction`
+flagged `qlik_get_set_expression` — a getter — as a mutation, because its name contains the noun
+"set expression". Matching became positional, a fixture pins the case, and the version went to 4.
+Triaging every error-severity finding across eight registered servers found two such false positives
+out of ten and left six real ones; the full list is in
+[`planning/Roadmap/RM-20-security-posture/STATUS.md`](./planning/Roadmap/RM-20-security-posture/STATUS.md).
 
 Pick an older scan or version as a baseline and the tab becomes a **diff** — what was added, what was
 resolved, what carries over. It refuses rather than guesses: two different servers, a server against
@@ -588,6 +606,9 @@ apps/
   web/       React 19 + Vite SPA — react-router-dom v7, the @elabs-ai/components-* design system
 packages/
   shared/    the API contract — types.ts, schemas.ts (zod), constants.ts
+data-pack/   the reference data the app checks servers and models against — per-provider model
+             entries, protocol/client limits, the compatibility test catalog, their JSON Schemas,
+             and a generated manifest.json carrying a SHA-256 per file (`pnpm build:data-pack`)
 ```
 
 - **Runtime boundary:** the API is the *only* process that spawns MCP stdio commands, makes MCP HTTP

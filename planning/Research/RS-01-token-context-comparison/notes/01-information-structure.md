@@ -3,14 +3,15 @@ type: "Research Note"
 title: "01 \u2014 Information Structure Concept"
 description: "The comparison schema. Defines exactly what every provider subagent collects and where it goes,"
 tags: ["research", "RS-01"]
-timestamp: "2026-08-20T13:47:37Z"
+timestamp: "2026-08-22T21:05:00Z"
 status: "final"
 ---
 # 01 — Information Structure Concept
 
 > The comparison schema. Defines exactly what every provider subagent collects and where it goes,
 > so 11 independent research tasks produce one consistent, machine-readable dataset.
-> Pairs with the JSON Schema in [`schema/model-entry.schema.json`](../outputs/schema/model-entry.schema.json)
+> Pairs with the JSON Schema now at `data-pack/schema/model-entry.schema.json` (RM-38 WP 1.1;
+> see [`07-dataset-moved-to-data-pack.md`](../outputs/07-dataset-moved-to-data-pack.md))
 > and the blank [`schema/template.provider.json`](../outputs/schema/template.provider.json).
 
 ## 1. Design goals

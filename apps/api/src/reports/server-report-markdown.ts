@@ -9,8 +9,10 @@
 //  1. COMPLETENESS — every tool list is emitted in FULL. The HTML truncates the per-test "tools with a
 //     severity" list at 18 and affected-tool lists at 16 ("+N more"); Markdown lists them all.
 //  2. NO COLOUR — the HTML conveys severity with coloured badges. Markdown can't colour cells, so every
-//     severity/outcome is a bracket TEXT TAG ([BLOCKER]/[HIGH]/[MEDIUM]/[LOW]/[PASS]/[N/A]) with a
-//     one-time legend. The tag is the source of truth, so nothing is lost (and it survives pandoc→Word).
+//     severity/outcome is a bracket TEXT TAG ([EXCEEDS LIMIT]/[NEAR LIMIT]/[WITHIN LIMIT]/[ADVICE]/
+//     [PASS]/[N/A]) with a one-time legend. The severity tags are the same LIMIT language as
+//     COMPATIBILITY_SEVERITY_LABEL (RM-37 WP 0.5) — a measurement, not a mood word. The tag is the
+//     source of truth, so nothing is lost (and it survives pandoc→Word).
 
 import type {
   CompatibilityAffectedTool,
@@ -25,6 +27,7 @@ import type {
   ToolSeveritySummary,
 } from "@mcp-token-footprint/shared";
 import {
+  COMPATIBILITY_SEVERITY_LABEL,
   DETAIL_OPTIONS,
   FINDING_SEVERITIES,
   MANUAL_REVIEW_CONCERNS,
@@ -50,11 +53,14 @@ import { renderSecuritySection } from "./security-section.js";
 
 // ── Markdown vocabulary (the only NEW presentation knowledge — bracket tags, no colour, no emoji) ───
 
+// LIMIT language (RM-37 WP 0.5) — the same `COMPATIBILITY_SEVERITY_LABEL` words the web SEVERITY_META
+// takes its labels from, upper-cased for the bracket-tag convention. The wire severities (`blocker` /
+// `high` / `medium` / `low`) are unchanged; only the printed tag changes.
 const STATUS_TAG: Record<StatusKey, string> = {
-  blocker: "[BLOCKER]",
-  high: "[HIGH]",
-  medium: "[MEDIUM]",
-  low: "[LOW]",
+  blocker: `[${COMPATIBILITY_SEVERITY_LABEL.blocker.toUpperCase()}]`,
+  high: `[${COMPATIBILITY_SEVERITY_LABEL.high.toUpperCase()}]`,
+  medium: `[${COMPATIBILITY_SEVERITY_LABEL.medium.toUpperCase()}]`,
+  low: `[${COMPATIBILITY_SEVERITY_LABEL.low.toUpperCase()}]`,
   pass: "[PASS]",
   na: "[N/A]",
 };
@@ -66,7 +72,7 @@ const CONFIDENCE_LABEL: Record<string, string> = {
   "n/a": "Unverified",
 };
 
-/** Worst-first severity chips, e.g. "[BLOCKER] ×2 · [HIGH] ×1" (empty string when there are none). */
+/** Worst-first severity chips, e.g. "[EXCEEDS LIMIT] ×2 · [NEAR LIMIT] ×1" (empty when none). */
 function severityTally(counts: Partial<Record<CompatibilitySeverity, number>>): string {
   return FINDING_SEVERITIES.filter((s) => (counts[s] ?? 0) > 0)
     .map((s) => `${STATUS_TAG[s]} ×${counts[s]}`)
@@ -132,9 +138,10 @@ export function createServerMarkdownReport(report: ServerReport, detail: DetailL
   lines.push(`# MCP Server Compatibility & Footprint Report — ${escapeText(server.name)}`, "");
   lines.push(`Generated ${formatDateTime(report.generatedAt)}.`, "");
   lines.push(
-    "**Legend** — severity (worst → least): `[BLOCKER]` > `[HIGH]` > `[MEDIUM]` > `[LOW]`. " +
-      "Outcomes: `[PASS]` (no issue on that model) · `[N/A]` (no documented limit for that model). " +
-      "A count like `[BLOCKER] ×2` means two models hit that severity.",
+    `**Legend** — severity (worst → least): \`${STATUS_TAG.blocker}\` > \`${STATUS_TAG.high}\` > ` +
+      `\`${STATUS_TAG.medium}\` > \`${STATUS_TAG.low}\`. ` +
+      `Outcomes: \`${STATUS_TAG.pass}\` (no issue on that model) · \`${STATUS_TAG.na}\` (no documented ` +
+      `limit for that model). A count like \`${STATUS_TAG.blocker} ×2\` means two models hit that severity.`,
     "",
   );
 
@@ -466,7 +473,7 @@ function renderAppendix(lines: string[], report: ServerReport): void {
     "",
     "Each test evaluates the scanned tool surface against a per-model limit resolved from a provenanced " +
       "dataset. A test yields a verdict per model — **pass**, **warn**, **fail**, or **n/a** (no documented " +
-      "limit) — and a per-model severity (Blocker → Low) that reflects the real-world consequence on that " +
+      "limit) — and a per-model severity (Exceeds limit → Advice) that reflects the real-world consequence on that " +
       "model. Evidence carries the cited value, its source link, and a confidence label " +
       "(Verified / Likely / Estimated / Unverified) derived from the dataset's source tier.",
     "",

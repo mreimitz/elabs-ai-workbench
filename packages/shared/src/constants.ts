@@ -1289,7 +1289,7 @@ const LEGACY_MODEL_CONTEXT_LIMITS: Record<string, number> = {
 // This is a hand-maintained GAP-FILLER, not a second source of truth: it is merged BEFORE
 // `GENERATED_MODEL_CONTEXT_LIMITS`, so the moment the dataset is refreshed the dataset value wins
 // and the entry here becomes dead weight to be deleted. **Never hand-edit `model-data.generated.ts`**
-// — regenerate it from `planning/Research/RS-01-token-context-comparison/outputs/data/**` with `pnpm build:model-data`.
+// — regenerate it from `data-pack/models/**` with `pnpm build:data-pack`.
 //
 // Dated snapshot ids are listed explicitly next to their alias because every lookup in the app is an
 // EXACT-key map read (`MODEL_CONTEXT_LIMITS[modelId] ?? 0`) — there is no alias normalization, and
@@ -1309,7 +1309,7 @@ export const ROSTER_GAP_MODEL_CONTEXT_LIMITS: Record<string, number> = {
 // The authoritative, dataset-derived context windows (current-generation models) take precedence;
 // the legacy seed fills gaps for older ids the user might still run, and the roster-gap seed fills
 // current-generation ids the dataset snapshot predates. Single source of truth:
-// planning/Research/RS-01-token-context-comparison/outputs/data/** → regenerate with `pnpm build:model-data` (Decision 1).
+// data-pack/models/** → regenerate with `pnpm build:data-pack` (Decision 1).
 export const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   ...LEGACY_MODEL_CONTEXT_LIMITS,
   ...ROSTER_GAP_MODEL_CONTEXT_LIMITS,

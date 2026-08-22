@@ -21,6 +21,9 @@ import {
   PopoverTrigger,
   Skeleton,
   Text,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
   cn,
 } from "@elabs-ai/components-ui";
 import { ShieldCheck } from "lucide-react";
@@ -29,7 +32,7 @@ import { TabEmptyState } from "../../components/TabEmptyState";
 import { formatDateTime, formatNumber } from "../../lib/format";
 import { type Loadable, useLoadable } from "../../lib/loadable";
 import { FindingSeverityBadge } from "./FindingSeverityBadge";
-import { PostureScore } from "./PostureScore";
+import { PostureScore, ScoreScaleHint } from "./PostureScore";
 import { SecurityDiffPanel } from "./SecurityDiffPanel";
 import {
   getScanSecurityDiff,
@@ -204,6 +207,7 @@ export function SecurityPanel({
       baselines={baselines}
       baselineId={baselineId}
       onBaselineChange={setBaselineId}
+      onReanalyze={onRetry}
       className={className}
     />
   );
@@ -225,6 +229,7 @@ function SecurityPanelBody({
   baselines,
   baselineId,
   onBaselineChange,
+  onReanalyze,
   className,
 }: {
   target: SecuritySubjectTarget;
@@ -232,6 +237,7 @@ function SecurityPanelBody({
   baselines: SecurityBaselineOption[];
   baselineId: string | null;
   onBaselineChange: (next: string | null) => void;
+  onReanalyze: () => void;
   className?: string;
 }) {
   const diffState = useSecurityDiff(target, baselineId);
@@ -239,7 +245,7 @@ function SecurityPanelBody({
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <PostureHeader report={report} />
+      <PostureHeader report={report} onReanalyze={onReanalyze} />
 
       <SecurityDiffPanel
         target={target}
@@ -256,13 +262,32 @@ function SecurityPanelBody({
 }
 
 /** The KPI grid + the provenance line. Every figure is read off the report, never recomputed. */
-function PostureHeader({ report }: { report: SecurityReport }) {
+function PostureHeader({ report, onReanalyze }: { report: SecurityReport; onReanalyze: () => void }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Posture score"
-          value={<PostureScore score={report.score} />}
+          value={
+            // A real Button, not a `tabIndex`'d span: the scale is information a keyboard user
+            // needs as much as a mouse user, and the same `Button asChild` trigger is what the
+            // rule-rationale popover below already uses.
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="h-auto min-w-0 p-0 no-underline hover:no-underline"
+                  aria-label={`Posture score ${report.score.value} of 100 — show the band thresholds`}
+                >
+                  <PostureScore score={report.score} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <ScoreScaleHint />
+              </TooltipContent>
+            </Tooltip>
+          }
           description={`${formatNumber(report.counts.total)} ${
             report.counts.total === 1 ? "finding" : "findings"
           }`}
@@ -272,11 +297,20 @@ function PostureHeader({ report }: { report: SecurityReport }) {
         <MetricCard label="Info" value={formatNumber(report.counts.info)} />
       </div>
 
-      <Text variant="meta" tone="muted" className="tabular-nums text-pretty">
-        {`Security analyzer v${formatNumber(report.analyzerVersion)} · ${report.subject.name} · captured ${formatDateTime(
-          report.subject.capturedAt,
-        )} · analysed ${formatDateTime(report.generatedAt)}`}
-      </Text>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Text variant="meta" tone="muted" className="tabular-nums text-pretty">
+          {`Security analyzer v${formatNumber(report.analyzerVersion)} · ${report.subject.name} · captured ${formatDateTime(
+            report.subject.capturedAt,
+          )} · analysed ${formatDateTime(report.generatedAt)}`}
+        </Text>
+        {/* A posture report is computed on READ and stored nowhere (D-SP8), so this is a refetch,
+            not a re-score of a saved document — which is exactly why it is the honest affordance
+            after an analyzer-version bump: the answer you are looking at was produced by the
+            version named to its left, and this gets you the current one. */}
+        <Button variant="outline" size="sm" onClick={onReanalyze}>
+          Re-analyze
+        </Button>
+      </div>
 
       {report.truncated ? (
         // D-SP4/A7 — the LIST was capped; `counts` above still describes every finding. Saying so is
