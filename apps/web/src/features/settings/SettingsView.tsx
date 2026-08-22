@@ -160,6 +160,7 @@ import {
   startGithubDeviceFlow,
   updateProvider,
 } from "../../lib/api";
+import { DiagnosticsRow } from "./DiagnosticsRow";
 import { FeaturesSection } from "./FeaturesSection";
 import { TokensSection } from "./TokensSection";
 import { notifyError } from "../../lib/notify";
@@ -382,6 +383,9 @@ const SECTION_GROUPS: { label: string; sections: SectionDef[] }[] = [
           "prune",
           "retention",
           "threads",
+          "diagnostics",
+          "bug report",
+          "support bundle",
         ],
       },
       {
@@ -3408,6 +3412,9 @@ function StorageSection() {
             </>
           )}
         </li>
+        {/* RM-18 WP 1.3 — the redacted bundle for a bug report. Read-then-copy, never a blind
+            download and never an upload. */}
+        <DiagnosticsRow disabled={busy} />
       </ul>
 
       <ConfirmDialog

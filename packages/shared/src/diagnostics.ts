@@ -18,9 +18,19 @@ import { redactSecurityEvidence, SECURITY_EVIDENCE_MAX_CHARS } from "./security-
 //     fingerprinted — so no redaction has to be trusted for the single largest secret surface.
 //  2. **Names are user data too.** A server's name, a skill's title, a scenario's label and an MCP
 //     command are all free text the owner typed, and any of them can carry a hostname, a client name
-//     or a path. This payload carries **counts and shapes** — row counts, booleans, versions — and
-//     no user-typed string anywhere. The only free-form strings in the whole bundle are the error
-//     messages, and those are the one group that goes through the shared redactor (§ errors below).
+//     or a path. The versions, environment, database and feature groups therefore carry **counts and
+//     shapes only** — row counts, booleans, versions — and no user-typed string at all.
+//
+// **The one exception, stated plainly because it is real.** The `errors` group quotes error text
+// verbatim, and an error message can itself quote something the owner typed. This is not theoretical:
+// a failed stdio scan produces `spawn /path/to/your-server ENOENT`, and that path is in the bundle.
+// Credentials in it are masked and the text is length-capped, but a path or a URL an error mentions
+// survives — because an ENOENT with the path stripped out is no longer worth putting in a bug report.
+// So the trade is deliberate: the four derived groups are unconditionally safe, the errors group is
+// the section to actually read before pasting, and every surface says so in those words. It is also
+// exactly why the Settings action SHOWS the bundle instead of downloading it. Pinned by
+// `apps/api/test/diagnostics.test.ts` — one test asserts the four groups stay clean, another asserts
+// the errors group really does echo a quoted command, so neither half can drift into a lie.
 //
 // There is deliberately no second redactor. `redactSecurityEvidence` (D-SP4) already owns "turn an
 // arbitrary string into something safe to publish, capped by construction"; two redactors would mean

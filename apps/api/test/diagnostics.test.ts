@@ -140,8 +140,7 @@ test("GET /api/diagnostics and /markdown are two renderings of ONE builder", asy
   // requests build the bundle independently, so the only fields that may differ are the clock and
   // anything derived from it — pin `generatedAt` and compare the rest byte for byte.
   const expected = renderDiagnosticsMarkdown({ ...payload, generatedAt: payload.generatedAt });
-  const normalise = (value: string) =>
-    value.replace(/Generated at: .*/g, "Generated at: <pinned>");
+  const normalise = (value: string) => value.replace(/Generated at: .*/g, "Generated at: <pinned>");
   assert.equal(normalise(markdown), normalise(expected));
 });
 
@@ -337,6 +336,10 @@ test("no stored secret reaches either rendering", () => {
 });
 
 test("no user-typed free text reaches either rendering", () => {
+  // The fixture has no FAILED scan and no errored run, so the errors group is empty here and this
+  // test speaks for the four derived groups: versions, environment, database, feature state. The
+  // errors group's separate, deliberate boundary is pinned by the test below it — the two together
+  // are the honest statement, and neither alone would be.
   const db = openDb();
   seedRealSecretsAndNames(db);
   const { both } = renderBoth(build(db));
@@ -407,13 +410,57 @@ function seedScanEventError(db: AppDatabase, message: string, at: string): void 
   ).run(nanoid(), scanId, message, at);
 }
 
+test("the errors group DOES echo a path an error quotes — the documented boundary, pinned", () => {
+  // Found live, on 2026-08-22, by running a real failing stdio scan against the built API: the
+  // bundle came back carrying `spawn /nonexistent/binary-… ENOENT`, so the operator's configured
+  // command path was in the document. Nothing else leaked — not the server name, not the args, not
+  // the env secret, not the env var value — but this did, and the preamble at the time claimed
+  // "no user-typed names", which was false.
+  //
+  // The fix was to state the boundary rather than to strip the path: an ENOENT with the path
+  // removed is not worth putting in a bug report. This test exists so the boundary can never
+  // silently change in EITHER direction — if someone starts redacting paths, or if the honest
+  // wording gets tidied away, one of these three assertions goes red.
+  const db = openDb();
+  const configuredCommand = "/opt/homebrew/bin/acme-mcp-server";
+  seedScanEventError(db, `spawn ${configuredCommand} ENOENT (ENOENT)`, "2026-08-22T07:00:00.000Z");
+
+  const bundle = build(db);
+  assert.equal(
+    bundle.errors.entries[0]?.message.includes(configuredCommand),
+    true,
+    "the error text is verbatim — that is the documented trade, and the wording below depends on it",
+  );
+
+  // It must appear ONLY there. The four derived groups stay clean.
+  const { errors: _errors, ...derivedGroups } = bundle;
+  assert.equal(
+    JSON.stringify(derivedGroups).includes(configuredCommand),
+    false,
+    "a configured path may ride an error message; it may not reach any other group",
+  );
+
+  // And the document must SAY so, in the section header and up top, so a reader is never told the
+  // bundle is name-free when it is not.
+  const markdown = renderDiagnosticsMarkdown(bundle);
+  assert.match(markdown, /Read the Recent errors section before you paste/);
+  assert.equal(
+    markdown.includes("no user-typed names"),
+    false,
+    "the preamble must not make the blanket claim this test disproves",
+  );
+});
+
 test("an over-long, secret-bearing error is capped AND redacted by construction", () => {
   const db = openDb();
   // Credential-SHAPED on purpose here: being masked is the assertion. `sk-` + 40 base64url chars is
   // one of the shapes `SECURITY_CREDENTIAL_PREFIX_PATTERNS` matches.
   const credential = `sk-${"A1b2C3d4E5".repeat(4)}`;
   const longMessage = `connect failed for ${credential} ${"padding ".repeat(80)}end-of-message`;
-  assert.ok(longMessage.length > DIAGNOSTICS_ERROR_MAX_CHARS * 2, "the fixture must exceed the cap");
+  assert.ok(
+    longMessage.length > DIAGNOSTICS_ERROR_MAX_CHARS * 2,
+    "the fixture must exceed the cap",
+  );
   seedScanEventError(db, longMessage, "2026-08-22T07:00:00.000Z");
 
   const bundle = build(db);

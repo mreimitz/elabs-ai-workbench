@@ -21,7 +21,10 @@ export function registerDiagnosticsRoutes(app: FastifyInstance, ports: Diagnosti
   app.get("/api/diagnostics/markdown", async (_request, reply) => {
     const bundle = buildDiagnosticsBundle(ports);
     reply.header("content-type", "text/markdown; charset=utf-8");
-    reply.header("content-disposition", 'attachment; filename="mcp-token-footprint-diagnostics.md"');
+    reply.header(
+      "content-disposition",
+      'attachment; filename="mcp-token-footprint-diagnostics.md"',
+    );
     return renderDiagnosticsMarkdown(bundle);
   });
 }

@@ -33,8 +33,11 @@ import { buildEnvironmentGroup } from "./env-vars.js";
 //
 //   • **Counts and shapes, never content.** Row counts stand in for "how much is in here"; a
 //     boolean per provider kind stands in for "is a credential configured". No server name, skill
-//     title, scenario label, MCP command or URL is read at any point, because all of those are free
-//     text the owner typed and any of them can carry a hostname or a path.
+//     title, scenario label, MCP command or URL is READ at any point, because all of those are free
+//     text the owner typed and any of them can carry a hostname or a path. (One does still arrive
+//     indirectly: an error message may quote a command the owner configured. That is a known,
+//     documented boundary — see `packages/shared/src/diagnostics.ts` — not an oversight, and every
+//     surface names it rather than claiming the bundle is name-free.)
 //   • **Every error string goes through `createDiagnosticsErrorEntry`.** That constructor takes RAW
 //     text and forces it through the shared `redactSecurityEvidence`; there is no way to hand it an
 //     already-formatted message. Do not build a `DiagnosticsErrorEntry` literal here.
