@@ -296,13 +296,19 @@ export function resolveComponentPlacement(input: ComponentPlacementInput): Compo
           reason: "Open this skill in the Studio to add a trigger keyword.",
         };
       }
+      // A keyword is FRONTMATTER, so it rides the Studio draft's settings channel and stages no edit
+      // op. That is deliberate: `set_keywords` exists in the op union, but using it here would give
+      // frontmatter two writers — the edit buffer and the settings draft — which is exactly the split
+      // brain WP 7.3 closed. The consequence is visible and must be SAID rather than left to puzzle
+      // the author: the projector turns a keyword into an entry-point node, but only on the next
+      // save, so unlike every other component this one changes nothing on the canvas right away.
       const keyword = nextAvailableName(KEYWORD_PLACEHOLDER, input.existingKeywords);
       return {
         ok: true,
         ops: [],
         keyword,
         title: "Keyword added",
-        description: `“${keyword}” joins the draft’s keywords — rename it in Settings, then save.`,
+        description: `“${keyword}” joins the draft’s keywords — rename it in Settings. It appears on the flow as a trigger once you save.`,
       };
     }
 

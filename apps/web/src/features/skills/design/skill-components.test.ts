@@ -115,12 +115,17 @@ describe("the nine components", () => {
 });
 
 describe("document-level components", () => {
-  test("a keyword stages frontmatter, not an edit op", () => {
+  test("a keyword stages frontmatter, not an edit op — and SAYS the flow updates on save", () => {
+    // The one component that changes nothing on the canvas immediately: frontmatter has exactly one
+    // writer (the Studio settings draft), so a keyword becomes an entry-point node only when the
+    // projector re-reads the saved document. The copy has to admit that, or the author presses Add,
+    // sees no node, and concludes it did not work.
     const result = place({ component: "keyword" });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.ops).toEqual([]);
     expect(result.keyword).toBe(KEYWORD_PLACEHOLDER);
+    expect(result.description).toMatch(/once you save|after you save/i);
   });
 
   test("a keyword de-duplicates against the keywords already declared", () => {
