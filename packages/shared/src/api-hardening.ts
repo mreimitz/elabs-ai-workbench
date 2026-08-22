@@ -52,22 +52,20 @@ export const RATE_LIMITED_ERROR_CODE = "rate_limited";
  * slip: the value is not a credential (it authenticates nothing on its own), it is a proof that the
  * caller could read a same-origin cookie, which a cross-site attacker cannot do.
  */
-export const CSRF_COOKIE_NAME = "workbench_csrf";
-
-/** The header the SPA echoes the cookie back in, on every state-changing request. Lowercase — Node
- *  normalizes incoming header names, and the web client sends it in this exact spelling. */
+/** The header the SPA echoes its cookie back in, on every state-changing request. Lowercase — Node
+ *  normalizes incoming header names, and the web client sends it in this exact spelling. It may carry
+ *  SEVERAL comma-separated values; see {@link readCsrfCookieValues}. */
 export const CSRF_HEADER_NAME = "x-workbench-csrf";
 
 /** Random bytes behind the per-install CSRF token (base64url-encoded to 43 characters). */
 export const CSRF_TOKEN_BYTES = 32;
 
-/** The `app_settings` key the per-install CSRF token is persisted under, so it survives a restart —
+/** The `app_settings` key this install's CSRF identity is persisted under, so it survives a restart —
  *  a token minted per process would 403 every open tab on every `docker compose restart`. */
 export const CSRF_TOKEN_SETTING_KEY = "app.csrfToken";
 
 /** Does this string even LOOK like one of our CSRF tokens? Cheap shape gate before any comparison,
- *  so a blank or attacker-planted `workbench_csrf=x` cookie is rejected on shape rather than on a
- *  string compare that a same-site cookie-setting attacker might otherwise try to steer. */
+ *  so a blank or attacker-planted cookie is rejected on shape rather than on a string compare. */
 export function looksLikeCsrfToken(value: string | undefined | null): boolean {
   return typeof value === "string" && /^[A-Za-z0-9_-]{32,128}$/.test(value);
 }
@@ -91,11 +89,67 @@ export function readCookie(header: string | undefined | null, name: string): str
   return undefined;
 }
 
-/** The `Set-Cookie` value for the browser CSRF token. `Path=/` so every route sees it; no `Domain`
- *  so it stays host-only; no `Secure` because this app is served over plain HTTP on loopback (a
- *  `Secure` cookie would simply never be stored, which would 403 every write). */
-export function csrfSetCookieValue(token: string): string {
-  return `${CSRF_COOKIE_NAME}=${token}; Path=/; SameSite=Strict`;
+/** The prefix every install's CSRF cookie name starts with. */
+export const CSRF_COOKIE_PREFIX = "workbench_csrf_";
+
+/**
+ * The cookie name for THIS install: the prefix plus the install's own id.
+ *
+ * **The id is in the NAME, not just the value, and that is the whole point.** A cookie is scoped by
+ * (name, domain, path) — **the port is not part of it.** Two workbench instances on one machine
+ * (this repo's own `docker-compose.yml` notes a second, older checkout serving on :8080 while this
+ * one serves on :8081) are both `localhost`, so a single shared name means they overwrite each
+ * other's cookie: whichever loaded last owns the slot, and the other one's open tab gets 403 on
+ * every write until its next GET rewrites the cookie — which then breaks the first. A per-install
+ * name gives each instance its own slot and ends the ping-pong.
+ */
+export function csrfCookieName(installId: string): string {
+  return `${CSRF_COOKIE_PREFIX}${installId}`;
+}
+
+/** Random bytes behind an install id. Short — it is a disambiguator, not a secret. */
+export const CSRF_INSTALL_ID_BYTES = 6;
+
+/** Does this look like an install id we minted? Used when reading a persisted value back. */
+export function looksLikeCsrfInstallId(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{6,32}$/.test(value);
+}
+
+/**
+ * Every CSRF cookie value the browser is holding, across ALL installs it has visited.
+ *
+ * The page cannot tell which cookie belongs to the instance it is talking to — it does not know that
+ * instance's id — so it sends them all and lets each API pick its own out (see
+ * {@link parseCsrfHeaderValues}). Sending another local instance's value costs nothing: the value
+ * authenticates nobody, and either instance could already reach the other tokenlessly over loopback.
+ */
+export function readCsrfCookieValues(header: string | undefined | null): string[] {
+  if (!header) return [];
+  const out: string[] = [];
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
+    if (!part.slice(0, eq).trim().startsWith(CSRF_COOKIE_PREFIX)) continue;
+    const value = part.slice(eq + 1).trim();
+    if (value.length > 0 && !out.includes(value)) out.push(value);
+  }
+  return out;
+}
+
+/** Split the `X-Workbench-Csrf` header, which may carry several comma-separated values. */
+export function parseCsrfHeaderValues(header: string | undefined | null): string[] {
+  if (!header) return [];
+  return header
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+/** The `Set-Cookie` value for this install's browser CSRF token. `Path=/` so every route sees it; no
+ *  `Domain` so it stays host-only; no `Secure` because this app is served over plain HTTP on loopback
+ *  (a `Secure` cookie would simply never be stored, which would 403 every write). */
+export function csrfSetCookieValue(installId: string, token: string): string {
+  return `${csrfCookieName(installId)}=${token}; Path=/; SameSite=Strict`;
 }
 
 // ── Host allow-list ───────────────────────────────────────────────────────────────────────────────

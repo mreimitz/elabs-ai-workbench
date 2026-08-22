@@ -1,6 +1,6 @@
 import {
-  CSRF_COOKIE_NAME,
   SECURITY_RESPONSE_HEADERS,
+  csrfCookieName,
   csrfSetCookieValue,
   readCookie,
 } from "@mcp-token-footprint/shared";
@@ -41,7 +41,7 @@ import type { FastifyInstance } from "fastify";
  */
 export function registerSecurityHeaders(
   app: FastifyInstance,
-  options: { csrfToken: () => string | undefined },
+  options: { csrf: () => { installId: string; token: string } | undefined },
 ): void {
   app.addHook("onSend", async (request, reply, payload) => {
     for (const [name, value] of Object.entries(SECURITY_RESPONSE_HEADERS)) {
@@ -51,9 +51,12 @@ export function registerSecurityHeaders(
     }
 
     if (request.method === "GET") {
-      const token = options.csrfToken();
-      if (token !== undefined && readCookie(request.headers.cookie, CSRF_COOKIE_NAME) !== token) {
-        reply.header("set-cookie", csrfSetCookieValue(token));
+      const install = options.csrf();
+      if (
+        install !== undefined &&
+        readCookie(request.headers.cookie, csrfCookieName(install.installId)) !== install.token
+      ) {
+        reply.header("set-cookie", csrfSetCookieValue(install.installId, install.token));
       }
     }
 

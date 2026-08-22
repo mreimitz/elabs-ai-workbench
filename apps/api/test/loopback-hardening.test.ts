@@ -8,7 +8,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import {
   API_TOKEN_DEFAULT_EXPIRY_DAYS,
-  CSRF_COOKIE_NAME,
+  CSRF_COOKIE_PREFIX,
   CSRF_HEADER_NAME,
   CSRF_TOKEN_INVALID_ERROR_CODE,
   CSRF_TOKEN_SETTING_KEY,
@@ -17,6 +17,7 @@ import {
   RATE_LIMITED_ERROR_CODE,
   RATE_LIMIT_AUTH_FAILURES_PER_MINUTE,
   RATE_LIMIT_EXPENSIVE_PER_MINUTE,
+  csrfCookieName,
   csrfSetCookieValue,
   defaultApiTokenExpiry,
   hostnameFromHostHeader,
@@ -24,7 +25,9 @@ import {
   isAllowedHostname,
   looksLikeCsrfToken,
   parseAllowedHosts,
+  parseCsrfHeaderValues,
   readCookie,
+  readCsrfCookieValues,
 } from "@mcp-token-footprint/shared";
 import { registerApiTokenGuard } from "../src/api-tokens/guard.js";
 import { ApiTokenRepository } from "../src/api-tokens/repository.js";
@@ -67,6 +70,8 @@ afterEach(async () => {
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const INSTALL = "aB3dEf";
+const COOKIE = csrfCookieName(INSTALL);
 const CSRF = "Zm9vYmFyYmF6cXV4MTIzNDU2Nzg5MGFiY2RlZmdoaWpr";
 const OTHER_CSRF = "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVoxMjM0NTY";
 
@@ -88,6 +93,7 @@ async function makeApp(
   options: {
     allowedHosts?: readonly string[];
     csrfToken?: string | undefined;
+    installId?: string;
     expensiveLimit?: number;
     authFailureLimit?: number;
   } = {},
@@ -115,11 +121,15 @@ async function makeApp(
   });
 
   const csrfToken = "csrfToken" in options ? options.csrfToken : CSRF;
+  const install =
+    csrfToken === undefined
+      ? undefined
+      : { installId: options.installId ?? INSTALL, token: csrfToken };
   registerOriginGuard(app, {
     allowedHosts: options.allowedHosts ?? [],
-    csrfToken: () => csrfToken,
+    csrf: () => install,
   });
-  registerSecurityHeaders(app, { csrfToken: () => csrfToken });
+  registerSecurityHeaders(app, { csrf: () => install });
 
   const now = { ms: 1_000_000 };
   const limiter = new FixedWindowRateLimiter(60_000, () => now.ms);
@@ -186,9 +196,7 @@ function browser(
       host: "localhost:8081",
       origin: "http://localhost:8081",
       "sec-fetch-site": "same-origin",
-      ...(csrf
-        ? { cookie: `${CSRF_COOKIE_NAME}=${csrf}`, [CSRF_HEADER_NAME]: csrf }
-        : {}),
+      ...(csrf ? { cookie: `${COOKIE}=${csrf}`, [CSRF_HEADER_NAME]: csrf } : {}),
       ...(init.headers ?? {}),
     },
   });
@@ -502,6 +510,70 @@ test("CSRF: with no install token available the check is skipped, not failed clo
   );
 });
 
+test("CSRF: two workbench instances on ONE host do not fight over a cookie slot", async () => {
+  // The defect this asserts against was real and mine. A cookie is scoped by (name, domain, path) —
+  // **the port is not part of it** — and this repo's own compose file notes a second, older checkout
+  // serving on :8080 while this one serves on :8081. With one shared cookie name, whichever instance
+  // loaded last owned the slot and the other one's open tab got 403 on every write until its next
+  // GET rewrote the cookie, which then broke the first. Ping-pong, on the owner's actual setup.
+  const a = await makeApp();
+  const b = await makeApp({ csrfToken: OTHER_CSRF, installId: "zZ9yXw" });
+
+  // The browser's single jar, after visiting both instances. Different names ⇒ both survive.
+  const aCookie = String(
+    (await a.app.inject({ method: "GET", url: "/api/health", headers: { host: "localhost:8081" } }))
+      .headers["set-cookie"] ?? "",
+  );
+  const bCookie = String(
+    (await b.app.inject({ method: "GET", url: "/api/health", headers: { host: "localhost:8080" } }))
+      .headers["set-cookie"] ?? "",
+  );
+  const jar = `${aCookie.split(";")[0]}; ${bCookie.split(";")[0]}`;
+  assert.deepEqual(readCsrfCookieValues(jar).sort(), [CSRF, OTHER_CSRF].sort());
+
+  // The page sends every value it holds; each instance picks its own out and both writes succeed.
+  const header = readCsrfCookieValues(jar).join(",");
+  for (const [name, instance] of [
+    ["A", a],
+    ["B", b],
+  ] as const) {
+    const response = await instance.app.inject({
+      method: "POST",
+      url: "/api/servers",
+      headers: {
+        host: "localhost:8081",
+        origin: "http://localhost:8081",
+        cookie: jar,
+        [CSRF_HEADER_NAME]: header,
+      },
+    });
+    assert.equal(response.statusCode, 200, `instance ${name} must accept its own value`);
+  }
+
+  // …and a header carrying ONLY the other instance's value is still refused, so the multi-value
+  // header is a convenience, not a way to satisfy the check with somebody else's token.
+  const wrong = await a.app.inject({
+    method: "POST",
+    url: "/api/servers",
+    headers: {
+      host: "localhost:8081",
+      origin: "http://localhost:8081",
+      cookie: jar,
+      [CSRF_HEADER_NAME]: OTHER_CSRF,
+    },
+  });
+  assert.equal(wrong.statusCode, 403);
+  assert.equal(wrong.json().code, CSRF_TOKEN_INVALID_ERROR_CODE);
+});
+
+test("CSRF: the cookie NAME carries the install id, so each instance owns its own slot", () => {
+  assert.equal(csrfCookieName(INSTALL), `${CSRF_COOKIE_PREFIX}${INSTALL}`);
+  assert.notEqual(csrfCookieName("aaaaaa"), csrfCookieName("bbbbbb"));
+  assert.deepEqual(parseCsrfHeaderValues(" a , b ,, c "), ["a", "b", "c"]);
+  assert.deepEqual(parseCsrfHeaderValues(undefined), []);
+  assert.deepEqual(readCsrfCookieValues("theme=light; other=1"), [], "no workbench cookie present");
+});
+
 test("CSRF: the token's shape gate rejects a blank or short cookie before any comparison", () => {
   assert.equal(looksLikeCsrfToken(CSRF), true);
   for (const bad of [undefined, null, "", "short", "a".repeat(31), "has spaces in it", "a".repeat(129)]) {
@@ -510,10 +582,10 @@ test("CSRF: the token's shape gate rejects a blank or short cookie before any co
 });
 
 test("CSRF: readCookie picks the right cookie out of a crowded header and tolerates junk", () => {
-  assert.equal(readCookie(`a=1; ${CSRF_COOKIE_NAME}=${CSRF}; b=2`, CSRF_COOKIE_NAME), CSRF);
-  assert.equal(readCookie(`${CSRF_COOKIE_NAME}_other=x`, CSRF_COOKIE_NAME), undefined);
-  assert.equal(readCookie("garbage;;;=", CSRF_COOKIE_NAME), undefined);
-  assert.equal(readCookie(undefined, CSRF_COOKIE_NAME), undefined);
+  assert.equal(readCookie(`a=1; ${COOKIE}=${CSRF}; b=2`, COOKIE), CSRF);
+  assert.equal(readCookie(`${COOKIE}_other=x`, COOKIE), undefined);
+  assert.equal(readCookie("garbage;;;=", COOKIE), undefined);
+  assert.equal(readCookie(undefined, COOKIE), undefined);
 });
 
 // ── 4. The per-install CSRF token ────────────────────────────────────────────────────────────────
@@ -523,15 +595,21 @@ test("the install CSRF token is minted once and REUSED across restarts", () => {
   const port = { get: (k: string) => store.get(k), put: (k: string, v: unknown) => store.set(k, v) };
 
   const first = resolveCsrfToken(port);
-  assert.ok(first && looksLikeCsrfToken(first));
-  assert.equal(store.get(CSRF_TOKEN_SETTING_KEY), first);
+  assert.ok(first && looksLikeCsrfToken(first.token) && first.installId.length >= 6);
   // A second boot against the same store must not mint a new one — that would 403 every open tab.
-  assert.equal(resolveCsrfToken(port), first);
+  assert.deepEqual(resolveCsrfToken(port), first);
 
   // A corrupt/hand-edited value is replaced rather than trusted.
   store.set(CSRF_TOKEN_SETTING_KEY, { not: "a token" });
   const replaced = resolveCsrfToken(port);
-  assert.ok(replaced && looksLikeCsrfToken(replaced) && replaced !== first);
+  assert.ok(replaced && looksLikeCsrfToken(replaced.token) && replaced.token !== first.token);
+
+  // A value written before the cookie name carried an install id was a bare string. The token is
+  // KEPT (any tab holding it stays valid) and simply gains an id.
+  store.set(CSRF_TOKEN_SETTING_KEY, CSRF);
+  const migrated = resolveCsrfToken(port);
+  assert.equal(migrated?.token, CSRF, "a legacy bare-string token must be preserved, not discarded");
+  assert.ok(migrated && migrated.installId.length >= 6);
 });
 
 test("an unusable settings store yields undefined rather than throwing on the hot path", () => {
@@ -583,7 +661,7 @@ test("a GET sets the CSRF cookie when the request did not already carry it, and 
     headers: { host: "localhost:8081" },
   });
   const setCookie = String(cold.headers["set-cookie"] ?? "");
-  assert.equal(setCookie, csrfSetCookieValue(CSRF));
+  assert.equal(setCookie, csrfSetCookieValue(INSTALL, CSRF));
   assert.match(setCookie, /SameSite=Strict/);
   assert.match(setCookie, /Path=\//);
   assert.doesNotMatch(setCookie, /HttpOnly/, "the SPA has to read this back — see CSRF_COOKIE_NAME");
@@ -592,7 +670,7 @@ test("a GET sets the CSRF cookie when the request did not already carry it, and 
   const warm = await h.app.inject({
     method: "GET",
     url: "/api/health",
-    headers: { host: "localhost:8081", cookie: `${CSRF_COOKIE_NAME}=${CSRF}` },
+    headers: { host: "localhost:8081", cookie: `${COOKIE}=${CSRF}` },
   });
   assert.equal(warm.headers["set-cookie"], undefined);
 
@@ -600,9 +678,9 @@ test("a GET sets the CSRF cookie when the request did not already carry it, and 
   const stale = await h.app.inject({
     method: "GET",
     url: "/api/health",
-    headers: { host: "localhost:8081", cookie: `${CSRF_COOKIE_NAME}=${OTHER_CSRF}` },
+    headers: { host: "localhost:8081", cookie: `${COOKIE}=${OTHER_CSRF}` },
   });
-  assert.equal(String(stale.headers["set-cookie"] ?? ""), csrfSetCookieValue(CSRF));
+  assert.equal(String(stale.headers["set-cookie"] ?? ""), csrfSetCookieValue(INSTALL, CSRF));
 });
 
 // ── 6. Rate limits ───────────────────────────────────────────────────────────────────────────────

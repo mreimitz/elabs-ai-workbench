@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { serializeRunMetricsRatio } from "@mcp-token-footprint/shared";
-import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from "@mcp-token-footprint/shared";
+import { CSRF_HEADER_NAME, csrfCookieName } from "@mcp-token-footprint/shared";
 import {
   apiDelete,
   apiGet,
@@ -278,7 +278,7 @@ describe("CSRF header (RM-37 WP 0.4)", () => {
   }
 
   beforeEach(() => {
-    stubCookie(`theme=light; ${CSRF_COOKIE_NAME}=${TOKEN}; other=1`);
+    stubCookie(`theme=light; ${csrfCookieName("aB3dEf")}=${TOKEN}; other=1`);
     mockFetchOk({ ok: true });
   });
 
@@ -314,6 +314,14 @@ describe("CSRF header (RM-37 WP 0.4)", () => {
     const headers = headersOf(vi.mocked(fetch).mock.calls[0] as unknown[]);
     expect(CSRF_HEADER_NAME in headers).toBe(false);
     expect(headers["content-type"]).toBe("application/json");
+  });
+
+  it("sends EVERY install's cookie, so two local instances do not fight over one slot", async () => {
+    const other = "QUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVoxMjM0NTY";
+    stubCookie(`${csrfCookieName("aB3dEf")}=${TOKEN}; ${csrfCookieName("zZ9yXw")}=${other}`);
+    await apiPost("/api/x", {});
+    const sent = headersOf(vi.mocked(fetch).mock.calls[0] as unknown[])[CSRF_HEADER_NAME] ?? "";
+    expect(sent.split(",").sort()).toEqual([TOKEN, other].sort());
   });
 
   it("still threads the caller's AbortSignal alongside the header", async () => {

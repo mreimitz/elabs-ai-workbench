@@ -125,9 +125,8 @@ import type {
 import {
   // RM-37 WP 0.4 — the browser CSRF token's cookie/header names + the cookie reader, shared with the
   // API so the two ends cannot drift into disagreeing about what the header is called.
-  CSRF_COOKIE_NAME,
   CSRF_HEADER_NAME,
-  readCookie,
+  readCsrfCookieValues,
   serializeRunFilter,
   serializeRunMetricsRatio,
 } from "@mcp-token-footprint/shared";
@@ -165,9 +164,9 @@ export class ApiError extends Error {
 
 // ── The browser CSRF token (RM-37 WP 0.4) ────────────────────────────────────────────────────────
 //
-// The API sets a `SameSite=Strict`, non-`HttpOnly` cookie on any GET whose request did not already
-// carry the current install token, and requires it back as `X-Workbench-Csrf` on every state-changing
-// request from a tokenless caller. This is the second half of a double-submit pair: a cross-site page
+// The API sets a `SameSite=Strict`, non-`HttpOnly` cookie — named for THIS install — on any GET whose
+// request did not already carry the current token, and requires it back as `X-Workbench-Csrf` on every
+// state-changing request from a tokenless caller. This is the second half of a double-submit pair: a cross-site page
 // can make the browser SEND a request to `http://localhost:8080`, but `SameSite=Strict` means the
 // cookie does not ride along, and the same-origin policy means the attacker's script cannot read the
 // value to put in the header. The cookie is deliberately readable by THIS app's JavaScript — that is
@@ -181,7 +180,13 @@ export class ApiError extends Error {
  *  tells the operator to reload, which is the honest outcome rather than a silent failure. */
 function readCsrfCookie(): string | undefined {
   if (typeof document === "undefined") return undefined;
-  return readCookie(document.cookie, CSRF_COOKIE_NAME);
+  // EVERY workbench install's cookie the browser holds, comma-joined. The page cannot tell which one
+  // belongs to the instance it is talking to — the cookie name carries that instance's id and the
+  // page does not know it — so it sends them all and each API picks its own out. Two instances on
+  // one machine (this repo ships a compose file that notes exactly that) would otherwise fight over
+  // a single cookie slot, since cookies are scoped by name/domain/path and NOT by port.
+  const values = readCsrfCookieValues(document.cookie);
+  return values.length > 0 ? values.join(",") : undefined;
 }
 
 /**

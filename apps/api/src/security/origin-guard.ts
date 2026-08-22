@@ -7,9 +7,10 @@ import {
   hostnameFromUrl,
   isAllowedHostname,
   looksLikeCsrfToken,
+  parseCsrfHeaderValues,
   readBearerToken,
   readCookie,
-  CSRF_COOKIE_NAME,
+  csrfCookieName,
 } from "@mcp-token-footprint/shared";
 import type { FastifyInstance } from "fastify";
 import { httpError } from "../utils/errors.js";
@@ -88,9 +89,10 @@ export type OriginGuardRequest = {
   csrfHeader: string | undefined;
   /** Parsed `API_ALLOWED_HOSTS`. Can only ever ADD names to the loopback defaults. */
   allowedHosts: readonly string[];
-  /** The per-install CSRF token, or `undefined` when the store could not produce one (then the CSRF
-   *  check is skipped rather than locking the operator out of their own app — see the hook). */
-  csrfToken: string | undefined;
+  /** This install's cookie-name discriminator and token, or `undefined` when the store could not
+   *  produce one (then the CSRF check is skipped rather than locking the operator out of their own
+   *  app — see the hook). */
+  csrf: { installId: string; token: string } | undefined;
 };
 
 export type OriginGuardDecision =
@@ -151,19 +153,21 @@ export function decideOriginAccess(request: OriginGuardRequest): OriginGuardDeci
   if (readBearerToken(request.authorization) !== undefined) return { kind: "pass" };
   // No install token available (a read-only or unavailable settings store). Refusing here would
   // brick the UI over a degraded side-table; the Host and cross-site checks above still stand.
-  if (request.csrfToken === undefined) return { kind: "pass" };
+  if (request.csrf === undefined) return { kind: "pass" };
   // A caller that is not a browser at all. See {@link carriesBrowserFingerprint}: this is what keeps
   // `mcpfp scan` on a tokenless loopback instance (D-C2, documented in the CLI's own help) and a
   // tokenless local MCP client on `POST /api/mcp` (D-MCP7) working exactly as they did.
   if (!carriesBrowserFingerprint(request)) return { kind: "pass" };
 
-  const cookie = readCookie(request.cookie, CSRF_COOKIE_NAME);
-  const header = request.csrfHeader?.trim();
+  // Read THIS install's own cookie by its own name. The header may carry several comma-separated
+  // values — one per workbench instance the browser has visited — because the page cannot tell which
+  // cookie belongs to the instance it is talking to. We accept only if OUR cookie is among them.
+  const cookie = readCookie(request.cookie, csrfCookieName(request.csrf.installId));
+  const presented = parseCsrfHeaderValues(request.csrfHeader);
   if (
     !looksLikeCsrfToken(cookie) ||
-    !looksLikeCsrfToken(header) ||
-    cookie !== header ||
-    cookie !== request.csrfToken
+    cookie !== request.csrf.token ||
+    !presented.includes(cookie as string)
   ) {
     return {
       kind: "refused",
@@ -224,12 +228,15 @@ function crossSiteRefusal(): OriginGuardDecision {
 /**
  * Install the guard on the root Fastify instance.
  *
- * `csrfToken` is a getter rather than a value so the caller can resolve it lazily from the settings
- * store (and so a test can flip it between assertions without re-registering the hook).
+ * `csrf` is a getter rather than a value so the caller can resolve it lazily from the settings store
+ * (and so a test can flip it between assertions without re-registering the hook).
  */
 export function registerOriginGuard(
   app: FastifyInstance,
-  options: { allowedHosts: readonly string[]; csrfToken: () => string | undefined },
+  options: {
+    allowedHosts: readonly string[];
+    csrf: () => { installId: string; token: string } | undefined;
+  },
 ): void {
   app.addHook("onRequest", async (request) => {
     const decision = decideOriginAccess({
@@ -245,7 +252,7 @@ export function registerOriginGuard(
       cookie: headerValue(request.headers.cookie),
       csrfHeader: headerValue(request.headers[CSRF_HEADER_NAME]),
       allowedHosts: options.allowedHosts,
-      csrfToken: options.csrfToken(),
+      csrf: options.csrf(),
     });
 
     if (decision.kind === "refused") {

@@ -1,9 +1,14 @@
 import crypto from "node:crypto";
 import {
+  CSRF_INSTALL_ID_BYTES,
   CSRF_TOKEN_BYTES,
   CSRF_TOKEN_SETTING_KEY,
+  looksLikeCsrfInstallId,
   looksLikeCsrfToken,
 } from "@mcp-token-footprint/shared";
+
+/** What one install is identified by in the browser: a cookie-name discriminator and the token. */
+export type CsrfInstall = { installId: string; token: string };
 
 /** The narrow slice of `AppSettingsRepository` this needs — so a test can pass a plain object. */
 export type CsrfTokenStore = {
@@ -29,14 +34,30 @@ export type CsrfTokenStore = {
  * "skip the CSRF check" rather than "refuse everything": bricking the UI over a degraded side-table
  * would be a worse outcome than falling back to the Host and cross-site checks, which still stand.
  */
-export function resolveCsrfToken(store: CsrfTokenStore): string | undefined {
+export function resolveCsrfToken(store: CsrfTokenStore): CsrfInstall | undefined {
   try {
     const existing = store.get(CSRF_TOKEN_SETTING_KEY);
-    if (typeof existing === "string" && looksLikeCsrfToken(existing)) return existing;
+    if (
+      typeof existing === "object" &&
+      existing !== null &&
+      looksLikeCsrfInstallId((existing as CsrfInstall).installId) &&
+      looksLikeCsrfToken((existing as CsrfInstall).token)
+    ) {
+      return existing as CsrfInstall;
+    }
 
-    const minted = crypto.randomBytes(CSRF_TOKEN_BYTES).toString("base64url");
-    store.put(CSRF_TOKEN_SETTING_KEY, minted);
-    return minted;
+    // A value written before the cookie name carried an install id was a bare token string. Keep the
+    // token (so any tab holding it is not needlessly invalidated) and give it an id.
+    const token =
+      typeof existing === "string" && looksLikeCsrfToken(existing)
+        ? existing
+        : crypto.randomBytes(CSRF_TOKEN_BYTES).toString("base64url");
+    const install: CsrfInstall = {
+      installId: crypto.randomBytes(CSRF_INSTALL_ID_BYTES).toString("base64url"),
+      token,
+    };
+    store.put(CSRF_TOKEN_SETTING_KEY, install);
+    return install;
   } catch {
     return undefined;
   }

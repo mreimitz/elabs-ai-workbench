@@ -385,17 +385,17 @@ registerFeatureRoutes(server, featureFlags);
 // The install's CSRF token lives in the SAME `app_settings` KV (key `app.csrfToken`; no table, no
 // migration) so it survives a restart — a per-process token would 403 every open tab on every
 // `docker compose restart`.
-const csrfToken = resolveCsrfToken(appSettings);
-if (csrfToken === undefined) {
+const csrfInstall = resolveCsrfToken(appSettings);
+if (csrfInstall === undefined) {
   server.log.warn(
     "Could not read or mint the browser CSRF token; the CSRF check is inactive (the Host and cross-site checks still apply)",
   );
 }
 registerOriginGuard(server, {
   allowedHosts: config.apiAllowedHosts,
-  csrfToken: () => csrfToken,
+  csrf: () => csrfInstall,
 });
-registerSecurityHeaders(server, { csrfToken: () => csrfToken });
+registerSecurityHeaders(server, { csrf: () => csrfInstall });
 // The expensive-action budget (scan / server test / run + suite launch). Ahead of the token guard so
 // a budgeted request is counted before the API spends a hash and a SQLite lookup on its credential.
 const rateLimiter = new FixedWindowRateLimiter();
