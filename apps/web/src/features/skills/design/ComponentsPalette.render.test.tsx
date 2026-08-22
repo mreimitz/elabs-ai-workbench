@@ -116,7 +116,7 @@ const sectionNode: SkillGraphNode = {
   kind: "subroutine",
   label: "Collect input",
   anchor: { headingPath: ["Skill", "Collect input"], startLine: 2, endLine: 4 },
-  source: "heading",
+  source: "inferred",
 };
 
 const toolRefNode: SkillGraphNode = {
@@ -125,7 +125,7 @@ const toolRefNode: SkillGraphNode = {
   label: "read_file",
   toolName: "read_file",
   anchor: { headingPath: ["Skill", "Collect input"], startLine: 3, endLine: 3 },
-  source: "reference",
+  source: "inferred",
 };
 
 const GRAPH: SkillGraph = { nodes: [sectionNode, toolRefNode], edges: [], warnings: [] };

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import type { SkillGraph, SkillGraphNode } from "@mcp-token-footprint/shared";
+import { explainerFor } from "./code-intel/explainers";
 import {
   annotationIdFor,
   appendSentence,
@@ -39,7 +40,7 @@ const section = (id: string, label: string, startLine = 2, endLine = 4): SkillGr
   kind: "subroutine",
   label,
   anchor: { headingPath: ["Skill", label], startLine, endLine },
-  source: "heading",
+  source: "inferred",
 });
 
 const assetNode = (id: string, label: string): SkillGraphNode => ({
@@ -49,7 +50,7 @@ const assetNode = (id: string, label: string): SkillGraphNode => ({
   path: "reference/notes.md",
   fileKind: "reference",
   anchor: { headingPath: ["Skill", label], startLine: 9, endLine: 10 },
-  source: "reference",
+  source: "inferred",
 });
 
 const TEXT = ["# Skill", "## Collect input", "Ask for the file.", "Then read it.", "## Next"].join(
@@ -86,10 +87,15 @@ describe("the nine components", () => {
     ]);
   });
 
-  test("every component carries a label and an explainer id — the Legend's vocabulary moved here", () => {
+  test("every component's explainer id RESOLVES — the deleted Legend's vocabulary moved, not vanished", () => {
+    // SI17 deletes the Legend button on the promise that the palette rows carry the same teaching
+    // copy. A typo'd id would render an empty row description and quietly break that promise, so
+    // assert the registry lookup actually lands rather than that the string is non-empty.
     for (const spec of SKILL_COMPONENTS) {
       expect(spec.label.length).toBeGreaterThan(0);
-      expect(spec.explainerId.length).toBeGreaterThan(0);
+      const explainer = explainerFor(spec.explainerId);
+      expect(explainer, `no explainer registered for “${spec.explainerId}”`).toBeDefined();
+      expect(explainer?.short.length ?? 0).toBeGreaterThan(0);
     }
   });
 

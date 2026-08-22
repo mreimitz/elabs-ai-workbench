@@ -248,7 +248,7 @@ describe("links 2 + 3 — the dropped component becomes a node the author can se
     kind: "subroutine",
     label: "Collect input",
     anchor: { headingPath: ["Skill", "Collect input"], startLine: 2, endLine: 4 },
-    source: "heading",
+    source: "inferred",
   };
   const graph: SkillGraph = { nodes: [sectionNode], edges: [], warnings: [] };
   const text = ["# Skill", "## Collect input", "Ask for the file."].join("\n");
