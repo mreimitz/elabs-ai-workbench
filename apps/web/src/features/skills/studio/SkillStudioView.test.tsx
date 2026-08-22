@@ -241,7 +241,7 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
 
     const rail = screen.getByTestId("studio-left-rail");
     expect(within(rail).getByRole("tab", { name: "Files" })).toBeInTheDocument();
-    expect(within(rail).getByRole("tab", { name: "Components" })).toBeInTheDocument();
+    expect(within(rail).getByRole("tab", { name: "Tools" })).toBeInTheDocument();
     expect(within(rail).getByRole("tab", { name: "Settings" })).toBeInTheDocument();
 
     // Never a reserved blank column: the context panel is a slim strip until asked for.
@@ -266,8 +266,8 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     await screen.findByTestId("studio-context-panel-collapsed");
   });
 
-  // RM-30 WP 7.7 renamed this surface: the rail tab and the panel heading both read "Components"
-  // now (the tab's URL value stays `tools`, so shared `?rail=tools` links keep working).
+  // RM-30 WP 7.7 renamed the PANEL to "Components"; the rail TAB still reads "Tools" (the label did
+  // not fit a three-way split of the 184px rail — see the note in StudioLeftRail.tsx).
   test("the Components palette lives in the rail ONLY — the centre surface is the canvas alone", async () => {
     renderStudio();
     await waitForStudio();
@@ -276,8 +276,8 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     expect(screen.queryByRole("heading", { name: "Components" })).toBeNull();
 
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Components" }), { button: 0 });
-    fireEvent.click(within(rail).getByRole("tab", { name: "Components" }));
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
 
     const palette = await screen.findByRole("heading", { name: "Components" });
     expect(rail.contains(palette)).toBe(true);
@@ -395,8 +395,8 @@ describe("the Studio shell (RM-30 WP 7.1)", () => {
     // "Add section" button — creation is the Components palette now, so the dirty state is reached
     // exactly the way an author reaches it: open the palette, press a component's Add.
     const rail = screen.getByTestId("studio-left-rail");
-    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Components" }), { button: 0 });
-    fireEvent.click(within(rail).getByRole("tab", { name: "Components" }));
+    fireEvent.mouseDown(within(rail).getByRole("tab", { name: "Tools" }), { button: 0 });
+    fireEvent.click(within(rail).getByRole("tab", { name: "Tools" }));
     fireEvent.click(await screen.findByRole("button", { name: /^Add a Section/ }));
     await screen.findByText("1 unsaved change");
 
