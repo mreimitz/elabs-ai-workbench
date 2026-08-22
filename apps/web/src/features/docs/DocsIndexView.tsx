@@ -81,7 +81,7 @@ export function DocsIndexView() {
                       <li key={document.id} className="min-w-0">
                         <Link
                           to={`${DOCS_ROUTE_BASE}/${subject.id}#${document.id}`}
-                          className="text-caption text-primary underline underline-offset-2"
+                          className="text-caption text-foreground underline underline-offset-2 decoration-muted-foreground hover:decoration-foreground"
                         >
                           {document.title}
                         </Link>

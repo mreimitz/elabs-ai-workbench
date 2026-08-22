@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Button, Heading, StatePanel, Text } from "@elabs-ai/components-ui";
 import { PageShell } from "../../components/PageShell";
 import { InlineError } from "../../components/InlineError";
@@ -22,6 +22,7 @@ import { useDocsManifest, useSubjectDocuments } from "./use-docs";
  */
 export function DocsSubjectView() {
   const { subject: subjectId } = useParams<{ subject: string }>();
+  const { hash } = useLocation();
   const { state: manifestState, reload: reloadManifest } = useDocsManifest();
   const subject =
     manifestState.status === "data" && subjectId
@@ -32,14 +33,16 @@ export function DocsSubjectView() {
   // The breadcrumb leaf is the subject's real title, published once it resolves (see route-crumb).
   useRouteCrumb(subject?.title ?? null);
 
-  // A `#document` in the URL must survive the fetch: the anchor does not exist at mount, so the
-  // browser's own scroll-to-fragment has nothing to hit. Re-run it once the documents are in.
+  // Two reasons the browser cannot do this itself. (1) A `#document` already in the URL points at an
+  // anchor that does not exist at mount — the documents are still being fetched — so the native
+  // scroll-to-fragment has nothing to hit. (2) A same-page anchor clicked inside the rendered guide
+  // goes through the router, which changes the hash WITHOUT scrolling. Keyed on both signals.
   useEffect(() => {
     if (documentsState.status !== "data") return;
-    const hash = window.location.hash.slice(1);
-    if (!hash) return;
-    document.getElementById(hash)?.scrollIntoView();
-  }, [documentsState.status]);
+    const target = hash.slice(1);
+    if (!target) return;
+    document.getElementById(target)?.scrollIntoView();
+  }, [documentsState.status, hash]);
 
   const notFound = manifestState.status === "data" && subject === undefined;
 
@@ -100,7 +103,7 @@ export function DocsSubjectView() {
                   <li key={document.id} className="min-w-0">
                     <a
                       href={`#${document.id}`}
-                      className="text-caption text-primary underline underline-offset-2"
+                      className="text-caption text-foreground underline underline-offset-2 decoration-muted-foreground hover:decoration-foreground"
                     >
                       {document.title}
                     </a>
