@@ -1,5 +1,6 @@
 import { MemoryRouter } from "react-router-dom";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SECURITY_ANALYZER_VERSION,
@@ -60,14 +61,18 @@ function renderPanel(
   state: Parameters<typeof SecurityPanel>[0]["state"],
   opts: { baselines?: { id: string; label: string }[]; entry?: string } = {},
 ) {
+  // `TooltipProvider` mirrors `main.tsx`, which mounts one for the whole app — the posture score's
+  // scale hint (RM-37 WP 0.5) is a Radix Tooltip and needs it.
   return render(
     <MemoryRouter initialEntries={[opts.entry ?? "/scans/scan_new"]}>
-      <SecurityPanel
-        target={{ kind: "scan", scanId: "scan_new" }}
-        baselines={opts.baselines ?? []}
-        state={state}
-        onRetry={() => {}}
-      />
+      <TooltipProvider>
+        <SecurityPanel
+          target={{ kind: "scan", scanId: "scan_new" }}
+          baselines={opts.baselines ?? []}
+          state={state}
+          onRetry={() => {}}
+        />
+      </TooltipProvider>
     </MemoryRouter>,
   );
 }
@@ -166,6 +171,7 @@ describe("SecurityPanel — A2/D-SP12: an anchor renders per KIND", () => {
   it("renders a skill version's own anchors in the table", () => {
     render(
       <MemoryRouter initialEntries={["/skills/skl_1"]}>
+        <TooltipProvider>
         <SecurityPanel
           target={{ kind: "skill", skillId: "skl_1", versionId: "ver_2" }}
           baselines={[]}
@@ -199,6 +205,7 @@ describe("SecurityPanel — A2/D-SP12: an anchor renders per KIND", () => {
           }}
           onRetry={() => {}}
         />
+        </TooltipProvider>
       </MemoryRouter>,
     );
     expect(screen.getByText("This skill version")).toBeTruthy();
@@ -220,6 +227,42 @@ describe("SecurityPanel — A3/D-SP23: a clean subject gets a real answer", () =
     ).toBeTruthy();
     expect(screen.queryByRole("table")).toBeNull();
   });
+});
+
+// RM-37 WP 0.5 (action 5) — the header has to say what produced the number and what the number is
+// out of. Before this, the score was a bare "15" and the only way to learn the scale was to read
+// `computeSecurityScore`.
+describe("SecurityPanel — the score names its scale and its provenance", () => {
+  it("prints the score out of 100 and the analyzer version that produced it", () => {
+    renderPanel({
+      status: "data",
+      data: report({ score: { value: 45, band: "high", analyzerVersion: SECURITY_ANALYZER_VERSION } }),
+    });
+    expect(screen.getByText("45")).toBeTruthy();
+    expect(screen.getByText("/ 100")).toBeTruthy();
+    expect(
+      screen.getByText(new RegExp(`Security analyzer v${SECURITY_ANALYZER_VERSION}`)),
+    ).toBeTruthy();
+  });
+
+  it("offers a re-analysis, because the report is computed on read and never stored", () => {
+    const onRetry = vi.fn();
+    render(
+      <MemoryRouter initialEntries={["/scans/scan_new"]}>
+        <TooltipProvider>
+          <SecurityPanel
+            target={{ kind: "scan", scanId: "scan_new" }}
+            baselines={[]}
+            state={{ status: "data", data: report() }}
+            onRetry={onRetry}
+          />
+        </TooltipProvider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Re-analyze" }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+
 });
 
 describe("SecurityPanel — A9: evidence is visible, redacted TEXT", () => {

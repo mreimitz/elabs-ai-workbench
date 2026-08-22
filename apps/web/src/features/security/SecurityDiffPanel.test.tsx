@@ -1,5 +1,6 @@
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { TooltipProvider } from "@elabs-ai/components-ui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   SECURITY_ANALYZER_VERSION,
@@ -92,24 +93,28 @@ function LocationProbe() {
 }
 
 function renderTab(entry = "/scans/scan_new?tab=security", data: SecurityReport = report()) {
+  // `TooltipProvider` mirrors `main.tsx`, which mounts one for the whole app — the posture score's
+  // scale hint (RM-37 WP 0.5) is a Radix Tooltip and needs it.
   return render(
     <MemoryRouter initialEntries={[entry]}>
-      <Routes>
-        <Route
-          path="/scans/:scanId"
-          element={
-            <>
-              <LocationProbe />
-              <SecurityPanel
-                target={{ kind: "scan", scanId: "scan_new" }}
-                baselines={BASELINES}
-                state={{ status: "data", data }}
-                onRetry={() => {}}
-              />
-            </>
-          }
-        />
-      </Routes>
+      <TooltipProvider>
+        <Routes>
+          <Route
+            path="/scans/:scanId"
+            element={
+              <>
+                <LocationProbe />
+                <SecurityPanel
+                  target={{ kind: "scan", scanId: "scan_new" }}
+                  baselines={BASELINES}
+                  state={{ status: "data", data }}
+                  onRetry={() => {}}
+                />
+              </>
+            }
+          />
+        </Routes>
+      </TooltipProvider>
     </MemoryRouter>,
   );
 }
@@ -260,12 +265,14 @@ describe("SecurityDiffPanel — a subject with nothing to compare against", () =
   it("disables the picker and says why, rather than offering an empty list", () => {
     render(
       <MemoryRouter initialEntries={["/scans/scan_new?tab=security"]}>
-        <SecurityPanel
-          target={{ kind: "scan", scanId: "scan_new" }}
-          baselines={[]}
-          state={{ status: "data", data: report() }}
-          onRetry={() => {}}
-        />
+        <TooltipProvider>
+          <SecurityPanel
+            target={{ kind: "scan", scanId: "scan_new" }}
+            baselines={[]}
+            state={{ status: "data", data: report() }}
+            onRetry={() => {}}
+          />
+        </TooltipProvider>
       </MemoryRouter>,
     );
     expect(screen.getByRole("combobox", { name: /baseline scan to compare/i })).toBeDisabled();

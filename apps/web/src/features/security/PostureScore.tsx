@@ -1,4 +1,8 @@
 import type { SecurityScore, SecurityScoreBand } from "@mcp-token-footprint/shared";
+import {
+  SECURITY_SCORE_BANDS,
+  SECURITY_SCORE_BAND_MINIMUM,
+} from "@mcp-token-footprint/shared";
 import { Text, cn } from "@elabs-ai/components-ui";
 import { StatusBadge } from "../../components/StatusBadge";
 import type { StatusTone, StatusView } from "../../lib/status";
@@ -39,6 +43,34 @@ export function postureBandLabel(band: SecurityScoreBand): string {
   return BAND_LABEL[band];
 }
 
+/**
+ * The score's own SCALE (RM-37 WP 0.5, action 5) — shown on hover/focus of the score.
+ *
+ * "15" told an operator nothing: not out of what, and not what 15 buys you. The score now reads
+ * "15 / 100", and this names the four bands behind it.
+ *
+ * **The thresholds are read from `SECURITY_SCORE_BAND_MINIMUM`**, the same table
+ * `computeSecurityScore` bands with. That is the whole point: the note at the top of this file says
+ * that writing `value >= 90` here is the bug, so the contract had to expose its thresholds as data
+ * before this component could exist. It does not compare, it just prints.
+ */
+export function ScoreScaleHint({ className }: { className?: string }) {
+  return (
+    <ul className={cn("flex flex-col gap-1", className)}>
+      {SECURITY_SCORE_BANDS.map((band) => (
+        <li key={band} className="flex items-center justify-between gap-4">
+          <span>{BAND_LABEL[band]}</span>
+          <span className="tabular-nums">
+            {band === "clean"
+              ? "100 — nothing found"
+              : `${SECURITY_SCORE_BAND_MINIMUM[band]} and above`}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** The band as a {@link StatusView}, so it renders through the app's ONE chip component. */
 export function postureBandView(band: SecurityScoreBand): StatusView {
   return {
@@ -77,13 +109,16 @@ export function PostureScore({ score, variant = "full", className }: PostureScor
       </span>
     );
   }
+  // RM-37 WP 0.5 (action 5) — "15 / 100", not a bare "15". A lone number beside a token count and a
+  // tool count is a third unlabelled number; the denominator is what makes it a score. The "/ 100"
+  // is muted so the figure that carries the information still leads.
   return (
     <span className={cn("inline-flex items-baseline gap-2", className)}>
-      <Text
-        className="font-semibold tabular-nums"
-        aria-label={`Posture score ${score.value} of 100`}
-      >
-        {score.value}
+      <Text className="inline-flex items-baseline gap-0.5 font-semibold tabular-nums">
+        <span aria-label={`Posture score ${score.value} of 100`}>{score.value}</span>
+        <Text as="span" variant="meta" tone="muted" className="font-normal tabular-nums" aria-hidden>
+          {" / 100"}
+        </Text>
       </Text>
       <StatusBadge view={postureBandView(score.band)} />
     </span>

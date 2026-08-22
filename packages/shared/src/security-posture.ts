@@ -490,6 +490,25 @@ export const SECURITY_SEVERITY_DEDUCTION_CAP: Record<SecuritySeverity, number> =
  * The returned {@link SecurityScore.analyzerVersion} echoes {@link SECURITY_ANALYZER_VERSION} so a
  * stored score can never be silently compared against, or re-banded by, a later build's thresholds.
  */
+/**
+ * **The band thresholds, as data.** The inclusive lower bound of each band, worst-last.
+ *
+ * `computeSecurityScore` reads this table rather than inlining the numbers, and so does the UI when
+ * it explains the scale to an operator (RM-37 WP 0.5, action 5: the Security tab now prints
+ * "15 / 100" and shows this ramp on hover). Before this existed, a UI wanting to show the scale had
+ * to retype `>= 90` — which `PostureScore.tsx` explicitly calls out as the bug it is, because a UI
+ * that re-types a threshold is a UI that eventually disagrees with the gate.
+ *
+ * `clean` is `100` and means literally nothing was found, so a single `info` drops out of it. That
+ * is the point: an operator should be able to trust `clean`.
+ */
+export const SECURITY_SCORE_BAND_MINIMUM: Record<SecurityScoreBand, number> = {
+  clean: 100,
+  low: 90,
+  medium: 70,
+  high: 0,
+};
+
 export function computeSecurityScore(findings: readonly SecurityFinding[]): SecurityScore {
   // Tally per severity FIRST, so each severity's cap applies to its own total rather than to the
   // running sum — capping the mixed sum would let a single error swallow the whole info allowance.
@@ -502,16 +521,11 @@ export function computeSecurityScore(findings: readonly SecurityFinding[]): Secu
     deduction += Math.min(perSeverity[severity], SECURITY_SEVERITY_DEDUCTION_CAP[severity]);
   }
   const value = Math.max(0, 100 - deduction);
-  let band: SecurityScoreBand;
-  if (value >= 100) {
-    band = "clean";
-  } else if (value >= 90) {
-    band = "low";
-  } else if (value >= 70) {
-    band = "medium";
-  } else {
-    band = "high";
-  }
+  // Best-first over the ONE threshold table, so the UI that prints the scale and the gate that
+  // enforces it can never drift apart. `high` has a floor of 0, so this always resolves.
+  const band =
+    SECURITY_SCORE_BANDS.find((candidate) => value >= SECURITY_SCORE_BAND_MINIMUM[candidate]) ??
+    "high";
   return { value, band, analyzerVersion: SECURITY_ANALYZER_VERSION };
 }
 
