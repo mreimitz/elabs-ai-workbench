@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T21:40:00Z"
+timestamp: "2026-08-22T22:20:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -219,6 +219,33 @@ textbook clean-auto-merge-wrong case. Merge one branch at a time and re-gate bet
 **WP 2.1 will collide harder.** RM-37 adds `packages/shared/src/severity-ramp.ts`, a
 `risk-vocabulary.guardrail.test.ts` and 65 lines to `security-posture.ts` — the file WP 2.1 empties of
 literals. Sequence, do not race, and announce before dispatch.
+
+## The rebase happened, and it disproved one of this ledger's own guards — 2026-08-22
+
+WP 1.1 was rebased onto `wp/rm37/0.5`. Gate green after: typecheck **0** · lint clean (1866 files) ·
+build **0** · test **0**, counts now base + RM-37's additions (shared **288** · illustrations **957** ·
+cli **87** · api **3839** · web **385 files / 4357 + 5 skipped**). All 39 `finding_name` values are in
+`data-pack/compatibility/test-catalog.json` and in the api snapshot; the old path is gone.
+
+**But the reversion this ledger predicted DID occur, and the guard designed to catch it did NOT.**
+
+Applying the relocation commit moved the **pre-edit** bytes to `data-pack/` and git raised **no
+conflict on that file** — all 39 values silently gone. And `relocation-ledger.json` **passed**, because
+it records *pre-move* bytes: a silent reversion **to** pre-move bytes is exactly what it asserts. It
+detects mutation during a move. It cannot detect reversion, and it is green in the failure case.
+
+Both this session and RM-37 believed a red there would signal a correct rebase. That was wrong in both
+directions. **What actually caught it** was the ordinary git modify/delete conflict raised one commit
+later, when the second commit deleted the old path — a signal that exists only because the WP *removed*
+the source rather than leaving a copy behind.
+
+**Rules that follow, for WP 2.1 and any later relocation:**
+1. A hash ledger is a mutation detector, never a reversion detector. Do not cite it as protection
+   against a bad merge.
+2. **Delete the old path in the same change that creates the new one.** The modify/delete conflict is
+   the only reliable signal here; leaving a copy behind removes it and the reversion goes silent.
+3. After any rebase across a relocation, assert a **content invariant** the incoming change introduced
+   (here: 39 `finding_name` values present), not merely that hashes are self-consistent.
 
 ## Test-count baselines (measured by the RM-35 session, 2026-08-22, gate green)
 
