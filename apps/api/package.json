@@ -7,10 +7,10 @@
     "build": "tsc -p tsconfig.json && node scripts/copy-data.mjs",
     "dev": "tsx watch --env-file-if-exists=.env.local --env-file-if-exists=.env src/index.ts",
     "start": "node --env-file-if-exists=.env.local --env-file-if-exists=.env dist/index.js",
-    "test": "pnpm --filter @mcp-token-footprint/shared build && tsx --test test/*.test.ts",
-    "fixtures:upgrade": "pnpm --filter @mcp-token-footprint/shared build && tsx scripts/build-upgrade-fixtures.ts",
-    "seed:sessions": "pnpm --filter @mcp-token-footprint/shared build && tsx scripts/seed-sessions.ts",
-    "test:coverage": "pnpm --filter @mcp-token-footprint/shared build && tsx --test --experimental-test-coverage test/*.test.ts",
+    "test": "node ../../scripts/build-shared-once.mjs && tsx --test test/*.test.ts",
+    "fixtures:upgrade": "node ../../scripts/build-shared-once.mjs && tsx scripts/build-upgrade-fixtures.ts",
+    "seed:sessions": "node ../../scripts/build-shared-once.mjs && tsx scripts/seed-sessions.ts",
+    "test:coverage": "node ../../scripts/build-shared-once.mjs && tsx --test --experimental-test-coverage test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

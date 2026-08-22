@@ -8,9 +8,9 @@
     "dev": "vite --host 127.0.0.1 --port 5173",
     "preview": "vite preview --host 127.0.0.1 --port 5173",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "pnpm --filter @mcp-token-footprint/shared build && vitest run",
+    "test": "node ../../scripts/build-shared-once.mjs && vitest run",
     "test:watch": "vitest",
-    "test:coverage": "pnpm --filter @mcp-token-footprint/shared build && vitest run --coverage"
+    "test:coverage": "node ../../scripts/build-shared-once.mjs && vitest run --coverage"
   },
   "dependencies": {
     "@mcp-token-footprint/illustrations": "workspace:*",

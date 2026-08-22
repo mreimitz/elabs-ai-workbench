@@ -12,12 +12,60 @@ import Database from "better-sqlite3";
 import type { RunFilter } from "@mcp-token-footprint/shared";
 import type { AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
+import { measure, percentile } from "./support/perf-clock.js";
 import { computeRunMetrics } from "../src/observability/metrics.js";
 
 const databases: AppDatabase[] = [];
 afterEach(() => {
   for (const db of databases.splice(0)) db.close();
 });
+
+// Both cases below used to measure WALL CLOCK, and both flaked, because `pnpm test` runs several
+// packages at once: wall clock counts the time this process spends waiting to be scheduled, which is
+// a property of the machine, not of the query. (Observed: the absolute case at 486 ms against a
+// 500 ms ceiling; the ratio case at 3.42x against 3x.) The ceilings were NOT widened — the clock was
+// changed to one the rest of the machine cannot move. The reasoning, and what this clock does NOT
+// buy, is in `test/support/perf-clock.ts`; it lives there because search-perf needs it too and two
+// copies of a measurement helper is how the two `buildRunFilterWhere` bodies started.
+
+type StatementLike = { all: (...args: unknown[]) => unknown };
+
+/**
+ * `EXPLAIN QUERY PLAN` for every statement `fn` actually RUNS, with the parameters it ran them with.
+ *
+ * The metrics service builds its SQL privately, so the plan cannot be asked for from outside without
+ * observing what it prepares: `db.prepare` is wrapped for the duration of the call (and restored in a
+ * `finally`, even on a throw), each returned statement's `.all` records `(sql, params)`, and the plan
+ * is taken afterwards by re-preparing `EXPLAIN QUERY PLAN <sql>` with the same bindings. Nothing in
+ * `src/` changes and no query is rewritten — this reads what shipped.
+ */
+function queryPlansFor(
+  db: AppDatabase,
+  fn: () => void,
+): Array<{ sql: string; detail: string[] }> {
+  const seen: Array<{ sql: string; params: unknown[] }> = [];
+  const original = db.prepare;
+  (db as unknown as { prepare: unknown }).prepare = function patched(this: AppDatabase, sql: string) {
+    const statement = original.call(this, sql) as unknown as StatementLike;
+    const originalAll = statement.all;
+    statement.all = function all(...args: unknown[]) {
+      seen.push({ sql, params: args });
+      return originalAll.apply(statement, args);
+    };
+    return statement;
+  };
+  try {
+    fn();
+  } finally {
+    (db as unknown as { prepare: unknown }).prepare = original;
+  }
+  return seen.map(({ sql, params }) => ({
+    sql,
+    detail: (db.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...params) as Array<{ detail: string }>).map(
+      (row) => row.detail,
+    ),
+  }));
+}
 
 const NOW = "2026-06-01T00:00:00.000Z";
 const RUN_COUNT = 50_000;
@@ -139,7 +187,7 @@ function seedRatings(db: AppDatabase): void {
   insertMany();
 }
 
-test(`p95 latency < 500 ms — 30-day day-bucket grouped query over ${RUN_COUNT} runs`, () => {
+test(`p95 CPU < 500 ms — 30-day day-bucket grouped query over ${RUN_COUNT} runs`, () => {
   const db = new Database(":memory:");
   db.pragma("foreign_keys = ON");
   db.exec(schemaSql); // schema.ts baseline carries the v32 covering indexes (fresh DBs skip migrations)
@@ -165,54 +213,77 @@ test(`p95 latency < 500 ms — 30-day day-bucket grouped query over ${RUN_COUNT}
   // Warm up (query planner + statement prep), then measure p95 over repeated calls.
   call();
   const ITER = 25;
-  const timings: number[] = [];
+  const cpu: number[] = [];
+  const wall: number[] = [];
   for (let i = 0; i < ITER; i++) {
-    const t0 = process.hrtime.bigint();
-    call();
-    timings.push(Number(process.hrtime.bigint() - t0) / 1e6);
+    const sample = measure(call);
+    cpu.push(sample.cpu);
+    wall.push(sample.wall);
   }
-  timings.sort((a, b) => a - b);
-  const p95 = timings[Math.min(Math.ceil(0.95 * ITER), ITER) - 1] as number;
-  const p50 = timings[Math.ceil(0.5 * ITER) - 1] as number;
+  const cpuP95 = percentile(cpu, 0.95);
+  const cpuP50 = percentile(cpu, 0.5);
+  const wallP95 = percentile(wall, 0.95);
+  const wallP50 = percentile(wall, 0.5);
 
   // Also time a SQL window-function percentile over the same window (for the recorded comparison).
-  const t0 = process.hrtime.bigint();
-  db.prepare(
-    `SELECT model, day, dur, PERCENT_RANK() OVER (PARTITION BY model, day ORDER BY dur) AS pr
-       FROM (SELECT s.model AS model, substr(r.started_at, 1, 10) AS day,
-                    COALESCE(r.active_duration_ms, r.total_duration_ms) AS dur
-               FROM runs r JOIN scenarios s ON s.id = r.scenario_id
-              WHERE r.started_at >= @from AND r.started_at <= @to
-                AND COALESCE(r.active_duration_ms, r.total_duration_ms) IS NOT NULL)`,
-  ).all({ from, to });
-  const sqlWindowMs = Number(process.hrtime.bigint() - t0) / 1e6;
+  const sqlWindow = measure(() => {
+    db.prepare(
+      `SELECT model, day, dur, PERCENT_RANK() OVER (PARTITION BY model, day ORDER BY dur) AS pr
+         FROM (SELECT s.model AS model, substr(r.started_at, 1, 10) AS day,
+                      COALESCE(r.active_duration_ms, r.total_duration_ms) AS dur
+                 FROM runs r JOIN scenarios s ON s.id = r.scenario_id
+                WHERE r.started_at >= @from AND r.started_at <= @to
+                  AND COALESCE(r.active_duration_ms, r.total_duration_ms) IS NOT NULL)`,
+    ).all({ from, to });
+  });
 
   // Determinism spot-check: two calls identical (no cache).
   assert.deepEqual(call(), call());
 
   console.log(
-    `[metrics-perf] ${RUN_COUNT} runs · 30-day day-bucket groupBy=model — in-process p50=${p50.toFixed(1)}ms p95=${p95.toFixed(1)}ms; single SQL-window percentile pass=${sqlWindowMs.toFixed(1)}ms`,
+    `[metrics-perf] ${RUN_COUNT} runs · 30-day day-bucket groupBy=model — in-process CPU p50=${cpuP50.toFixed(1)}ms p95=${cpuP95.toFixed(1)}ms (wall p50=${wallP50.toFixed(1)}ms p95=${wallP95.toFixed(1)}ms); single SQL-window percentile pass CPU=${sqlWindow.cpu.toFixed(1)}ms`,
   );
-  assert.ok(p95 < 500, `p95 ${p95.toFixed(1)}ms must be < 500ms`);
+  // D-OB13's 500 ms budget, measured in CPU rather than wall clock. It is the same number and the
+  // same query; what changed is that a parallel web suite can no longer spend it. Wall clock is
+  // logged, not asserted — on an idle machine the two are within noise of each other, and on a busy
+  // one only the CPU figure is about the code. What this therefore CANNOT catch: a regression that
+  // makes the query WAIT rather than compute (a lock, a disk read) — there is none to wait on here,
+  // the DB is `:memory:` and better-sqlite3 is synchronous.
+  assert.ok(cpuP95 < 500, `CPU p95 ${cpuP95.toFixed(1)}ms must be < 500ms`);
 });
+
 
 // RM-17 Phase 6 (AM-OB12) — the verdict/finding filters read a JSON member out of `run_grades`, which
 // is the most expensive shape in the grammar and the one the WP spec flagged for measurement at
 // pickup: had it failed the recorded 500 ms budget, the answer would have been an INDEX, and an index
 // is a migration. Measured at the same 50k scale with a 150k-row `run_grades` beside it; the
 // correlated EXISTS rides `idx_run_grades_run (run_id, created_at)`, which has existed since the
-// table did, so no new index — and therefore no migration — was taken.
+// table did, so no new index — and therefore no migration — was taken. Isolated numbers for the
+// record: unfiltered p95 65ms; answerVerdict 74ms; errorBucket 83ms; the composed filter 101ms —
+// all far inside the 500 ms budget.
 //
-// The ASSERTION is deliberately RELATIVE to an unfiltered baseline measured in this same process, and
-// the absolute p95 is logged rather than asserted. `pnpm test` runs apps/api and apps/web in
-// parallel, and under that contention the pre-existing absolute case measures ~5x its isolated time
-// (p95 57ms isolated → 486ms in the gate, i.e. it sits one bad scheduling slice from a red gate on a
-// busy machine). Pinning a second absolute budget here would add three more coin flips to the gate
-// while answering a worse question. The question that matters is whether the JSON extraction
-// BLOWS UP the query, and a ratio against a baseline taken under the same load answers exactly that,
-// while machine noise cancels. Isolated numbers for the record: unfiltered p95 65ms; answerVerdict
-// 74ms; errorBucket 83ms; the composed filter 101ms — all far inside the 500 ms budget.
-test(`rating-verdict filters stay within a small multiple of the unfiltered query at ${RUN_COUNT} runs`, () => {
+// TWO CHECKS, and the load-independent one is the real guard (owner decision 2026-08-22 — this case
+// flaked at 3.42× against a 3× ceiling, and the answer was to measure differently, not to widen it):
+//
+//   (a) THE QUERY PLAN. The named regression — dropping the `g.run_id = runs.id` correlation, or the
+//       latest-row restriction — turns the EXISTS into a table scan of `run_grades` PER RUN. That is
+//       visible in `EXPLAIN QUERY PLAN` as a SCAN where there should be a SEARCH on
+//       `idx_run_grades_run`, with no clock in it at all: it cannot flake, it cannot be blamed on a
+//       busy machine, and it names the defect instead of a symptom of it.
+//   (b) A CPU-TIME RATIO against an unfiltered baseline, INTERLEAVED with it. Interleaving is the
+//       point: baseline and cases are sampled round-robin, so drift in machine conditions across the
+//       run hits all four equally, where "measure the baseline once, then measure each case" let a
+//       burst of load land on exactly one of them. With CPU time (see `measure` above) on top, the
+//       ratio still reads asymptotic blow-up under a loaded gate.
+//
+// What (b) can and cannot catch, plainly. CAN: the filtered path becoming asymptotically worse than
+// the unfiltered one — a lost index correlation sends the ratio far past 3×, not to 3.4×. CANNOT: a
+// slowdown that hits the baseline equally (the ratio stays ~1 — that is what (a) and the first
+// test's absolute budget are for); a filtered-path regression smaller than 3×; and anything about
+// real-world WALL-CLOCK latency on a loaded machine, which is a property of the machine, not the
+// query. Absolute CPU figures are logged for the record, not asserted, so the budget question is
+// answered by the first test's one assertion rather than by three more coin flips here.
+test(`rating-verdict filters use the grades index and stay within a small multiple of the unfiltered query at ${RUN_COUNT} runs`, () => {
   const db = new Database(":memory:");
   db.pragma("foreign_keys = ON");
   db.exec(schemaSql);
@@ -227,39 +298,21 @@ test(`rating-verdict filters stay within a small multiple of the unfiltered quer
     "idx_run_grades_run must exist on the fresh DB (schema.ts baseline) — the EXISTS leans on it",
   );
 
-  const ITER = 9;
-  /** Median wall time of `ITER` calls, plus how many runs the filter selected. */
-  const measure = (filter: RunFilter): { p50: number; matched: number } => {
-    const call = () =>
-      computeRunMetrics(db, {
-        filter,
-        from,
-        to,
-        bucket: "day",
-        groupBy: "model",
-        measures: ["count", "errorRate", "p95DurationMs", "tokensIn", "costUsd"],
-      });
-    const first = call(); // warm up the planner + statement prep
-    const matched = first.series
-      .filter((s) => s.measure === "count")
-      .flatMap((s) => s.points)
-      .reduce((sum, p) => sum + p.value, 0);
-    const timings: number[] = [];
-    for (let i = 0; i < ITER; i++) {
-      const t0 = process.hrtime.bigint();
-      call();
-      timings.push(Number(process.hrtime.bigint() - t0) / 1e6);
-    }
-    timings.sort((a, b) => a - b);
-    return { p50: timings[Math.ceil(0.5 * ITER) - 1] as number, matched };
-  };
-
-  const baseline = measure({});
-  assert.ok(baseline.p50 > 0);
+  const call = (filter: RunFilter) =>
+    computeRunMetrics(db, {
+      filter,
+      from,
+      to,
+      bucket: "day",
+      groupBy: "model",
+      measures: ["count", "errorRate", "p95DurationMs", "tokensIn", "costUsd"],
+    });
 
   // The two evidence shapes — a single-object verdict extraction, and the `json_each` walk over the
-  // forensics inventory (the more expensive of the two) — plus the two composed.
-  const cases: Array<{ label: string; filter: RunFilter }> = [
+  // forensics inventory (the more expensive of the two) — plus the two composed. Index 0 is the
+  // unfiltered baseline every ratio below is taken against.
+  const variants: Array<{ label: string; filter: RunFilter }> = [
+    { label: "unfiltered", filter: {} },
     { label: "answerVerdict", filter: { answerVerdict: ["unanswered"] } },
     { label: "errorBucket", filter: { errorBucket: ["skill"] } },
     {
@@ -268,16 +321,74 @@ test(`rating-verdict filters stay within a small multiple of the unfiltered quer
     },
   ];
 
-  for (const { label, filter } of cases) {
-    const { p50, matched } = measure(filter);
-    assert.ok(matched > 0, `${label} must select some rows, or the timing means nothing`);
-    const ratio = p50 / baseline.p50;
+  // ── (a) The plan, with no clock in it ───────────────────────────────────────────────────────────
+  for (const { label, filter } of variants.slice(1)) {
+    const plans = queryPlansFor(db, () => {
+      call(filter);
+    });
+    const gradePlans = plans.filter((plan) => plan.sql.includes("run_grades"));
+    assert.ok(
+      gradePlans.length > 0,
+      `${label}: the harness saw no statement touching run_grades — it is watching the wrong thing`,
+    );
+    for (const { sql, detail } of gradePlans) {
+      const scans = detail.filter((line) => /^SCAN (run_grades|g|g2)\b/.test(line));
+      assert.deepEqual(
+        scans,
+        [],
+        `${label}: the grades EXISTS must never SCAN — a per-run table scan is the regression this guards\nplan:\n${detail.join("\n")}\nsql:\n${sql}`,
+      );
+      assert.ok(
+        detail.some((line) => line.includes("idx_run_grades_run")),
+        `${label}: the grades EXISTS must SEARCH via idx_run_grades_run\nplan:\n${detail.join("\n")}`,
+      );
+    }
+  }
+
+  // ── (b) CPU time, interleaved ───────────────────────────────────────────────────────────────────
+  const ITER = 9;
+  const matched = new Map<string, number>();
+  const cpu = new Map<string, number[]>();
+  const wall = new Map<string, number[]>();
+  for (const { label, filter } of variants) {
+    const first = call(filter); // warm up the planner + statement prep
+    matched.set(
+      label,
+      first.series
+        .filter((s) => s.measure === "count")
+        .flatMap((s) => s.points)
+        .reduce((sum, p) => sum + p.value, 0),
+    );
+    cpu.set(label, []);
+    wall.set(label, []);
+  }
+  for (let i = 0; i < ITER; i++) {
+    for (const { label, filter } of variants) {
+      const sample = measure(() => {
+        call(filter);
+      });
+      (cpu.get(label) as number[]).push(sample.cpu);
+      (wall.get(label) as number[]).push(sample.wall);
+    }
+  }
+
+  const baselineCpu = percentile(cpu.get("unfiltered") as number[], 0.5);
+  assert.ok(baselineCpu > 0, "the baseline must be measurable, or every ratio below is meaningless");
+
+  for (const { label } of variants.slice(1)) {
+    const cpuP50 = percentile(cpu.get(label) as number[], 0.5);
+    const wallP50 = percentile(wall.get(label) as number[], 0.5);
+    const rows = matched.get(label) as number;
+    assert.ok(rows > 0, `${label} must select some rows, or the timing means nothing`);
+    const ratio = cpuP50 / baselineCpu;
     console.log(
-      `[metrics-perf] ${RUN_COUNT} runs · ${gradeCount} grades · filter=${label} (${matched} matched) — p50=${p50.toFixed(1)}ms vs unfiltered ${baseline.p50.toFixed(1)}ms (${ratio.toFixed(2)}x)`,
+      `[metrics-perf] ${RUN_COUNT} runs · ${gradeCount} grades · filter=${label} (${rows} matched) — CPU p50=${cpuP50.toFixed(1)}ms vs unfiltered ${baselineCpu.toFixed(1)}ms (${ratio.toFixed(2)}x CPU); wall p50=${wallP50.toFixed(1)}ms`,
     );
     // 3x leaves room for a filtered query that reads FEWER rows but pays the JSON walk, while still
-    // failing loudly on the regression this guards: someone dropping the `g.run_id = runs.id`
-    // correlation, or the latest-row restriction, turns the EXISTS into a table scan per run.
-    assert.ok(ratio < 3, `${label}: ${ratio.toFixed(2)}x the unfiltered query (p50 ${p50.toFixed(1)}ms) — the JSON extraction should not dominate`);
+    // failing loudly on asymptotic blow-up. (a) above is what actually names the regression.
+    assert.ok(
+      ratio < 3,
+      `${label}: ${ratio.toFixed(2)}x the unfiltered query's CPU (p50 ${cpuP50.toFixed(1)}ms) — the JSON extraction should not dominate`,
+    );
   }
 });
