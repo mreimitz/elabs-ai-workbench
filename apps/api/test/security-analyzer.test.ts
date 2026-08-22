@@ -542,20 +542,50 @@ test("rule 6 · the owner's three REAL contradictions still fire (RM-37 WP 0.5 t
   );
 });
 
-test("rule 6 · a read verb earlier in the name suppresses a STRONG mutating token too", () => {
+// Two DIFFERENT mechanisms suppress a mutating token behind a read verb, and their coverage overlaps
+// only PARTIALLY. Splitting the fixtures across tests is the point: one test spanning both regions
+// stays green while either mechanism is broken, which is exactly how guard 1 shipped unprotected.
+//
+//   • `nameLeadsWithReadVerb` — the early return in `ruleReadonlyContradiction`, token index 0..1.
+//     Uniquely load-bearing for the DESCRIPTION path, pinned by "is not second-guessed by its prose".
+//   • guard 1 inside `findMutatingNameToken` — a read verb at any earlier index. Uniquely
+//     load-bearing for a read verb at index >= 2, pinned by the second test below.
+//
+// The region they SHARE — the name path with a read verb at index 0..1 — is covered twice, so the
+// first test below documents behaviour but pins neither mechanism. That is stated rather than left
+// for the next person to discover by breaking something and seeing nothing go red.
+
+test("rule 6 · a name that LEADS with a read verb never fires (the early return)", () => {
   const fires = (toolName: string) =>
     ruleReadonlyContradiction(tool({ toolName, annotations: { readOnlyHint: true } })).length;
 
   // `list_deleted_items` never fired (`deleted` is not in the list); these are the ones that DID.
   assert.equal(fires("get_delete_policy"), 0);
+  assert.equal(fires("list_remove_rules"), 0);
   assert.equal(fires("search_create_templates"), 0);
   assert.equal(fires("describe_update_channel"), 0);
+  // One namespace token in front still counts as leading.
+  assert.equal(fires("qlik_get_delete_policy"), 0);
 
   // The read verb has to come FIRST. A mutation that merely mentions a read afterwards still fires.
   assert.equal(fires("delete_and_list_orphans"), 1);
   // And an unguarded mutation is untouched by this WP.
   assert.equal(fires("create_issue"), 1);
   assert.equal(fires("qlik_create_data_object"), 1);
+});
+
+test("rule 6 · a read verb DEEPER than the leading position still suppresses (guard 1)", () => {
+  const fires = (toolName: string) =>
+    ruleReadonlyContradiction(tool({ toolName, annotations: { readOnlyHint: true } })).length;
+
+  // Every name here puts its read verb at token index >= 2, past what the early return inspects, so
+  // these assertions are carried by guard 1 ALONE. Break that guard and only this test goes red.
+  assert.equal(fires("qlik_app_get_delete_policy"), 0);
+  assert.equal(fires("mcp_server_list_remove_rules"), 0);
+  assert.equal(fires("acme_widgets_search_create_templates"), 0);
+
+  // The guard reads BEFORE the token only — a read verb after the mutation is no excuse.
+  assert.equal(fires("acme_widgets_create_from_get_template"), 1);
 });
 
 // ══════════════════════════════════════════════════════════════════════════════════════════════

@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// RM-37 WP 0.5 (action 9) — "risk" belongs to security's error-class results, and nowhere else.
+// RM-37 WP 0.5 — two reserved words: "risk" (action 9) and "Blocker" (action 7).
 // ------------------------------------------------------------------------------------------------
 // The app measures things. Three features were calling their measurements "risk" anyway:
 // Compatibility ranked a model pairing "Blocker", Advisor painted a heuristic recommendation red,
@@ -26,6 +26,8 @@ import { describe, expect, it } from "vitest";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB_SRC = path.resolve(HERE, "..");
+/** `Blocker` was a wire-value LABEL, so the ban has to reach the package that declares the labels. */
+const SHARED_SRC = path.resolve(HERE, "../../../../packages/shared/src");
 
 /** The one feature whose subject matter is risk. */
 const RESERVED_FOR = path.join("features", "security");
@@ -83,5 +85,40 @@ describe("`risk` is reserved for security's error-class results (RM-37 WP 0.5)",
       WORD.test(stripComments(readFileSync(file, "utf8"))),
     );
     expect(usesTheWord).toBe(true);
+  });
+});
+
+// RM-37 WP 0.5 (action 7) — "Blocker" is not a word this app says to an operator.
+// ------------------------------------------------------------------------------------------------
+// Compatibility's severities are LIMIT language now: "Exceeds limit" / "Near limit" / "Within limit"
+// / "Advice". The wire values are frozen and unchanged — `blocker` still travels, still weights the
+// score, still gates the heatmap band — so this bans the capitalised DISPLAY word only, and leaves
+// the lower-case wire value deliberately alone.
+//
+// This assertion exists because the work package's acceptance was written as a `grep` to be run by
+// hand and pasted into a report, and it got pasted wrong: two comment hits were reported as zero.
+// A check that matters belongs in the suite, where nobody has to transcribe it.
+describe('"Blocker" is a wire value, never a word shown to an operator (RM-37 WP 0.5)', () => {
+  const DISPLAY_WORD = /\bBlocker\b/;
+
+  it("appears in no copy in apps/web or packages/shared", () => {
+    const offenders: string[] = [];
+    for (const root of [WEB_SRC, SHARED_SRC]) {
+      for (const file of walk(root)) {
+        const copy = stripComments(readFileSync(file, "utf8"));
+        if (DISPLAY_WORD.test(copy)) {
+          const line = copy.split("\n").findIndex((text) => DISPLAY_WORD.test(text)) + 1;
+          offenders.push(`${path.relative(root, file)}:${line}`);
+        }
+      }
+    }
+    expect(offenders, 'the display word "Blocker" — state the limit instead').toEqual([]);
+  });
+
+  it("has NOT banned the lower-case wire value, which must still exist", () => {
+    // Non-vacuity in the other direction: if `blocker` ever stops appearing, this guard is policing
+    // a vocabulary the app no longer has, and the check above has quietly become meaningless.
+    const wire = walk(SHARED_SRC).some((file) => /\bblocker\b/.test(readFileSync(file, "utf8")));
+    expect(wire).toBe(true);
   });
 });

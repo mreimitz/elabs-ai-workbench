@@ -616,8 +616,23 @@ export function findMutatingNameToken(name: string): TokenMatch | null {
     const lower = token.text.toLowerCase();
     if (!MUTATING_NAME_TOKENS.has(lower)) continue;
 
-    // Guard 1 — a read verb anywhere before this token. (Any LATER mutating token is behind the
-    // same read verb, so this could equally `return null`; the `continue` keeps the loop uniform.)
+    // Guard 1 — a read verb ANYWHERE before this token means the token names the thing being read.
+    //
+    // This overlaps `nameLeadsWithReadVerb`, the early return in `ruleReadonlyContradiction`, and the
+    // overlap is only partial. Measured by disabling each one separately:
+    //
+    //   • name path, read verb at index 0-1 (`get_delete_policy`) — BOTH catch it; either alone suffices.
+    //   • name path, read verb at index >= 2 (`qlik_app_get_delete_policy`) — **this guard only.** The
+    //     early return never looks that deep.
+    //   • description path (`qlik_get_script`, whose NAME holds no mutating token) — **early return
+    //     only.** This function is never reached.
+    //
+    // The middle case is why this guard exists, and it is the one that shipped untested: an earlier
+    // revision of this comment said the guard "could equally `return null`", which read as a note about
+    // control flow and became a reason not to test it, while every fixture happened to sit in the
+    // doubly-covered first case. Each mechanism now has a fixture in the region only IT covers, and each
+    // was proved by breaking that mechanism alone — see the tests "read verb DEEPER than the leading
+    // position (guard 1)" and "is not second-guessed by its prose".
     const readVerbPrecedes = tokens
       .slice(0, index)
       .some((earlier) => READ_NAME_TOKENS.has(earlier.text.toLowerCase()));
