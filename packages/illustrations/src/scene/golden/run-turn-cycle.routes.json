@@ -1,0 +1,265 @@
+{
+  "routes": [
+    {
+      "index": 0,
+      "id": "c1",
+      "identity": "c1",
+      "from": "ask.emit",
+      "to": "agent.context-in",
+      "kind": "flow",
+      "shape": "z",
+      "fromDirection": "east",
+      "toDirection": "west",
+      "points": [
+        {
+          "x": -275.032,
+          "y": 99.28
+        },
+        {
+          "x": -158.3,
+          "y": 99.28
+        },
+        {
+          "x": -158.3,
+          "y": 100.8
+        },
+        {
+          "x": -41.569,
+          "y": 100.8
+        }
+      ],
+      "corners": 2,
+      "d": "M -275.032 99.28 L -159.06 99.28 A 0.76 0.76 0 0 1 -158.3 100.04 L -158.3 100.04 A 0.76 0.76 0 0 0 -157.54 100.8 L -41.569 100.8",
+      "nudge": 0,
+      "doublesBack": false,
+      "label": null
+    },
+    {
+      "index": 1,
+      "id": "c2",
+      "identity": "c2",
+      "from": "agent.result-out",
+      "to": "loop.entry",
+      "kind": "flow",
+      "shape": "u",
+      "fromDirection": "east",
+      "toDirection": "east",
+      "points": [
+        {
+          "x": 41.569,
+          "y": 100.8
+        },
+        {
+          "x": 73.569,
+          "y": 100.8
+        },
+        {
+          "x": 73.569,
+          "y": 675.2
+        },
+        {
+          "x": -272,
+          "y": 675.2
+        }
+      ],
+      "corners": 2,
+      "d": "M 41.569 100.8 L 65.569 100.8 A 8 8 0 0 1 73.569 108.8 L 73.569 667.2 A 8 8 0 0 1 65.569 675.2 L -272 675.2",
+      "nudge": 0,
+      "doublesBack": false,
+      "label": {
+        "text": "plan in hand",
+        "anchor": {
+          "x": 9.569,
+          "y": 544.784
+        },
+        "box": {
+          "x": -32.381,
+          "y": 533.021,
+          "width": 83.9,
+          "height": 23.525
+        },
+        "along": 0.5,
+        "offset": -64,
+        "collides": false
+      }
+    },
+    {
+      "index": 2,
+      "id": "c3",
+      "identity": "c3",
+      "from": "hub-skill.top",
+      "to": "agent.bottom",
+      "kind": "read",
+      "shape": "z",
+      "fromDirection": "north",
+      "toDirection": "south",
+      "points": [
+        {
+          "x": 160,
+          "y": 1176.08
+        },
+        {
+          "x": 160,
+          "y": 647.84
+        },
+        {
+          "x": 0,
+          "y": 647.84
+        },
+        {
+          "x": 0,
+          "y": 119.6
+        }
+      ],
+      "corners": 2,
+      "d": "M 160 1176.08 L 160 655.84 A 8 8 0 0 0 152 647.84 L 8 647.84 A 8 8 0 0 1 0 639.84 L 0 119.6",
+      "nudge": 0,
+      "doublesBack": false,
+      "label": {
+        "text": "loads the Skill",
+        "anchor": {
+          "x": 80,
+          "y": 647.84
+        },
+        "box": {
+          "x": 28.563,
+          "y": 636.077,
+          "width": 102.875,
+          "height": 23.525
+        },
+        "along": 0.5,
+        "offset": 0,
+        "collides": false
+      }
+    },
+    {
+      "index": 3,
+      "id": "c4",
+      "identity": "c4",
+      "from": "call.plug",
+      "to": "hub-mcp.bus",
+      "kind": "write",
+      "shape": "u",
+      "fromDirection": "west",
+      "toDirection": "west",
+      "points": [
+        {
+          "x": 167.392,
+          "y": 468.467
+        },
+        {
+          "x": -216.942,
+          "y": 468.467
+        },
+        {
+          "x": -216.942,
+          "y": 1197.2
+        },
+        {
+          "x": -184.942,
+          "y": 1197.2
+        }
+      ],
+      "corners": 2,
+      "d": "M 167.392 468.467 L -208.942 468.467 A 8 8 0 0 0 -216.942 476.467 L -216.942 1189.2 A 8 8 0 0 0 -208.942 1197.2 L -184.942 1197.2",
+      "nudge": 0,
+      "doublesBack": false,
+      "label": {
+        "text": "tools/call, every turn, same server",
+        "anchor": {
+          "x": -216.942,
+          "y": 656.667
+        },
+        "box": {
+          "x": -331.63,
+          "y": 644.904,
+          "width": 229.375,
+          "height": 23.525
+        },
+        "along": 0.5,
+        "offset": 0,
+        "collides": false
+      }
+    },
+    {
+      "index": 4,
+      "id": "c5",
+      "identity": "c5",
+      "from": "append.exit",
+      "to": "meter.measure-in",
+      "kind": "signal",
+      "shape": "z",
+      "fromDirection": "east",
+      "toDirection": "west",
+      "points": [
+        {
+          "x": -9.431,
+          "y": 938.892
+        },
+        {
+          "x": -70.399,
+          "y": 938.892
+        },
+        {
+          "x": -70.399,
+          "y": 1159.132
+        },
+        {
+          "x": -131.367,
+          "y": 1159.132
+        }
+      ],
+      "corners": 2,
+      "d": "M -9.431 938.892 L -62.399 938.892 A 8 8 0 0 0 -70.399 946.892 L -70.399 1151.132 A 8 8 0 0 1 -78.399 1159.132 L -131.367 1159.132",
+      "nudge": 0,
+      "doublesBack": true,
+      "label": null
+    },
+    {
+      "index": 5,
+      "id": "c6",
+      "identity": "c6",
+      "from": "loop.exit",
+      "to": "report.in",
+      "kind": "flow",
+      "shape": "l",
+      "fromDirection": "north",
+      "toDirection": "west",
+      "points": [
+        {
+          "x": 272,
+          "y": 675.2
+        },
+        {
+          "x": 272,
+          "y": 115.84
+        },
+        {
+          "x": 275.032,
+          "y": 115.84
+        }
+      ],
+      "corners": 1,
+      "d": "M 272 675.2 L 272 117.356 A 1.516 1.516 0 0 1 273.516 115.84 L 275.032 115.84",
+      "nudge": 0,
+      "doublesBack": false,
+      "label": {
+        "text": "the last turn",
+        "anchor": {
+          "x": 272,
+          "y": 394.004
+        },
+        "box": {
+          "x": 226.887,
+          "y": 382.242,
+          "width": 90.225,
+          "height": 23.525
+        },
+        "along": 0.5,
+        "offset": 0,
+        "collides": false
+      }
+    }
+  ],
+  "unresolved": []
+}
