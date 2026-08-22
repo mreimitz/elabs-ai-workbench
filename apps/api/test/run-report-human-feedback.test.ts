@@ -188,11 +188,22 @@ test("Markdown: the corrected answer is its OWN labelled sub-block, distinct fro
   assert.ok(md.indexOf("## Human feedback") < md.indexOf("## 2. Summary"));
 });
 
-test("Markdown: a step-scoped row is listed with its scope, not silently shown as run-level", () => {
-  const rows = [feedbackRow({ id: "fb-3", stepId: "run-1:step:2", comment: "this turn" })];
+test("Markdown: a step-scoped correction is LISTED with its scope but is NOT the run's answer", () => {
+  const rows = [
+    feedbackRow({
+      id: "fb-3",
+      key: "corrected_output",
+      score: undefined,
+      stepId: "run-1:step:2",
+      comment: "this ONE turn was wrong",
+    }),
+  ];
   const md = createRunMarkdownReport(fixtureRun(), enrich, undefined, buildRunReportHumanFeedback(rows));
+  // It travels in the table — nothing a human wrote is dropped …
   assert.match(md, /\| step run-1:step:2 \|/);
-  // A step-scoped correction is not the run's corrected answer.
+  assert.match(md, /this ONE turn was wrong/);
+  // … but a correction of one TURN is not a correction of the run's ANSWER, so the labelled
+  // "Corrected answer" block must still say none was captured (it is what promote-to-test reads).
   assert.match(md, /_No corrected answer was captured for this run\._/);
 });
 
