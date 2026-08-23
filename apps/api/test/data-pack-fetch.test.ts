@@ -106,7 +106,12 @@ function servingFetch(tree: PackTree): { impl: DataPackFetchImpl; calls: string[
   const calls: string[] = [];
   const impl: DataPackFetchImpl = async (url) => {
     calls.push(url);
-    const rel = decodeURIComponent(new URL(url).pathname.replace(/^\/pack\//, ""));
+    // The double serves BOTH layouts the tests use: a manifest under `/pack/` and one at the
+    // server root. The root case is not decoration — it is the only layout in which the write-side
+    // path guard is the sole defence (see the ROOT-HOSTED test below).
+    const rel = decodeURIComponent(
+      new URL(url).pathname.replace(/^\//, "").replace(/^pack\//, ""),
+    );
     const bytes = tree.get(rel);
     if (!bytes) return new Response("not found", { status: 404 });
     return new Response(new Uint8Array(bytes), {
@@ -191,6 +196,42 @@ test("a manifest listing a traversal path is refused BEFORE any file is download
     "only the manifest may have been fetched — the refusal precedes every file request",
   );
   assert.equal(readdirSync(dataDirectory).length, 0, "and nothing was written anywhere");
+});
+
+test("a ROOT-HOSTED manifest cannot escape DATA_DIR — the case where the path guard is the ONLY defence", async () => {
+  // FOUND BY A MUTATION PROBE, not by reasoning. Disabling `isSafePackRelativePath` left the
+  // traversal test above GREEN, because `resolveDataPackFileUrl` independently refused the URL —
+  // the manifest there lives at `/pack/`, so `../../..` climbs out of the manifest's own directory
+  // and the URL guard catches it. Two guards, one visible case, and the write-side one looked
+  // load-bearing when it was not being tested at all.
+  //
+  // It IS load-bearing here. When the manifest is served from the server ROOT, `..` clamps at the
+  // origin instead of escaping it: `new URL("../../evil.json", "http://host/manifest.json")` is
+  // `http://host/evil.json`, which is under the manifest's directory, so the URL guard passes it.
+  // `path.join(stagingDir, "..", "..", "evil.json")` then writes OUTSIDE `DATA_DIR`. The write-side
+  // whitelist is the only thing between a downloaded manifest and that write.
+  //
+  // The default `DATA_PACK_URL` is a GitHub release asset, which redirects to a CDN host whose
+  // layout this repository does not control — so "the manifest is deep in a path" is not a property
+  // to rely on.
+  const rootUrl = "http://packs.invalid/manifest.json";
+
+  // The control: a legitimate pack served from the root installs. So the refusal below is about the
+  // path, not about root-hosted manifests being broken in general.
+  const control = await run({ tree: acceptedTree(), url: rootUrl });
+  assert.equal(control.result.outcome.status, "installed", control.result.outcome.detail);
+
+  const tree = acceptedTree();
+  const manifest = manifestOf(tree);
+  (manifest.files[0] as { path: string }).path = "../../evil.json";
+  setManifest(tree, manifest);
+
+  const { result, calls, dataDirectory } = await run({ tree, url: rootUrl });
+  assert.equal(result.outcome.status, "refused");
+  assert.equal(result.outcome.refusal?.reason, "schema_violation");
+  assert.match(result.outcome.refusal?.detail ?? "", /will not fetch or write/);
+  assert.deepEqual(calls, [rootUrl], "refused before a single file was requested");
+  assert.equal(readdirSync(dataDirectory).length, 0);
 });
 
 test("a manifest listing an absolute path, a backslash path or an unknown directory is refused", async () => {
