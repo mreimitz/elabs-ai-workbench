@@ -337,10 +337,8 @@ export function checkSecurityRuleSet(
   const missing = [...known].filter((id) => !declared.has(id));
   if (added.length === 0 && missing.length === 0) return null;
   const parts: string[] = [];
-  if (added.length > 0)
-    parts.push(`declares ${added.length} rule(s) no analyzer implements (${added.join(", ")})`);
-  if (missing.length > 0)
-    parts.push(`omits ${missing.length} rule(s) an analyzer emits (${missing.join(", ")})`);
+  if (added.length > 0) parts.push(`declares ${added.length} rule(s) no analyzer implements (${added.join(", ")})`);
+  if (missing.length > 0) parts.push(`omits ${missing.length} rule(s) an analyzer emits (${missing.join(", ")})`);
   return {
     reason: `the pack's rule set does not match this build's analyzers: it ${parts.join(", and ")}.`,
   };

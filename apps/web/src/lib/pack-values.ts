@@ -24,15 +24,17 @@
 //     matters most at `RunConsole.tsx`, whose `?? 0` turned an unknown window into a confident,
 //     meaningless "0% of context used"; `contextLimitFor` returns `null` for genuinely unknown and
 //     the caller renders nothing rather than a number it cannot justify.
-//  2. **`CompareView`'s threshold is an INITIAL value, not a live one.** It seeds from here at mount
-//     and never re-reads: re-pointing it after mount would yank a slider the operator had already
-//     moved. `main.tsx` therefore hydrates BEFORE the first render (bounded, and failure is fine),
-//     so a cold load straight onto `/compare/scans` still seeds from the pack in force.
+//  2. **`CompareView`'s threshold is a SEED, not a live value.** It never re-points on a later pack
+//     change: that would yank a slider the operator had already moved. Because the seed can be
+//     wanted before hydration returns, `CompareView` awaits `packValuesSettled()` ONCE and adopts
+//     the pack's default only while its own seed is still untouched. Nothing blocks the first
+//     paint to arrange this — see `packValuesSettled` for why that inversion mattered.
 //  3. **A malformed payload degrades, it does not throw.** `install` validates against the shared
 //     zod schema and keeps the floor on any failure. A pack surface that could white-screen the app
 //     would be a worse outcome than a stale number.
-//  4. **Hydration never blocks correctness.** Every accessor answers before the fetch resolves and
-//     after it fails.
+//  4. **Hydration never blocks anything — not correctness, and not the first paint.** Every accessor
+//     answers before the fetch resolves and after it fails, and the shell renders without waiting
+//     on it at all.
 
 import { useSyncExternalStore } from "react";
 import {
@@ -160,20 +162,44 @@ export function securityRuleCount(): number {
 
 // ── Hydration ───────────────────────────────────────────────────────────────────────────────────
 
+/** The in-flight (or settled) first hydration, so a consumer can wait on it WITHOUT the shell doing so. */
+let hydration: Promise<boolean> | null = null;
+
 /**
  * Fetch `GET /api/data-pack` and install its `values`.
  *
  * Never throws and never rejects: an unreachable API leaves the floor in force, which is exactly
- * what the image shipped with. `main.tsx` awaits this before the first render, under its own
- * bound — see rule 2.
+ * what the image shipped with. `main.tsx` FIRES this and does not await it — see
+ * {@link packValuesSettled} for why that ordering is the whole design.
  */
-export async function hydratePackValues(signal?: AbortSignal): Promise<boolean> {
-  try {
-    const status = await getDataPackStatus(signal);
-    return installPackValues(status.values);
-  } catch {
-    return false;
-  }
+export function hydratePackValues(signal?: AbortSignal): Promise<boolean> {
+  const attempt = getDataPackStatus(signal)
+    .then((status) => installPackValues(status.values))
+    .catch(() => false);
+  hydration = attempt;
+  return attempt;
+}
+
+/**
+ * Resolves once the first hydration attempt has SETTLED — or immediately if none was ever fired.
+ *
+ * **This exists so that nothing has to block the first paint.** An earlier cut awaited hydration in
+ * `main.tsx` before mounting, which bought one correct slider default on one route and cost a blank
+ * screen for up to two seconds whenever the API was slow to answer. That is this work package's own
+ * subject inverted: D-DP4 and WP 3.1 exist to stop the app waiting on a dependency that is ALLOWED
+ * to be slow, and a busy event loop — a large scan, a suite run — is exactly when someone reloads
+ * the page to see what is happening.
+ *
+ * So the shell mounts immediately, and the ONE consumer whose value is a seed rather than a live
+ * read (`CompareView`'s Jaccard threshold) waits here instead: a local, cancellable wait inside one
+ * route's subtree, which renders its floor-seeded default in the meantime and adopts the pack's
+ * default if and when it lands. A hung `/api/data-pack` therefore delays nothing at all — it leaves
+ * one slider on the value the image shipped with.
+ *
+ * Never rejects, for the same reason {@link hydratePackValues} does not.
+ */
+export function packValuesSettled(): Promise<boolean> {
+  return hydration ?? Promise.resolve(false);
 }
 
 function subscribe(listener: () => void): () => void {
@@ -208,5 +234,6 @@ export function useSecurityRuleRegistry(): Record<string, DataPackSecurityRuleVi
 /** For tests only — production installs and never reverts. */
 export function resetPackValuesForTests(): void {
   current = FLOOR;
+  hydration = null;
   emit();
 }

@@ -209,10 +209,8 @@ export function verifyManifestDigests(
 
   const parts: string[] = [];
   if (mismatched.length > 0) parts.push(`${mismatched.length} file(s) do not match their digest`);
-  if (missing.length > 0)
-    parts.push(`${missing.length} manifest file(s) are missing from the pack`);
-  if (unlisted.length > 0)
-    parts.push(`${unlisted.length} pack file(s) are not listed in the manifest`);
+  if (missing.length > 0) parts.push(`${missing.length} manifest file(s) are missing from the pack`);
+  if (unlisted.length > 0) parts.push(`${unlisted.length} pack file(s) are not listed in the manifest`);
 
   return {
     ok: false,

@@ -14,7 +14,10 @@
  * the RUNNING app, not here. A test that installs a value into the store and reads it back proves
  * the store, not the seam.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_COMPARE_THRESHOLD,
   FAILURE_BUCKET_SCORE_THRESHOLD,
@@ -25,15 +28,18 @@ import {
   contextLimitFor,
   defaultCompareThreshold,
   failureBucketScoreThreshold,
+  hydratePackValues,
   installPackValues,
   isKnownModelId,
   knownModelIds,
   packValues,
+  packValuesSettled,
   resetPackValuesForTests,
   securityRuleCount,
   securityRuleFor,
   securityRuleRegistry,
 } from "./pack-values";
+import * as api from "./api";
 
 afterEach(() => {
   resetPackValuesForTests();
@@ -141,5 +147,66 @@ describe("rule 4 — a hydrated pack is what the accessors answer", () => {
     resetPackValuesForTests();
     expect(defaultCompareThreshold()).toBe(DEFAULT_COMPARE_THRESHOLD);
     expect(failureBucketScoreThreshold()).toBe(FAILURE_BUCKET_SCORE_THRESHOLD);
+  });
+});
+
+describe("hydration never blocks — the shell mounts, one seed waits", () => {
+  it("packValuesSettled resolves immediately when nothing was ever fired", async () => {
+    // The state a view mounted in a test (or before `main.tsx` ran) sees. It must not hang, because
+    // `CompareView` awaits it inside its own subtree.
+    await expect(packValuesSettled()).resolves.toBe(false);
+  });
+
+  it("packValuesSettled tracks the in-flight attempt, and a FAILED one still settles", async () => {
+    // A rejecting API must resolve this, not reject it and not hang: the floor is already in force,
+    // so there is nothing to wait for and nothing to report.
+    const spy = vi
+      .spyOn(api, "getDataPackStatus")
+      .mockRejectedValueOnce(new Error("the API is not answering"));
+    const inFlight = hydratePackValues();
+    await expect(packValuesSettled()).resolves.toBe(false);
+    await expect(inFlight).resolves.toBe(false);
+    expect(defaultCompareThreshold()).toBe(DEFAULT_COMPARE_THRESHOLD);
+    spy.mockRestore();
+  });
+
+  it("a SUCCESSFUL hydration is observable through packValuesSettled", async () => {
+    const spy = vi.spyOn(api, "getDataPackStatus").mockResolvedValueOnce({
+      packVersion: "9.9.9",
+      schemaVersion: 1,
+      asOf: "2099-01-01",
+      source: "fetched",
+      files: 28,
+      analyzerVersion: 4,
+      checkConfigured: true,
+      values: {
+        modelContextLimits: { "pack-only-model": 4242 },
+        defaultCompareThreshold: 0.4,
+        failureBucketScoreThreshold: 0.5,
+        securityRules: {},
+      },
+    } as never);
+    hydratePackValues();
+    await expect(packValuesSettled()).resolves.toBe(true);
+    // The value CompareView adopts once it wakes.
+    expect(defaultCompareThreshold()).toBe(0.4);
+    expect(contextLimitFor("pack-only-model")).toBe(4242);
+    spy.mockRestore();
+  });
+
+  it("the app entry FIRES hydration and does not await it", () => {
+    // The requirement is structural, so it is asserted structurally: `main.tsx` must call
+    // `hydratePackValues` WITHOUT `await`, and must not race it against a timer before mounting.
+    // An earlier cut did exactly that and blanked the shell for up to two seconds whenever the API
+    // was slow — the inversion of D-DP4, inside the work package that argues for it.
+    const entry = join(dirname(fileURLToPath(import.meta.url)), "..", "main.tsx");
+    const source = readFileSync(entry, "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/[^\n]*/g, "");
+    expect(source).toContain("hydratePackValues()");
+    expect(source).not.toMatch(/await\s+hydratePackValues/);
+    expect(source).not.toMatch(/Promise\.race/);
+    // Non-vacuity: the strip left real code behind, so the two absences above mean something.
+    expect(source).toContain("ReactDOM.createRoot");
   });
 });
