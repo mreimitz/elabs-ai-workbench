@@ -179,7 +179,9 @@ test("the compatibility engine does not touch the filesystem at all", () => {
 // --- 4. Boot order and shipping ------------------------------------------------------------------
 
 test("index.ts installs the data pack before it installs the pricing resolver", () => {
-  const source = readFileSync(path.join(SRC, "index.ts"), "utf8");
+  // stripComments: a guard a COMMENT can satisfy is a guard documentation keeps alive after the
+  // code is gone. Proved on this file 2026-08-23 — see the sibling test below.
+  const source = stripComments(readFileSync(path.join(SRC, "index.ts"), "utf8"));
   const installPack = source.indexOf("installDataPackSource(dataPackResolution.pack)");
   const installPricing = source.indexOf("installPricingResolver(pricingRepository)");
   assert.ok(installPack > 0, "index.ts must install a resolved data pack at boot");
@@ -205,7 +207,10 @@ test("copy-data-pack.mjs ships exactly the directories the contract calls pack c
   // The script is a plain .mjs run by `tsc && node`, so it repeats the list rather than importing
   // it. This is what holds the two equal. WHAT IT CANNOT SEE: whether the copy actually happened —
   // only that the script intends to copy the right set.
-  const source = readFileSync(path.join(API_ROOT, "scripts/copy-data-pack.mjs"), "utf8");
+  // stripComments is NOT decoration. Probed 2026-08-23: deleting the two lines that actually copy
+  // the manifest, and adding one comment saying the script copies it, left this test GREEN. A guard
+  // that reads un-stripped source asserts "someone wrote this string", not "the code does this".
+  const source = stripComments(readFileSync(path.join(API_ROOT, "scripts/copy-data-pack.mjs"), "utf8"));
   const block = /const CONTENT_DIRS = \[([\s\S]*?)\];/.exec(source);
   assert.ok(block, "copy-data-pack.mjs must declare CONTENT_DIRS");
   const declared = [...(block[1] as string).matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);

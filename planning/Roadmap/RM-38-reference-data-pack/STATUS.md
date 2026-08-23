@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T03:30:00Z"
+timestamp: "2026-08-23T04:00:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -396,10 +396,39 @@ the source rather than leaving a copy behind.
    `build:data-pack`; `packages/shared/src/index.ts` needed RM-37's `demo-seed.js` *and* this item's
    `data-pack.js`. Taking a side is the default that quietly deletes a work package's public surface.
 
-## The web "flake" has names, and they are not random — 2026-08-23
+## A guard a COMMENT can satisfy — found in WP 1.2's own merged code, 2026-08-23
 
-Pooled with RM-37, which saw it twice independently tonight. **Four sightings, all the same shape:
-files fail in a FULL parallel run and pass in isolation.**
+RM-37 hit this while repairing a guard of their own and passed it on. Probed on **this item's** code,
+on `main`, and it was live:
+
+`data-pack-seam.test.ts`'s shipping guard read `copy-data-pack.mjs` **un-stripped** and asserted
+`/manifest\.json/`. Deleting the two lines that actually copy the manifest turned it red — but only
+because that string happened to appear nowhere in a comment. **Adding one comment line — "this script
+also copies manifest.json" — with the copying code still deleted made the test GREEN.** The manifest
+would have stopped shipping and a passing gate would have said nothing.
+
+Fixed on `main`: that scan and the `index.ts` boot-order scan now strip comments before matching, and
+both carry the probe result in the test file. Re-probed after the fix — same mutation, now red.
+`# pass 3886 # fail 0` restored.
+
+**The general form, which is why it is recorded here and not just fixed:** a guard that reads
+un-stripped source asserts *"someone wrote this string"*, never *"the code does this"* — and
+documentation is the thing most likely to keep the string alive after the code is gone. It is the
+hash-ledger error again in a new costume: precisely right about the wrong quantity. **This matters
+most exactly when tables move between files**, which is what WP 2.1 is doing right now — a comment
+describing the old location routinely outlives it.
+
+## The web "flake" — evidence DOWNGRADED, 2026-08-23
+
+**Corrected the same night by RM-37, and the correction cuts the evidence in half.** RM-37's own
+full-gate reds turned out to be **two real, deterministic defects** — a source-scanning guardrail that
+cannot be load-sensitive by construction, and a test rendering a view without the shell its button
+moved into. Both fail in isolation, repeatedly; both are fixed; the re-run is green **in parallel**
+(415 files / 4771 passed, EXIT=0). That run is a **control, not a fourth sighting.**
+
+So the standing evidence is **two sightings, both confirmed-by-agent-report and neither reproduced by
+an orchestrator**, plus my own two-file failure whose names I never captured. "The cluster is
+hub/assistant/watch dialogs" is **not established** and should not be repeated as though it were.
 
 | Sighting | Failed | Named | Alone |
 | --- | --- | --- | --- |
