@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T05:05:00Z"
+timestamp: "2026-08-23T06:30:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -231,37 +231,107 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 
 ## Phase 2 — Migrate the tables
 
-- [ ] WP 2.1 — security rules + id ledger + every signature list into the pack — spec:
-      [`wp-2.1-security-tables.md`](./wp-2.1-security-tables.md). **status: in progress** · dispatched
-      2026-08-23 from `main` at `d387fc8`, after RM-37 confirmed the rule definitions are settled.
+- [x] WP 2.1 — security rules + id ledger + every signature list into the pack — **done 2026-08-23** ·
+      `worktree-agent-af9934533d9b19707` · **merged to `main`** in `4534720`.
+      **Byte-identity is a PINNED hash, not a regenerated comparison** — the agent wrote the guard
+      first, on unmodified `main`, and committed it before touching a literal. Four SHA-256s
+      (`serverReport 686f3d33…` · `skillReport ee7bd5ab…` · `serverDiff d7a624ff…` ·
+      `skillDiff 2a1267a5…`) unchanged after the move, with coverage tests proving the fixtures fire
+      all 18 rules.
+      **No id changed spelling, proved four ways rather than inferred** from the hashes: the 18 ids
+      diffed against `main`'s source, `id|severity|subject|category` diffed for all 18, and every
+      `title` and `rationale` (36 fields) asserted byte-for-byte in the pre-move source.
+      `skill-surface.injection-phrasing` is untouched, so RM-37 WP 1.5's confirm gate is unaffected.
+      `SECURITY_RULES` still imports from its current path — checked at **runtime**, 18 rules, and
+      `SecurityRuleId` is still a literal union, so `SecurityPanel.tsx:356` is unchanged.
+      **Tooth 4 is the entry worth reading, and it is a self-caught false pass.** The agent's first
+      regex-cap probe went green for a reason it had not designed: there are **two** independent caps,
+      and the pack's own JSON Schema `maxLength` caught the payload after the TypeScript one was
+      removed. It removed the third layer, resealed the manifest and got the intended red. It would
+      otherwise have reported a bitten tooth that was not bitten — the exact failure this ledger has
+      been cataloguing, caught by the agent on itself.
+      **The comment-laundering probe was run in BOTH directions** (literal as code → red; literal as
+      code plus a "moved to the pack" comment → still red; comment only → green), against the real
+      900-line file rather than a synthetic string.
+      **A measured blind spot in its own byte-identity guard, written into the test file:** deleting a
+      *redundant* verb inflection leaves all six hashes green, because the fixture's tool is named
+      `delete_everything` and the rule reads the name first. The hashes see a changed **outcome**,
+      never a changed **table** — right for a relocation guard, wrong for reviewing a pack edit.
+      **The self-scan score changed and the change is explained, not absorbed.** RM-20 recorded
+      "49 / high risk on 51 `info` findings"; it is now **100 / clean, 0 findings**. Two causes, both
+      verified: analyzer v3 capped `info` deductions, and the mount's tools have since gained
+      parameter descriptions and `additionalProperties: false`, so the 51 findings no longer exist.
+      **Orchestrator's own live run confirms the budget half:** `24 tools · 3183 definition tokens ·
+      budget 3500 → within budget`, EXIT=0.
+      **Spec corrections:** the oversized-description ceiling lives in `security-posture.ts`, not
+      `analyzer.ts`; and the spec's signature inventory predated RM-37 WP 0.5, which added
+      `READ_VERBS_IN_NAME` / `WEAK_MUTATING_VERBS_IN_NAME` / `WEAK_VERB_MAX_LEADING_OFFSET` — moved
+      too, since the acceptance says *no* literal may remain.
+      **Not verified:** no browser; no pack has been fetched over a network (every D-DP6/D-DP7 refusal
+      was exercised through the **cache** rung, which is the same `resolveDataPack` path); no Docker
+      image built, though the real compiled API was booted (`packVersion 1.1.0, files 22`, health 200).
 
-      **RM-37's clearance, and the two conditions it comes with** (they grepped all 29 RM-37 specs for
-      `security-posture` / `severity-ramp` / `apps/api/src/security` / `SECURITY_RULES` and read every
-      hit): WP 0.5 was the last edit and is merged; **WP 3.2 lands next door, not here** — its severity
-      work is `FINDING_SEVERITY_META` in `packages/shared/src/labels.ts` plus web maps, and it
-      explicitly leaves the deterministic analyzers alone; 2.4 references RM-20's doc; 2.6 and 1.5
-      only **read**. The two conditions are about the **import surface, not the data**:
-      1. `SECURITY_RULES` stays importable from its current module path even if its contents come from
-         the pack — a re-export is fine.
-      2. Any rule-id or finding-id **spelling** change must be reported. `skill-surface.injection-phrasing`
-         is load-bearing for RM-37 WP 1.5's confirm gate, and byte-identity on reports would **not**
-         catch a rename faithfully mirrored in the fixtures.
+- [x] WP 2.2 — advisor + quality thresholds and the model merge chains into the pack — **done
+      2026-08-23** · `worktree-agent-a25edd1f907247b54` · **merged to `main`** in `52038b8`.
+      **Byte-identity PASS, measured on a genuinely pristine tree** — advisor reports over three
+      scopes, two skill-quality reports and two heatmaps as one JSON blob, sha256
+      `760fd893d66af1072e70035e42c0489eab3b98ab43077cf6bb853c4f3b796dc0` before and after. The
+      baseline was captured under `git stash push -u` with the probe restored from outside the repo,
+      not on a partially-reverted tree.
+      **It found a real hole in a guard it had just copied from `1687eb8`, by probing rather than
+      reasoning:** reverting `quality-validated-trim.ts` to hardcoded `0.5`/`0.2` while leaving the
+      comment naming `high_waste_share` left the file **green**. Fixed, and **re-probed by the
+      orchestrator independently** — mutation confirmed applied (`2 insertions, 2 deletions`), the
+      laundering comment confirmed present at `:74`, and `not ok 1138 - the waste bands are ONE pack
+      entry that both trim rules read` observed. A first attempt at that probe targeted a symbol that
+      does not exist in the file and was discarded as **no result**, per the standing rule.
+      **The env → pack → compiled chain is proved behaviourally, not by source assertion.** The
+      agent's first cut asserted the `??` was *spelled* a certain way; it replaced that with three
+      spawned child processes, because `config` is frozen at module load and a source assertion
+      measures a proxy.
+      **The design decision to review, and it is sound:** `packages/shared` cannot read the filesystem
+      and `apps/web` consumes `MODEL_CONTEXT_LIMITS` / `DEFAULT_COMPARE_THRESHOLD` /
+      `FAILURE_BUCKET_SCORE_THRESHOLD`, so D-DP3's compiled floor must exist as code. Rather than
+      hand-maintain it — the second copy D-DP1 forbids — `pnpm build:data-pack` **renders** it into
+      `packages/shared/src/pack-defaults.generated.ts` from the same authored files. One authored
+      copy, one derived.
+      **A REAL GAP this creates, carried to WP 3.2 rather than closed here:** `apps/web` reads the
+      **compiled floor**, not the runtime pack. Once WP 3.1 can fetch a pack, the API's answers will
+      change while the browser's model list and compare-view default stay on what shipped in the
+      image. Structural — `packages/shared` may not touch the filesystem — so it is a surface
+      problem, and WP 3.2 must solve it or say plainly that the browser lags the API.
+      **Judgement calls left standing:** the three new pack files carry no `as_of` (they are
+      judgements, not dated external facts, and inventing a date would be worse than omitting one;
+      `additionalProperties: false` stops one being smuggled in later).
+      **Spec correction:** `MODEL_ID_ALIASES` / `DEFAULT_HEATMAP_MODELS` are at `dataset.ts:40`/`:102`.
+      **Not verified:** no browser, no Docker image; the built API was booted against the shipped
+      snapshot (`origin:"bundled", files:24`, health 200).
 
-      **Two premise corrections found at dispatch, both against my own spec:** `SECURITY_ANALYZER_VERSION`
-      is **4**, not the 3 the spec states — RM-37 WP 0.5 bumped it. And `Object.keys(SECURITY_RULES)`
-      is **already live** at `apps/web/src/features/security/SecurityPanel.tsx:356`, not a future WP 2.6
-      usage as RM-37 believed, which makes condition 1 a present constraint rather than a courtesy.
-      18 rules and all the signature lists are where the spec says.
-- [ ] WP 2.2 — advisor + quality thresholds and the model merge chains into the pack — spec:
-      [`wp-2.2-thresholds-and-model-chains.md`](./wp-2.2-thresholds-and-model-chains.md).
-      **status: in progress** · dispatched 2026-08-23 from `main` at `d387fc8`.
-      **Premises re-verified before dispatch:** the duplicated `HIGH_WASTE_SHARE`/`MEDIUM_WASTE_SHARE`
-      pair is still in both `unused-tool-trim.ts` and `quality-validated-trim.ts`; the six other advisor
-      thresholds, the six shared quality constants, the 3500-token budget, the three pricing layers and
-      `MODEL_ID_ALIASES`/`DEFAULT_HEATMAP_MODELS` are all where the spec says. RM-37 has **not** touched
-      `apps/api/src/advisor/` (its severity work landed in `apps/web/src/features/advisor/` instead), so
-      2.2 and RM-37 do not overlap. WP 2.1 remains **held** pending RM-37's answer on whether
-      `security-posture.ts` is settled.
+### The merge of the two, and what it cost
+
+Merged in order 2.2 → 2.1. **The generated-file rule this ledger wrote at `1f13cae` was needed within
+the hour:** `data-pack/manifest.json` conflicted, was resolved by taking one side wholesale and
+re-running `pnpm build:data-pack`, never hand-merged. `packVersion` was 1.0.0 on one side and 1.1.0 on
+the other — resolved to the **single higher version**, as WP 2.1 predicted.
+
+Three further conflicts (`loader.ts`, `build-cli.ts`, `README.md`) were **all** "both, not one" — each
+side adding its own outputs — and were resolved by keeping both sides of every hunk. Two things that
+needed a human eye afterwards, neither of which git would have flagged: a **duplicated numbered step**
+in a comment block (both sides rewrote the same list item), and a **doubled `console.log` argument**
+that made the build print its output paths twice. The writes themselves were correct and distinct —
+checked, not assumed. **Concatenating both sides is right for declarations and wrong for prose**; that
+distinction is the residue worth keeping.
+
+**Gate re-run on `main` after both merges:** typecheck **0** · lint **0** · build **0** · test
+**EXIT=0** · `okf:validate` PASS. shared **288** · illustrations **1032** · cli **87** · api **3936**
+(3886 + 20 + 30, reconciling exactly) · web **394 files / 4463 + 5 skipped**.
+
+**A validation-method note.** One `pnpm test` invocation on WP 2.2's branch exited **1** with every
+suite reporting zero failures; a captured re-run exited **0** with identical counts. The cause was
+this session's habit of running the suite twice — once piped for counts, once redirected for an exit
+code — which both wastes a full run and produces two results that can disagree. **One run, captured to
+a file, both signals read from it.**
+
 
 ## Phase 3 — Refresh, surface, publish
 
