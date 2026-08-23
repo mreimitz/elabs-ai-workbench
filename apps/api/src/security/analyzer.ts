@@ -13,9 +13,10 @@
 //   • **D-SP4 — a rule never builds a `SecurityEvidence`.** Evidence is handed over as
 //     `{ raw, offset }` and `createSecurityFinding` forces it through `redactSecurityEvidence`
 //     (invisibles escaped so they become visible, credential-shaped runs masked, truncated at 200).
-//   • **README — heuristics are conservative and documented.** Every matcher below is an exported
-//     named constant whose comment says what it deliberately does NOT match (D-SP11). That comment is
-//     the false-positive review, written down; each one has a near-miss fixture in
+//   • **README — heuristics are conservative and documented.** Every matcher's vocabulary now lives
+//     in `data-pack/security/signatures.json`, and its false-positive review — what it deliberately
+//     does NOT match, and why — travels WITH it, in that file's `…Note` fields, where the person
+//     editing the list will read it. Each one still has a near-miss fixture in
 //     `apps/api/test/security-analyzer.test.ts` that must stay green.
 //   • **A rule that throws must not take the report down.** MCP tool definitions arrive from arbitrary
 //     third-party servers, so `inputSchema` may be a string, `annotations` may be an array and
@@ -27,28 +28,31 @@
 // the untouched provider payload and may hold anything at all; the four normalized fields are the
 // surface a model actually reads, which is the surface these rules are about.
 //
-// **D-SP14 (WP 1.3) — rules 1, 2 and 3 are now thin callers of `./text-scan.ts`.** Their three
-// heuristics — the injection phrase list, the hidden-instruction patterns, the invisible-codepoint
-// ranges — ask exactly the same question of a SKILL.md body that they ask of a tool description, so
-// they were moved to one file rather than copied into a second analyzer. Everything this module
-// exported before the move it still exports, re-exported below, and
-// `apps/api/test/security-analyzer.test.ts` is byte-identical and green: that is the proof the
-// extraction changed no behaviour. The rules THEMSELVES — which anchor they use, how many findings
-// they emit per tool, what their messages say — stay here, because those are per-subject decisions
-// and the skill rules make different ones.
+// **D-SP14 (WP 1.3) — rules 1, 2 and 3 are thin callers of `./text-scan.ts`.** Their three
+// heuristics ask exactly the same question of a SKILL.md body that they ask of a tool description,
+// so they live in one file rather than being copied into a second analyzer. The rules THEMSELVES —
+// which anchor they use, how many findings they emit per tool, what their messages say — stay here,
+// because those are per-subject decisions and the skill rules make different ones.
+//
+// **RM-38 WP 2.1 — every list and every pattern this file used to declare is now pack data.** Not one
+// vocabulary literal remains here; each rule reads `securitySignatures()` at CALL time, never at
+// module load, because in ESM a module-level read happens strictly before boot installs the resolved
+// pack. `apps/api/test/security-tables.test.ts` scans this file's comment-stripped source and fails
+// on a re-introduced phrase list or verb array — comment-stripped on purpose, because a sentence
+// describing where a list used to live would otherwise satisfy the scan after the list came back.
 
 import {
-  createSecurityFinding,
-  SECURITY_MAX_DESCRIPTION_CHARS,
   SECURITY_MAX_FINDINGS_PER_TOOL,
   type ScanDetail,
   type SecurityFinding,
   type SecurityRuleId,
   type ToolScan,
+  createSecurityFinding,
+  securityMaxDescriptionChars,
+  securitySignatures,
 } from "@mcp-token-footprint/shared";
 import {
   describeCodePoint,
-  escapeRegExp,
   evidenceAround,
   findHiddenInstructionBlocks,
   findInjectionPhrases,
@@ -56,20 +60,12 @@ import {
   readText,
 } from "./text-scan.js";
 
-// D-SP14 — everything this module exported before the heuristics moved, it still exports. A consumer
-// that imported `INJECTION_PHRASES` or `HIDDEN_PSEUDO_TAG_PATTERN` from here keeps compiling, and the
-// WP 1.2 test file's import list did not have to change (which is what made it possible to leave that
-// file byte-identical).
-export {
-  EVIDENCE_CONTEXT_CHARS,
-  HIDDEN_HTML_COMMENT_PATTERN,
-  HIDDEN_MODEL_ADDRESS_PATTERN,
-  HIDDEN_PSEUDO_TAG_PATTERN,
-  INJECTION_INSTRUCTION_OBJECTS,
-  INJECTION_PHRASES,
-  INVISIBLE_CODE_POINT_RANGES,
-  type InjectionPhrase,
-} from "./text-scan.js";
+// D-SP14 — the three shared text heuristics are still defined in exactly one place, `./text-scan.ts`,
+// and this module is still a thin caller of them. What changed in RM-38 WP 2.1 is that their
+// VOCABULARY is no longer a `const` in either file: it is pack data, reached through
+// `securitySignatures()` at call time. Nothing is re-exported from here any more, because there is no
+// longer a constant to re-export — a consumer that wants the phrase list reads the tables.
+export { escapeRegExp } from "./text-scan.js";
 
 // ── Input ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -108,18 +104,10 @@ function toolNameOf(tool: ToolScan): string {
   return name.length > 0 ? name : UNNAMED_TOOL;
 }
 
-/**
- * A "token" boundary for identifiers AND prose: anything that is not a letter or a digit. That makes
- * `delete` a token in `delete_file`, `delete-file`, `Delete a file` and `files.delete`, while
- * `dropdown` does NOT contain the token `drop` and `undelete` does not contain `delete`.
- *
- * Deliberately NOT `\b`: `_` is a word character, so `\bdelete\b` fails on `soft_delete_file` —
- * exactly the snake_case names MCP tools are written in.
- */
-function tokenPattern(words: readonly string[], flags = "i"): RegExp {
-  const alternatives = words.map(escapeRegExp).join("|");
-  return new RegExp(`(?:^|[^a-zA-Z0-9])(${alternatives})(?![a-zA-Z0-9])`, flags);
-}
+// The token-boundary matcher that turns a word list into a pattern now lives in
+// `packages/shared/src/security-tables.ts` and runs ONCE, at pack load (D-DP9). Its boundary is
+// anything that is not a letter or a digit — deliberately NOT `\b`, because `_` is a word character
+// and the snake_case names MCP tools are written in would defeat it.
 
 /** The index/length of the captured group (group 1), not of the boundary character before it. */
 type TokenMatch = { index: number; length: number; text: string };
@@ -164,13 +152,10 @@ function readSchemaObject(value: unknown): Record<string, unknown> | null {
 
 // ── The parameter walk (rules 3, 8, 9) ──────────────────────────────────────────────────────────
 
-/**
- * How deep and how wide the schema walk goes before it stops. A tool definition is untrusted input,
- * so the traversal is bounded rather than trusting it to be small. Both bounds are far past anything
- * a real schema reaches; hitting one means the report is incomplete for that tool, never wrong.
- */
-export const SCHEMA_WALK_MAX_DEPTH = 12;
-export const SCHEMA_WALK_MAX_NODES = 2000;
+// How deep and how wide the schema walk goes before it stops is pack data
+// (`schemaWalkMaxDepth`/`schemaWalkMaxNodes`). A tool definition is untrusted input, so the traversal
+// is bounded rather than trusted to be small. Both bounds are far past anything a real schema
+// reaches; hitting one means the report is incomplete for that tool, never wrong.
 
 export type SchemaParameter = {
   /** Dotted path from the root schema, e.g. `auth.api_key` or `filters[].field`. */
@@ -195,14 +180,15 @@ export function collectSchemaParameters(inputSchema: unknown): SchemaParameter[]
 
   const collected: SchemaParameter[] = [];
   let visited = 0;
+  const { schemaWalkMaxDepth, schemaWalkMaxNodes } = securitySignatures();
 
   const walk = (node: Record<string, unknown>, prefix: string, depth: number): void => {
-    if (depth > SCHEMA_WALK_MAX_DEPTH || visited >= SCHEMA_WALK_MAX_NODES) return;
+    if (depth > schemaWalkMaxDepth || visited >= schemaWalkMaxNodes) return;
 
     const properties = readSchemaObject(node.properties);
     if (properties !== null) {
       for (const [key, rawChild] of Object.entries(properties)) {
-        if (visited >= SCHEMA_WALK_MAX_NODES) return;
+        if (visited >= schemaWalkMaxNodes) return;
         if (key.length === 0) continue;
         const child = readSchemaObject(rawChild);
         if (child === null) continue;
@@ -233,9 +219,10 @@ export function collectSchemaParameters(inputSchema: unknown): SchemaParameter[]
  * fact — the kind of severity inflation the README calls a defect. The message says how many other
  * phrases matched so nothing is hidden.
  *
- * The phrase list itself is `INJECTION_PHRASES` in `./text-scan.ts` (D-SP14) — including the
- * `requiresInstructionObject` rule that keeps "will ignore previous drafts" silent. What is decided
- * HERE is what a SERVER finding looks like: the `tool` anchor, the one-per-tool bound, the message.
+ * The phrase list itself is pack data, matched by `./text-scan.ts` (D-SP14) — including the
+ * requires-an-instruction-object rule that keeps a sentence about the tool's own behaviour silent.
+ * What is decided HERE is what a SERVER finding looks like: the `tool` anchor, the one-per-tool
+ * bound, the message.
  */
 export function ruleInjectionPhrasing(tool: ToolScan): SecurityFinding[] {
   const description = readText(tool.description);
@@ -290,7 +277,7 @@ export function ruleHiddenInstructions(tool: ToolScan): SecurityFinding[] {
 /**
  * One tool-anchored finding for the name/description, plus one parameter-anchored finding per
  * offending parameter (bounded per tool like rule 9, so a pathological schema cannot drown the
- * report). The ranges themselves are `INVISIBLE_CODE_POINT_RANGES` in `./text-scan.ts` (D-SP14).
+ * report). The ranges themselves are pack data, matched by `./text-scan.ts` (D-SP14).
  */
 export function ruleInvisibleUnicode(tool: ToolScan): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
@@ -363,20 +350,21 @@ export function ruleInvisibleUnicode(tool: ToolScan): SecurityFinding[] {
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
 /**
- * Length only — no attempt to judge the CONTENT of a long description. `SECURITY_MAX_DESCRIPTION_CHARS`
- * (2,000) is set so that a thorough, honest description does not reach it; a 1,900-character
- * description is deliberately silent, which is the near-miss fixture.
+ * Length only — no attempt to judge the CONTENT of a long description. The ceiling is pack data
+ * (`maxDescriptionChars`), set so that a thorough, honest description does not reach it; a
+ * description just under it is deliberately silent, which is the near-miss fixture.
  */
 export function ruleOversizedDescription(tool: ToolScan): SecurityFinding[] {
   const description = readText(tool.description);
-  if (description.length <= SECURITY_MAX_DESCRIPTION_CHARS) return [];
+  const ceiling = securityMaxDescriptionChars();
+  if (description.length <= ceiling) return [];
 
   const toolName = toolNameOf(tool);
   return [
     createSecurityFinding({
       ruleId: "poisoning.oversized-description",
       anchor: { kind: "tool", toolName },
-      message: `The description of "${toolName}" is ${description.length} characters, over the ${SECURITY_MAX_DESCRIPTION_CHARS}-character limit, and that context is spent on every call. Read it end to end.`,
+      message: `The description of "${toolName}" is ${description.length} characters, over the ${ceiling}-character limit, and that context is spent on every call. Read it end to end.`,
       // The first 200 characters — the excerpt cap is 200 anyway, so this is what a reader gets.
       evidence: { raw: description.slice(0, 200), offset: 0 },
     }),
@@ -387,29 +375,8 @@ export function ruleOversizedDescription(tool: ToolScan): SecurityFinding[] {
 // Rule 5 — annotation.destructive-unmarked
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
-/**
- * Destructive verbs, written out in every inflection rather than stemmed.
- *
- * Spelling the forms out is what makes the false-positive review reviewable: `drop` is here but
- * `dropdown` is not a token match, `delete` is here but `undelete` is not (the token boundary is a
- * non-alphanumeric, so `un` before it blocks the match), and no stem like `eras` can quietly pull in
- * "eras" or `wip` pull in "work in progress".
- */
-// biome-ignore format: one inflection family per line — the grouping IS the review surface
-export const DESTRUCTIVE_VERBS = [
-  "delete", "deletes", "deleted", "deleting", "deletion", "deletions",
-  "remove", "removes", "removed", "removing", "removal",
-  "drop", "drops", "dropped", "dropping",
-  "destroy", "destroys", "destroyed", "destroying",
-  "purge", "purges", "purged", "purging",
-  "truncate", "truncates", "truncated", "truncating",
-  "revoke", "revokes", "revoked", "revoking",
-  "terminate", "terminates", "terminated", "terminating",
-  "wipe", "wipes", "wiped", "wiping",
-  "erase", "erases", "erased", "erasing",
-] as const;
-
-export const DESTRUCTIVE_VERB_PATTERN = tokenPattern(DESTRUCTIVE_VERBS);
+// The destructive-verb vocabulary is pack data (`destructiveVerbs`), written out in every inflection
+// rather than stemmed, with its false-positive review beside it in the pack.
 
 /**
  * Fires when the tool reads as destructive AND (there is no annotations object at all, OR
@@ -432,8 +399,9 @@ export function ruleDestructiveUnmarked(tool: ToolScan): SecurityFinding[] {
 
   const name = readText(tool.toolName);
   const description = readText(tool.description);
-  const inName = matchToken(DESTRUCTIVE_VERB_PATTERN, name);
-  const inDescription = inName === null ? matchToken(DESTRUCTIVE_VERB_PATTERN, description) : null;
+  const pattern = securitySignatures().destructiveVerbPattern;
+  const inName = matchToken(pattern, name);
+  const inDescription = inName === null ? matchToken(pattern, description) : null;
   const hit = inName ?? inDescription;
   if (hit === null) return [];
 
@@ -456,107 +424,28 @@ export function ruleDestructiveUnmarked(tool: ToolScan): SecurityFinding[] {
 // Rule 6 — annotation.readonly-contradiction
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
-/**
- * Mutating verbs matched in the tool NAME. A name is an identifier the server chose, so a token here
- * is a claim about what the tool does, never incidental prose.
- *
- * Token matching subsumes the `set_`/`put_` prefixes the plan names: `set` is a token in `set_config`
- * and in `config_set`, while `settings_get` and `output_path` contain neither (`settings` and
- * `output` are single tokens). `reset` is likewise not the token `set`.
- *
- * Deliberately absent: the past participles (`deleted`, `updated`, `removed`). Those describe a STATE
- * the tool reads, not an action it performs — `list_deleted_items` is a read tool with an honest
- * `readOnlyHint: true`, and firing this `error` on it would be exactly the false positive that
- * teaches an operator to stop reading the loudest severity in the report.
- */
-// biome-ignore format: one inflection family per line — the grouping IS the review surface
-export const MUTATING_VERBS_IN_NAME = [
-  "delete", "deletes",
-  "remove", "removes",
-  "write", "writes",
-  "create", "creates",
-  "update", "updates",
-  "insert", "inserts",
-  "drop", "drops",
-  "send", "sends",
-  "post", "posts",
-  "patch", "patches",
-  "set", "sets",
-  "put", "puts",
-] as const;
-
-/**
- * Mutating verbs matched in the DESCRIPTION — third-person-singular forms only.
- *
- * The bare infinitives are all common NOUNS in tool prose: "write access", "the last update", "a
- * blog post", "the patch id", "the result set". Matching those would turn the one `error` in the
- * annotation family into the noisiest rule in the report. The `-s` form is unambiguously verbal in
- * "Deletes a file", which is how honest servers actually write a mutation.
- *
- * Deliberately absent even in `-s` form: `updates`, `posts`, `patches`, `sets`, `puts` — all common
- * plural nouns ("returns pending updates", "the user's posts"). A tool that really mutates and lies
- * about it will almost always say so in its NAME as well, which the list above catches.
- */
-export const MUTATING_VERBS_IN_DESCRIPTION = [
-  "deletes",
-  "removes",
-  "writes",
-  "creates",
-  "inserts",
-  "drops",
-  "sends",
-] as const;
-
-// NOTE — there is deliberately no `MUTATING_NAME_PATTERN` any more. A single first-match regex over
-// the whole name is what produced this rule's false positives, so leaving it exported beside
+// Rule 6's whole vocabulary is pack data, and each of the four lists carries its own false-positive
+// review there:
+//
+//   • `mutatingVerbsInName` — matched in the tool NAME, which is an identifier the server chose, so a
+//     token there is a claim about what the tool does rather than incidental prose. Token matching
+//     subsumes the prefix forms the plan named, and the past participles are deliberately absent
+//     because they describe a STATE the tool reads.
+//   • `mutatingVerbsInDescription` — third-person-singular forms only, because the bare infinitives
+//     are all common nouns in tool prose.
+//   • `readVerbsInName` (RM-37 WP 0.5) — when one of these precedes a mutating token in the SAME
+//     name, the mutating token is part of the noun being read, not the action being performed. The
+//     leading verb is what the tool does.
+//   • `weakMutatingVerbsInName` + `weakVerbMaxLeadingOffset` (RM-37 WP 0.5) — the two inflection
+//     families that are as often a noun as a verb. They produced this rule's only MEASURED false
+//     positives, on three of the owner's own Qlik servers, so they fire from the leading verb
+//     position only: index 0, or index 1 behind a single namespace token, which is how MCP servers
+//     namespace a tool.
+//
+// There is deliberately no single "mutating name pattern". A first-match regex over the whole name
+// is exactly what produced this rule's false positives, so leaving one beside
 // {@link findMutatingNameToken} would leave a second, quietly wrong answer for the next caller to
-// reach for. The vocabulary lives in {@link MUTATING_VERBS_IN_NAME}; the matching is positional.
-export const MUTATING_DESCRIPTION_PATTERN = tokenPattern(MUTATING_VERBS_IN_DESCRIPTION);
-
-/**
- * Tokens that declare the name a READ (RM-37 WP 0.5).
- *
- * When one of these precedes a mutating token in the SAME name, the mutating token is part of the
- * noun being read, not the action being performed: `qlik_get_set_expression` reads *a set
- * expression*, `get_delete_policy` reads *a delete policy*. The leading verb is what the tool does.
- */
-// biome-ignore format: one token per line — the list IS the review surface
-export const READ_VERBS_IN_NAME = [
-  "get",
-  "list",
-  "read",
-  "fetch",
-  "describe",
-  "search",
-  "query",
-  "find",
-  "show",
-] as const;
-
-/**
- * The two inflection families that are as often a NOUN or a trailing modifier as they are a verb.
- *
- * `set` and `put` are the weakest tokens in {@link MUTATING_VERBS_IN_NAME}, and they produced this
- * rule's only measured false positives: on the owner's three Qlik servers,
- * `qlik_get_set_expression` and `qlik_generate_set_expression` are both getters whose names carry
- * the noun "set expression". They therefore fire only from the LEADING verb position — see
- * {@link findMutatingNameToken}.
- */
-export const WEAK_MUTATING_VERBS_IN_NAME = ["set", "sets", "put", "puts"] as const;
-
-/**
- * How many tokens may precede a weak verb and still leave it "leading".
- *
- * **One**, because that is how MCP servers namespace a tool: `qlik_set_session_mutation_mode`,
- * `github_put_file`. Anything deeper and the verb is sitting inside a noun phrase — which is
- * exactly the shape of both measured false positives (`qlik_get_set_expression`,
- * `qlik_generate_set_expression`, both at index 2).
- */
-const WEAK_VERB_MAX_LEADING_OFFSET = 1;
-
-const READ_NAME_TOKENS = new Set<string>(READ_VERBS_IN_NAME);
-const MUTATING_NAME_TOKENS = new Set<string>(MUTATING_VERBS_IN_NAME);
-const WEAK_MUTATING_NAME_TOKENS = new Set<string>(WEAK_MUTATING_VERBS_IN_NAME);
+// reach for. The vocabulary is a list; the matching is positional.
 
 /** Every alphanumeric run in a name, in order — the same token boundary {@link tokenPattern} uses. */
 function tokenizeName(name: string): TokenMatch[] {
@@ -600,21 +489,24 @@ function tokenizeName(name: string): TokenMatch[] {
  * verb: `qlik_get_script` and `get_script` are the same claim.
  */
 function nameLeadsWithReadVerb(name: string): boolean {
+  const { readNameTokens, weakVerbMaxLeadingOffset } = securitySignatures();
   const tokens = tokenizeName(name);
-  for (let index = 0; index < tokens.length && index <= WEAK_VERB_MAX_LEADING_OFFSET; index += 1) {
+  for (let index = 0; index < tokens.length && index <= weakVerbMaxLeadingOffset; index += 1) {
     const token = tokens[index];
-    if (token !== undefined && READ_NAME_TOKENS.has(token.text.toLowerCase())) return true;
+    if (token !== undefined && readNameTokens.has(token.text.toLowerCase())) return true;
   }
   return false;
 }
 
 export function findMutatingNameToken(name: string): TokenMatch | null {
+  const { readNameTokens, mutatingNameTokens, weakMutatingNameTokens, weakVerbMaxLeadingOffset } =
+    securitySignatures();
   const tokens = tokenizeName(name);
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index];
     if (token === undefined) continue;
     const lower = token.text.toLowerCase();
-    if (!MUTATING_NAME_TOKENS.has(lower)) continue;
+    if (!mutatingNameTokens.has(lower)) continue;
 
     // Guard 1 — a read verb ANYWHERE before this token means the token names the thing being read.
     //
@@ -635,13 +527,13 @@ export function findMutatingNameToken(name: string): TokenMatch | null {
     // position (guard 1)" and "is not second-guessed by its prose".
     const readVerbPrecedes = tokens
       .slice(0, index)
-      .some((earlier) => READ_NAME_TOKENS.has(earlier.text.toLowerCase()));
+      .some((earlier) => readNameTokens.has(earlier.text.toLowerCase()));
     if (readVerbPrecedes) continue;
 
     // Guard 2 — a weak verb has to LEAD a verb phrase: at most one namespace token in front of it,
     // and at least one token after it for it to act on.
-    if (WEAK_MUTATING_NAME_TOKENS.has(lower)) {
-      const leads = index <= WEAK_VERB_MAX_LEADING_OFFSET && index < tokens.length - 1;
+    if (weakMutatingNameTokens.has(lower)) {
+      const leads = index <= weakVerbMaxLeadingOffset && index < tokens.length - 1;
       if (!leads) continue;
     }
 
@@ -670,10 +562,12 @@ export function ruleReadonlyContradiction(tool: ToolScan): SecurityFinding[] {
   if (nameLeadsWithReadVerb(name)) return [];
 
   // Position-aware — a name is an ordered claim, so where the token sits decides whether it is the
-  // verb or part of the noun. The vocabulary is still {@link MUTATING_VERBS_IN_NAME}.
+  // verb or part of the noun. The vocabulary is the pack's `mutatingVerbsInName`.
   const inName = findMutatingNameToken(name);
   const inDescription =
-    inName === null ? matchToken(MUTATING_DESCRIPTION_PATTERN, description) : null;
+    inName === null
+      ? matchToken(securitySignatures().mutatingDescriptionPattern, description)
+      : null;
   const hit = inName ?? inDescription;
   if (hit === null) return [];
 
@@ -694,67 +588,16 @@ export function ruleReadonlyContradiction(tool: ToolScan): SecurityFinding[] {
 // Rule 7 — annotation.open-world-unmarked
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
-/**
- * Terms in a tool's NAME that suggest it reaches outside the host's control.
- *
- * A name is a label the server author chose for what the tool DOES, so a noun here is as strong a
- * signal as a verb: `fetch_page`, `web_search`, `download_report`, `remote_exec`. `https` sits
- * beside `http` because the token matcher treats `https` as its own token.
- *
- * What it deliberately does NOT match: `search` inside a compound token (`researcher`, `websearch`
- * are single tokens and do not match `search` — that is the token boundary doing its job), nor a
- * tool that already declares `openWorldHint: true`, nor `file`, `read` or `list`. This is the
- * quietest rule in the plan (`info`) precisely because plenty of honest servers just omit the hint —
- * a finding here is a nudge, and treating it as anything more would be severity inflation.
- */
-// biome-ignore format: one inflection family per line — the grouping IS the review surface
-export const OPEN_WORLD_NAME_TERMS = [
-  "fetch", "fetches", "fetched", "fetching",
-  "http", "https",
-  "url", "urls", "uri", "uris",
-  "web",
-  "search", "searches", "searching",
-  "browse", "browses", "browsing",
-  "download", "downloads", "downloading",
-  "upload", "uploads", "uploading",
-  "remote",
-] as const;
-
-/**
- * Terms in a tool's DESCRIPTION that suggest it reaches outside the host's control — a deliberately
- * SMALLER list than {@link OPEN_WORLD_NAME_TERMS}, and the same split rule 6 already makes between a
- * name and a description.
- *
- * A description is prose, and prose names the data a tool RETURNS as often as it names what the tool
- * does. Two real false positives on this app's own MCP mount are why this list is narrow:
- * `servers_list` was flagged for the word "url" in *"transport, command/url, auth kind"* — a field it
- * returns — and `skills_list` for "upload" in *"source (upload/GitHub)"*, an enum value it returns.
- * Neither tool reaches anything; both read the local database.
- *
- * So only unambiguous **action inflections** survive here: a description has to say the tool *fetches*
- * or *downloads*, not merely that the word `url` appears somewhere in it. Nothing was added to the
- * vocabulary — this is the existing list, split.
- *
- * What it deliberately does NOT match, all of them nouns that routinely name returned data or a
- * config field: `url`/`uri`, `web`, `remote`, `http`/`https` (a documentation link in a description is
- * a citation, not a network call), and the bare verb stems `fetch`, `search`, `browse`, `download`,
- * `upload`, which are equally common as nouns ("the search index", "an upload"). Each of those still
- * fires from the tool's NAME, where it is a claim about behaviour rather than about a payload.
- */
-// biome-ignore format: one inflection family per line — the grouping IS the review surface
-export const OPEN_WORLD_DESCRIPTION_TERMS = [
-  "fetches", "fetched", "fetching",
-  "searches", "searching",
-  "browses", "browsing",
-  "downloads", "downloading",
-  "uploads", "uploading",
-] as const;
-
-export const OPEN_WORLD_NAME_PATTERN = tokenPattern(OPEN_WORLD_NAME_TERMS);
-export const OPEN_WORLD_DESCRIPTION_PATTERN = tokenPattern(OPEN_WORLD_DESCRIPTION_TERMS);
-
-/** The plan lists "external api" as a phrase, which is not a token — it gets its own matcher. */
-export const OPEN_WORLD_PHRASE_PATTERN = /external\s+api/i;
+// Rule 7's vocabulary is pack data, in two lists with one review between them:
+// `openWorldNameTerms` is the fuller one, because a NAME is a label the author chose for what the
+// tool DOES; `openWorldDescriptionTerms` is deliberately smaller, because prose names the data a
+// tool RETURNS as often as it names what the tool does — two measured false positives on this app's
+// own MCP mount are why. The phrase matcher (`openWorldPhrase`) exists because the plan lists a
+// two-word phrase that is not a token.
+//
+// This is the quietest rule in the plan (`info`) precisely because plenty of honest servers just
+// omit the hint — a finding here is a nudge, and treating it as anything more would be severity
+// inflation.
 
 export function ruleOpenWorldUnmarked(tool: ToolScan): SecurityFinding[] {
   const annotations = readAnnotations(tool.annotations);
@@ -763,14 +606,15 @@ export function ruleOpenWorldUnmarked(tool: ToolScan): SecurityFinding[] {
 
   const name = readText(tool.toolName);
   const description = readText(tool.description);
-  // The name gets the full term list; the description gets action inflections only. `external api`
-  // is unambiguous wherever it appears, so the phrase matcher applies to both.
+  const signatures = securitySignatures();
+  // The name gets the full term list; the description gets action inflections only. The two-word
+  // phrase is unambiguous wherever it appears, so its matcher applies to both.
   for (const [source, where, pattern] of [
-    [name, "name", OPEN_WORLD_NAME_PATTERN],
-    [description, "description", OPEN_WORLD_DESCRIPTION_PATTERN],
+    [name, "name", signatures.openWorldNamePattern],
+    [description, "description", signatures.openWorldDescriptionPattern],
   ] as const) {
     const token = matchToken(pattern, source);
-    const phrase = OPEN_WORLD_PHRASE_PATTERN.exec(source);
+    const phrase = signatures.openWorldPhrasePattern.exec(source);
     const hit =
       token !== null && (phrase === null || token.index <= phrase.index)
         ? token
@@ -796,31 +640,11 @@ export function ruleOpenWorldUnmarked(tool: ToolScan): SecurityFinding[] {
 // Rule 8 — schema.secret-shaped-parameter
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
-/**
- * A property name shaped like a credential. Anchored on `_`-separated segment boundaries, so it reads
- * whole words rather than substrings.
- *
- * Names are normalized to snake_case first ({@link normalizeParameterName}), which is what lets the
- * same anchored pattern read `accessToken` and `access_token` identically instead of silently
- * missing every camelCase schema.
- */
-export const SECRET_PARAMETER_PATTERN =
-  /(^|_)(token|password|passwd|secret|api[_-]?key|apikey|credential|credentials|private[_-]?key|access[_-]?key)($|_)/;
-
-/**
- * Trailing segments that turn a credential-shaped name into a MEASUREMENT or a REFERENCE rather than
- * a place a secret goes: `token_count` counts tokens, `secret_name` names a vault entry,
- * `access_key_id` is the public half of an AWS key pair.
- *
- * This list is why the near-miss fixture `token_count` stays silent. Note what survives it:
- * `secret_access_key` ends in `key`, which is not on this list, so the actual AWS secret still fires.
- */
-// biome-ignore format: one inflection family per line — the grouping IS the review surface
-export const SECRET_PARAMETER_MEASUREMENT_SUFFIXES = [
-  "count", "counts", "limit", "limits", "length", "size", "budget", "usage", "total", "totals",
-  "type", "kind", "name", "names", "id", "ids", "index", "estimate", "ratio", "threshold",
-  "max", "min", "profile", "format", "prefix", "suffix", "required", "enabled", "present",
-] as const;
+// Rule 8's matcher (`secretParameterPattern`) and its exception list
+// (`secretParameterMeasurementSuffixes`) are pack data, with their review beside them there. Names
+// are normalized to snake_case first ({@link normalizeParameterName}), which is what lets one
+// anchored pattern read camelCase and snake_case identically instead of silently missing every
+// camelCase schema.
 
 /**
  * `accessToken` → `access_token`; `APIKey` → `api_key`; `api-key` → `api_key`. Lower-cased, with a
@@ -836,11 +660,12 @@ export function normalizeParameterName(name: string): string {
 
 /** True when the parameter is a free-text field named like a credential. */
 export function isSecretShapedParameter(parameter: SchemaParameter): boolean {
+  const signatures = securitySignatures();
   const normalized = normalizeParameterName(parameter.name);
-  if (!SECRET_PARAMETER_PATTERN.test(normalized)) return false;
+  if (!signatures.secretParameterPattern.test(normalized)) return false;
 
   const lastSegment = normalized.split("_").at(-1) ?? "";
-  if ((SECRET_PARAMETER_MEASUREMENT_SUFFIXES as readonly string[]).includes(lastSegment)) {
+  if (signatures.secretParameterMeasurementSuffixes.includes(lastSegment)) {
     return false;
   }
 
@@ -942,28 +767,12 @@ export function ruleUnconstrainedAdditionalProperties(tool: ToolScan): SecurityF
 // Rule 11 — oauth.broad-scope
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
-/**
- * Scope shapes that grant far more than one job needs.
- *
- * What it deliberately does NOT match: any narrowed scope, which is nearly all of them —
- * `read:user`, `read:org`, `repo:status`, `admin` as part of a longer word, `user:email`. The
- * patterns are anchored end to end for exactly that reason: `^.*:\*$` matches `files:*` but not
- * `files:read`, and `^(repo|write:org|admin:.*)$` matches GitHub's whole-account grants without
- * touching their narrowed siblings.
- *
- * Matched case-insensitively; a provider that returns `ADMIN` is granting the same thing.
- */
-export const BROAD_OAUTH_SCOPE_PATTERNS: readonly RegExp[] = [
-  /^\*$/i,
-  /^all$/i,
-  /^admin$/i,
-  /^full[_-]?access$/i,
-  /^.*:\*$/i,
-  /^(repo|write:org|admin:.*)$/i,
-];
+// Rule 11's scope shapes (`broadOauthScopePatterns`) are pack data, with their review beside them
+// there. Every pattern is anchored end to end so a narrowed scope — which is nearly all of them —
+// does not match, and all are matched case-insensitively.
 
 export function isBroadOAuthScope(scope: string): boolean {
-  return BROAD_OAUTH_SCOPE_PATTERNS.some((pattern) => pattern.test(scope));
+  return securitySignatures().broadOauthScopePatterns.some((pattern) => pattern.test(scope));
 }
 
 /**

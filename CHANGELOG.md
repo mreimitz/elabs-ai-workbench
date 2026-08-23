@@ -5,6 +5,32 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the security rules move into the data pack, with two things standing in their way
+
+**The eighteen security checks, and every phrase, verb and pattern they match on, are now reference
+data rather than code.** Recognising a newly-seen prompt-injection payload used to need a release, an
+image rebuild and a redeploy of every install; it is now a pack update.
+
+**What a replacement pack may not do is quietly change a verdict.** A CI gate identifies a security
+finding by its rule id and passes or fails on a severity floor, so a fetched file that renamed an id
+or lowered a severity would change somebody's pipeline result with no code change anywhere. Three
+refusals stand in the way, and they are checks the app performs on startup, not advice in a
+document: the list of rule ids ever shipped is **append-only** — a pack that drops, renames or
+re-orders one is refused whole; **any severity change requires a higher analyzer version**, which is
+the app's existing way of saying "these two reports are not comparable", so the change becomes
+visible instead of silent; and a pack whose set of rules does not match the checks this build
+actually implements is refused too. A refused pack is logged with its reason while the shipped one
+keeps serving.
+
+Patterns travel as text and are **compiled once, when the pack loads**, under a length cap. A broken
+or oversized pattern is a refusal at startup rather than a failure halfway through a report someone
+asked for.
+
+Nothing a user sees changed. A security report and a security diff — for a server and for a skill —
+were pinned to their exact bytes before the move and are unchanged after it, and no rule id,
+severity, title or wording moved. The bench's scan of its own MCP mount scores the same 100/clean it
+scored before.
+
 ## Unreleased — the reference data the app reasons from has one address, and can be replaced
 
 **The model roster, the cross-cutting limits and the compatibility rule catalog are now read from a

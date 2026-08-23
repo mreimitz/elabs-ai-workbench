@@ -32,6 +32,7 @@ const CONTENT_DIRS = [
   "models/saas",
   "quality",
   "schema",
+  "security",
 ];
 
 const here = path.dirname(fileURLToPath(import.meta.url));

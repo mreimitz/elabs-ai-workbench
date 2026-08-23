@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Security rule registry",
+  "description": "data-pack/security/rules.json — the frozen rule ids, their severities, and the append-only id ledger (RM-38 D-DP6/D-DP7, RM-20 D-SP2/D-SP5). The analyzers implement these; this file declares them. A rule id is frozen the moment it ships: a renamed id reads to a CI gate as one finding resolved plus one appearing, which is exactly the false alarm that teaches an operator to ignore the gate.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["analyzerVersion", "idLedger", "rules"],
+  "properties": {
+    "analyzerVersion": {
+      "description": "Bumped when a rule's MEANING changes, a weight changes, or the report shape changes — whenever two reports would no longer be comparable. A pack whose severities differ from the bundled registry MUST carry a greater value here (D-DP7).",
+      "type": "integer",
+      "minimum": 1
+    },
+    "idLedger": {
+      "description": "Every rule id ever shipped, append-only. A pack that drops, renames or re-points a ledger id is refused whole (D-DP6).",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^[a-z-]+\\.[a-z0-9-]+$" }
+    },
+    "rules": {
+      "description": "The rules currently implemented, in declaration order. `SECURITY_RULE_IDS` is this order, and reports iterate it.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "category", "subject", "severity", "title", "rationale"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z-]+\\.[a-z0-9-]+$" },
+          "category": {
+            "type": "string",
+            "enum": ["poisoning", "annotation", "schema", "oauth", "skill-surface"]
+          },
+          "subject": { "type": "string", "enum": ["server", "skill"] },
+          "severity": { "type": "string", "enum": ["error", "warning", "info"] },
+          "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "rationale": {
+            "description": "WHY this matters and what to do, written for the person who has to fix the server. A rule with a vague rationale is a rule that gets ignored, which is why there is a length floor.",
+            "type": "string",
+            "minLength": 40,
+            "maxLength": 2000
+          },
+          "deprecated": {
+            "description": "Set instead of deleting a rule that no longer makes sense. Its id is never reused.",
+            "type": "boolean",
+            "const": true
+          }
+        }
+      }
+    }
+  }
+}

@@ -20,12 +20,22 @@
 //   3. digests, in both directions (nothing missing, nothing unlisted).
 //   4. per-file JSON Schema — now, and only now, the schema files themselves are digest-verified.
 //   5. parse the documents the app actually reads (three data files + three judgement tables).
+//   6. parse the security rule registry and COMPILE every signature pattern (RM-38 WP 2.1, D-DP9).
+//      A JSON Schema can say a pattern's source is a string; it cannot say the string is a valid
+//      regular expression. That question is answered HERE, at load, so the answer is a refusal
+//      rather than a `SyntaxError` thrown from inside a rule halfway through a scan.
+//
+// The two cross-PACK security checks — the append-only rule-id ledger (D-DP6) and the
+// severity-needs-a-version-bump rule (D-DP7) — are deliberately NOT here. They compare a candidate
+// against the BUNDLED registry, and this function only ever sees one pack. They live in
+// `resolve.ts`, which holds both.
 
 import path from "node:path";
 import { createHash } from "node:crypto";
 import {
   type AllModels,
   compileSchema,
+  compileSecuritySignatures,
   DATA_PACK_CONTENT_DIRS,
   DATA_PACK_JUDGEMENT_PATHS,
   DATA_PACK_MANIFEST_FILENAME,
@@ -43,6 +53,9 @@ import {
   isSupportedDataPackSchemaVersion,
   type JsonSchema,
   type SchemaValidator,
+  type SecurityRuleRegistryDoc,
+  SecurityRuleRegistryDocSchema,
+  type SecurityTables,
   verifyManifestDigests,
 } from "@mcp-token-footprint/shared";
 import { type DataPackFs, nodeDataPackFs } from "./fs.js";
@@ -62,6 +75,14 @@ export type DataPackDocuments = {
   qualityThresholds: DataPackQualityThresholds;
   /** WP 2.2 — the merge-chain layers under the generated dataset (D-DP3 keeps a compiled floor). */
   modelOverrides: DataPackModelOverrides;
+  /**
+   * RM-38 WP 2.1 — the security rule registry plus every signature list, with every regex ALREADY
+   * COMPILED (D-DP9). Compiling here is what makes a malformed pattern refuse the pack instead of
+   * throwing halfway through a report an operator asked for.
+   */
+  securityTables: SecurityTables;
+  /** The rules document as declared, kept so `resolve.ts` can run the D-DP6/D-DP7 cross-pack checks. */
+  securityRulesDoc: SecurityRuleRegistryDoc;
 };
 
 export type ResolvedDataPack = {
@@ -83,6 +104,8 @@ const TEST_CATALOG_PATH = "compatibility/test-catalog.json";
 const ADVISOR_THRESHOLDS_PATH = DATA_PACK_JUDGEMENT_PATHS.advisorThresholds;
 const QUALITY_THRESHOLDS_PATH = DATA_PACK_JUDGEMENT_PATHS.qualityThresholds;
 const MODEL_OVERRIDES_PATH = DATA_PACK_JUDGEMENT_PATHS.modelOverrides;
+const SECURITY_RULES_PATH = "security/rules.json";
+const SECURITY_SIGNATURES_PATH = "security/signatures.json";
 
 function refuse(refusal: DataPackRefusal): DataPackLoadResult {
   return { ok: false, refusal };
@@ -292,6 +315,49 @@ export function loadDataPack(args: {
     DataPackModelOverridesSchema,
   );
   if ("reason" in modelOverrides) return refuse(modelOverrides);
+  // --- 6. The security tables: parsed, and every pattern COMPILED, here (D-DP9) -------------------
+  //
+  // The JSON Schema pass above already checked their SHAPE. What it cannot check is whether a
+  // pattern's `source` actually compiles — a JSON Schema has no way to say "this string is a valid
+  // regular expression". So compilation happens here, once, and a failure is a refusal. The
+  // alternative is a `SyntaxError` thrown from inside a rule, mid-scan, on the report an operator
+  // just asked for.
+
+  const rulesParsed = SecurityRuleRegistryDocSchema.safeParse(readDoc(SECURITY_RULES_PATH));
+  if (!rulesParsed.success) {
+    return refuse({
+      reason: "schema_violation",
+      detail:
+        `${SECURITY_RULES_PATH} does not satisfy the security rule-registry contract: ` +
+        rulesParsed.error.issues
+          .slice(0, 4)
+          .map((issue) => `${issue.path.join(".") || "<root>"}: ${issue.message}`)
+          .join("; "),
+      paths: [SECURITY_RULES_PATH],
+    });
+  }
+
+  const signatures = compileSecuritySignatures(readDoc(SECURITY_SIGNATURES_PATH));
+  if (!signatures.ok) {
+    return refuse({
+      reason: "schema_violation",
+      detail:
+        `${SECURITY_SIGNATURES_PATH} cannot be compiled into a usable signature table: ` +
+        signatures.violations
+          .slice(0, 4)
+          .map((violation) => `${violation.path}: ${violation.message}`)
+          .join("; "),
+      paths: [SECURITY_SIGNATURES_PATH],
+    });
+  }
+
+  const rulesDoc = rulesParsed.data;
+  const securityTables: SecurityTables = {
+    analyzerVersion: rulesDoc.analyzerVersion,
+    rules: Object.fromEntries(rulesDoc.rules.map((rule) => [rule.id, rule])),
+    idLedger: rulesDoc.idLedger,
+    signatures: signatures.signatures,
+  };
 
   return {
     ok: true,
@@ -306,6 +372,8 @@ export function loadDataPack(args: {
         advisorThresholds: advisorThresholds.value,
         qualityThresholds: qualityThresholds.value,
         modelOverrides: modelOverrides.value,
+        securityTables,
+        securityRulesDoc: rulesDoc,
       },
     },
   };

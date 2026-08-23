@@ -24,6 +24,7 @@ export const PACK_CONTENT_DIRS = [
   "models/saas",
   "quality",
   "schema",
+  "security",
 ] as const;
 
 export type ManifestFileEntry = { path: string; sha256: string; bytes: number };

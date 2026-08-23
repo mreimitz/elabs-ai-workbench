@@ -60,6 +60,7 @@ export const DATA_PACK_CONTENT_DIRS = [
   "models/saas",
   "quality",
   "schema",
+  "security",
 ] as const;
 
 /**
@@ -80,6 +81,8 @@ export function dataPackSchemaFor(relPath: string): string | null {
   if (relPath === "quality/thresholds.json") return "schema/quality-thresholds.schema.json";
   if (relPath === "limits/cross-cutting.json") return "schema/cross-cutting.schema.json";
   if (relPath === "compatibility/test-catalog.json") return "schema/test-catalog.schema.json";
+  if (relPath === "security/rules.json") return "schema/security-rules.schema.json";
+  if (relPath === "security/signatures.json") return "schema/security-signatures.schema.json";
   return null;
 }
 

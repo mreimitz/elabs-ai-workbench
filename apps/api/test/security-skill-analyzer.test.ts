@@ -19,6 +19,7 @@ import {
   type SkillVersion,
   compareSecurityFindings,
   securityReportSchema,
+  securitySignatures,
 } from "@mcp-token-footprint/shared";
 import { applyMigrations, type AppDatabase } from "../src/db/database.js";
 import { schemaSql } from "../src/db/schema.js";
@@ -30,7 +31,7 @@ import { SkillRepository } from "../src/skills/repository.js";
 import { SERVER_ANALYZER_RULE_IDS, analyzeScanTools } from "../src/security/analyzer.js";
 import { registerSecurityRoutes } from "../src/security/routes.js";
 import {
-  BROAD_ALLOWED_TOOL_PATTERNS,
+
   SKILL_ANALYZER_RULE_IDS,
   SKILL_RULES,
   analyzeSkillFiles,
@@ -383,9 +384,14 @@ test("S5 · NEAR-MISS NEGATIVE — a parenthesised restriction, and an ABSENT gr
   assert.deepEqual(ruleSkillBroadAllowedTools(input(CLEAN_BODY, { manifest: {} })), []);
 });
 
-test("S5 · the matcher is an exported constant, anchored end to end", () => {
-  assert.ok(BROAD_ALLOWED_TOOL_PATTERNS.length > 0);
-  for (const pattern of BROAD_ALLOWED_TOOL_PATTERNS) {
+test("S5 · every grant matcher is anchored end to end", () => {
+  // RM-38 WP 2.1 — the patterns moved from an exported constant in `skill-analyzer.ts` into
+  // `data-pack/security/signatures.json`, compiled once at pack load. The assertion is unchanged:
+  // an unanchored pattern would match a NARROWED grant, which is the good case this rule must never
+  // punish. It reads the tables in force, so it holds for a fetched pack too.
+  const patterns = securitySignatures().broadAllowedToolPatterns;
+  assert.ok(patterns.length > 0);
+  for (const pattern of patterns) {
     assert.ok(pattern.source.startsWith("^"), `${pattern.source} is not anchored at the start`);
     assert.ok(pattern.source.endsWith("$"), `${pattern.source} is not anchored at the end`);
   }
@@ -572,30 +578,38 @@ test("A6 (D-SP15) — the analyzer reads NO file content beyond the SKILL.md bod
   assert.deepEqual(reads, ["SKILL.md"]);
 });
 
-test("A5 (D-SP14) — each shared heuristic is DEFINED in exactly one file under apps/api/src", () => {
-  // Fingerprints of the DEFINITIONS, not of the names: `analyzer.ts` re-exports the names on
-  // purpose, and that re-export is the mechanism keeping one definition rather than a violation of
-  // it. A second copy of any of these lists is what D-SP14 exists to make impossible.
+test("A5 (D-SP14, as amended by RM-38 WP 2.1) — no shared heuristic is DEFINED under apps/api/src at all", () => {
+  // WP 1.3 asserted these three vocabularies lived in exactly ONE file (`security/text-scan.ts`).
+  // RM-38 WP 2.1 moved them out of the code entirely, into `data-pack/security/signatures.json`, so
+  // the expectation flips from "exactly one owner" to "no owner": a copy in `text-scan.ts` is now as
+  // much a violation as a copy in `skill-analyzer.ts` was.
+  //
+  // Comments are stripped before matching. WITHOUT that, this scan asserts only that nobody WROTE
+  // these strings, and the sentence most likely to keep one alive after the code is gone is a
+  // comment saying where it used to live — precisely the sentence a relocation invites. The
+  // stripper is what makes the assertion about code.
   //
   // (`packages/shared/src/security-posture.ts` carries its own, deliberately DIFFERENT invisible
   // range list — the redactor also escapes C0/DEL and does not care about the private-use block.
   // That is out of this scan's scope on purpose: the two answer different questions.)
+  const strip = (source: string): string =>
+    source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
   const fingerprints = [
     "before using any other tool", // the injection phrase list
-    "INJECTION_PHRASES: readonly",
-    "HIDDEN_HTML_COMMENT_PATTERN = ",
-    "HIDDEN_PSEUDO_TAG_PATTERN =",
-    "HIDDEN_MODEL_ADDRESS_PATTERN =",
-    "INVISIBLE_CODE_POINT_RANGES: readonly",
+    "INJECTION_PHRASES",
+    "HIDDEN_HTML_COMMENT_PATTERN",
+    "HIDDEN_PSEUDO_TAG_PATTERN",
+    "HIDDEN_MODEL_ADDRESS_PATTERN",
+    "INVISIBLE_CODE_POINT_RANGES",
   ];
   for (const fingerprint of fingerprints) {
     const owners = walkSources(API_SRC_DIR).filter((path) =>
-      readFileSync(path, "utf8").includes(fingerprint),
+      strip(readFileSync(path, "utf8")).includes(fingerprint),
     );
     assert.deepEqual(
       owners.map((path) => path.slice(API_SRC_DIR.length)),
-      ["security/text-scan.ts"],
-      `"${fingerprint}" is defined in ${owners.length} files, not one`,
+      [],
+      `"${fingerprint}" is back in the code; it belongs in data-pack/security/signatures.json`,
     );
   }
 });

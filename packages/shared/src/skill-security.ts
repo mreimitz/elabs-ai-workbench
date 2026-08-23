@@ -10,6 +10,12 @@
 // It INSPECTS, it never executes: skill content is stored and metered, never run (see CLAUDE.md §
 // "Skills registry & inspector"). The network check is a deliberately LIGHT lexical scan of the
 // SKILL.md body — it flags an operator-visible signal, it is not a sandbox or a taint analysis.
+//
+// RM-38 WP 2.1 — the language-label map and the URL matcher are no longer literals here. They are
+// pack data (`data-pack/security/signatures.json`), read through `securitySignatures()` at call
+// time so a refreshed pack changes them with no release. The DERIVATION is unchanged, which is why
+// this file's tests did not move.
+import { securitySignatures } from "./security-tables.js";
 import type { SkillFileNode } from "./types.js";
 
 /** The at-a-glance security surface of ONE skill version. */
@@ -26,32 +32,35 @@ export type SkillSecuritySurface = {
   totalBytes: number;
 };
 
-/** File extension → the language label the UI and the MCP tool both report. */
-export const SKILL_SCRIPT_LANG_LABELS: Record<string, string> = {
-  py: "python",
-  js: "javascript",
-  ts: "typescript",
-  sh: "shell",
-  bash: "shell",
-  rb: "ruby",
-  go: "go",
-};
+/**
+ * File extension → the language label the UI and the MCP tool both report.
+ *
+ * Pack data since RM-38 WP 2.1. A FUNCTION rather than a constant, deliberately: a constant would
+ * snapshot the table at module-evaluation time, which in ESM is strictly before `index.ts` installs
+ * the resolved pack — "install before the consumer" is not something that can be arranged for a
+ * module-level read, only something that can look arranged.
+ */
+export function skillScriptLangLabels(): Readonly<Record<string, string>> {
+  return securitySignatures().skillScriptLangLabels;
+}
 
 /**
  * Rough URL/network-reference detector. Light on purpose: it flags absolute http(s) URLs so an
  * operator can spot an external call in the prose, and never claims more than that.
  *
- * What it deliberately does NOT match: a relative Markdown link (`[guide](./docs/guide.md)`), a bare
- * domain with no scheme (`example.com`), a `mailto:`/`file:` URI, or a package name that merely
- * contains a slash. The scheme is the whole signal — anything looser would fire on ordinary prose and
- * make the `info` finding it feeds worthless. It is a lexical scan, NOT a taint analysis: it says
- * "there is a URL in here to go and read", never "this skill makes a network call".
+ * The full false-positive review — what it deliberately does NOT match, and why the scheme is the
+ * whole signal — travels with the pattern, in `data-pack/security/signatures.json`'s
+ * `skillNetworkRefNote`. It is a lexical scan, NOT a taint analysis: it says "there is a URL in here
+ * to go and read", never "this skill makes a network call".
  *
- * Exported (WP 1.3) so `skill-surface.network-reference` can report WHERE it matched, with an offset,
- * instead of only that it did. {@link deriveSkillSecuritySurface} keeps using the same constant, so
- * the boolean the Skills inspector shows and the finding the analyzer emits can never disagree.
+ * Exposed as a function (WP 1.3 exported the constant) so `skill-surface.network-reference` can
+ * report WHERE it matched, with an offset, instead of only that it did.
+ * {@link deriveSkillSecuritySurface} calls the same accessor, so the boolean the Skills inspector
+ * shows and the finding the analyzer emits can never disagree.
  */
-export const SKILL_NETWORK_REF_PATTERN = /\bhttps?:\/\/[^\s"'<>)]+/i;
+export function skillNetworkRefPattern(): RegExp {
+  return securitySignatures().skillNetworkRefPattern;
+}
 
 /**
  * Derive the security surface from a version's file list plus a light scan of its SKILL.md body.
@@ -64,19 +73,20 @@ export function deriveSkillSecuritySurface(
   files: readonly SkillFileNode[],
   skillMdBody: string,
 ): SkillSecuritySurface {
+  const labels = skillScriptLangLabels();
   const scripts = files.filter((file) => file.kind === "script");
   const scriptLangs = Array.from(
     new Set(
       scripts.map((file) => {
         const ext = file.path.split(".").pop()?.toLowerCase() ?? "";
-        return SKILL_SCRIPT_LANG_LABELS[ext] ?? ext;
+        return labels[ext] ?? ext;
       }),
     ),
   ).sort();
   return {
     scriptCount: scripts.length,
     scriptLangs,
-    networkRefs: SKILL_NETWORK_REF_PATTERN.test(skillMdBody),
+    networkRefs: skillNetworkRefPattern().test(skillMdBody),
     fileCount: files.length,
     totalBytes: files.reduce((sum, file) => sum + file.size, 0),
   };

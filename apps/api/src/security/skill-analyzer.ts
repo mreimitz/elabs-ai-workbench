@@ -36,11 +36,12 @@ import {
   deriveSkillSecuritySurface,
   findPrefixedCredential,
   SECURITY_MAX_FINDINGS_PER_TOOL,
-  SKILL_NETWORK_REF_PATTERN,
   type SecurityFinding,
   type SecurityRuleId,
   type SkillFileNode,
   type SkillVersion,
+  securitySignatures,
+  skillNetworkRefPattern,
 } from "@mcp-token-footprint/shared";
 import {
   describeCodePoint,
@@ -316,23 +317,14 @@ export function ruleSkillCredentialInBody(input: SkillAnalyzerInput): SecurityFi
 /**
  * Grant tokens that hand a skill more than the few tools it needs.
  *
- * What they deliberately do NOT match: **a parenthesised restriction**. `Bash(git:*)` is a NARROWED
- * grant — the good case, the thing we want authors to write — and firing on it would punish exactly
- * the behaviour the rule exists to encourage. Nor does a named tool (`Read`, `Grep`, `mcp__foo__bar`)
- * match anything here; nor does a tool whose name merely CONTAINS one of the executor words
- * (`bash_history_read` is one token and is not `bash`), because every pattern is anchored end to end.
- *
- * Each entry is anchored `^…$` against a single whitespace-separated token, and matched
- * case-insensitively — `BASH` grants what `bash` grants.
+ * The patterns are pack data (`broadAllowedToolPatterns`), with their false-positive review beside
+ * them there. The shape of the review, in one line: every entry is anchored end to end against a
+ * single whitespace-separated token and matched case-insensitively, so a NARROWED grant — the good
+ * case, the thing we want authors to write — never fires, and neither does a named tool nor a tool
+ * whose name merely CONTAINS one of the executor words.
  */
-export const BROAD_ALLOWED_TOOL_PATTERNS: readonly RegExp[] = [
-  /^\*$/i,
-  /^(bash|shell|execute)$/i,
-  /^(bash|shell|execute)\(\s*\*\s*\)$/i,
-];
-
 export function isBroadAllowedTool(token: string): boolean {
-  return BROAD_ALLOWED_TOOL_PATTERNS.some((pattern) => pattern.test(token));
+  return securitySignatures().broadAllowedToolPatterns.some((pattern) => pattern.test(token));
 }
 
 /**
@@ -407,11 +399,11 @@ export function ruleSkillExecutableScripts(input: SkillAnalyzerInput): SecurityF
 // ══════════════════════════════════════════════════════════════════════════════════════════════
 
 /**
- * `SKILL_NETWORK_REF_PATTERN` — the same constant `deriveSkillSecuritySurface` computes its
+ * `skillNetworkRefPattern()` — the same accessor `deriveSkillSecuritySurface` computes its
  * `networkRefs` boolean from, so the Skills inspector and this report can never disagree.
  *
- * What it deliberately does NOT match: a relative Markdown link, a bare domain with no scheme, a
- * `mailto:` URI. The scheme is the whole signal.
+ * The pattern is pack data; its false-positive review travels with it there. The scheme is the whole
+ * signal.
  *
  * **Deliberately light.** It flags an operator-visible signal — "there is a URL in here, go and read
  * it" — and is not a taint analysis; the rationale in the registry says so, exactly as
@@ -421,7 +413,7 @@ export function ruleSkillExecutableScripts(input: SkillAnalyzerInput): SecurityF
  */
 export function ruleSkillNetworkReference(input: SkillAnalyzerInput): SecurityFinding[] {
   const body = input.skillMd.body;
-  const match = SKILL_NETWORK_REF_PATTERN.exec(body);
+  const match = skillNetworkRefPattern().exec(body);
   if (match === null) return [];
 
   return [
