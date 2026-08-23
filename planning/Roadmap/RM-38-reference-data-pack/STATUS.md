@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T04:00:00Z"
+timestamp: "2026-08-23T04:25:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -417,6 +417,33 @@ documentation is the thing most likely to keep the string alive after the code i
 hash-ledger error again in a new costume: precisely right about the wrong quantity. **This matters
 most exactly when tables move between files**, which is what WP 2.1 is doing right now — a comment
 describing the old location routinely outlives it.
+
+### The audit that follows, and RM-37's narrowing of it
+
+RM-37 applied the two-step probe to their own guards and found a **fourth** hole, worse-placed than
+mine: a source scan over `scripts/release/run.ps1`, a file that has **never been executed on Windows**
+because nobody in that item has a Windows machine. So the assertion was not one of several
+verifications behind that file — it was the **only** one, and a comment could satisfy it. My manifest
+case at least had a boot failure waiting downstream.
+
+**Their narrowing, which shrinks the audit surface a lot:** only a **presence** assertion
+(`assert.ok(src.includes(x))`, `assert.match(src, /x/)`) is vulnerable. A **ban** — assert the string
+is absent — fails the *safe* way: a comment containing the banned word causes a false **red**, which is
+annoying, not dangerous. So the audit question is not "does this guard read source" but **"does it
+assert something is THERE"**.
+
+**RM-38 audited on that basis. Result: exactly one hole, the one already fixed.** The other presence
+assertions in this item's tests are safe by construction and were checked rather than assumed —
+`data-pack.test.ts:99/201/383` assert over **file listings**, not source text;
+`data-pack-seam.test.ts:199` matches `package.json`'s `scripts.build`, and **JSON has no comments**;
+`data-pack-loader.test.ts:164` matches a refusal *detail string* off a result object, not a file.
+
+**A hazard in this session's own validation method, from RM-37:** one of their probe invocations never
+ran at all — wrong working directory, `grep` matched nothing — and **empty output reads exactly like a
+clean pass**. This session has repeatedly validated by piping a test run through `grep -E "^not ok"`
+and reading silence as success. Silence is also what a command that failed to start produces.
+`git diff --stat` confirms the *mutation* applied; an exit code or a baseline count confirms the
+*test actually executed*. Both halves, or neither is evidence.
 
 ## The web "flake" — evidence DOWNGRADED, 2026-08-23
 
