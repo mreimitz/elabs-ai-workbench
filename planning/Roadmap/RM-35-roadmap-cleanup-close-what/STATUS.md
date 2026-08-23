@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Roadmap cleanup — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the roadmap-cleanup plan, read and updated by /next-wp roadmap-cleanup. A box is ticked only when its acceptance is met."
 tags: ["roadmap", "RM-35"]
-timestamp: "2026-08-22T22:00:00Z"
+timestamp: "2026-08-23T09:20:00Z"
 status: "active"
 ---
 # Roadmap cleanup — work-package status ledger · **PRIORITY: HIGH**
@@ -78,6 +78,11 @@ met and — where the box touches code — the gate
       section D-SP24–26) actually shipped — including that all six are computed on read and persisted
       nowhere, and the 10 owner-acceptance boxes, naming the recorded finding that the bench's own MCP
       mount scores **49 / high risk** on 51 `info` findings.
+      **That last figure was corrected on `main` 2026-08-23 (RM-38), so this line records what WP 0.5
+      wrote at the time, not what CLAUDE.md says now.** The mount measures **24 tools · 0 findings ·
+      100 / `clean` · analyzerVersion 4**, the original pair was transposed (the code says score 51 on
+      49 findings), the box is closed on the owner's ruling, and the row now reads **9** owner-acceptance
+      boxes. Left as a dated record rather than rewritten — this ledger describes an edit that happened.
 - [x] WP 0.6 — add the seven missing CLAUDE.md rows — **done 2026-08-21.** Confirmed all seven had a
       `grep -c` of **0** in `CLAUDE.md` before the edit. Added a capability-table row each for
       **RM-09** (claude subscription as a run model, 13 WPs, 4 owner boxes), **RM-11** (dashboard

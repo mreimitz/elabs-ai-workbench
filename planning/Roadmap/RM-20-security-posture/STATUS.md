@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Security posture \u2014 work-package status ledger \u00b7 PRIORITY: HIGH"
 description: "Living state for the security-posture plan, read and updated by /next-wp security-posture."
 tags: ["roadmap", "RM-20"]
-timestamp: "2026-08-22T19:25:00Z"
+timestamp: "2026-08-23T09:10:00Z"
 status: "active"
 ---
 # Security posture — work-package status ledger · **PRIORITY: HIGH**
@@ -321,10 +321,41 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       **Could not be exercised live:** a `truncated` report (needs >200 findings from one subject —
       test-only), a refusal produced by clicking (unreachable by design), and the analyzer-version
       refusal (unreachable while one build analyses both sides).
-      **One observation, not a defect:** the workbench's own `/api/mcp` mount scores **49 / high
-      risk** against its own analyzer — 51 `info` findings, all undescribed parameters and
-      unconstrained object schemas. That is the analyzer telling the truth about the bench's own tool
-      surface, and it is an owner decision, not a bug in this WP.
+      **One observation — and it was recorded WRONG. Corrected 2026-08-23 by the RM-38 session, on
+      the owner's explicit ruling.** This line used to read: *the workbench's own `/api/mcp` mount
+      scores 49 / high risk against its own analyzer — 51 `info` findings.* Two numbers, both wrong,
+      and **transposed**. The true pair was **score 51 on 49 findings**, not score 49 on 51 findings.
+      **The tie is broken documentarily, because it CANNOT be broken computationally** — and that is
+      the part worth carrying, found by the RM-37 session and confirmed here by execution. Under the
+      then-uncapped v2 formula, *both* readings are internally consistent: 49 findings deduct 49 for a
+      score of 51, and 51 findings deduct 51 for a score of 49. Both land in `high` (floor 0, `medium`
+      starts at 70), so the band agrees with either. **A reader who checked the arithmetic would have
+      confirmed the wrong pair** — which is strictly worse than a pair that does not add up.
+      What settles it is two independent comments in `packages/shared/src/security-posture.ts`,
+      written at different times and agreeing: the version-3 changelog paragraph at **`:73-77`**
+      ("this app's own mount, with zero `error` and zero `warning` findings and **49** hygiene `info`
+      findings, scored **51**/`high`") and the cap's own doc at **`:479-482`** ("24 tools, zero error,
+      zero warning, and **49** info findings … That scored **51/100, band `high`**"). Both read
+      directly, in the action that reports them, not carried from a ledger.
+      **The species, for the taxonomy this project keeps:** *a self-consistent transposition, where
+      verifying the arithmetic confirms the error.* No check that stays inside the numbers can catch
+      it; only an external record can.
+      **The figure is now unreachable as well as wrong.** `SECURITY_SEVERITY_DEDUCTION.info` is **1**
+      and `SECURITY_SEVERITY_DEDUCTION_CAP.info` is **10** — added in analyzer v3 precisely because
+      this mount showed the score was measuring surface size. An info-only report therefore cannot
+      score below **90** at any volume: 51 `info` findings today would score **90 / `low`**, never
+      49 / high.
+      **What the mount measures today, run on `main` 2026-08-23 in the same action that reports it:**
+      **24 tools · 0 findings · `{"value":100,"band":"clean","analyzerVersion":4}`**, pack `1.1.0`,
+      3183 of 3500 definition tokens. Via `runWorkbenchSelfScan` + `analyzeScanTools` +
+      `computeSecurityScore`, not via a report.
+      **That 0 is a clean subject, not a deleted rule set** — the distinction the third audit question
+      exists to force. 18 rules are live (7 `error` · 6 `warning` · 5 `info`), and degrading **one**
+      real tool from the live scan — parameter descriptions and `additionalProperties` stripped —
+      produces exactly 2 `info` findings (`schema.undescribed-parameter`,
+      `schema.unconstrained-additional-properties`) and a score of 98 / `low`. The checks fire. The
+      mount's tools gained parameter descriptions and `additionalProperties: false` in the meantime,
+      so the findings genuinely no longer exist.
 - [x] WP 2.2 — report export integration — done 2026-08-20 · `wp/security-posture/2.2` ·
       spec: [`wp-2.2-report-export.md`](./wp-2.2-report-export.md).
       **The exported documents now carry the posture.** The scan and server exports, JSON and
@@ -684,10 +715,19 @@ _Entries: date · decision · rationale._
       masked), the clean-subject and "nothing changed" states (they should read as answers, not as
       emptiness), and the focus ring on the new controls in **light**, where this app carries a
       deliberate token override — accepted: ____
-- [ ] **The bench's own MCP mount scores 49 / high risk.** 51 `info` findings against
-      `/api/mcp`, all undescribed parameters and unconstrained object schemas. The analyzer is telling
-      the truth about our own tool surface. Decide whether that is a backlog item for the MCP mount or
-      an accepted characteristic — accepted: ____
+- [x] **The bench's own MCP mount — CLOSED 2026-08-23 on the owner's explicit ruling.** This box
+      asked whether "49 / high risk on 51 `info` findings" was a backlog item for the MCP mount or an
+      accepted characteristic. It is **neither**: the findings no longer exist, and the pair of
+      numbers was never right (see the correction under WP 2.1 above — the contemporaneous record says
+      **score 51 on 49 findings**, and `info` has been capped at 10 total since analyzer v3, which
+      makes "49 / high risk" unreachable from `info` findings at any volume). Measured on `main`
+      2026-08-23: **24 tools · 0 findings · 100 / `clean` · analyzerVersion 4**, with the 18 rules
+      proved live by degrading one real tool to 2 `info` findings / 98 `low`.
+      **What this acceptance rests on, stated plainly:** one session's direct measurement through
+      `runWorkbenchSelfScan` + `analyzeScanTools` + `computeSecurityScore` — **not** a browser walk of
+      the Security tab, and **no test in the suite asserts the real mount's score** (the security
+      tests use synthetic `scan_clean` / `scan_poisoned` fixtures), so the green gate covers this
+      number not at all. — accepted: **owner ruling 2026-08-23, on that measurement**
 - [ ] **WP 1.4 — the diff on YOUR own history, and the four refusals.** Pick a server you have
       scanned more than once and call
       `GET /api/scans/:scanId/security/diff?baseline=<an older scan of the same server>`; do the same

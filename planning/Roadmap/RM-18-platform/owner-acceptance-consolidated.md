@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "Owner acceptance — the one consolidated checklist (WP 1.6)"
 description: "Every pending owner-acceptance check across every roadmap ledger, grouped into four sittings by the one credential each needs."
 tags: ["roadmap", "RM-18"]
-timestamp: "2026-08-21T16:20:00Z"
+timestamp: "2026-08-23T09:20:00Z"
 status: "final"
 ---
 # Owner acceptance — the one consolidated checklist (WP 1.6)
@@ -12,6 +12,12 @@ status: "final"
 sittings by the one thing each sitting needs before it can start.** (One box — RM-08's WP M.4 — is
 worked in two halves, in different sittings; hence 193 checks for 192 boxes.) Assembled 2026-08-21
 by RM-18 WP 1.6, driven as RM-35 WP 1.1.
+
+> **One box closed since assembly: 191 open as of 2026-08-23.** RM-20's "the bench's own MCP mount
+> scores 49 / high risk" (block A9, box 4 of 10) was closed by the owner — the mount measures
+> 24 tools / 0 findings / 100 `clean`, and the recorded pair was transposed. **The totals below are
+> the assembly figures and are deliberately left as assembled**; subtract closed boxes rather than
+> rewriting them, so the arithmetic stays checkable against the date it was measured.
 
 Thirteen roadmap items are code-complete, gate-green and on `main`, and cannot be retired because
 `/complete-roadmap` refuses while any ledger box is open — and their only open boxes are these.
@@ -457,11 +463,17 @@ cheapest-first, which is **not** the ledger's order — the `Ledger:` line gives
       *The decision:* is a skill report endpoint (JSON + Markdown, like the scan and server ones)
       worth its own work package? The posture renderer already handles a skill report unchanged.
       *Ledger:* box 1 of 10.
-- [ ] **DECISION — the bench's own MCP mount scores 49 / high risk.** 51 `info` findings against
-      `/api/mcp`, all undescribed parameters and unconstrained object schemas. The analyzer is
-      telling the truth about our own tool surface.
-      *The decision:* a backlog item for the MCP mount, or an accepted characteristic?
-      *Ledger:* box 4 of 10.
+- [x] **CLOSED 2026-08-23 — the mount is 100 / clean, and the recorded figure was wrong.** This box
+      read "the bench's own MCP mount scores 49 / high risk, 51 `info` findings". Measured on `main`
+      2026-08-23 (RM-38): **24 tools · 0 findings · 100 / `clean` · analyzerVersion 4**, and the 18
+      rules are live — degrading one real tool produces 2 `info` findings / 98 `low`, so the 0 is a
+      clean subject, not a deleted rule set. The original pair was also **transposed**: the code's own
+      record (`packages/shared/src/security-posture.ts:73-77` and `:479-482`, two independent comments)
+      says **score 51 on 49 findings**. And since analyzer v3 capped `info` at 10, no info-only report
+      can score below **90** at any count, so "49 / high risk" is unreachable either way.
+      *Decided by the owner 2026-08-23.* It rests on that measurement — **no test in the suite asserts
+      the real mount's score**, so the gate covers it not at all.
+      *Ledger:* box 4 of 10 — now closed; RM-20 has 9 open.
 
 ---
 
