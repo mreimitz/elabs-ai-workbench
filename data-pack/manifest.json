@@ -5,6 +5,11 @@
   "generator": "data-pack/build/build-cli.ts",
   "files": [
     {
+      "path": "advisor/thresholds.json",
+      "sha256": "8ca94014717df27269422202a89692b741d482fea1c89e58f9fc88dff1d520a4",
+      "bytes": 389
+    },
+    {
       "path": "compatibility/test-catalog.json",
       "sha256": "da516d41d53624b200338cb66a9445bc076d9bf2a8d51e113f037b90ea517858",
       "bytes": 122956
@@ -45,6 +50,11 @@
       "bytes": 124438
     },
     {
+      "path": "models/overrides.json",
+      "sha256": "d8efa88a0d77b9768c8bb705895266a76b08f74cb2895ebe9ca821415f457e72",
+      "bytes": 4313
+    },
+    {
       "path": "models/saas/anthropic.json",
       "sha256": "13e69b6eb3054409bc709ed7fb39789001724e195a35586a59044bf70302db7e",
       "bytes": 239019
@@ -75,6 +85,16 @@
       "bytes": 150683
     },
     {
+      "path": "quality/thresholds.json",
+      "sha256": "056bb3f548e89eaac07aadecc914fe61f5466182f1407516ae5de956e7bc2c93",
+      "bytes": 329
+    },
+    {
+      "path": "schema/advisor-thresholds.schema.json",
+      "sha256": "08d62afae64ef91902c9202cec3f363b2ee5d2e924b34d32e5c3df0d66db3564",
+      "bytes": 4054
+    },
+    {
       "path": "schema/cross-cutting.schema.json",
       "sha256": "fe37590ea48b76315ca249bd2fc1424252cdc469527db6496c94102f2d757c5b",
       "bytes": 3348
@@ -88,6 +108,16 @@
       "path": "schema/model-entry.schema.json",
       "sha256": "dd08faf81ead8d6c9015494e451b16b07ddfb203a094901b4025791125e286ed",
       "bytes": 7845
+    },
+    {
+      "path": "schema/model-overrides.schema.json",
+      "sha256": "faacbaaff32069612e3ed189d0d0c3538cdf7a177ad32a020868e106584f16d6",
+      "bytes": 4236
+    },
+    {
+      "path": "schema/quality-thresholds.schema.json",
+      "sha256": "ec98968ebb924787da791ef9f8ea18382680982bca5222af62f89d156239659f",
+      "bytes": 3059
     },
     {
       "path": "schema/test-catalog.schema.json",

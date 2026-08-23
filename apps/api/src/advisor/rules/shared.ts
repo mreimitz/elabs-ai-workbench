@@ -18,13 +18,16 @@ import type {
 } from "@mcp-token-footprint/shared";
 import type { AdvisorContext } from "../types.js";
 
-/** How many `tool_scan` evidence refs a single recommendation may carry. A server can expose
- *  hundreds of tools; an unbounded evidence array would bloat every report for no extra insight, so
- *  each rule cites the biggest offenders and says in its detail that the list is the top N. */
-export const EVIDENCE_TOOL_LIMIT = 10;
-
-/** How many `run` evidence refs one side of a run-derived finding may carry (same reasoning). */
-export const EVIDENCE_RUN_LIMIT = 3;
+// The evidence caps, the severity bands and every other advisor threshold live in
+// `data-pack/advisor/thresholds.json` since RM-38 WP 2.2 — read them through `advisorThresholds()`
+// from `../../data-pack/thresholds.js`. There is deliberately NO compiled fallback: the pack's JSON
+// Schema marks every key required and the loader refuses a pack that omits one, so a missing
+// threshold is a refused pack rather than a silently disabled band.
+//
+// (What used to be here: `EVIDENCE_TOOL_LIMIT = 10` — how many `tool_scan` evidence refs a single
+// recommendation may carry, because a server can expose hundreds of tools and an unbounded evidence
+// array would bloat every report for no extra insight; and `EVIDENCE_RUN_LIMIT = 3`, the same
+// reasoning for `run` refs.)
 
 /** Ascending string compare with no locale in play — `localeCompare` is locale-sensitive and would
  *  make report ordering depend on the machine's ICU data, which the determinism contract forbids. */

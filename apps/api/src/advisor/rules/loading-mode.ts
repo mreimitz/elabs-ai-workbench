@@ -25,12 +25,12 @@
 // exactly what is missing. It never falls back to "compare anyway".
 
 import type { AdvisorRecommendation, RunSummary, Scenario } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import { runEvidence, scenarioEvidence } from "../evidence.js";
 import type { AdvisorContext, AdvisorRule, AdvisorRuleResult } from "../types.js";
 import {
   compareStrings,
   completedRuns,
-  EVIDENCE_RUN_LIMIT,
   formatCount,
   plural,
   ratio,
@@ -132,8 +132,8 @@ function buildRecommendation(
     evidence: [
       scenarioEvidence(eager.scenario),
       scenarioEvidence(deferred.scenario),
-      ...eagerMetrics.runs.slice(0, EVIDENCE_RUN_LIMIT).map(runEvidence),
-      ...deferredMetrics.runs.slice(0, EVIDENCE_RUN_LIMIT).map(runEvidence),
+      ...eagerMetrics.runs.slice(0, advisorThresholds().evidence_run_limit).map(runEvidence),
+      ...deferredMetrics.runs.slice(0, advisorThresholds().evidence_run_limit).map(runEvidence),
     ],
     assumptions: [
       "the tool-loading mode is a property of the ENVIRONMENT and is never recorded on a run, so only runs that started after each environment was last edited are counted — those demonstrably ran under the mode the environment carries now",

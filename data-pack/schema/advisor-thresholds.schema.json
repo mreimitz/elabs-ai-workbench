@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elabs-ai/mcp-token-footprint/data-pack/advisor-thresholds.schema.json",
+  "title": "Advisor rule thresholds",
+  "description": "data-pack/advisor/thresholds.json — every tunable number the deterministic advisor rules read (RM-38 WP 2.2). These are JUDGEMENTS, not dated external facts, so the file carries no `as_of` and does not move the manifest's. EVERY key is required and additionalProperties is false: these values live ONLY here (no compiled fallback exists in apps/api), so a pack that omits one must be refused whole rather than silently disabling a severity band. `ADVISOR_RULES` order in registry.ts is deliberately NOT here — it is the report's first-wins dedup tie-break, a behavioural contract rather than a tunable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "description_share_threshold",
+    "min_description_tokens",
+    "top_tools",
+    "high_scan_share",
+    "medium_scan_share",
+    "overlap_similarity_threshold",
+    "medium_overlap_count",
+    "high_waste_share",
+    "medium_waste_share",
+    "suite_run_window",
+    "provenance_suite_run_limit",
+    "evidence_tool_limit",
+    "evidence_run_limit"
+  ],
+  "properties": {
+    "description_share_threshold": {
+      "description": "advisor.description-bloat — a tool is flagged when its description is at least this share of its OWN definition tokens.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "min_description_tokens": {
+      "description": "advisor.description-bloat — …and only above this absolute description size, so a tiny tool is never dressed up as a finding.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "top_tools": {
+      "description": "advisor.description-bloat — how many of a scan's largest tools the rule looks at.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "high_scan_share": {
+      "description": "advisor.description-bloat — `high` at or above this share of the WHOLE scan's tokens.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "medium_scan_share": {
+      "description": "advisor.description-bloat — `medium` at or above this share; below it, `info`.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "overlap_similarity_threshold": {
+      "description": "advisor.tool-overlap — the Jaccard floor for calling two differently-named tools the same tool. Passed to the shared compare matcher.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "medium_overlap_count": {
+      "description": "advisor.tool-overlap — `medium` at or above this many duplicated tools; below it, `info`. Overlap is never `high`.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "high_waste_share": {
+      "description": "advisor.unused-tool-trim AND advisor.quality-validated-trim — `high` at or above this share of a server's allow-listed definition tokens never being exercised. ONE entry for what used to be two identical constants in two files.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "medium_waste_share": {
+      "description": "The `medium` band of the same shared waste ramp; below it, `info`.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "suite_run_window": {
+      "description": "How many suite runs a grade-aware rule walks, newest first.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "provenance_suite_run_limit": {
+      "description": "How many suite-run ids one AdvisorGradeProvenance lists.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "evidence_tool_limit": {
+      "description": "How many `tool_scan` evidence refs a single recommendation may carry.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "evidence_run_limit": {
+      "description": "How many `run` evidence refs one side of a run-derived finding may carry.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

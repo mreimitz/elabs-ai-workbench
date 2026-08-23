@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elabs-ai/mcp-token-footprint/data-pack/quality-thresholds.schema.json",
+  "title": "Skill-quality, compare, loop and budget thresholds",
+  "description": "data-pack/quality/thresholds.json — the shared judgement numbers that used to be hand-written literals in packages/shared (RM-38 WP 2.2). Unlike advisor/thresholds.json these values ALSO have a compiled floor, because apps/web reads several of them and packages/shared may not touch the filesystem: `pnpm build:data-pack` renders them into packages/shared/src/pack-defaults.generated.ts, so there is exactly one AUTHORED copy (this file) and the compiled one is derived. The two skill-quality ceilings resolve env → pack → compiled default. Judgements, not dated facts, so no `as_of`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "skill_quality_l1_token_ceiling",
+    "skill_quality_l2_token_ceiling",
+    "quality_severity_weights",
+    "default_compare_threshold",
+    "default_loop_threshold",
+    "failure_bucket_score_threshold",
+    "workbench_mcp_definition_token_budget"
+  ],
+  "properties": {
+    "skill_quality_l1_token_ceiling": {
+      "description": "Skill IDE quality engine — L1 (metadata) token ceiling above which an `l1-budget` warning is raised. Overridable per-install by SKILL_QUALITY_L1_TOKEN_CEILING.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "skill_quality_l2_token_ceiling": {
+      "description": "The same for L2 (body). Overridable by SKILL_QUALITY_L2_TOKEN_CEILING.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "quality_severity_weights": {
+      "description": "The ONLY definition of the quality score's penalty per severity: score = clamp(100 - sum of weights, 0, 100).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error", "warning", "info"],
+      "properties": {
+        "error": { "type": "integer", "minimum": 0 },
+        "warning": { "type": "integer", "minimum": 0 },
+        "info": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "default_compare_threshold": {
+      "description": "The Jaccard floor the compare matcher uses when a caller passes none (GET /api/compare, the assertions gate, the fleet report, skill-IDE tool validation).",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "default_loop_threshold": {
+      "description": "SkillFlow trace aligner — visit-count ceiling for generic loop detection.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "failure_bucket_score_threshold": {
+      "description": "Suite failure buckets — a run scoring below this is a low-score candidate.",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "workbench_mcp_definition_token_budget": {
+      "description": "D-MCP5 — the token budget the workbench's OWN MCP mount holds its serialized tools/list payload under. `pnpm mcp:self-scan` fails over it.",
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

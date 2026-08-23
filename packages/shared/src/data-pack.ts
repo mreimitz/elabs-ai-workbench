@@ -48,11 +48,17 @@ export const DATA_PACK_MANIFEST_FILENAME = "manifest.json";
  * `PACK_SCHEMA_VERSION` / `DATA_PACK_SCHEMA_VERSION`.
  */
 export const DATA_PACK_CONTENT_DIRS = [
+  "advisor",
   "compatibility",
   "generated",
   "limits",
+  // `models` holds `overrides.json` (the merge-chain layers); the per-provider model entries live in
+  // the two subdirectories below. Listing all three is not double-counting — the directory walk only
+  // takes `*.json` FILES, and a subdirectory is never a file.
+  "models",
   "models/open-weight",
   "models/saas",
+  "quality",
   "schema",
 ] as const;
 
@@ -66,7 +72,12 @@ export const DATA_PACK_CONTENT_DIRS = [
  * itself proves nothing.
  */
 export function dataPackSchemaFor(relPath: string): string | null {
+  // ORDER MATTERS: `models/overrides.json` is under `models/` but is NOT a provider model-entry
+  // file, so its exact match must be taken before the prefix rule below.
+  if (relPath === "models/overrides.json") return "schema/model-overrides.schema.json";
   if (relPath.startsWith("models/")) return "schema/model-entry.schema.json";
+  if (relPath === "advisor/thresholds.json") return "schema/advisor-thresholds.schema.json";
+  if (relPath === "quality/thresholds.json") return "schema/quality-thresholds.schema.json";
   if (relPath === "limits/cross-cutting.json") return "schema/cross-cutting.schema.json";
   if (relPath === "compatibility/test-catalog.json") return "schema/test-catalog.schema.json";
   return null;
@@ -207,6 +218,102 @@ export function verifyManifestDigests(
     },
   };
 }
+
+// --- Judgement tables (RM-38 WP 2.2) ------------------------------------------------------------
+//
+// Three documents whose values used to be hand-written literals in `apps/api` and `packages/shared`.
+// Each has BOTH a JSON Schema in the pack AND a compiled-in zod contract here, for the same
+// defence-in-depth reason the manifest does: the pack's own schema files are only trustworthy AFTER
+// their digests verify, and a document the app then destructures must be shaped before it is read.
+//
+// Every field is REQUIRED and every object is `.strict()`. A pack that omits a threshold is refused
+// whole rather than silently falling back — for `advisor/thresholds.json` there is nothing to fall
+// back TO, and for the other two a partial document would mean half the app on one pack and half on
+// another, which D-DP2 forbids.
+
+/** `data-pack/advisor/thresholds.json` — every tunable number the deterministic advisor rules read. */
+export const DataPackAdvisorThresholdsSchema = z
+  .object({
+    description_share_threshold: z.number().min(0).max(1),
+    min_description_tokens: z.number().int().positive(),
+    top_tools: z.number().int().positive(),
+    high_scan_share: z.number().min(0).max(1),
+    medium_scan_share: z.number().min(0).max(1),
+    overlap_similarity_threshold: z.number().min(0).max(1),
+    medium_overlap_count: z.number().int().positive(),
+    /** ONE entry for what used to be an identical pair of constants in two rule files. */
+    high_waste_share: z.number().min(0).max(1),
+    medium_waste_share: z.number().min(0).max(1),
+    suite_run_window: z.number().int().positive(),
+    provenance_suite_run_limit: z.number().int().positive(),
+    evidence_tool_limit: z.number().int().positive(),
+    evidence_run_limit: z.number().int().positive(),
+  })
+  .strict();
+
+export type DataPackAdvisorThresholds = z.infer<typeof DataPackAdvisorThresholdsSchema>;
+
+/** `data-pack/quality/thresholds.json` — the shared skill-quality / compare / loop / budget numbers. */
+export const DataPackQualityThresholdsSchema = z
+  .object({
+    skill_quality_l1_token_ceiling: z.number().int().positive(),
+    skill_quality_l2_token_ceiling: z.number().int().positive(),
+    quality_severity_weights: z
+      .object({
+        error: z.number().int().nonnegative(),
+        warning: z.number().int().nonnegative(),
+        info: z.number().int().nonnegative(),
+      })
+      .strict(),
+    default_compare_threshold: z.number().min(0).max(1),
+    default_loop_threshold: z.number().int().positive(),
+    failure_bucket_score_threshold: z.number().min(0).max(1),
+    workbench_mcp_definition_token_budget: z.number().int().positive(),
+  })
+  .strict();
+
+export type DataPackQualityThresholds = z.infer<typeof DataPackQualityThresholdsSchema>;
+
+/** One per-1M-token USD price. Superset-free: the DB resolver's `cacheWritePer1M` is NOT a pack fact. */
+export const DataPackModelPriceSchema = z
+  .object({
+    inPer1M: z.number().nonnegative(),
+    outPer1M: z.number().nonnegative(),
+    cachedInPer1M: z.number().nonnegative().optional(),
+  })
+  .strict();
+
+export type DataPackModelPrice = z.infer<typeof DataPackModelPriceSchema>;
+
+/**
+ * `data-pack/models/overrides.json` — the merge-chain layers that sit UNDER the generated dataset.
+ *
+ * The precedence these participate in is contract and is asserted by test: legacy → roster-gap →
+ * generated dataset, on top of a compiled floor (D-DP3), with the DB-backed `PricingRepository`
+ * resolver winning over all of it.
+ */
+export const DataPackModelOverridesSchema = z
+  .object({
+    legacy_context_limits: z.record(z.number().int().positive()),
+    roster_gap_context_limits: z.record(z.number().int().positive()),
+    legacy_pricing: z.record(DataPackModelPriceSchema),
+    roster_gap_pricing: z.record(DataPackModelPriceSchema),
+    zero_price_models: z.array(z.string().min(1)),
+    model_id_aliases: z.record(z.string().min(1)),
+    default_heatmap_models: z.array(z.string().min(1)).min(1),
+    assistant_default_model_roster: z.array(z.string().min(1)).min(1),
+    assistant_default_title_model: z.string().min(1),
+  })
+  .strict();
+
+export type DataPackModelOverrides = z.infer<typeof DataPackModelOverridesSchema>;
+
+/** Pack-root-relative paths of the three WP 2.2 documents, so nothing spells them twice. */
+export const DATA_PACK_JUDGEMENT_PATHS = {
+  advisorThresholds: "advisor/thresholds.json",
+  qualityThresholds: "quality/thresholds.json",
+  modelOverrides: "models/overrides.json",
+} as const;
 
 const SEMVER_CORE = /^(\d+)\.(\d+)\.(\d+)$/;
 

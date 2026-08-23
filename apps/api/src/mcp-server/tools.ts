@@ -19,7 +19,7 @@ import {
   truncateFields,
 } from "../assistant/tools/util.js";
 import type { CollectionRepository } from "../collections/repository.js";
-import { DEFAULT_HEATMAP_MODELS } from "../compatibility/dataset.js";
+import { defaultHeatmapModels } from "../compatibility/dataset.js";
 import { buildHeatmap, buildToolFindings } from "../compatibility/service.js";
 import { buildRunPlanEstimate, type EstimateDeps } from "../estimate/service.js";
 import type { GradeRepository } from "../grading/grade-repository.js";
@@ -325,7 +325,7 @@ export function buildWorkbenchToolDefinitions(
         "heatmap. Defaults to a representative model set.",
       (args) => {
         const scan = deps.scans.getDetail(args.scanId);
-        const heatmap = buildHeatmap(scan, args.models ?? DEFAULT_HEATMAP_MODELS, {
+        const heatmap = buildHeatmap(scan, args.models ?? defaultHeatmapModels(), {
           view: args.view ?? "server",
           rollup: args.rollup ?? "worst-tool",
         });
@@ -340,7 +340,7 @@ export function buildWorkbenchToolDefinitions(
         "severity, plus a per-tool severity tally. Use compatibility_heatmap for the model matrix.",
       (args) => {
         const scan = deps.scans.getDetail(args.scanId);
-        const findings = buildToolFindings(scan, args.models ?? DEFAULT_HEATMAP_MODELS);
+        const findings = buildToolFindings(scan, args.models ?? defaultHeatmapModels());
         return jsonResult(truncateFields(findings, ["byTest", "byTool"], LIST_LIMIT));
       },
     ),

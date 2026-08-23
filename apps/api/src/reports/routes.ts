@@ -17,7 +17,7 @@ import type { SuiteRunRepository } from "../suites/suite-run-repository.js";
 import type { RunRepository } from "../testing/run-repository.js";
 import type { ScenarioService } from "../testing/scenario-service.js";
 import type { TestService } from "../testing/test-service.js";
-import { DEFAULT_HEATMAP_MODELS } from "../compatibility/dataset.js";
+import { defaultHeatmapModels } from "../compatibility/dataset.js";
 import { createDigestMarkdownReport } from "./digest-markdown.js";
 import { DigestReportRepository, DigestScheduleService } from "./digest.js";
 import { createJsonReport, createMarkdownReport } from "./reports.js";
@@ -119,7 +119,7 @@ export async function registerReportRoutes(
     return createServerReport(
       scan,
       server,
-      models ?? DEFAULT_HEATMAP_MODELS,
+      models ?? defaultHeatmapModels(),
       client,
       postureFor(scan.id),
     );
@@ -138,7 +138,7 @@ export async function registerReportRoutes(
     const report = createServerReport(
       scan,
       server,
-      models ?? DEFAULT_HEATMAP_MODELS,
+      models ?? defaultHeatmapModels(),
       client,
       postureFor(scan.id),
     );

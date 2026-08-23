@@ -23,11 +23,14 @@ import { fileURLToPath } from "node:url";
 // `tsc && node`), so the list is repeated rather than imported —
 // `apps/api/test/data-pack-seam.test.ts` reads this file and fails if the two disagree.
 const CONTENT_DIRS = [
+  "advisor",
   "compatibility",
   "generated",
   "limits",
+  "models",
   "models/open-weight",
   "models/saas",
+  "quality",
   "schema",
 ];
 

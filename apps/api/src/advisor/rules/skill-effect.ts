@@ -33,6 +33,7 @@ import {
   type SuiteRun,
   type SuiteVariant,
 } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import { attributeVariant, computeSuiteDeltas, type DeltaChildRun } from "../../suites/analytics.js";
 import { runEvidence, scenarioEvidence, skillEvidence } from "../evidence.js";
 import type { AdvisorContext, AdvisorRule, AdvisorRuleResult } from "../types.js";
@@ -46,10 +47,9 @@ import {
   runScore,
   singleGradingVersion,
   skillNamesById,
-  SUITE_RUN_WINDOW,
   variantsOf,
 } from "./grade-shared.js";
-import { compareStrings, EVIDENCE_RUN_LIMIT, formatCount, plural } from "./shared.js";
+import { compareStrings, formatCount, plural } from "./shared.js";
 
 export const SKILL_EFFECT_RULE_ID = "advisor.skill-effect";
 
@@ -320,7 +320,7 @@ export const skillEffectRule: AdvisorRule = {
         const evidenceRuns = children
           .filter((child) => child.variantLabel === variantLabel)
           .sort((a, b) => compareStrings(a.runId, b.runId))
-          .slice(0, EVIDENCE_RUN_LIMIT);
+          .slice(0, advisorThresholds().evidence_run_limit);
 
         recommendations.push(
           buildRecommendation({
@@ -339,7 +339,7 @@ export const skillEffectRule: AdvisorRule = {
 
     if (!sawVariantSuite) {
       gap(
-        `no suite run in the ${SUITE_RUN_WINDOW} most recent defines a ± skill variant axis` +
+        `no suite run in the ${advisorThresholds().suite_run_window} most recent defines a ± skill variant axis` +
           (scope.kind === "scenario" ? " for this environment" : "") +
           ", so there is no A/B comparison to summarize (run a skill-effect suite — benchmarks WP 5.1)",
       );

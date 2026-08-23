@@ -216,7 +216,11 @@ export const WORKBENCH_MCP_DEFAULT_LIST_LIMIT = 50;
  *   3. **Is the new headroom honest?** 3,500 leaves ~10% over the measured 3,183 — the same
  *      proportion the original 3,000 left over its own 2,749, so the gate stays as tight as it was.
  */
-export const WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET = 3500;
+// RM-38 WP 2.2 — the number itself is now AUTHORED in `data-pack/quality/thresholds.json` and
+// rendered into `pack-defaults.generated.ts`. This re-export keeps the name (and the reasoning
+// above) where every reader already looks; `apps/api` reads the RUNTIME pack's value through
+// `workbenchMcpDefinitionTokenBudget()`, so a pack update moves the gate with no code edit.
+export { WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET } from "./pack-defaults.generated.js";
 
 // ── Tool argument shapes (ZodRawShape — see the banner) ───────────────────────────────────────────
 

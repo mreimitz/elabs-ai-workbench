@@ -41,7 +41,7 @@ import type {
   HubToolGrants,
   NormalizedToolDefinition,
 } from "@mcp-token-footprint/shared";
-import { MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
+import { modelContextLimits } from "../data-pack/thresholds.js";
 import type { TokenCounter } from "../token-counting/types.js";
 import { buildSessionEffectiveMemory, type HubEffectiveMemory } from "./memory-resolver.js";
 import {
@@ -115,7 +115,7 @@ export async function buildHubContextInspector(
 ): Promise<HubSessionContextPayload> {
   const { repository, tokenCounter } = deps;
   const session = repository.getSession(sessionId); // 404s if unknown (HubRepository's own contract)
-  const contextWindow = MODEL_CONTEXT_LIMITS[session.model] ?? 0;
+  const contextWindow = modelContextLimits()[session.model] ?? 0;
   const events = repository.listEvents(sessionId);
 
   // ── Memory (WP3.2/D-AH11) — the SAME body the turn engine injects + the Memory panel shows.

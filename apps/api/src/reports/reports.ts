@@ -24,9 +24,9 @@ import type {
 } from "@mcp-token-footprint/shared";
 import {
   CONTEXT_SEGMENTS,
-  MODEL_CONTEXT_LIMITS,
   usageSplitKind,
 } from "@mcp-token-footprint/shared";
+import { modelContextLimits } from "../data-pack/thresholds.js";
 import { buildRunKpiByStep, type RunKpis } from "./run-kpi-by-step.js";
 // RM-20 WP 2.2 — the ONE posture-section derivation. Both scan exports call it; neither renders the
 // section itself. The import is one-directional on purpose: `security-section.ts` reaches only for
@@ -193,7 +193,7 @@ export function createRunJsonReport(
   humanFeedback?: RunReportHumanFeedback,
 ) {
   const { test, scenario } = enrich;
-  const limit = MODEL_CONTEXT_LIMITS[scenario.model];
+  const limit = modelContextLimits()[scenario.model];
   const kpiByStep = buildRunKpiByStep(run);
 
   // Key insertion order is insights-first (rating → summary/config → statistics → the raw dump last)
@@ -255,7 +255,7 @@ export function createRunMarkdownReport(
   humanFeedback?: RunReportHumanFeedback,
 ): string {
   const { test, scenario } = enrich;
-  const limit = MODEL_CONTEXT_LIMITS[scenario.model];
+  const limit = modelContextLimits()[scenario.model];
   const kpiByStep = buildRunKpiByStep(run);
 
   const lines: string[] = ["# MCP Token Footprint Run Report", ""];

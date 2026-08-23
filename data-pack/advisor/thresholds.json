@@ -1,0 +1,15 @@
+{
+  "description_share_threshold": 0.5,
+  "min_description_tokens": 100,
+  "top_tools": 5,
+  "high_scan_share": 0.3,
+  "medium_scan_share": 0.15,
+  "overlap_similarity_threshold": 0.7,
+  "medium_overlap_count": 3,
+  "high_waste_share": 0.5,
+  "medium_waste_share": 0.2,
+  "suite_run_window": 20,
+  "provenance_suite_run_limit": 10,
+  "evidence_tool_limit": 10,
+  "evidence_run_limit": 3
+}

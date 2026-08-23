@@ -33,6 +33,7 @@ import {
   type ServerConfig,
   type ToolScan,
 } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import {
   runEvidence,
   scanEvidence,
@@ -45,7 +46,6 @@ import {
   clearsQualityBar,
   formatScore,
   meanOrNull,
-  PROVENANCE_SUITE_RUN_LIMIT,
   runScore,
   singleGradingVersion,
   sortedUniqueIds,
@@ -54,8 +54,6 @@ import {
   allowedToolsOf,
   compareStrings,
   completedRuns,
-  EVIDENCE_RUN_LIMIT,
-  EVIDENCE_TOOL_LIMIT,
   formatCount,
   formatPercent,
   latestSuccessfulScan,
@@ -73,12 +71,13 @@ export const QUALITY_VALIDATED_TRIM_RULE_ID = "advisor.quality-validated-trim";
 /** Same severity bands as the Phase 1 trim, by the share of the server's allow-listed definition
  *  tokens that is never exercised — so the two rules' severities mean the same thing and a reader
  *  can check the band by hand from the numbers in the detail. */
-const HIGH_WASTE_SHARE = 0.5;
-const MEDIUM_WASTE_SHARE = 0.2;
+// The waste bands are the pack's `high_waste_share` / `medium_waste_share` — the SAME entry
+// `unused-tool-trim.ts` reads. The two files used to declare an identical pair each (RM-38 WP 2.2).
 
 function severityFor(wastedShare: number): AdvisorSeverity {
-  if (wastedShare >= HIGH_WASTE_SHARE) return "high";
-  if (wastedShare >= MEDIUM_WASTE_SHARE) return "medium";
+  const t = advisorThresholds();
+  if (wastedShare >= t.high_waste_share) return "high";
+  if (wastedShare >= t.medium_waste_share) return "medium";
   return "info";
 }
 
@@ -131,11 +130,12 @@ function buildRecommendation(finding: ServerFinding): AdvisorRecommendation {
     `score ${formatScore(quality.meanScore)} >= the ${ADVISOR_QUALITY_BAR} quality bar), not across ` +
     "every completed run";
 
-  const evidenceTools = unused.slice(0, EVIDENCE_TOOL_LIMIT);
+  const t = advisorThresholds();
+  const evidenceTools = unused.slice(0, t.evidence_tool_limit);
   const trimmedTools = unused.length - evidenceTools.length;
-  const evidenceRuns = quality.runs.slice(0, EVIDENCE_RUN_LIMIT);
+  const evidenceRuns = quality.runs.slice(0, t.evidence_run_limit);
 
-  const listedSuiteRuns = quality.suiteRunIds.slice(0, PROVENANCE_SUITE_RUN_LIMIT);
+  const listedSuiteRuns = quality.suiteRunIds.slice(0, t.provenance_suite_run_limit);
   const trimmedSuiteRuns = quality.suiteRunIds.length - listedSuiteRuns.length;
 
   return {
@@ -174,12 +174,12 @@ function buildRecommendation(finding: ServerFinding): AdvisorRecommendation {
       `the footprint comes from ${scanProvenance(scan)} — the server's latest successful scan, which may be older than the runs`,
       ...(trimmedTools > 0
         ? [
-            `${trimmedTools} further never-called ${plural(trimmedTools, "tool")} ${plural(trimmedTools, "is", "are")} named in the detail but not linked as evidence (the ${EVIDENCE_TOOL_LIMIT} largest are)`,
+            `${trimmedTools} further never-called ${plural(trimmedTools, "tool")} ${plural(trimmedTools, "is", "are")} named in the detail but not linked as evidence (the ${t.evidence_tool_limit} largest are)`,
           ]
         : []),
       ...(trimmedSuiteRuns > 0
         ? [
-            `${trimmedSuiteRuns} further suite ${plural(trimmedSuiteRuns, "run")} contributed members but ${plural(trimmedSuiteRuns, "is", "are")} not listed in the detail (the first ${PROVENANCE_SUITE_RUN_LIMIT} are); gradeProvenance carries the full list`,
+            `${trimmedSuiteRuns} further suite ${plural(trimmedSuiteRuns, "run")} contributed members but ${plural(trimmedSuiteRuns, "is", "are")} not listed in the detail (the first ${t.provenance_suite_run_limit} are); gradeProvenance carries the full list`,
           ]
         : []),
     ],

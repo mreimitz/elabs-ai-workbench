@@ -21,6 +21,7 @@ import type {
   ServerConfig,
   ToolScan,
 } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import { matchTools, type RawMatch } from "../../compare/matching.js";
 import { scanEvidence, serverEvidence, toolScanEvidence } from "../evidence.js";
 import type { AdvisorContext, AdvisorRule, AdvisorRuleResult } from "../types.js";
@@ -28,7 +29,6 @@ import {
   allowedToolsOf,
   comparablyCounted,
   compareStrings,
-  EVIDENCE_TOOL_LIMIT,
   formatCount,
   latestSuccessfulScan,
   plural,
@@ -41,17 +41,19 @@ import {
 
 export const TOOL_OVERLAP_RULE_ID = "advisor.tool-overlap";
 
-/** The Jaccard floor for calling two differently-named tools "the same tool". Same default family as
- *  the Compare workspace's threshold; exact and normalized-name matches are taken first regardless. */
-export const OVERLAP_SIMILARITY_THRESHOLD = 0.7;
-
-/** At this many duplicated tools the overlap stops being a curiosity worth noting and becomes worth
- *  acting on. Overlap is never `high`: two servers legitimately covering the same ground is a design
- *  decision, not a defect. */
-const MEDIUM_OVERLAP_COUNT = 3;
+// Two thresholds, both read from `data-pack/advisor/thresholds.json` (RM-38 WP 2.2):
+//   overlap_similarity_threshold  the Jaccard floor for calling two differently-named tools "the
+//                                 same tool" — same default family as the Compare workspace's
+//                                 threshold; exact and normalized-name matches are taken first
+//                                 regardless. The rule's `assumptions` prose quotes this exact
+//                                 resolved value, so the matcher and the sentence cannot disagree.
+//   medium_overlap_count          at this many duplicated tools the overlap stops being a curiosity
+//                                 and becomes worth acting on. Overlap is never `high`: two servers
+//                                 legitimately covering the same ground is a design decision, not a
+//                                 defect.
 
 function severityFor(duplicateCount: number): AdvisorSeverity {
-  return duplicateCount >= MEDIUM_OVERLAP_COUNT ? "medium" : "info";
+  return duplicateCount >= advisorThresholds().medium_overlap_count ? "medium" : "info";
 }
 
 type ServerScan = { server: ServerConfig; scan: ScanDetail; tools: ToolScan[] };
@@ -82,7 +84,7 @@ function buildRecommendation(
   const overlapTokens = sumBy(duplicates, savedTokens);
 
   const lines = duplicates
-    .slice(0, EVIDENCE_TOOL_LIMIT)
+    .slice(0, advisorThresholds().evidence_tool_limit)
     .map(
       (match) =>
         `${match.a.toolName} ↔ ${match.b.toolName} (${match.basis}${match.basis === "fuzzy" ? `, ${match.similarity.toFixed(2)} similar` : ""}; ${formatCount(match.a.totalTokens)} / ${formatCount(match.b.totalTokens)} tokens)`,
@@ -118,14 +120,14 @@ function buildRecommendation(
       scanEvidence(a.scan),
       scanEvidence(b.scan),
       ...duplicates
-        .slice(0, EVIDENCE_TOOL_LIMIT)
+        .slice(0, advisorThresholds().evidence_tool_limit)
         .flatMap((match) => [
           toolScanEvidence(a.scan.id, match.a.toolName),
           toolScanEvidence(b.scan.id, match.b.toolName),
         ]),
     ],
     assumptions: [
-      `tools are paired by exact name, then normalized name, then Jaccard similarity ≥ ${OVERLAP_SIMILARITY_THRESHOLD} over name + description tokens — the same matcher the Compare view uses`,
+      `tools are paired by exact name, then normalized name, then Jaccard similarity ≥ ${advisorThresholds().overlap_similarity_threshold} over name + description tokens — the same matcher the Compare view uses`,
       "duplication only costs tokens when both servers are loaded into the same prompt; two servers that are never used together cost nothing extra",
       "a near-duplicate by name and description is not proof of identical behavior — check both tools before dropping either",
     ],
@@ -206,7 +208,7 @@ export const toolOverlapRule: AdvisorRule = {
         if (focusId !== undefined && a.server.id !== focusId && b.server.id !== focusId) continue;
 
         const duplicates = sortDuplicates(
-          matchTools(a.tools, b.tools, OVERLAP_SIMILARITY_THRESHOLD).matched,
+          matchTools(a.tools, b.tools, advisorThresholds().overlap_similarity_threshold).matched,
         );
         if (duplicates.length === 0) continue;
 

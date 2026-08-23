@@ -18,11 +18,11 @@ import type {
   ServerConfig,
   ToolScan,
 } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import { scanEvidence, scenarioEvidence, serverEvidence, toolScanEvidence } from "../evidence.js";
 import type { AdvisorContext, AdvisorRule, AdvisorRuleResult } from "../types.js";
 import {
   completedRuns,
-  EVIDENCE_TOOL_LIMIT,
   formatCount,
   formatPercent,
   latestSuccessfulScan,
@@ -39,36 +39,35 @@ import {
 
 export const DESCRIPTION_BLOAT_RULE_ID = "advisor.description-bloat";
 
-/** How many of a scan's largest tools the rule looks at. "Bloat" is only worth acting on where the
- *  footprint actually is; a verbose description on the 40th-biggest tool is noise. */
-const TOP_TOOLS = 5;
-
-/** A tool is flagged when its description is at least this share of its OWN definition tokens — the
- *  prose, not the schema, is what makes it big. */
-const DESCRIPTION_SHARE_THRESHOLD = 0.5;
-
-/** …and only above this absolute size, so a 12-token tool whose description happens to be 8 tokens
- *  is never dressed up as a finding. */
-const MIN_DESCRIPTION_TOKENS = 100;
-
-/** Severity bands, by the share of the WHOLE scan the flagged descriptions occupy. */
-const HIGH_SCAN_SHARE = 0.3;
-const MEDIUM_SCAN_SHARE = 0.15;
+// Four thresholds, all read from `data-pack/advisor/thresholds.json` (RM-38 WP 2.2):
+//   top_tools                    how many of a scan's largest tools the rule looks at — "bloat" is
+//                                only worth acting on where the footprint actually is.
+//   description_share_threshold  a tool is flagged when its description is at least this share of
+//                                its OWN definition tokens (the prose, not the schema, makes it big).
+//   min_description_tokens       …and only above this absolute size, so a 12-token tool whose
+//                                description happens to be 8 tokens is never dressed up as a finding.
+//   high_scan_share /            the severity bands, by the share of the WHOLE scan the flagged
+//   medium_scan_share            descriptions occupy.
+//
+// The rule's `assumptions` prose QUOTES these same resolved values, so an edited threshold cannot
+// produce a report that misdescribes itself.
 
 function severityFor(scanShare: number): AdvisorSeverity {
-  if (scanShare >= HIGH_SCAN_SHARE) return "high";
-  if (scanShare >= MEDIUM_SCAN_SHARE) return "medium";
+  const t = advisorThresholds();
+  if (scanShare >= t.high_scan_share) return "high";
+  if (scanShare >= t.medium_scan_share) return "medium";
   return "info";
 }
 
 /** The flagged subset of a scan's biggest tools, biggest first (the input order is already total). */
 function flaggedTools(scan: ScanDetail): ToolScan[] {
+  const t = advisorThresholds();
   return toolsByTokensDesc(scan.tools)
-    .slice(0, TOP_TOOLS)
+    .slice(0, t.top_tools)
     .filter(
       (tool) =>
-        tool.descriptionTokens >= MIN_DESCRIPTION_TOKENS &&
-        tool.descriptionTokens >= DESCRIPTION_SHARE_THRESHOLD * tool.totalTokens,
+        tool.descriptionTokens >= t.min_description_tokens &&
+        tool.descriptionTokens >= t.description_share_threshold * tool.totalTokens,
     );
 }
 
@@ -84,6 +83,7 @@ function buildRecommendation(
   flagged: ToolScan[],
   usage: UsageContext | null,
 ): AdvisorRecommendation {
+  const t = advisorThresholds();
   const descriptionTokens = sumBy(flagged, (tool) => tool.descriptionTokens);
   const scanShare = ratio(descriptionTokens, scan.totalTokens);
 
@@ -100,7 +100,7 @@ function buildRecommendation(
     ruleId: DESCRIPTION_BLOAT_RULE_ID,
     title: `Shorten ${flagged.length} oversized tool ${plural(flagged.length, "description")} on "${server.name}"`,
     detail:
-      `${flagged.length} of the ${TOP_TOOLS} largest tool ${plural(flagged.length, "definition")} on "${server.name}" ` +
+      `${flagged.length} of the ${t.top_tools} largest tool ${plural(flagged.length, "definition")} on "${server.name}" ` +
       `spend most of their tokens on prose, ${formatCount(descriptionTokens)} tokens in total — ` +
       `${formatPercent(scanShare)} of the scan's ${formatCount(scan.totalTokens)} tool tokens. ` +
       lines.join("; ") +
@@ -116,12 +116,12 @@ function buildRecommendation(
       serverEvidence(server),
       scanEvidence(scan),
       ...flagged
-        .slice(0, EVIDENCE_TOOL_LIMIT)
+        .slice(0, t.evidence_tool_limit)
         .map((tool) => toolScanEvidence(scan.id, tool.toolName)),
       ...(usage ? [scenarioEvidence(usage.scenario)] : []),
     ],
     assumptions: [
-      `"bloat" means a description is at least ${formatPercent(DESCRIPTION_SHARE_THRESHOLD)} of its own tool's definition tokens and at least ${MIN_DESCRIPTION_TOKENS} tokens, measured over the ${TOP_TOOLS} largest tools in ${scanProvenance(scan)}`,
+      `"bloat" means a description is at least ${formatPercent(t.description_share_threshold)} of its own tool's definition tokens and at least ${t.min_description_tokens} tokens, measured over the ${t.top_tools} largest tools in ${scanProvenance(scan)}`,
       "a shorter description is only a saving if the tool is still described well enough for the model to pick it correctly — this rule measures size, not quality",
       ...(usage
         ? [

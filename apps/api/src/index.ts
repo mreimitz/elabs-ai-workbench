@@ -36,6 +36,7 @@ import {
 import { config } from "./config/env.js";
 import { resolveDataPackFromDisk } from "./data-pack/resolve.js";
 import { installDataPackSource } from "./data-pack/source.js";
+import { skillQualityCeilings } from "./data-pack/thresholds.js";
 import { openDatabase } from "./db/database.js";
 import { registerMaintenanceRoutes } from "./db/maintenance.js";
 import { registerDiagnosticsRoutes } from "./diagnostics/routes.js";
@@ -1756,7 +1757,7 @@ await registerAssistantRoutes(server, {
     runs: runRepository,
     suiteRuns: suiteRunRepository,
     skills,
-    skillQualityL2TokenCeiling: config.skillQualityL2TokenCeiling,
+    skillQualityL2TokenCeiling: skillQualityCeilings().l2,
   },
 });
 // Assistant Hub (planning/Roadmap/RM-03-assistant-hub/, WP4.3, R-SES9/R-UX11) — the notification-center hook for the

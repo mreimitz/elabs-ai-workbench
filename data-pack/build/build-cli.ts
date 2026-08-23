@@ -7,11 +7,15 @@
 //   - data-pack/models/{saas,open-weight}/*.json   per-provider model entries
 //   - data-pack/limits/cross-cutting.json          protocol / client / SDK / provider limits
 //   - data-pack/compatibility/test-catalog.json    the compatibility rule catalog
+//   - data-pack/models/overrides.json              the model merge-chain override layers
+//   - data-pack/quality/thresholds.json            the shared quality/compare/loop/budget numbers
+//   - data-pack/advisor/thresholds.json            the advisor rule thresholds (pack-only, no floor)
 //
 // Writes (all committed; the drift test re-derives in memory and fails if any is stale):
 //   - data-pack/generated/all-models.json          built flat index — the pack's derived artifact
 //   - data-pack/manifest.json                      packVersion + schemaVersion + per-file SHA-256
 //   - packages/shared/src/model-data.generated.ts  derived context-limit + pricing maps
+//   - packages/shared/src/pack-defaults.generated.ts  the D-DP3 compiled floor (WP 2.2)
 //
 // It no longer writes a copy into `apps/api/src/compatibility/data/`: RM-38 WP 1.2 moved the
 // compatibility engine onto the resolved pack (`apps/api/src/data-pack/`), and that directory was
@@ -21,7 +25,12 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildAllModels, renderSharedGenerated, serializeAllModels } from "./build.js";
+import {
+  buildAllModels,
+  renderPackDefaults,
+  renderSharedGenerated,
+  serializeAllModels,
+} from "./build.js";
 import { buildManifest, serializeManifest } from "./manifest.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -36,6 +45,7 @@ const repoRoot = path.resolve(PACK_ROOT, "..");
 const modelsDir = path.join(PACK_ROOT, "models");
 const generatedDir = path.join(PACK_ROOT, "generated");
 const sharedGenerated = path.join(repoRoot, "packages/shared/src/model-data.generated.ts");
+const sharedPackDefaults = path.join(repoRoot, "packages/shared/src/pack-defaults.generated.ts");
 
 /**
  * Prove the two path anchors before writing a single byte. A silently-wrong `repoRoot` would write
@@ -92,12 +102,23 @@ export function readProviderFiles(): { relPath: string; data: unknown }[] {
   return out;
 }
 
+/** Read one hand-curated pack JSON document by pack-root-relative path. */
+function readPackJson<T>(rel: string): T {
+  return JSON.parse(readFileSync(path.join(PACK_ROOT, rel), "utf8")) as T;
+}
+
 /** Build every derived output in memory (no writes) — the drift test calls this. */
 export function buildOutputs() {
   const all = buildAllModels(readProviderFiles());
   return {
     allModelsJson: serializeAllModels(all),
     sharedGeneratedTs: renderSharedGenerated(all),
+    // RM-38 WP 2.2 — the D-DP3 compiled floor, derived from the two authored judgement files so
+    // there is exactly ONE maintained copy of every value in it.
+    packDefaultsTs: renderPackDefaults({
+      modelOverrides: readPackJson("models/overrides.json"),
+      qualityThresholds: readPackJson("quality/thresholds.json"),
+    }),
     asOf: all.as_of,
     modelCount: all.model_count,
     providerCount: all.provider_count,
@@ -109,6 +130,7 @@ export const OUTPUT_PATHS = {
   packAllModels: path.join(generatedDir, "all-models.json"),
   packManifest: path.join(PACK_ROOT, "manifest.json"),
   sharedGenerated,
+  sharedPackDefaults,
 };
 
 /** The pack version stamped into the manifest — `data-pack/package.json`'s `version`. */
@@ -151,6 +173,7 @@ function main() {
   mkdirSync(generatedDir, { recursive: true });
   writeFileSync(OUTPUT_PATHS.packAllModels, o.allModelsJson);
   writeFileSync(OUTPUT_PATHS.sharedGenerated, o.sharedGeneratedTs);
+  writeFileSync(OUTPUT_PATHS.sharedPackDefaults, o.packDefaultsTs);
 
   // The manifest digests what is on disk, so it is written LAST.
   const manifest = buildManifest({
@@ -165,7 +188,7 @@ function main() {
   console.log(
     `Built data pack ${manifest.packVersion} (schema ${manifest.schemaVersion}, as-of ${manifest.asOf}): ` +
       `${o.providerCount} providers, ${o.modelCount} models, ${manifest.files.length} pack files → ` +
-      "data-pack/{generated,manifest.json} + packages/shared/src/model-data.generated.ts",
+      "data-pack/{generated,manifest.json} + packages/shared/src/{model-data,pack-defaults}.generated.ts",
   );
 }
 

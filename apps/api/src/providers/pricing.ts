@@ -1,9 +1,13 @@
 import {
   type CostBreakdown,
   GENERATED_MODEL_PRICING,
+  LEGACY_MODEL_PRICING as FLOOR_LEGACY_MODEL_PRICING,
+  ROSTER_GAP_MODEL_PRICING as FLOOR_ROSTER_GAP_MODEL_PRICING,
   type TokenUsageActual,
   usageSplitKind,
+  ZERO_PRICE_MODELS as FLOOR_ZERO_PRICE_MODELS,
 } from "@mcp-token-footprint/shared";
+import { modelPricingTable, zeroPriceModels } from "../data-pack/thresholds.js";
 
 /**
  * WP 1.5 / Phase 5 — best-effort model pricing for the **spend-cap guardrail** and the run cost KPI.
@@ -28,41 +32,34 @@ import {
  * free/local" from "we have no price for this model at all". Add local models the app should treat as
  * free here; a model that is NOT here and NOT in the priced table is reported as price-unknown.
  */
-export const ZERO_PRICE_MODELS: readonly string[] = ["llama3.1", "llama3.3", "qwen2.5", "mistral"];
+export const ZERO_PRICE_MODELS: readonly string[] = FLOOR_ZERO_PRICE_MODELS;
 
 function zeroPriceEntries(): Record<string, { inPer1M: number; outPer1M: number }> {
   return Object.fromEntries(ZERO_PRICE_MODELS.map((id) => [id, { inPer1M: 0, outPer1M: 0 }]));
 }
 
+/**
+ * The zero-price allowlist as the RUNTIME pack sees it — the compiled floor UNION the pack's list,
+ * never the pack alone (D-DP3: dropping an id would make that model price-unknown, which refuses a
+ * cost-capped run). Degrades to the floor if no pack can be resolved, for the same reason
+ * `packResolvedPricing` does.
+ */
+export function resolvedZeroPriceModels(): readonly string[] {
+  try {
+    return zeroPriceModels();
+  } catch {
+    return ZERO_PRICE_MODELS;
+  }
+}
+
+// The legacy + roster-gap price layers moved to `data-pack/models/overrides.json` in RM-38 WP 2.2
+// and are rendered back into `packages/shared/src/pack-defaults.generated.ts` by
+// `pnpm build:data-pack`. Edit the PACK file, never the generated one.
 const LEGACY_MODEL_PRICING: Record<
   string,
   { inPer1M: number; outPer1M: number; cachedInPer1M?: number }
 > = {
-  // Anthropic (cache-read = 0.1× input).
-  "claude-opus-4-1": { inPer1M: 15, outPer1M: 75, cachedInPer1M: 1.5 },
-  "claude-opus-4": { inPer1M: 15, outPer1M: 75, cachedInPer1M: 1.5 },
-  "claude-sonnet-4-5": { inPer1M: 3, outPer1M: 15, cachedInPer1M: 0.3 },
-  "claude-sonnet-4": { inPer1M: 3, outPer1M: 15, cachedInPer1M: 0.3 },
-  "claude-3-7-sonnet": { inPer1M: 3, outPer1M: 15, cachedInPer1M: 0.3 },
-  "claude-3-5-sonnet": { inPer1M: 3, outPer1M: 15, cachedInPer1M: 0.3 },
-  "claude-3-5-haiku": { inPer1M: 0.8, outPer1M: 4, cachedInPer1M: 0.08 },
-
-  // OpenAI (cache-read = 0.5× input for GPT-4o / 4.1; o-series cached input where published).
-  "gpt-4o": { inPer1M: 2.5, outPer1M: 10, cachedInPer1M: 1.25 },
-  "gpt-4o-mini": { inPer1M: 0.15, outPer1M: 0.6, cachedInPer1M: 0.075 },
-  "gpt-4.1": { inPer1M: 2, outPer1M: 8, cachedInPer1M: 0.5 },
-  "gpt-4.1-mini": { inPer1M: 0.4, outPer1M: 1.6, cachedInPer1M: 0.1 },
-  "gpt-4.1-nano": { inPer1M: 0.1, outPer1M: 0.4, cachedInPer1M: 0.025 },
-  o3: { inPer1M: 2, outPer1M: 8, cachedInPer1M: 0.5 },
-  "o3-mini": { inPer1M: 1.1, outPer1M: 4.4, cachedInPer1M: 0.55 },
-  "o4-mini": { inPer1M: 1.1, outPer1M: 4.4, cachedInPer1M: 0.275 },
-
-  // Google (cache-read = 0.25× input where published).
-  "gemini-2.5-pro": { inPer1M: 1.25, outPer1M: 10, cachedInPer1M: 0.31 },
-  "gemini-2.5-flash": { inPer1M: 0.3, outPer1M: 2.5, cachedInPer1M: 0.075 },
-  "gemini-2.5-flash-lite": { inPer1M: 0.1, outPer1M: 0.4, cachedInPer1M: 0.025 },
-  "gemini-2.0-flash": { inPer1M: 0.1, outPer1M: 0.4, cachedInPer1M: 0.025 },
-
+  ...FLOOR_LEGACY_MODEL_PRICING,
   // Local / Ollama zero-price models (spread in) fill the rest of this map.
   ...zeroPriceEntries(),
 };
@@ -82,18 +79,7 @@ const LEGACY_MODEL_PRICING: Record<
 export const ROSTER_GAP_MODEL_PRICING: Record<
   string,
   { inPer1M: number; outPer1M: number; cachedInPer1M?: number }
-> = {
-  "claude-fable-5": { inPer1M: 10, outPer1M: 50, cachedInPer1M: 1 },
-  "claude-opus-5": { inPer1M: 5, outPer1M: 25, cachedInPer1M: 0.5 },
-  "claude-opus-4-7": { inPer1M: 5, outPer1M: 25, cachedInPer1M: 0.5 },
-  "claude-opus-4-6": { inPer1M: 5, outPer1M: 25, cachedInPer1M: 0.5 },
-  "claude-sonnet-5": { inPer1M: 3, outPer1M: 15, cachedInPer1M: 0.3 },
-  // Dated snapshot ids (same models as their aliases; the rosters return these exact strings, and
-  // every lookup is an exact-key map read — there is no alias normalization).
-  "claude-haiku-4-5-20251001": { inPer1M: 1, outPer1M: 5, cachedInPer1M: 0.1 },
-  "claude-sonnet-4-5-20250929": { inPer1M: 3, outPer1M: 15, cachedInPer1M: 0.3 },
-  "claude-opus-4-1-20250805": { inPer1M: 15, outPer1M: 75, cachedInPer1M: 1.5 },
-};
+> = FLOOR_ROSTER_GAP_MODEL_PRICING;
 
 // Dataset-derived current-gen prices win on overlap; legacy entries fill previous-generation gaps and
 // the roster-gap seed fills current-generation ids the dataset snapshot predates (no regression).
@@ -155,6 +141,26 @@ export function resetPricingResolver(): void {
 }
 
 /**
+ * The pack-resolved price table, or the compiled seed when no pack can be resolved.
+ *
+ * `getDataPack()` throws only when the BUNDLED SNAPSHOT is missing or unusable — a broken build
+ * artifact, not a data problem (see `data-pack/resolve.ts`). Pricing is on the cost-cap guardrail
+ * path, and D-DP3's whole point is that a pack problem must never make a model look unpriced, so
+ * this degrades to the compiled floor rather than propagating. Every OTHER pack consumer still
+ * fails loudly; this one cannot afford to.
+ */
+function packResolvedPricing(): Record<
+  string,
+  { inPer1M: number; outPer1M: number; cachedInPer1M?: number }
+> {
+  try {
+    return modelPricingTable();
+  } catch {
+    return MODEL_PRICING;
+  }
+}
+
+/**
  * Resolve a model's price. With a resolver installed: the DB match wins; on a DB MISS we fall back
  * to the code table (belt-and-braces) and LOG that fallback (only when the code table actually has a
  * price — a genuinely unpriced model is not a "fallback", just unpriced, and must stay quiet). With
@@ -165,10 +171,15 @@ export function resolvePrice(
   opts?: PricingResolveOptions,
 ): ResolvedPrice | undefined {
   const resolver = activeResolver;
-  if (!resolver) return MODEL_PRICING[model];
+  // RM-38 WP 2.2 — the table consulted here is the PACK-RESOLVED one (compiled floor, then the
+  // pack's legacy / roster-gap / generated layers in that order). `MODEL_PRICING` below stays the
+  // compiled SEED, which is what `buildSeedPricingRows` writes into `model_pricing` and what every
+  // test that enumerates "the code table" means. The DB resolver still wins over both.
+  const table = packResolvedPricing();
+  if (!resolver) return table[model];
   const hit = resolver.resolve(model, opts);
   if (hit) return hit;
-  const codeHit = MODEL_PRICING[model];
+  const codeHit = table[model];
   if (codeHit) {
     console.warn(
       `[pricing] no DB pricing match for "${model}"; falling back to the code pricing table`,
