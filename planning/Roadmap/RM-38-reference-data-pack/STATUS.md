@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T13:15:00Z"
+timestamp: "2026-08-23T13:40:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -719,6 +719,48 @@ agent's HTTP test found one occurrence and appeared to contradict its claim that
 asserts an accept first. Reading the file showed the assertion lives in a shared `controlThenCase`
 helper used by all five. **The agent's report was accurate and my instrument was naive — twice, in
 opposite directions, within one validation.**
+
+## The prose-merge rule has a price, and no text scan can enforce it — 2026-08-23
+
+**The fourth artifact of the WP 2.1 + WP 2.2 merge, and the first on a file people read.** The
+`README.md` `data-pack/` tree entry was **duplicated**: `c594580` (WP 2.2) and `5da963f` (WP 2.1)
+each rewrote the same block, the merge kept both, and it sat on `main` as a sentence that restarts
+mid-clause — *"…SHA-256 per file (`pnpm build:data-pack`) / entries, protocol/client limits, …"*.
+Found by reading the file to write a front-page update, not by any check. Joins the duplicated
+comment step and the doubled `console.log` argument already recorded from that same merge. **Three
+silent artifacts, one merge, all in prose, none detectable by the gate.**
+
+**And the check that was clearing these merges cannot see them — measured, not argued.** RM-37 had
+been resolving prose conflicts by concatenation and clearing each with a duplicate-*sentence* scan
+that returned 0 every time; on this find they upgraded it to a repeated-non-trivial-*line* scan. Run
+against `90e3fde:README.md`, the exact bytes carrying the defect:
+
+```
+PRE-FIX README: 715 lines, repeated non-trivial lines = 0
+PRE-FIX README: duplicate SENTENCES                   = 0
+```
+
+**Both return 0 on the defective file.** They are the same instrument at different granularity, and
+the class is invisible to both **by construction**: two *rewrites* of one block share no identical
+text at any granularity, so the discontinuity is **semantic with no lexical signature**. No post-hoc
+scan over merged prose can find it.
+
+**What does work is on the diff side, before resolving:** were the two sides **additions of different
+blocks** (union is right) or **rewrites of the same block** (union is always wrong — take a side or
+write a third version)? That is decidable by reading what each side changed against the merge base,
+and it is not decidable afterwards by inspecting the merged text.
+
+**The general form, and it is the day's pattern arriving one level up.** A check returned 0; the 0
+was true about the wrong quantity; and **the fix had the same defect as the original** — moving from
+sentence granularity to line granularity felt like closing the hole and moved nothing, because the
+**axis** was wrong rather than the resolution. *A refinement along the wrong axis is
+indistinguishable from progress until someone measures it against the actual failure.* It was only
+caught by running the new check against the **defective bytes** in `git show` rather than against
+current files, where it returns 0 and reads as confirmation.
+
+Current state, checked rather than assumed: `README.md` **0** repeated lines · `CHANGELOG.md` **0** ·
+`CLAUDE.md` **1**, the `DC-17` service-tokens link at lines 372 and 440 closing §6's and §7's own
+paragraphs — legitimate, pre-existing, left alone.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
