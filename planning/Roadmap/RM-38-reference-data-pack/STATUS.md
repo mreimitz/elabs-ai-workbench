@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T03:10:00Z"
+timestamp: "2026-08-23T03:30:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -232,7 +232,26 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 ## Phase 2 — Migrate the tables
 
 - [ ] WP 2.1 — security rules + id ledger + every signature list into the pack — spec:
-      [`wp-2.1-security-tables.md`](./wp-2.1-security-tables.md). **Depends on 1.2.**
+      [`wp-2.1-security-tables.md`](./wp-2.1-security-tables.md). **status: in progress** · dispatched
+      2026-08-23 from `main` at `d387fc8`, after RM-37 confirmed the rule definitions are settled.
+
+      **RM-37's clearance, and the two conditions it comes with** (they grepped all 29 RM-37 specs for
+      `security-posture` / `severity-ramp` / `apps/api/src/security` / `SECURITY_RULES` and read every
+      hit): WP 0.5 was the last edit and is merged; **WP 3.2 lands next door, not here** — its severity
+      work is `FINDING_SEVERITY_META` in `packages/shared/src/labels.ts` plus web maps, and it
+      explicitly leaves the deterministic analyzers alone; 2.4 references RM-20's doc; 2.6 and 1.5
+      only **read**. The two conditions are about the **import surface, not the data**:
+      1. `SECURITY_RULES` stays importable from its current module path even if its contents come from
+         the pack — a re-export is fine.
+      2. Any rule-id or finding-id **spelling** change must be reported. `skill-surface.injection-phrasing`
+         is load-bearing for RM-37 WP 1.5's confirm gate, and byte-identity on reports would **not**
+         catch a rename faithfully mirrored in the fixtures.
+
+      **Two premise corrections found at dispatch, both against my own spec:** `SECURITY_ANALYZER_VERSION`
+      is **4**, not the 3 the spec states — RM-37 WP 0.5 bumped it. And `Object.keys(SECURITY_RULES)`
+      is **already live** at `apps/web/src/features/security/SecurityPanel.tsx:356`, not a future WP 2.6
+      usage as RM-37 believed, which makes condition 1 a present constraint rather than a courtesy.
+      18 rules and all the signature lists are where the spec says.
 - [ ] WP 2.2 — advisor + quality thresholds and the model merge chains into the pack — spec:
       [`wp-2.2-thresholds-and-model-chains.md`](./wp-2.2-thresholds-and-model-chains.md).
       **status: in progress** · dispatched 2026-08-23 from `main` at `d387fc8`.
