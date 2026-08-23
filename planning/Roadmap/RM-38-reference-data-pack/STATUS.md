@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T03:00:00Z"
+timestamp: "2026-08-23T03:10:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -234,7 +234,15 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
 - [ ] WP 2.1 — security rules + id ledger + every signature list into the pack — spec:
       [`wp-2.1-security-tables.md`](./wp-2.1-security-tables.md). **Depends on 1.2.**
 - [ ] WP 2.2 — advisor + quality thresholds and the model merge chains into the pack — spec:
-      [`wp-2.2-thresholds-and-model-chains.md`](./wp-2.2-thresholds-and-model-chains.md). **Depends on 1.2.**
+      [`wp-2.2-thresholds-and-model-chains.md`](./wp-2.2-thresholds-and-model-chains.md).
+      **status: in progress** · dispatched 2026-08-23 from `main` at `d387fc8`.
+      **Premises re-verified before dispatch:** the duplicated `HIGH_WASTE_SHARE`/`MEDIUM_WASTE_SHARE`
+      pair is still in both `unused-tool-trim.ts` and `quality-validated-trim.ts`; the six other advisor
+      thresholds, the six shared quality constants, the 3500-token budget, the three pricing layers and
+      `MODEL_ID_ALIASES`/`DEFAULT_HEATMAP_MODELS` are all where the spec says. RM-37 has **not** touched
+      `apps/api/src/advisor/` (its severity work landed in `apps/web/src/features/advisor/` instead), so
+      2.2 and RM-37 do not overlap. WP 2.1 remains **held** pending RM-37's answer on whether
+      `security-posture.ts` is settled.
 
 ## Phase 3 — Refresh, surface, publish
 
