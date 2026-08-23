@@ -40,7 +40,9 @@ import { redactSecurityEvidence, SECURITY_EVIDENCE_MAX_CHARS } from "./security-
  * Bumped when the payload's SHAPE changes in a way a reader must notice. A bug report pasted from an
  * older build should still say which shape it is.
  */
-export const DIAGNOSTICS_BUNDLE_VERSION = 1;
+// 2 — RM-38 WP 3.2 added the `dataPack` group. A reader looking at a pasted bundle can tell from
+// this number whether the absence of that section means "old build" or "something is wrong".
+export const DIAGNOSTICS_BUNDLE_VERSION = 2;
 
 // ── Versions ────────────────────────────────────────────────────────────────────────────────────
 
@@ -271,6 +273,66 @@ export const diagnosticsFeaturesSchema = z
   })
   .strict();
 
+// ── Reference data pack (RM-38 WP 3.2) ──────────────────────────────────────────────────────────
+
+/**
+ * Which reference data pack this install is running, where it came from, and what the last remote
+ * check did.
+ *
+ * **It carries no free text at all**, and that is why it is safe to paste. `DATA_PACK_URL` is a
+ * variable the operator configured, so it lives in the Environment group as `{ name, status }` and
+ * its VALUE reaches no part of this document. That rules out the refusal's own `detail` sentence
+ * too: the fetcher composes those with the checked URL inside them (`fetcher.ts` — "The manifest
+ * served at ${url} …"), so quoting one here would carry the configured URL into a bug report
+ * through the back door. The bundle therefore carries the refusal's **reason**, which is a member of
+ * a frozen enum, and the version that was refused. The full sentence is shown in Settings, on the
+ * operator's own screen, where it is exactly what they need and goes nowhere.
+ *
+ * This is the WP 1.3 rule applied rather than special-cased — counts, enums, versions and booleans;
+ * never content.
+ */
+export type DiagnosticsDataPack = {
+  packVersion: string;
+  schemaVersion: number;
+  asOf: string;
+  source: string;
+  files: number;
+  analyzerVersion: number;
+  /** Whether a remote check is configured. A BOOLEAN — never the URL that configures it. */
+  checkConfigured: boolean;
+  lastCheckedAt: string | null;
+  /** The last check's status word (`disabled` · `unreachable` · `up_to_date` · `refused` · `installed`). */
+  lastCheckStatus: string | null;
+  /**
+   * The last refusal, or `null`. A later successful check does NOT clear it — see
+   * `apps/api/src/data-pack/state.ts`. No `detail`: see this type's header.
+   */
+  lastRefusal: { reason: string; at: string; refusedVersion: string | null; origin: string } | null;
+};
+
+export const diagnosticsDataPackSchema = z
+  .object({
+    packVersion: z.string().min(1),
+    schemaVersion: z.number().int(),
+    asOf: z.string().min(1),
+    source: z.string().min(1),
+    files: z.number().int().nonnegative(),
+    analyzerVersion: z.number().int(),
+    checkConfigured: z.boolean(),
+    lastCheckedAt: z.string().nullable(),
+    lastCheckStatus: z.string().nullable(),
+    lastRefusal: z
+      .object({
+        reason: z.string().min(1),
+        at: z.string().min(1),
+        refusedVersion: z.string().nullable(),
+        origin: z.string().min(1),
+      })
+      .strict()
+      .nullable(),
+  })
+  .strict();
+
 // ── The bundle ──────────────────────────────────────────────────────────────────────────────────
 
 export type DiagnosticsBundle = {
@@ -283,6 +345,8 @@ export type DiagnosticsBundle = {
   database: DiagnosticsDatabase;
   errors: DiagnosticsErrors;
   features: DiagnosticsFeatures;
+  /** RM-38 WP 3.2 — the reference data pack in force. No URL, ever. */
+  dataPack: DiagnosticsDataPack;
 };
 
 export const diagnosticsBundleSchema = z
@@ -294,5 +358,6 @@ export const diagnosticsBundleSchema = z
     database: diagnosticsDatabaseSchema,
     errors: diagnosticsErrorsSchema,
     features: diagnosticsFeaturesSchema,
+    dataPack: diagnosticsDataPackSchema,
   })
   .strict();

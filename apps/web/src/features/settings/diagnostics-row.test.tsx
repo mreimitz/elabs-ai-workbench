@@ -56,6 +56,18 @@ const BUNDLE: DiagnosticsBundle = {
     flags: [{ id: "assistant", enabled: true }],
     providerKinds: [{ kind: "anthropic", configured: true }],
   },
+  dataPack: {
+    packVersion: "1.1.0",
+    schemaVersion: 1,
+    asOf: "2026-08-22",
+    source: "bundled",
+    files: 24,
+    analyzerVersion: 4,
+    checkConfigured: false,
+    lastCheckedAt: null,
+    lastCheckStatus: null,
+    lastRefusal: null,
+  },
 };
 
 const MARKDOWN = "# Diagnostics bundle\n\n- Bundle version: 1\n";

@@ -109,7 +109,17 @@ export function workbenchMcpDefinitionTokenBudget(): number {
  * pack layers keep the exact precedence `MODEL_CONTEXT_LIMITS` has always had, so a dataset refresh
  * still wins over both hand-maintained seeds.
  */
-export const modelContextLimits = perPack((pack): Record<string, number> => {
+export const modelContextLimits = perPack(modelContextLimitsFor);
+
+/**
+ * The same merge, over a pack the CALLER already holds.
+ *
+ * Exported (RM-38 WP 3.2) so `data-pack/status.ts` can project the browser's copy of this map out of
+ * the SAME `ResolvedDataPack` object it reads the metadata from — the accessor above would resolve
+ * `getDataPack()` a second time, which is the seam through which a payload could name one pack's
+ * version beside another pack's values. One merge, two entry points.
+ */
+export function modelContextLimitsFor(pack: ResolvedDataPack): Record<string, number> {
   const overrides = pack.documents.modelOverrides;
   const generated: Record<string, number> = {};
   for (const model of pack.documents.allModels.models) {
@@ -121,7 +131,7 @@ export const modelContextLimits = perPack((pack): Record<string, number> => {
     ...overrides.roster_gap_context_limits,
     ...generated,
   };
-});
+}
 
 /**
  * List price per model id, in the same four-layer order. The zero-price allowlist is spread into

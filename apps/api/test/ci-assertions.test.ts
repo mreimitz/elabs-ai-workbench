@@ -1366,11 +1366,14 @@ test("A5 (D-C14) — a scan report's JSON gains `kind` and NOTHING else", () => 
   ]);
   assert.equal(report.subject.kind, "scan");
   assert.deepEqual(Object.keys(report.subject).sort(), Object.keys(report.baseline?.scan ?? {}).sort());
-  // The report itself gains no field when a baseline resolved.
+  // The report itself gains no field when a baseline resolved. (`dataPackVersion` is RM-38 D-DP8's
+  // stamp — it is present in BOTH cases, which is the property this pair of assertions is for: the
+  // shape must not vary between "a baseline resolved" and "none was asked for".)
   assert.deepEqual(Object.keys(report).sort(), [
     "assertionsVersion",
     "baseline",
     "counts",
+    "dataPackVersion",
     "evaluatedAt",
     "passed",
     "results",
@@ -1389,6 +1392,7 @@ test("A5 (D-C14) — a scan report's JSON gains `kind` and NOTHING else", () => 
     "assertionsVersion",
     "baseline",
     "counts",
+    "dataPackVersion",
     "evaluatedAt",
     "passed",
     "results",

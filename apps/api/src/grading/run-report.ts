@@ -13,6 +13,7 @@ import {
   type RunReport,
 } from "@mcp-token-footprint/shared";
 import { z, type ZodType } from "zod";
+import { dataPackStamp } from "../data-pack/stamp.js";
 import type { GradeRepository } from "./grade-repository.js";
 import type { RunRepository } from "../testing/run-repository.js";
 
@@ -77,6 +78,9 @@ export class RunReportService {
       judgeProvenance: pickJudgeProvenance(latest),
       ratingVersion: AUTO_RATING_VERSION,
       generatedAt: new Date().toISOString(),
+      // RM-38 D-DP8 — the pack whose thresholds (the failure-bucket floor, the quality weights)
+      // stand behind the numbers a reader compares across runs.
+      ...dataPackStamp(),
     };
   }
 }

@@ -2941,6 +2941,12 @@ export type RunReport = {
   judgeProvenance: Pick<RunGrade, "judgeProviderId" | "judgeModel">;
   ratingVersion: number;
   generatedAt: string;
+  /**
+   * RM-38 D-DP8 — the reference data pack in force when this report was composed. Pack thresholds
+   * (the failure-bucket floor, the quality weights) influence the numbers a reader compares across
+   * runs, so a report that cannot name its pack is not reproducible.
+   */
+  dataPackVersion?: string;
 };
 
 /**
@@ -3257,6 +3263,8 @@ export type CompatibilityHeatmap = {
   client?: string;
   models: CompatibilityModelRef[];
   rows: CompatibilityHeatmapRow[];
+  /** RM-38 D-DP8 — the pack whose test catalog and scoring bands produced these verdicts. */
+  dataPackVersion?: string;
 };
 
 // --- Per-test report (the "Tests" tab on a server / tool) -------------------------------------
@@ -3301,6 +3309,8 @@ export type CompatibilityTestReport = {
   subjectLabel: string;
   models: CompatibilityReportModel[];
   entries: CompatibilityTestEntry[];
+  /** RM-38 D-DP8 — the pack whose test catalog and scoring bands produced these verdicts. */
+  dataPackVersion?: string;
 };
 
 // --- Tool-findings aggregation (server Overview findings + tool-list "Issues" column) -----------
@@ -3375,6 +3385,8 @@ export type ServerReport = {
    * exactly the document it produced before. See `SecurityPostureSection` in `security-posture.ts`.
    */
   security?: SecurityPostureSection;
+  /** RM-38 D-DP8 — the pack behind this document's compatibility verdicts and security section. */
+  dataPackVersion?: string;
 };
 
 // --- Skills (Agent Skill registry + versioning) — Phase 1 contract ---------------------------
@@ -7684,6 +7696,8 @@ export type AdvisorReport = {
   scope: AdvisorScope;
   recommendations: AdvisorRecommendation[];
   insufficientData: AdvisorInsufficientData[];
+  /** RM-38 D-DP8 — the reference data pack the thresholds behind these verdicts came from. */
+  dataPackVersion?: string;
 };
 
 /** Query for `GET /api/advisor/report` (WP 1.2). `id` names the server/environment a scoped report
@@ -7902,4 +7916,6 @@ export type FleetReport = {
   suites: FleetSuitesSection;
   posture: FleetPostureSection;
   advisor: FleetAdvisorSection;
+  /** RM-38 D-DP8 — the reference data pack the thresholds behind these verdicts came from. */
+  dataPackVersion?: string;
 };

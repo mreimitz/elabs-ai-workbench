@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { inheritedDataPackStamp } from "./data-pack.js";
 import {
   BUNDLED_SECURITY_ANALYZER_VERSION,
   BUNDLED_SECURITY_RULES,
@@ -424,6 +425,12 @@ export type SecurityReport = {
   score: SecurityScore;
   /** True when {@link capSecurityFindings} dropped rows; `counts` still reflects ALL findings. */
   truncated: boolean;
+  /**
+   * RM-38 D-DP8 — the reference data pack this verdict was computed against. Additive and optional
+   * so a fixture report stays constructible; every report the API actually serves carries it,
+   * stamped through the ONE definition (`stampDataPackVersion` in `data-pack.ts`).
+   */
+  dataPackVersion?: string;
 };
 
 // ── Constants the pure functions apply ──────────────────────────────────────────────────────────
@@ -976,6 +983,12 @@ export type SecurityPostureDiff = {
      */
     delta: number;
   };
+  /**
+   * RM-38 D-DP8 — INHERITED from the subject report, never re-read. This module may not touch a
+   * pack, and a diff is a derivation of two already-stamped documents: the version travels IN the
+   * input. A subject with no stamp yields no stamp here rather than a guess.
+   */
+  dataPackVersion?: string;
 };
 
 /** Tally one bucket. Local: a diff's counts are its own and are never read off a report. */
@@ -1074,6 +1087,9 @@ export function diffSecurityReports(
   );
 
   return {
+    // RM-38 D-DP8 — inherited from the SUBJECT, through the one stamp helper. Nothing here reads a
+    // pack; a diff is a derivation of two documents that already named their data.
+    ...inheritedDataPackStamp(subject),
     analyzerVersion: subject.analyzerVersion,
     generatedAt: laterInstant(baseline.generatedAt, subject.generatedAt),
     baseline: baseline.subject,
@@ -1194,6 +1210,8 @@ export const securityReportSchema = z
     counts: securityFindingCountsSchema,
     score: securityScoreSchema,
     truncated: z.boolean(),
+    /** RM-38 D-DP8 — additive and optional; see the type. */
+    dataPackVersion: z.string().min(1).optional(),
   })
   .strict();
 
@@ -1227,6 +1245,8 @@ export const securityPostureDiffSchema = z
         delta: z.number().int(),
       })
       .strict(),
+    /** RM-38 D-DP8 — inherited from the subject report; see the type. */
+    dataPackVersion: z.string().min(1).optional(),
   })
   .strict();
 

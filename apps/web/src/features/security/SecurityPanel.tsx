@@ -2,7 +2,6 @@ import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   SECURITY_EVIDENCE_MAX_CHARS,
-  SECURITY_RULES,
   type SecurityFinding,
   type SecurityFindingAnchor,
   type SecurityFindingCounts,
@@ -31,6 +30,7 @@ import { InlineError } from "../../components/InlineError";
 import { TabEmptyState } from "../../components/TabEmptyState";
 import { formatDateTime, formatNumber } from "../../lib/format";
 import { type Loadable, useLoadable } from "../../lib/loadable";
+import { securityRuleFor, useSecurityRuleRegistry } from "../../lib/pack-values";
 import { FindingSeverityBadge } from "./FindingSeverityBadge";
 import { PostureScore, ScoreScaleHint } from "./PostureScore";
 import { SecurityDiffPanel } from "./SecurityDiffPanel";
@@ -353,7 +353,10 @@ export function CleanSubjectState({
   counts: SecurityFindingCounts;
   analyzerVersion: number;
 }) {
-  const ruleCount = Object.keys(SECURITY_RULES).length;
+  // RM-38 WP 3.2 — the count describes the registry the ANALYZER used, which now ships in the
+  // reference data pack. Read from the compiled floor it would say "18 rules ran" beside a verdict
+  // produced by a pack carrying nineteen.
+  const ruleCount = Object.keys(useSecurityRuleRegistry()).length;
   return (
     <TabEmptyState
       size="sm"
@@ -394,7 +397,7 @@ export function anchorLabel(anchor: SecurityFindingAnchor): string {
 
 /** The rule's own title, or its raw id if a report arrives under a build that does not know it. */
 function ruleTitle(ruleId: SecurityRuleId): string {
-  return SECURITY_RULES[ruleId]?.title ?? ruleId;
+  return securityRuleFor(ruleId)?.title ?? ruleId;
 }
 
 /**
@@ -486,7 +489,10 @@ export function FindingsTable({
  * real `Button`, so it is reachable by Tab and dismissible by Escape without any handling here.
  */
 function RuleCell({ ruleId }: { ruleId: SecurityRuleId }) {
-  const rule = SECURITY_RULES[ruleId];
+  // RM-38 WP 3.2 — subscribed, so a pack landing mid-session retitles the row and re-words the
+  // rationale rather than leaving the image's copy beside the API's verdict. The rationale is still
+  // shown verbatim; the pack's strings are free text and this component does not edit them.
+  const rule = useSecurityRuleRegistry()[ruleId] ?? securityRuleFor(ruleId);
   return (
     <Popover>
       <PopoverTrigger asChild>

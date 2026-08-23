@@ -22,6 +22,7 @@ import "@xyflow/react/dist/style.css";
 import { App } from "./App";
 import { AssistantProvider } from "./features/assistant/assistant-context";
 import { FeatureFlagsProvider } from "./features/feature-flags/feature-flags-context";
+import { hydratePackValues } from "./lib/pack-values";
 import {
   ALLOWED_THEMES,
   DEFAULT_ALLOWED_THEME,
@@ -52,6 +53,21 @@ try {
 } catch {
   // localStorage unavailable — provider falls back to defaultTheme anyway.
 }
+
+// RM-38 WP 3.2 — fetch the reference data pack's VALUES, and do NOT wait for them.
+//
+// FIRED HERE, BEFORE the render call, and deliberately not awaited. The position is what matters:
+// firing first guarantees `packValuesSettled()` has a promise to hand back by the time any view
+// mounts, so the one consumer that needs a SEED rather than a live read (`CompareView`'s Jaccard
+// threshold) can wait for it inside its own subtree. Not awaiting is what keeps a slow or hung
+// `/api/data-pack` from delaying the shell by a single frame — an earlier cut of this work package
+// raced it against a 2 s budget before mounting, which is the thing D-DP4 and WP 3.1 exist to
+// forbid. Measured, not reasoned: with a 10 s stall on that one route, that cut delayed first paint
+// by 2118 ms and this one by -8 ms.
+//
+// Every accessor in `lib/pack-values` answers from the compiled floor until this lands, and keeps
+// answering from it if it never does.
+void hydratePackValues();
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

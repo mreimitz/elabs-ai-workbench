@@ -13,7 +13,7 @@ import type {
   ToolDefinitionDelta,
   ToolMatchBasis,
 } from "@mcp-token-footprint/shared";
-import { DEFAULT_COMPARE_THRESHOLD } from "@mcp-token-footprint/shared";
+import { defaultCompareThreshold, packValuesSettled } from "../../lib/pack-values";
 import { DataTable, FacetFilter, SearchInput } from "@elabs-ai/components-data";
 import {
   Alert,
@@ -163,7 +163,29 @@ export function CompareView(props: {
   const [serverB, setServerB] = useState("");
   const [scanAId, setScanAId] = useState("");
   const [scanBId, setScanBId] = useState("");
-  const [threshold, setThreshold] = useState(DEFAULT_COMPARE_THRESHOLD);
+  // RM-38 WP 3.2 — SEEDED from the reference data pack in force, never re-pointed by a later pack
+  // change: that would yank a slider the operator had already moved, which is a worse defect than a
+  // stale default.
+  //
+  // The seed can be wanted before the pack has hydrated (a cold load straight onto this route), and
+  // the fix for that is deliberately NOT to block the app's first paint on a network call — see
+  // `packValuesSettled`. Instead this view renders immediately on whatever is in force (the compiled
+  // floor, at worst) and adopts the pack's default once hydration settles, and ONLY while its own
+  // seed is still untouched: `seededWith` captures the first-render value, so the moment an operator
+  // picks anything the equality fails and the adoption is skipped. A hung `/api/data-pack` costs one
+  // slider its pack default; it costs the shell nothing.
+  const [threshold, setThreshold] = useState(defaultCompareThreshold);
+  const seededWith = useRef(threshold);
+  useEffect(() => {
+    let cancelled = false;
+    void packValuesSettled().then(() => {
+      if (cancelled) return;
+      setThreshold((current) => (current === seededWith.current ? defaultCompareThreshold() : current));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [tab, setTab] = useState("tools");
 
   const [comparison, setComparison] = useState<ScanComparison | null>(null);

@@ -18,6 +18,7 @@ import type {
   ToolFindingsReport,
   ToolSeveritySummary,
 } from "@mcp-token-footprint/shared";
+import { dataPackStamp } from "../data-pack/stamp.js";
 import { getTest } from "./catalog.js";
 import { getModel, listModelRefs } from "./dataset.js";
 import {
@@ -114,7 +115,15 @@ export function buildHeatmap(
           },
         ];
 
-  return { view: opts.view, rollup: opts.rollup, client: opts.client, models, rows };
+  return {
+    // RM-38 D-DP8 — the pack whose test catalog and scoring bands produced these cells.
+    ...dataPackStamp(),
+    view: opts.view,
+    rollup: opts.rollup,
+    client: opts.client,
+    models,
+    rows,
+  };
 }
 
 // --- Per-test report (the "Tests" tab) -----------------------------------------------------------
@@ -209,6 +218,8 @@ export function buildServerTestReport(
     runServerLevel(scanInput, modelId, { client }, env).filter((r) => r.level === "server"),
   );
   return {
+    // RM-38 D-DP8 — the pack whose test catalog produced these entries.
+    ...dataPackStamp(),
     subjectType: "server",
     subjectId: scan.id,
     subjectLabel: scan.serverName,
@@ -310,6 +321,8 @@ export function buildToolTestReport(
     ? buildEntries(known, (modelId) => runToolLevel(toToolInput(toolScan), modelId, { client }))
     : [];
   return {
+    // RM-38 D-DP8 — the pack whose test catalog produced these entries.
+    ...dataPackStamp(),
     subjectType: "tool",
     subjectId: toolName,
     subjectLabel: toolName,

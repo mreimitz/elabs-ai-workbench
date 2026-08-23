@@ -160,6 +160,7 @@ import {
   startGithubDeviceFlow,
   updateProvider,
 } from "../../lib/api";
+import { DataPackRow } from "./DataPackRow";
 import { DiagnosticsRow } from "./DiagnosticsRow";
 import { FeaturesSection } from "./FeaturesSection";
 import { TokensSection } from "./TokensSection";
@@ -289,6 +290,12 @@ const SECTION_GROUPS: { label: string; sections: SectionDef[] }[] = [
           "rate",
           "cache",
           "effective date",
+          // RM-38 WP 3.2 — the data-pack row lives at the top of this pane, so Settings search finds
+          // it by the words an operator would actually type.
+          "data pack",
+          "reference data",
+          "pack version",
+          "update check",
         ],
       },
       {
@@ -2366,6 +2373,11 @@ export function PricingSection() {
         </Button>
       }
     >
+      {/* RM-38 WP 3.2 — the reference data pack, immediately above the pricing table it seeds. The
+          rows below OVERRIDE the pack's prices; this says which pack they are overriding, when its
+          facts were current, and whether anything published since has been refused. */}
+      <DataPackRow />
+
       <InputGroup className="max-w-sm">
         <InputGroupAddon align="inline-start">
           <Search className="size-4 text-muted-foreground" aria-hidden />

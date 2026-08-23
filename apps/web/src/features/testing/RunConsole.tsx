@@ -12,7 +12,8 @@ import type {
   SessionCapabilities,
   Test,
 } from "@mcp-token-footprint/shared";
-import { MODEL_CONTEXT_LIMITS , usageSplitKind } from "@mcp-token-footprint/shared";
+import { usageSplitKind } from "@mcp-token-footprint/shared";
+import { useContextLimit } from "../../lib/pack-values";
 import { SearchInput } from "@elabs-ai/components-data";
 import {
   Alert,
@@ -653,7 +654,14 @@ export function RunConsole({
 
   // WP 3.5 — the model's context window keys the KPI headline % + the chart's limit line. A provider
   // limit error is ground truth regardless of this seed map (handled API-side); 0 ⇒ "limit unknown".
-  const contextLimit = MODEL_CONTEXT_LIMITS[scenario.model] ?? 0;
+  //
+  // RM-38 WP 3.2 — read through the pack store, so a model the fetched pack knows gets a real
+  // percentage without an image rebuild. `useContextLimit` answers `null` for genuinely unknown and
+  // the compiled window whenever the image knew one, so a pending or failed hydration can no longer
+  // collapse this to a confident, meaningless "0% of context used"; the `?? 0` below is now only
+  // ever reached for a model NOTHING knows, which is the case the downstream code already reads as
+  // "limit unknown".
+  const contextLimit = useContextLimit(scenario.model) ?? 0;
 
   // The turn-0 baseline (system + tool defs) is the static footprint the budget starts from. It is
   // computed API-side, so the first streamed step carrying a `context` snapshot is its earliest

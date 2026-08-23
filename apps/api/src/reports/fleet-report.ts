@@ -44,6 +44,7 @@ import { compareStrings } from "../advisor/rules/shared.js";
 import { buildAdvisorReport } from "../advisor/service.js";
 import type { AdvisorContext } from "../advisor/types.js";
 import { buildComparison } from "../compare/service.js";
+import { dataPackStamp } from "../data-pack/stamp.js";
 import { isSubscriptionCostBasis } from "./reports.js";
 
 // ── Ports ───────────────────────────────────────────────────────────────────────────────────────
@@ -430,6 +431,8 @@ function buildAdvisorSection(ctx: AdvisorContext): FleetAdvisorSection {
  */
 export function createFleetReport(deps: FleetReportDeps): FleetReport {
   return {
+    // RM-38 D-DP8 — the pack every threshold behind this document's verdicts came from.
+    ...dataPackStamp(),
     advisorVersion: ADVISOR_VERSION,
     generatedAt: deps.advisor.now().toISOString(),
     servers: buildServersSection(deps.advisor),
