@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T16:10:00Z"
+timestamp: "2026-08-23T16:35:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -940,10 +940,24 @@ RM-37 has renamed the product's machine handle on its own branch, not yet on `ma
 `aiwb_`, CI gate filename `aiwb.assert.json`); version **0.3.0**, licence **Apache-2.0**, product name
 still "AI Workbench".
 
-**Every WP here that mints an identifier, names a file or documents a command uses `aiwb`** — WP 3.1's
-env vars are already neutral (`DATA_PACK_*`), but WP 3.3's publish script, release-asset name and DC
-documentation must not be written against the old handle and renamed twice. WP 3.2's stamp lands in the
-CI gate document, whose filename RM-37 is changing.
+~~**Every WP here that mints an identifier, names a file or documents a command uses `aiwb`**~~ —
+**REVERSED 2026-08-23, because the premise expired.** That instruction assumed RM-37 would land
+first. It has not: measured on `main` today, the handle is still `mcpfp` (`apps/cli/package.json`
+name and bin, root `package.json`), and `aiwb` appears in **no** code path — only in three planning
+ledgers and one temp-directory prefix.
+
+**So WP 3.3 uses the handle the tree actually carries.** A publish script, a release-asset name or a
+documented command written as `aiwb` on a tree whose binary is `mcpfp` is **documentation that does
+not work** — and the cost of being renamed twice is one `sed` in RM-37's own sweep, which is already
+scoped to do exactly that. Trading a working document for a saved rename is the wrong way round.
+
+**A known fact that nobody re-checks is how a plan goes stale** — this ledger's own words, from the
+struck lint claim above, now applied to an instruction it wrote itself six days earlier. The
+instruction was right when written and wrong when read, and nothing about it announced the change.
+
+*(One harmless artifact: WP 3.1's `data-pack-fetch-http.test.ts:229` mints a temp-directory prefix
+`aiwb-datapack-http-`. It resolves to nothing and breaks nothing — noted so RM-37's sweep is not
+surprised to find their target name already present.)*
 
 ## Sequencing against RM-37 — 2026-08-22
 
