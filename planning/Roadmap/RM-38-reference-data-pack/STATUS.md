@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T13:40:00Z"
+timestamp: "2026-08-23T14:05:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -741,9 +741,28 @@ PRE-FIX README: duplicate SENTENCES                   = 0
 ```
 
 **Both return 0 on the defective file.** They are the same instrument at different granularity, and
-the class is invisible to both **by construction**: two *rewrites* of one block share no identical
-text at any granularity, so the discontinuity is **semantic with no lexical signature**. No post-hoc
-scan over merged prose can find it.
+both are **wrapping-sensitive**, which is why they miss it: `grep -n "SHA-256 per file"` puts the
+duplicated phrase on lines **622 and 626**, and those two lines differ only in where they wrap, so
+line-granularity sees two distinct lines while sentence-granularity sees no whole sentence at all.
+
+**AMENDED — this entry first said the defect has "no lexical signature by construction", and that
+was an over-concession.** RM-37 refuted it and I reproduced their refutation rather than accepting
+it: collapse whitespace and scan for repeated **12-word** phrases and the block shows up —
+`n=12` gives 3 repeated regions, all of them windows over the one duplicate. (`n=8` also matches
+markdown table rules `| --- | --- |`, so 8 is too loose and 12 is not.) **The signature was there the
+whole time.** A whitespace-collapsed n-gram is a genuinely better smoke test than either scan above.
+
+**The conclusion survives, for a reason neither of us stated first: the CLASS is not guaranteed a
+signature even though this INSTANCE has one.** Two rewrites of one block need not share phrasing at
+all — a rewrite that reworded everything leaves no trace at any granularity. So a scan can only ever
+be a smoke test over the subset where the two sides happen to overlap, never the decision procedure.
+
+**And the over-concession is this item's own lesson pointing back at me.** "No lexical signature by
+construction" was the blanket downgrade in the opposite direction — the exact error I corrected
+RM-37 on hours earlier when they erased the manual relocation proof alongside the standing test's
+false one. **Conceding more than the evidence supports reads as rigour and costs exactly as much
+accuracy as over-claiming.** It survived one round because the framing was more elegant than the
+truth.
 
 **What does work is on the diff side, before resolving:** were the two sides **additions of different
 blocks** (union is right) or **rewrites of the same block** (union is always wrong — take a side or
@@ -756,7 +775,8 @@ sentence granularity to line granularity felt like closing the hole and moved no
 **axis** was wrong rather than the resolution. *A refinement along the wrong axis is
 indistinguishable from progress until someone measures it against the actual failure.* It was only
 caught by running the new check against the **defective bytes** in `git show` rather than against
-current files, where it returns 0 and reads as confirmation.
+current files, where it returns 0 and reads as confirmation. **Test a fix against the state it was
+meant to fix, not against the state you have** — which is a non-vacuity control one level up.
 
 Current state, checked rather than assumed: `README.md` **0** repeated lines · `CHANGELOG.md` **0** ·
 `CLAUDE.md` **1**, the `DC-17` service-tokens link at lines 372 and 440 closing §6's and §7's own
