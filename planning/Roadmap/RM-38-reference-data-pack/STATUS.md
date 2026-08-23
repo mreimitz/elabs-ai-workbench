@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T09:52:00Z"
+timestamp: "2026-08-23T10:05:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -437,6 +437,39 @@ under test · **it was the only mutation in flight.** One probe at a time, clean
 **Ports: 8131–8134 are RM-38's.** 8126–8130 belong to the RM-37 session's batch. Any browser or
 container work copies `data/app.sqlite`; nothing opens the live file. **No migration from this item** —
 Phase 3's cache is a `DATA_DIR` filesystem tree, not a table. `v65` is RM-37's.
+
+## WP 3.1's own Acceptance had a hole, found after dispatch — 2026-08-23
+
+RM-37's verification agent found that in `apps/api/src/token-counting/`, **removing the request
+timeout entirely — and separately disabling the rate limiter — each left the pre-existing 19-test
+suite fully green.** Two production paths with no coverage at all, in the very file the suite was
+written to test. Species 3 (no test at all, with a green gate nearby mistaken for coverage), found
+twice in one file, and only by mutating them.
+
+**The same hole is in WP 3.1's Acceptance, written by this session and not seen until RM-37's finding
+made it visible.** The item reads: *"Boot time with an unreachable URL is not measurably worse than
+with the fetch disabled — the request is genuinely off the critical path."* Read adversarially,
+**that passes even if `DATA_PACK_TIMEOUT_MS` does nothing whatsoever** — a fetch fired and never
+awaited on the critical path is also "not measurably worse". The acceptance cannot distinguish a
+bounded request from an unbounded one that nobody waits for. And the timeout is not incidental here;
+it is the load-bearing half of D-DP4.
+
+**Sent to the agent as an additive brief** (minutes after dispatch, so no mid-flight hazard): three
+mutations, each alone with a clean tree between — delete the timeout · neutralise the total budget
+separately from the per-request timeout · break the retry pacing. Proved against a listener that
+**accepts the connection and never responds**, not one that refuses: a hang is genuinely hard to fake
+with a stub, and it is the same control-and-case discipline (assert a normal response is handled,
+then make that one server stop answering). *"Nothing went red"* is a reportable finding, not a
+failure.
+
+**The lesson is about acceptance criteria, not about timeouts.** An acceptance item phrased as an
+*absence* — nothing got slower, nothing was requested, no error appeared — is satisfied by the code
+doing nothing at all. It is the ledger's own "an absence is never a measurement", arriving this time
+inside a criterion rather than inside a merge.
+
+**One more from the same session, recorded because it validates check 1 in someone else's hands:**
+two of their sixteen probes returned an **empty `git diff --stat`** (a malformed mutation command),
+and their harness declared those `INVALID PROBE` rather than reading the green as a pass.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
