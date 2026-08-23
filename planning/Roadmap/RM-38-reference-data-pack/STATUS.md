@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T10:05:00Z"
+timestamp: "2026-08-23T10:25:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -470,6 +470,72 @@ inside a criterion rather than inside a merge.
 **One more from the same session, recorded because it validates check 1 in someone else's hands:**
 two of their sixteen probes returned an **empty `git diff --stat`** (a malformed mutation command),
 and their harness declared those `INVALID PROBE` rather than reading the green as a pass.
+
+## A fetched pack can put text in the operator's UI that no source guard can ever see — 2026-08-23
+
+**For WP 3.2 to decide. Not a defect today: 0 hits.** Surfaced when RM-37's planning-id guardrail —
+which scans `packages/shared` because reports render server-side — flagged two RM-38 strings, and
+they path-exempted `security-tables.generated.ts` (correctly: a per-string edit there is erased by
+the next `pnpm build:data-pack`, and a fix the generator silently undoes is the regression the guard
+exists to catch). They flagged the resulting blind spot as a constraint on this item. It is bigger
+than that, and all four links were measured on `main` rather than reasoned:
+
+1. `data-pack/schema/security-rules.schema.json` constrains rule `title` (`maxLength` 120) and
+   `rationale` (`minLength` 40, `maxLength` 2000) **by LENGTH ONLY — no content constraint.**
+2. Both are rendered **verbatim to an app user** — `SecurityPanel.tsx`'s `RuleCell` popover, whose
+   own comment says the component deliberately "does not paraphrase it, shorten it or turn it into a
+   tooltip".
+3. They render into `packages/shared/src/security-tables.generated.ts`, now path-exempted.
+4. **After WP 3.1 they can arrive from a FETCHED pack** — text that was never in this repository, in
+   any file.
+
+**Link 4 is the finding, and it is this item's, not RM-37's.** Their exemption creates a blind spot
+in a source scan; the fetcher makes source scanning **structurally incapable**. Un-exempting would
+not fix it: a guard that reads files in this repository cannot see a string that arrives over HTTP at
+boot. So the enforcement point for user-visible pack text is the **verifier** — D-DP5 refusal 3, "any
+file fails its JSON Schema" — and today that verifier checks length and nothing else.
+
+**Deliberately NOT added to WP 3.1.** It is a class, not a defect; 3.1 already carries five refusals
+plus three timeout mutations, and loading a speculative content rule onto it would trade a real proof
+for an imagined one. **WP 3.2 owns it**, because 3.2 is what puts these strings in a browser, and it
+arrives as a choice with both branches stated: constrain user-visible pack fields in the schema, or
+accept explicitly that a published pack can put arbitrary text in the operator's UI. Verified 0 of 18
+rules currently carry a planning-id shape in `title`/`rationale`/`remediation`/`description`.
+
+## Species 8 — an absence test cannot detect a change that MANUFACTURES the absence — 2026-08-23
+
+From RM-37's batch, found by probing: a mutation that dropped a SQL column reddened four of five
+tests, and **the fifth could not redden — it asserts `null`, and dropping the column also yields
+`null`.**
+
+**WP 3.1's five refusals are absence-shaped by construction**, so this lands directly on the WP in
+flight. A refusal test asserting only "the pack in force did not change" passes for the right reason
+**and** for every wrong one: the fetcher threw early, the URL was never built, `.staging/` was never
+written, verify was never called at all. A refusal test that a completely broken fetcher also
+satisfies is not testing the refusal.
+
+**Sent to the agent as a sharpening, not new scope:** two assertions per refusal — the typed reason
+asserted **by name** (`digest_mismatch`, not "a refusal happened"), plus the control that the same
+pack minus the one mutation is **accepted**. The second is what the control-and-case listener was
+already worth; what was missed is that it generalises past the HTTP test to every refusal. Where a
+refusal genuinely has nothing positive to assert, the test says so and names what else could produce
+the same nothing.
+
+**Relation to the earlier entries:** this is the third distinct way an absence has failed as evidence
+in this item — a conflict that did not appear, an acceptance line satisfied by doing nothing, and now
+an assertion the defect itself can satisfy. "An absence is never a measurement" has earned its place
+as the item's one-line summary.
+
+## Species 7 — an acceptance line that cannot fail the defect it was written for
+
+Named here after WP 3.1's own Acceptance hole (above). Distinguished from species 1 by the fact that
+it **fails freely on other things**, so it looks alive. The real cost, in RM-37's sharpening: **it
+lives in the spec, so it poisons every implementation, and the agent that satisfies it has done
+nothing wrong.** Its worst form carries a prose escape hatch — RM-37 found one of their own in
+flight, *"X is reachable from the Studio, or `CLAUDE.md` says it is not"*, satisfiable by an agent
+that builds nothing and is correct to do so — and the disposition that works is to rule such a branch
+a **named residual before the agent reports**, since deciding afterwards lets whatever happened set
+the standard.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
