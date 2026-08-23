@@ -250,6 +250,65 @@ test("an empty model roster refuses — a blank heatmap is worse than a refusal"
   assert.deepEqual(result.ok === false && result.refusal.paths, ["generated/all-models.json"]);
 });
 
+// --- RM-38 WP 2.2 — the three judgement tables ---------------------------------------------------
+//
+// These three documents have NO compiled fallback on the advisor side and only a merge FLOOR on the
+// model/quality side, so a pack that carries a broken one must be refused whole rather than half
+// applied. Each is checked twice over: by its own JSON Schema (step 4) and by a compiled-in zod
+// contract (step 5). The zod layer is what these cases exercise — the schema layer is already
+// covered by the case above.
+
+test("a judgement table missing a required key refuses the whole pack", () => {
+  for (const [rel, key] of [
+    ["advisor/thresholds.json", "high_waste_share"],
+    ["quality/thresholds.json", "default_compare_threshold"],
+    ["models/overrides.json", "zero_price_models"],
+  ] as const) {
+    const tree = clone();
+    const doc = getJson<Record<string, unknown>>(tree, rel);
+    Reflect.deleteProperty(doc, key);
+    setJson(tree, rel, doc);
+    reseal(tree);
+
+    const result = load(tree);
+    assert.equal(result.ok, false, `${rel} without ${key} must refuse`);
+    assert.equal(result.ok === false && result.refusal.reason, "schema_violation");
+    assert.deepEqual(result.ok === false && result.refusal.paths, [rel]);
+  }
+});
+
+test("a judgement table whose value has the wrong TYPE refuses, not coerces", () => {
+  const tree = clone();
+  const doc = getJson<Record<string, unknown>>(tree, "advisor/thresholds.json");
+  doc.top_tools = "five";
+  setJson(tree, "advisor/thresholds.json", doc);
+  reseal(tree);
+
+  const result = load(tree);
+  assert.equal(result.ok, false);
+  assert.equal(result.ok === false && result.refusal.reason, "schema_violation");
+  assert.match(
+    (result.ok === false && result.refusal.detail) || "",
+    /top_tools/,
+    "the refusal must name the offending field, not just the file",
+  );
+});
+
+test("an UNKNOWN key in a judgement table refuses — a silently ignored knob is a lie", () => {
+  // `.strict()` on the zod contract and `additionalProperties: false` in the JSON Schema both catch
+  // this. It matters because the failure mode otherwise is an operator editing a misspelled key,
+  // seeing the pack accepted, and concluding the threshold did not do anything.
+  const tree = clone();
+  const doc = getJson<Record<string, unknown>>(tree, "quality/thresholds.json");
+  doc.defualt_compare_threshold = 0.9;
+  setJson(tree, "quality/thresholds.json", doc);
+  reseal(tree);
+
+  const result = load(tree);
+  assert.equal(result.ok, false);
+  assert.equal(result.ok === false && result.refusal.reason, "schema_violation");
+});
+
 // --- The resolver: bundled → cache (D-DP2) -------------------------------------------------------
 
 function resolveWith(cache: PackTree | null, bundled: PackTree = clone()) {

@@ -16,6 +16,11 @@ import {
   runWorkbenchSelfScan,
   type WorkbenchSelfScanResult,
 } from "../src/mcp-server/self-scan.js";
+import { resolveDataPackFromDisk } from "../src/data-pack/resolve.js";
+import {
+  installDataPackSource,
+  resetDataPackSourceForTests,
+} from "../src/data-pack/source.js";
 
 // ==================================================================================================
 // The self-scan gate (D-MCP5) inside the normal test run
@@ -96,6 +101,36 @@ test("the measured definition footprint is under the declared budget (the gate)"
     result.measuredTokens < WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
     `tool definitions cost ${result.measuredTokens} tokens, over the ${WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET} budget`,
   );
+});
+
+// RM-38 WP 2.2 — the budget is a PACK value, so a pack update moves the gate with no code edit and
+// no image rebuild. The quantity asserted: `runWorkbenchSelfScan()` reads
+// `workbenchMcpDefinitionTokenBudget()` at scan time, so the SAME measured surface produces a
+// different verdict under a different pack. WHAT IT CANNOT SEE: whether the CI workflow runs the
+// command at all, or whether a REFRESHED (fetched) pack ever reaches a deployed container — that is
+// WP 3.1's subject.
+test("the gate's verdict follows the pack, not a number compiled into this build", async () => {
+  const real = resolveDataPackFromDisk().pack;
+  const measured = (await selfScan()).measuredTokens;
+  assert.ok(measured > 1, "precondition: the surface costs something");
+
+  const doctored = JSON.parse(JSON.stringify(real)) as typeof real;
+  doctored.documents.qualityThresholds.workbench_mcp_definition_token_budget = 1;
+
+  resetDataPackSourceForTests();
+  installDataPackSource(doctored);
+  try {
+    const strict = await runWorkbenchSelfScan();
+    assert.equal(strict.budget, 1, "the budget on the result is the PACK's");
+    assert.equal(
+      strict.overBudget,
+      true,
+      "a 1-token budget must fail the same surface that passes at 3500",
+    );
+    assert.match(formatSelfScanHeadline(strict), /OVER/);
+  } finally {
+    resetDataPackSourceForTests();
+  }
 });
 
 test("both artifacts render, carry the verdict, and expose no local path", async () => {

@@ -1,7 +1,6 @@
 import {
   API_TOKEN_ROUTE_SCOPES,
   WORKBENCH_MCP_DEFAULT_LIST_LIMIT,
-  WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
   WORKBENCH_MCP_MAX_LIST_LIMIT,
   WORKBENCH_MCP_MOUNT_PATH,
   WORKBENCH_MCP_RESOURCE_TEMPLATES,
@@ -12,6 +11,7 @@ import {
   type ApiTokenScope,
   type WorkbenchMcpToolName,
 } from "@mcp-token-footprint/shared";
+import { workbenchMcpDefinitionTokenBudget } from "../data-pack/thresholds.js";
 
 // ==================================================================================================
 // Workbench MCP server — the `llms.txt`-style usage doc (planning/Roadmap/RM-08-ci/mcp-server.md, WP M.4)
@@ -215,7 +215,7 @@ export function buildWorkbenchLlmsTxt(input: WorkbenchLlmsTxtInput): string {
     "## Definition footprint",
     "",
     "This server pays attention to what it costs you, because measuring that is its day job. The",
-    `serialized tools/list payload is held under a budget of ${WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET} tokens under the app's`,
+    `serialized tools/list payload is held under a budget of ${workbenchMcpDefinitionTokenBudget()} tokens under the app's`,
     "default tokenizer profile — the price of knowing this server exists, paid on every conversation.",
     "The budget is asserted by the test suite and by a CI job that points the app's own discovery",
     "scanner at this mount (pnpm mcp:self-scan), so the number is measured, never assumed.",

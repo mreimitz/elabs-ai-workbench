@@ -108,8 +108,18 @@ test("the manifest lists every pack-content file except manifest.json itself", (
 
 test("every models/**/*.json validates against schema/model-entry.schema.json", () => {
   const validate = compileSchema(modelEntrySchema);
-  const modelFiles = listPackContentFiles(PACK_ROOT).filter((p) => p.startsWith("models/"));
+  // `models/open-weight/` + `models/saas/` only. `models/overrides.json` sits beside them and is a
+  // DIFFERENT kind of document (the WP 2.2 merge-chain layers), governed by its own schema — the
+  // assertion below pins that, so a stray file under `models/` still fails rather than being skipped.
+  const modelFiles = listPackContentFiles(PACK_ROOT).filter(
+    (p) => p.startsWith("models/open-weight/") || p.startsWith("models/saas/"),
+  );
   assert.equal(modelFiles.length, 11, "expected 11 per-provider model files");
+  assert.deepEqual(
+    listPackContentFiles(PACK_ROOT).filter((p) => p.startsWith("models/") && !modelFiles.includes(p)),
+    ["models/overrides.json"],
+    "the only non-provider file under models/ is the WP 2.2 override layer",
+  );
   for (const rel of modelFiles) {
     const violations = validate(readPackJson(rel));
     assert.deepEqual(violations, [], formatViolations(rel, violations));
@@ -179,12 +189,20 @@ test("dataPackSchemaFor maps every schema-governed pack file, and only those", (
   const governed = new Map<string, string | null>();
   for (const rel of listPackContentFiles(PACK_ROOT)) governed.set(rel, dataPackSchemaFor(rel));
 
-  // Every models/** file is governed by the model-entry schema.
-  const modelFiles = [...governed].filter(([rel]) => rel.startsWith("models/"));
+  // Every PER-PROVIDER models/** file is governed by the model-entry schema.
+  const modelFiles = [...governed].filter(
+    ([rel]) => rel.startsWith("models/open-weight/") || rel.startsWith("models/saas/"),
+  );
   assert.equal(modelFiles.length, 11);
   for (const [rel, schema] of modelFiles) {
     assert.equal(schema, "schema/model-entry.schema.json", rel);
   }
+  // …and `models/overrides.json` is NOT: it is the WP 2.2 merge-chain layer document. The exact
+  // match in `dataPackSchemaFor` has to be taken BEFORE the `models/` prefix rule, or this file
+  // would be validated against the model-entry schema and refuse the whole pack.
+  assert.equal(governed.get("models/overrides.json"), "schema/model-overrides.schema.json");
+  assert.equal(governed.get("advisor/thresholds.json"), "schema/advisor-thresholds.schema.json");
+  assert.equal(governed.get("quality/thresholds.json"), "schema/quality-thresholds.schema.json");
   assert.equal(governed.get("limits/cross-cutting.json"), "schema/cross-cutting.schema.json");
   assert.equal(
     governed.get("compatibility/test-catalog.json"),
