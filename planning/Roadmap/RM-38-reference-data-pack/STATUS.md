@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T11:20:00Z"
+timestamp: "2026-08-23T12:30:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -627,6 +627,24 @@ without a control.* The five: a merge conflict that did not appear · an accepta
 doing nothing · an assertion the defect itself satisfies · a scan that found nothing because it
 looked nowhere · an exemption that governs nothing while reading as a decision.
 
+## Species 5, committed by this session inside the run validating someone else's — 2026-08-23
+
+Recorded because of who made it and where, not because it was costly. Validating WP 3.1, I grepped
+my own gate output for failures with a pattern that also matched the word `FAIL` **inside test
+names**, got **38**, and briefly held an unexplained number beside an `EXIT=0`. All 38 were `ok`
+lines; `^not ok` was **0**.
+
+**That is species 5 — a count measured over the wrong quantity — committed by the session that had
+spent the day finding it in others, inside the very run being used to validate another session's
+measurement discipline.** RM-37's framing is the one to keep: *the defence is never knowing better;
+it is the mechanical habit.* **Read the count the runner prints. Never a grep over its prose.**
+
+The same instrument had already failed once that hour: my first grep for `CONTROL FAILED` in the
+agent's HTTP test found one occurrence and appeared to contradict its claim that every refusal
+asserts an accept first. Reading the file showed the assertion lives in a shared `controlThenCase`
+helper used by all five. **The agent's report was accurate and my instrument was naive — twice, in
+opposite directions, within one validation.**
+
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
 - The two-stage pipeline already exists for models only: `pnpm build:model-data` →
@@ -936,8 +954,26 @@ parallel converts this from folklore into a reproducible defect and points strai
 Check **counts**, not just the exit code — the failure mode under this machine's load is a truncated
 run that exits 0 over fewer files. shared **287** · illustrations **1032** · cli **87** · api **3832** ·
 web **383 files / 4337 passed + 5 skipped**. A bare `Test timed out in 5000ms` in the web suite under
-load is a **false red** (a different file each run, all pass in isolation); a green under load is still
-a green. Below baseline must be reconciled, never assumed to be either.
+load is a **false red** (a different file each run, all pass in isolation). Below baseline must be
+reconciled, never assumed to be either.
+
+**"A green under load is still a green" — CORRECTED 2026-08-23, and the correction is why counts are
+read at all.** The asymmetry is real and its mechanism is plain: starvation makes a test exceed
+vitest's 5 s ceiling, which is reported as a **failure**. Starvation cannot manufacture a pass. So a
+red under load is not evidence and a green is — **but only over an unshrunken corpus.** A starved run
+that never *executed* a file reports **fewer tests**, not failures, and that is a green over a
+smaller set, which is the one way a green under load can lie. RM-37 supplied the missing half.
+
+**The check is therefore the corpus, not the exit code**: file count *and* skipped count against
+baseline, every time. Applied to this session's own WP 3.1 validation rather than asserted — it ran
+at load **66** and returned `Test Files 394 passed (394)` · `Tests 4463 passed | 5 skipped (4468)`,
+byte-identical to the baseline above, and the four `node --test` packages each reported `# tests`
+equal to `# pass`. That green stands. A green at load whose corpus was never checked does not.
+
+**A cross-session count note, so a future reader does not read a phantom regression.** As of
+2026-08-23 this session measures shared **288** / api **3964** on `main`+WP 3.1, while the RM-37
+session measures shared **382** / api **4149** on `rm37/integration`. The delta is RM-37's batch, not
+a drop. Compare counts only within one branch.
 
 ## Owner-acceptance (nothing below is verified)
 
