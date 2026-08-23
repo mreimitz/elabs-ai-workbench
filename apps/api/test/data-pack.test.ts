@@ -13,6 +13,7 @@
 // The drift guard (rebuild + byte-compare) lives next door in `compatibility-data.test.ts`.
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
@@ -395,6 +396,58 @@ test("every relocated pack file still has the exact bytes it had before the move
     );
   }
   assert.deepEqual(mismatches, [], mismatches.join("; "));
+});
+
+// The `from` side of the ledger is a provenance claim, and until now nothing checked it.
+//
+// The absence assertion above is satisfied by a path that NEVER EXISTED just as well as by one
+// that was genuinely moved — so a typo'd, invented or silently-renamed `from` reads as a real
+// record of a real move while proving nothing. Measured before this test was written: a planted
+// `saas/NEVER-EXISTED.json` passed the absence check and fails this one, which is the only reason
+// it is worth adding.
+//
+// WHEN THIS GOES RED: a `from` path does not resolve at the recorded `baseCommit`. Fix the ledger
+// entry to name the path the file actually had before the move — never delete the entry, and never
+// move `baseCommit` forward to make it pass (that would relocate the claim, not verify it).
+test("every relocation-ledger `from` path resolved at the recorded baseCommit", () => {
+  const ledger = readPackJson<{
+    baseCommit: string;
+    files: { from: string; to: string }[];
+  }>("relocation-ledger.json");
+  const repoRoot = path.resolve(PACK_ROOT, "..");
+  const git = (args: string[]): { ok: boolean; stderr: string } => {
+    try {
+      execFileSync("git", args, { cwd: repoRoot, stdio: "pipe" });
+      return { ok: true, stderr: "" };
+    } catch (error) {
+      const stderr = (error as { stderr?: Buffer }).stderr?.toString() ?? String(error);
+      return { ok: false, stderr };
+    }
+  };
+
+  // Non-vacuity guard, asserted rather than printed: if the base commit itself is not in this
+  // clone, EVERY lookup below would fail for a reason that has nothing to do with the ledger, and
+  // a `skip` here would make the whole test a green that means "nothing was checked".
+  const base = git(["cat-file", "-e", `${ledger.baseCommit}^{commit}`]);
+  assert.ok(
+    base.ok,
+    `baseCommit ${ledger.baseCommit} is not present in this clone, so nothing below could be ` +
+      `verified. Run \`git fetch --unshallow\` (or fetch that commit) and re-run — do not skip ` +
+      `this test. git said: ${base.stderr.trim()}`,
+  );
+
+  const unresolvable: string[] = [];
+  for (const entry of ledger.files) {
+    if (!git(["cat-file", "-e", `${ledger.baseCommit}:${entry.from}`]).ok) {
+      unresolvable.push(`${entry.from} (claimed to have moved to ${entry.to})`);
+    }
+  }
+  assert.deepEqual(
+    unresolvable,
+    [],
+    `these \`from\` paths do not exist at ${ledger.baseCommit}, so they were never moved from ` +
+      `there: ${unresolvable.join("; ")}`,
+  );
 });
 
 test("the relocation ledger is provenance, not pack content — the manifest does not list it", () => {

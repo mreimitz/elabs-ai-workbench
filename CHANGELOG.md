@@ -7,6 +7,21 @@ entries below that date name the paths as they were at the time). Per-phase git 
 
 ## Unreleased — publishing the pack, and proving the app works with none of it
 
+**The release notes told recipients the wrong thing about who could download a release.** The
+publish script, this README and the deployment guide all stated that this repository is private and
+that release assets therefore need repository access. It is public, and has been. Corrected in all
+three places — and the script no longer *states* it at all: it asks GitHub at publish time and
+renders the matching note, or, if that query fails, says plainly that the access rule is unconfirmed
+rather than guessing. A hardcoded "public" would have been the same mistake with a fresher value.
+`--publish` still has never been run, so the note has never appeared on a real release.
+
+**A provenance record in the reference data pack is now checkable rather than merely plausible.**
+The pack records where each of its files was moved from. Nothing verified those old paths existed,
+so a typo or an invented path read as a real record of a real move while proving nothing — confirmed
+by planting a path that never existed and watching the old check pass it. The new check resolves
+every recorded origin against the commit the move was made from, and fails loudly if it cannot see
+that commit at all rather than reporting a pass over nothing checked. All 15 recorded paths verify.
+
 **Publishing reference data is now a commit.** The pack is sealed from its own sources — a checksum
 per file — and served from the repository; a running install picks it up on its next start. **The
 version bump is the go-live switch**: editing a pack without raising its version is answered

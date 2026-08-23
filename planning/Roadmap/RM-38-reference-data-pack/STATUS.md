@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T19:50:00Z"
+timestamp: "2026-08-23T20:10:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -585,6 +585,18 @@ a file, both signals read from it.**
       non-event* and therefore easy to miss. (2) `scripts/release.sh` states "this repo is PRIVATE" in
       its header and in the release notes it generates. Measured false.
 
+      > **(2) FIXED 2026-08-23.** Both sites are corrected, but not by hardcoding `public` — that
+      > is the same mistake with a fresh value, and it is precisely how the old string came to be
+      > wrong. `scripts/release.sh` now **asks GitHub** (`gh repo view --json visibility`, and `gh`
+      > was already a hard requirement of the publish path, so this costs nothing) and renders one
+      > of three notes: public, private/internal, or — when the query fails — an explicit *"could
+      > not read this repository's visibility … check it before sending the link on"*, which never
+      > reports an access rule it did not establish. All three branches were rendered and read, and
+      > the live call returns `PUBLIC`. **Not verified: `--publish` still has never been run**, so
+      > the note has never appeared on a real release. This does **not** touch (1) — the default
+      > `DATA_PACK_URL` still silently depends on the repo staying public, and that remains the
+      > owner's to watch.
+
 ---
 
 ## Two owner decisions, put and answered — 2026-08-23
@@ -831,6 +843,25 @@ while reading as a record of a real move. Species 8 wearing species 9's clothes.
 made now.** That file is the pack test file, and WP 3.1's agent is in flight and likely editing it;
 taking it would trade a certain merge conflict for a hole that is currently empty. **Queued for
 immediately after 3.1 merges**, recorded here so it is not lost.
+
+> **CLOSED 2026-08-23, after 3.1/3.2/3.3 all merged.** The assertion is
+> `apps/api/test/data-pack.test.ts` -> *"every relocation-ledger `from` path resolved at the
+> recorded baseCommit"*. It was **not** taken on trust: the discrimination this note promised was
+> re-measured in the same action that reports it, by planting
+> `research/token-context-comparison/data/saas/NEVER-EXISTED.json` into the ledger and running the
+> file — the **old** absence assertion reported `ok 19` on that invented path while the **new** one
+> reported `not ok 20`. So the hole was real and this assertion closes exactly it.
+>
+> **Its own non-vacuity is an assertion, not a printed number** (RM-37's sharpening, applied rather
+> than quoted). If `baseCommit` is absent from the clone, every lookup below it would fail for a
+> reason that has nothing to do with the ledger — so a `skip` there would be a green meaning
+> *nothing was checked*, the fifth absence. Probed by corrupting `baseCommit` to all-zeros: the test
+> goes red naming the commit and telling the reader to `git fetch --unshallow`, rather than passing
+> quietly. The relocation ledger was restored byte-clean after both probes (`git status` empty).
+>
+> All **15/15** `from` paths resolve at `a0179f1` today, so this closes a hole, not a defect — the
+> ledger was honest, and now it is *checkable*. Gate re-run whole: EXIT=0, api **3984 -> 3985**,
+> which is this one test and nothing else.
 
 **RM-37's sharpening of the non-vacuity rule, which corrects my own phrasing of it:** their scan
 *printed* `checked=36` beside `hits=0`, and that number is what produced my field-list correction —

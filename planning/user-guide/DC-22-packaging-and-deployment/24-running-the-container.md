@@ -3,7 +3,7 @@ type: "Guide Page"
 title: "Running the workbench container"
 description: "How the workbench is built into one Docker image, what it listens on, where its data lives, and how to start and stop it."
 tags: ["documentation", "DC-22"]
-timestamp: "2026-08-21T19:15:00Z"
+timestamp: "2026-08-23T20:15:00Z"
 status: "current"
 ---
 
@@ -114,11 +114,17 @@ same machine does not collide; `PORT=9090 ./run.sh` overrides the starting point
 persistent named volume (`mcp-token-footprint-data`), so re-running the launcher with a newer bundle
 is an upgrade rather than a reset.
 
-Two things follow from the repository being **private**. GitHub Release assets are downloadable only
-by people who already have repository access, so the Release is a provenance record for the owner
-and for repository members — an outside recipient gets the bundle handed over directly, by any file
-channel. And **no secrets ship**: `.dockerignore` excludes `.env*`, `data/` and `.git`, so each
-install generates its own `mcp-secret.key` in its own volume on first boot.
+This repository is **public** (measured 2026-08-23; an earlier version of this page said private,
+and was simply wrong). GitHub Release assets are therefore downloadable by anyone with the link, so
+the Release is a distribution channel, not just a provenance record for the owner — the offline
+bundle exists for a recipient with no network or no GitHub, not to work around access control.
+`scripts/release.sh` asks GitHub for the visibility when it generates release notes rather than
+asserting it, so the claim cannot silently rot again; if the query fails it says the access rule is
+unconfirmed instead of guessing.
+
+**No secrets ship** — and this follows from `.dockerignore`, not from who can reach the repository,
+which is why it is stated separately here: `.dockerignore` excludes `.env*`, `data/` and `.git`, so
+each install generates its own `mcp-secret.key` in its own volume on first boot.
 
 The image is cross-built to `linux/amd64` by default, because the build host is Apple Silicon but
 most recipients are not, and Docker Desktop on Apple Silicon emulates amd64. Pass
