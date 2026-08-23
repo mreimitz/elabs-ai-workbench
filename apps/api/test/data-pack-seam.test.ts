@@ -284,3 +284,81 @@ test("copy-data-pack.mjs ships exactly the directories the contract calls pack c
   assert.deepEqual(declared, [...DATA_PACK_CONTENT_DIRS]);
   assert.match(source, /manifest\.json/, "the manifest must ship too — a pack without one is not one");
 });
+
+// --- 6. The published pack's ADDRESS is a directory, not a flat release asset ---------------------
+//
+// WHY THIS GUARD EXISTS AT ALL. WP 3.1 shipped the default `DATA_PACK_URL` as
+// `https://github.com/…/releases/latest/download/manifest.json`, and no test could see that the
+// address is unusable BY CONSTRUCTION. The fetcher resolves every pack file relative to the
+// manifest, the manifest lists nested paths, and a GitHub release serves a flat set of assets whose
+// name is one path segment. Measured 2026-08-23 against `cli/cli` v2.98.0 — a repository that
+// actually has releases — 0 of 22 asset names contain a slash, `…/download/gh_2.98.0_checksums.txt`
+// answers 200 and `…/download/sub/gh_2.98.0_checksums.txt` answers 404.
+//
+// This reads the RESOLVED default out of `config`, not the source text: the thing that matters is
+// the value the process boots with, and a source scan would pass on a literal that a later edit
+// stops using.
+//
+// WHICH OF THE TWO TESTS BELOW ACTUALLY CATCHES THAT DEFECT — PROBED, NOT ASSUMED. Reverting the
+// default to the release-asset address turns exactly ONE red, and it is the BAN. This first test
+// stays GREEN on it, because `resolveDataPackFileUrl` is pure URL arithmetic: it happily produces
+// `…/releases/latest/download/models/saas/openai.json`, a perfectly well-formed URL that 404s in
+// the world. So this test is a structural sanity check (the default is an absolute http(s)
+// manifest URL whose siblings resolve under it) and the ban below is the guard with the teeth.
+// Recorded here rather than left implied — a reader who assumed the pair were redundant would
+// delete the wrong one.
+test("the default DATA_PACK_URL can address the pack's own nested files", async () => {
+  const { config } = await import("../src/config/env.js");
+  const { resolveDataPackFileUrl } = await import("@mcp-token-footprint/shared");
+
+  const manifest = JSON.parse(
+    readFileSync(path.join(REPO_ROOT, "data-pack", "manifest.json"), "utf8"),
+  ) as { files: { path: string }[] };
+  const nested = manifest.files.map((f) => f.path).filter((p) => p.includes("/"));
+
+  // NON-VACUITY, and it is the whole point of reading the real manifest rather than hardcoding a
+  // path: if the pack ever became flat this test would have nothing to prove and must say so
+  // rather than pass over an empty set.
+  assert.ok(
+    nested.length >= 20,
+    `the pack must actually contain nested paths for this guard to mean anything (saw ${nested.length})`,
+  );
+
+  for (const rel of nested) {
+    const href = resolveDataPackFileUrl(config.dataPackUrl, rel);
+    assert.ok(href, `the default pack URL cannot address ${rel} — the fetcher would never reach it`);
+    assert.ok(
+      href.endsWith(`/${rel}`),
+      `${rel} must resolve to a path-shaped URL under the manifest's directory, got ${href}`,
+    );
+  }
+});
+
+test("the default DATA_PACK_URL is not a flat GitHub release asset", () => {
+  // A BAN, and per this item's own ledger a ban is itself an absence assertion — so the regex is
+  // asserted DISCRIMINATING against the exact address this WP replaced. An inert pattern fails
+  // here instead of passing quietly.
+  const releaseAssetUrl = /\/releases\/(latest\/download|download\/[^/]+)\//;
+  assert.match(
+    "https://github.com/mreimitz/elabs-ai-workbench/releases/latest/download/manifest.json",
+    releaseAssetUrl,
+    "the ban must match the address it was written for, or it bans nothing",
+  );
+  assert.doesNotMatch(
+    "https://raw.githubusercontent.com/mreimitz/elabs-ai-workbench/main/data-pack/manifest.json",
+    releaseAssetUrl,
+    "…and must not match a directory-hosted manifest, or it bans everything",
+  );
+
+  const source = stripComments(readFileSync(path.join(SRC, "config/env.ts"), "utf8"));
+  const defaults = [...source.matchAll(/"(https?:\/\/[^"]+)"/g)].map((m) => m[1] as string);
+  assert.ok(defaults.length > 0, "env.ts must still carry a default pack URL literal");
+  for (const url of defaults) {
+    assert.doesNotMatch(
+      url,
+      releaseAssetUrl,
+      `${url} is a flat release-asset address; the pack is a directory of nested files and its ` +
+        "files would 404 one by one while the manifest itself answered 200",
+    );
+  }
+});

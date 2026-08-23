@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-08-22T18:15:37Z"
+timestamp: "2026-08-23T15:19:43Z"
 status: "active"
 ---
 
@@ -96,6 +96,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [DC-23-product-overview](../user-guide/DC-23-product-overview/doc.md) — Product overview · `current`
 * [DC-24-security-posture](../user-guide/DC-24-security-posture/doc.md) — Security posture · `draft`
 * [DC-25-advisor](../user-guide/DC-25-advisor/doc.md) — Advisor — evidenced recommendations · `draft`
+* [DC-26-reference-data-pack](../user-guide/DC-26-reference-data-pack/doc.md) — Reference data pack · `draft`
 
 ## Now / Next / Later
 

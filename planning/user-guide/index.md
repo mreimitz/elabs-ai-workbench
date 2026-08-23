@@ -27,3 +27,4 @@
 * [Product overview](DC-23-product-overview/) - Browse product overview.
 * [Security posture](DC-24-security-posture/) - Browse security posture.
 * [Advisor — evidenced recommendations](DC-25-advisor/) - Browse advisor — evidenced recommendations.
+* [Reference data pack](DC-26-reference-data-pack/) - Browse reference data pack.
