@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T14:05:00Z"
+timestamp: "2026-08-23T14:25:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -781,6 +781,44 @@ meant to fix, not against the state you have** — which is a non-vacuity contro
 Current state, checked rather than assumed: `README.md` **0** repeated lines · `CHANGELOG.md` **0** ·
 `CLAUDE.md` **1**, the `DC-17` service-tokens link at lines 372 and 440 closing §6's and §7's own
 paragraphs — legitimate, pre-existing, left alone.
+
+## A ban is an absence too — the rule from this morning was half a rule — 2026-08-23
+
+This item told WP 3.2 to guard the D-DP8 stamp with a **ban** ("no builder assembles the field
+itself") on the grounds that a ban fails the safe way where a presence check can be satisfied by a
+comment. RM-37 pointed out that this is **half a rule**: a ban is *itself* an absence assertion, and
+it passes when the scan looks in the wrong place or walks an empty set. **If a seventh builder is
+added under a path the glob does not match, the test stays green and the guarantee is gone** — and
+D-DP8's reproducibility claim rests entirely on that guarantee.
+
+**So a ban needs the same two things every other absence in this ledger needed:** a **non-vacuity**
+assertion (it walked a non-empty set, and — stronger — found the sanctioned call site in *every*
+builder it expects), and a **positive control** run as the two-step probe (delete a real call, leave
+a plausible comment naming the helper, confirm still red).
+
+**Two precedents on `main`, both read here rather than recalled, and the distinction between them is
+the load-bearing part:**
+- `apps/api/test/estimate.test.ts:333-346` — the D-CT5 tooth for "one pricing code path". Strips
+  comments before matching and states why the naive strip is exact there. **The call-site variant**:
+  one function is the only producer. It reads **one hardcoded file**, so it cannot go vacuous —
+  `readFileSync` throws if the file moves. **A glob over several builders has no such protection.**
+- `apps/api/test/security-report-export.test.ts` — **the structural variant**: one file owns the
+  thing.
+
+**The stamp needs the call-site variant**, because six builders each legitimately call the helper. A
+one-file rule would be the wrong shape and would read as satisfied while being unenforceable.
+
+**And the design's own priority, restated because the brief had it second.** The single definition is
+required because *a document that names its data version is worthless if two builders can disagree
+about the version* — a correctness requirement, not a merge convenience. The clean additive merge
+with the concurrent workstream is a side effect of getting the correctness right. Choosing a shape
+because it merges well is the priority inverted.
+
+**Why the stamp is not being routed around the four hot trees at all** (advisor, compatibility,
+`assertions/service.ts`, the report builders, plus `grading/run-report.ts` which is a report builder
+in all but name): routing around a shared file means writing the same value in two places, which is
+the duplication problem one level up — the very class that produced the README defect above. One
+definition, one call per builder, additive-vs-additive at the merge.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
