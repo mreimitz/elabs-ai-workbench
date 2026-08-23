@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T10:40:00Z"
+timestamp: "2026-08-23T10:55:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -571,6 +571,52 @@ flight, *"X is reachable from the Studio, or `CLAUDE.md` says it is not"*, satis
 that builds nothing and is correct to do so — and the disposition that works is to rule such a branch
 a **named residual before the agent reports**, since deciding afterwards lets whatever happened set
 the standard.
+
+## The fifth absence, found in THIS item's own relocation test — 2026-08-23
+
+RM-37's fifth shape is **an exemption that governs nothing while reading as a live decision**: a
+typo'd entry fails loudly (it exempts nothing, so the violation still reports), but an entry left
+behind by a deleted or moved file **exempts nothing while looking deliberate**, and the next author
+extends the list rather than questioning it. Species 3 by drift, in a decision record.
+
+**Applied to RM-38 and it finds one, in `apps/api/test/data-pack.test.ts`'s relocation assertion.**
+The test is better than my scan was — it carries a real non-vacuity guard
+(`assert.equal(ledger.files.length, 15)`), and a vanished `to` path throws out of `readFileSync`, so
+that direction is loud. But the other assertion is absence-shaped:
+
+```
+assert.equal(existsSync(path.join(repoRoot, entry.from)), false,
+  `${entry.from} must not still exist — a move leaves no copy behind (D-DP1)`)
+```
+
+**A `from` path is never proved to have EVER existed.** It passes because the file was moved — the
+right reason — and it passes identically for a misspelled path, or one that never existed at all,
+while reading as a record of a real move. Species 8 wearing species 9's clothes.
+
+**Measured, both directions, rather than argued:**
+- All **15/15** `from` paths resolve at the recorded `baseCommit` (`a0179f1`) via
+  `git cat-file -e <base>:<path>`. **The ledger is honest today** — this is a hole, not a defect.
+- A planted `…/saas/NEVER-EXISTED.json` **passes the current assertion** (it is absent from the
+  worktree, which is all the test asks) and **fails the proposed control** (unresolvable at
+  `baseCommit`). So the control discriminates, which is the only thing that makes it worth adding.
+
+**The fix is one assertion — `from` must resolve at `baseCommit` — and it is deliberately NOT being
+made now.** That file is the pack test file, and WP 3.1's agent is in flight and likely editing it;
+taking it would trade a certain merge conflict for a hole that is currently empty. **Queued for
+immediately after 3.1 merges**, recorded here so it is not lost.
+
+**RM-37's sharpening of the non-vacuity rule, which corrects my own phrasing of it:** their scan
+*printed* `checked=36` beside `hits=0`, and that number is what produced my field-list correction —
+but **a printed count is only a guard if a human reads it.** Had they skimmed past it, their scan and
+mine fail identically. So: **in a test it must be an assertion; in a one-off script it is a number
+somebody has to actually look at**, and saying "my script printed the count" is not the same claim as
+"my test asserts it".
+
+**The five absences, as one sentence** (RM-37's formulation, and the best summary this item has
+produced): *nothing happened, and nothing was supposed to happen, and no one can tell those apart
+without a control.* The five: a merge conflict that did not appear · an acceptance line satisfied by
+doing nothing · an assertion the defect itself satisfies · a scan that found nothing because it
+looked nowhere · an exemption that governs nothing while reading as a decision.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
