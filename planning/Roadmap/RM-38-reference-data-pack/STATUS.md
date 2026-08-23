@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T10:55:00Z"
+timestamp: "2026-08-23T11:10:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -107,6 +107,15 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       hashes: for every one, the base-commit blob, the recorded `gitBlobSha1` and the current file
       agree — 15 files, 0 mismatches. `data-pack/relocation-ledger.json` records them permanently and a
       test re-asserts them in-process.
+      **AMENDED 2026-08-23 — this entry conflates a one-time check with a standing one, and only the
+      first half survives.** The manual verification described here is sound and stays: comparing the
+      **base-commit blob** against the recorded hash and the current file does prove the file existed
+      at `from` with those bytes, so the *content* claim holds. But the **standing test** is weaker
+      than the sentence it is cited for. Its `to` half is real mutation detection; its `from` half is
+      `existsSync(...) === false`, which passes for a path that never existed. So the test proves the
+      bytes at `to` are the bytes recorded, and separately that **a path is absent now** — it is not
+      evidence that a *move* occurred rather than a creation. "The relocation is proved" was true of
+      what I did by hand; it is not true of what runs in the gate.
 
       **I broke the guards myself and watched them go red.** Tampering the SHIPPED snapshot alone (pack
       source untouched — the erasure path) turned **two** independent tests red, including the
@@ -714,7 +723,16 @@ the source rather than leaving a copy behind.
 
 **Rules that follow, for WP 2.1 and any later relocation:**
 1. A hash ledger is a mutation detector, never a reversion detector. Do not cite it as protection
-   against a bad merge.
+   against a bad merge. **SHARPENED 2026-08-23, and the sharpening is the point: this downgrade was
+   not enough.** RM-37 arrived at the same correction on their own copy of the rule and stated the
+   residue better than either of us had — the `from` half is not evidence a move happened either,
+   only that **a path is absent now**. That is all it has ever been.
+   **And a DOWNGRADE IS NOT A FIX.** This rule was written after a real incident, in this file, saying
+   in as many words "trust this less" — and the second, larger hole survived it untouched, because a
+   note telling readers to trust something less leaves the untrustworthy thing in place doing exactly
+   what it did before. Both of us then caught the same mechanism a second time with different
+   instruments. **When a guard is found to be weaker than its citation, change the guard or delete
+   it; do not annotate it and move on.**
 2. ~~**Delete the old path in the same change that creates the new one.** The modify/delete conflict is
    the only reliable signal here.~~ **CORRECTED 2026-08-23 — this over-claimed, and a minimal
    reproduction disproves it.** In a clean two-branch fixture, git's rename detection carried an
