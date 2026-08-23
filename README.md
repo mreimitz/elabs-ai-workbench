@@ -617,13 +617,11 @@ apps/
 packages/
   shared/    the API contract — types.ts, schemas.ts (zod), constants.ts
 data-pack/   the reference data the app checks servers and models against — per-provider model
-             entries, protocol/client limits, the compatibility test catalog, the advisor and
+             entries, protocol/client limits, the compatibility test catalog, the security rule
+             registry and every signature list the security analyzers match on, the advisor and
              quality thresholds, the model context-limit/pricing override layers, their JSON
              Schemas, and a generated manifest.json carrying a SHA-256 per file
              (`pnpm build:data-pack`)
-             entries, protocol/client limits, the compatibility test catalog, the security rule
-             registry and every signature list the security analyzers match on, their JSON Schemas,
-             and a generated manifest.json carrying a SHA-256 per file (`pnpm build:data-pack`)
 ```
 
 - **Runtime boundary:** the API is the *only* process that spawns MCP stdio commands, makes MCP HTTP
@@ -632,6 +630,14 @@ data-pack/   the reference data the app checks servers and models against — pe
 - **Contract-first:** anything touching the wire changes in `packages/shared` first (type + zod
   schema), then the API, then the web app.
 - **Persistence:** one SQLite file, evolved through `PRAGMA user_version`-gated migrations.
+- **Reference data resolves fetched → cached → bundled**, once at boot, whole or not at all. The app
+  checks a published URL for a newer pack, verifies every file against the manifest's SHA-256 and its
+  JSON Schema, and adopts it only if it is genuinely newer; a verified pack is kept in the data volume
+  and reused on the next start with no network. **The check can never delay or break startup** — it is
+  fired after the server is already listening and is not awaited, under a per-request timeout *and* a
+  total budget. Anything wrong with a pack — unreachable, truncated, tampered, a layout this build
+  does not understand, not newer, or a security rule ledger that is no longer append-only — is
+  refused whole with its reason in the log while the shipped pack keeps serving.
 - **Multi-provider inference** via the Vercel AI SDK (`@ai-sdk/*`); per-model pricing is maintained
   in `data-pack/` (with a compiled floor so a bad pack can never make a model look unpriced) and can
   be edited per-install in Settings, and the cost cap rejects unpriced models.

@@ -5,6 +5,41 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the app can fetch its own reference data, and refuses it five ways
+
+**The reference data pack can now arrive over the network at startup instead of only from the image
+or the data volume.** The app checks a published URL, and if what it finds verifies *and* is newer,
+it swaps to it for every subsequent request. Correcting a model's context window, a price, a
+compatibility rule or a security signature no longer needs a release and a redeploy.
+
+**Startup never waits on that check and never fails because of it.** The request is fired after the
+server is already accepting connections, and it is not awaited — so an unreachable URL, a slow one,
+or one that hangs forever cannot delay or break boot. Measured: with a server that accepts the
+connection and never answers, the app was serving health checks in about a second while the fetch
+was still running, and gave up on it at the five-second bound. Two bounds exist, because they catch
+different failures: one per request, and one total budget for the whole check — a server answering
+every request just inside the per-request limit would otherwise be unbounded in aggregate.
+
+**Five things get a pack refused whole, each one named in the log:** a layout this build does not
+understand; any file whose contents disagree with the manifest's checksum; any file that fails its
+schema; a version that is not newer than what is running; and — the one that protects other people's
+CI — a security rule list that has dropped, renamed or re-pointed an id it previously shipped. A
+refused pack changes nothing: the app keeps serving what it had, and leaves nothing on disk for a
+later boot to pick up.
+
+**A download in progress can never become the pack in force.** Files land in a staging directory,
+are verified there, and only a verified tree is moved into place in one step. Killing the process
+mid-download leaves the previous pack serving and the partial tree discarded on the next run.
+
+A verified pack is kept in the data volume, so a later restart uses it with no network at all.
+Setting the check off, or the URL to empty, makes the app open no socket — asserted by a test that
+records every outbound call.
+
+**Not yet, and visible:** there is no screen for any of this and no way to trigger a check by hand
+(both next), and the publish path does not exist, so the default URL currently answers 404. That is
+logged once at startup as information, not as a warning — an install with no network sees exactly
+the same line, and warning about the expected case is how people learn to ignore logs.
+
 ## Unreleased — the security rules move into the data pack, with two things standing in their way
 
 **The eighteen security checks, and every phrase, verb and pattern they match on, are now reference

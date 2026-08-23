@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T12:30:00Z"
+timestamp: "2026-08-23T13:15:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -357,11 +357,86 @@ a file, both signals read from it.**
 
 ## Phase 3 — Refresh, surface, publish
 
-- [ ] WP 3.1 — startup fetcher + verifier + `DATA_DIR` cache with atomic swap; all five refusals
-      mutation-probed — spec: [`wp-3.1-fetch-and-verify.md`](./wp-3.1-fetch-and-verify.md). **Depends on 1.2.**
-      **status: in progress** (dispatched 2026-08-23, one worktree agent, solo — it is the only
-      dependency-unblocked WP; 3.2 depends on it and 3.3 on both). Spec hardened before dispatch with
-      the control-and-case real-HTTP requirement and the four-check probe rule.
+- [x] WP 3.1 — startup fetcher + verifier + `DATA_DIR` cache with atomic swap; all five refusals
+      mutation-probed — **done 2026-08-23** · `wp/reference-data-pack/3.1` (3 commits: `7f3c352`
+      `a0d8847` `8ef244d`) · spec: [`wp-3.1-fetch-and-verify.md`](./wp-3.1-fetch-and-verify.md).
+
+      **Gate re-run by the orchestrator in the agent's worktree, one captured run, both signals read
+      from it: EXIT=0.** shared **288** · illustrations **1032** · cli **87** · api **3965** · web
+      **394 files / 4463 + 5 skipped**, `# fail 0` per package, lint 1927 files. api 3964 → 3965 is
+      the one guard added on refinement. **Corpus checked, not just the exit code** (the same day's
+      correction): web's file and skipped counts are byte-identical to the baseline, and every
+      `node --test` package reports `# tests` equal to `# pass`.
+
+      **THE GAP THE ORCHESTRATOR FOUND, AND IT WAS IN THE LOAD-BEARING CLAIM.** `index.ts` said in
+      prose that the refresh call's *position* — after `listen()`, not awaited — "is the entire D-DP4
+      guarantee and it is structural rather than promised". **Nothing enforced it.** Inserting an
+      `await refreshDataPack({...})` above `await server.listen(...)`, which destroys the guarantee
+      outright, left the api suite at **`# pass 3964 # fail 0`, EXIT=0**. The agent's proof was a
+      one-time live measurement — precisely the manual-check-versus-standing-test distinction this
+      ledger drew hours earlier, arriving inside the work being validated.
+      **Closed as guard 5** in `data-pack-seam.test.ts`, beside guard 4 and reusing its
+      `stripComments` helper: `refreshDataPack(` must appear **exactly once**, after `listen`, with a
+      preceding `void` and not `await`. **Re-probed by the orchestrator after the fix, not taken on
+      report** — the identical mutation is now **RED**, `# fail 1`, naming that guard.
+      **And the laundering direction, which is the one this item actually lost a guard to:** deleting
+      the real call while leaving two comment lines that name `refreshDataPack({ ... })` and
+      `await refreshDataPack(...)` is **RED** (`0 !== 1`). The comment-stripping is load-bearing, not
+      decorative. The agent added that fourth probe itself, unprompted, on the grounds that the
+      no-false-red direction alone is the weak half — correct, and it is why the guard is not one this
+      item will have to downgrade later.
+
+      **Two more orchestrator probes, one at a time, clean tree between, all through
+      `pnpm --filter @mcp-token-footprint/api test`:**
+      - Neutering the single `status: "installed"` site → **15 red, EXIT=1**, including all five
+        refusals, the CONTROL, the negative control and BOUND 1. **So no refusal test is satisfiable
+        by a fetcher that never installs** — species 8 answered, and answered by someone who did not
+        write the answer.
+      - Forcing `isSafePackRelativePath` true → **3 red**, first among them *"a ROOT-HOSTED manifest
+        cannot escape DATA_DIR — the case where the path guard is the ONLY defence"*.
+      *(A first attempt at the install probe targeted a string with the wrong indentation; its
+      `count == 1` assert failed loudly and it was discarded as no result, not read as green.)*
+
+      **The control-and-case design held.** Every refusal runs through one `controlThenCase` helper
+      that asserts the unmutated pack is **installed** first, from the same listener and code path,
+      then applies exactly one mutation and asserts the reason **by name**. All five go through a real
+      `node:http` listener, plus a negative control proving an *appended* rule-id ledger is still
+      accepted. An early orchestrator grep for `CONTROL FAILED` found one occurrence and appeared to
+      contradict the agent's claim; reading the helper settled it — **the report was accurate and the
+      instrument was naive**, the second time that hour.
+
+      **Both bound tests are stronger than the brief asked for.** BOUND 1 (a server that accepts and
+      never answers) and BOUND 2 (every response inside the per-request limit, the *sum* unreasonable)
+      each assert **elapsed wall clock**, each set the other bound out of range so exactly one
+      explanation survives, and BOUND 2 carries a **non-vacuity assertion on its own fixture**
+      (`wouldTake > budget * 2`). The agent reported **T3 (retry/pacing) as N/A with evidence** — no
+      retry loop or pacing delay exists to mutate — rather than inventing a probe.
+
+      **Two deviations, both verified sound.** (1) Staging is `DATA_DIR/data-pack.staging/`, a
+      sibling, because `rename(2)` cannot move a directory into its own descendant — the spec's swap
+      is not expressible; the property is unchanged. (2) The spec's teeth name
+      `schema_invalid`/`downgrade`/`rule_ledger_regression`; the code keeps the **frozen**
+      `DATA_PACK_REFUSAL_REASONS` tuple, which the orchestrator confirmed pre-exists at the base
+      commit and is consumed by WP 1.2/2.1. Keeping the contract over the prose was right.
+
+      **`packages/shared/src/data-pack.ts` is purely additive** — diffed with additions filtered out,
+      **zero** removed or modified lines, twelve new exports. `verify.ts` is now one definition both
+      rungs call, so a fetched and a cached pack cannot be judged by two subtly different rules.
+      `DataPackFs` gained a separate `DataPackWriteFs`, so a module holding the read seam provably
+      cannot write under `DATA_DIR`. D-DP6 anchors the rule-id ledger on the **bundled** registry, not
+      whatever is in force — otherwise a chain of packs could walk the ledger anywhere one append at a
+      time. No migration, no new dependency, no route, no UI.
+
+      **Not verified, and the limits are the agent's own words, not extracted from it.** No Docker
+      image was built (assigned to WP 3.3). No browser — this WP has no UI. **Per-request pack
+      isolation is NOT enforced**: a consumer calling `getDataPack()` twice inside one operation,
+      straddling the swap, gets two packs; the exposure is the seconds after boot, since there is no
+      manual trigger and no periodic re-check yet. And the real-HTTP proof's stated open half:
+      *it proves the client refuses a pack one mutation away from an accepted one — not that the
+      mutation is the kind of change that ought to be refused, because the schemas, the id ledger and
+      the digest algorithm are all authored in this repository and travel with the fixture.*
+      **No pack from the real publish path has ever been served** — the accepted base is this repo's
+      own `data-pack/` with its version bumped.
 - [ ] WP 3.2 — `GET`/`POST /api/data-pack`, Settings row, diagnostics group, `packVersion` stamped into
       every verdict document — spec: [`wp-3.2-surfaces.md`](./wp-3.2-surfaces.md). **Depends on 3.1.**
 - [ ] WP 3.3 — publish path, docs, `.dockerignore` correction, offline verification — spec:
