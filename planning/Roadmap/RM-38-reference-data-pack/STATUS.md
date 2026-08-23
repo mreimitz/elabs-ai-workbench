@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T06:30:00Z"
+timestamp: "2026-08-23T07:00:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -263,6 +263,19 @@ A box is ticked **only** when the WP's Acceptance is met and the gate
       parameter descriptions and `additionalProperties: false`, so the 51 findings no longer exist.
       **Orchestrator's own live run confirms the budget half:** `24 tools · 3183 definition tokens ·
       budget 3500 → within budget`, EXIT=0.
+      **The SCORE half was initially reported to the owner on the agent's word alone — corrected.**
+      RM-37 pointed out that a measurement by one session is evidence it *tried*, not evidence anyone
+      else verified, and they were right: **no test in the suite asserts the real mount's score** (the
+      security tests use synthetic `scan_clean` / `scan_poisoned` fixtures), so the green gate covered
+      it not at all. Measured directly since, through `runWorkbenchSelfScan` + `analyzeScanTools` +
+      `computeSecurityScore`: **24 tools · 0 findings · `{"value":100,"band":"clean",
+      "analyzerVersion":4}`**. It now holds on this session's own measurement.
+      **Deliberately NOT propagated.** RM-20's "49 / high risk on 51 info findings" is quoted at
+      `RM-20/STATUS.md:325`, `RM-20/STATUS.md:687` and `CLAUDE.md:111`. `:687` is an **open
+      owner-acceptance box**, and closing it is the owner's call, not an orchestrator's — RM-37 reached
+      the same conclusion independently and left all three alone. Correcting a peer item's authoritative
+      ledger on the strength of a number that arrived through two ledgers would *look* like diligence
+      and be the opposite. **Surfaced to the owner as a decision instead.**
       **Spec corrections:** the oversized-description ceiling lives in `security-posture.ts`, not
       `analyzer.ts`; and the spec's signature inventory predated RM-37 WP 0.5, which added
       `READ_VERBS_IN_NAME` / `WEAK_MUTATING_VERBS_IN_NAME` / `WEAK_VERB_MAX_LEADING_OFFSET` — moved
