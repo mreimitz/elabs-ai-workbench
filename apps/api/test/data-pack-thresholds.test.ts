@@ -158,12 +158,21 @@ test("no file declares an advisor threshold a second time (the two-copies regres
 });
 
 test("the waste bands are ONE pack entry that both trim rules read", () => {
-  // The quantity: both rule files name the pack field and NEITHER names the retired constant.
-  // This is the specific regression WP 2.2 removed — `HIGH_WASTE_SHARE = 0.5` and
-  // `MEDIUM_WASTE_SHARE = 0.2` were declared IDENTICALLY in both files.
+  // The quantity: both rule files' CODE — comments stripped — names the pack field.
+  //
+  // stripComments is NOT decoration here, and this is not inherited caution: probed 2026-08-23 by
+  // reverting `quality-validated-trim.ts` to hardcoded `0.5` / `0.2` while leaving the comment that
+  // names `high_waste_share` in place. Un-stripped, this test stayed GREEN — the comment alone
+  // satisfied it, which is the same defect `1687eb8` found in the shipping guard. Re-probed after:
+  // same mutation, red.
+  //
+  // WHAT IT STILL CANNOT SEE: whether the resulting SEVERITY moves. Only `unused-tool-trim` has a
+  // behavioural band test below (`quality-validated-trim` needs a graded suite-run fixture this WP
+  // does not build). So for that rule this asserts "the code reads the pack field", not "the finding
+  // changes" — a real, named gap, not a covered one.
   const rules = path.join(API_ROOT, "src/advisor/rules");
   for (const name of ["unused-tool-trim.ts", "quality-validated-trim.ts"]) {
-    const source = readFileSync(path.join(rules, name), "utf8");
+    const source = stripComments(readFileSync(path.join(rules, name), "utf8"));
     assert.match(source, /high_waste_share/, `${name} must read the pack's high_waste_share`);
     assert.match(source, /medium_waste_share/, `${name} must read the pack's medium_waste_share`);
   }
@@ -416,10 +425,13 @@ test("prices merge in the same order, and the DB resolver still sits above all o
   // installing a real `PricingRepository` here would be testing `pricing-editor.test.ts`'s subject.
   // The quantity: `resolvePrice` consults `activeResolver` BEFORE the table. Blind spot: it does not
   // prove the resolver returns anything useful.
-  const source = readFileSync(path.join(API_ROOT, "src/providers/pricing.ts"), "utf8");
+  // Comments stripped, for the reason the waste-band guard above records: an un-stripped presence
+  // check asserts "someone wrote this string", and a comment describing where a call USED to be is
+  // exactly what outlives the call.
+  const source = stripComments(readFileSync(path.join(API_ROOT, "src/providers/pricing.ts"), "utf8"));
   const resolverAt = source.indexOf("const hit = resolver.resolve(model, opts);");
   const tableAt = source.indexOf("const codeHit = table[model];");
-  assert.ok(resolverAt > 0 && tableAt > 0);
+  assert.ok(resolverAt > 0 && tableAt > 0, "both reads must still exist in the CODE");
   assert.ok(resolverAt < tableAt, "the DB resolver is consulted before the pack-resolved table");
 });
 
