@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T16:35:00Z"
+timestamp: "2026-08-23T18:20:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -913,6 +913,46 @@ branches is precisely the accident it exists to prevent, done deliberately and t
 Agreed with RM-37: a quiet tree, no agents running on either side, one mechanical commit with nothing
 else in it, announced before and confirmed clear. **Carried here only so the decision is not lost**;
 the warning documentation stays correct in the meantime and must not be reverted when it happens.
+
+## A coordination fact written into code that the code cannot enforce — 2026-08-23
+
+**This item shipped the only fixed-port bind in the repository, and it fired against a peer session
+within hours.** `data-pack-fetch-http.test.ts` binds **8131/8132/8133/8134** because the WP 3.1
+brief allocated that range — an orchestrator instruction, inherited without question. A concurrent
+session ran the api suite while this session probed, and **13 tests went red together** with
+`listen EADDRINUSE: address already in use 127.0.0.1:8131`: the CONTROL, all five REFUSALs, the
+negative control, both BOUNDs and the network-failure cases. **Every test NAME points at the
+fetcher; only the error line names the cause.**
+
+**Measured, after the first instrument failed.** A grep for `port:\s*[0-9]{2,5}` returned **zero**
+fixed binds — because the code reads `listen({ port: SERVE_PORT })`, a constant, not a literal. The
+scan measured the wrong quantity and its clean result was a **false clean on a file this session had
+just probed by hand**. Re-run over every `.listen(` site with the port expression shown:
+`data-pack-fetch-http.test.ts:172` is **the sole fixed-port bind**, against **~50** test listeners
+already using `listen(0, …)` (and `apps/cli/test/harness.ts`, and `self-scan.ts:214` in production
+code). So it is not a judgement call the repo makes differently elsewhere — it is one outlier.
+
+**RM-37's diagnosis is the species and it is worth more than the fix.** The file carries a comment at
+`:44`: *"8131–8134 are RM-38's allocation (see the ledger). Nothing else on the machine may be
+assumed…"* — **a coordination fact, written into code, that the code cannot enforce and a future
+reader cannot verify.** It was true when written. It stops being true silently, because the test
+outlives the conversation that allocated the range and gets run by a session that never saw the
+message. `listen({ port: 0 })` needs no comment, no ledger and no agreement.
+
+**And the allocation was the wrong instrument, not a mis-used right one.** A reserved range works for
+a container a human opens in a browser — a person can see which port is theirs. For anything a *test*
+binds it only relocates the collision onto whoever forgets the reservation. The two cases were
+conflated in the WP 3.1 brief and inherited straight into WP 3.3.
+
+**Sent back for `listen({ port: 0 })`**, reading the assigned port off the server, with the
+`DEAD_PORT` case handled by binding-then-closing rather than hoping a number is free. **The cost of
+finding it late was borne by a peer**, and the only reason it was cheap is that the signature was
+reported mid-flight rather than after their gate went red.
+
+**Third naive-instrument failure by this session in one day**, all the same shape — a grep that
+measured something adjacent to the question: `FAIL` inside test names, `CONTROL FAILED` counted
+outside its helper, and now a port literal that is a constant. **Read the count the runner prints;
+when scanning source, print what matched and look at it.**
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
