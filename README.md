@@ -637,7 +637,14 @@ data-pack/   the reference data the app checks servers and models against — pe
   fired after the server is already listening and is not awaited, under a per-request timeout *and* a
   total budget. Anything wrong with a pack — unreachable, truncated, tampered, a layout this build
   does not understand, not newer, or a security rule ledger that is no longer append-only — is
-  refused whole with its reason in the log while the shipped pack keeps serving.
+  refused whole with its reason in the log while the shipped pack keeps serving. **Settings shows
+  which pack is in force**, when it was last checked, and — in plain words — what was refused and
+  why, with a **Check now** button; and **every verdict document names the pack it was computed
+  against** (security report and diff, advisor, fleet, compatibility heatmap and test report, server
+  and run reports, and the CI gate document), because a verdict that cannot name its data is not
+  reproducible. The browser reads the pack in force too, so a fetched pack changes what you see
+  without an image rebuild — **and none of it gates the first render**: the app paints on the values
+  it shipped with and adopts the pack when it arrives.
 - **Multi-provider inference** via the Vercel AI SDK (`@ai-sdk/*`); per-model pricing is maintained
   in `data-pack/` (with a compiled floor so a bad pack can never make a model look unpriced) and can
   be edited per-install in Settings, and the cost cap rejects unpriced models.

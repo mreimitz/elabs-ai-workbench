@@ -5,6 +5,36 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — every verdict names its data, and Settings shows which pack is in force
+
+**A report that judges something now says what it judged it against.** The reference pack's version
+is recorded in the security report and its diff, the advisor report, the fleet report, the
+compatibility heatmap and test report, the server and run reports, and the CI gate document — in the
+JSON and in the Markdown. A verdict you cannot reproduce is a verdict you cannot argue with, and
+until now nothing in those documents said which thresholds, rules or model facts produced them. The
+version is written by one piece of code that every document calls, so two reports cannot disagree
+about it.
+
+**Settings has a reference-data row.** It shows the version in force, where it came from, when it was
+last checked, and a **Check now** button. When a published pack is refused it says so in a sentence —
+*"a published pack could not be verified — this app is still using the version it had"* — naming the
+version that was refused and the reason, and saying plainly that nothing was applied. A failed check
+never renders as a successful one.
+
+**The browser no longer lags the server.** Model context windows, the compare default, the failure
+threshold and the security rule titles were previously whatever shipped in the image, so a fetched
+pack changed the server's answers while the screen kept showing the old ones. All of them now read
+the pack in force. **None of it delays the app starting** — the page paints immediately on the values
+it shipped with and adopts the pack when it arrives, so a slow or unreachable server costs you
+nothing but the update itself. Measured before and after: with the server deliberately stalled, the
+old shape delayed first paint by 2.1 seconds and the shipped one by none.
+
+One consequence worth knowing: an unknown model context window now reads as **unknown** rather than
+as zero. It previously rendered "0% of context used", which is a number nobody could justify.
+
+The diagnostics bundle gains a reference-data section, and it carries the version, the source and the
+refusal reason — never the URL it checked.
+
 ## Unreleased — the app can fetch its own reference data, and refuses it five ways
 
 **The reference data pack can now arrive over the network at startup instead of only from the image

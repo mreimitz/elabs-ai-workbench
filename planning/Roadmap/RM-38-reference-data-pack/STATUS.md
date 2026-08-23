@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T14:25:00Z"
+timestamp: "2026-08-23T16:10:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -437,8 +437,79 @@ a file, both signals read from it.**
       the digest algorithm are all authored in this repository and travel with the fixture.*
       **No pack from the real publish path has ever been served** — the accepted base is this repo's
       own `data-pack/` with its version bumped.
-- [ ] WP 3.2 — `GET`/`POST /api/data-pack`, Settings row, diagnostics group, `packVersion` stamped into
-      every verdict document — spec: [`wp-3.2-surfaces.md`](./wp-3.2-surfaces.md). **Depends on 3.1.**
+- [x] WP 3.2 — `GET`/`POST /api/data-pack`, Settings row, diagnostics group, `packVersion` stamped into
+      every verdict document, **and the browser reading the live pack** — **done 2026-08-23** ·
+      `wp/reference-data-pack/3.2` (2 commits: `212b4f3` `0b4ec61`) · spec:
+      [`wp-3.2-surfaces.md`](./wp-3.2-surfaces.md).
+
+      **Gate re-run by the orchestrator in the agent's worktree, one captured run: EXIT=0.** shared
+      **288** · illustrations **1032** · cli **87** · api **3982** · web **396 files / 4478 + 5
+      skipped**, `# fail 0` per package, lint 1937. Corpus **grew** (shrinkage is the tell, not
+      growth). 39 files, 10 new.
+
+      **THE DEFECT THE ORCHESTRATOR SENT BACK, and it was this WP inverting WP 3.1's own argument.**
+      `main.tsx` raced `hydratePackValues()` against a 2 s budget and mounted on whichever won, so a
+      server that accepts connections but answers slowly gave a **blank shell for up to two seconds on
+      every cold load** — in the item whose D-DP4 exists to forbid waiting on a dependency that is
+      allowed to be slow. The trade bought one slider's default on one route and cost the whole first
+      render, and the slow-API case is real here (a scan or suite run can tie up the event loop, which
+      is exactly when someone reloads).
+      **The agent fixed it and MEASURED it with a control rather than asserting it** — it rebuilt the
+      web bundle from the previously-validated commit to get the "before" number, against the same
+      route with `/api/data-pack` stalled 10 s: **+2118 ms** before, **−8 ms** after. So the defect was
+      real, the instrument could see it, and the fix removes it. `main.tsx` now *fires* hydration
+      without awaiting; `CompareView` renders on the floor and adopts the pack's default once
+      hydration settles **only while its own seed is untouched** (`seededWith` equality, so a moved
+      slider is never yanked). **Re-probed by the orchestrator:** reintroducing the blocking shape
+      reddens exactly one test — *"the app entry FIRES hydration and does not await it"*.
+      **Stated residual, not smoothed over:** a cold load straight onto `/compare/scans` with the
+      endpoint delayed fires compare twice, at `0.6` then `0.4`. It converges; it never blocks.
+
+      **The D-DP8 stamp has ONE definition and the guard around it is the strongest in this item.**
+      `stampDataPackVersion` in `packages/shared/src/data-pack.ts`, with `apps/api/src/data-pack/stamp.ts`
+      its only production caller; every builder gains one call. **Three non-vacuity guards**, which is
+      what this ledger asked for after RM-37 pointed out that a ban is itself an absence assertion:
+      (1) the source walk asserts a **corpus floor**; (2) **every stamped builder must be inside the
+      walked set** — the precise answer to "a seventh builder under a path the glob misses"; (3) the
+      assembly regex is asserted **discriminating** (matches an assembly, does *not* match a zod
+      declaration). Plus each builder read by **absolute path**, so a move throws rather than shrinking
+      the set. **Orchestrator probe:** hand-assembling `dataPackVersion: "9.9.9"` in `fleet-report.ts`
+      reddens **2** — the ban and the per-builder call-site check.
+      **The agent disclosed a hole in its own guard rather than hiding it:** under comment-laundering
+      the file-level check stays green (the skill path still calls the helper), and the behavioural
+      test is what catches it. That is the right disclosure and the right division of labour.
+      **Documents stamped:** SecurityReport (scan + skill), SecurityPostureDiff (inherited from the
+      subject, never re-invented), AdvisorReport, FleetReport, CompatibilityHeatmap,
+      CompatibilityTestReport, AssertionReport, ServerReport, RunReport. **Not stamped:** the scan
+      report — its numbers are token counts, and it inherits through the embedded security section.
+
+      **`pnpm format` IS NOT SAFE IN THIS REPO, and this WP is how it was found.** The agent ran it and
+      it rewrote **732** files. Measured by the orchestrator on clean `main`: `biome format .` reports
+      **735** divergences while `pnpm lint` is clean, because `lint` is
+      `biome check --formatter-enabled=false` — **the formatter has never been applied to this tree.**
+      The agent restored everything and hand-reverted 20 formatter-only hunks; the orchestrator
+      verified the result rather than trusting it and found **two reflows had survived**, in
+      `packages/shared/src/{data-pack,security-posture}.ts`, and had them stripped — both files now
+      carry **zero** deleted lines. RM-37 independently reported the same accident from a WP 2.6 agent
+      that reformatted **556 files belonging to other agents**. **Two agents reaching for a documented
+      command is a trap in the documentation, not two mistakes**, and it is now warned in `CLAUDE.md`
+      §4 and `.claude/rules/quality-gates.md` (RM-37, `0ac9a77`).
+
+      **Cleared after checking rather than by absence of evidence:** `DIAGNOSTICS_BUNDLE_VERSION`
+      1 → 2 was the agent's own call, so every consumer was enumerated — the API emits it, Markdown
+      prints it, one api test asserts it **equals the constant** (so it moves with the constant and can
+      never fail — species 1, in a file neither session was auditing, left alone rather than widening
+      scope), and a web fixture hardcodes `1` without asserting on the real value. **Nothing branches
+      on it.** The bump is harmless.
+
+      **Not verified.** No Docker image (WP 3.3 owns that). The compare threshold only *visibly*
+      changes the Select label when the pack's value is one of the four fixed options — a value like
+      `0.31` leaves the trigger blank while the request still carries the right number; flagged by the
+      agent rather than fixed, since that control is outside this WP. The agent's compare walk could
+      not select two different servers (selector timeout), so the threshold was proved via the
+      outgoing request rather than the rendered label. The two-theme + keyboard walk is the agent's
+      own measurement (13 tab stops, `:focus-visible` true, ring visible in both themes); **no human
+      has looked at this screen.**
 - [ ] WP 3.3 — publish path, docs, `.dockerignore` correction, offline verification — spec:
       [`wp-3.3-publish-and-offline.md`](./wp-3.3-publish-and-offline.md). **Depends on 3.1, 3.2.**
 
@@ -819,6 +890,29 @@ because it merges well is the priority inverted.
 in all but name): routing around a shared file means writing the same value in two places, which is
 the duplication problem one level up — the very class that produced the README defect above. One
 definition, one call per builder, additive-vs-additive at the merge.
+
+## Two owner rulings — 2026-08-23
+
+**1. Published pack text: ACCEPT IT, AND STATE THE BOUNDARY.** The open question recorded above —
+rule `title`/`rationale` are free text, rendered verbatim to an operator, and after WP 3.1 they can
+arrive from a fetched pack that no source guard can ever inspect — was put to the owner with three
+branches (constrain in the schema · accept and document · sanitise at display). **Ruling: accept.**
+Whoever publishes reference data is trusted with what it says, which today is the owner from their
+own repository. **So no content constraint goes into the JSON Schema**, and the earlier "WP 3.2 owns
+it as a choice with both branches open" resolves to the documented-boundary branch.
+**WP 3.3 owns writing it down** — the DC subject must state plainly that a published pack can set the
+text an operator reads, so it is a stated property rather than an oversight. That sentence is the
+whole deliverable of this ruling; do not let it become a code change.
+
+**2. The formatter: ADOPT ONCE, THEN ENFORCE.** One deliberate commit formatting the tree, then
+`lint` drops `--formatter-enabled=false` so it cannot drift again.
+**Explicitly NOT RM-38's work and not to be done inside it.** It is repo-wide, it changes
+`quality-gates.md`'s definition of done, and per the lifecycle rule it wants its own `RM-NN` item.
+**It also cannot be done while anything is in flight** — 735 files landing under three sessions'
+branches is precisely the accident it exists to prevent, done deliberately and to everyone at once.
+Agreed with RM-37: a quiet tree, no agents running on either side, one mechanical commit with nothing
+else in it, announced before and confirmed clear. **Carried here only so the decision is not lost**;
+the warning documentation stays correct in the meantime and must not be reverted when it happens.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
