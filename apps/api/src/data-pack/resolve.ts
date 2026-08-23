@@ -19,16 +19,11 @@
 
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  checkSecurityRuleLedger,
-  checkSecurityRuleSet,
-  checkSecuritySeverityBump,
-  comparePackVersions,
-  type DataPackRefusal,
-} from "@mcp-token-footprint/shared";
+import { DATA_PACK_MANIFEST_FILENAME, type DataPackRefusal } from "@mcp-token-footprint/shared";
 import { config } from "../config/env.js";
 import { type DataPackFs, nodeDataPackFs } from "./fs.js";
 import { type DataPackOrigin, loadDataPack, type ResolvedDataPack } from "./loader.js";
+import { verifyCandidatePack } from "./verify.js";
 
 /**
  * The directory name the API build copies the pack into, beside the compiled code
@@ -40,6 +35,29 @@ export const BUNDLED_PACK_DIRNAME = "data-pack-bundled";
 
 /** The pack subdirectory under `DATA_DIR` that a refreshed pack is cached into (WP 3.1 writes it). */
 export const CACHE_PACK_DIRNAME = "data-pack";
+
+/**
+ * Where a download is assembled before anything has verified it (RM-38 WP 3.1).
+ *
+ * A SIBLING of the cache directory, not a child of it, and that is a correction to the WP spec
+ * rather than a preference. The spec says `DATA_DIR/data-pack/.staging/`, verified there and then
+ * renamed into `DATA_DIR/data-pack/` — but `rename(2)` cannot move a directory into its own
+ * ancestor (EINVAL), so that swap is not expressible. A sibling can be renamed into place; a child
+ * cannot. The property the spec was buying is unchanged and is the one that matters: an
+ * interrupted download lives somewhere `resolveDataPack` never looks, and `DATA_DIR/data-pack/`
+ * only ever comes into existence through a single `rename` of an already-verified tree.
+ */
+export const STAGING_PACK_DIRNAME = "data-pack.staging";
+
+/**
+ * Where the OUTGOING pack is parked for the microsecond between the two renames of a swap.
+ *
+ * `rename(2)` onto a non-empty directory is ENOTEMPTY, so replacing the cache is two renames: old
+ * out, new in. A crash between them leaves no cache at all — which resolves to the bundled pack on
+ * the next boot, i.e. the D-DP4 answer, never a partial tree. The alternative (rename new over old
+ * in one call) does not exist on POSIX.
+ */
+export const RETIRED_PACK_DIRNAME = "data-pack.retired";
 
 export class DataPackUnavailableError extends Error {
   constructor(message: string) {
@@ -53,6 +71,17 @@ export type OriginRefusal = DataPackRefusal & { origin: DataPackOrigin; dir: str
 
 export type DataPackResolution = {
   pack: ResolvedDataPack;
+  /**
+   * The BUNDLED snapshot, always — even when a cache won and `pack` is something else.
+   *
+   * WP 3.1 needs it, and needs it to be this one specifically: D-DP6 anchors the append-only
+   * security rule-id ledger on the registry that SHIPPED IN THE IMAGE. An anchor that moved with
+   * each accepted pack would let a chain of packs walk the ledger anywhere, one small append at a
+   * time. Returned here rather than re-resolved by the caller, because re-reading and re-parsing
+   * ~2 MB of pack at boot to recover an object this function already built is waste with a second
+   * failure mode attached.
+   */
+  bundled: ResolvedDataPack;
   /** Non-fatal refusals seen while resolving. Empty on a clean boot. */
   refusals: OriginRefusal[];
 };
@@ -76,56 +105,10 @@ export function findBundledPackDir(
     : // apps/api/src/data-pack → <repo root>/data-pack
       path.resolve(moduleDir, "..", "..", "..", "..", CACHE_PACK_DIRNAME);
   const searched = [candidate];
-  const ok = fs.exists(path.join(candidate, "manifest.json"));
+  const ok = fs.exists(path.join(candidate, DATA_PACK_MANIFEST_FILENAME));
   return { dir: ok ? candidate : null, searched };
 }
 
-/**
- * The three cross-pack security checks a CANDIDATE pack must pass before it can replace the one
- * shipped in the image (RM-38 WP 2.1). Returns a refusal, or `null` when the candidate is safe.
- *
- * WHY THESE LIVE HERE AND NOT IN THE LOADER: each one compares a candidate against the BUNDLED
- * registry, and `loadDataPack` only ever sees one pack. This function is the only place that holds
- * both, which is also why WP 3.1's fetcher will call exactly this rather than growing its own copy.
- *
- * WHAT THEY ARE FOR, in one sentence: the `no-new-security-findings` CI gate identifies a finding by
- * `(ruleId, anchor)` and decides pass or fail on a severity floor, so a fetched file that renamed an
- * id or lowered a severity would change somebody else's pipeline verdict with no code change
- * anywhere. D-DP6 and D-DP7 exist for exactly that, and they are load-time refusals rather than
- * documentation.
- *
- * WHAT THEY CANNOT SEE: anything about the SIGNATURE lists. A pack that removes an injection phrase
- * is not refused — that is a legitimate reason to publish a pack, and it is why the ledger and the
- * severity rule guard the rule REGISTRY specifically rather than the pack as a whole.
- */
-function checkCandidateSecurityRegistry(
-  candidate: ResolvedDataPack,
-  bundled: ResolvedDataPack,
-): DataPackRefusal | null {
-  const doc = candidate.documents.securityRulesDoc;
-  const bundledTables = bundled.documents.securityTables;
-
-  const ledger = checkSecurityRuleLedger(doc.idLedger, bundledTables.idLedger);
-  if (ledger) {
-    return { reason: "rule_ledger_not_append_only", detail: ledger.reason, paths: [SECURITY_RULES_PATH] };
-  }
-  const ruleSet = checkSecurityRuleSet(doc, bundledTables.rules);
-  if (ruleSet) {
-    return { reason: "schema_violation", detail: ruleSet.reason, paths: [SECURITY_RULES_PATH] };
-  }
-  const severities = checkSecuritySeverityBump(
-    doc,
-    bundledTables.rules,
-    bundledTables.analyzerVersion,
-  );
-  if (severities) {
-    return { reason: "schema_violation", detail: severities.reason, paths: [SECURITY_RULES_PATH] };
-  }
-  return null;
-}
-
-/** The one path every security-registry refusal names, so a log line points at the file to fix. */
-const SECURITY_RULES_PATH = "security/rules.json";
 
 export function resolveDataPack(args: {
   bundledDir: string | null;
@@ -156,40 +139,26 @@ export function resolveDataPack(args: {
   let pack = bundled.pack;
 
   const cacheDir = args.cacheDir ?? null;
-  if (cacheDir && fs.exists(path.join(cacheDir, "manifest.json"))) {
-    const cached = loadDataPack({ dir: cacheDir, origin: "cache", fs });
-    // RM-38 WP 2.1 — the security-registry checks come BEFORE the version comparison, on purpose. A
-    // pack that renames a rule id is refused whether or not it is newer, and reporting it as a
-    // version regression would name the wrong problem.
-    const registryRefusal = cached.ok
-      ? checkCandidateSecurityRegistry(cached.pack, bundled.pack)
-      : null;
-    if (!cached.ok) {
-      refusals.push({ ...cached.refusal, origin: "cache", dir: cacheDir });
-    } else if (registryRefusal !== null) {
-      refusals.push({ ...registryRefusal, origin: "cache", dir: cacheDir });
+  if (cacheDir && fs.exists(path.join(cacheDir, DATA_PACK_MANIFEST_FILENAME))) {
+    // ONE verifier, shared with WP 3.1's fetch rung (see verify.ts). Everything this rung used to
+    // do inline — load, the D-DP6/D-DP7 registry checks, then the version comparison, in that
+    // order — now has exactly one implementation, so a cached pack and a fetched pack cannot be
+    // judged by two subtly different rules.
+    const verified = verifyCandidatePack({
+      dir: cacheDir,
+      origin: "cache",
+      inForce: bundled.pack,
+      bundled: bundled.pack,
+      fs,
+    });
+    if (verified.ok) {
+      pack = verified.pack;
     } else {
-      const order = comparePackVersions(
-        cached.pack.manifest.packVersion,
-        bundled.pack.manifest.packVersion,
-      );
-      if (order === 1) {
-        pack = cached.pack;
-      } else {
-        refusals.push({
-          reason: "version_regression",
-          detail:
-            `Cached pack ${cached.pack.manifest.packVersion} is not newer than the bundled pack ` +
-            `${bundled.pack.manifest.packVersion}${order === null ? " (and one of the two versions is unorderable)" : ""}; ` +
-            "keeping the bundled pack.",
-          origin: "cache",
-          dir: cacheDir,
-        });
-      }
+      refusals.push({ ...verified.refusal, origin: "cache", dir: cacheDir });
     }
   }
 
-  return { pack, refusals };
+  return { pack, bundled: bundled.pack, refusals };
 }
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));

@@ -342,3 +342,166 @@ export function comparePackVersions(a: string, b: string): -1 | 0 | 1 | null {
   }
   return 0;
 }
+
+// --- The remote refresh (RM-38 WP 3.1) ----------------------------------------------------------
+//
+// Everything below describes the STARTUP FETCH: the bounds it runs under, what a pack file's path
+// is allowed to look like when it arrives from somewhere else, and the shape of the answer the check
+// hands back. It is still pure — no `fetch`, no `node:*`, no timers. The API side owns the socket.
+//
+// D-DP4 is the constraint the whole design serves: the fetch is an OPTIMISATION THAT CAN ALWAYS
+// FAIL. Every bound here exists so that "the network misbehaved" has a finite cost.
+
+/** Per-request bound, in milliseconds, when `DATA_PACK_TIMEOUT_MS` is unset. */
+export const DATA_PACK_DEFAULT_TIMEOUT_MS = 5000;
+
+/**
+ * How many per-request timeouts the WHOLE check may take.
+ *
+ * These are two genuinely different bounds and the pack needs both. The per-request timeout stops
+ * ONE hung socket; it does nothing at all about a server that answers every request just under the
+ * timeout — with ~24 files, a peer sitting at 99% of the per-request bound costs 24x the timeout,
+ * and nothing would notice. The total budget is the bound on the check as a whole.
+ */
+export const DATA_PACK_TOTAL_BUDGET_FACTOR = 12;
+
+/** The total wall-clock budget for one refresh, derived from the per-request timeout. */
+export function dataPackTotalBudgetMs(perRequestTimeoutMs: number): number {
+  return Math.max(1, Math.floor(perRequestTimeoutMs)) * DATA_PACK_TOTAL_BUDGET_FACTOR;
+}
+
+/**
+ * Byte and count caps on what a remote pack may make this process download. The largest real pack
+ * file today is `generated/all-models.json` at ~1.8 MB against a pack of ~24 files, so these are
+ * roughly 4x and 10x headroom — big enough that a legitimate pack never trips them, small enough
+ * that a hostile or broken endpoint cannot fill the data volume.
+ */
+export const DATA_PACK_MAX_REMOTE_FILE_BYTES = 8 * 1024 * 1024;
+export const DATA_PACK_MAX_REMOTE_TOTAL_BYTES = 32 * 1024 * 1024;
+export const DATA_PACK_MAX_REMOTE_FILES = 256;
+
+const PACK_FILE_BASENAME = /^[A-Za-z0-9][A-Za-z0-9._-]*\.json$/;
+/**
+ * True when `value` carries a control character, DEL, or a backslash.
+ *
+ * A code-point loop rather than a character class, because a regex expressing this range IS a
+ * control character in the source, and Biome's `noControlCharactersInRegex` refuses it — correctly,
+ * since an invisible byte in a pattern is unreviewable. Backslash rides along because it is the
+ * separator POSIX does not treat as one: `models\\saas\\x.json` is one legal POSIX filename and a
+ * two-level path on Windows, and a guard that reads it as a filename is a guard that can be walked
+ * past on the platform where it matters.
+ */
+function hasHostilePathCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (code < 0x20 || code === 0x7f || code === 0x5c) return true;
+  }
+  return false;
+}
+
+/**
+ * Is `rel` a path a pack file is allowed to occupy?
+ *
+ * This is a WRITE-SIDE guard, and that is the reason it exists at all. The loader's digest check
+ * compares a manifest against a directory listing, which is a fine answer once the bytes are on
+ * disk — but the fetcher has to WRITE the bytes before anything can verify them, and the only thing
+ * telling it where to put each file is the manifest it just downloaded from the network. A manifest
+ * listing `../../../etc/cron.d/x.json` would be a remote write outside `DATA_DIR`, performed before
+ * a single refusal has had a chance to run.
+ *
+ * So the rule is a whitelist, not a sanitiser: exactly `<content dir>/<name>.json`, where the
+ * directory is one of {@link DATA_PACK_CONTENT_DIRS} and the name carries no separator of any kind.
+ * `..`, absolute paths, backslashes, percent-encoding, NUL bytes and empty segments all fail by
+ * construction rather than by enumeration.
+ */
+export function isSafePackRelativePath(rel: string): boolean {
+  if (typeof rel !== "string" || rel.length === 0 || rel.length > 255) return false;
+  if (hasHostilePathCharacter(rel)) return false;
+  if (rel.includes("%")) return false;
+  const cut = rel.lastIndexOf("/");
+  if (cut <= 0) return false;
+  const dir = rel.slice(0, cut);
+  const base = rel.slice(cut + 1);
+  if (!(DATA_PACK_CONTENT_DIRS as readonly string[]).includes(dir)) return false;
+  return PACK_FILE_BASENAME.test(base);
+}
+
+/**
+ * Where one pack file lives, given the URL the manifest came from. Returns `null` when the result
+ * would not be a plain `http(s)` URL under the manifest's own directory.
+ *
+ * Belt and braces over {@link isSafePackRelativePath}: that one governs where a byte is WRITTEN,
+ * this one governs where it is READ FROM. They fail for different reasons — a relative path can be
+ * perfectly safe on disk and still resolve onto a different origin if the manifest URL carries
+ * something odd — so neither substitutes for the other.
+ */
+export function resolveDataPackFileUrl(manifestUrl: string, rel: string): string | null {
+  if (!isSafePackRelativePath(rel)) return null;
+  let base: URL;
+  try {
+    base = new URL(manifestUrl);
+  } catch {
+    return null;
+  }
+  if (base.protocol !== "http:" && base.protocol !== "https:") return null;
+  const dirHref = new URL(".", base).href;
+  const resolved = new URL(rel, base);
+  if (resolved.protocol !== base.protocol || resolved.host !== base.host) return null;
+  if (!resolved.href.startsWith(dirHref)) return null;
+  return resolved.href;
+}
+
+/**
+ * How a startup check ended. Five outcomes, and the split between them is the operator-facing point:
+ *
+ *   - `disabled`     — no URL, or the check is switched off. Zero outbound requests.
+ *   - `unreachable`  — the network produced no usable answer (DNS, connect, non-2xx, timeout,
+ *                      budget, oversize). NOT a data problem, and on an offline install it is the
+ *                      NORMAL outcome — which is why it is logged at info rather than warn.
+ *   - `up_to_date`   — an answer arrived and the pack in force is already at least as new.
+ *   - `refused`      — an answer arrived and was REJECTED by one of the five D-DP5 refusals. This is
+ *                      the one an operator has to see: something published a pack this build will
+ *                      not trust.
+ *   - `installed`    — a newer pack verified and is now in force.
+ */
+export const DATA_PACK_FETCH_STATUSES = [
+  "disabled",
+  "unreachable",
+  "up_to_date",
+  "refused",
+  "installed",
+] as const;
+
+export type DataPackFetchStatus = (typeof DATA_PACK_FETCH_STATUSES)[number];
+
+/** The answer one startup check hands back. A VALUE — the check never throws (D-DP4). */
+export type DataPackFetchOutcome = {
+  status: DataPackFetchStatus;
+  /** One human sentence, always present, safe to log and (WP 3.2) to show in Settings. */
+  detail: string;
+  /** The manifest URL that was checked. Absent only when the check was disabled with no URL. */
+  url?: string;
+  /** `packVersion` the remote manifest declared, when one was read. */
+  remoteVersion?: string;
+  /** `packVersion` that was in force when the check started. */
+  currentVersion?: string;
+  /** The refusal, when `status` is `refused`. */
+  refusal?: DataPackRefusal;
+  /** Files downloaded, when a pack was installed. */
+  files?: number;
+  /** Wall-clock milliseconds the whole check took. */
+  durationMs?: number;
+};
+
+export const DataPackFetchOutcomeSchema = z
+  .object({
+    status: z.enum(DATA_PACK_FETCH_STATUSES),
+    detail: z.string().min(1),
+    url: z.string().optional(),
+    remoteVersion: z.string().optional(),
+    currentVersion: z.string().optional(),
+    refusal: DataPackRefusalSchema.optional(),
+    files: z.number().int().nonnegative().optional(),
+    durationMs: z.number().int().nonnegative().optional(),
+  })
+  .strict();

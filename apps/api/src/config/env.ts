@@ -7,6 +7,7 @@ import {
   ASSISTANT_DEFAULT_RELEASE_GRACE_MS,
   ASSISTANT_DEFAULT_TITLE_MODEL,
   ASSISTANT_DEFAULT_TITLE_TIMEOUT_MS,
+  DATA_PACK_DEFAULT_TIMEOUT_MS,
   DEFAULT_TOKEN_PROFILE,
   type HubAutonomyLevel,
   HUB_AUTONOMY_LEVELS,
@@ -185,6 +186,27 @@ export const config = {
   secretKeyPath: path.resolve(
     process.env.MCP_SECRET_KEY_PATH ?? path.join(dataDirectory, "mcp-secret.key"),
   ),
+  // --- Reference data pack refresh (RM-38 WP 3.1, D-DP4) ---------------------------------------
+  //
+  // The FIRST outbound request this application makes at boot, and the contract around it is narrow:
+  // the fetch is an optimisation that can always fail. It is fired after `server.listen()`, never
+  // awaited on the boot path, and every failure keeps the pack already in force.
+  //
+  // `dataPackUrl` reads `process.env` directly rather than through `readString`, because the two
+  // things `readString` collapses have to stay distinct here: UNSET means "use the published
+  // release asset", and SET-TO-EMPTY means "make no outbound request at all" — the switch an
+  // air-gapped install uses. A helper that falls back on empty would make the second one
+  // unspellable.
+  //
+  // The default names a release asset that WP 3.3 publishes. Until it exists the check answers
+  // `unreachable` and logs one info line, which is the same thing an offline install sees and is
+  // exactly the designed non-event.
+  dataPackUrl:
+    process.env.DATA_PACK_URL === undefined
+      ? "https://github.com/mreimitz/elabs-ai-workbench/releases/latest/download/manifest.json"
+      : process.env.DATA_PACK_URL.trim(),
+  dataPackCheckOnStart: readBoolean(process.env.DATA_PACK_CHECK_ON_START, true),
+  dataPackTimeoutMs: readPositiveInt(process.env.DATA_PACK_TIMEOUT_MS, DATA_PACK_DEFAULT_TIMEOUT_MS),
   secretKey: process.env.MCP_SECRET_KEY,
   oauthRedirectUrl:
     process.env.OAUTH_REDIRECT_URL ??
