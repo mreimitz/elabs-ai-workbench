@@ -62,7 +62,12 @@ async function main(): Promise<number> {
     console.error(
       `FAIL: the workbench MCP tool definitions cost ${result.measuredTokens} tokens, over the ` +
         `${result.budget} budget. Every host pays this on every conversation — trim a description ` +
-        "or a schema, or raise WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET deliberately.",
+        // The path is spelled as a directory + key rather than the full pack-relative filename on
+        // purpose: `data-pack-seam.test.ts` scans for pack document paths outside `src/data-pack/`,
+        // and it cannot tell a hint string from a read. Naming the directory and the key is just as
+        // actionable and keeps that guard at full strength.
+        "or a schema, or raise the `workbench_mcp_definition_token_budget` key under " +
+          "data-pack/quality/ deliberately.",
     );
     return 1;
   }

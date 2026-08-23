@@ -7,8 +7,6 @@ import {
   ASSISTANT_DEFAULT_RELEASE_GRACE_MS,
   ASSISTANT_DEFAULT_TITLE_MODEL,
   ASSISTANT_DEFAULT_TITLE_TIMEOUT_MS,
-  DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING,
-  DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING,
   DEFAULT_TOKEN_PROFILE,
   type HubAutonomyLevel,
   HUB_AUTONOMY_LEVELS,
@@ -43,6 +41,18 @@ function readPositiveInt(value: string | undefined, fallback: number): number {
   if (value === undefined || value.trim() === "") return fallback;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
+}
+
+/**
+ * Parse an OPTIONAL positive-integer env override. `null` means "not set" — deliberately distinct
+ * from a default, because the caller (`data-pack/thresholds.ts`) has a pack value to fall through to
+ * and must be able to tell "the operator asked for 500" from "nobody asked". A present-but-invalid
+ * value is treated as unset rather than throwing, matching every other reader in this file.
+ */
+function readOptionalPositiveInt(value: string | undefined): number | null {
+  if (value === undefined || value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : null;
 }
 
 /** Parse a non-negative-integer env override (0 allowed, e.g. "disabled"); fall back otherwise. */
@@ -201,15 +211,18 @@ export const config = {
   skillMaxTotalBytes: readPositiveInt(process.env.SKILL_MAX_TOTAL_BYTES, SKILL_MAX_TOTAL_BYTES),
   skillMaxFiles: readPositiveInt(process.env.SKILL_MAX_FILES, SKILL_MAX_FILES),
   // Skill IDE quality engine (WP 4.1, I4) token-budget ceilings — the L1 (metadata) and L2 (body)
-  // levels above which the quality engine raises an `l1-budget`/`l2-budget` warning. Env overrides
-  // fall back to the shared-constant defaults (500 / 5000), the SKILL_MAX_* pattern.
-  skillQualityL1TokenCeiling: readPositiveInt(
+  // levels above which the quality engine raises an `l1-budget`/`l2-budget` warning.
+  //
+  // RM-38 WP 2.2 changed what these two fields HOLD: the ENV OVERRIDE ONLY, `null` when unset. The
+  // resolved value is `skillQualityCeilings()` in `apps/api/src/data-pack/thresholds.ts`, which
+  // applies env → pack → compiled default. It cannot be resolved here: this object is built at
+  // module load and `data-pack/resolve.ts` imports `config`, so reading the pack from here would be
+  // a cycle as well as strictly too early (see `data-pack/source.ts`'s header).
+  skillQualityL1TokenCeilingOverride: readOptionalPositiveInt(
     process.env.SKILL_QUALITY_L1_TOKEN_CEILING,
-    DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING,
   ),
-  skillQualityL2TokenCeiling: readPositiveInt(
+  skillQualityL2TokenCeilingOverride: readOptionalPositiveInt(
     process.env.SKILL_QUALITY_L2_TOKEN_CEILING,
-    DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING,
   ),
   // Retention (issue #19): "keep last N scans per server". 0 = disabled (keep everything) — the
   // default, so retention is opt-in and never silently discards history. When > 0, a successful scan

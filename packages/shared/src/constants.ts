@@ -1,4 +1,22 @@
 import { GENERATED_MODEL_CONTEXT_LIMITS } from "./model-data.generated.js";
+// RM-38 WP 2.2 — the D-DP3 compiled floor. AUTHORED in `data-pack/{models/overrides,quality/
+// thresholds}.json` and RENDERED here by `pnpm build:data-pack`, so these are derived values
+// rather than a second maintained copy (D-DP1). `apps/api` layers the RUNTIME pack over them;
+// `apps/web` and this module read the floor alone, because neither may touch the filesystem.
+import {
+  DEFAULT_COMPARE_THRESHOLD as PACK_DEFAULT_COMPARE_THRESHOLD,
+  DEFAULT_LOOP_THRESHOLD as PACK_DEFAULT_LOOP_THRESHOLD,
+  DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING as PACK_L1_CEILING,
+  DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING as PACK_L2_CEILING,
+  FAILURE_BUCKET_SCORE_THRESHOLD as PACK_FAILURE_BUCKET_SCORE_THRESHOLD,
+  LEGACY_MODEL_CONTEXT_LIMITS,
+  PACK_QUALITY_SEVERITY_WEIGHTS,
+  ROSTER_GAP_MODEL_CONTEXT_LIMITS as PACK_ROSTER_GAP_MODEL_CONTEXT_LIMITS,
+} from "./pack-defaults.generated.js";
+export {
+  ASSISTANT_DEFAULT_MODEL_ROSTER,
+  ASSISTANT_DEFAULT_TITLE_MODEL,
+} from "./pack-defaults.generated.js";
 
 export const TRANSPORT_TYPES = ["stdio", "streamable_http"] as const;
 
@@ -37,7 +55,7 @@ export const TOKEN_COUNTING_VERSION = 2;
 // Default fuzzy-match cutoff (0..1 Jaccard similarity over name+description tokens). Pairs at or
 // above this score are treated as the "same" tool across two scans; below it they fall through to
 // only-in-A / only-in-B. Shared so the API default and the web UI's slider agree.
-export const DEFAULT_COMPARE_THRESHOLD = 0.6;
+export const DEFAULT_COMPARE_THRESHOLD = PACK_DEFAULT_COMPARE_THRESHOLD;
 
 // --- Testing (runs) contract ---------------------------------------------------------------
 
@@ -923,7 +941,7 @@ export const SKILLFLOW_MARKER_PATTERN = "\\[\\s*skillflow:([^\\]]*)\\]";
 
 // Default loop-detection threshold: how many visits to the same node before the aligner flags a
 // loop-guard fracture (unless a `loop_guard` node's own `maxIterations` overrides it).
-export const DEFAULT_LOOP_THRESHOLD = 3;
+export const DEFAULT_LOOP_THRESHOLD = PACK_DEFAULT_LOOP_THRESHOLD;
 
 // The graph-level edit-operation vocabulary (Phase 4, WP 4.1 — the write half of Design Mode).
 // Each op targets a projected node/edge by id and is applied to SKILL.md through the node's anchor
@@ -1046,9 +1064,7 @@ export const QUALITY_SEVERITIES = ["error", "warning", "info"] as const;
 // score is `clamp(100 - Σ(count(severity) * weight), 0, 100)`, rounded to an int. Exported so the
 // engine (WP 4.1) and any doc/test derive the score from the same numbers — never a re-hardcoded copy.
 export const QUALITY_SEVERITY_WEIGHTS: Record<(typeof QUALITY_SEVERITIES)[number], number> = {
-  error: 15,
-  warning: 5,
-  info: 1,
+  ...PACK_QUALITY_SEVERITY_WEIGHTS,
 };
 
 // The quality engine's algorithm version (I4/I8), mirroring `TOKEN_COUNTING_VERSION`'s
@@ -1063,8 +1079,8 @@ export const QUALITY_ENGINE_VERSION = 1;
 // ≤ ~1024 chars ≈ 256 tokens) — 500 leaves headroom while still flagging a bloated description; L2 =
 // the SKILL.md body loaded IN FULL on trigger, which the guidance keeps lean (~<500 lines) — 5000
 // tokens (~a few hundred lines of prose) flags a body that should be split into L3 reference files.
-export const DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING = 500;
-export const DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING = 5000;
+export const DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING = PACK_L1_CEILING;
+export const DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING = PACK_L2_CEILING;
 
 // MCP tool-reference validation (I5): a diagnostic's kind + its close-match candidate confidence
 // (reusing the compare feature's exact→normalized→fuzzy match basis). Read-only over persisted
@@ -1242,69 +1258,14 @@ export const APP_SETTING_RUN_RETENTION_KEY = "run_retention";
 // Relative tolerance for numeric `value_match` comparisons (WP 1.2 uses it): |a-b| <= tol*max(|a|,|b|).
 export const VALUE_MATCH_REL_TOLERANCE = 1e-6;
 
-// Legacy/fallback seed map of model context windows (tokens) for previous-generation model ids the
-// dataset does not cover. The CURRENT-generation windows come from the research dataset via
-// `GENERATED_MODEL_CONTEXT_LIMITS` (see the merge in `MODEL_CONTEXT_LIMITS` below). Treat a provider
-// limit error as ground truth regardless of either map (WP 1.4).
-const LEGACY_MODEL_CONTEXT_LIMITS: Record<string, number> = {
-  "claude-opus-4-1": 200000,
-  "claude-opus-4": 200000,
-  "claude-sonnet-4-5": 200000,
-  "claude-sonnet-4": 200000,
-  "claude-3-7-sonnet": 200000,
-  "claude-3-5-sonnet": 200000,
-  "claude-3-5-haiku": 200000,
-  "gpt-4o": 128000,
-  "gpt-4o-mini": 128000,
-  "gpt-4.1": 1047576,
-  "gpt-4.1-mini": 1047576,
-  "gpt-4.1-nano": 1047576,
-  o3: 200000,
-  "o3-mini": 200000,
-  "o4-mini": 200000,
-  "gemini-2.5-pro": 1048576,
-  "gemini-2.5-flash": 1048576,
-  "gemini-2.5-flash-lite": 1048576,
-  "gemini-2.0-flash": 1048576,
-  // Representative local / Ollama models (run via the openai-compatible provider). Context windows
-  // are model-config-dependent (Ollama can override `num_ctx`); these are the model defaults — a
-  // provider limit error is still treated as ground truth regardless of this map (WP 1.4).
-  "llama3.1": 131072,
-  "llama3.3": 131072,
-  "qwen2.5": 32768,
-  mistral: 32768,
-};
-
-// Current-generation ids the LIVE provider rosters offer but the research dataset SNAPSHOT
-// (as-of 2026-06-21) predates (D-MI11, `planning/Roadmap/RM-16-model-identity/`). Distinct from
-// {@link LEGACY_MODEL_CONTEXT_LIMITS} above, which back-fills *previous*-generation ids: these are
-// current models the dataset simply hasn't been refreshed for yet.
-//
-// Why this matters beyond a cosmetic "unknown model" — a missing entry resolves to `0`, and a
-// context window of `0`:
-//   • disables compaction (`hub/compaction.ts` gates on a positive window), and
-//   • makes every "% of context used" surface meaningless.
-// The owner's failing session ran on `claude-sonnet-5`, which was absent from BOTH maps.
-//
-// This is a hand-maintained GAP-FILLER, not a second source of truth: it is merged BEFORE
-// `GENERATED_MODEL_CONTEXT_LIMITS`, so the moment the dataset is refreshed the dataset value wins
-// and the entry here becomes dead weight to be deleted. **Never hand-edit `model-data.generated.ts`**
-// — regenerate it from `data-pack/models/**` with `pnpm build:data-pack`.
-//
-// Dated snapshot ids are listed explicitly next to their alias because every lookup in the app is an
-// EXACT-key map read (`MODEL_CONTEXT_LIMITS[modelId] ?? 0`) — there is no alias normalization, and
-// `claude-haiku-4-5-20251001` is precisely the id the signed-in Claude subscription reports for Haiku.
-export const ROSTER_GAP_MODEL_CONTEXT_LIMITS: Record<string, number> = {
-  "claude-fable-5": 1000000,
-  "claude-opus-5": 1000000,
-  "claude-opus-4-7": 1000000,
-  "claude-opus-4-6": 1000000,
-  "claude-sonnet-5": 1000000,
-  // Dated snapshot ids (same models as their aliases; the subscription/API rosters return these).
-  "claude-haiku-4-5-20251001": 200000,
-  "claude-sonnet-4-5-20250929": 200000,
-  "claude-opus-4-1-20250805": 200000,
-};
+// The two hand-maintained context-limit layers moved to `data-pack/models/overrides.json` in
+// RM-38 WP 2.2 and are rendered back into `pack-defaults.generated.ts` by `pnpm build:data-pack`.
+// Edit the PACK file, never the generated one. `LEGACY_MODEL_CONTEXT_LIMITS` back-fills
+// previous-generation ids; `ROSTER_GAP_MODEL_CONTEXT_LIMITS` fills current-generation ids the
+// dataset snapshot predates (a missing entry resolves to `0`, which disables compaction and makes
+// every "% of context used" surface meaningless — see the pack schema for the full rationale).
+// Re-exported here because `apps/api/test/pricing.test.ts` and `hub/routes.ts` name it directly.
+export const ROSTER_GAP_MODEL_CONTEXT_LIMITS = PACK_ROSTER_GAP_MODEL_CONTEXT_LIMITS;
 
 // The authoritative, dataset-derived context windows (current-generation models) take precedence;
 // the legacy seed fills gaps for older ids the user might still run, and the roster-gap seed fills
@@ -1343,7 +1304,7 @@ export const SUITE_DEFAULT_CONCURRENCY = 3;
 export const SUITE_MAX_CONCURRENCY = 8;
 
 // WP 3.5 default low-score cutoff — a run scoring below this is a candidate for a failure bucket.
-export const FAILURE_BUCKET_SCORE_THRESHOLD = 0.5;
+export const FAILURE_BUCKET_SCORE_THRESHOLD = PACK_FAILURE_BUCKET_SCORE_THRESHOLD;
 
 // --- Benchmarks — collections & on-disk file format (WP 4.1, B10/B12) -------------------------
 // A Collection is a synced set of tests/suites backed by a git repo (B10). Its members serialize to
@@ -1558,26 +1519,20 @@ export const ASSISTANT_OAUTH_TOKEN_PREFIX = "sk-ant-oat01-";
 export const ASSISTANT_TOKEN_EXPIRY_WARNING_DAYS = 335;
 
 /**
- * The Claude-tier model roster used as the HONEST FALLBACK for the subscription's live model list.
+ * `ASSISTANT_DEFAULT_MODEL_ROSTER` — the Claude-tier roster used as the HONEST FALLBACK for the
+ * subscription's live model list, and `ASSISTANT_DEFAULT_TITLE_MODEL` (further down this block's
+ * original position) are now AUTHORED in `data-pack/models/overrides.json` and re-exported from
+ * `pack-defaults.generated.ts` at the top of this file (RM-38 WP 2.2).
  *
- * The Agent SDK's own live roster (`Query.supportedModels()`, confirmed in the pinned
- * `@anthropic-ai/claude-agent-sdk` `.d.ts`) is the CLI picker's real source and is now resolved live
- * through a short-lived spawn + cache (see `apps/api/src/providers/subscription-models.ts`), backing
- * BOTH the provider Model dropdown (`GET /api/providers/:id/models`) and the Assistant dock
- * (`GET /api/assistant/models`). This constant is what those surfaces fall back to on ANY
+ * The Agent SDK's own live roster (`Query.supportedModels()`) is the CLI picker's real source and is
+ * resolved live through a short-lived spawn + cache (`apps/api/src/providers/subscription-models.ts`),
+ * backing BOTH the provider Model dropdown (`GET /api/providers/:id/models`) and the Assistant dock
+ * (`GET /api/assistant/models`). The pack roster is what those surfaces fall back to on ANY
  * error/timeout/not-signed-in, and what a plain no-resolver caller returns — so the dropdown always
  * has a usable, CURRENT list even when the live probe can't run. It is env-overridable via
- * `ASSISTANT_MODEL_ROSTER` (comma-separated) for an owner who wants a different set — see
- * `apps/api/src/config/env.ts`. Kept in `packages/shared` (not apps/api) so it is the one place both a
- * web-side default and the API surfaces read from. Values kept CURRENT (2026-07): Opus 4.8, Sonnet 5,
- * Haiku 4.5, Fable 5.
+ * `ASSISTANT_MODEL_ROSTER` (comma-separated) — see `apps/api/src/config/env.ts`.
  */
-export const ASSISTANT_DEFAULT_MODEL_ROSTER = [
-  "claude-opus-4-8",
-  "claude-sonnet-5",
-  "claude-haiku-4-5",
-  "claude-fable-5",
-] as const;
+
 
 // ── Refinement R2 (D-AS25 release-on-reply · D-AS26 thread names/dates) — ADDITIVE block ───────────
 // Kept in one clearly-marked place so the R2 wire additions merge-cleanly alongside R1's own block.
@@ -1610,11 +1565,9 @@ export const ASSISTANT_DEFAULT_RELEASE_GRACE_MS = 0;
  */
 export const ASSISTANT_DEFAULT_AUTO_TITLE = true;
 
-/**
- * D-AS26 — the cheap model the title one-shot runs on. The last (cheapest) tier of
- * {@link ASSISTANT_DEFAULT_MODEL_ROSTER}. Env-overridable via `ASSISTANT_TITLE_MODEL`.
- */
-export const ASSISTANT_DEFAULT_TITLE_MODEL = "claude-haiku-4-5";
+// D-AS26 — the cheap model the title one-shot runs on (the last, cheapest tier of
+// {@link ASSISTANT_DEFAULT_MODEL_ROSTER}; env-overridable via `ASSISTANT_TITLE_MODEL`) is
+// `ASSISTANT_DEFAULT_TITLE_MODEL`, re-exported at the top of this file from the pack (WP 2.2).
 
 /** D-AS26 — the deterministic title is trimmed/whitespace-collapsed and capped at this many chars
  *  (a real `…` on truncation). ~60 keeps a switcher row on one line. */

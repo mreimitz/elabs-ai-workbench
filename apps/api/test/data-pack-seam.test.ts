@@ -149,6 +149,10 @@ test("only apps/api/src/data-pack/ names a pack document — nothing else reads 
     "test-catalog.json",
     // Trailing slash on purpose: `compatibility/dataset.js` is an import every consumer makes.
     "compatibility/data/",
+    // RM-38 WP 2.2 — path-qualified, because `thresholds.json` alone names two different documents.
+    "advisor/thresholds.json",
+    "quality/thresholds.json",
+    "models/overrides.json",
   ];
   const allowed = path.join(SRC, "data-pack");
 

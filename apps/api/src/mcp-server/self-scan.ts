@@ -6,12 +6,12 @@ import {
   DEFAULT_TOKEN_PROFILE,
   type ScanDetail,
   type TokenProfileId,
-  WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
   WORKBENCH_MCP_MOUNT_PATH,
   WORKBENCH_MCP_SERVER_NAME,
   WORKBENCH_MCP_SERVER_VERSION,
   WORKBENCH_MCP_TOOL_NAMES,
 } from "@mcp-token-footprint/shared";
+import { workbenchMcpDefinitionTokenBudget } from "../data-pack/thresholds.js";
 import Database from "better-sqlite3";
 import Fastify from "fastify";
 import { CollectionRepository } from "../collections/repository.js";
@@ -230,6 +230,10 @@ export async function runWorkbenchSelfScan(
       );
     }
 
+    // RM-38 WP 2.2 — the budget is a PACK value now, so `pnpm mcp:self-scan` re-measures against
+    // whatever pack is in force rather than a number compiled into this build.
+    const budget = workbenchMcpDefinitionTokenBudget();
+
     return {
       generatedAt: new Date().toISOString(),
       mountUrl,
@@ -237,9 +241,9 @@ export async function runWorkbenchSelfScan(
       serverVersion: WORKBENCH_MCP_SERVER_VERSION,
       tokenProfile,
       countingVersion: scan.countingVersion,
-      budget: WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
+      budget,
       measuredTokens: scan.totalTokens,
-      overBudget: scan.totalTokens > WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET,
+      overBudget: scan.totalTokens > budget,
       toolCount: scan.totalTools,
       declaredToolCount: WORKBENCH_MCP_TOOL_NAMES.length,
       resourceCount: scan.totalResources,

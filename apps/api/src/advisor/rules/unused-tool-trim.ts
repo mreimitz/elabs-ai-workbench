@@ -25,13 +25,13 @@ import type {
   ServerConfig,
   ToolScan,
 } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import { scanEvidence, scenarioEvidence, serverEvidence, toolScanEvidence } from "../evidence.js";
 import type { AdvisorContext, AdvisorRule, AdvisorRuleResult } from "../types.js";
 import {
   allowedToolsOf,
   compareStrings,
   completedRuns,
-  EVIDENCE_TOOL_LIMIT,
   formatCount,
   formatPercent,
   latestSuccessfulScan,
@@ -46,15 +46,22 @@ import {
 
 export const UNUSED_TOOL_TRIM_RULE_ID = "advisor.unused-tool-trim";
 
-/** Severity bands, by the share of THIS SERVER's allow-listed definition tokens that is never
- *  exercised. Fixed constants, not tuning knobs: the same inputs must always produce the same
- *  severity, and a reader must be able to check the band by hand from the numbers in the detail. */
-const HIGH_WASTE_SHARE = 0.5;
-const MEDIUM_WASTE_SHARE = 0.2;
-
+/**
+ * Severity bands, by the share of THIS SERVER's allow-listed definition tokens that is never
+ * exercised: the pack's `high_waste_share` / `medium_waste_share`.
+ *
+ * ONE definition, read by BOTH this rule and `quality-validated-trim.ts`. They used to be two
+ * identical `const HIGH_WASTE_SHARE = 0.5` / `MEDIUM_WASTE_SHARE = 0.2` pairs in the two files —
+ * the same shape as this repository's two `buildRunFilterWhere` copies, and
+ * `apps/api/test/data-pack-thresholds.test.ts` fails if a second copy reappears.
+ *
+ * Still not a per-report tuning knob: the same inputs must always produce the same severity, and a
+ * reader must be able to check the band by hand from the numbers in the detail.
+ */
 function severityFor(wastedShare: number): AdvisorSeverity {
-  if (wastedShare >= HIGH_WASTE_SHARE) return "high";
-  if (wastedShare >= MEDIUM_WASTE_SHARE) return "medium";
+  const t = advisorThresholds();
+  if (wastedShare >= t.high_waste_share) return "high";
+  if (wastedShare >= t.medium_waste_share) return "medium";
   return "info";
 }
 
@@ -91,7 +98,8 @@ function buildRecommendation(finding: ServerFinding): AdvisorRecommendation {
     ? `sum of the ${unused.length} never-called ${plural(unused.length, "tool")}' definition tokens in ${scanProvenance(scan)}; this environment loads tools eagerly, so every allowed definition rides each turn's prompt prefix`
     : `sum of the ${unused.length} never-called ${plural(unused.length, "tool")}' definition tokens in ${scanProvenance(scan)}; this environment loads tools deferred, so the definitions are NOT resident in every turn and the figure is a one-off footprint, not a per-turn cost`;
 
-  const evidenceTools = unused.slice(0, EVIDENCE_TOOL_LIMIT);
+  const evidenceToolLimit = advisorThresholds().evidence_tool_limit;
+  const evidenceTools = unused.slice(0, evidenceToolLimit);
   const trimmed = unused.length - evidenceTools.length;
 
   return {
@@ -122,7 +130,7 @@ function buildRecommendation(finding: ServerFinding): AdvisorRecommendation {
       `the footprint comes from ${scanProvenance(scan)} — the server's latest successful scan, which may be older than the runs`,
       ...(trimmed > 0
         ? [
-            `${trimmed} further never-called ${plural(trimmed, "tool")} ${plural(trimmed, "is", "are")} named in the detail but not linked as evidence (the ${EVIDENCE_TOOL_LIMIT} largest are)`,
+            `${trimmed} further never-called ${plural(trimmed, "tool")} ${plural(trimmed, "is", "are")} named in the detail but not linked as evidence (the ${evidenceToolLimit} largest are)`,
           ]
         : []),
     ],

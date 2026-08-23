@@ -1,0 +1,13 @@
+{
+  "skill_quality_l1_token_ceiling": 500,
+  "skill_quality_l2_token_ceiling": 5000,
+  "quality_severity_weights": {
+    "error": 15,
+    "warning": 5,
+    "info": 1
+  },
+  "default_compare_threshold": 0.6,
+  "default_loop_threshold": 3,
+  "failure_bucket_score_threshold": 0.5,
+  "workbench_mcp_definition_token_budget": 3500
+}

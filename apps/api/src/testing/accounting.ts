@@ -9,7 +9,8 @@ import type {
   TokenUsageActual,
   ToolLoadingMode,
 } from "@mcp-token-footprint/shared";
-import { MODEL_CONTEXT_LIMITS, usageSplitKind } from "@mcp-token-footprint/shared";
+import { usageSplitKind } from "@mcp-token-footprint/shared";
+import { modelContextLimits } from "../data-pack/thresholds.js";
 import type { LanguageModelUsage, ModelMessage, ProviderMetadata } from "ai";
 import { estimateCost } from "../providers/pricing.js";
 import { getTokenCounter } from "../token-counting/profiles.js";
@@ -341,7 +342,7 @@ export class AccountingSink {
   ) {
     this.counters = ctx.profiles.map((p) => getTokenCounter(p));
     this.primaryCounter = this.counters[0] ?? getTokenCounter("generic_o200k");
-    this.limit = MODEL_CONTEXT_LIMITS[ctx.model] ?? 0;
+    this.limit = modelContextLimits()[ctx.model] ?? 0;
   }
 
   get runKpis(): Readonly<RunKpis> {

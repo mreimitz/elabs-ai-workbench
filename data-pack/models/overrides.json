@@ -1,0 +1,199 @@
+{
+  "legacy_context_limits": {
+    "claude-opus-4-1": 200000,
+    "claude-opus-4": 200000,
+    "claude-sonnet-4-5": 200000,
+    "claude-sonnet-4": 200000,
+    "claude-3-7-sonnet": 200000,
+    "claude-3-5-sonnet": 200000,
+    "claude-3-5-haiku": 200000,
+    "gpt-4o": 128000,
+    "gpt-4o-mini": 128000,
+    "gpt-4.1": 1047576,
+    "gpt-4.1-mini": 1047576,
+    "gpt-4.1-nano": 1047576,
+    "o3": 200000,
+    "o3-mini": 200000,
+    "o4-mini": 200000,
+    "gemini-2.5-pro": 1048576,
+    "gemini-2.5-flash": 1048576,
+    "gemini-2.5-flash-lite": 1048576,
+    "gemini-2.0-flash": 1048576,
+    "llama3.1": 131072,
+    "llama3.3": 131072,
+    "qwen2.5": 32768,
+    "mistral": 32768
+  },
+  "roster_gap_context_limits": {
+    "claude-fable-5": 1000000,
+    "claude-opus-5": 1000000,
+    "claude-opus-4-7": 1000000,
+    "claude-opus-4-6": 1000000,
+    "claude-sonnet-5": 1000000,
+    "claude-haiku-4-5-20251001": 200000,
+    "claude-sonnet-4-5-20250929": 200000,
+    "claude-opus-4-1-20250805": 200000
+  },
+  "legacy_pricing": {
+    "claude-opus-4-1": {
+      "inPer1M": 15,
+      "outPer1M": 75,
+      "cachedInPer1M": 1.5
+    },
+    "claude-opus-4": {
+      "inPer1M": 15,
+      "outPer1M": 75,
+      "cachedInPer1M": 1.5
+    },
+    "claude-sonnet-4-5": {
+      "inPer1M": 3,
+      "outPer1M": 15,
+      "cachedInPer1M": 0.3
+    },
+    "claude-sonnet-4": {
+      "inPer1M": 3,
+      "outPer1M": 15,
+      "cachedInPer1M": 0.3
+    },
+    "claude-3-7-sonnet": {
+      "inPer1M": 3,
+      "outPer1M": 15,
+      "cachedInPer1M": 0.3
+    },
+    "claude-3-5-sonnet": {
+      "inPer1M": 3,
+      "outPer1M": 15,
+      "cachedInPer1M": 0.3
+    },
+    "claude-3-5-haiku": {
+      "inPer1M": 0.8,
+      "outPer1M": 4,
+      "cachedInPer1M": 0.08
+    },
+    "gpt-4o": {
+      "inPer1M": 2.5,
+      "outPer1M": 10,
+      "cachedInPer1M": 1.25
+    },
+    "gpt-4o-mini": {
+      "inPer1M": 0.15,
+      "outPer1M": 0.6,
+      "cachedInPer1M": 0.075
+    },
+    "gpt-4.1": {
+      "inPer1M": 2,
+      "outPer1M": 8,
+      "cachedInPer1M": 0.5
+    },
+    "gpt-4.1-mini": {
+      "inPer1M": 0.4,
+      "outPer1M": 1.6,
+      "cachedInPer1M": 0.1
+    },
+    "gpt-4.1-nano": {
+      "inPer1M": 0.1,
+      "outPer1M": 0.4,
+      "cachedInPer1M": 0.025
+    },
+    "o3": {
+      "inPer1M": 2,
+      "outPer1M": 8,
+      "cachedInPer1M": 0.5
+    },
+    "o3-mini": {
+      "inPer1M": 1.1,
+      "outPer1M": 4.4,
+      "cachedInPer1M": 0.55
+    },
+    "o4-mini": {
+      "inPer1M": 1.1,
+      "outPer1M": 4.4,
+      "cachedInPer1M": 0.275
+    },
+    "gemini-2.5-pro": {
+      "inPer1M": 1.25,
+      "outPer1M": 10,
+      "cachedInPer1M": 0.31
+    },
+    "gemini-2.5-flash": {
+      "inPer1M": 0.3,
+      "outPer1M": 2.5,
+      "cachedInPer1M": 0.075
+    },
+    "gemini-2.5-flash-lite": {
+      "inPer1M": 0.1,
+      "outPer1M": 0.4,
+      "cachedInPer1M": 0.025
+    },
+    "gemini-2.0-flash": {
+      "inPer1M": 0.1,
+      "outPer1M": 0.4,
+      "cachedInPer1M": 0.025
+    }
+  },
+  "roster_gap_pricing": {
+    "claude-fable-5": {
+      "inPer1M": 10,
+      "outPer1M": 50,
+      "cachedInPer1M": 1
+    },
+    "claude-opus-5": {
+      "inPer1M": 5,
+      "outPer1M": 25,
+      "cachedInPer1M": 0.5
+    },
+    "claude-opus-4-7": {
+      "inPer1M": 5,
+      "outPer1M": 25,
+      "cachedInPer1M": 0.5
+    },
+    "claude-opus-4-6": {
+      "inPer1M": 5,
+      "outPer1M": 25,
+      "cachedInPer1M": 0.5
+    },
+    "claude-sonnet-5": {
+      "inPer1M": 3,
+      "outPer1M": 15,
+      "cachedInPer1M": 0.3
+    },
+    "claude-haiku-4-5-20251001": {
+      "inPer1M": 1,
+      "outPer1M": 5,
+      "cachedInPer1M": 0.1
+    },
+    "claude-sonnet-4-5-20250929": {
+      "inPer1M": 3,
+      "outPer1M": 15,
+      "cachedInPer1M": 0.3
+    },
+    "claude-opus-4-1-20250805": {
+      "inPer1M": 15,
+      "outPer1M": 75,
+      "cachedInPer1M": 1.5
+    }
+  },
+  "zero_price_models": [
+    "llama3.1",
+    "llama3.3",
+    "qwen2.5",
+    "mistral"
+  ],
+  "model_id_aliases": {
+    "claude-haiku-4-5-20251001": "claude-haiku-4-5"
+  },
+  "default_heatmap_models": [
+    "claude-opus-4-8",
+    "gpt-5.5",
+    "gemini-3.5-flash",
+    "claude-haiku-4-5",
+    "microsoft/phi-4"
+  ],
+  "assistant_default_model_roster": [
+    "claude-opus-4-8",
+    "claude-sonnet-5",
+    "claude-haiku-4-5",
+    "claude-fable-5"
+  ],
+  "assistant_default_title_model": "claude-haiku-4-5"
+}

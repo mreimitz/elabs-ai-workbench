@@ -18,7 +18,7 @@ import {
   type SkillSuggestionsResponse,
 } from "@mcp-token-footprint/shared";
 import type { FastifyInstance } from "fastify";
-import { config } from "../config/env.js";
+import { skillQualityCeilings } from "../data-pack/thresholds.js";
 import { DEFAULT_INGEST_CAPS, type IngestCaps } from "../skills/caps.js";
 import { SkillDiffService } from "../skills/diff-service.js";
 import { countLevels, type SkillFootprintFile } from "../skills/footprint.js";
@@ -303,8 +303,8 @@ export async function registerSkillflowRoutes(
           graph,
           files,
           footprint: { l1: levels.l1, l2: levels.l2 },
-          l1Ceiling: config.skillQualityL1TokenCeiling,
-          l2Ceiling: config.skillQualityL2TokenCeiling,
+          l1Ceiling: skillQualityCeilings().l1,
+          l2Ceiling: skillQualityCeilings().l2,
         });
         return skillSuggestionsResponseSchema.parse({
           suggestions: [],
@@ -366,8 +366,8 @@ export async function registerSkillflowRoutes(
       files,
       graph,
       footprint: { l1: levels.l1, l2: levels.l2 },
-      l1Ceiling: config.skillQualityL1TokenCeiling,
-      l2Ceiling: config.skillQualityL2TokenCeiling,
+      l1Ceiling: skillQualityCeilings().l1,
+      l2Ceiling: skillQualityCeilings().l2,
     });
     return qualityReportSchema.parse(report);
   });

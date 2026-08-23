@@ -20,19 +20,18 @@ import {
   type SuiteRun,
   type SuiteVariant,
 } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import { selectRunScore } from "../../suites/analytics.js";
 import type { AdvisorContext } from "../types.js";
 import { compareStrings } from "./shared.js";
 
-/** How many suite runs one rule will walk, newest first. A fleet can accumulate hundreds of suite
- *  runs; an unbounded walk would make one report quadratic in the whole run history for no extra
- *  insight, and the OLDEST matrices are the least representative of how the fleet runs today. The
- *  cap is stated in every finding's assumptions so a reader knows the window they are looking at. */
-export const SUITE_RUN_WINDOW = 20;
-
-/** How many suite-run ids one `AdvisorGradeProvenance` will list (the same bounded-evidence
- *  reasoning as `EVIDENCE_TOOL_LIMIT`). A rule that reads more says so in its assumptions. */
-export const PROVENANCE_SUITE_RUN_LIMIT = 10;
+// `suite_run_window` (how many suite runs one rule walks, newest first — a fleet can accumulate
+// hundreds and an unbounded walk would make one report quadratic in the whole run history, while the
+// OLDEST matrices are the least representative of how the fleet runs today) and
+// `provenance_suite_run_limit` (how many suite-run ids one `AdvisorGradeProvenance` lists, the same
+// bounded-evidence reasoning as `evidence_tool_limit`) both live in
+// `data-pack/advisor/thresholds.json` since RM-38 WP 2.2. Each cap is stated in the emitting
+// finding's assumptions, so a reader always knows the window they are looking at.
 
 /**
  * The latest grade row per grader for a run, in the shape {@link selectRunScore} expects.
@@ -98,14 +97,14 @@ export function clearsQualityBar(score: number | null): score is number {
   return score !== null && score >= ADVISOR_QUALITY_BAR;
 }
 
-/** Suite runs newest first (id tie-break), capped at {@link SUITE_RUN_WINDOW}. */
+/** Suite runs newest first (id tie-break), capped at the pack's `suite_run_window`. */
 export function recentSuiteRuns(ctx: AdvisorContext): SuiteRun[] {
   return [...ctx.suiteRuns.listRuns()]
     .sort((a, b) => {
       const byTime = compareStrings(b.startedAt, a.startedAt);
       return byTime !== 0 ? byTime : compareStrings(a.id, b.id);
     })
-    .slice(0, SUITE_RUN_WINDOW);
+    .slice(0, advisorThresholds().suite_run_window);
 }
 
 /** A suite run's child run summaries, in the repository's `started_at ASC` id order, skipping any

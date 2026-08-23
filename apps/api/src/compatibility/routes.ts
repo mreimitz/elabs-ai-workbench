@@ -10,7 +10,7 @@ import {
 import type { ScanRepository } from "../scans/repository.js";
 import type { RunRepository } from "../testing/run-repository.js";
 import type { ScenarioService } from "../testing/scenario-service.js";
-import { DEFAULT_HEATMAP_MODELS, getModel, listModelIds, listModelRefs } from "./dataset.js";
+import { defaultHeatmapModels, getModel, listModelIds, listModelRefs } from "./dataset.js";
 import { scoreCell } from "./runner.js";
 import { runSessionLevel, sessionRunFromDetail } from "./session.js";
 import {
@@ -47,7 +47,7 @@ export async function registerCompatibilityRoutes(app: FastifyInstance, scans: S
       .map((id) => loadScanOrNull(scans, id))
       .filter((s): s is ScanDetail => s !== null);
 
-    return buildHeatmap(scan, models ?? DEFAULT_HEATMAP_MODELS, {
+    return buildHeatmap(scan, models ?? defaultHeatmapModels(), {
       view,
       rollup,
       client,

@@ -13,11 +13,16 @@ import path from "node:path";
  * absent — the generator is code, not pack content — and so are package.json / tsconfig.json.
  */
 export const PACK_CONTENT_DIRS = [
+  "advisor",
   "compatibility",
   "generated",
   "limits",
+  // `models` itself holds `overrides.json`; the per-provider entries are in the two subdirectories.
+  // Listing all three double-counts nothing — only `*.json` FILES are taken, never a subdirectory.
+  "models",
   "models/open-weight",
   "models/saas",
+  "quality",
   "schema",
 ] as const;
 

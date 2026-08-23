@@ -100,7 +100,6 @@ import {
   HUB_ARTIFACT_TITLE_MAX_LENGTH,
   HUB_GENUI_SPEC_VERSION,
   HUB_REVIEW_MAX_COMMENTS,
-  MODEL_CONTEXT_LIMITS,
   providerKindLabel,
   type HubAgentRole,
   type HubArtifact,
@@ -127,6 +126,7 @@ import {
   type NormalizedToolDefinition,
   type ProviderCredential,
 } from "@mcp-token-footprint/shared";
+import { modelContextLimits } from "../data-pack/thresholds.js";
 import { generateObject } from "ai";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
@@ -322,7 +322,7 @@ export function createHubModelResolver(
     }
 
     const providerKind = chosen.kind;
-    const contextWindow = MODEL_CONTEXT_LIMITS[modelId] ?? 0;
+    const contextWindow = modelContextLimits()[modelId] ?? 0;
     // model-identity WP6.1 (F6, D-MI11) — MAKE THE DATA GAP LOUD.
     //
     // A `0` here is not cosmetic: `hub/compaction.ts` gates on a positive window, so compaction is
@@ -2297,7 +2297,7 @@ function registerHubSessionSkillRoutes(app: FastifyInstance, deps: HubRouteDeps)
     const attachments = repository.listSessionSkills(id);
     const resolved = skillReader ? resolveHubSkillAttachments(skillReader, attachments) : [];
     const loaded = reconstructLoadedSkills(repository.listEvents(id));
-    const contextWindow = MODEL_CONTEXT_LIMITS[session.model] ?? 0;
+    const contextWindow = modelContextLimits()[session.model] ?? 0;
     const { listing } = await computeSkillListing(resolved, {
       tokenCounter,
       contextWindow,

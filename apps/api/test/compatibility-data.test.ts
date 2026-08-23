@@ -36,6 +36,16 @@ test("data-pack/generated/all-models.json is not stale vs data-pack/models/** (r
     fresh.sharedGeneratedTs,
     "run `pnpm build:data-pack` — model-data.generated.ts is stale",
   );
+  // RM-38 WP 2.2 — the D-DP3 compiled floor. This is the assertion that makes the floor DERIVED
+  // rather than a second maintained copy: edit `data-pack/models/overrides.json` or
+  // `data-pack/quality/thresholds.json` and forget to rebuild, and this goes red.
+  // WHAT IT CANNOT SEE: whether anything actually READS the floor — a generated export nobody
+  // imports would still match. The precedence tests in `data-pack-thresholds.test.ts` cover that.
+  assert.equal(
+    read(OUTPUT_PATHS.sharedPackDefaults),
+    fresh.packDefaultsTs,
+    "run `pnpm build:data-pack` — pack-defaults.generated.ts is stale",
+  );
 });
 
 // RM-38 WP 1.2 deleted the third copy this file used to pin (apps/api/src/compatibility/data/).

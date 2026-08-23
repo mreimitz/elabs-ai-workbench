@@ -13,6 +13,10 @@
 
 import type { AllModels, FlatModel } from "@mcp-token-footprint/shared";
 import { getDataPack } from "../data-pack/source.js";
+import {
+  defaultHeatmapModels as packDefaultHeatmapModels,
+  modelIdAliases as packModelIdAliases,
+} from "../data-pack/thresholds.js";
 
 /** Model-id index, built once per resolved pack. Keyed by the pack object so a swap rebuilds it. */
 let indexedFor: AllModels | null = null;
@@ -35,11 +39,15 @@ function index(): Map<string, FlatModel> {
  * Run-engine model id → dataset model id. Current-generation ids are identical between the two
  * (claude-opus-4-8, gpt-5.5, gemini-3.5-flash, …) so this is intentionally small; it captures only
  * genuine aliases / snapshot-pinned ids. Hand-maintained (frontier models ship monthly; fuzzy
- * matching is too risky to auto-derive).
+ * matching is too risky to auto-derive) — AUTHORED in `data-pack/models/overrides.json` since
+ * RM-38 WP 2.2, with the compiled floor underneath it.
+ *
+ * A FUNCTION, not a const: the pack resolves lazily (see `../data-pack/source.ts`), so a
+ * module-load read could only ever see the bundled snapshot.
  */
-export const MODEL_ID_ALIASES: Record<string, string> = {
-  "claude-haiku-4-5-20251001": "claude-haiku-4-5",
-};
+export function modelIdAliases(): Record<string, string> {
+  return packModelIdAliases();
+}
 
 /** The full dataset (flat rows + the per-model `detail` the resolver reads). */
 export function getAllModels(): AllModels {
@@ -54,7 +62,7 @@ export function getCrossCutting(): Record<string, unknown> {
 /** Resolve a run-engine model id to its dataset id (via alias table), or null if not in the dataset. */
 export function resolveDatasetModelId(modelId: string): string | null {
   const lookup = index();
-  const aliased = MODEL_ID_ALIASES[modelId] ?? modelId;
+  const aliased = modelIdAliases()[modelId] ?? modelId;
   if (lookup.has(aliased)) return aliased;
   // Fall back by stripping a trailing snapshot date (`-YYYYMMDD`), e.g. a provider's pinned
   // `claude-opus-4-8-20251101` → `claude-opus-4-8`. Only used when the exact id isn't in the dataset.
@@ -98,11 +106,9 @@ export function listModelRefs(): ModelRef[] {
 }
 
 /** A sensible default heatmap column set: current flagships across the runnable kinds + a small
- *  window for contrast. Used when the caller doesn't pass an explicit `models` list. */
-export const DEFAULT_HEATMAP_MODELS = [
-  "claude-opus-4-8",
-  "gpt-5.5",
-  "gemini-3.5-flash",
-  "claude-haiku-4-5",
-  "microsoft/phi-4",
-];
+ *  window for contrast. Used when the caller doesn't pass an explicit `models` list. AUTHORED in
+ *  `data-pack/models/overrides.json` since RM-38 WP 2.2; a function for the same laziness reason as
+ *  {@link modelIdAliases}. */
+export function defaultHeatmapModels(): string[] {
+  return [...packDefaultHeatmapModels()];
+}

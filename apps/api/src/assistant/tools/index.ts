@@ -22,7 +22,7 @@ import {
 } from "@mcp-token-footprint/shared";
 import { z } from "zod";
 import { buildComparison } from "../../compare/service.js";
-import { DEFAULT_HEATMAP_MODELS } from "../../compatibility/dataset.js";
+import { defaultHeatmapModels } from "../../compatibility/dataset.js";
 import { buildHeatmap } from "../../compatibility/service.js";
 import type { CollectionRepository } from "../../collections/repository.js";
 import type { GradeRepository } from "../../grading/grade-repository.js";
@@ -544,7 +544,7 @@ export function buildAssistantToolDefinitions(deps: AssistantToolDeps) {
       async (args) =>
         safeTool(() => {
           const scan = deps.scans.getDetail(args.scanId);
-          const heatmap = buildHeatmap(scan, args.models ?? DEFAULT_HEATMAP_MODELS, {
+          const heatmap = buildHeatmap(scan, args.models ?? defaultHeatmapModels(), {
             view: args.view ?? "server",
             rollup: args.rollup ?? "worst-tool",
             client: args.client,

@@ -38,6 +38,7 @@ import {
   type RunSummary,
   type SuiteRun,
 } from "@mcp-token-footprint/shared";
+import { advisorThresholds } from "../../data-pack/thresholds.js";
 import { runEvidence, scenarioEvidence } from "../evidence.js";
 import type { AdvisorContext, AdvisorRule, AdvisorRuleResult } from "../types.js";
 import {
@@ -48,10 +49,9 @@ import {
   recentSuiteRuns,
   runScore,
   singleGradingVersion,
-  SUITE_RUN_WINDOW,
   suiteRunMembers,
 } from "./grade-shared.js";
-import { compareStrings, EVIDENCE_RUN_LIMIT, formatCount, plural } from "./shared.js";
+import { compareStrings, formatCount, plural } from "./shared.js";
 
 export const MODEL_QUALITY_BAR_RULE_ID = "advisor.model-quality-bar";
 
@@ -89,7 +89,7 @@ function evidenceFor(stats: ModelStats, scenarioNames: Map<string, string>): Adv
     ...stats.scenarioIds.map((id) =>
       scenarioEvidence({ id, name: scenarioNames.get(id) ?? id }),
     ),
-    ...stats.runs.slice(0, EVIDENCE_RUN_LIMIT).map((run) => runEvidence(run)),
+    ...stats.runs.slice(0, advisorThresholds().evidence_run_limit).map((run) => runEvidence(run)),
   ];
 }
 
@@ -369,7 +369,7 @@ export const modelQualityBarRule: AdvisorRule = {
 
     if (recommendations.length === 0 && insufficientData.length === 0) {
       gap(
-        `none of the ${SUITE_RUN_WINDOW} most recent suite runs had any member runs to compare models over`,
+        `none of the ${advisorThresholds().suite_run_window} most recent suite runs had any member runs to compare models over`,
       );
     }
 

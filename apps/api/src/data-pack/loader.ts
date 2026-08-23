@@ -19,7 +19,7 @@
 //      `unsupported_schema_version` rather than as a pile of digest noise (teeth 2).
 //   3. digests, in both directions (nothing missing, nothing unlisted).
 //   4. per-file JSON Schema — now, and only now, the schema files themselves are digest-verified.
-//   5. parse the three documents the app actually reads.
+//   5. parse the documents the app actually reads (three data files + three judgement tables).
 
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -27,9 +27,16 @@ import {
   type AllModels,
   compileSchema,
   DATA_PACK_CONTENT_DIRS,
+  DATA_PACK_JUDGEMENT_PATHS,
   DATA_PACK_MANIFEST_FILENAME,
+  type DataPackAdvisorThresholds,
+  DataPackAdvisorThresholdsSchema,
   type DataPackManifest,
   DataPackManifestSchema,
+  type DataPackModelOverrides,
+  DataPackModelOverridesSchema,
+  type DataPackQualityThresholds,
+  DataPackQualityThresholdsSchema,
   type DataPackRefusal,
   dataPackSchemaFor,
   formatViolations,
@@ -43,12 +50,18 @@ import { type DataPackFs, nodeDataPackFs } from "./fs.js";
 /** Where a resolved pack came from. The fetched rung arrives in WP 3.1. */
 export type DataPackOrigin = "bundled" | "cache";
 
-/** The three documents the app reads out of a pack. Parsed once, at load. */
+/** The documents the app reads out of a pack. Parsed once, at load. */
 export type DataPackDocuments = {
   allModels: AllModels;
   crossCutting: Record<string, unknown>;
   /** Typed as `Catalog` by `compatibility/catalog.ts`, which owns that type. */
   testCatalog: unknown;
+  /** WP 2.2 — every tunable number the deterministic advisor rules read. Pack-only, no floor. */
+  advisorThresholds: DataPackAdvisorThresholds;
+  /** WP 2.2 — the shared skill-quality / compare / loop / budget numbers. */
+  qualityThresholds: DataPackQualityThresholds;
+  /** WP 2.2 — the merge-chain layers under the generated dataset (D-DP3 keeps a compiled floor). */
+  modelOverrides: DataPackModelOverrides;
 };
 
 export type ResolvedDataPack = {
@@ -67,6 +80,9 @@ const MODELS_PATH_PREFIX = "models/";
 const ALL_MODELS_PATH = "generated/all-models.json";
 const CROSS_CUTTING_PATH = "limits/cross-cutting.json";
 const TEST_CATALOG_PATH = "compatibility/test-catalog.json";
+const ADVISOR_THRESHOLDS_PATH = DATA_PACK_JUDGEMENT_PATHS.advisorThresholds;
+const QUALITY_THRESHOLDS_PATH = DATA_PACK_JUDGEMENT_PATHS.qualityThresholds;
+const MODEL_OVERRIDES_PATH = DATA_PACK_JUDGEMENT_PATHS.modelOverrides;
 
 function refuse(refusal: DataPackRefusal): DataPackLoadResult {
   return { ok: false, refusal };
@@ -223,7 +239,7 @@ export function loadDataPack(args: {
     }
   }
 
-  // --- 5. The three documents the app reads -----------------------------------------------------
+  // --- 5. The documents the app reads ------------------------------------------------------------
 
   const readDoc = (rel: string): unknown | undefined => {
     if (documentCache.has(rel)) return documentCache.get(rel);
@@ -253,6 +269,30 @@ export function loadDataPack(args: {
     });
   }
 
+  // The three WP 2.2 judgement tables. Each goes through its COMPILED-IN zod contract as well as
+  // the pack's own JSON Schema above — the schema files only became trustworthy at step 3, and
+  // these three are destructured field-by-field by code that must never read `undefined`.
+  const advisorThresholds = parseJudgement(
+    ADVISOR_THRESHOLDS_PATH,
+    readDoc(ADVISOR_THRESHOLDS_PATH),
+    DataPackAdvisorThresholdsSchema,
+  );
+  if ("reason" in advisorThresholds) return refuse(advisorThresholds);
+
+  const qualityThresholds = parseJudgement(
+    QUALITY_THRESHOLDS_PATH,
+    readDoc(QUALITY_THRESHOLDS_PATH),
+    DataPackQualityThresholdsSchema,
+  );
+  if ("reason" in qualityThresholds) return refuse(qualityThresholds);
+
+  const modelOverrides = parseJudgement(
+    MODEL_OVERRIDES_PATH,
+    readDoc(MODEL_OVERRIDES_PATH),
+    DataPackModelOverridesSchema,
+  );
+  if ("reason" in modelOverrides) return refuse(modelOverrides);
+
   return {
     ok: true,
     pack: {
@@ -263,9 +303,55 @@ export function loadDataPack(args: {
         allModels: allModelsDoc as AllModels,
         crossCutting: crossCuttingDoc as Record<string, unknown>,
         testCatalog: testCatalogDoc,
+        advisorThresholds: advisorThresholds.value,
+        qualityThresholds: qualityThresholds.value,
+        modelOverrides: modelOverrides.value,
       },
     },
   };
+}
+
+/** The `safeParse` surface `parseJudgement` needs, without importing zod's own types here. */
+type JudgementSchema<T> = {
+  safeParse(value: unknown): { success: true; data: T } | { success: false; error: ZodLikeError };
+};
+type ZodLikeError = { issues: { path: (string | number)[]; message: string }[] };
+
+/**
+ * Parse one judgement table against its compiled-in zod contract. Returns `{ value }` or a refusal;
+ * the caller narrows on `"reason" in result`.
+ *
+ * A MISSING file lands here as `undefined` and is refused with the same `schema_violation` reason,
+ * which is honest rather than approximate: step 3 has already proved the file set matches the
+ * manifest, so "absent" can only mean the manifest never listed it — i.e. the pack does not carry a
+ * document this build cannot run without.
+ */
+function parseJudgement<T>(
+  rel: string,
+  doc: unknown,
+  schema: JudgementSchema<T>,
+): { value: T } | DataPackRefusal {
+  if (doc === undefined) {
+    return {
+      reason: "schema_violation",
+      detail: `${rel} is missing from the pack — this build cannot run without it.`,
+      paths: [rel],
+    };
+  }
+  const parsed = schema.safeParse(doc);
+  if (!parsed.success) {
+    return {
+      reason: "schema_violation",
+      detail:
+        `${rel} does not satisfy its compiled-in contract: ` +
+        parsed.error.issues
+          .slice(0, 4)
+          .map((i) => `${i.path.join(".") || "<root>"}: ${i.message}`)
+          .join("; "),
+      paths: [rel],
+    };
+  }
+  return { value: parsed.data };
 }
 
 /**

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://elabs-ai/mcp-token-footprint/data-pack/model-overrides.schema.json",
+  "title": "Model merge-chain override layers",
+  "description": "data-pack/models/overrides.json — the hand-maintained layers that sit UNDER the generated dataset in the context-limit and pricing merge chains, plus three small model lists (RM-38 WP 2.2). MERGE PRECEDENCE IS CONTRACT: legacy -> roster-gap -> generated dataset, with the DB-backed PricingRepository resolver winning over all of it. D-DP3: these values also have a COMPILED FLOOR (rendered into packages/shared/src/pack-defaults.generated.ts by `pnpm build:data-pack`), because an unknown context window silently disables a guardrail and an unpriced model makes isModelPriced() false, which REFUSES a cost-capped run. The floor is a merge BASE, not an if-the-pack-is-absent fallback.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "legacy_context_limits",
+    "roster_gap_context_limits",
+    "legacy_pricing",
+    "roster_gap_pricing",
+    "zero_price_models",
+    "model_id_aliases",
+    "default_heatmap_models",
+    "assistant_default_model_roster",
+    "assistant_default_title_model"
+  ],
+  "properties": {
+    "legacy_context_limits": {
+      "description": "Previous-generation model ids the dataset does not cover. Merged FIRST (lowest precedence).",
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "roster_gap_context_limits": {
+      "description": "Current-generation ids the live provider rosters offer but the dataset snapshot predates. Merged SECOND. A missing entry resolves to 0, which disables compaction and makes every '% of context used' surface meaningless.",
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "legacy_pricing": {
+      "description": "The pricing twin of legacy_context_limits. Merged FIRST. The zero_price_models entries are spread in by pricing.ts and are NOT repeated here.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/price" }
+    },
+    "roster_gap_pricing": {
+      "description": "The pricing twin of roster_gap_context_limits. Merged SECOND. List prices per 1M tokens; time-varying prices belong in the DB-backed resolver, which carries effective dates.",
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/price" }
+    },
+    "zero_price_models": {
+      "description": "EXPLICIT zero-price allowlist — local/Ollama models with no per-token list price. Priced at an explicit 0 AND treated as a KNOWN price, which is what distinguishes 'genuinely free' from 'we have no price at all'.",
+      "type": "array",
+      "minItems": 0,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "model_id_aliases": {
+      "description": "Run-engine model id -> dataset model id. Deliberately small: it captures genuine aliases and snapshot-pinned ids only.",
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1 }
+    },
+    "default_heatmap_models": {
+      "description": "The default compatibility-heatmap column set when the caller passes no explicit model list.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "assistant_default_model_roster": {
+      "description": "The honest fallback for the Claude subscription's live model list, used on any error/timeout/not-signed-in. Env-overridable via ASSISTANT_MODEL_ROSTER.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "assistant_default_title_model": {
+      "description": "The cheap model the thread-title one-shot runs on. Env-overridable via ASSISTANT_TITLE_MODEL.",
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "price": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inPer1M", "outPer1M"],
+      "properties": {
+        "inPer1M": { "type": "number", "minimum": 0 },
+        "outPer1M": { "type": "number", "minimum": 0 },
+        "cachedInPer1M": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

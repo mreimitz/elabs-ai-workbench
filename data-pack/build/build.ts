@@ -247,3 +247,142 @@ ${priceLines}
 export function serializeAllModels(all: AllModels): string {
   return JSON.stringify(all, null, 2) + "\n";
 }
+
+// --- The compiled floor (RM-38 WP 2.2, D-DP3) ---------------------------------------------------
+//
+// `data-pack/models/overrides.json` and `data-pack/quality/thresholds.json` are the AUTHORED copy of
+// these values. But `packages/shared` may never touch the filesystem and `apps/web` reads several of
+// them (`MODEL_CONTEXT_LIMITS`, `DEFAULT_COMPARE_THRESHOLD`, `FAILURE_BUCKET_SCORE_THRESHOLD`), so a
+// compiled copy has to exist somewhere. Rendering it here rather than hand-maintaining it is what
+// keeps D-DP1's "nothing else in the tree may hold a second copy" true: there is one authored copy
+// and one DERIVED one, and `apps/api/test/compatibility-data.test.ts` rebuilds and byte-compares.
+//
+// D-DP3 is the reason this floor exists at all: an unknown context window silently disables a
+// guardrail and an unpriced model makes `isModelPriced()` false, which REFUSES a cost-capped run.
+// The floor is a merge BASE the runtime pack layers over — never an if-the-pack-is-absent fallback.
+
+/** A price map key ordering that JSON.stringify cannot reorder — sorted, always. */
+function renderRecord(record: Record<string, unknown>, indent = "  "): string {
+  return Object.keys(record)
+    .sort()
+    .map((k) => `${indent}${JSON.stringify(k)}: ${JSON.stringify(record[k])}`)
+    .join(",\n");
+}
+
+function renderStringArray(values: readonly string[], indent = "  "): string {
+  return values.map((v) => `${indent}${JSON.stringify(v)}`).join(",\n");
+}
+
+/**
+ * Render `packages/shared/src/pack-defaults.generated.ts` from the two authored judgement files.
+ *
+ * Both arguments are the PARSED JSON documents. They are typed loosely here on purpose: this module
+ * must not import `packages/shared`'s zod contracts (the pack build runs before `shared` is built —
+ * the same constraint that made `PACK_SCHEMA_VERSION` a separate constant), and the pack loader
+ * validates both documents against those contracts at runtime anyway.
+ */
+export function renderPackDefaults(input: {
+  modelOverrides: {
+    legacy_context_limits: Record<string, number>;
+    roster_gap_context_limits: Record<string, number>;
+    legacy_pricing: Record<string, DerivedPrice>;
+    roster_gap_pricing: Record<string, DerivedPrice>;
+    zero_price_models: string[];
+    default_heatmap_models: string[];
+    model_id_aliases: Record<string, string>;
+    assistant_default_model_roster: string[];
+    assistant_default_title_model: string;
+  };
+  qualityThresholds: {
+    skill_quality_l1_token_ceiling: number;
+    skill_quality_l2_token_ceiling: number;
+    quality_severity_weights: { error: number; warning: number; info: number };
+    default_compare_threshold: number;
+    default_loop_threshold: number;
+    failure_bucket_score_threshold: number;
+    workbench_mcp_definition_token_budget: number;
+  };
+}): string {
+  const m = input.modelOverrides;
+  const q = input.qualityThresholds;
+  return `// GENERATED — do not edit by hand.
+// Source of truth: data-pack/models/overrides.json + data-pack/quality/thresholds.json;
+// regenerate with \`pnpm build:data-pack\`.
+//
+// This is the COMPILED FLOOR (RM-38 D-DP3), not a copy anyone maintains. It exists because
+// \`packages/shared\` may never read the filesystem and \`apps/web\` consumes several of these values,
+// and because an unknown context window disables a guardrail while an unpriced model REFUSES a
+// cost-capped run. \`apps/api\` merges the RUNTIME pack over this floor
+// (\`apps/api/src/data-pack/model-overrides.ts\`); \`apps/web\` reads the floor alone.
+
+export type PackModelPrice = { inPer1M: number; outPer1M: number; cachedInPer1M?: number };
+
+/** Previous-generation ids the dataset does not cover. Merged FIRST (lowest precedence). */
+export const LEGACY_MODEL_CONTEXT_LIMITS: Record<string, number> = {
+${renderRecord(m.legacy_context_limits)}
+};
+
+/** Current-generation ids the live rosters offer but the dataset snapshot predates. Merged SECOND. */
+export const ROSTER_GAP_MODEL_CONTEXT_LIMITS: Record<string, number> = {
+${renderRecord(m.roster_gap_context_limits)}
+};
+
+/** The pricing twin of the legacy limits. The zero-price entries are spread in by \`pricing.ts\`. */
+export const LEGACY_MODEL_PRICING: Record<string, PackModelPrice> = {
+${renderRecord(m.legacy_pricing as unknown as Record<string, unknown>)}
+};
+
+/** The pricing twin of the roster-gap limits. Merged SECOND. */
+export const ROSTER_GAP_MODEL_PRICING: Record<string, PackModelPrice> = {
+${renderRecord(m.roster_gap_pricing as unknown as Record<string, unknown>)}
+};
+
+/** Local / on-device models priced at an explicit 0 AND treated as a KNOWN price. */
+export const ZERO_PRICE_MODELS: readonly string[] = [
+${renderStringArray(m.zero_price_models)}
+];
+
+/** Run-engine model id → dataset model id. */
+export const MODEL_ID_ALIASES: Record<string, string> = {
+${renderRecord(m.model_id_aliases)}
+};
+
+/** Default compatibility-heatmap column set. */
+export const DEFAULT_HEATMAP_MODELS: readonly string[] = [
+${renderStringArray(m.default_heatmap_models)}
+];
+
+/** The honest fallback for the Claude subscription's live model list. */
+export const ASSISTANT_DEFAULT_MODEL_ROSTER = [
+${renderStringArray(m.assistant_default_model_roster)}
+] as const;
+
+/** The cheap model the thread-title one-shot runs on. */
+export const ASSISTANT_DEFAULT_TITLE_MODEL = ${JSON.stringify(m.assistant_default_title_model)};
+
+/** Skill IDE quality engine — L1 (metadata) token ceiling. Env: SKILL_QUALITY_L1_TOKEN_CEILING. */
+export const DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING = ${q.skill_quality_l1_token_ceiling};
+
+/** Skill IDE quality engine — L2 (body) token ceiling. Env: SKILL_QUALITY_L2_TOKEN_CEILING. */
+export const DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING = ${q.skill_quality_l2_token_ceiling};
+
+/** The quality score's penalty per severity: clamp(100 - Σ weights, 0, 100). */
+export const PACK_QUALITY_SEVERITY_WEIGHTS = {
+  error: ${q.quality_severity_weights.error},
+  warning: ${q.quality_severity_weights.warning},
+  info: ${q.quality_severity_weights.info},
+} as const;
+
+/** The compare matcher's Jaccard floor when a caller passes none. */
+export const DEFAULT_COMPARE_THRESHOLD = ${q.default_compare_threshold};
+
+/** SkillFlow trace aligner — visit-count ceiling for generic loop detection. */
+export const DEFAULT_LOOP_THRESHOLD = ${q.default_loop_threshold};
+
+/** Suite failure buckets — a run scoring below this is a low-score candidate. */
+export const FAILURE_BUCKET_SCORE_THRESHOLD = ${q.failure_bucket_score_threshold};
+
+/** D-MCP5 — the token budget the workbench's own MCP mount holds its tools/list payload under. */
+export const WORKBENCH_MCP_DEFINITION_TOKEN_BUDGET = ${q.workbench_mcp_definition_token_budget};
+`;
+}
