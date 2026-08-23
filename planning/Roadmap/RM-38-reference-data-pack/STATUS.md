@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T07:40:00Z"
+timestamp: "2026-08-23T09:40:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -356,6 +356,84 @@ a file, both signals read from it.**
       [`wp-3.3-publish-and-offline.md`](./wp-3.3-publish-and-offline.md). **Depends on 3.1, 3.2.**
 
 ---
+
+## Two owner decisions, put and answered — 2026-08-23
+
+Both were held open deliberately rather than assumed, and both came back the *less* convenient way.
+
+**1. The mount's security score — CORRECT ALL SITES AND CLOSE THE BOX.** The previous entry left
+RM-20's "49 / high risk on 51 `info` findings" alone on the reasoning that an open owner-acceptance
+box is the owner's to close. Put to the owner; ruling was to correct it and tick it. Done on `main`
+in `ff7cf8b`.
+
+**And measuring it properly made it a bigger finding than a stale number.** Measured here, in the
+action that reports it: **24 tools · 0 findings · `{"value":100,"band":"clean","analyzerVersion":4}`**,
+pack 1.1.0, 3183/3500 definition tokens. Three things came out of it that were not known before:
+
+- **The 0 is a clean subject, not a deleted rule set.** 18 rules live (7 `error` · 6 `warning` ·
+  5 `info`); degrading one real tool from the live scan — parameter descriptions and
+  `additionalProperties` stripped — yields exactly 2 `info` findings and 98/`low`. This is audit
+  question (c) paying for itself twice: the first pass found a number with no test behind it, and the
+  second found that "0 findings" needed its own control before it could be reported as good news.
+- **The recorded pair was transposed**: score **51** on **49** findings, not score 49 on 51.
+- **The tie cannot be broken by arithmetic, which is why it survived.** Under uncapped v2 *both*
+  readings are internally consistent (49→51 and 51→49) and both band `high`, so a reader who checked
+  the maths would have **confirmed the wrong pair**. The RM-37 session found this and it is the
+  sharpest thing in the exchange. It is settled documentarily instead, by two independent comments in
+  `packages/shared/src/security-posture.ts` (`:73-77`, `:479-482`) that agree on 49→51; both read
+  here directly rather than relayed.
+
+**A sixth species for this item's taxonomy: a self-consistent transposition — verifying the
+arithmetic confirms the error.** No check that stays inside the numbers can catch it; only an
+external record can. Related to, but worse than, RM-37's WP 2.9 case (a number right about the wrong
+quantity), which *can* be caught by asking what the number measures.
+
+**Two sites the ruling did not name carried the same claim** and were corrected under it, flagged as
+such: RM-18's consolidated checklist (block A9 box 4 — closed; 191 open since assembly, totals left
+at their assembly figures) and RM-35's WP 0.5 record (a description of an edit that happened, so the
+correction was appended rather than the history rewritten).
+
+**The honest limit, written into the box itself:** no test asserts the real mount's score — the
+security suite uses synthetic `scan_clean`/`scan_poisoned` fixtures — so the closed box rests on one
+session's measurement and the green gate covers it not at all.
+
+**2. The browser lagging the API — FIX IT IN WP 3.2, not "state it plainly".** WP 2.2's carried gap
+is now scope item 6 of [`wp-3.2-surfaces.md`](./wp-3.2-surfaces.md), with the consumer surface
+**measured at `ff7cf8b` rather than assumed** — and the measurement found **six** sites where the
+ledger's statement of the gap named two kinds. The one nobody had listed is
+`features/security/SecurityPanel.tsx`: `SECURITY_RULES` is `BUNDLED_SECURITY_RULES`, the compiled
+table, so a pack that adds or retitles a rule leaves the panel's "N rules" wrong and the API's verdict
+sitting beside the image's title. The one that matters most is `RunConsole.tsx:656`
+(`MODEL_CONTEXT_LIMITS[model] ?? 0`), where an empty store does not error — it renders a confident,
+meaningless "0% of context used".
+
+Three design constraints are written into the spec because they are where this goes wrong: the
+compiled floor is the initial value **and** the fallback so the store is never empty;
+`CompareView`'s threshold is an **initial** value and must not become reactive (it would yank a
+slider the operator moved); and the guard is a **ban**, not a presence check — this item already lost
+one guard to a comment, and a ban fails the safe way.
+
+## WP 3.1's real-HTTP proof — the design, hardened before dispatch — 2026-08-23
+
+The ledger already records that WP 3.1's five D-DP5 refusals must not be proved only through an
+injected `fetch` seam. RM-37 sharpened it and the sharpening changes the design, not the wording:
+**a local listener written to satisfy a refusal is the same self-fulfilling loop one layer down, with
+sockets.** It closes "does the client survive a real socket" and closes nothing about whether the
+refusal is the right refusal.
+
+**So the brief requires control-and-case from one server:** the `node:http` listener serves a pack
+that is byte-valid and **would be ACCEPTED**, that acceptance is asserted first, and then a **single
+mutation** is applied to what the listener serves. The agent never authors a failing response, so it
+cannot author the refusal it is testing. The accept path is the control; the refusal is the case.
+
+**And the probe-validity rule is now FOUR checks, not three** (RM-37, after a WP 2.3 agent had two
+probes in flight masking each other): the edit applied · the test ran · the mutation reached the code
+under test · **it was the only mutation in flight.** One probe at a time, clean tree between,
+`git diff --stat` each time.
+
+**Ports: 8131–8134 are RM-38's.** 8126–8130 belong to the RM-37 session's batch. Any browser or
+container work copies `data/app.sqlite`; nothing opens the live file. **No migration from this item** —
+Phase 3's cache is a `DATA_DIR` filesystem tree, not a table. `v65` is RM-37's.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
