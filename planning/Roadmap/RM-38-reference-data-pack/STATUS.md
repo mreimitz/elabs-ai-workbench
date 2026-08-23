@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T02:40:00Z"
+timestamp: "2026-08-23T03:00:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -368,6 +368,31 @@ the source rather than leaving a copy behind.
    after we each hit it independently in one day): `package.json` needed RM-18's `docs:bundle` *and*
    `build:data-pack`; `packages/shared/src/index.ts` needed RM-37's `demo-seed.js` *and* this item's
    `data-pack.js`. Taking a side is the default that quietly deletes a work package's public surface.
+
+## The web "flake" has names, and they are not random — 2026-08-23
+
+Pooled with RM-37, which saw it twice independently tonight. **Four sightings, all the same shape:
+files fail in a FULL parallel run and pass in isolation.**
+
+| Sighting | Failed | Named | Alone |
+| --- | --- | --- | --- |
+| RM-38 WP 1.2 (this item) | 2 files, at load **155** *and* at load **32** | not captured — a third full run came back EXIT=0 | 394/394 twice |
+| RM-37 WP 2.1's agent | 4 files | **`CrewProfileModal`** (hub), **`RuleEditorDialog`** (watch) | 26/26 and 22/22; 37 files / 461 green together |
+| RM-37 WP 2.5's agent | 3 files | all under `features/assistant` + `features/hub` | 85/85 at load **97** |
+
+**The cluster is hub / assistant / watch dialogs — heavy modal-rendering suites.** Combined with a
+recurrence at load 32, CPU starvation is a **poor** fit; cross-file shared state, or a timer/portal
+leak between parallel workers, is a much better one. None of the three work packages that saw it
+touched those files.
+
+**This is deliberately NOT filed as "the documented load flake."** That conclusion is absence-shaped —
+it costs nothing to reach, explains a load-32 failure badly, and would hide a real bug that only
+appears under parallelism, which is exactly the bug this evidence describes. It belongs to the testing
+workstream, not to RM-38; recorded here because this item is where the evidence was pooled.
+
+**The next step that would settle it**, for whoever picks it up: run the full web suite with file
+parallelism disabled (`vitest --no-file-parallelism`) against a run with it on. Green serial + red
+parallel converts this from folklore into a reproducible defect and points straight at shared state.
 
 ## Test-count baselines (measured by the RM-35 session, 2026-08-22, gate green)
 
