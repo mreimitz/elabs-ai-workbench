@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T18:20:00Z"
+timestamp: "2026-08-23T18:45:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -927,10 +927,33 @@ fetcher; only the error line names the cause.**
 **Measured, after the first instrument failed.** A grep for `port:\s*[0-9]{2,5}` returned **zero**
 fixed binds — because the code reads `listen({ port: SERVE_PORT })`, a constant, not a literal. The
 scan measured the wrong quantity and its clean result was a **false clean on a file this session had
-just probed by hand**. Re-run over every `.listen(` site with the port expression shown:
-`data-pack-fetch-http.test.ts:172` is **the sole fixed-port bind**, against **~50** test listeners
-already using `listen(0, …)` (and `apps/cli/test/harness.ts`, and `self-scan.ts:214` in production
-code). So it is not a judgement call the repo makes differently elsewhere — it is one outlier.
+just probed by hand**. Re-run by printing every `.listen(` site in **tracked source** with its port
+expression, exact figures:
+
+| | |
+| --- | --- |
+| `.listen(` lines in tracked source | **69** |
+| genuinely non-ephemeral | **2** |
+| `apps/api/src/index.ts:1915` | production, `config.port` — correct |
+| `data-pack-fetch-http.test.ts:172` | **the sole fixed test bind** |
+
+(The three further hits in `data-pack-seam.test.ts` are string literals inside its source-scanning
+guard, not binds.) So it is not a judgement call the repo makes differently elsewhere — it is **one
+outlier against 66 sites already ephemeral**.
+
+**BOTH SESSIONS' FIRST INSTRUMENTS FAILED THE SAME WAY, AND ONE WAS HANDED OVER AS A CHECKED FACT.**
+RM-37 reported "I scanned the whole repo, this is the only fixed-port bind" — a **true claim their
+instrument had not established**: they grepped for a 4-digit *literal* inside `.listen(`, which could
+never match `listen(port, …)` where `port` is a constant, so **zero was what it always returned,
+about any tree.** They then passed it to this session and to two of their agents as verified. This
+session made the identical error one message earlier. **Two independent sessions, same question, same
+wrong instrument, within minutes** — which is the strongest available evidence that this is
+structural rather than personal carelessness, and that "be more careful" is not the fix.
+**The fix is the habit: when scanning source, PRINT what matched and look at it.** A count answers
+*"how many of the thing I described"*; only the printout answers *"is the thing I described the thing
+I meant"* (RM-37's formulation). It caught all four failures the moment it was applied. A related
+trap in the same exchange: their honest re-run first drowned in `apps/web/dist`, so **scan tracked
+source, not the working tree**.
 
 **RM-37's diagnosis is the species and it is worth more than the fix.** The file carries a comment at
 `:44`: *"8131–8134 are RM-38's allocation (see the ledger). Nothing else on the machine may be
@@ -938,6 +961,17 @@ assumed…"* — **a coordination fact, written into code, that the code cannot 
 reader cannot verify.** It was true when written. It stops being true silently, because the test
 outlives the conversation that allocated the range and gets run by a session that never saw the
 message. `listen({ port: 0 })` needs no comment, no ledger and no agreement.
+
+**The general test, and it is the most portable thing this exchange produced:** *if the correctness
+of a line depends on a fact recorded somewhere else, the line is wrong.* It covers all three of this
+week's mechanisms with one rule — the reserved port (correctness depends on a ledger), the `49`/`51`
+transposition (correctness depends on a code comment to disambiguate a self-consistent pair), and a
+stale exemption path (correctness depends on a file still existing).
+
+**And a note on why neither session questioned the allocation.** RM-37 used these ranges happily for
+four batches of browser walks — *"the range worked perfectly for my case, which is exactly why I
+never examined it"*. **A convention that works in the case you use it in is invisible until someone
+uses it in the case it fails.**
 
 **And the allocation was the wrong instrument, not a mis-used right one.** A reserved range works for
 a container a human opens in a browser — a person can see which port is theirs. For anything a *test*
