@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T04:25:00Z"
+timestamp: "2026-08-23T04:45:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -417,6 +417,39 @@ documentation is the thing most likely to keep the string alive after the code i
 hash-ledger error again in a new costume: precisely right about the wrong quantity. **This matters
 most exactly when tables move between files**, which is what WP 2.1 is doing right now — a comment
 describing the old location routinely outlives it.
+
+### The second audit question, and what it finds in RM-38 — 2026-08-23
+
+RM-37 turned an aside of mine into a second audit question, and it finds a **different** set from the
+first: **"is this check the only thing standing behind something that has never run?"** The two barely
+overlap — a presence check can be perfectly sound and still be the sole evidence for an artifact
+nobody has executed. Its degenerate form is the comment-satisfies-grep case: **the verification and the
+thing verified share an author and an assumption, so the check cannot contradict what it checks.**
+
+**Applied honestly to RM-38, it finds three, none of them fixed:**
+
+1. **The real Docker image has never been built for this item.** WP 1.2 verified `node apps/api/dist`
+   boots and resolves a pack, and WP 1.1 ran a probe image confirming `data-pack/` enters the build
+   context — but the `Dockerfile` never names `data-pack-bundled`, no workflow runs `docker build`, and
+   the only workflow on `main` is `mcp-self-scan.yml`. So "the pack reaches the runtime image" rests on
+   two partial checks plus reasoning about a `COPY --from=build /app/apps/api/dist`. **Assigned to WP
+   3.3**, which already owns offline verification — it must actually build and boot the image, not
+   reason about it.
+2. **The 279-line JSON Schema validator is self-authored and validates schemas this repo also
+   authors.** If a schema states the wrong constraint, the validator agrees with it. It throws on an
+   unimplemented keyword, which is the right failure direction, but nothing independent checks that a
+   schema means what it claims.
+3. **WP 3.1's fetcher will land in exactly RM-37's token-counter shape unless it is designed against
+   it.** Its remote behaviour will be exercised through an injected `fetch` seam — a stub written by the
+   same agent that writes the assumption it encodes. Every refusal will pass against a stub built to
+   produce that refusal. **Recorded now, before the WP is dispatched:** at least one refusal must be
+   proved against a real HTTP server (a throwaway `node:http` listener serving a corrupt manifest is
+   enough) rather than a stub, or the five D-DP5 refusals are self-fulfilling.
+
+**And it re-frames a hole this ledger already named.** WP 2.1's byte-identity acceptance is a check
+whose **fixtures move with the thing they verify** — an id renamed in both the registry and the
+fixtures passes silently. That is the same family, not a separate quirk, and the mitigation stays what
+it was: treat ids as frozen rather than expect the tests to notice.
 
 ### The audit that follows, and RM-37's narrowing of it
 
