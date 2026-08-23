@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T07:00:00Z"
+timestamp: "2026-08-23T07:40:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -519,7 +519,39 @@ the truth. Same for `data-pack/generated/all-models.json`.
 This is the third face of "both, not one" — the first two were two work packages needing both halves of
 a hand-written file; this is a **derived** file where neither side is right and the fix is to re-derive.
 
-### The second audit question, and what it finds in RM-38 — 2026-08-23
+#### Probe validity is THREE checks, not two — and the third is the dangerous one
+
+From RM-37, who lost three probes to it. A probe proves nothing unless:
+1. **The edit applied** — `git diff --stat`. (Hit twice in this item: a mutation targeting a symbol
+   that did not exist reported a confident GREEN both times.)
+2. **The test ran** — an exit code or a count. Silence is also what a command that never started
+   produces.
+3. **The mutation reached the code under test** — build boundary, stale `dist`, cached artifact, or a
+   mock standing in for the module.
+
+**Item 3 is qualitatively worse than the other two.** They catch you doing *nothing*; item 3 has you
+doing everything correctly **against the wrong copy**, and it yields a *confident false negative* — a
+working guard recorded as inert, and then "fixed". Same family as a chart stub that discards its props:
+a real test, really running, against something that is not the thing.
+
+**The concrete exposure in this repo:** `apps/api` tests import `packages/shared` from its **built
+`dist`**, and the package's `test` script runs `scripts/build-shared-once.mjs` first. Invoking
+`npx tsx --test` directly — which "just run the files you touched" actively encourages — **skips that
+build**, so a shared mutation sits in source while the test runs against the previous artifact. Phase 3
+puts the fetcher contract in `shared` with consumers in `api`: exactly this shape.
+
+**Verified here rather than assumed** (2026-08-23): mutating `computeSecurityScore` in
+`packages/shared/src/security-posture.ts` (`100 - deduction` → `42 - deduction`) and running
+`pnpm --filter @mcp-token-footprint/api test` turned **12 tests red**, first among them
+`A4 — a clean server scores 100/clean`. So this session's probes have been sound — but by the habit of
+using the package's `test` script, not by care. `build-shared-once.mjs` keys freshness on a stamp
+compared against the newest **source** mtime, so a source edit does invalidate it; that was read in the
+code *and then proved*, because reading it is exactly what item 3 punishes.
+
+**Standing rule for every RM-38 probe from here: run the package's own `test` script, never the bare
+runner.** Slower loop, honest result.
+
+## The second audit question, and what it finds in RM-38 — 2026-08-23
 
 RM-37 turned an aside of mine into a second audit question, and it finds a **different** set from the
 first: **"is this check the only thing standing behind something that has never run?"** The two barely
