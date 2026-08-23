@@ -309,6 +309,16 @@ grants broader than the job needs. Seven read a skill: the same steering heurist
 a credential committed into the body, a wildcard `allowed-tools` grant, and the scripts and network
 references it ships.
 
+**The phrase lists, verb lists and patterns they match on are reference data, not code.** They live
+in the same versioned data pack as the model roster, so recognising a newly-seen prompt-injection
+payload is a pack update rather than a release, an image rebuild and a redeploy. What a replacement
+pack may *not* do is quietly change a verdict: a rule id is frozen and its ledger append-only, so a
+pack that renames, drops or re-orders one is refused whole; a pack that changes any severity must
+declare a higher analyzer version, which is the app's existing way of saying "these two reports are
+not comparable"; and a pack whose rule set does not match the checks this build implements is
+refused too. Every pattern is compiled when the pack loads, so a broken or oversized one is a
+refusal at startup rather than a failure in the middle of a report you asked for.
+
 **They are heuristics over text, so they can be wrong, and the fix is a rule change with a
 fixture — never a quieter severity.** Every report names the analyzer version that produced it, and
 that version moves whenever a rule's meaning changes, so two reports either compare honestly or
@@ -607,7 +617,8 @@ apps/
 packages/
   shared/    the API contract — types.ts, schemas.ts (zod), constants.ts
 data-pack/   the reference data the app checks servers and models against — per-provider model
-             entries, protocol/client limits, the compatibility test catalog, their JSON Schemas,
+             entries, protocol/client limits, the compatibility test catalog, the security rule
+             registry and every signature list the security analyzers match on, their JSON Schemas,
              and a generated manifest.json carrying a SHA-256 per file (`pnpm build:data-pack`)
 ```
 

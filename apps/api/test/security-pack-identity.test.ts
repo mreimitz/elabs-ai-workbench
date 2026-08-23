@@ -15,9 +15,16 @@
 //      the two coverage tests below assert exactly that, so the claim is checked rather than
 //      believed. If a nineteenth rule is added and not added to the fixture, THOSE tests go red —
 //      the hashes would not have noticed.
-//   2. **Anything outside these two subjects.** A signature list used by no rule here (there is
+//   2. **A REDUNDANT term.** Measured, not assumed: deleting `deletes` from the destructive-verb
+//      list leaves all six hashes GREEN, because the fixture's tool is named `delete_everything` and
+//      the rule checks the NAME before the description, so `delete` still matches. Deleting a term
+//      the fixture uniquely depends on (`ignore previous`) turns all six red. So these hashes see a
+//      change in the OUTCOME, never a change in the table — which is the right sensitivity for a
+//      relocation guard and the wrong one for reviewing a pack edit. Reviewing a pack edit is what
+//      the near-miss fixtures in `security-analyzer.test.ts` are for.
+//   3. **Anything outside these two subjects.** A signature list used by no rule here (there is
 //      none today) could change unnoticed.
-//   3. It says nothing about WHERE the tables live — that is `security-tables.test.ts`'s job. A
+//   4. It says nothing about WHERE the tables live — that is `security-tables.test.ts`'s job. A
 //      relocation that changed no byte is exactly what this file certifies, and a relocation that
 //      changed a byte is exactly what it refuses.
 //
