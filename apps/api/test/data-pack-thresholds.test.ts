@@ -30,11 +30,14 @@
 //      CANNOT SEE: whether the CI workflow actually runs that command.
 
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
 import {
   DEFAULT_HEATMAP_MODELS as FLOOR_DEFAULT_HEATMAP_MODELS,
+  DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING,
+  DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING,
   MODEL_CONTEXT_LIMITS,
 } from "@mcp-token-footprint/shared";
 import { runAdvisor } from "../src/advisor/engine.js";
@@ -88,22 +91,6 @@ function withPack<T>(pack: ResolvedDataPack, body: () => T): T {
   }
 }
 
-function withEnv<T>(vars: Record<string, string | undefined>, body: () => T): T {
-  const saved = new Map<string, string | undefined>();
-  for (const [k, v] of Object.entries(vars)) {
-    saved.set(k, process.env[k]);
-    if (v === undefined) delete process.env[k];
-    else process.env[k] = v;
-  }
-  try {
-    return body();
-  } finally {
-    for (const [k, v] of saved) {
-      if (v === undefined) delete process.env[k];
-      else process.env[k] = v;
-    }
-  }
-}
 
 // ── 1. No second copy of a threshold ─────────────────────────────────────────────────────────────
 
@@ -292,49 +279,70 @@ test("the shared waste bands drive severity from the pack, in both trim rules", 
 
 // ── 3. env → pack → compiled, for the two skill-quality ceilings ─────────────────────────────────
 
-test("skill-quality ceilings resolve env → pack → compiled default, in that order", () => {
-  // Pack alone.
+test("with no env override the PACK's ceilings win, not the compiled default", () => {
+  // The middle rung. This test runner carries no `SKILL_QUALITY_*` variable, so `config`'s override
+  // fields are null and the pack is the answer — which is what makes the child-process test below
+  // meaningful rather than vacuous.
   const packOnly = withPack(
     doctoredPack((p) => {
       p.documents.qualityThresholds.skill_quality_l1_token_ceiling = 777;
       p.documents.qualityThresholds.skill_quality_l2_token_ceiling = 8888;
     }),
-    () => withEnv({ SKILL_QUALITY_L1_TOKEN_CEILING: undefined }, () => skillQualityCeilings()),
+    () => skillQualityCeilings(),
   );
-  assert.deepEqual(packOnly, { l1: 777, l2: 8888 }, "with no env override the PACK wins");
+  assert.deepEqual(packOnly, { l1: 777, l2: 8888 });
 
-  // `config` is built at module load, so the env override cannot be changed after the fact from a
-  // test — assert the RESOLUTION FUNCTION's precedence directly instead, and pin the wiring by
-  // source so an accidental swap of the two operands is still caught.
-  const source = readFileSync(path.join(API_ROOT, "src/data-pack/thresholds.ts"), "utf8");
-  assert.match(
-    source,
-    /l1:\s*config\.skillQualityL1TokenCeilingOverride \?\? pack\.skill_quality_l1_token_ceiling/,
-    "env must be the LEFT operand of ??, i.e. env wins over the pack",
-  );
-  assert.match(
-    source,
-    /l2:\s*config\.skillQualityL2TokenCeilingOverride \?\? pack\.skill_quality_l2_token_ceiling/,
-  );
-
-  // And the compiled default is the last rung: it is what the SHIPPED pack carries, so with no env
-  // override and the real pack in force the answer equals the compiled constant.
+  // The bottom rung: the compiled default is what the SHIPPED pack carries, so with the real pack in
+  // force the answer equals `DEFAULT_SKILL_QUALITY_L1/L2_TOKEN_CEILING`. If the two ever diverge,
+  // `compatibility-data.test.ts`'s rebuild-and-byte-compare goes red first.
   const shipped = withPack(REAL, () => skillQualityCeilings());
-  assert.deepEqual(shipped, { l1: 500, l2: 5000 });
+  assert.deepEqual(shipped, {
+    l1: DEFAULT_SKILL_QUALITY_L1_TOKEN_CEILING,
+    l2: DEFAULT_SKILL_QUALITY_L2_TOKEN_CEILING,
+  });
 });
 
-test("an env override is honoured when the process actually carries one", () => {
-  // The one thing the test above cannot reach: `config` is frozen at module load. Re-import the
-  // env module in a child registry with the variable set, and assert the OVERRIDE field is filled.
-  // The quantity: `readOptionalPositiveInt` reading the variable. What it cannot see: whether
-  // `skillQualityCeilings()` prefers it — the source assertion above covers that half.
-  const source = readFileSync(path.join(API_ROOT, "src/config/env.ts"), "utf8");
-  assert.match(source, /skillQualityL1TokenCeilingOverride: readOptionalPositiveInt\(/);
-  assert.match(source, /process\.env\.SKILL_QUALITY_L1_TOKEN_CEILING,/);
-  assert.match(source, /skillQualityL2TokenCeilingOverride: readOptionalPositiveInt\(/);
-  assert.match(source, /process\.env\.SKILL_QUALITY_L2_TOKEN_CEILING,/);
-  // `null` when unset is what makes "not set" distinguishable from "set to the default".
-  assert.match(source, /function readOptionalPositiveInt\(value: string \| undefined\): number \| null/);
+test("an env override BEATS the pack — proved in a child process, not by reading the source", () => {
+  // `config` is built once at module load from `process.env`, so this runner cannot change an
+  // override and observe it. A child process can. The quantity: the value
+  // `skillQualityCeilings()` returns in a process that carries the variables. WHAT IT CANNOT SEE:
+  // whether the route handlers call that function — `skill-ide-quality.test.ts` covers the engine,
+  // and the wiring is a one-line read in `skillflow/routes.ts`.
+  const probe = path.join(API_ROOT, "test/support/print-skill-quality-ceilings.ts");
+
+  const withOverride = runProbe({
+    SKILL_QUALITY_L1_TOKEN_CEILING: "123",
+    SKILL_QUALITY_L2_TOKEN_CEILING: "4567",
+  });
+  assert.deepEqual(
+    withOverride,
+    { l1: 123, l2: 4567 },
+    "an env override must beat the pack's 500 / 5000",
+  );
+
+  const withoutOverride = runProbe({});
+  assert.deepEqual(
+    withoutOverride,
+    { l1: 500, l2: 5000 },
+    "with no override the PACK's value is the answer — so the case above really moved something",
+  );
+
+  // One override, not both: the two must resolve independently.
+  assert.deepEqual(runProbe({ SKILL_QUALITY_L2_TOKEN_CEILING: "9" }), { l1: 500, l2: 9 });
+
+  function runProbe(env: Record<string, string>): { l1: number; l2: number } {
+    const out = execFileSync("pnpm", ["exec", "tsx", probe], {
+      cwd: API_ROOT,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        SKILL_QUALITY_L1_TOKEN_CEILING: "",
+        SKILL_QUALITY_L2_TOKEN_CEILING: "",
+        ...env,
+      },
+    });
+    return JSON.parse(out.trim().split("\n").at(-1) as string) as { l1: number; l2: number };
+  }
 });
 
 // ── 4. Merge order is contract ───────────────────────────────────────────────────────────────────
