@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T19:30:00Z"
+timestamp: "2026-08-23T19:50:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -1059,6 +1059,31 @@ reported mid-flight rather than after their gate went red.
 measured something adjacent to the question: `FAIL` inside test names, `CONTROL FAILED` counted
 outside its helper, and now a port literal that is a constant. **Read the count the runner prints;
 when scanning source, print what matched and look at it.**
+
+## The last number in this item was wrong, in the commit that closed it — 2026-08-23
+
+`257535c`, the commit ticking WP 3.3, is titled *"Phase 3 complete, all **nine** work packages
+done"*. **There are seven**, and counting them takes one command:
+
+```
+WP 1.1  WP 1.2  WP 2.1  WP 2.2  WP 3.1  WP 3.2  WP 3.3   → count: 7
+```
+
+Not corrected by amending — the commit is on `main` in a checkout three sessions share, and rewriting
+a tip they may already have fetched to tidy a number is worse than the number. **Recorded here
+instead, which is the whole point of a ledger.**
+
+**Why it belongs in the permanent record rather than being quietly fixed:** this item spent a full
+day cataloguing numbers that were confidently wrong — a merge split restated four times and wrong
+every time, a security score whose two figures were transposed, `FAIL` matched inside test names,
+`CONTROL FAILED` counted outside its helper, a port literal that was a constant, and two sessions'
+scans failing identically. **The closing commit then stated a count nobody checked**, about the very
+thing being closed, written by the session that had spent the day finding exactly this in others.
+
+It is the item's own thesis, demonstrated one last time at the moment of maximum confidence: **a
+number that feels obvious is the one nobody measures.** The habit that would have caught it is the
+one already written above — *print what matched and look at it* — and the cost of applying it here
+was a single `grep -c`.
 
 ## Known facts carried into the work (verified 2026-08-22, not taken on report)
 
