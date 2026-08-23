@@ -335,18 +335,44 @@ test("the skill fixture really fires every skill rule (coverage for the hash bel
   assert.deepEqual(ruleIdsOf(skillReport().findings), expected);
 });
 
+/**
+ * Drop the RM-38 D-DP8 pack stamp before hashing — and REFUSE to hash a document that has none.
+ *
+ * The stamp names the reference data pack a verdict was computed against, so it moves whenever the
+ * pack does. That is exactly the field this file must not be sensitive to: the pinned hashes answer
+ * "did relocating the rule tables change what the analyzer SAYS", and the pack version is not part
+ * of that question. So the field is removed rather than the hashes regenerated — regenerating one of
+ * these to make a test pass defeats the entire point of the file.
+ *
+ * The throw is the other half. Silently deleting an absent field would let a builder LOSE its stamp
+ * and leave these four tests green, turning a hash pin into cover for a missing stamp;
+ * `apps/api/test/data-pack-stamp.test.ts` owns the stamp, and this makes sure the two cannot drift
+ * apart in the direction where both look fine.
+ */
+function withoutPackStamp<T extends { dataPackVersion?: string }>(
+  document: T,
+): Omit<T, "dataPackVersion"> {
+  assert.match(
+    document.dataPackVersion ?? "",
+    /^\d+\.\d+\.\d+$/,
+    "the document carries no RM-38 pack stamp — the hash below would pass for the wrong reason",
+  );
+  const { dataPackVersion: _stamp, ...rest } = document;
+  return rest;
+}
+
 test("the server posture report is byte-identical to its pre-relocation bytes", () => {
-  assert.equal(sha256(serverReport()), PINNED.serverReport);
+  assert.equal(sha256(withoutPackStamp(serverReport())), PINNED.serverReport);
 });
 
 test("the skill posture report is byte-identical to its pre-relocation bytes", () => {
-  assert.equal(sha256(skillReport()), PINNED.skillReport);
+  assert.equal(sha256(withoutPackStamp(skillReport())), PINNED.skillReport);
 });
 
 test("the server posture DIFF is byte-identical to its pre-relocation bytes", () => {
-  assert.equal(sha256(serverDiff()), PINNED.serverDiff);
+  assert.equal(sha256(withoutPackStamp(serverDiff())), PINNED.serverDiff);
 });
 
 test("the skill posture DIFF is byte-identical to its pre-relocation bytes", () => {
-  assert.equal(sha256(skillDiff()), PINNED.skillDiff);
+  assert.equal(sha256(withoutPackStamp(skillDiff())), PINNED.skillDiff);
 });

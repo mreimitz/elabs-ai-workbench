@@ -693,6 +693,8 @@ export const runReportSchema = z.object({
   }),
   ratingVersion: z.number().int().nonnegative(),
   generatedAt: z.string(),
+  /** RM-38 D-DP8 — the reference data pack this document was computed against. */
+  dataPackVersion: z.string().min(1).optional(),
 });
 
 /** Mean + standard deviation for one numeric dimension across a test-group's member runs (WP 4.1). */
@@ -4719,6 +4721,8 @@ export const advisorReportSchema = z.object({
   scope: advisorScopeSchema,
   recommendations: z.array(advisorRecommendationSchema),
   insufficientData: z.array(advisorInsufficientDataSchema),
+  /** RM-38 D-DP8 — the reference data pack this document was computed against. */
+  dataPackVersion: z.string().min(1).optional(),
 });
 
 /**
@@ -4878,4 +4882,6 @@ export const fleetReportSchema = z.object({
   suites: fleetSuitesSectionSchema,
   posture: fleetPostureSectionSchema,
   advisor: fleetAdvisorSectionSchema,
+  /** RM-38 D-DP8 — the reference data pack this document was computed against. */
+  dataPackVersion: z.string().min(1).optional(),
 });

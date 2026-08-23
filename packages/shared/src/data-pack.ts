@@ -209,8 +209,10 @@ export function verifyManifestDigests(
 
   const parts: string[] = [];
   if (mismatched.length > 0) parts.push(`${mismatched.length} file(s) do not match their digest`);
-  if (missing.length > 0) parts.push(`${missing.length} manifest file(s) are missing from the pack`);
-  if (unlisted.length > 0) parts.push(`${unlisted.length} pack file(s) are not listed in the manifest`);
+  if (missing.length > 0)
+    parts.push(`${missing.length} manifest file(s) are missing from the pack`);
+  if (unlisted.length > 0)
+    parts.push(`${unlisted.length} pack file(s) are not listed in the manifest`);
 
   return {
     ok: false,
@@ -503,5 +505,194 @@ export const DataPackFetchOutcomeSchema = z
     refusal: DataPackRefusalSchema.optional(),
     files: z.number().int().nonnegative().optional(),
     durationMs: z.number().int().nonnegative().optional(),
+  })
+  .strict();
+
+// --- The stamp (D-DP8, RM-38 WP 3.2) ------------------------------------------------------------
+//
+// **A verdict document that cannot name the data it was computed against is not reproducible.**
+// Every document a verdict travels in carries the resolved pack version, and this module is the ONE
+// place in the repository that spells that field.
+//
+// WHY ONE DEFINITION, AND WHY IT IS A CORRECTNESS REQUIREMENT RATHER THAN TIDINESS: a document that
+// names its data version is worthless if two builders can disagree about the version. Eight builders
+// hand-assembling the field is eight independent answers to "which pack?", and the first time one of
+// them reads a stale memo the stamp becomes a confident lie — strictly worse than no stamp at all,
+// because a reader would then TRUST it.
+//
+// The enforcement is a two-sided guard in `apps/api/test/data-pack-stamp.test.ts`:
+//   * a BAN — the field literal appears in no source file under `apps/api/src`, and in exactly this
+//     one file under `packages/shared/src`, comments stripped first;
+//   * a NON-VACUITY half, because a ban is itself an absence assertion and passes over an empty
+//     corpus: the scan asserts it walked a non-empty tree, every named builder is read by an
+//     absolute path (so a moved file throws rather than silently dropping out of the set), and each
+//     one is asserted to carry the sanctioned call.
+// Neither half is evidence on its own.
+
+/** The additive field every verdict document carries. */
+export type DataPackStamp = { dataPackVersion: string };
+
+/**
+ * Build the stamp. Takes an ALREADY-RESOLVED version — this module may not read a pack (see the
+ * header's hard constraint), so "which pack is in force" is answered exactly once, on the API side,
+ * by `apps/api/src/data-pack/stamp.ts`, which is the only caller in production API code.
+ */
+export function stampDataPackVersion(packVersion: string): DataPackStamp {
+  return { dataPackVersion: packVersion };
+}
+
+/**
+ * The stamp for a document DERIVED from another already-stamped document (the security posture
+ * diff). It is not a second source of truth: the version travels IN the input, and an input with no
+ * stamp produces no stamp rather than a guess.
+ */
+export function inheritedDataPackStamp(
+  from: { dataPackVersion?: string } | undefined,
+): DataPackStamp | Record<string, never> {
+  const version = from?.dataPackVersion;
+  return version === undefined ? {} : stampDataPackVersion(version);
+}
+
+// --- The resolved-pack status surface (RM-38 WP 3.2) --------------------------------------------
+
+/**
+ * The display projection of ONE security rule.
+ *
+ * Deliberately not the whole `SecurityRule`: the browser's Security tab renders a rule's `title`
+ * and its `rationale` and counts the registry, and takes severity off the finding — so those four
+ * fields are what travel. `category` / `subject` / `deprecated` are analyzer-side facts and stay on
+ * the API side of the wire.
+ *
+ * The strings are **free text from the pack**, rendered verbatim to an operator. Whether a
+ * user-visible pack field should carry a content constraint in the JSON Schema is an open owner
+ * question recorded in RM-38's ledger; this contract deliberately neither adds one nor forecloses
+ * one — it constrains presence only, exactly as the pack's own schema already does.
+ */
+export type DataPackSecurityRuleView = {
+  id: string;
+  severity: string;
+  title: string;
+  rationale: string;
+};
+
+export const DataPackSecurityRuleViewSchema = z
+  .object({
+    id: z.string().min(1),
+    severity: z.string().min(1),
+    title: z.string().min(1),
+    rationale: z.string().min(1),
+  })
+  .strict();
+
+/**
+ * The pack-derived VALUES the browser needs, so `apps/web` stops rendering the compiled floor while
+ * the API answers from a fetched pack (RM-38 WP 3.2 scope item 6, owner ruling 2026-08-23).
+ *
+ * These are exactly the four things `apps/web` reads today, measured rather than assumed — the
+ * context-window map (`allow-list.ts`, `RunConsole.tsx`), the two thresholds (`CompareView.tsx`,
+ * `FailureBuckets.tsx`) and the security rule registry (`SecurityPanel.tsx`). The MODEL DATASET is
+ * deliberately not here: the browser needs a `Record<string, number>`, not the ~1.8 MB
+ * `generated/all-models.json` it is derived from.
+ *
+ * They are produced from the SAME read of the resolved pack as the metadata beside them, so the
+ * browser can never show one pack's values next to another pack's version.
+ */
+export type DataPackValues = {
+  /** Model id to context window in tokens, merged in the same order the API merges it. */
+  modelContextLimits: Record<string, number>;
+  /** The compare matcher's Jaccard floor. */
+  defaultCompareThreshold: number;
+  /** Suite failure buckets — a run scoring below this is a low-score candidate. */
+  failureBucketScoreThreshold: number;
+  /** The security rule registry, keyed by rule id, as the Security tab renders it. */
+  securityRules: Record<string, DataPackSecurityRuleView>;
+};
+
+export const DataPackValuesSchema = z
+  .object({
+    modelContextLimits: z.record(z.number()),
+    defaultCompareThreshold: z.number(),
+    failureBucketScoreThreshold: z.number(),
+    securityRules: z.record(DataPackSecurityRuleViewSchema),
+  })
+  .strict();
+
+/** Which rung a pack, or a refusal, came from. */
+export const DATA_PACK_ORIGINS = ["bundled", "cache", "fetched"] as const;
+export type DataPackOriginName = (typeof DATA_PACK_ORIGINS)[number];
+
+/**
+ * A refusal, dated, and naming the pack version that was refused.
+ *
+ * It is a SEPARATE member from the last check's outcome on purpose. An operator's question is not
+ * "what happened last time" but "is something out there this build will not trust" — and a refusal
+ * that scrolled off behind a later successful `up_to_date` check would answer the first question
+ * and hide the second.
+ */
+export type DataPackRefusalRecord = {
+  reason: DataPackRefusalReason;
+  detail: string;
+  paths?: string[];
+  /** ISO 8601 instant the refusal was recorded. */
+  at: string;
+  /** The pack version that was refused, when the manifest got far enough to declare one. */
+  refusedVersion?: string;
+  /** Which rung refused it: the boot-time cache read, or a startup/on-demand fetch. */
+  origin: "cache" | "fetched";
+};
+
+export const DataPackRefusalRecordSchema = z
+  .object({
+    reason: z.enum(DATA_PACK_REFUSAL_REASONS),
+    detail: z.string().min(1),
+    paths: z.array(z.string()).optional(),
+    at: z.string().min(1),
+    refusedVersion: z.string().optional(),
+    origin: z.enum(["cache", "fetched"]),
+  })
+  .strict();
+
+/**
+ * `GET /api/data-pack` and `POST /api/data-pack/refresh` — the same shape from both.
+ *
+ * `lastRefusal` is the member the Settings row exists to show. A failed check must never look like
+ * a successful one (the RM-17 lesson, where an empty window reported as "recovered"), so this
+ * payload keeps the refusal ALIVE alongside the pack in force rather than letting a later
+ * `up_to_date` overwrite it.
+ */
+export type DataPackStatus = {
+  packVersion: string;
+  schemaVersion: number;
+  asOf: string;
+  /** Which rung the pack in force came from. */
+  source: DataPackOriginName;
+  /** How many files the manifest lists. */
+  files: number;
+  /** The security analyzer version this pack's rule registry declares (D-DP7). */
+  analyzerVersion: number;
+  /** Whether a remote check is configured at all, so the UI can say "no URL" rather than "never". */
+  checkConfigured: boolean;
+  /** ISO 8601 instant of the most recent completed check, absent when none has run. */
+  lastCheckedAt?: string;
+  /** The most recent check's own outcome, absent when none has run. */
+  lastCheck?: DataPackFetchOutcome;
+  /** The most recent refusal, from any rung, which a later successful check does NOT clear. */
+  lastRefusal?: DataPackRefusalRecord;
+  values: DataPackValues;
+};
+
+export const DataPackStatusSchema = z
+  .object({
+    packVersion: z.string().min(1),
+    schemaVersion: z.number().int(),
+    asOf: z.string().min(1),
+    source: z.enum(DATA_PACK_ORIGINS),
+    files: z.number().int().nonnegative(),
+    analyzerVersion: z.number().int(),
+    checkConfigured: z.boolean(),
+    lastCheckedAt: z.string().optional(),
+    lastCheck: DataPackFetchOutcomeSchema.optional(),
+    lastRefusal: DataPackRefusalRecordSchema.optional(),
+    values: DataPackValuesSchema,
   })
   .strict();

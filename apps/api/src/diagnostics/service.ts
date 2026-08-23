@@ -15,6 +15,7 @@ import {
   PROVIDER_KINDS,
 } from "@mcp-token-footprint/shared";
 import { config } from "../config/env.js";
+import { buildDiagnosticsDataPackGroup } from "../data-pack/status.js";
 import { LATEST_SCHEMA_VERSION, type AppDatabase } from "../db/database.js";
 import { buildEnvironmentGroup } from "./env-vars.js";
 
@@ -265,5 +266,10 @@ export function buildDiagnosticsBundle(ports: DiagnosticsPorts): DiagnosticsBund
     database: readDatabaseGroup(ports.db, databasePath),
     errors: readErrorsGroup(ports.db),
     features: readFeaturesGroup(ports.db, ports.featureFlags()),
+    // RM-38 WP 3.2 — which reference data pack this install is running. Counts, enums, versions and
+    // booleans only: the group carries no `DATA_PACK_URL` (it is in the Environment catalogue as
+    // `{ name, status }` like every other variable) and no refusal SENTENCE, because the fetcher
+    // composes those with the checked URL inside them. See `data-pack/status.ts`.
+    dataPack: buildDiagnosticsDataPackGroup(),
   };
 }

@@ -7,7 +7,7 @@ import type {
   Skill,
   SkillVersion,
 } from "@mcp-token-footprint/shared";
-import { MODEL_CONTEXT_LIMITS } from "@mcp-token-footprint/shared";
+import { isKnownModelId, knownModelIds } from "../../lib/pack-values";
 import type { RankedItem } from "../../components/TokenViz";
 
 /**
@@ -177,13 +177,17 @@ export function computeSkillFootprint(
 }
 
 /**
- * Known models from `MODEL_CONTEXT_LIMITS`, filtered to the provider `kind` via a model-id prefix
- * map. If no provider is selected (or nothing matches the kind) every known model is returned so the
- * Combobox is never empty. The engine accepts ANY model id — this is convenience, not a gate; an
- * arbitrary id is still reachable via the "custom model" affordance.
+ * Known models from the reference data pack in force, filtered to the provider `kind` via a model-id
+ * prefix map. If no provider is selected (or nothing matches the kind) every known model is returned
+ * so the Combobox is never empty. The engine accepts ANY model id — this is convenience, not a gate;
+ * an arbitrary id is still reachable via the "custom model" affordance.
+ *
+ * RM-38 WP 3.2 — read through `lib/pack-values`, not the compiled floor. A pack that adds a model
+ * makes it offerable here without an image rebuild; a pack that drops one cannot un-know it, because
+ * the store unions the floor (D-DP3).
  */
 export function modelsForKind(kind: ProviderKind | undefined): string[] {
-  const all = Object.keys(MODEL_CONTEXT_LIMITS);
+  const all = knownModelIds();
   if (!kind) return all;
   const matched = all.filter((model) => kindForModelId(model)?.has(kind));
   return matched.length > 0 ? matched : all;
@@ -202,7 +206,7 @@ function kindForModelId(modelId: string): Set<ProviderKind> | undefined {
   return undefined;
 }
 
-/** True when the model id is one of the code-maintained known models. */
+/** True when the reference data pack (or the compiled floor under it) knows this model. */
 export function isKnownModel(modelId: string): boolean {
-  return Object.prototype.hasOwnProperty.call(MODEL_CONTEXT_LIMITS, modelId);
+  return isKnownModelId(modelId);
 }

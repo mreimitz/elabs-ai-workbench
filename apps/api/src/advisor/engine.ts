@@ -34,6 +34,7 @@ import {
   type AdvisorReport,
   type AdvisorScope,
 } from "@mcp-token-footprint/shared";
+import { dataPackStamp } from "../data-pack/stamp.js";
 import { advisorRuleRegistry } from "./registry.js";
 import { AdvisorRuleContractError, type AdvisorContext, type AdvisorRule } from "./types.js";
 
@@ -207,6 +208,8 @@ export function runAdvisor(
   }
 
   return {
+    // RM-38 D-DP8 — the pack every threshold behind these recommendations came from.
+    ...dataPackStamp(),
     advisorVersion: ADVISOR_VERSION,
     generatedAt: ctx.now().toISOString(),
     // Rebuilt rather than passed through, so the report never aliases caller state and its key

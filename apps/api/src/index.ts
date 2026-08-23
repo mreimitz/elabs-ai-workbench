@@ -40,7 +40,9 @@ import {
 import { config } from "./config/env.js";
 import { refreshDataPack } from "./data-pack/fetcher.js";
 import { resolveDataPackFromDisk } from "./data-pack/resolve.js";
+import { registerDataPackRoutes } from "./data-pack/routes.js";
 import { installDataPackSource } from "./data-pack/source.js";
+import { recordDataPackCheck, recordDataPackRefusal } from "./data-pack/state.js";
 import { skillQualityCeilings } from "./data-pack/thresholds.js";
 import { openDatabase } from "./db/database.js";
 import { registerMaintenanceRoutes } from "./db/maintenance.js";
@@ -235,6 +237,19 @@ for (const refusal of dataPackResolution.refusals) {
     { origin: refusal.origin, dir: refusal.dir, reason: refusal.reason, paths: refusal.paths },
     `Reference data pack refused: ${refusal.detail}`,
   );
+  // RM-38 WP 3.2 — a boot-time CACHE refusal reaches Settings and `/api/diagnostics` through the
+  // same slot a fetch refusal does. A refusal that only ever reached the log is a refusal nobody
+  // sees; a `bundled` origin with no explanation beside it reads as a normal install.
+  if (refusal.origin !== "bundled") {
+    recordDataPackRefusal(
+      {
+        reason: refusal.reason,
+        detail: refusal.detail,
+        ...(refusal.paths ? { paths: refusal.paths } : {}),
+      },
+      refusal.origin,
+    );
+  }
 }
 // Observability WP2.6 (D-OB22) — install the DB-backed pricing resolver BEFORE any run/estimate can
 // price a model, so `estimateCost`/`isModelPriced` resolve edited prices from `model_pricing` (the
@@ -1514,6 +1529,10 @@ await registerMaintenanceRoutes(
 );
 await registerCompareRoutes(server, scans);
 registerDiagnosticsRoutes(server, { db, featureFlags: () => featureFlags.getFlags() }); // RM-18 WP 1.3
+// Reference data pack (planning/Roadmap/RM-38-reference-data-pack/, WP 3.2) — `GET /api/data-pack`
+// (which pack is in force, what the last check did, and the VALUES `apps/web` hydrates from) and
+// `POST /api/data-pack/refresh` (run WP 3.1's check on demand). No feature flag, no migration.
+registerDataPackRoutes(server);
 // Security posture (planning/Roadmap/RM-20-security-posture/, WP 1.2 + WP 1.3) — `GET /api/scans/:scanId/security`
 // (the eleven deterministic rules over an already-persisted scan) and
 // `GET /api/skills/:id/versions/:vid/security` (the seven over an already-persisted skill version),
@@ -1921,6 +1940,9 @@ void refreshDataPack({
   bundled: dataPackResolution.bundled,
 })
   .then((result) => {
+    // RM-38 WP 3.2 — record the outcome BEFORE branching on it, so every status reaches Settings and
+    // `/api/diagnostics`, not just the two the log distinguishes.
+    recordDataPackCheck(result.outcome);
     if (result.outcome.status === "installed" && result.pack) {
       installDataPackSource(result.pack);
       installSecurityTables(result.pack.documents.securityTables);

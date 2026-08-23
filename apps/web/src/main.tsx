@@ -22,6 +22,7 @@ import "@xyflow/react/dist/style.css";
 import { App } from "./App";
 import { AssistantProvider } from "./features/assistant/assistant-context";
 import { FeatureFlagsProvider } from "./features/feature-flags/feature-flags-context";
+import { hydratePackValues } from "./lib/pack-values";
 import {
   ALLOWED_THEMES,
   DEFAULT_ALLOWED_THEME,
@@ -53,34 +54,55 @@ try {
   // localStorage unavailable — provider falls back to defaultTheme anyway.
 }
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <React.StrictMode>
-    <ThemeProvider
-      defaultTheme={DEFAULT_ALLOWED_THEME}
-      allowedThemes={ALLOWED_THEMES}
-      defaultDensity="compact"
-    >
-      <TooltipProvider delayDuration={200}>
-        <BrowserRouter>
-          {/* Mounted inside the router (it derives the current envelope from `useLocation`) and near
+// RM-38 WP 3.2 — hydrate the reference-data-pack VALUES before the first render.
+//
+// It has to be here rather than in an effect because ONE consumer (`CompareView`'s Jaccard
+// threshold) is deliberately a seed-at-mount value, not a live one: re-pointing it after mount would
+// yank a slider the operator had already moved. Hydrating first is what lets a cold load straight
+// onto `/compare/scans` still seed from the pack in force.
+//
+// Bounded and failure-tolerant on purpose. `hydratePackValues` never rejects, and the race caps a
+// hanging API at `HYDRATE_BUDGET_MS` — the store already holds the compiled floor the image shipped
+// with, so the worst case is the exact behaviour of every build before this work package, never a
+// blank screen. The request is same-origin against a route that does no I/O beyond an in-memory
+// projection.
+// A `.then` rather than a top-level `await`: the build target does not support top-level await, and
+// discovering that in `vite build` rather than in a comment is the reason it is written down here.
+const HYDRATE_BUDGET_MS = 2000;
+void Promise.race([
+  hydratePackValues(),
+  new Promise((resolve) => setTimeout(resolve, HYDRATE_BUDGET_MS)),
+]).then(mount);
+
+function mount(): void {
+  ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+    <React.StrictMode>
+      <ThemeProvider
+        defaultTheme={DEFAULT_ALLOWED_THEME}
+        allowedThemes={ALLOWED_THEMES}
+        defaultDensity="compact"
+      >
+        <TooltipProvider delayDuration={200}>
+          <BrowserRouter>
+            {/* Mounted inside the router (it derives the current envelope from `useLocation`) and near
               the app root (owns the dock's open/close state — see `features/assistant/assistant-context.tsx`). */}
-          {/* Settings › Features — the app-wide feature-flag map (source of truth: the API, which
+            {/* Settings › Features — the app-wide feature-flag map (source of truth: the API, which
               also enforces a disabled feature server-side). Mounted ABOVE AssistantProvider so the
               nav, the routes and the dock all read one map. Unknown/failed reads mean ENABLED. */}
-          <FeatureFlagsProvider>
-            <AssistantProvider>
-              <App />
-            </AssistantProvider>
-          </FeatureFlagsProvider>
-        </BrowserRouter>
-        {/* WP 0.2 / S13: offset the toast viewport below the 56px (`h-14`) app header bar so a
+            <FeatureFlagsProvider>
+              <AssistantProvider>
+                <App />
+              </AssistantProvider>
+            </FeatureFlagsProvider>
+          </BrowserRouter>
+          {/* WP 0.2 / S13: offset the toast viewport below the 56px (`h-14`) app header bar so a
             real toast never overlaps the header's controls (the false-completion toast that used to
             land here is now gated at its source in RunConsole). */}
-        {/* Interface Craft WP 3.1 (finding 5, D-IC7): `duration={4000}` is the finite default for
+          {/* Interface Craft WP 3.1 (finding 5, D-IC7): `duration={4000}` is the finite default for
             successes/info toasts. Every error toast goes through `notifyError` (`lib/notify.ts`),
             which forces `duration: Infinity` per-call — overriding this default so errors (and the
             one action-bearing toast) stay until the operator dismisses them. */}
-        {/* Interface Craft WP 4.3 FIX 2 (P1): `richColors` was DROPPED. Sonner's rich-colors palette
+          {/* Interface Craft WP 4.3 FIX 2 (P1): `richColors` was DROPPED. Sonner's rich-colors palette
             is hardcoded and theme-agnostic — its error plate measured 4.35:1 in light (below AA),
             and since D-IC7 errors now persist it was on screen longer. Instead the per-type toast plates
             are mapped onto the app's SEMANTIC token pairs, which WP 0.1 already tuned to clear AA (the
@@ -91,33 +113,34 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
             on one element; the `group-[.toaster]:` variant (mirrors the vendored default) beats sonner's
             built-in `--normal-bg`. Description inherits the plate's own AA foreground (`text-current`)
             instead of `text-muted-foreground`, which would under-contrast on the colored plates. */}
-        <Toaster
-          closeButton
-          position="top-right"
-          offset={64}
-          duration={4000}
-          toastOptions={{
-            classNames: {
-              // Base (ALL toasts): structure only — the tone color lives in the per-type keys below.
-              toast:
-                "group toast group-[.toaster]:border group-[.toaster]:shadow-lg group-[.toaster]:rounded-md",
-              description: "group-[.toast]:text-current",
-              actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-              cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-              // Neutral `toast(...)` → the original card surface.
-              default: "group-[.toaster]:bg-card group-[.toaster]:text-card-foreground",
-              // The four tones inherit the WP 0.1 AA-fixed on-fill semantic pairs.
-              success:
-                "group-[.toaster]:bg-success group-[.toaster]:text-success-foreground group-[.toaster]:border-success",
-              error:
-                "group-[.toaster]:bg-destructive group-[.toaster]:text-destructive-foreground group-[.toaster]:border-destructive",
-              warning:
-                "group-[.toaster]:bg-warning group-[.toaster]:text-warning-foreground group-[.toaster]:border-warning",
-              info: "group-[.toaster]:bg-info group-[.toaster]:text-info-foreground group-[.toaster]:border-info",
-            },
-          }}
-        />
-      </TooltipProvider>
-    </ThemeProvider>
-  </React.StrictMode>,
-);
+          <Toaster
+            closeButton
+            position="top-right"
+            offset={64}
+            duration={4000}
+            toastOptions={{
+              classNames: {
+                // Base (ALL toasts): structure only — the tone color lives in the per-type keys below.
+                toast:
+                  "group toast group-[.toaster]:border group-[.toaster]:shadow-lg group-[.toaster]:rounded-md",
+                description: "group-[.toast]:text-current",
+                actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
+                cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+                // Neutral `toast(...)` → the original card surface.
+                default: "group-[.toaster]:bg-card group-[.toaster]:text-card-foreground",
+                // The four tones inherit the WP 0.1 AA-fixed on-fill semantic pairs.
+                success:
+                  "group-[.toaster]:bg-success group-[.toaster]:text-success-foreground group-[.toaster]:border-success",
+                error:
+                  "group-[.toaster]:bg-destructive group-[.toaster]:text-destructive-foreground group-[.toaster]:border-destructive",
+                warning:
+                  "group-[.toaster]:bg-warning group-[.toaster]:text-warning-foreground group-[.toaster]:border-warning",
+                info: "group-[.toaster]:bg-info group-[.toaster]:text-info-foreground group-[.toaster]:border-info",
+              },
+            }}
+          />
+        </TooltipProvider>
+      </ThemeProvider>
+    </React.StrictMode>,
+  );
+}

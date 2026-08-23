@@ -1,10 +1,6 @@
 import { useMemo, useState } from "react";
-import {
-  FAILURE_BUCKET_SCORE_THRESHOLD,
-  type FailureBucket,
-  type SuiteAggregates,
-  type SuiteRun,
-} from "@mcp-token-footprint/shared";
+import type { FailureBucket, SuiteAggregates, SuiteRun } from "@mcp-token-footprint/shared";
+import { usePackValues } from "../../../lib/pack-values";
 import {
   Alert,
   AlertDescription,
@@ -50,14 +46,16 @@ export type FailureBucketsProps = {
   onOpenRun: (runId: string) => void;
 };
 
-const LOW_SCORE_PERCENT = `${Math.round(FAILURE_BUCKET_SCORE_THRESHOLD * 100)}%`;
-
 export function FailureBuckets({
   suiteRunId,
   aggregates,
   isTerminal,
   onOpenRun,
 }: FailureBucketsProps) {
+  // RM-38 WP 3.2 — the label is derived from the pack in force, not the compiled floor. It used to
+  // be a module constant, which meant a pack that moved the bucket floor left this reading "50%"
+  // beside an API bucketing at another number: a label that disagrees with the thing it labels.
+  const lowScorePercent = `${Math.round(usePackValues().failureBucketScoreThreshold * 100)}%`;
   const [result, setResult] = useState<SuiteRun | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +102,7 @@ export function FailureBuckets({
             Failure buckets
           </Heading>
           <Text variant="meta" tone="muted" className="text-pretty">
-            Cluster the runs scoring below <span className="tabular-nums">{LOW_SCORE_PERCENT}</span>{" "}
+            Cluster the runs scoring below <span className="tabular-nums">{lowScorePercent}</span>{" "}
             into a failure taxonomy. This runs a judge call on demand — it never runs on its own.
           </Text>
         </div>
@@ -163,7 +161,7 @@ export function FailureBuckets({
         <EmptyState
           icon={<TriangleAlert aria-hidden />}
           title="No failure clusters"
-          description={`Nothing in this suite run scored below ${LOW_SCORE_PERCENT}, so there are no failures to cluster.`}
+          description={`Nothing in this suite run scored below ${lowScorePercent}, so there are no failures to cluster.`}
         />
       ) : (
         <div className="flex flex-col gap-3">

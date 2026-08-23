@@ -83,6 +83,7 @@ import {
   type SuiteRun,
 } from "@mcp-token-footprint/shared";
 import { buildComparison } from "../compare/service.js";
+import { dataPackStamp } from "../data-pack/stamp.js";
 import { httpError } from "../utils/errors.js";
 
 /**
@@ -160,6 +161,10 @@ export function evaluateAssertions(
   const skipped = results.filter((result) => result.status === "skipped").length;
 
   const report: AssertionReport = {
+    // RM-38 D-DP8 — the pack this gate was evaluated against. `no-new-security-findings`
+    // re-projects the security analyzer, whose whole rule table ships in the pack, so a CI verdict
+    // that cannot name its data version is not reproducible.
+    ...dataPackStamp(),
     assertionsVersion: ASSERTIONS_VERSION,
     evaluatedAt: (ports.now?.() ?? new Date()).toISOString(),
     subject: toSubjectRef(subject),

@@ -40,6 +40,7 @@ import {
   type SkillFileNode,
   type SkillVersion,
 } from "@mcp-token-footprint/shared";
+import { dataPackStamp } from "../data-pack/stamp.js";
 import { httpError } from "../utils/errors.js";
 import { analyzeScanTools } from "./analyzer.js";
 import { analyzeSkillFiles } from "./skill-analyzer.js";
@@ -94,6 +95,8 @@ export function analyzeScan(ports: SecurityAnalyzerPorts, scanId: string): Secur
   const capped = capSecurityFindings(ordered);
 
   return {
+    // RM-38 D-DP8 — the pack whose rule registry and signature lists produced these findings.
+    ...dataPackStamp(),
     analyzerVersion: SECURITY_ANALYZER_VERSION,
     generatedAt: (ports.now?.() ?? new Date()).toISOString(),
     subject: {
@@ -230,6 +233,8 @@ export function analyzeSkillVersion(
   const capped = capSecurityFindings(ordered);
 
   return {
+    // RM-38 D-DP8 — the pack whose rule registry and signature lists produced these findings.
+    ...dataPackStamp(),
     analyzerVersion: SECURITY_ANALYZER_VERSION,
     generatedAt: (ports.now?.() ?? new Date()).toISOString(),
     subject: {

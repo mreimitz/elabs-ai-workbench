@@ -20,6 +20,7 @@ import {
   buildToolFindings,
   buildToolTestReport,
 } from "../compatibility/service.js";
+import { dataPackStamp } from "../data-pack/stamp.js";
 
 const SEVERITY_WEIGHT: Record<CompatibilitySeverity, number> = {
   blocker: 1000,
@@ -65,6 +66,8 @@ export function createServerReport(
   );
 
   return {
+    // RM-38 D-DP8 — the pack behind this document's compatibility verdicts and security section.
+    ...dataPackStamp(),
     generatedAt: new Date().toISOString(),
     server,
     scan,

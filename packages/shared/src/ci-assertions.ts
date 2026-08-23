@@ -524,6 +524,12 @@ export type AssertionReport = {
   counts: { total: number; passed: number; failed: number; skipped: number };
   /** False iff at least one result is `"fail"`. A report with only passes and skips is `true`. */
   passed: boolean;
+  /**
+   * RM-38 D-DP8 — the reference data pack the gate was evaluated against. A CI verdict that cannot
+   * name its data version is not reproducible: `no-new-security-findings` re-projects the security
+   * analyzer, whose whole rule table now ships in the pack.
+   */
+  dataPackVersion?: string;
 };
 
 /** The id of whichever subject kind this is — the scan id, or the suite-run id. */
@@ -590,7 +596,13 @@ export function renderAssertionMarkdown(report: AssertionReport): string {
     renderDeltaSentence(report),
     renderRulesTable(report),
     ...renderFailureDetails(report),
-    `<sub>mcpfp assertions v${report.assertionsVersion} · evaluated ${report.evaluatedAt}</sub>`,
+    // RM-38 D-DP8 — the footer names the reference data pack beside the assertions version, because
+    // a gate verdict is only reproducible if a reader can obtain the same rule tables and
+    // thresholds. Appended to the existing footer rather than given a section of its own: the
+    // document's shape is a contract (D-C15/WP 1.3's tests grep it).
+    `<sub>mcpfp assertions v${report.assertionsVersion}${
+      report.dataPackVersion === undefined ? "" : ` · data pack ${report.dataPackVersion}`
+    } · evaluated ${report.evaluatedAt}</sub>`,
   ];
   // One blank line between sections, one trailing newline: a comment body, not a document.
   return `${sections.join("\n\n")}\n`;

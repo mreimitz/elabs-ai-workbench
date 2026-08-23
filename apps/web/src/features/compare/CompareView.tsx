@@ -13,7 +13,7 @@ import type {
   ToolDefinitionDelta,
   ToolMatchBasis,
 } from "@mcp-token-footprint/shared";
-import { DEFAULT_COMPARE_THRESHOLD } from "@mcp-token-footprint/shared";
+import { defaultCompareThreshold } from "../../lib/pack-values";
 import { DataTable, FacetFilter, SearchInput } from "@elabs-ai/components-data";
 import {
   Alert,
@@ -163,7 +163,11 @@ export function CompareView(props: {
   const [serverB, setServerB] = useState("");
   const [scanAId, setScanAId] = useState("");
   const [scanBId, setScanBId] = useState("");
-  const [threshold, setThreshold] = useState(DEFAULT_COMPARE_THRESHOLD);
+  // RM-38 WP 3.2 — seeded from the reference data pack in force, ONCE, at mount. Deliberately NOT
+  // reactive: re-pointing it when a pack lands mid-session would yank a slider the operator had
+  // already moved, which is a worse defect than a stale default. `main.tsx` hydrates the store
+  // before the first render, so a cold load straight onto this route still seeds from the pack.
+  const [threshold, setThreshold] = useState(defaultCompareThreshold);
   const [tab, setTab] = useState("tools");
 
   const [comparison, setComparison] = useState<ScanComparison | null>(null);

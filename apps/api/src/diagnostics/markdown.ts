@@ -192,6 +192,50 @@ export function renderDiagnosticsMarkdown(bundle: DiagnosticsBundle): string {
     lines.push("");
   }
 
+  // ── Reference data pack ───────────────────────────────────────────────────────────────────────
+  lines.push("## Reference data pack", "");
+  lines.push(
+    "_Which external-fact and judgement-table pack this install is running. Versions, an origin and",
+    "a refusal **reason** only — the configured pack URL is not here (it appears in Environment by",
+    "name and status, like every other variable), and neither is a refusal's own sentence, because",
+    "those quote the URL that was checked. The full sentence is in Settings, on your screen._",
+    "",
+  );
+  lines.push("| Field | Value |", "| --- | --- |");
+  lines.push(`| Pack version | ${escapeMarkdownTable(bundle.dataPack.packVersion)} |`);
+  lines.push(`| Layout (schema) version | ${count(bundle.dataPack.schemaVersion)} |`);
+  lines.push(`| Data current as of | ${escapeMarkdownTable(bundle.dataPack.asOf)} |`);
+  lines.push(`| Loaded from | ${escapeMarkdownTable(bundle.dataPack.source)} |`);
+  lines.push(`| Files | ${count(bundle.dataPack.files)} |`);
+  lines.push(`| Security analyzer version | ${count(bundle.dataPack.analyzerVersion)} |`);
+  lines.push(`| Remote check configured | ${yesNo(bundle.dataPack.checkConfigured)} |`);
+  lines.push(
+    `| Last check | ${
+      bundle.dataPack.lastCheckStatus === null
+        ? "not run in this process"
+        : `${escapeMarkdownTable(bundle.dataPack.lastCheckStatus)} at ${escapeMarkdownTable(
+            bundle.dataPack.lastCheckedAt ?? "",
+          )}`
+    } |`,
+  );
+  // Stated as its own row, and worded so a `null` cannot be read as "the check succeeded". A
+  // refusal is not cleared by a later good check (see `data-pack/state.ts`), so its presence here
+  // means something out there is publishing a pack this build will not trust.
+  lines.push(
+    `| Last refusal | ${
+      bundle.dataPack.lastRefusal === null
+        ? "none recorded"
+        : `**${escapeMarkdownTable(bundle.dataPack.lastRefusal.reason)}** (${escapeMarkdownTable(
+            bundle.dataPack.lastRefusal.origin,
+          )}) at ${escapeMarkdownTable(bundle.dataPack.lastRefusal.at)}${
+            bundle.dataPack.lastRefusal.refusedVersion === null
+              ? ""
+              : `, refusing pack ${escapeMarkdownTable(bundle.dataPack.lastRefusal.refusedVersion)}`
+          }`
+    } |`,
+  );
+  lines.push("");
+
   // ── Feature state ─────────────────────────────────────────────────────────────────────────────
   lines.push("## Feature state", "");
   lines.push("| Feature | Enabled |", "| --- | --- |");

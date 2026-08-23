@@ -119,7 +119,15 @@ export function renderSecuritySection(section: SecurityPostureSection | undefine
   const { report } = section;
   const { counts, score } = report;
   lines.push(
-    `Score: ${score.value}/100 (${score.band}) · security analyzer version ${report.analyzerVersion} · subject ${cell(report.subject.id)} · analysed ${cell(report.generatedAt)}`,
+    // RM-38 D-DP8 — the pack version is appended to the EXISTING score line rather than given a
+    // line of its own, so D-SP25's fixed, greppable shape is unchanged: same heading, same score
+    // line, same count line, same table. The version is read off the report; this renderer reaches
+    // for no pack (it takes a payload and nothing else — see the header).
+    `Score: ${score.value}/100 (${score.band}) · security analyzer version ${report.analyzerVersion}${
+      report.dataPackVersion === undefined
+        ? ""
+        : ` · reference data pack ${cell(report.dataPackVersion)}`
+    } · subject ${cell(report.subject.id)} · analysed ${cell(report.generatedAt)}`,
     "",
     `Findings: ${counts.total} total · ${counts.error} error · ${counts.warning} warning · ${counts.info} info`,
     "",

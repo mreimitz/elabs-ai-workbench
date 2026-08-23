@@ -2731,3 +2731,17 @@ export const getDiagnosticsBundle = (signal?: AbortSignal): Promise<DiagnosticsB
 /** `GET /api/diagnostics/markdown` — the human-pasteable rendering of that same payload. */
 export const getDiagnosticsMarkdown = (signal?: AbortSignal): Promise<string> =>
   apiGetText("/api/diagnostics/markdown", signal);
+
+// ── Reference data pack (planning/Roadmap/RM-38-reference-data-pack/, WP 3.2) ────────────────────
+// Which pack is in force, what the last remote check did, and the `values` block `lib/pack-values.ts`
+// hydrates from. The two routes answer the SAME shape, so a refresh needs no follow-up read — and,
+// more to the point, cannot show a version and a check outcome captured at two different moments.
+import type { DataPackStatus } from "@mcp-token-footprint/shared";
+
+/** `GET /api/data-pack`. */
+export const getDataPackStatus = (signal?: AbortSignal): Promise<DataPackStatus> =>
+  apiGet<DataPackStatus>("/api/data-pack", signal);
+
+/** `POST /api/data-pack/refresh` — run the startup check on demand; answers the post-check status. */
+export const refreshDataPackStatus = (signal?: AbortSignal): Promise<DataPackStatus> =>
+  apiPost<DataPackStatus>("/api/data-pack/refresh", undefined, signal);
