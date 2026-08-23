@@ -16,9 +16,10 @@
 # the image and starts the container in Docker Desktop on http://localhost:8080.
 #
 # Optionally (--publish) it also creates a matching GitHub Release (tag v<version>) with those
-# same files attached, as the owner's versioned artifact vault. NOTE: this repo is PRIVATE, so
-# release assets are only downloadable by people who already have repo access — hand the offline
-# bundle to outside recipients directly.
+# same files attached, as the owner's versioned artifact vault. Who can download those assets
+# follows the repository's visibility, so the generated release notes ASK GitHub rather than
+# stating it here — a hardcoded answer goes stale the moment the repo is flipped, which is exactly
+# how this comment came to claim "PRIVATE" long after the repo had gone public (RM-38).
 #
 # Usage:
 #   scripts/release.sh [options]
@@ -178,6 +179,24 @@ if [ "$PUBLISH" = 1 ]; then
     NOTES_PATH="$NOTES_FILE"
   else
     NOTES_PATH="$REL_DIR/RELEASE_NOTES.md"
+    # Who can download these assets follows repository visibility. Ask GitHub for it instead of
+    # asserting it: this note used to say "private" as a fixed string and was simply wrong once the
+    # repo went public. `gh` is already required below, so this costs nothing extra.
+    REPO_VISIBILITY="$(gh repo view --json visibility --jq '.visibility' 2>/dev/null || true)"
+    case "$REPO_VISIBILITY" in
+      PUBLIC)
+        ACCESS_NOTE="> This repository is public, so anyone with the link can download these assets."
+        ;;
+      PRIVATE|INTERNAL)
+        ACCESS_NOTE="> This repository is ${REPO_VISIBILITY}, so these assets are only downloadable by people with repo
+> access. To share with someone **outside** the repo, hand them the files from the offline bundle
+> directly."
+        ;;
+      *)
+        ACCESS_NOTE="> Could not read this repository's visibility from GitHub, so who can download these assets is
+> unconfirmed — check it before sending the link on."
+        ;;
+    esac
     cat > "$NOTES_PATH" <<EOF
 # MCP Token Footprint $TAG
 
@@ -193,8 +212,7 @@ for \`$PLATFORM\`.
 
 Verify integrity with \`shasum -a 256 -c SHA256SUMS.txt\` (macOS/Linux).
 
-> This repository is private, so these assets are only downloadable by people with repo access.
-> To share with someone **outside** the repo, hand them the files from the offline bundle directly.
+$ACCESS_NOTE
 EOF
   fi
 

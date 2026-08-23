@@ -564,9 +564,11 @@ opens the browser. Re-running it with a newer bundle is an upgrade, not a reset.
 
 No secrets travel — `.dockerignore` excludes `.env*`, `data/` and `.git`, so each install generates
 its own encryption key on first boot. The image is cross-built to `linux/amd64` by default and built
-from committed `HEAD`. `scripts/release.sh --publish` additionally cuts a git tag and GitHub Release;
-because this repository is private, those assets are only downloadable by people who already have
-access, so an outside recipient gets the bundle handed over directly.
+from committed `HEAD`. `scripts/release.sh --publish` additionally cuts a git tag and GitHub Release.
+This repository is **public** (measured 2026-08-23), so those Release assets are downloadable by
+anyone with the link — the offline bundle exists for recipients with no network or no GitHub at all,
+not to work around access control. The generated release notes read the visibility from GitHub at
+publish time rather than stating it, so this no longer goes stale silently.
 
 **Not yet proven end to end:** no bundle has been built and started on a clean machine, and
 `run.ps1` has never been run on Windows.
