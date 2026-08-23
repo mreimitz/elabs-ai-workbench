@@ -20,6 +20,9 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  checkSecurityRuleLedger,
+  checkSecurityRuleSet,
+  checkSecuritySeverityBump,
   comparePackVersions,
   type DataPackRefusal,
 } from "@mcp-token-footprint/shared";
@@ -77,6 +80,53 @@ export function findBundledPackDir(
   return { dir: ok ? candidate : null, searched };
 }
 
+/**
+ * The three cross-pack security checks a CANDIDATE pack must pass before it can replace the one
+ * shipped in the image (RM-38 WP 2.1). Returns a refusal, or `null` when the candidate is safe.
+ *
+ * WHY THESE LIVE HERE AND NOT IN THE LOADER: each one compares a candidate against the BUNDLED
+ * registry, and `loadDataPack` only ever sees one pack. This function is the only place that holds
+ * both, which is also why WP 3.1's fetcher will call exactly this rather than growing its own copy.
+ *
+ * WHAT THEY ARE FOR, in one sentence: the `no-new-security-findings` CI gate identifies a finding by
+ * `(ruleId, anchor)` and decides pass or fail on a severity floor, so a fetched file that renamed an
+ * id or lowered a severity would change somebody else's pipeline verdict with no code change
+ * anywhere. D-DP6 and D-DP7 exist for exactly that, and they are load-time refusals rather than
+ * documentation.
+ *
+ * WHAT THEY CANNOT SEE: anything about the SIGNATURE lists. A pack that removes an injection phrase
+ * is not refused — that is a legitimate reason to publish a pack, and it is why the ledger and the
+ * severity rule guard the rule REGISTRY specifically rather than the pack as a whole.
+ */
+function checkCandidateSecurityRegistry(
+  candidate: ResolvedDataPack,
+  bundled: ResolvedDataPack,
+): DataPackRefusal | null {
+  const doc = candidate.documents.securityRulesDoc;
+  const bundledTables = bundled.documents.securityTables;
+
+  const ledger = checkSecurityRuleLedger(doc.idLedger, bundledTables.idLedger);
+  if (ledger) {
+    return { reason: "rule_ledger_not_append_only", detail: ledger.reason, paths: [SECURITY_RULES_PATH] };
+  }
+  const ruleSet = checkSecurityRuleSet(doc, bundledTables.rules);
+  if (ruleSet) {
+    return { reason: "schema_violation", detail: ruleSet.reason, paths: [SECURITY_RULES_PATH] };
+  }
+  const severities = checkSecuritySeverityBump(
+    doc,
+    bundledTables.rules,
+    bundledTables.analyzerVersion,
+  );
+  if (severities) {
+    return { reason: "schema_violation", detail: severities.reason, paths: [SECURITY_RULES_PATH] };
+  }
+  return null;
+}
+
+/** The one path every security-registry refusal names, so a log line points at the file to fix. */
+const SECURITY_RULES_PATH = "security/rules.json";
+
 export function resolveDataPack(args: {
   bundledDir: string | null;
   bundledSearched?: string[];
@@ -108,8 +158,16 @@ export function resolveDataPack(args: {
   const cacheDir = args.cacheDir ?? null;
   if (cacheDir && fs.exists(path.join(cacheDir, "manifest.json"))) {
     const cached = loadDataPack({ dir: cacheDir, origin: "cache", fs });
+    // RM-38 WP 2.1 — the security-registry checks come BEFORE the version comparison, on purpose. A
+    // pack that renames a rule id is refused whether or not it is newer, and reporting it as a
+    // version regression would name the wrong problem.
+    const registryRefusal = cached.ok
+      ? checkCandidateSecurityRegistry(cached.pack, bundled.pack)
+      : null;
     if (!cached.ok) {
       refusals.push({ ...cached.refusal, origin: "cache", dir: cacheDir });
+    } else if (registryRefusal !== null) {
+      refusals.push({ ...registryRefusal, origin: "cache", dir: cacheDir });
     } else {
       const order = comparePackVersions(
         cached.pack.manifest.packVersion,

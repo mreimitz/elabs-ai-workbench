@@ -22,6 +22,9 @@ import {
   DATA_PACK_CONTENT_DIRS,
   DATA_PACK_SCHEMA_VERSION,
   type DataPackManifest,
+  SECURITY_ANALYZER_VERSION,
+  type SecurityReport,
+  diffSecurityReports,
 } from "@mcp-token-footprint/shared";
 import type { DataPackDirEntry, DataPackFs } from "../src/data-pack/fs.js";
 import { loadDataPack } from "../src/data-pack/loader.js";
@@ -382,4 +385,179 @@ test("source code (tsx / tests) looks at the repository's data-pack/", () => {
   const srcModuleDir = path.join(REPO_ROOT, "apps", "api", "src", "data-pack");
   const found = findBundledPackDir(srcModuleDir);
   assert.equal(found.dir, REAL_PACK);
+});
+
+// --- RM-38 WP 2.1 · the security registry, refused at LOAD ---------------------------------------
+//
+// These are the WP's six teeth in their real wiring: not the pure functions (those are pinned in
+// `security-tables.test.ts`) but the loader and the resolver, driven over an in-memory pack tree
+// seeded from the real one. Every mutation below is re-sealed, so the digests are correct and the
+// refusal really is the security check firing rather than a byte mismatch in disguise.
+//
+// WHAT THEY CANNOT SEE: whether the BUNDLED pack is itself sound. Both checks compare a candidate
+// against the bundled registry, so a bundled pack that shipped with a renamed id would be the new
+// reference and nothing here would notice. That is what `security-tables.test.ts`'s hand-written
+// eighteen-id assertions and `packages/shared/src/security-posture.test.ts`'s FROZEN_RULES table
+// are for — they compare the bundled registry against literals a human typed.
+
+/** The smallest report the differ will look at, stamped with a chosen analyzer version. */
+function reportAtVersion(analyzerVersion: number): SecurityReport {
+  return {
+    analyzerVersion,
+    generatedAt: "2026-08-23T00:00:00.000Z",
+    subject: {
+      kind: "server",
+      id: "scan_1",
+      ownerId: "srv_1",
+      name: "Fixture server",
+      capturedAt: "2026-08-23T00:00:00.000Z",
+    },
+    findings: [],
+    counts: { error: 0, warning: 0, info: 0, total: 0 },
+    score: { value: 100, band: "clean", analyzerVersion },
+    truncated: false,
+  };
+}
+
+function securityRules(tree: PackTree): {
+  analyzerVersion: number;
+  idLedger: string[];
+  rules: { id: string; severity: string }[];
+} {
+  return getJson(tree, "security/rules.json");
+}
+
+/** A cache pack at 9.9.9 whose `security/rules.json` has been mutated and re-sealed. */
+function cacheWithRules(mutate: (doc: ReturnType<typeof securityRules>) => void): PackTree {
+  const cache = withPackVersion("9.9.9");
+  const doc = securityRules(cache);
+  mutate(doc);
+  setJson(cache, "security/rules.json", doc);
+  return reseal(cache);
+}
+
+test("teeth 1 (D-DP6) — a RENAMED rule id in the pack refuses the pack", () => {
+  const resolution = resolveWith(
+    cacheWithRules((doc) => {
+      doc.idLedger[0] = "poisoning.injection-phrasing-v2";
+      const first = doc.rules[0];
+      if (first) first.id = "poisoning.injection-phrasing-v2";
+    }),
+  );
+  assert.equal(resolution.pack.origin, "bundled", "a renamed id must never take effect");
+  assert.equal(resolution.refusals[0]?.reason, "rule_ledger_not_append_only");
+  assert.match(resolution.refusals[0]?.detail ?? "", /diverges at position 0/);
+});
+
+test("teeth 5 (D-DP6) — REMOVING an id from the ledger while keeping the rule refuses", () => {
+  const resolution = resolveWith(cacheWithRules((doc) => doc.idLedger.splice(3, 1)));
+  assert.equal(resolution.pack.origin, "bundled");
+  assert.equal(resolution.refusals[0]?.reason, "rule_ledger_not_append_only");
+  assert.match(resolution.refusals[0]?.detail ?? "", /append-only|diverges/);
+});
+
+test("D-DP6 — APPENDING to the ledger is fine, and the pack is accepted", () => {
+  // The negative control for the two above: the ledger is append-only, not frozen. Without this a
+  // check that refused every ledger would look identical from the outside.
+  const resolution = resolveWith(
+    cacheWithRules((doc) => doc.idLedger.push("poisoning.some-future-rule")),
+  );
+  assert.equal(resolution.pack.origin, "cache");
+  assert.deepEqual(resolution.refusals, []);
+});
+
+test("teeth 2 (D-DP7) — LOWERING a severity without bumping analyzerVersion refuses", () => {
+  const resolution = resolveWith(
+    cacheWithRules((doc) => {
+      const target = doc.rules.find((rule) => rule.severity === "error");
+      if (target) target.severity = "info";
+    }),
+  );
+  assert.equal(resolution.pack.origin, "bundled", "a silent re-score must never take effect");
+  assert.equal(resolution.refusals[0]?.reason, "schema_violation");
+  assert.match(resolution.refusals[0]?.detail ?? "", /analyzerVersion is 4, not greater/);
+});
+
+test("teeth 3 (D-DP7) — bump the version AND lower a severity, and the pack is ACCEPTED", () => {
+  const cache = cacheWithRules((doc) => {
+    doc.analyzerVersion = 5;
+    const target = doc.rules.find((rule) => rule.severity === "error");
+    if (target) target.severity = "info";
+  });
+  const resolution = resolveWith(cache);
+  assert.equal(resolution.pack.origin, "cache", "with the bump, the change is legitimate");
+  assert.deepEqual(resolution.refusals, []);
+  assert.equal(resolution.pack.documents.securityTables.analyzerVersion, 5);
+
+  // …and the second half of teeth 3: a report computed under the new version is NOT comparable to a
+  // baseline computed under the old one, which is exactly what the version exists to signal. The
+  // posture differ is the thing that refuses; asserted here against the two versions this pack
+  // straddles rather than by re-running a scan, because `diffSecurityReports` is the one definition
+  // of that refusal and it reads `analyzerVersion` alone.
+  const baseline = reportAtVersion(SECURITY_ANALYZER_VERSION);
+  const subject = reportAtVersion(resolution.pack.documents.securityTables.analyzerVersion);
+  assert.throws(
+    () => diffSecurityReports(baseline, subject),
+    /analyzer version|analyzerVersion/i,
+    "a diff across an analyzer-version change must be refused, not silently computed",
+  );
+});
+
+test("teeth 6 — a rule the analyzers do not implement refuses the pack", () => {
+  const resolution = resolveWith(
+    cacheWithRules((doc) => {
+      doc.idLedger.push("poisoning.invented-rule");
+      doc.rules.push({
+        id: "poisoning.invented-rule",
+        category: "poisoning",
+        subject: "server",
+        severity: "info",
+        title: "Invented",
+        rationale: "A rule no analyzer implements would be declared and never emitted, forever.",
+      } as never);
+    }),
+  );
+  assert.equal(resolution.pack.origin, "bundled");
+  assert.equal(resolution.refusals[0]?.reason, "schema_violation");
+  assert.match(resolution.refusals[0]?.detail ?? "", /no analyzer implements/);
+});
+
+test("teeth 4 (D-DP9) — a pattern beyond the source cap refuses at LOAD, not at scan", () => {
+  const cache = withPackVersion("9.9.9");
+  const signatures = getJson<Record<string, unknown>>(cache, "security/signatures.json");
+  // Nested quantifiers, and long: the classic catastrophic-backtracking shape, well past the cap.
+  signatures.secretParameterPattern = { source: `(${"a+".repeat(200)})+$`, flags: "" };
+  setJson(cache, "security/signatures.json", signatures);
+  const resolution = resolveWith(reseal(cache));
+
+  assert.equal(resolution.pack.origin, "bundled");
+  assert.equal(resolution.refusals[0]?.reason, "schema_violation");
+  assert.match(resolution.refusals[0]?.detail ?? "", /security\/signatures\.json/);
+  // The point of the whole decision: the failure is a VALUE at load, never a throw mid-scan. The
+  // bundled analyzer is still fully usable afterwards.
+  assert.ok(resolution.pack.documents.securityTables.signatures.secretParameterPattern.test("api_key"));
+});
+
+test("a pattern that does not COMPILE refuses the pack the same way", () => {
+  const cache = withPackVersion("9.9.9");
+  const signatures = getJson<Record<string, unknown>>(cache, "security/signatures.json");
+  signatures.openWorldPhrase = { source: "([unclosed", flags: "i" };
+  setJson(cache, "security/signatures.json", signatures);
+  const resolution = resolveWith(reseal(cache));
+  assert.equal(resolution.pack.origin, "bundled");
+  assert.equal(resolution.refusals[0]?.reason, "schema_violation");
+  assert.match(resolution.refusals[0]?.detail ?? "", /openWorldPhrase/);
+});
+
+test("the loader hands back COMPILED tables, not raw JSON", () => {
+  const result = load(clone());
+  assert.ok(result.ok);
+  if (!result.ok) return;
+  const tables = result.pack.documents.securityTables;
+  assert.equal(tables.analyzerVersion, SECURITY_ANALYZER_VERSION);
+  assert.equal(Object.keys(tables.rules).length, 18);
+  assert.ok(tables.signatures.injectionPatterns.length > 0);
+  for (const { pattern } of tables.signatures.injectionPatterns) {
+    assert.ok(pattern instanceof RegExp);
+  }
 });

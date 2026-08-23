@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Security signature tables",
+  "description": "data-pack/security/signatures.json — every ageing literal the two security analyzers match on. Regex arrives as { source, flags } and is compiled ONCE at pack load under a source-length cap (RM-38 D-DP9); a pattern that will not compile refuses the pack rather than throwing halfway through a scan. Each group carries an optional `note`: the 'what this deliberately does NOT match' review that makes the heuristic reviewable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "evidenceContextChars",
+    "maxDescriptionChars",
+    "schemaWalkMaxDepth",
+    "schemaWalkMaxNodes",
+    "injection",
+    "hiddenInstructions",
+    "invisibleCodePointRanges",
+    "destructiveVerbs",
+    "mutatingVerbsInName",
+    "mutatingVerbsInDescription",
+    "readVerbsInName",
+    "weakMutatingVerbsInName",
+    "weakVerbMaxLeadingOffset",
+    "openWorldNameTerms",
+    "openWorldDescriptionTerms",
+    "openWorldPhrase",
+    "secretParameterPattern",
+    "secretParameterMeasurementSuffixes",
+    "broadOauthScopePatterns",
+    "broadAllowedToolPatterns",
+    "skillScriptLangLabels",
+    "skillNetworkRefPattern"
+  ],
+  "$defs": {
+    "note": { "type": "string", "minLength": 1, "maxLength": 4000 },
+    "word": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "wordList": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/word" }
+    },
+    "regexSpec": {
+      "description": "A regular expression as data. `flags` excludes `g`: a shared g-flagged regex carries lastIndex between calls, which would make a report depend on what ran before it.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "flags"],
+      "properties": {
+        "source": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "flags": { "type": "string", "maxLength": 8, "pattern": "^[dimsuvy]*$" }
+      }
+    }
+  },
+  "properties": {
+    "note": { "$ref": "#/$defs/note" },
+    "evidenceContextChars": { "type": "integer", "minimum": 1, "maximum": 1000 },
+    "maxDescriptionChars": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "schemaWalkMaxDepth": { "type": "integer", "minimum": 1, "maximum": 100 },
+    "schemaWalkMaxNodes": { "type": "integer", "minimum": 1, "maximum": 1000000 },
+    "injection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phrases", "instructionObjects", "objectModifiers"],
+      "properties": {
+        "note": { "$ref": "#/$defs/note" },
+        "phrases": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 512,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["phrase"],
+            "properties": {
+              "phrase": { "$ref": "#/$defs/word" },
+              "requiresInstructionObject": { "type": "boolean", "const": true }
+            }
+          }
+        },
+        "instructionObjects": { "$ref": "#/$defs/wordList" },
+        "objectModifiers": { "$ref": "#/$defs/wordList" }
+      }
+    },
+    "hiddenInstructions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["htmlComment", "pseudoTag", "modelAddress"],
+      "properties": {
+        "note": { "$ref": "#/$defs/note" },
+        "htmlComment": { "$ref": "#/$defs/regexSpec" },
+        "pseudoTag": { "$ref": "#/$defs/regexSpec" },
+        "modelAddress": { "$ref": "#/$defs/regexSpec" }
+      }
+    },
+    "invisibleCodePointRanges": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "invisibleCodePointRangesNote": { "$ref": "#/$defs/note" },
+    "destructiveVerbs": { "$ref": "#/$defs/wordList" },
+    "destructiveVerbsNote": { "$ref": "#/$defs/note" },
+    "mutatingVerbsInName": { "$ref": "#/$defs/wordList" },
+    "mutatingVerbsInNameNote": { "$ref": "#/$defs/note" },
+    "mutatingVerbsInDescription": { "$ref": "#/$defs/wordList" },
+    "mutatingVerbsInDescriptionNote": { "$ref": "#/$defs/note" },
+    "readVerbsInName": { "$ref": "#/$defs/wordList" },
+    "weakMutatingVerbsInName": { "$ref": "#/$defs/wordList" },
+    "weakVerbMaxLeadingOffset": { "type": "integer", "minimum": 0, "maximum": 10 },
+    "openWorldNameTerms": { "$ref": "#/$defs/wordList" },
+    "openWorldDescriptionTerms": { "$ref": "#/$defs/wordList" },
+    "openWorldNote": { "$ref": "#/$defs/note" },
+    "openWorldPhrase": { "$ref": "#/$defs/regexSpec" },
+    "secretParameterPattern": { "$ref": "#/$defs/regexSpec" },
+    "secretParameterMeasurementSuffixes": { "$ref": "#/$defs/wordList" },
+    "secretParameterNote": { "$ref": "#/$defs/note" },
+    "broadOauthScopePatterns": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/regexSpec" }
+    },
+    "broadOauthScopeNote": { "$ref": "#/$defs/note" },
+    "broadAllowedToolPatterns": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 512,
+      "items": { "$ref": "#/$defs/regexSpec" }
+    },
+    "broadAllowedToolNote": { "$ref": "#/$defs/note" },
+    "skillScriptLangLabels": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/word" }
+    },
+    "skillNetworkRefPattern": { "$ref": "#/$defs/regexSpec" },
+    "skillNetworkRefNote": { "$ref": "#/$defs/note" }
+  }
+}

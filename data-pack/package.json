@@ -1,6 +1,6 @@
 {
   "name": "@mcp-token-footprint/data-pack",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "The reference data pack (RM-38): versioned, schema-validated external facts and judgement tables. The `version` field above IS the packVersion stamped into manifest.json — bump it when pack content changes.",

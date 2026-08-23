@@ -23,6 +23,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildAllModels, renderSharedGenerated, serializeAllModels } from "./build.js";
 import { buildManifest, serializeManifest } from "./manifest.js";
+import { renderSecurityGeneratedFromPack } from "./security.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // data-pack/build → data-pack → <repo root>. Two levels, not four: this file used to live at
@@ -35,7 +36,12 @@ const repoRoot = path.resolve(PACK_ROOT, "..");
 
 const modelsDir = path.join(PACK_ROOT, "models");
 const generatedDir = path.join(PACK_ROOT, "generated");
+const securityDir = path.join(PACK_ROOT, "security");
 const sharedGenerated = path.join(repoRoot, "packages/shared/src/model-data.generated.ts");
+const sharedSecurityGenerated = path.join(
+  repoRoot,
+  "packages/shared/src/security-tables.generated.ts",
+);
 
 /**
  * Prove the two path anchors before writing a single byte. A silently-wrong `repoRoot` would write
@@ -56,7 +62,7 @@ function assertAnchors(): void {
   if (nameOf(repoRoot) !== "mcp-token-footprint") {
     throw new Error(`repoRoot does not look like the repository root: ${repoRoot}`);
   }
-  for (const required of [modelsDir, path.dirname(sharedGenerated)]) {
+  for (const required of [modelsDir, securityDir, path.dirname(sharedGenerated)]) {
     if (!existsSync(required)) {
       throw new Error(`Expected directory is missing — wrong anchor? ${required}`);
     }
@@ -98,6 +104,9 @@ export function buildOutputs() {
   return {
     allModelsJson: serializeAllModels(all),
     sharedGeneratedTs: renderSharedGenerated(all),
+    // RM-38 WP 2.1 — the bundled snapshot of the pack's security tables: the fallback for the
+    // browser bundle, and the reference a candidate pack's ledger/severities are checked against.
+    sharedSecurityGeneratedTs: renderSecurityGeneratedFromPack(PACK_ROOT),
     asOf: all.as_of,
     modelCount: all.model_count,
     providerCount: all.provider_count,
@@ -109,6 +118,7 @@ export const OUTPUT_PATHS = {
   packAllModels: path.join(generatedDir, "all-models.json"),
   packManifest: path.join(PACK_ROOT, "manifest.json"),
   sharedGenerated,
+  sharedSecurityGenerated,
 };
 
 /** The pack version stamped into the manifest — `data-pack/package.json`'s `version`. */
@@ -151,6 +161,7 @@ function main() {
   mkdirSync(generatedDir, { recursive: true });
   writeFileSync(OUTPUT_PATHS.packAllModels, o.allModelsJson);
   writeFileSync(OUTPUT_PATHS.sharedGenerated, o.sharedGeneratedTs);
+  writeFileSync(OUTPUT_PATHS.sharedSecurityGenerated, o.sharedSecurityGeneratedTs);
 
   // The manifest digests what is on disk, so it is written LAST.
   const manifest = buildManifest({
@@ -165,7 +176,7 @@ function main() {
   console.log(
     `Built data pack ${manifest.packVersion} (schema ${manifest.schemaVersion}, as-of ${manifest.asOf}): ` +
       `${o.providerCount} providers, ${o.modelCount} models, ${manifest.files.length} pack files → ` +
-      "data-pack/{generated,manifest.json} + packages/shared/src/model-data.generated.ts",
+      "data-pack/{generated,manifest.json} + packages/shared/src/{model-data,security-tables}.generated.ts",
   );
 }
 

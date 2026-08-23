@@ -1,4 +1,11 @@
 import { z } from "zod";
+import {
+  BUNDLED_SECURITY_ANALYZER_VERSION,
+  BUNDLED_SECURITY_RULES,
+  BUNDLED_SECURITY_RULE_ID_LEDGER,
+  BUNDLED_SECURITY_SIGNATURES,
+} from "./security-tables.generated.js";
+import { getSecurityTables } from "./security-tables.js";
 
 // ==================================================================================================
 // Security posture contract — the finding/report shapes, the frozen rule-id registry, the score, and
@@ -12,10 +19,16 @@ import { z } from "zod";
 // consumed by both the API and the CLI) and `skill-security.ts` (a derivation lifted out of a React
 // component so both ends could reach it).
 //
-// It is PURE. `zod` is its only import: no `node:*`, no filesystem, no network, no database, no
-// module-level mutable state. That is exactly what lets the API, the web bundle and the CLI-facing
-// report share one copy of it, and it is why the analyzer's I/O lives in `apps/api` instead
-// (`.claude/rules/architecture.md` — a wire shape is declared in `packages/shared` first).
+// It is PURE: no `node:*`, no filesystem, no network, no database. That is exactly what lets the
+// API, the web bundle and the CLI-facing report share one copy of it, and it is why the analyzer's
+// I/O lives in `apps/api` instead (`.claude/rules/architecture.md` — a wire shape is declared in
+// `packages/shared` first).
+//
+// **RM-38 WP 2.1 widened its imports from `zod` alone to `zod` plus two sibling modules**, both of
+// which are themselves pure: `security-tables.generated.js` (data, importing nothing) and
+// `security-tables.js` (the seam that answers "which tables are in force"). The one piece of
+// module-level mutable state in the pair lives in `security-tables.ts`'s installed slot, filled once
+// at boot exactly as `installPricingResolver` fills its own — not here.
 //
 // Locked decisions this module encodes (planning/Roadmap/RM-20-security-posture/wp-1.1-contract.md):
 //
@@ -71,8 +84,14 @@ import { z } from "zod";
  * of the right token. A finding produced under version 3 may be absent under version 4, which is
  * exactly the "not comparable" condition this constant exists to make visible — a diff across the
  * change is refused rather than reporting an `error` as resolved that nobody fixed.
+ *
+ * **RM-38 WP 2.1 — the VALUE now comes from `data-pack/security/rules.json`.** This constant is the
+ * BUNDLED value, compiled in for consumers that cannot read a pack off disk (the browser bundle) and
+ * used as the reference D-DP7 checks a candidate pack against. The version a REPORT carries is
+ * {@link securityAnalyzerVersion}, which reads the pack in force — a pack may declare a greater
+ * version, and D-DP7 says it MUST if it changes any severity.
  */
-export const SECURITY_ANALYZER_VERSION = 4;
+export const SECURITY_ANALYZER_VERSION = BUNDLED_SECURITY_ANALYZER_VERSION;
 
 /**
  * Ordered worst-first, which is also the order findings are emitted in (D-SP6) and the order the
@@ -133,189 +152,196 @@ export type SecurityRule = {
  * a reasonable server or an honest skill may legitimately fail is `info`.
  *
  * Every id is frozen the moment it ships (D-SP2). The seven skill ids were ADDED here; not one of the
- * eleven above was renamed, re-pointed or re-severitied, which is why `SECURITY_ANALYZER_VERSION`
- * stays 1.
+ * eleven above was renamed, re-pointed or re-severitied.
+ *
+ * **RM-38 WP 2.1 — the eighteen now LIVE in `data-pack/security/rules.json`.** This binding is the
+ * BUNDLED snapshot of that file, rendered into `security-tables.generated.ts` by
+ * `pnpm build:data-pack` and checked against the pack source by a byte-comparing test. It stays
+ * exported from this module path deliberately: `apps/web/src/features/security/SecurityPanel.tsx`
+ * reads `Object.keys(SECURITY_RULES).length` and looks a rule's `title` up by id, and a browser
+ * bundle cannot read a pack off disk.
+ *
+ * **What a REPORT reads is {@link securityRuleRegistry}, not this.** A refreshed pack may carry
+ * different titles, rationales or (with a version bump, D-DP7) severities; `createSecurityFinding`
+ * therefore takes a finding's severity from the registry in force. The two agree exactly whenever no
+ * pack has been installed, which is every test process and the browser.
+ *
+ * The `satisfies` is what holds the generated data to the {@link SecurityRule} shape, and the
+ * generated module's `as const` is what keeps {@link SecurityRuleId} a literal union rather than
+ * collapsing it to `string`.
  */
-export const SECURITY_RULES = {
-  "poisoning.injection-phrasing": {
-    id: "poisoning.injection-phrasing",
-    category: "poisoning",
-    subject: "server",
-    severity: "error",
-    title: "Injection phrasing in description",
-    rationale:
-      "The description tells the model to override its own instructions or to keep something from you. A tool definition is prompt text the model reads verbatim, so this steers every session that loads the server — treat it as hostile until the vendor explains it.",
-  },
-  "poisoning.hidden-instructions": {
-    id: "poisoning.hidden-instructions",
-    category: "poisoning",
-    subject: "server",
-    severity: "error",
-    title: "Hidden instruction block",
-    rationale:
-      "The description carries a block addressed to the model rather than to you — a pseudo-tag or an HTML comment. Anything you do not see in the tool list but the model does is a channel for instructions you never approved.",
-  },
-  "poisoning.invisible-unicode": {
-    id: "poisoning.invisible-unicode",
-    category: "poisoning",
-    subject: "server",
-    severity: "error",
-    title: "Invisible characters in definition",
-    rationale:
-      "Zero-width, bidi-control or private-use characters sit in the tool's name or description, where they are invisible to you and meaningful to the model. A tool definition has no legitimate reason to carry them.",
-  },
-  "poisoning.oversized-description": {
-    id: "poisoning.oversized-description",
-    category: "poisoning",
-    subject: "server",
-    severity: "warning",
-    title: "Oversized tool description",
-    rationale:
-      "The description is long enough to hide a second instruction set or an embedded protocol in plain sight, and it costs that context on every single call. Read it end to end, then ask the vendor to trim it.",
-  },
-  "annotation.destructive-unmarked": {
-    id: "annotation.destructive-unmarked",
-    category: "annotation",
-    subject: "server",
-    severity: "warning",
-    title: "Destructive tool not marked",
-    rationale:
-      "The tool reads as deleting or overwriting something but carries no destructiveHint, so a host that confirms destructive calls will not confirm this one. Set the hint, or rename the tool if it is not actually destructive.",
-  },
-  "annotation.readonly-contradiction": {
-    id: "annotation.readonly-contradiction",
-    category: "annotation",
-    subject: "server",
-    severity: "error",
-    title: "readOnlyHint contradicts the tool",
-    rationale:
-      "The tool claims readOnlyHint: true while its name or description describes a mutation. A host that skips approval for read-only tools will run this one unattended, which makes the wrong hint worse than no hint at all.",
-  },
-  "annotation.open-world-unmarked": {
-    id: "annotation.open-world-unmarked",
-    category: "annotation",
-    subject: "server",
-    severity: "info",
-    title: "Open-world tool not marked",
-    rationale:
-      "The tool appears to reach the network or an external system without declaring openWorldHint, so a host cannot tell you its result came from outside your control. Adding the hint costs nothing and changes no behaviour.",
-  },
-  "schema.secret-shaped-parameter": {
-    id: "schema.secret-shaped-parameter",
-    category: "schema",
-    subject: "server",
-    severity: "warning",
-    title: "Credential-shaped parameter",
-    rationale:
-      "A free-text parameter is named like a credential, which invites the model to put a real secret into a tool argument that then gets logged, metered and replayed. Have the server read that credential from its own configuration instead.",
-  },
-  "schema.undescribed-parameter": {
-    id: "schema.undescribed-parameter",
-    category: "schema",
-    subject: "server",
-    severity: "info",
-    title: "Parameter has no description",
-    rationale:
-      "The parameter carries no description, so the model has to guess what belongs in it from the name alone. That is a correctness problem before it is a cost problem: guessed arguments mean failed calls and retries.",
-  },
-  "schema.unconstrained-additional-properties": {
-    id: "schema.unconstrained-additional-properties",
-    category: "schema",
-    subject: "server",
-    severity: "info",
-    title: "Unconstrained object schema",
-    rationale:
-      "The object schema neither forbids additional properties nor constrains them, so the model may invent fields the server silently accepts or silently drops. Setting additionalProperties: false makes the contract checkable.",
-  },
-  "oauth.broad-scope": {
-    id: "oauth.broad-scope",
-    category: "oauth",
-    subject: "server",
-    severity: "warning",
-    title: "Broad OAuth scope",
-    rationale:
-      "The stored OAuth grant asks for a wildcard or whole-account scope on a server used for one job. If that server is compromised the blast radius is everything the scope reaches — request the narrowest scope that still works.",
-  },
-
-  // ── The seven skill rules (WP 1.3) ──────────────────────────────────────────────────────────
-  //
-  // Added, never re-pointed: every id above keeps its exact meaning, so `SECURITY_ANALYZER_VERSION`
-  // stays 1 and no report that exists today changes (D-SP2).
-  //
-  // The severities are chosen against the same "severity inflation is a defect" line the server rules
-  // were: only the three checks that mean *this skill is steering the model behind your back* are
-  // `error`. Shipping scripts and linking out are `info`, because honest skills do both all day —
-  // a skill registry whose loudest signal fires on every normal skill is a registry nobody reads.
-
-  "skill-surface.injection-phrasing": {
-    id: "skill-surface.injection-phrasing",
-    category: "skill-surface",
-    subject: "skill",
-    severity: "error",
-    title: "Injection phrasing in SKILL.md",
-    rationale:
-      "The skill body tells the model to override its own instructions or to keep something from you. SKILL.md is loaded verbatim into context every time this skill is attached, so this steers every run that uses it — treat it as hostile until the author explains it.",
-  },
-  "skill-surface.hidden-instructions": {
-    id: "skill-surface.hidden-instructions",
-    category: "skill-surface",
-    subject: "skill",
-    severity: "error",
-    title: "Hidden instruction block in SKILL.md",
-    rationale:
-      "The skill body carries a block addressed to the model rather than to you — a pseudo-tag, or a comment that renders as nothing while the model still reads it. Anything you do not see in the rendered skill but the model does is a channel for instructions you never approved.",
-  },
-  "skill-surface.invisible-unicode": {
-    id: "skill-surface.invisible-unicode",
-    category: "skill-surface",
-    subject: "skill",
-    severity: "error",
-    title: "Invisible characters in the skill",
-    rationale:
-      "Zero-width, bidi-control or private-use characters sit in the skill body, its frontmatter or a file path, where they are invisible to you and meaningful to the model. Skill text that a human wrote has no legitimate reason to carry them.",
-  },
-  "skill-surface.credential-in-body": {
-    id: "skill-surface.credential-in-body",
-    category: "skill-surface",
-    subject: "skill",
-    severity: "warning",
-    title: "Credential-shaped value in SKILL.md",
-    rationale:
-      "The skill body contains a run of text shaped like a real API key or token. Skill content is stored, versioned, exported and read into model context, so a secret pasted into it has already travelled further than you meant — rotate it and read the value from configuration instead.",
-  },
-  "skill-surface.broad-allowed-tools": {
-    id: "skill-surface.broad-allowed-tools",
-    category: "skill-surface",
-    subject: "skill",
-    severity: "warning",
-    title: "Broad allowed-tools grant",
-    rationale:
-      "The frontmatter grants this skill a wildcard or an unrestricted command executor, so attaching it hands the model every tool rather than the few the skill needs. Narrow the grant to the specific tools and command prefixes the instructions actually use.",
-  },
-  "skill-surface.executable-scripts": {
-    id: "skill-surface.executable-scripts",
-    category: "skill-surface",
-    subject: "skill",
-    severity: "info",
-    title: "Skill ships executable scripts",
-    rationale:
-      "The version contains script files. This app never runs them — it stores and meters skill content — but an agent host that does will execute whatever they contain, so read them before you attach this skill anywhere that can.",
-  },
-  "skill-surface.network-reference": {
-    id: "skill-surface.network-reference",
-    category: "skill-surface",
-    subject: "skill",
-    severity: "info",
-    title: "SKILL.md references the network",
-    rationale:
-      "The skill body contains an absolute http(s) URL, which is a hint that following the instructions reaches outside your control. This is a lexical scan of the prose and not a taint analysis, so treat it as a place to look rather than as proof of a network call.",
-  },
-} as const satisfies Record<string, SecurityRule>;
+export const SECURITY_RULES = BUNDLED_SECURITY_RULES satisfies Record<string, SecurityRule>;
 
 export type SecurityRuleId = keyof typeof SECURITY_RULES;
 
 /** Declaration order, which is stable for string keys and therefore safe to depend on. */
 export const SECURITY_RULE_IDS = Object.keys(SECURITY_RULES) as SecurityRuleId[];
+
+// ── RM-38 · the registry IN FORCE, and the two refusals that guard it ───────────────────────────
+
+/**
+ * The rule registry a report is computed against: the resolved pack's, or — in every test process
+ * and in the browser, where nothing is installed — the bundled one above.
+ *
+ * This exists because a fetched pack may legitimately re-word a title or a rationale, and (with the
+ * analyzer-version bump D-DP7 demands) change a severity. A report that named the BUNDLED severity
+ * while the pack said something else would be a report that disagrees with the file it claims to
+ * have been computed from.
+ */
+export function securityRuleRegistry(): Readonly<Record<string, SecurityRule>> {
+  return getSecurityTables().rules;
+}
+
+/** The analyzer version a report should stamp itself with. See {@link SECURITY_ANALYZER_VERSION}. */
+export function securityAnalyzerVersion(): number {
+  return getSecurityTables().analyzerVersion;
+}
+
+/** `poisoning.oversized-description`'s ceiling, from the pack in force. */
+export function securityMaxDescriptionChars(): number {
+  return getSecurityTables().signatures.maxDescriptionChars;
+}
+
+/**
+ * `data-pack/security/rules.json`, as this build understands it.
+ *
+ * Declared here rather than in `security-tables.ts` because it needs the severity / subject /
+ * category tuples that live above, and importing them there would make the two modules depend on
+ * each other at module-EVALUATION time — the kind of cycle that works until the day an import order
+ * changes and a `const` is read inside its own temporal dead zone.
+ */
+export const SecurityRuleRegistryDocSchema = z
+  .object({
+    analyzerVersion: z.number().int().positive(),
+    idLedger: z.array(z.string().min(1)).min(1),
+    rules: z
+      .array(
+        z
+          .object({
+            id: z.string().regex(/^[a-z-]+\.[a-z0-9-]+$/),
+            category: z.enum(SECURITY_RULE_CATEGORIES),
+            subject: z.enum(SECURITY_SUBJECT_KINDS),
+            severity: z.enum(SECURITY_SEVERITIES),
+            title: z.string().min(1).max(120),
+            rationale: z.string().min(40).max(2000),
+            deprecated: z.literal(true).optional(),
+          })
+          .strict(),
+      )
+      .min(1),
+  })
+  .strict();
+
+export type SecurityRuleRegistryDoc = z.infer<typeof SecurityRuleRegistryDocSchema>;
+
+/** One reason a candidate rule document may not be trusted. Never a throw — a refusal is a value. */
+export type SecurityRegistryRefusal = { reason: string };
+
+/**
+ * **D-DP6 — the rule-id ledger is append-only.**
+ *
+ * A finding's identity to the `no-new-security-findings` CI gate is `(ruleId, anchor)`. Rename an id
+ * and the gate reads one finding resolved plus one new finding appearing — on somebody else's
+ * pipeline, from a file fetched over the network, with no code change anywhere. So a candidate pack
+ * must carry the bundled ledger **as a prefix**, in order: it may append, and it may do nothing
+ * else. Dropping an id, renaming one, or re-ordering two is refused.
+ *
+ * The prefix rule (rather than a subset rule) is deliberate. A subset check would accept a pack that
+ * shuffled the ledger, and the ledger's ORDER is the record of what shipped when.
+ */
+export function checkSecurityRuleLedger(
+  candidate: readonly string[],
+  bundled: readonly string[] = BUNDLED_SECURITY_RULE_ID_LEDGER,
+): SecurityRegistryRefusal | null {
+  if (candidate.length < bundled.length) {
+    const missing = bundled.filter((id) => !candidate.includes(id));
+    return {
+      reason:
+        `the rule-id ledger has ${candidate.length} entries against the bundled ${bundled.length}; ` +
+        `a ledger is append-only (D-DP6) and this one drops ${missing.length || "or renames"}` +
+        (missing.length > 0 ? `: ${missing.join(", ")}` : " an id"),
+    };
+  }
+  for (const [index, id] of bundled.entries()) {
+    if (candidate[index] !== id) {
+      return {
+        reason:
+          `the rule-id ledger diverges at position ${index}: the bundled ledger has "${id}", the pack has ` +
+          `"${candidate[index] ?? "<nothing>"}". A ledger is append-only (D-DP6) — an id is never renamed, ` +
+          "re-pointed or re-ordered, because CI compares finding sets by rule id across releases.",
+      };
+    }
+  }
+  const duplicates = candidate.filter((id, index) => candidate.indexOf(id) !== index);
+  if (duplicates.length > 0) {
+    return { reason: `the rule-id ledger repeats ${[...new Set(duplicates)].join(", ")}` };
+  }
+  return null;
+}
+
+/**
+ * **D-DP7 — a severity change requires an analyzer-version bump.**
+ *
+ * A severity decides whether the CI gate's floor is crossed. Lowering one silently re-scores every
+ * report and quietly re-verdicts every pipeline reading that floor. Raising one does the reverse.
+ * Either way the reports on the two sides of the change are not comparable, and the ONE mechanism
+ * this codebase already has for saying so is `analyzerVersion` — which the posture diff refuses to
+ * compare across. So a pack that changes any severity must declare a GREATER `analyzerVersion`, and
+ * the change becomes visible instead of silent.
+ *
+ * A rule the bundled registry does not know is not this function's business; the rule-set equality
+ * check owns that.
+ */
+export function checkSecuritySeverityBump(
+  candidate: SecurityRuleRegistryDoc,
+  bundledRules: Readonly<Record<string, SecurityRule>> = SECURITY_RULES,
+  bundledAnalyzerVersion: number = SECURITY_ANALYZER_VERSION,
+): SecurityRegistryRefusal | null {
+  const changed: string[] = [];
+  for (const rule of candidate.rules) {
+    const known = bundledRules[rule.id];
+    if (known && known.severity !== rule.severity) {
+      changed.push(`${rule.id} (${known.severity} → ${rule.severity})`);
+    }
+  }
+  if (changed.length === 0) return null;
+  if (candidate.analyzerVersion > bundledAnalyzerVersion) return null;
+  return {
+    reason:
+      `${changed.length} rule severit${changed.length === 1 ? "y differs" : "ies differ"} from the bundled registry ` +
+      `— ${changed.join("; ")} — but analyzerVersion is ${candidate.analyzerVersion}, not greater than the ` +
+      `bundled ${bundledAnalyzerVersion}. A severity decides a CI gate's verdict, so changing one must bump ` +
+      "the version that makes two reports incomparable (D-DP7).",
+  };
+}
+
+/**
+ * **The rule SET a pack declares must be exactly the set the analyzers implement, both ways.**
+ *
+ * The analyzers are code; a fetched pack cannot add a rule to them, and a rule the pack drops would
+ * leave `createSecurityFinding` with no severity to read. Since the bundled registry is held equal
+ * to the analyzers' emit sets by test, comparing a candidate against the bundled set is the runtime
+ * face of that same equality.
+ */
+export function checkSecurityRuleSet(
+  candidate: SecurityRuleRegistryDoc,
+  bundledRules: Readonly<Record<string, SecurityRule>> = SECURITY_RULES,
+): SecurityRegistryRefusal | null {
+  const declared = new Set(candidate.rules.map((rule) => rule.id));
+  if (declared.size !== candidate.rules.length) {
+    return { reason: "the pack declares the same rule id twice" };
+  }
+  const known = new Set(Object.keys(bundledRules));
+  const added = [...declared].filter((id) => !known.has(id));
+  const missing = [...known].filter((id) => !declared.has(id));
+  if (added.length === 0 && missing.length === 0) return null;
+  const parts: string[] = [];
+  if (added.length > 0) parts.push(`declares ${added.length} rule(s) no analyzer implements (${added.join(", ")})`);
+  if (missing.length > 0) parts.push(`omits ${missing.length} rule(s) an analyzer emits (${missing.join(", ")})`);
+  return {
+    reason: `the pack's rule set does not match this build's analyzers: it ${parts.join(", and ")}.`,
+  };
+}
 
 // ── The finding + report shapes ─────────────────────────────────────────────────────────────────
 
@@ -421,7 +447,7 @@ export const SECURITY_REDACTION_MARKER = "«redacted»";
  * tab (WP 2.1) has to tell an operator what the threshold WAS, and a UI that re-types the number is a
  * UI that eventually disagrees with the analyzer.
  */
-export const SECURITY_MAX_DESCRIPTION_CHARS = 2000;
+export const SECURITY_MAX_DESCRIPTION_CHARS = BUNDLED_SECURITY_SIGNATURES.maxDescriptionChars;
 
 /**
  * WP 1.2 — how many findings ONE rule may emit for ONE tool before it stops and says how many more it
@@ -526,7 +552,7 @@ export function computeSecurityScore(findings: readonly SecurityFinding[]): Secu
   const band =
     SECURITY_SCORE_BANDS.find((candidate) => value >= SECURITY_SCORE_BAND_MINIMUM[candidate]) ??
     "high";
-  return { value, band, analyzerVersion: SECURITY_ANALYZER_VERSION };
+  return { value, band, analyzerVersion: securityAnalyzerVersion() };
 }
 
 // ── D-SP6 · the one total order ─────────────────────────────────────────────────────────────────
@@ -858,7 +884,11 @@ export function createSecurityFinding(input: {
   message: string;
   evidence?: { raw: string; offset?: number };
 }): SecurityFinding {
-  const severity: SecuritySeverity = SECURITY_RULES[input.ruleId].severity;
+  // The registry IN FORCE, not the bundled constant: a pack that changed a severity (and bumped
+  // `analyzerVersion` to say so, D-DP7) must change what a finding carries, or the report would
+  // disagree with the file it claims to have been computed from.
+  const severity: SecuritySeverity =
+    securityRuleRegistry()[input.ruleId]?.severity ?? SECURITY_RULES[input.ruleId].severity;
   const base = {
     ruleId: input.ruleId,
     severity,

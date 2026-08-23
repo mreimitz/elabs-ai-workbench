@@ -29,6 +29,7 @@ const CONTENT_DIRS = [
   "models/open-weight",
   "models/saas",
   "schema",
+  "security",
 ];
 
 const here = path.dirname(fileURLToPath(import.meta.url));

@@ -1,0 +1,169 @@
+{
+  "analyzerVersion": 4,
+  "idLedger": [
+    "poisoning.injection-phrasing",
+    "poisoning.hidden-instructions",
+    "poisoning.invisible-unicode",
+    "poisoning.oversized-description",
+    "annotation.destructive-unmarked",
+    "annotation.readonly-contradiction",
+    "annotation.open-world-unmarked",
+    "schema.secret-shaped-parameter",
+    "schema.undescribed-parameter",
+    "schema.unconstrained-additional-properties",
+    "oauth.broad-scope",
+    "skill-surface.injection-phrasing",
+    "skill-surface.hidden-instructions",
+    "skill-surface.invisible-unicode",
+    "skill-surface.credential-in-body",
+    "skill-surface.broad-allowed-tools",
+    "skill-surface.executable-scripts",
+    "skill-surface.network-reference"
+  ],
+  "rules": [
+    {
+      "id": "poisoning.injection-phrasing",
+      "category": "poisoning",
+      "subject": "server",
+      "severity": "error",
+      "title": "Injection phrasing in description",
+      "rationale": "The description tells the model to override its own instructions or to keep something from you. A tool definition is prompt text the model reads verbatim, so this steers every session that loads the server — treat it as hostile until the vendor explains it."
+    },
+    {
+      "id": "poisoning.hidden-instructions",
+      "category": "poisoning",
+      "subject": "server",
+      "severity": "error",
+      "title": "Hidden instruction block",
+      "rationale": "The description carries a block addressed to the model rather than to you — a pseudo-tag or an HTML comment. Anything you do not see in the tool list but the model does is a channel for instructions you never approved."
+    },
+    {
+      "id": "poisoning.invisible-unicode",
+      "category": "poisoning",
+      "subject": "server",
+      "severity": "error",
+      "title": "Invisible characters in definition",
+      "rationale": "Zero-width, bidi-control or private-use characters sit in the tool's name or description, where they are invisible to you and meaningful to the model. A tool definition has no legitimate reason to carry them."
+    },
+    {
+      "id": "poisoning.oversized-description",
+      "category": "poisoning",
+      "subject": "server",
+      "severity": "warning",
+      "title": "Oversized tool description",
+      "rationale": "The description is long enough to hide a second instruction set or an embedded protocol in plain sight, and it costs that context on every single call. Read it end to end, then ask the vendor to trim it."
+    },
+    {
+      "id": "annotation.destructive-unmarked",
+      "category": "annotation",
+      "subject": "server",
+      "severity": "warning",
+      "title": "Destructive tool not marked",
+      "rationale": "The tool reads as deleting or overwriting something but carries no destructiveHint, so a host that confirms destructive calls will not confirm this one. Set the hint, or rename the tool if it is not actually destructive."
+    },
+    {
+      "id": "annotation.readonly-contradiction",
+      "category": "annotation",
+      "subject": "server",
+      "severity": "error",
+      "title": "readOnlyHint contradicts the tool",
+      "rationale": "The tool claims readOnlyHint: true while its name or description describes a mutation. A host that skips approval for read-only tools will run this one unattended, which makes the wrong hint worse than no hint at all."
+    },
+    {
+      "id": "annotation.open-world-unmarked",
+      "category": "annotation",
+      "subject": "server",
+      "severity": "info",
+      "title": "Open-world tool not marked",
+      "rationale": "The tool appears to reach the network or an external system without declaring openWorldHint, so a host cannot tell you its result came from outside your control. Adding the hint costs nothing and changes no behaviour."
+    },
+    {
+      "id": "schema.secret-shaped-parameter",
+      "category": "schema",
+      "subject": "server",
+      "severity": "warning",
+      "title": "Credential-shaped parameter",
+      "rationale": "A free-text parameter is named like a credential, which invites the model to put a real secret into a tool argument that then gets logged, metered and replayed. Have the server read that credential from its own configuration instead."
+    },
+    {
+      "id": "schema.undescribed-parameter",
+      "category": "schema",
+      "subject": "server",
+      "severity": "info",
+      "title": "Parameter has no description",
+      "rationale": "The parameter carries no description, so the model has to guess what belongs in it from the name alone. That is a correctness problem before it is a cost problem: guessed arguments mean failed calls and retries."
+    },
+    {
+      "id": "schema.unconstrained-additional-properties",
+      "category": "schema",
+      "subject": "server",
+      "severity": "info",
+      "title": "Unconstrained object schema",
+      "rationale": "The object schema neither forbids additional properties nor constrains them, so the model may invent fields the server silently accepts or silently drops. Setting additionalProperties: false makes the contract checkable."
+    },
+    {
+      "id": "oauth.broad-scope",
+      "category": "oauth",
+      "subject": "server",
+      "severity": "warning",
+      "title": "Broad OAuth scope",
+      "rationale": "The stored OAuth grant asks for a wildcard or whole-account scope on a server used for one job. If that server is compromised the blast radius is everything the scope reaches — request the narrowest scope that still works."
+    },
+    {
+      "id": "skill-surface.injection-phrasing",
+      "category": "skill-surface",
+      "subject": "skill",
+      "severity": "error",
+      "title": "Injection phrasing in SKILL.md",
+      "rationale": "The skill body tells the model to override its own instructions or to keep something from you. SKILL.md is loaded verbatim into context every time this skill is attached, so this steers every run that uses it — treat it as hostile until the author explains it."
+    },
+    {
+      "id": "skill-surface.hidden-instructions",
+      "category": "skill-surface",
+      "subject": "skill",
+      "severity": "error",
+      "title": "Hidden instruction block in SKILL.md",
+      "rationale": "The skill body carries a block addressed to the model rather than to you — a pseudo-tag, or a comment that renders as nothing while the model still reads it. Anything you do not see in the rendered skill but the model does is a channel for instructions you never approved."
+    },
+    {
+      "id": "skill-surface.invisible-unicode",
+      "category": "skill-surface",
+      "subject": "skill",
+      "severity": "error",
+      "title": "Invisible characters in the skill",
+      "rationale": "Zero-width, bidi-control or private-use characters sit in the skill body, its frontmatter or a file path, where they are invisible to you and meaningful to the model. Skill text that a human wrote has no legitimate reason to carry them."
+    },
+    {
+      "id": "skill-surface.credential-in-body",
+      "category": "skill-surface",
+      "subject": "skill",
+      "severity": "warning",
+      "title": "Credential-shaped value in SKILL.md",
+      "rationale": "The skill body contains a run of text shaped like a real API key or token. Skill content is stored, versioned, exported and read into model context, so a secret pasted into it has already travelled further than you meant — rotate it and read the value from configuration instead."
+    },
+    {
+      "id": "skill-surface.broad-allowed-tools",
+      "category": "skill-surface",
+      "subject": "skill",
+      "severity": "warning",
+      "title": "Broad allowed-tools grant",
+      "rationale": "The frontmatter grants this skill a wildcard or an unrestricted command executor, so attaching it hands the model every tool rather than the few the skill needs. Narrow the grant to the specific tools and command prefixes the instructions actually use."
+    },
+    {
+      "id": "skill-surface.executable-scripts",
+      "category": "skill-surface",
+      "subject": "skill",
+      "severity": "info",
+      "title": "Skill ships executable scripts",
+      "rationale": "The version contains script files. This app never runs them — it stores and meters skill content — but an agent host that does will execute whatever they contain, so read them before you attach this skill anywhere that can."
+    },
+    {
+      "id": "skill-surface.network-reference",
+      "category": "skill-surface",
+      "subject": "skill",
+      "severity": "info",
+      "title": "SKILL.md references the network",
+      "rationale": "The skill body contains an absolute http(s) URL, which is a hint that following the instructions reaches outside your control. This is a lexical scan of the prose and not a taint analysis, so treat it as a place to look rather than as proof of a network call."
+    }
+  ]
+}

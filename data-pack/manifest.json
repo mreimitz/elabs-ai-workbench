@@ -1,5 +1,5 @@
 {
-  "packVersion": "1.0.0",
+  "packVersion": "1.1.0",
   "schemaVersion": 1,
   "asOf": "2026-08-19",
   "generator": "data-pack/build/build-cli.ts",
@@ -90,9 +90,29 @@
       "bytes": 7845
     },
     {
+      "path": "schema/security-rules.schema.json",
+      "sha256": "c5696304a5a528d14d54ddac954ebe0fe92bb49ba1a0b473f024ad2174bb3b8a",
+      "bytes": 2682
+    },
+    {
+      "path": "schema/security-signatures.schema.json",
+      "sha256": "bdb4d59d87930bafff60802c660a8208e31ebca84b566d82269720fe8c0c7e68",
+      "bytes": 5575
+    },
+    {
       "path": "schema/test-catalog.schema.json",
       "sha256": "f9934d11a62346b283671c3f6d1e25a44b2db282b1c6c58f7a2fcd94e3e9c34b",
       "bytes": 11480
+    },
+    {
+      "path": "security/rules.json",
+      "sha256": "79cf91a9b3856933a5b845fc59cd9ec84298726b1bd2d97dcc63199008827e0b",
+      "bytes": 8861
+    },
+    {
+      "path": "security/signatures.json",
+      "sha256": "d2b6a0868d86a82606c293c43de4770a2c2ec87bec5473925107a34b88bc8b8e",
+      "bytes": 13148
     }
   ]
 }

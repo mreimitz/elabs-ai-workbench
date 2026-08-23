@@ -1,7 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import fastifyStatic from "@fastify/static";
-import { type GraderId, type HealthPayload } from "@mcp-token-footprint/shared";
+import {
+  type GraderId,
+  type HealthPayload,
+  installSecurityTables,
+} from "@mcp-token-footprint/shared";
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { registerAdvisorRoutes } from "./advisor/routes.js";
@@ -207,6 +211,12 @@ const db = openDatabase();
 // throws: it is refused as a value and the bundled pack keeps serving (D-DP4).
 const dataPackResolution = resolveDataPackFromDisk();
 installDataPackSource(dataPackResolution.pack);
+// RM-38 WP 2.1 — the security rule registry and every signature list ride in the same pack, and the
+// two analyzers read them through `packages/shared`'s own slot rather than reaching for the pack.
+// Installed here, in the same breath, so a report computed after boot is computed against the pack
+// this log line names. The tables were already parsed and every pattern already compiled by
+// `loadDataPack`; this is one assignment (D-DP2).
+installSecurityTables(dataPackResolution.pack.documents.securityTables);
 server.log.info(
   {
     packVersion: dataPackResolution.pack.manifest.packVersion,
