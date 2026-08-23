@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T03:30:00Z"
+timestamp: "2026-08-23T05:05:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -396,10 +396,117 @@ the source rather than leaving a copy behind.
    `build:data-pack`; `packages/shared/src/index.ts` needed RM-37's `demo-seed.js` *and* this item's
    `data-pack.js`. Taking a side is the default that quietly deletes a work package's public surface.
 
-## The web "flake" has names, and they are not random — 2026-08-23
+## A guard a COMMENT can satisfy — found in WP 1.2's own merged code, 2026-08-23
 
-Pooled with RM-37, which saw it twice independently tonight. **Four sightings, all the same shape:
-files fail in a FULL parallel run and pass in isolation.**
+RM-37 hit this while repairing a guard of their own and passed it on. Probed on **this item's** code,
+on `main`, and it was live:
+
+`data-pack-seam.test.ts`'s shipping guard read `copy-data-pack.mjs` **un-stripped** and asserted
+`/manifest\.json/`. Deleting the two lines that actually copy the manifest turned it red — but only
+because that string happened to appear nowhere in a comment. **Adding one comment line — "this script
+also copies manifest.json" — with the copying code still deleted made the test GREEN.** The manifest
+would have stopped shipping and a passing gate would have said nothing.
+
+Fixed on `main`: that scan and the `index.ts` boot-order scan now strip comments before matching, and
+both carry the probe result in the test file. Re-probed after the fix — same mutation, now red.
+`# pass 3886 # fail 0` restored.
+
+**The general form, which is why it is recorded here and not just fixed:** a guard that reads
+un-stripped source asserts *"someone wrote this string"*, never *"the code does this"* — and
+documentation is the thing most likely to keep the string alive after the code is gone. It is the
+hash-ledger error again in a new costume: precisely right about the wrong quantity. **This matters
+most exactly when tables move between files**, which is what WP 2.1 is doing right now — a comment
+describing the old location routinely outlives it.
+
+### `data-pack/manifest.json` is a generated file two workstreams will both rewrite — 2026-08-23
+
+RM-37 WP 2.9 edits `data-pack/compatibility/test-catalog.json` as its authoring path and runs
+`pnpm build:data-pack`. RM-38 WP 2.1 adds `security/rules.json` + `security/signatures.json` to the
+pack and will run the same build. **Both regenerate `manifest.json`, which carries a SHA-256 and byte
+length per file — 18 today — and is stamped by the generator.**
+
+So the two branches will collide on a **generated** file whose contents encode *the other side's data
+too*. A textual merge of it is meaningless: resolving by hand produces a manifest that matches
+neither tree, and the digest test then fails for a reason that looks like corruption.
+
+**The rule, for whoever merges first:** never hand-merge `manifest.json`. Take **either** side wholesale,
+then run `pnpm build:data-pack` and commit what it writes. The manifest is derived; the pack files are
+the truth. Same for `data-pack/generated/all-models.json`.
+
+This is the third face of "both, not one" — the first two were two work packages needing both halves of
+a hand-written file; this is a **derived** file where neither side is right and the fix is to re-derive.
+
+### The second audit question, and what it finds in RM-38 — 2026-08-23
+
+RM-37 turned an aside of mine into a second audit question, and it finds a **different** set from the
+first: **"is this check the only thing standing behind something that has never run?"** The two barely
+overlap — a presence check can be perfectly sound and still be the sole evidence for an artifact
+nobody has executed. Its degenerate form is the comment-satisfies-grep case: **the verification and the
+thing verified share an author and an assumption, so the check cannot contradict what it checks.**
+
+**Applied honestly to RM-38, it finds three, none of them fixed:**
+
+1. **The real Docker image has never been built for this item.** WP 1.2 verified `node apps/api/dist`
+   boots and resolves a pack, and WP 1.1 ran a probe image confirming `data-pack/` enters the build
+   context — but the `Dockerfile` never names `data-pack-bundled`, no workflow runs `docker build`, and
+   the only workflow on `main` is `mcp-self-scan.yml`. So "the pack reaches the runtime image" rests on
+   two partial checks plus reasoning about a `COPY --from=build /app/apps/api/dist`. **Assigned to WP
+   3.3**, which already owns offline verification — it must actually build and boot the image, not
+   reason about it.
+2. **The 279-line JSON Schema validator is self-authored and validates schemas this repo also
+   authors.** If a schema states the wrong constraint, the validator agrees with it. It throws on an
+   unimplemented keyword, which is the right failure direction, but nothing independent checks that a
+   schema means what it claims.
+3. **WP 3.1's fetcher will land in exactly RM-37's token-counter shape unless it is designed against
+   it.** Its remote behaviour will be exercised through an injected `fetch` seam — a stub written by the
+   same agent that writes the assumption it encodes. Every refusal will pass against a stub built to
+   produce that refusal. **Recorded now, before the WP is dispatched:** at least one refusal must be
+   proved against a real HTTP server (a throwaway `node:http` listener serving a corrupt manifest is
+   enough) rather than a stub, or the five D-DP5 refusals are self-fulfilling.
+
+**And it re-frames a hole this ledger already named.** WP 2.1's byte-identity acceptance is a check
+whose **fixtures move with the thing they verify** — an id renamed in both the registry and the
+fixtures passes silently. That is the same family, not a separate quirk, and the mitigation stays what
+it was: treat ids as frozen rather than expect the tests to notice.
+
+### The audit that follows, and RM-37's narrowing of it
+
+RM-37 applied the two-step probe to their own guards and found a **fourth** hole, worse-placed than
+mine: a source scan over `scripts/release/run.ps1`, a file that has **never been executed on Windows**
+because nobody in that item has a Windows machine. So the assertion was not one of several
+verifications behind that file — it was the **only** one, and a comment could satisfy it. My manifest
+case at least had a boot failure waiting downstream.
+
+**Their narrowing, which shrinks the audit surface a lot:** only a **presence** assertion
+(`assert.ok(src.includes(x))`, `assert.match(src, /x/)`) is vulnerable. A **ban** — assert the string
+is absent — fails the *safe* way: a comment containing the banned word causes a false **red**, which is
+annoying, not dangerous. So the audit question is not "does this guard read source" but **"does it
+assert something is THERE"**.
+
+**RM-38 audited on that basis. Result: exactly one hole, the one already fixed.** The other presence
+assertions in this item's tests are safe by construction and were checked rather than assumed —
+`data-pack.test.ts:99/201/383` assert over **file listings**, not source text;
+`data-pack-seam.test.ts:199` matches `package.json`'s `scripts.build`, and **JSON has no comments**;
+`data-pack-loader.test.ts:164` matches a refusal *detail string* off a result object, not a file.
+
+**A hazard in this session's own validation method, from RM-37:** one of their probe invocations never
+ran at all — wrong working directory, `grep` matched nothing — and **empty output reads exactly like a
+clean pass**. This session has repeatedly validated by piping a test run through `grep -E "^not ok"`
+and reading silence as success. Silence is also what a command that failed to start produces.
+`git diff --stat` confirms the *mutation* applied; an exit code or a baseline count confirms the
+*test actually executed*. Both halves, or neither is evidence.
+
+## The web "flake" — evidence DOWNGRADED, 2026-08-23
+
+**Corrected the same night by RM-37, and the correction cuts the evidence in half.** RM-37's own
+full-gate reds turned out to be **two real, deterministic defects** — a source-scanning guardrail that
+cannot be load-sensitive by construction, and a test rendering a view without the shell its button
+moved into. Both fail in isolation, repeatedly; both are fixed; the re-run is green **in parallel**
+(415 files / 4771 passed, EXIT=0). That run is a **control, not a fourth sighting.**
+
+So the standing evidence is **two sightings, both confirmed-by-agent-report and neither reproduced by
+an orchestrator**, plus my own two-file failure whose names I never captured. "The cluster is
+hub/assistant/watch dialogs" is **not established** and should not be repeated as though it were.
 
 | Sighting | Failed | Named | Alone |
 | --- | --- | --- | --- |
