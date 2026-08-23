@@ -22,6 +22,35 @@ model list would be a worse answer than none.
 Nothing a user sees changed: the heatmap, the compatibility test report, the model context limits
 and the priced-model set are byte-for-byte what they were, checked before and after.
 
+**The judgement numbers moved in too — the ones that decide what the app tells you.** Every
+threshold the advisor rules use (what counts as a bloated description, when two tools are "the same
+tool", when wasted definition tokens are worth calling *high*), the skill-quality ceilings and score
+weights, the compare and loop thresholds, and the token budget the app holds its own MCP server to,
+are all maintained in the data pack now rather than written into the code. So are the hand-kept
+model layers: the context windows and list prices for models the research dataset does not cover.
+
+Two things about that are worth stating plainly.
+
+**A recommendation can no longer misdescribe itself.** The advisor explains its own reasoning in
+prose — *"'bloat' means a description is at least 50% of its own tool's definition tokens and at
+least 100 tokens, measured over the 5 largest tools"* — and those sentences used to quote numbers
+written separately from the ones the rule actually applied. They now read the same resolved values,
+so changing a threshold changes the finding **and** the sentence explaining it, together.
+
+**A bad pack still cannot make a model look free or limitless.** Context windows and prices keep a
+copy compiled into the build, and a pack layers on top of it rather than replacing it. An unknown
+context window silently switches off a safety check; an unpriced model makes the app *refuse* a
+cost-capped run and treat planned spend as $0. Neither is something a downloaded file should be able
+to cause. That compiled copy is generated from the same pack files, so there is still exactly one
+place anyone edits.
+
+One duplicate is gone: the waste-share bands that decide a trim's severity were written out twice,
+identically, in two different rule files — the same shape as a bug this project has been bitten by
+before. They are one entry, and a test fails if a second copy reappears.
+
+Again, nothing a user sees changed: an advisor report over fixed inputs, a skill quality report and
+a compatibility heatmap all hash identically before and after.
+
 ## Unreleased — the guide you shipped is readable inside the app you shipped
 
 **The user guide now lives in the product.** Open **`/docs`** and you get the same 22 subjects that

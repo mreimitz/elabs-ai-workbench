@@ -607,8 +607,10 @@ apps/
 packages/
   shared/    the API contract — types.ts, schemas.ts (zod), constants.ts
 data-pack/   the reference data the app checks servers and models against — per-provider model
-             entries, protocol/client limits, the compatibility test catalog, their JSON Schemas,
-             and a generated manifest.json carrying a SHA-256 per file (`pnpm build:data-pack`)
+             entries, protocol/client limits, the compatibility test catalog, the advisor and
+             quality thresholds, the model context-limit/pricing override layers, their JSON
+             Schemas, and a generated manifest.json carrying a SHA-256 per file
+             (`pnpm build:data-pack`)
 ```
 
 - **Runtime boundary:** the API is the *only* process that spawns MCP stdio commands, makes MCP HTTP
@@ -617,8 +619,9 @@ data-pack/   the reference data the app checks servers and models against — pe
 - **Contract-first:** anything touching the wire changes in `packages/shared` first (type + zod
   schema), then the API, then the web app.
 - **Persistence:** one SQLite file, evolved through `PRAGMA user_version`-gated migrations.
-- **Multi-provider inference** via the Vercel AI SDK (`@ai-sdk/*`); per-model pricing lives in code,
-  and the cost cap rejects unpriced models.
+- **Multi-provider inference** via the Vercel AI SDK (`@ai-sdk/*`); per-model pricing is maintained
+  in `data-pack/` (with a compiled floor so a bad pack can never make a model look unpriced) and can
+  be edited per-install in Settings, and the cost cap rejects unpriced models.
 - **Tooling:** Biome for lint/format (no ESLint). The four-command quality gate is run **locally** —
   there is no `ci.yml`. The repo's only workflow is `.github/workflows/mcp-self-scan.yml`, which
   asserts the workbench MCP server's own definition-token budget. Copyable CI gates for *your*
