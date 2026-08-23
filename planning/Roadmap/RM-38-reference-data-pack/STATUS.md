@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T04:45:00Z"
+timestamp: "2026-08-23T05:05:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -417,6 +417,24 @@ documentation is the thing most likely to keep the string alive after the code i
 hash-ledger error again in a new costume: precisely right about the wrong quantity. **This matters
 most exactly when tables move between files**, which is what WP 2.1 is doing right now — a comment
 describing the old location routinely outlives it.
+
+### `data-pack/manifest.json` is a generated file two workstreams will both rewrite — 2026-08-23
+
+RM-37 WP 2.9 edits `data-pack/compatibility/test-catalog.json` as its authoring path and runs
+`pnpm build:data-pack`. RM-38 WP 2.1 adds `security/rules.json` + `security/signatures.json` to the
+pack and will run the same build. **Both regenerate `manifest.json`, which carries a SHA-256 and byte
+length per file — 18 today — and is stamped by the generator.**
+
+So the two branches will collide on a **generated** file whose contents encode *the other side's data
+too*. A textual merge of it is meaningless: resolving by hand produces a manifest that matches
+neither tree, and the digest test then fails for a reason that looks like corruption.
+
+**The rule, for whoever merges first:** never hand-merge `manifest.json`. Take **either** side wholesale,
+then run `pnpm build:data-pack` and commit what it writes. The manifest is derived; the pack files are
+the truth. Same for `data-pack/generated/all-models.json`.
+
+This is the third face of "both, not one" — the first two were two work packages needing both halves of
+a hand-written file; this is a **derived** file where neither side is right and the fix is to re-derive.
 
 ### The second audit question, and what it finds in RM-38 — 2026-08-23
 
