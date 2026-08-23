@@ -53,7 +53,7 @@ afterEach(async () => {
 /**
  * The routes, with the CHECK switched off.
  *
- * Deliberate: `config.dataPackUrl` defaults to the published release asset, so a refresh with
+ * Deliberate: `config.dataPackUrl` defaults to the published pack, so a refresh with
  * production settings would open a socket to GitHub from the test suite — slow, flaky offline, and
  * a network dependency the gate must not acquire. WP 3.1's own tests already exercise every fetch
  * path against a real `node:http` listener; what this file is about is the SURFACE.
@@ -259,7 +259,7 @@ test("POST /api/data-pack/refresh answers the SAME shape, and records the check 
 });
 
 test("checkConfigured reports the real configuration, not the last outcome", () => {
-  // `config.dataPackUrl` defaults to the published release asset and `DATA_PACK_CHECK_ON_START`
+  // `config.dataPackUrl` defaults to the published pack and `DATA_PACK_CHECK_ON_START`
   // defaults to on, so an install that has configured nothing still HAS an update source. That is a
   // different fact from "the last check succeeded", and the payload keeps them apart.
   assert.equal(buildDataPackStatus().checkConfigured, dataPackCheckConfigured());

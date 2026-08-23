@@ -194,16 +194,36 @@ export const config = {
   //
   // `dataPackUrl` reads `process.env` directly rather than through `readString`, because the two
   // things `readString` collapses have to stay distinct here: UNSET means "use the published
-  // release asset", and SET-TO-EMPTY means "make no outbound request at all" — the switch an
-  // air-gapped install uses. A helper that falls back on empty would make the second one
-  // unspellable.
+  // pack", and SET-TO-EMPTY means "make no outbound request at all" — the switch an air-gapped
+  // install uses. A helper that falls back on empty would make the second one unspellable.
   //
-  // The default names a release asset that WP 3.3 publishes. Until it exists the check answers
-  // `unreachable` and logs one info line, which is the same thing an offline install sees and is
-  // exactly the designed non-event.
+  // WHY THIS IS A DIRECTORY URL AND NOT A RELEASE ASSET (RM-38 WP 3.3)
+  // -----------------------------------------------------------------
+  // WP 3.1 shipped this default as `…/releases/latest/download/manifest.json`, and that address
+  // CANNOT work — not "does not work yet", cannot. The fetcher resolves every pack file RELATIVE
+  // to the manifest (`resolveDataPackFileUrl`), and the manifest lists nested paths like
+  // `models/saas/openai.json`. A GitHub release serves a FLAT set of assets: an asset name is one
+  // path segment. Measured 2026-08-23 against a repository that actually has releases
+  // (`cli/cli` v2.98.0): 0 of its 22 asset names contain a slash,
+  // `…/releases/latest/download/gh_2.98.0_checksums.txt` answers 200 and
+  // `…/releases/latest/download/sub/gh_2.98.0_checksums.txt` answers 404. So the manifest would
+  // have been fetched and every one of the 28 files under it would have 404'd — an `unreachable`
+  // that no amount of publishing could fix.
+  //
+  // The pack is therefore published as a DIRECTORY, and `raw.githubusercontent.com` serves this
+  // repository's own `data-pack/` tree at exactly the shape the fetcher wants. Measured on this
+  // repository the same day: the manifest answers 200, and so does the nested
+  // `data-pack/models/saas/openai.json`. `scripts/publish-data-pack.sh` is the publish path, and
+  // `packVersion` — not the push — is the gate: a pack edit that reaches `main` without a version
+  // bump is answered `up_to_date` and never downloaded.
+  //
+  // An operator who wants to PIN rather than track uses a tag ref
+  // (`…/refs/tags/<tag>/data-pack/manifest.json` — the raw host serves tags, measured), and an
+  // air-gapped install sets the variable to the empty string. Either way a failure here is a
+  // logged non-event: the pack in force stays in force (D-DP4).
   dataPackUrl:
     process.env.DATA_PACK_URL === undefined
-      ? "https://github.com/mreimitz/elabs-ai-workbench/releases/latest/download/manifest.json"
+      ? "https://raw.githubusercontent.com/mreimitz/elabs-ai-workbench/main/data-pack/manifest.json"
       : process.env.DATA_PACK_URL.trim(),
   dataPackCheckOnStart: readBoolean(process.env.DATA_PACK_CHECK_ON_START, true),
   dataPackTimeoutMs: readPositiveInt(process.env.DATA_PACK_TIMEOUT_MS, DATA_PACK_DEFAULT_TIMEOUT_MS),

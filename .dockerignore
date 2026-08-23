@@ -22,8 +22,29 @@ e2e/
 playwright.config.ts
 
 # Docs / planning / agent tooling — not needed in the build context (cuts context bloat).
-research/
-roadmap/
+#
+# `research/` and `roadmap/` were removed from this list (RM-38 WP 3.3): both trees ceased to exist
+# when the planning bundle was consolidated under `planning/`, so the two entries had been matching
+# nothing for months while the 30 MB tree that replaced them was shipped in full.
+#
+# READ THIS BEFORE EXCLUDING `planning/` OUTRIGHT — it is a BUILD-CONTEXT DEPENDENCY, not docs.
+# The build stage runs `pnpm build`, whose first step is `pnpm docs:bundle`
+# (`scripts/build-docs-bundle.mjs`), and that script reads `planning/user-guide/DC-*` to generate
+# `apps/web/public/doc-content/` — the in-app manual. It refuses to emit an empty bundle, so a
+# blanket `planning/` exclusion does not degrade the image, it FAILS the build. Measured, not
+# reasoned: a probe image built from a context with a blanket `planning/` exclusion sees
+# `planning_files=0` and dies with
+# `Error: build-docs-bundle: user guide directory not found: /app/planning/user-guide`;
+# the same probe against the rules below finds the guide and completes.
+#
+# So the exclusion is the bundle MINUS the one subtree the build reads. `planning/**` catches every
+# future subtree by default (a new one is excluded automatically rather than silently re-inflating
+# the context), and the negation re-admits exactly the guide. Nothing else in the build reads
+# `planning/` — `build-docs-bundle.mjs` opens `planning/user-guide` and `CHANGELOG.md` and nothing
+# else, and the only other references to the path in the workspace are vitest tests, which do not
+# run in the image build.
+planning/**
+!planning/user-guide/**
 docs/
 .claude/
 .github/

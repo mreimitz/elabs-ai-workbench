@@ -39,12 +39,27 @@
 // `data-pack/` with its version bumped.
 //
 // --------------------------------------------------------------------------------------------------
-// PORTS
+// PORTS - EPHEMERAL, AND THE PREVIOUS RULE HERE WAS WRONG (RM-38 WP 3.3)
 // --------------------------------------------------------------------------------------------------
-// 8131–8134 are RM-38's allocation (see the ledger). Nothing else on the machine may be assumed
-// free, and these are not port 0, deliberately: the allocation exists so concurrent sessions in this
-// checkout do not collide, and a hard-coded port makes a collision a loud EADDRINUSE rather than a
-// quiet reassignment.
+// This block used to reserve a fixed four-port range as "RM-38's allocation", on the reasoning that
+// a fixed port makes a collision a loud EADDRINUSE rather than a quiet reassignment. That reasoning
+// is sound for a container a human opens in a browser and wrong for a test listener, and it was
+// disproved here: with a concurrent session running the api suite, THIRTEEN tests in this file went
+// red together with `listen EADDRINUSE: address already in use 127.0.0.1:8131` - the control, all
+// five refusals, the negative control, both bounds and the network-failure cases. The failure was
+// loud, but every test NAME said "the fetcher is broken"; only the error line said otherwise. A
+// reserved range does not prevent that collision, it just relocates it, and three sessions share
+// this machine.
+//
+// So every listener binds port 0 and the assigned port is read back off the server. There is no
+// port to collide over. The precedent is `apps/api/src/mcp-server/self-scan.ts`, which does the
+// same thing for the same reason.
+//
+// The one hard-coded port left is `127.0.0.1:1` in the closed-port test, and it is the exception
+// that proves the rule: that test needs a port where nothing listens and the connection is REFUSED,
+// which is the opposite requirement. Note that `notFoundPort` is NOT such a port - it is a real,
+// live listener that answers 404 to everything. It was previously named for a dead port, which read
+// as "closed" and is exactly why the distinction is spelled out here.
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -66,10 +81,12 @@ import { CACHE_PACK_DIRNAME, STAGING_PACK_DIRNAME } from "../src/data-pack/resol
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const REAL_PACK = path.join(REPO_ROOT, "data-pack");
 
-const SERVE_PORT = 8131;
-const HANG_PORT = 8132;
-const SLOW_PORT = 8133;
-const DEAD_PORT = 8134;
+// Assigned in `before` from what the kernel hands each listener. `let`, not `const`, because the
+// port cannot be known until the socket is bound - that is the whole point of binding port 0.
+let servePort = 0;
+let hangPort = 0;
+let slowPort = 0;
+let notFoundPort = 0;
 
 /** A pack tree: pack-root-relative POSIX path → bytes. Exactly what the listener serves. */
 type PackTree = Map<string, Buffer>;
@@ -166,13 +183,16 @@ function track(server: http.Server): http.Server {
   return server;
 }
 
-function listen(server: http.Server, port: number): Promise<void> {
+/** Bind an ephemeral loopback port and hand back the one the kernel assigned. */
+function listen(server: http.Server): Promise<number> {
   return new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(port, "127.0.0.1", () => {
+    server.listen({ port: 0, host: "127.0.0.1" }, () => {
       const address = server.address() as AddressInfo;
-      assert.equal(address.port, port, "the listener must be on RM-38's allocated port");
-      resolve();
+      // Non-vacuity: a 0 here would build `http://127.0.0.1:0/...` and every test in this file would
+      // fail for a reason that has nothing to do with the fetcher.
+      assert.ok(address.port > 0, "the listener must report the port the kernel assigned");
+      resolve(address.port);
     });
   });
 }
@@ -213,14 +233,17 @@ const slowServer = track(
 );
 
 /** Serves a real 404 for everything. */
-const deadServer = track(
+const notFoundServer = track(
   http.createServer((_req, res) => {
     res.writeHead(404, { "content-type": "text/plain" });
     res.end("no pack here");
   }),
 );
 
-const MANIFEST_URL = `http://127.0.0.1:${SERVE_PORT}/pack/manifest.json`;
+/** The accepted pack's URL. A function, because `servePort` is not known until `before` runs. */
+function manifestUrl(): string {
+  return `http://127.0.0.1:${servePort}/pack/manifest.json`;
+}
 
 let bundled: ResolvedDataPack;
 const tempDirs: string[] = [];
@@ -235,10 +258,10 @@ before(async () => {
   const loaded = loadDataPack({ dir: REAL_PACK, origin: "bundled" });
   assert.ok(loaded.ok, loaded.ok ? "" : `${loaded.refusal.reason}: ${loaded.refusal.detail}`);
   bundled = loaded.pack;
-  await listen(packServer, SERVE_PORT);
-  await listen(hangServer, HANG_PORT);
-  await listen(slowServer, SLOW_PORT);
-  await listen(deadServer, DEAD_PORT);
+  servePort = await listen(packServer);
+  hangPort = await listen(hangServer);
+  slowPort = await listen(slowServer);
+  notFoundPort = await listen(notFoundServer);
 });
 
 after(async () => {
@@ -251,7 +274,7 @@ after(async () => {
 async function refresh(options?: { url?: string; timeoutMs?: number; totalBudgetMs?: number }) {
   const dataDirectory = tempDataDir();
   const result = await refreshDataPack({
-    url: options?.url ?? MANIFEST_URL,
+    url: options?.url ?? manifestUrl(),
     enabled: true,
     timeoutMs: options?.timeoutMs ?? 5000,
     ...(options?.totalBudgetMs === undefined ? {} : { totalBudgetMs: options.totalBudgetMs }),
@@ -473,7 +496,7 @@ test(
     // fires. Exactly one bound can explain this result.
     const startedAt = Date.now();
     const { result, dataDirectory } = await refresh({
-      url: `http://127.0.0.1:${HANG_PORT}/pack/manifest.json`,
+      url: `http://127.0.0.1:${hangPort}/pack/manifest.json`,
       timeoutMs: 250,
       totalBudgetMs: 20_000,
     });
@@ -512,7 +535,7 @@ test(
 
     const startedAt = Date.now();
     const { result, dataDirectory } = await refresh({
-      url: `http://127.0.0.1:${SLOW_PORT}/pack/manifest.json`,
+      url: `http://127.0.0.1:${slowPort}/pack/manifest.json`,
       timeoutMs: 5_000,
       totalBudgetMs: budget,
     });
@@ -534,7 +557,7 @@ test(
 test("a 404 from a real server is unreachable, not a refusal — and the pack in force is untouched", async () => {
   const before = bundled.manifest.packVersion;
   const { result, dataDirectory } = await refresh({
-    url: `http://127.0.0.1:${DEAD_PORT}/pack/manifest.json`,
+    url: `http://127.0.0.1:${notFoundPort}/pack/manifest.json`,
   });
   assert.equal(result.outcome.status, "unreachable");
   assert.match(result.outcome.detail, /HTTP 404/);
@@ -583,7 +606,7 @@ test("a staged tree from an interrupted run is discarded, never promoted", async
 
   // And a real run sweeps it before it downloads anything.
   const result = await refreshDataPack({
-    url: MANIFEST_URL,
+    url: manifestUrl(),
     enabled: true,
     timeoutMs: 5000,
     dataDirectory,
