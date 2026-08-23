@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T11:10:00Z"
+timestamp: "2026-08-23T11:20:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -733,6 +733,15 @@ the source rather than leaving a copy behind.
    what it did before. Both of us then caught the same mechanism a second time with different
    instruments. **When a guard is found to be weaker than its citation, change the guard or delete
    it; do not annotate it and move on.**
+   **And the symmetric error, which completes the rule.** RM-37's first amendment restated the
+   standing as a flat *"not evidence the move happened"* — erasing the manual base-commit check,
+   which is a **real** proof, alongside the standing test's false one. **A blanket downgrade is the
+   same error wearing the opposite sign, and it is the easier one to feel virtuous about**: throwing
+   out a sound proof beside an unsound one reads as rigour and costs exactly as much accuracy as
+   over-claiming did. Their own note on it is the part worth keeping — they did it *inside* an
+   exchange whose entire subject was that distinction, one message after receiving the correction,
+   which is as clear a demonstration as either of us will get that **this failure is not a knowledge
+   problem.** So: correct a citation to what the evidence actually supports — neither up nor down.
 2. ~~**Delete the old path in the same change that creates the new one.** The modify/delete conflict is
    the only reliable signal here.~~ **CORRECTED 2026-08-23 — this over-claimed, and a minimal
    reproduction disproves it.** In a clean two-branch fixture, git's rename detection carried an
