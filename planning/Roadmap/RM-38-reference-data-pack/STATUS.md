@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T10:25:00Z"
+timestamp: "2026-08-23T10:40:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -499,8 +499,24 @@ file fails its JSON Schema" — and today that verifier checks length and nothin
 plus three timeout mutations, and loading a speculative content rule onto it would trade a real proof
 for an imagined one. **WP 3.2 owns it**, because 3.2 is what puts these strings in a browser, and it
 arrives as a choice with both branches stated: constrain user-visible pack fields in the schema, or
-accept explicitly that a published pack can put arbitrary text in the operator's UI. Verified 0 of 18
-rules currently carry a planning-id shape in `title`/`rationale`/`remediation`/`description`.
+accept explicitly that a published pack can put arbitrary text in the operator's UI.
+
+**The measurement, corrected — and the correction is the more useful half.** 18 rules carry exactly
+six keys (`id`, `category`, `subject`, `severity`, `title`, `rationale`), so the user-visible surface
+is **36 strings, not 72**. This entry originally said the scan covered
+`title`/`rationale`/`remediation`/`description`; **`remediation` and `description` do not exist on a
+rule object.** RM-37 caught it. The 0 hits stands — reproduced by them against their guardrail's
+actual `PLANNING_ID_RX` rather than a paraphrase, and their run confirms the same regex *does* match
+a planted `"(see D-DP6)"`, so the zero is a reading and not a blind spot.
+
+**But the defect in the probe is real and is this item's own lesson biting the orchestrator.** The
+scan looped a hard-coded field list with `r.get(field)`, which **silently skips a key that is not
+there**. Two of my four names were wrong, and it reported a confident 0. Had all four been wrong —
+had the field been `why` rather than `rationale` — **it would have scanned zero strings and reported
+exactly the same 0 hits.** A green over an empty set, which is the shape this ledger has now
+catalogued in a merge, in an acceptance line, in a probe's diff and in an assertion. **Rule: a scan
+that iterates a hard-coded field list must assert it found something** — the non-vacuity guard WP 2.2
+put on its own byte-identity test, which I did not apply to my own measurement.
 
 ## Species 8 — an absence test cannot detect a change that MANUFACTURES the absence — 2026-08-23
 
@@ -523,8 +539,27 @@ the same nothing.
 
 **Relation to the earlier entries:** this is the third distinct way an absence has failed as evidence
 in this item — a conflict that did not appear, an acceptance line satisfied by doing nothing, and now
-an assertion the defect itself can satisfy. "An absence is never a measurement" has earned its place
-as the item's one-line summary.
+an assertion the defect itself can satisfy. A fourth landed within the hour (the field-list scan
+above, a green over an empty set). "An absence is never a measurement" has earned its place as the
+item's one-line summary.
+
+## Species 9 — a guard belongs where data ENTERS, not where the source lives — 2026-08-23
+
+RM-37's generalisation of link 4 above, and it outgrows both work packages. Once content can arrive
+over HTTP at boot, a scan of source text is not a *weakened* instrument — it is **the wrong
+instrument**, structurally incapable of seeing the string it is meant to police. Un-exempting a file
+fixes nothing.
+
+**Why it is dangerous: it is species 3 arriving by ARCHITECTURE rather than by omission.** No test at
+all for a claim everyone believes is tested — because the test that used to cover it **still passes,
+over the shrinking part it can still see.** Nothing fails, nothing changes, and the coverage quietly
+stops meaning what it meant.
+
+**It generalises past packs**, which is why it is recorded as a species rather than as a note on this
+item: the same shape waits wherever this app renders text it did not author — an uploaded skill's
+body, a tool description from a scanned MCP server, an imported collection. Any source-scanning guard
+over those is already partly decorative. (The security analyzer is the app's existing answer to
+exactly this for MCP tool text; the point is that a *copy* guard is not.)
 
 ## Species 7 — an acceptance line that cannot fail the defect it was written for
 
