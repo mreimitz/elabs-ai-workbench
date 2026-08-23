@@ -3,7 +3,7 @@ type: "Work Package Spec"
 title: "WP 3.1 — the startup fetcher, the verifier, and the DATA_DIR cache"
 description: "Phase 3 of item.md. Ledger: STATUS.md. Boot never waits on the network and never fails on it."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-22T18:39:00Z"
+timestamp: "2026-08-23T09:50:00Z"
 status: "final"
 ---
 # WP 3.1 — the startup fetcher, the verifier, and the `DATA_DIR` cache
@@ -65,6 +65,46 @@ the manual trigger only.
 - [ ] `DATA_PACK_CHECK_ON_START=false` makes zero outbound requests (asserted by a fetch seam that
       records calls).
 - [ ] Gate green.
+
+## How the refusals must be proved — read this before writing a test
+
+**The trap this WP is built on, recorded in the ledger before the WP was dispatched.** Every refusal
+below will be exercised through an injected `fetch` seam — a stub written by the same agent that
+writes the assumption it encodes. **Every refusal will pass against a stub built to produce that
+refusal.** The verification and the thing verified share an author, so the check cannot contradict
+what it checks.
+
+**So at least one refusal is proved against a real `node:http` listener, and the listener is built
+control-and-case:**
+
+1. The listener serves a pack that is **byte-valid and would be ACCEPTED**.
+2. **Assert the acceptance first.** That is the control, and it is what makes the case mean anything.
+3. Apply **one** mutation to what the listener serves, and assert the refusal.
+
+The point is that you never author a failing response. A listener written to satisfy a refusal is the
+same self-fulfilling loop one layer down, with sockets — it closes "does the client survive a real
+socket" and closes nothing about whether the refusal is the right refusal. (RM-37's formulation,
+adopted.) **Ports 8131–8134 are this item's**; nothing else on the machine may be assumed free.
+
+**State in one sentence, in the test file, which half you did NOT close.** Writing "now tested
+against real HTTP" without that qualifier reproduces the defect this requirement exists to prevent.
+
+**Probe validity is FOUR checks, not three.** A probe proves nothing unless: (1) the edit applied —
+`git diff --stat`; (2) the test ran — an exit code or a count, because silence is also what a command
+that never started produces; (3) the mutation reached the code under test; and (4) **it was the only
+mutation in flight** — two probes running together mask each other. One at a time, clean tree between.
+
+**Check (3) has a live exposure in exactly this WP's shape.** `apps/api` tests import
+`packages/shared` from its **built `dist`**. This WP puts the fetcher contract in `shared` with the
+consumers in `api`. **Run the package's own `test` script (`pnpm --filter @mcp-token-footprint/api
+test`), never a bare `npx tsx --test`** — the bare runner skips `build-shared-once.mjs`, so a shared
+mutation sits in source while the test runs against the previous artifact and yields a confident
+false negative: a working guard recorded as inert, and then "fixed".
+
+**And a guard that asserts a string is PRESENT can be satisfied by a comment.** This item lost one
+that way. Where you need a source-level assertion, prefer a **ban** (assert the string is absent) —
+it fails the safe way. If a presence check is unavoidable, strip comments before matching, and probe
+it in two steps: delete the code **and** add a plausible comment naming it, then confirm still red.
 
 ## Teeth — all five refusals, each mutation-probed
 

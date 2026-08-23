@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T09:40:00Z"
+timestamp: "2026-08-23T09:52:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -350,6 +350,9 @@ a file, both signals read from it.**
 
 - [ ] WP 3.1 — startup fetcher + verifier + `DATA_DIR` cache with atomic swap; all five refusals
       mutation-probed — spec: [`wp-3.1-fetch-and-verify.md`](./wp-3.1-fetch-and-verify.md). **Depends on 1.2.**
+      **status: in progress** (dispatched 2026-08-23, one worktree agent, solo — it is the only
+      dependency-unblocked WP; 3.2 depends on it and 3.3 on both). Spec hardened before dispatch with
+      the control-and-case real-HTTP requirement and the four-check probe rule.
 - [ ] WP 3.2 — `GET`/`POST /api/data-pack`, Settings row, diagnostics group, `packVersion` stamped into
       every verdict document — spec: [`wp-3.2-surfaces.md`](./wp-3.2-surfaces.md). **Depends on 3.1.**
 - [ ] WP 3.3 — publish path, docs, `.dockerignore` correction, offline verification — spec:
