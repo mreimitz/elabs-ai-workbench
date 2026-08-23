@@ -5,6 +5,37 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — publishing the pack, and proving the app works with none of it
+
+**Publishing reference data is now a commit.** The pack is sealed from its own sources — a checksum
+per file — and served from the repository; a running install picks it up on its next start. **The
+version bump is the go-live switch**: editing a pack without raising its version is answered
+"already current" and never downloaded, so a half-finished edit cannot escape by accident. A script
+builds and checks it, and refuses if what is committed does not reproduce from its sources.
+
+**A defect in the previous release is fixed, and it would never have worked.** The address the app
+checked for updates pointed at a GitHub release attachment. Release attachments are a flat list —
+they cannot carry the nested paths the pack is made of — so the app would have found the index and
+then failed to fetch all 28 files behind it, permanently, in a way that looks exactly like "nothing
+has been published yet". Measured against a real repository rather than assumed. The address now
+points at the files themselves, which resolve.
+
+**The app was run in a real container with no network at all, for the first time in this work.** It
+starts, serves the reference data built into the image, and reports the failed check honestly —
+`source: bundled`, the attempt written out, health green in three seconds. Setting the address to
+empty is the air-gapped switch: no outbound request is made at all.
+
+**The container build stopped shipping 17 MB of documents it never reads.** Two directories in the
+exclusion list had not existed for months while the tree that replaced them was being copied in
+whole. The one part the build genuinely needs — the user guide, which becomes the in-app manual — is
+kept, and the exclusion is written so a new folder is left out by default rather than silently
+inflating the image again.
+
+**The guide gained a chapter on all of it**, including one thing stated plainly rather than left
+implied: a published pack carries the security rule wording you read on screen, so **whoever
+publishes reference data is trusted with what it says** — today that is you, from your own
+repository, which is the same trust boundary as the image itself.
+
 ## Unreleased — every verdict names its data, and Settings shows which pack is in force
 
 **A report that judges something now says what it judged it against.** The reference pack's version

@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Reference data pack — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the reference-data-pack plan, read and updated by /next-wp reference-data-pack."
 tags: ["roadmap", "RM-38"]
-timestamp: "2026-08-23T18:45:00Z"
+timestamp: "2026-08-23T19:30:00Z"
 status: "active"
 ---
 # Reference data pack — work-package status ledger · **PRIORITY: HIGH**
@@ -510,8 +510,80 @@ a file, both signals read from it.**
       outgoing request rather than the rendered label. The two-theme + keyboard walk is the agent's
       own measurement (13 tab stops, `:focus-visible` true, ring visible in both themes); **no human
       has looked at this screen.**
-- [ ] WP 3.3 — publish path, docs, `.dockerignore` correction, offline verification — spec:
-      [`wp-3.3-publish-and-offline.md`](./wp-3.3-publish-and-offline.md). **Depends on 3.1, 3.2.**
+- [x] WP 3.3 — publish path, docs, `.dockerignore` correction, offline verification — **done
+      2026-08-23** · `wp/reference-data-pack/3.3` (3 commits: `8b79c0f` `c95d3cc` `4753857`) · spec:
+      [`wp-3.3-publish-and-offline.md`](./wp-3.3-publish-and-offline.md).
+
+      **Gate re-run by the orchestrator: EXIT=0.** shared **288** · illustrations **1032** · cli
+      **87** · api **3984** · web **396 files / 4478 + 5 skipped**, lint 1939. Corpus unchanged by the
+      port rewrite — no test was lost to it.
+
+      **THE FINDING THAT JUSTIFIES THE WP: the published pack could never have been fetched.** WP
+      3.1's default `DATA_PACK_URL` named a GitHub **release asset**
+      (`…/releases/latest/download/manifest.json`). The fetcher resolves every pack file **relative to
+      the manifest**, and the manifest lists **28 nested paths**; a release serves a **flat** set of
+      assets whose name is one path segment. So the app would have fetched the manifest and then
+      404'd on all 28 files behind it — **permanently, and looking exactly like "nothing has been
+      published yet"**. Measured by the agent against a repository that actually has releases, and
+      **re-measured independently by the orchestrator**: flat asset `200`, nested asset `404`;
+      corrected `raw.githubusercontent.com` URL `200` on the manifest **and** `200` on nested
+      `models/saas/openai.json`. **Publishing is therefore a commit, and the version bump is the
+      go-live switch** — an unbumped pack edit is answered `up_to_date` and never downloaded.
+
+      **THE ITEM'S OLDEST GAP IS CLOSED, AND THE ORCHESTRATOR CLOSED IT PERSONALLY.** The audit
+      section recorded that the real Docker image had never been built for this item. It has now been
+      built **and booted**, and the orchestrator ran the offline case itself rather than reading the
+      agent's account: `docker run --network none` → `origin:"bundled"`, `packVersion 1.1.0`, **28
+      files** from `/app/apps/api/dist/data-pack-bundled` → `Server listening` → `status:"unreachable"
+      … durationMs:14`. **The log timestamps put the listen BEFORE the check** (61466 → 61550 →
+      61567), which is D-DP4 proved in the real image rather than in `dist`. Health **200** in 3 s.
+      `/api/data-pack` answers `source: "bundled"` with the failed check written out and
+      `lastRefusal: null`; the diagnostics section explains why the URL is deliberately absent. **It
+      never reports a check it did not make.**
+
+      **The agent's own before/after control on the fetch path** (same image `sha256:00a052f0…`, same
+      volume, only the process restarted): `1.1.0`/bundled/`disabled` → `1.2.0`/**fetched**/`installed`;
+      heatmap picker 55 → 56 models with the canary present; the same poisoned skill scoring
+      `100/clean` → `85/medium` on a rule the new pack carries; the D-DP8 stamp moving `1.1.0` → `1.2.0`.
+
+      **The spec was wrong about `.dockerignore` and the agent proved it rather than complying.** It
+      said to exclude `planning/`; that **breaks the image build**, because `pnpm build` runs
+      `docs:bundle`, which reads `planning/user-guide/` to generate the in-app manual. Probe image
+      with a blanket exclusion: `planning_files=0`, `Error: build-docs-bundle: user guide directory
+      not found`, EXIT=1. Shipped rule is `planning/**` + `!planning/user-guide/**`, so a future
+      subtree is excluded by default rather than silently re-inflating the context. Context
+      **64,848 KB / 2,906 files → 47,524 KB / 2,113 files**; the two entries it removed (`research/`,
+      `roadmap/`) had been **matching nothing for months** while the tree that replaced them shipped
+      whole.
+
+      **The docs — `DC-26-reference-data-pack`**, created with the generator: `doc.md` (what shipped
+      vs what was planned, including both spec corrections) and the guide page, which carries the
+      owner ruling as a design property under *"Who is trusted, and with what"* with the reopening
+      condition named. Docs bundle 22 subjects/27 docs → **23/28**.
+
+      **A DEFECT THIS SESSION INTRODUCED, FOUND BY COLLIDING WITH A PEER — see the fixed-port entry
+      below.** The suite bound ports 8131–8134 because the WP 3.1 brief allocated them. Fixed here:
+      every listener now binds `{ port: 0 }` and reads the port back, with a non-vacuity assertion
+      that the kernel returned `> 0`. **Proved by the orchestrator running the collision itself** —
+      two api suites started together, both `# pass 3984 # fail 0`, **zero EADDRINUSE**; the agent's
+      stashed-fix control gives `# fail 13` and 26 EADDRINUSE lines. Two corrections to the
+      orchestrator's own instruction, both right: `DEAD_PORT` was never a dead port (a live 404
+      listener, renamed `notFoundPort`), and `127.0.0.1:1` **must** stay hardcoded because that test
+      needs a *refused* connection.
+
+      **Not verified.** `run.sh` from the hand-off bundle was **not executed** — it replaces a
+      container and volume named `mcp-token-footprint`, which is the owner's own running container
+      from another checkout; the agent stopped rather than kill it, having checked the bundle
+      assembles, all four checksums verify, and the image inside is byte-identical to the one proved
+      offline. **No browser**: the Settings → Reference data row has no two-theme or keyboard walk.
+      **`--publish` never ran against a remote**; nothing was pushed. `run.ps1` remains unrun on
+      Windows (RM-19's standing gap, untouched).
+
+      **Two follow-ups for the owner, neither this WP's to fix.** (1) The default URL depends on the
+      repository staying **public** — measured today `"visibility": "public"`; if it goes private,
+      unauthenticated fetches 404 and every install answers `unreachable`, which is a *logged
+      non-event* and therefore easy to miss. (2) `scripts/release.sh` states "this repo is PRIVATE" in
+      its header and in the release notes it generates. Measured false.
 
 ---
 
@@ -589,7 +661,7 @@ probes in flight masking each other): the edit applied · the test ran · the mu
 under test · **it was the only mutation in flight.** One probe at a time, clean tree between,
 `git diff --stat` each time.
 
-**Ports: 8131–8134 are RM-38's.** 8126–8130 belong to the RM-37 session's batch. Any browser or
+~~**Ports: 8131–8134 are RM-38's.**~~ **REVERSED** — see the fixed-port entry below; the suite binds ephemeral ports and the reservation is gone. 8126–8130 belong to the RM-37 session's batch. Any browser or
 container work copies `data/app.sqlite`; nothing opens the live file. **No migration from this item** —
 Phase 3's cache is a `DATA_DIR` filesystem tree, not a table. `v65` is RM-37's.
 

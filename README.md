@@ -644,7 +644,10 @@ data-pack/   the reference data the app checks servers and models against — pe
   and run reports, and the CI gate document), because a verdict that cannot name its data is not
   reproducible. The browser reads the pack in force too, so a fetched pack changes what you see
   without an image rebuild — **and none of it gates the first render**: the app paints on the values
-  it shipped with and adopts the pack when it arrives.
+  it shipped with and adopts the pack when it arrives. **Publishing a pack is a commit** — it is
+  sealed with a checksum per file and served from the repository, and the version bump is the
+  go-live switch, so an unfinished edit is never picked up. An install with **no network at all**
+  runs on the pack built into the image and says so; `DATA_PACK_URL=` empty makes it stop asking.
 - **Multi-provider inference** via the Vercel AI SDK (`@ai-sdk/*`); per-model pricing is maintained
   in `data-pack/` (with a compiled floor so a bad pack can never make a model look unpriced) and can
   be edited per-install in Settings, and the cost cap rejects unpriced models.
