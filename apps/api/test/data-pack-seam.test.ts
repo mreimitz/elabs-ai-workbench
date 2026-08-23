@@ -8,7 +8,7 @@
 // making the read lazy would have moved the bug rather than fixed it, and the symptom would have
 // been import-order dependent.
 //
-// Four guards, and what each one CANNOT see:
+// Five guards, and what each one CANNOT see:
 //
 //   1. LAZINESS (runtime). Importing the readers in a fresh module registry must leave the source
 //      slot empty. Cannot see: whether a THIRD module reads the pack at load time — only the two
@@ -26,6 +26,10 @@
 //      directory list still equals the shared one. Cannot see: whether the copied bytes are
 //      correct — running the built API is what shows that, and it is not something a unit test in
 //      this suite does.
+//   5. THE REFRESH IS OFF THE BOOT PATH (source scan, RM-38 WP 3.1). `index.ts` calls
+//      `refreshDataPack` AFTER `await server.listen(` and does NOT await it. Cannot see: a refresh
+//      moved into some helper that `index.ts` awaits before `listen` — the scan reads one file and
+//      matches one call site, so an indirection defeats it. See the guard's own comment block.
 
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
@@ -193,6 +197,65 @@ test("index.ts installs the data pack before it installs the pricing resolver", 
   assert.ok(
     installPack < installPricing,
     "the pack is resolved first, so a cache refusal is logged before anything can serve",
+  );
+});
+
+test("index.ts fires the data-pack refresh AFTER listen(), and does not await it", () => {
+  // RM-38 WP 3.1, D-DP4: boot never waits on the network and never fails on it. That is not a
+  // property of the fetcher — every failure path in it could be perfect and boot would still block
+  // for the whole budget if this call moved four lines up. The guarantee is entirely POSITIONAL, and
+  // `index.ts` says so in a comment: "AFTER `listen()`, and NOT awaited. That position is the entire
+  // D-DP4 guarantee and it is structural rather than promised."
+  //
+  // Until this test existed, nothing enforced it. Inserting `await refreshDataPack({...})` above
+  // `await server.listen(...)` — which destroys the guarantee completely — left the whole api suite
+  // at "# pass 3964 # fail 0", EXIT=0. A live boot measurement (health at 1075 ms while the fetch ran
+  // 5003 ms) proved the property on the day it was taken; it is not a standing guard, which is
+  // exactly the distinction this item's ledger keeps drawing between a hand check and the gate.
+  //
+  // stripComments is NOT decoration here. This is a PRESENCE assertion — the shape this item has
+  // already lost one guard to — and `index.ts` carries a comment block naming `refreshDataPack` a
+  // few lines above the call. Without stripping, deleting the call and leaving the prose would pass.
+  //
+  // WHAT THIS CANNOT SEE, stated rather than implied:
+  //   * a refresh moved into a helper that `index.ts` awaits before `listen` — the scan reads ONE
+  //     file and matches ONE call site BY NAME, so any indirection walks straight past it;
+  //   * whether the call is genuinely non-blocking at runtime — a `refreshDataPack` that did its
+  //     work synchronously before returning a promise would satisfy every assertion below;
+  //   * anything about the fetcher's own bounds. `data-pack-fetch-http.test.ts` owns those, and each
+  //     is proved against a real listener with an elapsed-wall-clock assertion.
+  // It is a tripwire against the regression that is actually likely — someone tidying boot order —
+  // not a proof that the network is off the critical path.
+  const source = stripComments(readFileSync(path.join(SRC, "index.ts"), "utf8"));
+
+  const listenAt = source.indexOf("await server.listen(");
+  assert.ok(listenAt > 0, "index.ts must still await server.listen(...)");
+
+  const calls = [...source.matchAll(/refreshDataPack\(/g)].map((match) => match.index as number);
+  assert.equal(
+    calls.length,
+    1,
+    "index.ts must call refreshDataPack exactly once — a second call site is how the first one " +
+      "quietly moves back onto the boot path while the original still reads as correct",
+  );
+  const callAt = calls[0] as number;
+
+  assert.ok(
+    callAt > listenAt,
+    "the data-pack refresh must be fired AFTER server.listen() — D-DP4 is positional, and a call " +
+      "above listen() blocks boot on the network for the whole budget",
+  );
+
+  const prefix = source.slice(Math.max(0, callAt - 32), callAt);
+  assert.ok(
+    !/\bawait\s+$/.test(prefix),
+    "the data-pack refresh must NOT be awaited — an await here turns a hung URL into a hung boot " +
+      "sequence, which is the one thing D-DP4 forbids",
+  );
+  assert.ok(
+    /\bvoid\s+$/.test(prefix),
+    "the refresh is fired with `void`, so a deliberate fire-and-forget reads as deliberate rather " +
+      "than as a forgotten await somebody will later 'fix'",
   );
 });
 

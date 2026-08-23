@@ -38,6 +38,7 @@ import {
   registerRunCompatibilityRoutes,
 } from "./compatibility/routes.js";
 import { config } from "./config/env.js";
+import { refreshDataPack } from "./data-pack/fetcher.js";
 import { resolveDataPackFromDisk } from "./data-pack/resolve.js";
 import { installDataPackSource } from "./data-pack/source.js";
 import { skillQualityCeilings } from "./data-pack/thresholds.js";
@@ -1893,6 +1894,79 @@ if (fs.existsSync(config.webDistPath)) {
 }
 
 await server.listen({ port: config.port, host: config.host });
+
+// Reference data pack — the startup refresh (planning/Roadmap/RM-38-reference-data-pack/, WP 3.1, D-DP4).
+//
+// AFTER `listen()`, and NOT awaited. That position is the entire D-DP4 guarantee and it is
+// structural rather than promised: the first outbound request cannot be issued until the server is
+// already accepting connections, so no configuration of `DATA_PACK_URL` — unreachable, hanging,
+// serving two megabytes of nonsense — can delay or fail boot. `GET /api/health` is answerable
+// before this line runs.
+//
+// A successful swap installs the new pack for every SUBSEQUENT request. In-flight work keeps the
+// pack it started with because a `ResolvedDataPack` is never mutated: `installDataPackSource`
+// replaces the reference in one assignment, and anything holding the old object still reads the old
+// object. `installSecurityTables` is re-installed in the same breath, for the same reason WP 2.1
+// installed it beside the pack in the first place — the two must never name different versions.
+//
+// `.catch` is politeness, not defence: `refreshDataPack` returns a value on every failure path and
+// documents that it never throws. If that ever stops being true, an unhandled rejection would take
+// the process down over a network hiccup, which is precisely what D-DP4 forbids.
+void refreshDataPack({
+  url: config.dataPackUrl,
+  enabled: config.dataPackCheckOnStart,
+  timeoutMs: config.dataPackTimeoutMs,
+  dataDirectory: config.dataDirectory,
+  inForce: dataPackResolution.pack,
+  bundled: dataPackResolution.bundled,
+})
+  .then((result) => {
+    if (result.outcome.status === "installed" && result.pack) {
+      installDataPackSource(result.pack);
+      installSecurityTables(result.pack.documents.securityTables);
+      server.log.info(
+        {
+          packVersion: result.outcome.remoteVersion,
+          previousVersion: result.outcome.currentVersion,
+          files: result.outcome.files,
+          durationMs: result.outcome.durationMs,
+          dir: result.pack.dir,
+        },
+        "Reference data pack refreshed",
+      );
+      return;
+    }
+    if (result.outcome.status === "refused") {
+      // The one outcome an operator has to see: something published a pack this build will not
+      // trust. Everything else — disabled, unreachable, already current — is a normal day, and on
+      // an offline install `unreachable` is the DESIGNED outcome, so warning about it would train
+      // people to ignore the log.
+      server.log.warn(
+        {
+          url: result.outcome.url,
+          reason: result.outcome.refusal?.reason,
+          paths: result.outcome.refusal?.paths,
+          remoteVersion: result.outcome.remoteVersion,
+          currentVersion: result.outcome.currentVersion,
+        },
+        `Reference data pack refused: ${result.outcome.detail}`,
+      );
+      return;
+    }
+    server.log.info(
+      {
+        status: result.outcome.status,
+        url: result.outcome.url,
+        remoteVersion: result.outcome.remoteVersion,
+        currentVersion: result.outcome.currentVersion,
+        durationMs: result.outcome.durationMs,
+      },
+      `Reference data pack check: ${result.outcome.detail}`,
+    );
+  })
+  .catch((error: unknown) => {
+    server.log.warn({ err: error }, "Reference data pack check failed unexpectedly");
+  });
 
 // Observability (WP4.2, D-OB19) — start the windowed-rule ticker AFTER the server is up. `start()` runs
 // the boot catch-up ONCE (evaluating windows that completed while the app was away — late-flagged, gap

@@ -28,7 +28,7 @@
 // The two cross-PACK security checks — the append-only rule-id ledger (D-DP6) and the
 // severity-needs-a-version-bump rule (D-DP7) — are deliberately NOT here. They compare a candidate
 // against the BUNDLED registry, and this function only ever sees one pack. They live in
-// `resolve.ts`, which holds both.
+// `verify.ts`, which holds both, and which BOTH the cache rung and WP 3.1's fetch rung call.
 
 import path from "node:path";
 import { createHash } from "node:crypto";
@@ -60,8 +60,16 @@ import {
 } from "@mcp-token-footprint/shared";
 import { type DataPackFs, nodeDataPackFs } from "./fs.js";
 
-/** Where a resolved pack came from. The fetched rung arrives in WP 3.1. */
-export type DataPackOrigin = "bundled" | "cache";
+/**
+ * Where a resolved pack came from.
+ *
+ * `fetched` (RM-38 WP 3.1) is the pack a startup check downloaded, verified in staging and swapped
+ * into the cache directory IN THIS PROCESS. It is deliberately distinct from `cache`, which is a
+ * pack a PREVIOUS process left behind and this one read at boot: same bytes, same directory, but a
+ * log line, a diagnostics row (WP 3.2) and a version-regression message all read differently
+ * depending on which one you are looking at.
+ */
+export type DataPackOrigin = "bundled" | "cache" | "fetched";
 
 /** The documents the app reads out of a pack. Parsed once, at load. */
 export type DataPackDocuments = {
