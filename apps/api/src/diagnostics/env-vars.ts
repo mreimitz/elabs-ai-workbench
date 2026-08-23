@@ -57,7 +57,7 @@ export const RECOGNISED_ENV_VARS: readonly RecognisedEnvVar[] = [
   { name: "DATABASE_PATH", defaulted: true },
   { name: "DATA_DIR", defaulted: true },
   // RM-38 WP 3.1 — the startup reference-data-pack refresh. All three are defaulted: absent means
-  // "check the published release asset with a 5 s per-request bound", which is the shipped
+  // "check the published pack with a 5 s per-request bound", which is the shipped
   // behaviour, not an off switch. DATA_PACK_URL set to the EMPTY STRING is the off switch, and this
   // group cannot distinguish that from unset — it reports presence, never a value. Said here
   // because an operator reading "DATA_PACK_URL: set" and expecting a fetch would be misled.
