@@ -40,8 +40,11 @@ const HELPER = path.join("lib", "chart-colors.ts");
  */
 const ALLOWED: Record<string, string> = {
   [path.join("components", "TokenViz.tsx")]:
-    "Fixed context segments (system/tool_defs/history/tool_results/output) — five by definition, " +
-    "each pinned to its own token. Not a cycle: there is no 6th segment to collide with.",
+    "Fixed composition segments, each pinned to its own token — the three MCP surfaces " +
+    "(tools/resources/prompts) and the five parts of a tool definition (name/description/schema/" +
+    "annotations/wire structure). Both are fixed-arity by construction, so the index is a POSITION, " +
+    "not a cycle: there is no 6th segment to collide with. Series colours anywhere else still go " +
+    "through `lib/chart-colors.ts`.",
   [path.join("features", "hub", "agents", "RoleAvatar.tsx")]:
     "KNOWN index-driven cycle (hashIndex(id, 5) over five accent tokens), deliberately NOT converted " +
     "in WP 0.1. It colours agent AVATARS, not chart series, and widening it to twelve would reshuffle " +

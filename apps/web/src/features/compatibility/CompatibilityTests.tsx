@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CompatibilityAffectedTool,
   CompatibilityReportModel,
@@ -17,9 +17,13 @@ import {
   AccordionTrigger,
   Badge,
   Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
   Popover,
   PopoverContent,
   PopoverTrigger,
+  ScrollArea,
   StatePanel,
   Text,
   cn,
@@ -381,17 +385,15 @@ function ModelDetail({
 function AffectedTools({
   tools,
   onOpenTool,
-  limit = 12,
-}: { tools: CompatibilityAffectedTool[]; onOpenTool?: OpenTool; limit?: number }) {
+}: { tools: CompatibilityAffectedTool[]; onOpenTool?: OpenTool }) {
   const offenders = tools.filter((t) => t.over);
-  const shown = (offenders.length > 0 ? offenders : tools).slice(0, limit);
-  const hidden = (offenders.length > 0 ? offenders.length : tools.length) - shown.length;
+  const shown = offenders.length > 0 ? offenders : tools;
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <Text as="span" variant="meta" tone="muted" className="font-medium uppercase tracking-wide">
-        {offenders.length > 0 ? `Tools over the limit (${offenders.length})` : "Top contributors"}
+        {offenders.length > 0 ? "Tools over the limit" : "Top contributors"}
       </Text>
-      <div className="flex flex-wrap gap-1.5">
+      <ToolChipDisclosure count={shown.length} label="tool">
         {shown.map((t) => (
           <ToolLink
             key={t.toolName}
@@ -401,12 +403,7 @@ function AffectedTools({
             onOpenTool={onOpenTool}
           />
         ))}
-        {hidden > 0 ? (
-          <Text as="span" variant="meta" tone="muted">
-            +{hidden} more
-          </Text>
-        ) : null}
-      </div>
+      </ToolChipDisclosure>
     </div>
   );
 }
@@ -564,6 +561,8 @@ export function ServerFindings({
   const [report, setReport] = useState<CompatibilityTestReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** Which findings are expanded. Collapsed by default — the card's height is the point. */
+  const [open, setOpen] = useState<string[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -659,7 +658,7 @@ export function ServerFindings({
   for (const f of findings) tally.set(f.severity, (tally.get(f.severity) ?? 0) + 1);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
       <div className="flex flex-wrap items-center gap-1.5">
         {FINDING_SEVERITIES.filter((s) => tally.has(s)).map((s) => (
           <Badge key={s} variant={SEVERITY_META[s].variant} className="tabular-nums">
@@ -667,60 +666,117 @@ export function ServerFindings({
           </Badge>
         ))}
       </div>
-      <ul className="flex flex-col divide-y divide-border">
-        {findings.map((f) => (
-          <li key={f.key} className="flex flex-col gap-1.5 py-3 first:pt-0 last:pb-0">
-            <span className="flex min-w-0 flex-wrap items-center gap-2">
-              <Badge variant={SEVERITY_META[f.severity].variant}>
-                {SEVERITY_META[f.severity].label}
-              </Badge>
-              <Text as="span" className="truncate font-medium" title={f.name}>
-                {f.name}
-              </Text>
-              <Text as="span" variant="meta" tone="muted">
-                · {f.detail}
-              </Text>
-              {f.savings > 0 ? (
-                <Badge variant="success" className="tabular-nums">
-                  ≈ {formatNumber(f.savings)} tok recoverable
-                </Badge>
-              ) : null}
-            </span>
-            {f.recommendation ? (
-              <Text variant="meta" tone="muted" className="text-pretty line-clamp-2">
-                {f.recommendation}
-              </Text>
-            ) : null}
-            {f.serverTools && f.serverTools.length > 0 ? (
-              <AffectedTools tools={f.serverTools} onOpenTool={onOpenTool} />
-            ) : null}
-            {f.tools && f.tools.length > 0 ? (
-              <ToolFindingLinks tools={f.tools} onOpenTool={onOpenTool} />
-            ) : null}
-          </li>
-        ))}
-      </ul>
+
+      {/* The list scrolls INSIDE the card. Measured before this change: on `barc-benchmark` the
+          findings card rendered 2,428px tall against a 534px viewport, which pushed everything
+          below it — including the server's own connection details — five screens down. A finding is
+          a bordered, collapsed row now, so the card's height is a function of the finding COUNT
+          rather than of how many tool names the worst finding happens to carry. */}
+      {/* The cap is what bounds the CARD, and through it the page: `flex-1` lets the list fill
+          whatever height the grid row has, and `max-h` stops the row being set by the finding count.
+          32rem sits close to the token-distribution card beside it, so neither is left with a band
+          of dead space. */}
+      <ScrollArea className="max-h-[32rem] min-h-0 min-w-0 flex-1">
+        <Accordion type="multiple" value={open} onValueChange={setOpen} className="flex flex-col gap-2">
+          {findings.map((f) => (
+            <AccordionItem
+              className="min-w-0 rounded-md border border-border bg-card"
+              key={f.key}
+              value={f.key}
+            >
+              <AccordionTrigger className="gap-3 px-3 hover:no-underline">
+                <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Badge variant={SEVERITY_META[f.severity].variant}>
+                      {SEVERITY_META[f.severity].label}
+                    </Badge>
+                    <Text as="span" className="min-w-0 truncate font-medium" title={f.name}>
+                      {f.name}
+                    </Text>
+                  </span>
+                  <span className="flex min-w-0 flex-wrap items-center gap-2">
+                    <Text as="span" variant="meta" tone="muted">
+                      {f.detail}
+                    </Text>
+                    {f.savings > 0 ? (
+                      <Badge variant="success" className="tabular-nums">
+                        ≈ {formatNumber(f.savings)} tok recoverable
+                      </Badge>
+                    ) : null}
+                  </span>
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="flex flex-col gap-3 px-3">
+                {f.recommendation ? (
+                  <Text variant="meta" tone="muted" className="text-pretty">
+                    {f.recommendation}
+                  </Text>
+                ) : null}
+                {f.serverTools && f.serverTools.length > 0 ? (
+                  <AffectedTools tools={f.serverTools} onOpenTool={onOpenTool} />
+                ) : null}
+                {f.tools && f.tools.length > 0 ? (
+                  <ToolFindingLinks tools={f.tools} onOpenTool={onOpenTool} />
+                ) : null}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      </ScrollArea>
+
+      <Text variant="meta" tone="muted" className="shrink-0 tabular-nums">
+        {`${formatNumber(findings.length)} finding${findings.length === 1 ? "" : "s"} · expand one for the fix and the tools it applies to`}
+      </Text>
     </div>
   );
 }
 
-function ToolFindingLinks({
-  tools,
-  onOpenTool,
-  limit = 12,
-}: { tools: ToolFindingTool[]; onOpenTool?: OpenTool; limit?: number }) {
-  const shown = tools.slice(0, limit);
-  const hidden = tools.length - shown.length;
+/**
+ * The tools a finding applies to, behind a disclosure.
+ *
+ * These used to be twelve outline `Button`s laid straight into the row, plus a `+57 more`. On a
+ * 146-tool server that is a wall of monospace chips per finding, and with four findings stacked it
+ * became impossible to see where one finding ended and the next began — the owner's report. The
+ * names stay reachable, one click away, and the count is stated so the disclosure is never a
+ * mystery. Shape borrowed from `DetailNameList` in `features/advisor/RecommendationCard.tsx`, which
+ * solved the same problem for the advisor's rules.
+ */
+function ToolFindingLinks({ tools, onOpenTool }: { tools: ToolFindingTool[]; onOpenTool?: OpenTool }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {shown.map((t) => (
+    <ToolChipDisclosure count={tools.length} label="tool">
+      {tools.map((t) => (
         <ToolLink key={t.toolName} toolName={t.toolName} onOpenTool={onOpenTool} />
       ))}
-      {hidden > 0 ? (
-        <Text as="span" variant="meta" tone="muted">
-          +{hidden} more
-        </Text>
-      ) : null}
-    </div>
+    </ToolChipDisclosure>
+  );
+}
+
+/** Below this many names, a disclosure is more friction than the list it hides — show them inline. */
+export const TOOL_CHIP_DISCLOSURE_MIN = 4;
+
+/**
+ * `N tools` → a collapsible chip list. Under {@link TOOL_CHIP_DISCLOSURE_MIN} names the chips are
+ * rendered directly, with no trigger to click.
+ */
+function ToolChipDisclosure({
+  count,
+  label,
+  children,
+}: { count: number; label: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const chips = <div className="flex flex-wrap gap-1.5">{children}</div>;
+
+  if (count < TOOL_CHIP_DISCLOSURE_MIN) return chips;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="flex min-w-0 flex-col gap-1.5">
+      <CollapsibleTrigger asChild>
+        <Button className="h-auto w-fit px-2 py-1" size="sm" variant="outline">
+          {open ? "Hide" : "Show"} {formatNumber(count)} {label}
+          {count === 1 ? "" : "s"}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>{chips}</CollapsibleContent>
+    </Collapsible>
   );
 }

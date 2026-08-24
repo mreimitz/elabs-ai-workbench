@@ -5,6 +5,60 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — a server’s own page stopped burying what it is, and its token chart stopped hiding 59% of the tokens
+
+**The two cards that say what a server IS were five screens below the fold.** Measured on
+`barc-benchmark` at 1600×1000: the Overview tab scrolled 2,839px against a 534px viewport, because
+the findings list alone was 2,428px tall and stretched the card beside it to match. Connection
+details — transport, auth, URL, when it was last updated — did not begin until y=2722. Those eight
+read-only facts now sit on one line under the headline figures, where they are visible on arrival,
+and the page leads with its two charts instead. The tab now scrolls **1,172px** — 2.2 screens
+instead of 5.3 — and the two remaining cards are the same height as each other, so neither carries
+a band of dead space.
+
+**The token-distribution chart was omitting up to three fifths of the tokens it claimed to
+account for.** A tool’s headline token count is the serialized payload the model actually ingests
+— envelope, JSON keys, braces, quoting. The four parts the chart broke it into (name, description,
+schema, annotations) are each counted in isolation, so they never added up to it, and the bar was
+scaled to their sum — painting a full-width 100% bar under the heading “Where startup tokens go”
+while the difference went unmentioned. Measured across the registered servers that difference runs
+from 4.5% to **59.7%** (qlik-mreimitz: 48,860 tool tokens against a 19,707 sum). It is now a named
+fifth slice, **Wire structure**, and on `barc-benchmark` it reads 38,376 · 59.5% — the single
+largest thing on that server’s chart, and previously invisible.
+
+**The chart also answers a question it never used to.** A second bar splits the startup cost by
+surface — Tools, Resources, Prompts — which was already measured and never shown; on `qlik-stage`
+it reads 149,338 tools against 3,595 resources. Every slice on both bars now states its own token
+count and share beside it, rather than a detached legend at the bottom of the card. The eight
+heaviest tools underneath dropped their four-colour mini-bars for a single-hue ranking: repeating
+the same four hues down eight rows encoded nothing the row order did not already say, and squeezed
+each part into a sliver too small to compare. The split moved to hover — and, because
+`brand-ui docs Tooltip` is explicit that essential information must not be tooltip-only, it also
+rides in each row’s accessible name. That was not a precaution: tabbing to a row was measured
+opening no tooltip at all, so a keyboard user got nothing.
+
+**Findings became separable, and stopped setting the page’s height.** Each finding is a bordered,
+collapsed row carrying its severity, its title and how many tools it hits; expanding one shows the
+fix and puts the tool names behind their own disclosure that states the count. Before, every
+finding spilled twelve monospace chips plus a “+57 more” straight into the list, four findings deep,
+with nothing to mark where one ended and the next began. The disclosure now reveals **all** the
+names — the old row silently truncated at twelve — and the list scrolls inside its own card, so its
+height is a function of the finding count rather than of how many tools the worst finding happens
+to carry.
+
+**A server’s page now charts its open issues over time**, from the issue list the page already
+fetched — no endpoint, no second request. It is honestly labelled as a reconstruction rather than a
+history, because it cannot be one: `resolved_at` is cleared when an issue is reopened and there is
+no status-history table, so an issue closed in May and regressed in July reads as open since May.
+Making that faithful needs a new table, deliberately not added here.
+
+Verified against the running app in both themes and on a server that actually serves resources, not
+just the one in the report. Twenty-two new tests cover the derivations — the findings list had none at all
+before — and each guard was broken and watched go red before it was trusted. One of them caught a
+real defect during review: a zero-valued slice shifted the colours of the slices after it, so a
+server with no resources but some prompts would have painted Prompts in the Resources colour while
+its own legend said otherwise.
+
 ## Unreleased — a bucket nobody measured is no longer drawn at the top of the chart
 
 **Every line chart in the app was plotting unmeasured points at its own maximum, and then losing

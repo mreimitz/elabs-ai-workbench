@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type {
   CompatibilityTestReport,
@@ -21,8 +21,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  Descriptions,
-  DescriptionsItem,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,6 +31,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
+  cn,
   toast,
 } from "@elabs-ai/components-ui";
 import {
@@ -52,7 +51,7 @@ import { ViewToolbar } from "../../components/ViewToolbar";
 import { SplitPane, SplitPanePanel } from "../../components/SplitPane";
 import { TabPanel, TabPanelContent } from "../../components/TabPanel";
 import { TabEmptyState } from "../../components/TabEmptyState";
-import { StackedContributorList, type ContributorRow } from "../../components/TokenViz";
+import { TokenDistribution, type ContributorRow } from "../../components/TokenViz";
 import { IconButton } from "../../components/IconButton";
 import { AdvisorPanel } from "../advisor/AdvisorPanel";
 import { advisorReportHref } from "../advisor/advisor-format";
@@ -85,6 +84,7 @@ import {
 } from "../scans/scanDelta";
 import { ServerFindings, ServerTestsTab } from "../compatibility/CompatibilityTests";
 import { IssuesPanel } from "../issues/IssuesPanel";
+import { OpenIssuesCard } from "../issues/OpenIssuesCard";
 import { useRatingIssues } from "../issues/use-rating-issues";
 import { ServerTypeStatusBadge } from "./ServerTypeStatusBadge";
 import { ServerBreadcrumbSwitcher } from "./ServerBreadcrumbSwitcher";
@@ -627,22 +627,97 @@ export function ServersView(props: {
               {/* D-TB4 — the scan-result headline metrics, stated ONCE here in the Overview body as
                   content (they were the removed chrome stat strip). Tools/Resources/Prompts counts are
                   NOT restated — they already live in the tab badges; Recoverable is stated only here
-                  (its former Findings-card badge was dropped so no number appears twice). */}
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-3 rounded-md border border-border bg-card px-4 py-3">
-                <KpiStat label="Startup tokens" value={formatNumber(latestScan.totalTokens)} />
-                <KpiStat
-                  label="Top 3 share"
-                  value={health ? formatPercent(health.topShare) : "—"}
+                  (its former Findings-card badge was dropped so no number appears twice).
+
+                  The connection facts sit on a SECOND LINE of this same block rather than in a
+                  `Server profile` card of their own. That card used to be the last thing on the page:
+                  measured at 1600×1000 the tab scrolled 2,839px, and the profile did not begin until
+                  y=2722 — five screens past the identity it describes. Read-only facts do not need a
+                  card, and putting them in the header is what frees the top of the page for the two
+                  charts. */}
+              <div className="flex flex-col gap-3 rounded-md border border-border bg-card px-4 py-3">
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                  <KpiStat label="Startup tokens" value={formatNumber(latestScan.totalTokens)} />
+                  <KpiStat
+                    label="Top 3 share"
+                    value={health ? formatPercent(health.topShare) : "—"}
+                  />
+                  {showRecoverable ? (
+                    <KpiStat label="Recoverable" value={formatNumber(health!.recoverable)} />
+                  ) : null}
+                </div>
+                <ServerProfileLine
+                  authLabel={authLabel}
+                  endpoint={endpoint}
+                  server={server}
+                  serverType={serverType}
                 />
-                {showRecoverable ? (
-                  <KpiStat label="Recoverable" value={formatNumber(health!.recoverable)} />
-                ) : null}
+              </div>
+
+              {/* The two time series, side by side and FIRST — token footprint over scans, and open
+                  issues over days. Both are `h-44`, so the row has one height and no card is stretched
+                  to match a neighbour. */}
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Card className="flex min-w-0 flex-col">
+                  <CardHeader>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <SectionCardTitle>Scan trend</SectionCardTitle>
+                        <CardDescription>
+                          Total startup tokens across recent successful scans.
+                        </CardDescription>
+                      </div>
+                      {trendDelta != null ? (
+                        <Badge
+                          variant={
+                            trendDelta > 0 ? "warning" : trendDelta < 0 ? "success" : "secondary"
+                          }
+                          className="tabular-nums"
+                        >
+                          {trendDelta >= 0 ? "+" : "−"}
+                          {formatNumber(Math.abs(trendDelta))} vs prev
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex min-h-0 flex-1 flex-col">
+                    {trend.length > 1 ? (
+                      <div className="min-h-44 w-full min-w-0 flex-1">
+                        <AreaChart
+                          data={trend}
+                          xDataKey="date"
+                          aspectRatio="auto"
+                          className="h-full w-full"
+                          accessibleLabel="Startup tokens across recent scans"
+                        >
+                          <Grid horizontal />
+                          <Area
+                            dataKey="tokens"
+                            stroke="var(--chart-1)"
+                            fill="var(--chart-1)"
+                            fillOpacity={0.25}
+                          />
+                          <XAxis />
+                          <ChartTooltip />
+                        </AreaChart>
+                      </div>
+                    ) : (
+                      <StatePanel
+                        kind="empty"
+                        title="Not enough history"
+                        description="Run at least two scans to chart this server's token trend."
+                      />
+                    )}
+                  </CardContent>
+                </Card>
+
+                <OpenIssuesCard onReload={reloadIssues} state={issuesState} />
               </div>
 
               {/* Findings (~60%) beside Token distribution (~40%) — ONE test-driven findings surface
                   (server-level tests + tool-level tests aggregated across tools, with tool links). */}
               <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-                <Card className="lg:col-span-3">
+                <Card className="flex min-w-0 flex-col lg:col-span-3">
                   <CardHeader>
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
@@ -658,7 +733,7 @@ export function ServersView(props: {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="flex min-h-0 flex-1 flex-col">
                     {findingsState.status === "error" ? (
                       <InlineError
                         title="Couldn’t load findings"
@@ -680,108 +755,25 @@ export function ServersView(props: {
                   <CardHeader>
                     <SectionCardTitle>Token distribution</SectionCardTitle>
                     <CardDescription>
-                      Where startup tokens go — per-tool Name/Desc/Schema/Annotation split.
+                      Where startup tokens go — by surface, and by part of a tool definition.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     {health ? (
-                      <StackedContributorList
+                      <TokenDistribution
+                        facets={health.composition}
                         onSelect={inspectToolById}
-                        serverSplit={health.composition}
                         rows={contributorRows}
+                        surface={{
+                          // `ScanSummary.totalTokens` is TOOLS ONLY (see its type comment) — the
+                          // other two surfaces carry their own totals, so this is a real three-way
+                          // split rather than a whole re-cut into parts.
+                          tools: latestScan.totalTokens,
+                          resources: latestScan.totalResourceTokens,
+                          prompts: latestScan.totalPromptTokens,
+                        }}
                       />
                     ) : null}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Server profile (½) beside scan trend (½) */}
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Card className="min-w-0">
-                  <CardHeader>
-                    <SectionCardTitle>Server profile</SectionCardTitle>
-                    <CardDescription>Connection details (secrets never shown).</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Descriptions columns={2}>
-                      <DescriptionsItem label="Name">{server.name}</DescriptionsItem>
-                      <DescriptionsItem label="Transport">{server.transport}</DescriptionsItem>
-                      <DescriptionsItem label={server.transport === "stdio" ? "Command" : "URL"}>
-                        {endpoint || "n/a"}
-                      </DescriptionsItem>
-                      <DescriptionsItem label="Auth">{authLabel}</DescriptionsItem>
-                      <DescriptionsItem label="Type">
-                        {serverType ? (
-                          <span className="inline-flex flex-wrap items-center gap-2">
-                            <span className="min-w-0 truncate">{serverType.name}</span>
-                            <ServerTypeStatusBadge status={serverType.status} />
-                          </span>
-                        ) : (
-                          "Untyped"
-                        )}
-                      </DescriptionsItem>
-                      <DescriptionsItem label="Env secrets">
-                        {server.hasEnvSecrets ? "stored" : "none"}
-                      </DescriptionsItem>
-                      <DescriptionsItem label="Header secrets">
-                        {server.hasHeaderSecrets ? "stored" : "none"}
-                      </DescriptionsItem>
-                      <DescriptionsItem label="Updated">
-                        {formatDateTime(server.updatedAt)}
-                      </DescriptionsItem>
-                    </Descriptions>
-                  </CardContent>
-                </Card>
-
-                <Card className="min-w-0">
-                  <CardHeader>
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <SectionCardTitle>Scan trend</SectionCardTitle>
-                        <CardDescription>
-                          Total startup tokens across recent successful scans.
-                        </CardDescription>
-                      </div>
-                      {trendDelta != null ? (
-                        <Badge
-                          variant={
-                            trendDelta > 0 ? "warning" : trendDelta < 0 ? "success" : "secondary"
-                          }
-                          className="tabular-nums"
-                        >
-                          {trendDelta >= 0 ? "+" : "−"}
-                          {formatNumber(Math.abs(trendDelta))} vs prev
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {trend.length > 1 ? (
-                      <div className="h-44 w-full">
-                        <AreaChart
-                          data={trend}
-                          xDataKey="date"
-                          style={{ height: "100%" }}
-                          accessibleLabel="Startup tokens across recent scans"
-                        >
-                          <Grid horizontal />
-                          <Area
-                            dataKey="tokens"
-                            stroke="var(--chart-1)"
-                            fill="var(--chart-1)"
-                            fillOpacity={0.25}
-                          />
-                          <XAxis />
-                          <ChartTooltip />
-                        </AreaChart>
-                      </div>
-                    ) : (
-                      <StatePanel
-                        kind="empty"
-                        title="Not enough history"
-                        description="Run at least two scans to chart this server's token trend."
-                      />
-                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -986,5 +978,78 @@ function NoScan({ onRunScan }: { onRunScan: () => void }) {
       description="Run a scan to collect this server's tools and token footprint."
       actions={<Button onClick={onRunScan}>Run scan</Button>}
     />
+  );
+}
+
+/**
+ * The connection facts, on one line under the KPI figures.
+ *
+ * These used to be a `Server profile` `Card` at the very bottom of the Overview tab — past 2,428px
+ * of findings, which is where the owner found them. They are eight read-only strings; a card, a
+ * heading and a `Descriptions` grid was more chrome than the content, and it cost the page its
+ * whole top row. Rendered as a `<dl>` so each fact still has a real label/value pair for assistive
+ * tech, and `min-w-0` + `truncate` on the endpoint so a long URL wraps the row instead of the page.
+ */
+function ServerProfileLine({
+  server,
+  serverType,
+  endpoint,
+  authLabel,
+}: {
+  server: ServerConfig;
+  serverType: ServerType | null;
+  endpoint: string | undefined;
+  authLabel: string;
+}) {
+  const secrets = [
+    server.hasEnvSecrets ? "env" : null,
+    server.hasHeaderSecrets ? "headers" : null,
+  ].filter(Boolean);
+
+  return (
+    <dl className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 border-t border-border pt-3">
+      <ProfileFact label="Transport">{server.transport}</ProfileFact>
+      <ProfileFact label="Auth">{authLabel}</ProfileFact>
+      <ProfileFact label="Type">
+        {serverType ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <span className="min-w-0 truncate">{serverType.name}</span>
+            <ServerTypeStatusBadge status={serverType.status} />
+          </span>
+        ) : (
+          "Untyped"
+        )}
+      </ProfileFact>
+      <ProfileFact label={server.transport === "stdio" ? "Command" : "URL"} grow>
+        <span className="block min-w-0 truncate font-mono" title={endpoint || undefined}>
+          {endpoint || "n/a"}
+        </span>
+      </ProfileFact>
+      <ProfileFact label="Secrets">
+        {secrets.length > 0 ? `stored (${secrets.join(", ")})` : "none"}
+      </ProfileFact>
+      <ProfileFact label="Updated">{formatDateTime(server.updatedAt)}</ProfileFact>
+    </dl>
+  );
+}
+
+/** One `label: value` pair in {@link ServerProfileLine}. `grow` lets the endpoint take the slack. */
+function ProfileFact({
+  label,
+  children,
+  grow,
+}: {
+  label: string;
+  children: ReactNode;
+  grow?: boolean;
+}) {
+  return (
+    // `Text` cannot render a <dt>/<dd> (its `as` accepts div/p/span only), and the pair is what
+    // makes each fact a labelled term rather than two loose strings — so these are raw structural
+    // elements carrying the `text-meta` ROLE utility, which is exactly what the taxonomy allows.
+    <div className={cn("flex min-w-0 items-baseline gap-1.5", grow && "min-w-40 flex-1")}>
+      <dt className="shrink-0 text-meta text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 truncate text-meta">{children}</dd>
+    </div>
   );
 }
