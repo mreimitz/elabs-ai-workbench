@@ -112,6 +112,41 @@ describe("TokenDistribution", () => {
     expect(row.querySelector('span[style="width: 100%;"]')).toBeNull();
   });
 
+  test("each tool row DRAWS its five-part split, not only on hover", () => {
+    // The owner asked twice to see the breakdown per tool in this list. Hover works, and a hover is
+    // not "seeing it": it is invisible until the pointer lands, and it never opens on keyboard focus.
+    renderDistribution();
+    const row = screen.getByRole("button", { name: /qlik_create_data_object/ });
+    const bars = [...row.querySelectorAll("span")].filter((el) =>
+      /rounded-full bg-muted/.test(el.className),
+    );
+    expect(bars).toHaveLength(2); // share of server, then composition
+
+    const composition = bars[1] as HTMLElement;
+    const widths = [...composition.children].map((el) =>
+      Number(/width:\s*([\d.]+)%/.exec(el.getAttribute("style") ?? "")?.[1]),
+    );
+    // Description 2,002 · Schema 1,905 · Output schema + envelope 877, over the tool's own 4,796.
+    expect(widths[1]).toBeCloseTo((2002 / 4796) * 100, 4);
+    expect(widths[2]).toBeCloseTo((1905 / 4796) * 100, 4);
+    expect(widths.reduce((a, w) => a + w, 0)).toBeCloseTo(100, 6);
+  });
+
+  test("the composition bar is a part-to-whole of the TOOL, so it always spans the row", () => {
+    // Painting the split inside the ~30px share bar above would make five unreadable slivers; the
+    // two bars answer different questions and are scaled to different wholes on purpose.
+    renderDistribution();
+    const row = screen.getByRole("button", { name: /qlik_create_data_object/ });
+    const bars = [...row.querySelectorAll("span")].filter((el) =>
+      /rounded-full bg-muted/.test(el.className),
+    );
+    const share = Number(
+      /width:\s*([\d.]+)%/.exec(bars[0]?.firstElementChild?.getAttribute("style") ?? "")?.[1],
+    );
+    expect(share).toBeLessThan(10); // share of the server
+    expect(bars[1]?.children.length).toBeGreaterThan(1); // composition, several segments
+  });
+
   test("the list states what it adds up to — a whole-server track cannot show that on its own", () => {
     renderDistribution();
     expect(screen.getByText(/These 1 are 7\.4% of the server’s tool tokens\./)).toBeInTheDocument();

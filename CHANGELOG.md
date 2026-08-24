@@ -63,10 +63,19 @@ eight heaviest tools are **27.7%** of the surface between them. Whether the cost
 a few tools or spread across all of them calls for opposite fixes, and a chart whose top bar is
 always full can never tell you which you have.
 
-The split moved to hover — and, because
-`brand-ui docs Tooltip` is explicit that essential information must not be tooltip-only, it also
-rides in each row’s accessible name. That was not a precaution: tabbing to a row was measured
-opening no tooltip at all, so a keyboard user got nothing.
+**Each row then got its breakdown back, drawn rather than hovered.** It had moved to a tooltip, and
+a tooltip is not seeing it — invisible until the pointer lands, and measured opening on no keyboard
+focus at all. Every row now carries TWO bars, because the row answers two questions and one bar
+cannot hold both: a short top bar for the tool’s share of the server (its length is the percentage
+printed above it), and a full-width bottom bar for what the tool is made of. The second is a
+part-to-whole of the tool itself, so it spans the row and its five segments are legible — which they
+would not be if painted inside the ~30px share bar. Its colours are the legend already sitting
+directly above the list.
+
+That is what makes the shape comparable at a glance: on `qlik-mreimitz` the two heaviest tools are
+mostly description and input schema, while the six below them are dominated by output schema. The
+split also still rides in each row’s accessible name, because `brand-ui docs Tooltip` is explicit
+that essential information must not be tooltip-only.
 
 **Findings became separable, and stopped setting the page’s height.** Each finding is a bordered,
 collapsed row carrying its severity, its title and how many tools it hits; expanding one shows the
@@ -84,7 +93,7 @@ no status-history table, so an issue closed in May and regressed in July reads a
 Making that faithful needs a new table, deliberately not added here.
 
 Verified against the running app in both themes, on a server that actually serves resources, and on
-the tool detail panel. Thirty-four new tests cover the derivations — the findings list had none at all
+the tool detail panel. Thirty-six new tests cover the derivations — the findings list had none at all
 before — and each guard was broken and watched go red before it was trusted. One of them caught a
 real defect during review: a zero-valued slice shifted the colours of the slices after it, so a
 server with no resources but some prompts would have painted Prompts in the Resources colour while

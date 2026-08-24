@@ -412,14 +412,39 @@ function ToolTokenRow({
             {formatNumber(row.total)} · {formatPercent(row.percent)}
           </Text>
         </span>
-        {/* Taller than the max-scaled version it replaces: against a whole-server track the marks
-            are short by construction (6.9% of the row for the heaviest tool here), so height is
-            what keeps them reading as bars rather than dashes. */}
+        {/* TWO bars, because the row answers two different questions and one bar cannot carry both.
+            Squeezing them into one is exactly what made the earlier version read as broken: a
+            full-width bar beside the number 6.9%.
+
+            Top — how much of the SERVER this tool is. Its length is the percent printed above it,
+            so bar and number are one measurement. Short by construction (the heaviest tool here is
+            under 10% of its server), which is itself the finding.
+
+            Bottom — what this tool is MADE OF, always full width because it is a part-to-whole of
+            the tool itself. This is the breakdown the owner asked to see in the list rather than
+            behind a hover; at full width its five segments are legible, which they would not be if
+            painted inside the ~30px share bar above. Colours match the "By part of a tool
+            definition" legend directly above the list, so it needs no legend of its own. */}
         <span className="block h-2 w-full overflow-hidden rounded-full bg-muted">
           <span
             className="block h-full rounded-full bg-primary"
             style={{ width: `${(row.total / (serverTotal || 1)) * 100}%` }}
           />
+        </span>
+        <span className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          {segments.map((segment, index) =>
+            segment.value > 0 ? (
+              <span
+                className={cn(
+                  "h-full border-transparent last:border-r-0",
+                  segments.filter((s) => s.value > 0).length > 1 && "border-r-2",
+                  SEGMENT_BG[index % SEGMENT_BG.length],
+                )}
+                key={segment.key}
+                style={{ width: `${(segment.value / (row.total || 1)) * 100}%` }}
+              />
+            ) : null,
+          )}
         </span>
       </span>
       <span className="sr-only">
@@ -496,7 +521,7 @@ export function TokenDistribution({
       {rows.length > 0 ? (
         <div className="flex min-w-0 flex-col gap-1.5">
           <Text as="span" variant="meta" tone="muted">
-            Heaviest tools — bar is share of this server; hover a row for its split
+            Heaviest tools — top bar is its share of this server, bottom bar is what it’s made of
           </Text>
           <ul className="flex flex-col">
             {rows.map((row, index) => (
