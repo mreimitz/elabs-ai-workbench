@@ -5,26 +5,46 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
-## Unreleased — a server’s own page stopped burying what it is, and its token chart stopped hiding 59% of the tokens
+## Unreleased — a server’s page stopped burying what it is, and its token chart stopped hiding the biggest thing on it
 
 **The two cards that say what a server IS were five screens below the fold.** Measured on
 `barc-benchmark` at 1600×1000: the Overview tab scrolled 2,839px against a 534px viewport, because
 the findings list alone was 2,428px tall and stretched the card beside it to match. Connection
-details — transport, auth, URL, when it was last updated — did not begin until y=2722. Those eight
-read-only facts now sit on one line under the headline figures, where they are visible on arrival,
-and the page leads with its two charts instead. The tab now scrolls **1,172px** — 2.2 screens
-instead of 5.3 — and the two remaining cards are the same height as each other, so neither carries
-a band of dead space.
+details — transport, auth, URL, when it was last updated — did not begin until y=2722. They now
+live in the page toolbar, stated **once**: an intermediate pass put them on a second line under the
+headline figures and the result said transport, auth, type and URL twice on the same screen, which
+the owner caught immediately. The toolbar also stopped rendering them as six outline chips — a chip
+reads as "this is a state worth noticing", and a transport name is not one. Only the two real states
+keep a badge: the last scan's outcome, and the server type's lifecycle.
+
+The row under the figures now carries what the toolbar cannot: **when the server was last updated,
+and how much it has actually been used** — run counts and scan counts as small bar charts beside
+their totals. Those started as one bar per day and were changed after looking at them: 23 scans
+spread over seven weeks rendered as thirty 2px hairlines, which reads as an empty box beside the
+number 23. They are twelve equal slices of the server's own history instead, so the shape — bursty,
+steady, long-idle — survives however long the server has existed. The tab scrolls roughly two
+screens instead of five.
 
 **The token-distribution chart was omitting up to three fifths of the tokens it claimed to
-account for.** A tool’s headline token count is the serialized payload the model actually ingests
-— envelope, JSON keys, braces, quoting. The four parts the chart broke it into (name, description,
-schema, annotations) are each counted in isolation, so they never added up to it, and the bar was
-scaled to their sum — painting a full-width 100% bar under the heading “Where startup tokens go”
-while the difference went unmentioned. Measured across the registered servers that difference runs
-from 4.5% to **59.7%** (qlik-mreimitz: 48,860 tool tokens against a 19,707 sum). It is now a named
-fifth slice, **Wire structure**, and on `barc-benchmark` it reads 38,376 · 59.5% — the single
-largest thing on that server’s chart, and previously invisible.
+account for, and what it was omitting turned out to matter.** The four parts the chart broke a tool
+into — name, description, input schema, annotations — are each counted in isolation, so they never
+added up to the tool’s real total, and the bar was scaled to their sum: a full-width 100% bar under
+the heading “Where startup tokens go” with the difference unmentioned. Across the registered servers
+that difference runs from 4.5% to **59.7%**.
+
+The first attempt named the gap “Wire structure” and told the reader it was JSON punctuation they
+could not edit. **That was wrong, and checking it is what found the real problem.** The remainder is
+almost entirely the tool’s declared **`outputSchema`** — a full, editable content field this app
+does not meter at all. On every server whose tools declare one, 100% of the gap sits on exactly
+those tools; on the one server that declares none, the gap is 35 tokens across three tools, which is
+the actual envelope overhead. `qlik_get_full_glossary_export` carries an 8,356-character output
+schema against a 168-character input schema: the app reported 2,028 tokens and itemised 120 of them.
+The slice is now called **Output schema + envelope**, and a line under the bar says plainly what is
+in it, that the dominant part is editable, and that the two are not yet counted separately.
+
+**The same breakdown now appears in the tool detail panel**, which had the identical omission — its
+“Token budget” bar showed four segments summing to 2,511 against a stated 2,601. Both surfaces draw
+from one component now, with a test that fails if their rows ever differ.
 
 **The chart also answers a question it never used to.** A second bar splits the startup cost by
 surface — Tools, Resources, Prompts — which was already measured and never shown; on `qlik-stage`
@@ -52,8 +72,8 @@ history, because it cannot be one: `resolved_at` is cleared when an issue is reo
 no status-history table, so an issue closed in May and regressed in July reads as open since May.
 Making that faithful needs a new table, deliberately not added here.
 
-Verified against the running app in both themes and on a server that actually serves resources, not
-just the one in the report. Twenty-two new tests cover the derivations — the findings list had none at all
+Verified against the running app in both themes, on a server that actually serves resources, and on
+the tool detail panel. Thirty-two new tests cover the derivations — the findings list had none at all
 before — and each guard was broken and watched go red before it was trusted. One of them caught a
 real defect during review: a zero-valued slice shifted the colours of the slices after it, so a
 server with no resources but some prompts would have painted Prompts in the Resources colour while

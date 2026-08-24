@@ -2,6 +2,8 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type {
   CompatibilityTestReport,
+  RunFilter,
+  RunMetricsResponse,
   PromptScan,
   ResourceScan,
   ScanDetail,
@@ -12,7 +14,7 @@ import type {
   ToolScan,
 } from "@mcp-token-footprint/shared";
 import { DataTable, SearchInput, type ColumnDef } from "@elabs-ai/components-data";
-import { AreaChart, Area, Grid, XAxis, ChartTooltip } from "@elabs-ai/components-charts";
+import { AreaChart, Area, Grid, Sparkline, XAxis, ChartTooltip } from "@elabs-ai/components-charts";
 import {
   Badge,
   Button,
@@ -73,7 +75,7 @@ import { loadableData, useLoadable } from "../../lib/loadable";
 import { getErrorMessage } from "../../lib/errors";
 import { formatDateTime, formatNumber, formatPercent } from "../../lib/format";
 import { promptColumns, resourceColumns } from "../scans/resourcePromptColumns";
-import { apiDelete, getServerTests, getToolFindings } from "../../lib/api";
+import { apiDelete, getRunMetrics, getServerTests, getToolFindings } from "../../lib/api";
 import { PromptGetDialog, ResourceReadDialog } from "../scans/ResourcePromptRun";
 import { ToolDetailPanel } from "../scans/ToolDetailPanel";
 import {
@@ -86,6 +88,7 @@ import { ServerFindings, ServerTestsTab } from "../compatibility/CompatibilityTe
 import { IssuesPanel } from "../issues/IssuesPanel";
 import { OpenIssuesCard } from "../issues/OpenIssuesCard";
 import { useRatingIssues } from "../issues/use-rating-issues";
+import { activityBars } from "./activity-bars";
 import { ServerTypeStatusBadge } from "./ServerTypeStatusBadge";
 import { ServerBreadcrumbSwitcher } from "./ServerBreadcrumbSwitcher";
 import { useSetBreadcrumbSlot } from "../../components/breadcrumb-slot";
@@ -209,6 +212,30 @@ export function ServersView(props: {
     const prev = trend[trend.length - 2]?.tokens ?? 0;
     return last - prev;
   }, [trend]);
+
+  // ── The KPI row's two activity bars ──────────────────────────────────────────────────────────
+  // "Updates" comes from the scan history the page ALREADY holds — one bar per day, so a server
+  // scanned twice on Tuesday reads as a taller Tuesday rather than two bars. "Usage" is the only
+  // new request on this page: run counts filtered to this server. Both are counts, so an empty day
+  // is genuinely 0 and zero-filling is the honest fill (unlike the level series elsewhere).
+  const scanActivity = useMemo(
+    () => activityBars(props.scanHistory.map((scan) => ({ at: scan.scannedAt, count: 1 }))),
+    [props.scanHistory],
+  );
+
+  const runFilter = useMemo<RunFilter>(
+    () => (server?.id ? { serverId: [server.id] } : {}),
+    [server?.id],
+  );
+  const { state: runMetricsState } = useLoadable<RunMetricsResponse>(
+    () => getRunMetrics({ filter: runFilter, bucket: "day", measures: ["count"] }),
+    [runFilter],
+    { enabled: server?.id != null },
+  );
+  const runActivity = useMemo(() => {
+    const points = loadableData(runMetricsState)?.series.find((s) => s.measure === "count")?.points;
+    return activityBars((points ?? []).map((p) => ({ at: p.bucketStart, count: p.value })));
+  }, [runMetricsState]);
 
   const contributorRows: ContributorRow[] = useMemo(
     () =>
@@ -504,27 +531,29 @@ export function ServersView(props: {
                     : "This server has not been scanned yet."}
                 </TooltipContent>
               </Tooltip>
-              <Badge variant="outline" className="shrink-0">
-                {server.transport}
-              </Badge>
-              <Badge
-                variant={server.authType === "none" ? "secondary" : "success"}
-                className="shrink-0"
-              >
-                {authLabel}
-              </Badge>
-              {/* Server type (planning/Roadmap/completed/RM-21-server-types WP 2.2): the type NAME as an outline chip + its
-                  lifecycle status via the shared ServerTypeStatusBadge. Hidden when the server has no
-                  (known) type. */}
+              {/* Transport / auth / type NAME are plain facts, not states, so they read as labelled
+                  text rather than chips. Six outline badges in a row made the strip look like a
+                  status readout in which nothing was actually a status — and the same six facts were
+                  then repeated in the page body. Only the two real STATES keep a badge: the last
+                  scan's outcome above, and the server type's lifecycle below. */}
+              <ToolbarFact label="Transport">{server.transport}</ToolbarFact>
+              <ToolbarFact label="Auth">{authLabel}</ToolbarFact>
               {serverType ? (
-                <>
-                  <Badge variant="outline" className="max-w-[12rem] shrink-0 truncate">
-                    {serverType.name}
-                  </Badge>
-                  <span className="inline-flex shrink-0">
+                <ToolbarFact label="Type">
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                    <span className="min-w-0 truncate">{serverType.name}</span>
                     <ServerTypeStatusBadge status={serverType.status} />
                   </span>
-                </>
+                </ToolbarFact>
+              ) : null}
+              {/* Stated only when there ARE secrets. "none" is the ordinary case and says nothing;
+                  "this server holds credentials" is worth a glance. Values are never shown. */}
+              {server.hasEnvSecrets || server.hasHeaderSecrets ? (
+                <ToolbarFact label="Secrets">
+                  {[server.hasEnvSecrets ? "env" : null, server.hasHeaderSecrets ? "headers" : null]
+                    .filter(Boolean)
+                    .join(", ")}
+                </ToolbarFact>
               ) : null}
               <Text variant="meta" tone="muted" className="min-w-0 truncate font-mono">
                 {endpoint || "No endpoint configured."}
@@ -629,13 +658,12 @@ export function ServersView(props: {
                   NOT restated — they already live in the tab badges; Recoverable is stated only here
                   (its former Findings-card badge was dropped so no number appears twice).
 
-                  The connection facts sit on a SECOND LINE of this same block rather than in a
-                  `Server profile` card of their own. That card used to be the last thing on the page:
-                  measured at 1600×1000 the tab scrolled 2,839px, and the profile did not begin until
-                  y=2722 — five screens past the identity it describes. Read-only facts do not need a
-                  card, and putting them in the header is what frees the top of the page for the two
-                  charts. */}
-              <div className="flex flex-col gap-3 rounded-md border border-border bg-card px-4 py-3">
+                  The connection facts are NOT restated here. They live in the page toolbar, once —
+                  an earlier pass put them on a second line of this block and the result said
+                  transport, auth, type and URL twice on one screen. What this row adds beside the
+                  figures is the two things the toolbar cannot carry: when the server was last
+                  touched, and how much it has actually been used. */}
+              <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-4 rounded-md border border-border bg-card px-4 py-3">
                 <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
                   <KpiStat label="Startup tokens" value={formatNumber(latestScan.totalTokens)} />
                   <KpiStat
@@ -646,12 +674,28 @@ export function ServersView(props: {
                     <KpiStat label="Recoverable" value={formatNumber(health!.recoverable)} />
                   ) : null}
                 </div>
-                <ServerProfileLine
-                  authLabel={authLabel}
-                  endpoint={endpoint}
-                  server={server}
-                  serverType={serverType}
-                />
+                {/* The three figures above are the headline; these three are context, so they sit at
+                    the INLINE rung. A timestamp rendered at the 32px KPI size out-shouted every
+                    number beside it — it is the least urgent thing in the row. */}
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <MiniBars
+                    emptyLabel="none yet"
+                    label="Runs"
+                    total={runActivity.total}
+                    values={runActivity.values}
+                  />
+                  <MiniBars
+                    emptyLabel="none yet"
+                    label="Scans"
+                    total={scanActivity.total}
+                    values={scanActivity.values}
+                  />
+                  <KpiStat
+                    label="Updated"
+                    orientation="inline"
+                    value={formatDateTime(server.updatedAt)}
+                  />
+                </div>
               </div>
 
               {/* The two time series, side by side and FIRST — token footprint over scans, and open
@@ -982,74 +1026,54 @@ function NoScan({ onRunScan }: { onRunScan: () => void }) {
 }
 
 /**
- * The connection facts, on one line under the KPI figures.
+ * One `Label value` pair in the page toolbar.
  *
- * These used to be a `Server profile` `Card` at the very bottom of the Overview tab — past 2,428px
- * of findings, which is where the owner found them. They are eight read-only strings; a card, a
- * heading and a `Descriptions` grid was more chrome than the content, and it cost the page its
- * whole top row. Rendered as a `<dl>` so each fact still has a real label/value pair for assistive
- * tech, and `min-w-0` + `truncate` on the endpoint so a long URL wraps the row instead of the page.
+ * The toolbar used to state these as outline `Badge`s — six chips in a row, none of which was a
+ * status. A chip reads as "this is a state worth noticing"; a transport name is not. The two real
+ * states next to them (the last scan's outcome, the server type's lifecycle) keep their badges, and
+ * now stand out because everything around them stopped shouting.
  */
-function ServerProfileLine({
-  server,
-  serverType,
-  endpoint,
-  authLabel,
-}: {
-  server: ServerConfig;
-  serverType: ServerType | null;
-  endpoint: string | undefined;
-  authLabel: string;
-}) {
-  const secrets = [
-    server.hasEnvSecrets ? "env" : null,
-    server.hasHeaderSecrets ? "headers" : null,
-  ].filter(Boolean);
-
+function ToolbarFact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <dl className="flex flex-wrap items-baseline gap-x-5 gap-y-1.5 border-t border-border pt-3">
-      <ProfileFact label="Transport">{server.transport}</ProfileFact>
-      <ProfileFact label="Auth">{authLabel}</ProfileFact>
-      <ProfileFact label="Type">
-        {serverType ? (
-          <span className="inline-flex min-w-0 items-center gap-1.5">
-            <span className="min-w-0 truncate">{serverType.name}</span>
-            <ServerTypeStatusBadge status={serverType.status} />
-          </span>
-        ) : (
-          "Untyped"
-        )}
-      </ProfileFact>
-      <ProfileFact label={server.transport === "stdio" ? "Command" : "URL"} grow>
-        <span className="block min-w-0 truncate font-mono" title={endpoint || undefined}>
-          {endpoint || "n/a"}
-        </span>
-      </ProfileFact>
-      <ProfileFact label="Secrets">
-        {secrets.length > 0 ? `stored (${secrets.join(", ")})` : "none"}
-      </ProfileFact>
-      <ProfileFact label="Updated">{formatDateTime(server.updatedAt)}</ProfileFact>
-    </dl>
+    <span className="flex shrink-0 items-baseline gap-1.5">
+      <Text as="span" variant="meta" tone="muted">
+        {label}
+      </Text>
+      <Text as="span" variant="meta" className="min-w-0 truncate">
+        {children}
+      </Text>
+    </span>
   );
 }
 
-/** One `label: value` pair in {@link ServerProfileLine}. `grow` lets the endpoint take the slack. */
-function ProfileFact({
+/**
+ * A labelled count with a bar-per-day sparkline under it — the KPI row's "how much has this server
+ * actually been used / re-measured" pair. Renders an honest empty state rather than a flat baseline,
+ * because a row of zero-height bars and "never happened" look identical.
+ */
+function MiniBars({
   label,
-  children,
-  grow,
+  values,
+  total,
+  emptyLabel,
 }: {
   label: string;
-  children: ReactNode;
-  grow?: boolean;
+  values: number[];
+  total: number;
+  emptyLabel: string;
 }) {
+  if (values.length === 0) {
+    return <KpiStat label={label} orientation="inline" value={emptyLabel} />;
+  }
   return (
-    // `Text` cannot render a <dt>/<dd> (its `as` accepts div/p/span only), and the pair is what
-    // makes each fact a labelled term rather than two loose strings — so these are raw structural
-    // elements carrying the `text-meta` ROLE utility, which is exactly what the taxonomy allows.
-    <div className={cn("flex min-w-0 items-baseline gap-1.5", grow && "min-w-40 flex-1")}>
-      <dt className="shrink-0 text-meta text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 truncate text-meta">{children}</dd>
+    <div className="flex min-w-0 items-center gap-2">
+      <KpiStat label={label} orientation="inline" value={formatNumber(total)} />
+      <Sparkline
+        className="h-6 w-24 shrink-0"
+        label={`${label} over time, in ${values.length} equal slices of this server's history`}
+        values={values}
+        variant="bar"
+      />
     </div>
   );
 }

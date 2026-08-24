@@ -163,26 +163,48 @@ export function facetSum(split: ContributorSplit): number {
 }
 
 /**
- * The four facets **plus the wire structure they leave unaccounted for**.
+ * The four facets **plus everything else in the definition that nothing itemises**.
  *
- * A tool's headline `totalTokens` is the count of the serialized provider payload — envelope, JSON
- * keys, braces, quoting (`apps/api/src/token-counting/profiles.ts`: *"This is >= the facet sum
- * because the wire structure (keys, braces, envelope) is now included"*). The four facets are each
- * counted in ISOLATION, so they do not add up to it.
+ * A tool's headline `totalTokens` is the count of the serialized provider payload
+ * (`apps/api/src/token-counting/profiles.ts`). The four facets — name, description, INPUT schema,
+ * annotations — are each counted in ISOLATION, so they do not add up to it, and the bar this feeds
+ * used to scale to their sum: a full-width 100% bar under the heading "Where startup tokens go"
+ * with up to three fifths of the tokens missing from it.
  *
- * That gap is not a rounding artifact. Measured across the owner's own registered servers it runs
- * from 4.5% to **59.7%** of a server's tool tokens (qlik-mreimitz: 48,860 total against a 19,707
- * facet sum). The bar this feeds used to scale to the facet sum, so it painted a full-width 100%
- * bar under the heading "Where startup tokens go" while three fifths of the tokens were missing
- * from it. Naming the remainder is the whole point: those tokens are real, the model ingests them,
- * and this app exists to meter them.
+ * ## What the remainder actually is — measured, not assumed
+ * The first version of this called it "wire structure" and told the reader it was JSON braces and
+ * quoting they could not edit. That was wrong, and the numbers say so. Counted over the owner's own
+ * registered servers:
+ *
+ * | server | tools declaring `outputSchema` | remainder | held by those tools |
+ * |---|---|---|---|
+ * | barc-benchmark | 77 / 77 | 38,376 | **100%** |
+ * | qlik-stage | 143 / 146 | 63,939 | **100%** |
+ * | qlik-mreimitz | 60 / 60 | 29,153 | **100%** |
+ * | QSoW-MCP | 1 / 36 | 356 | 12% |
+ * | databricks-sql | 0 / 3 | 35 | 0% |
+ *
+ * So the remainder is dominated by the tool's declared **`outputSchema`** — a real, editable
+ * content field this app does not yet meter separately — and the true envelope overhead is the
+ * ~10 tokens per tool left over on servers that declare none. `qlik_get_full_glossary_export`
+ * carries a 8,356-character output schema against a 168-character input schema; it reads as 2,028
+ * tokens of which 120 are itemised.
+ *
+ * Splitting the two exactly needs an `outputSchemaTokens` count that is neither computed nor
+ * persisted today (`mcp_tool_scans` has no such column) — a schema change, deliberately not made
+ * here. Until it exists the segment names both things and the note says which one dominates,
+ * rather than asserting a split the data cannot support.
  *
  * The remainder is floored at 0 so a counting-version skew can never render a negative slice.
  */
 export function facetSegments(split: ContributorSplit, total: number): CompositionSegment[] {
   return [
     ...FACETS.map((facet) => ({ key: facet.key, label: facet.label, value: split[facet.key] })),
-    { key: "structure", label: "Wire structure", value: Math.max(0, total - facetSum(split)) },
+    {
+      key: "structure",
+      label: "Output schema + envelope",
+      value: Math.max(0, total - facetSum(split)),
+    },
   ];
 }
 
@@ -212,11 +234,14 @@ function CompositionBar({
   total,
   title,
   ariaLabel,
+  note,
 }: {
   segments: CompositionSegment[];
   total: number;
   title: string;
   ariaLabel: string;
+  /** An always-visible line under the legend. Not a tooltip: see {@link RESIDUAL_SEGMENT_NOTE}. */
+  note?: string;
 }) {
   const denom = total > 0 ? total : 1;
   // Colour is keyed to the segment's OWN position, never to its position among the drawn ones. A
@@ -273,7 +298,61 @@ function CompositionBar({
           </li>
         ))}
       </ul>
+      {note ? (
+        <Text variant="meta" tone="muted" className="text-pretty">
+          {note}
+        </Text>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * What the fifth segment is, stated on the page rather than hidden in a tooltip.
+ *
+ * The owner's reaction to the segment on first sight was *"what is wire structure ??"* — the
+ * correct reaction to an unexplained label that happens to be the biggest slice on the chart. A
+ * tooltip would not have answered it (unreachable by keyboard here, invisible until hovered), so
+ * the answer is a line of text under the bar. See {@link facetSegments} for the measurement behind
+ * the wording — and for why the earlier wording, which called it uneditable JSON punctuation, was
+ * false.
+ */
+export const RESIDUAL_SEGMENT_NOTE =
+  "Everything in the definition that the four parts above don’t itemise. On these servers it is " +
+  "almost entirely the tool’s declared output schema — which IS editable — plus roughly ten tokens " +
+  "of JSON envelope per tool. The two aren’t counted separately yet.";
+
+/**
+ * The Name / Description / Schema / Annotations / Wire structure bar — ONE component, used for a
+ * whole server and for a single tool, so the two can never show different arithmetic.
+ *
+ * The tool detail used to draw its own four-segment bar and rescale it to their sum: on
+ * `qlik_add_chart` that read Name 4 · Description 303 · Schema 2,197 · Annotations 7, which totals
+ * 2,511 against a stated 2,601 — 90 tokens unaccounted for, in a panel headed "Token budget".
+ */
+export function ToolFacetBar({
+  split,
+  total,
+  title = "By part of a tool definition",
+  subject,
+}: {
+  split: ContributorSplit;
+  /** The HEADLINE total (serialized payload), never the facet sum — that difference is a segment. */
+  total: number;
+  title?: string;
+  /** Names the thing being broken down, for the bar's accessible label. */
+  subject?: string;
+}) {
+  return (
+    <CompositionBar
+      ariaLabel={
+        subject ? `Token composition for ${subject}` : "Tool tokens by part of the definition"
+      }
+      note={RESIDUAL_SEGMENT_NOTE}
+      segments={facetSegments(split, total)}
+      title={title}
+      total={total}
+    />
   );
 }
 
@@ -400,12 +479,7 @@ export function TokenDistribution({
         title="By surface"
         total={surfaceTotal}
       />
-      <CompositionBar
-        ariaLabel="Tool tokens by part of the definition"
-        segments={facetSegments(facets, surface.tools)}
-        title="By part of a tool definition"
-        total={surface.tools}
-      />
+      <ToolFacetBar split={facets} total={surface.tools} />
       {rows.length > 0 ? (
         <div className="flex min-w-0 flex-col gap-1.5">
           <Text as="span" variant="meta" tone="muted">

@@ -23,7 +23,7 @@ import {
 import { CodeEditor } from "@elabs-ai/components-editor";
 import { Check, Maximize2, Play } from "lucide-react";
 import { ScrollableTabsList } from "../../components/ScrollableTabsList";
-import { SegmentedBar } from "../../components/TokenViz";
+import { ToolFacetBar } from "../../components/TokenViz";
 import { parseParams, sortParams } from "../../lib/schema-params";
 import { recoverableTokens } from "../../lib/optimize";
 import { ToolRunDialog } from "./ToolPlayground";
@@ -121,14 +121,21 @@ export function ToolDetailPanel({
                 </Text>
               </span>
             </div>
-            <SegmentedBar
-              ariaLabel={`Token composition for ${tool.toolName}`}
-              segments={[
-                { label: "Name", value: tool.nameTokens },
-                { label: "Description", value: tool.descriptionTokens },
-                { label: "Schema", value: tool.schemaTokens },
-                { label: "Annotations", value: tool.annotationsTokens },
-              ]}
+            {/* The SAME bar the server's Token distribution card draws, so a tool's numbers here
+                and its row over there cannot disagree. It also carries the fifth segment this
+                panel used to omit: the four facets are measured in isolation and do not add up to
+                `totalTokens`, so the old bar rescaled them to their own sum and quietly dropped the
+                difference — 90 tokens on `qlik_add_chart`, and far more on a schema-heavy tool. */}
+            <ToolFacetBar
+              split={{
+                name: tool.nameTokens,
+                description: tool.descriptionTokens,
+                schema: tool.schemaTokens,
+                annotations: tool.annotationsTokens,
+              }}
+              subject={tool.toolName}
+              title="By part of this tool's definition"
+              total={tool.totalTokens}
             />
           </section>
 

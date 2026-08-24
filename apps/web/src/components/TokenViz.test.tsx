@@ -11,7 +11,7 @@ import {
 
 const SPLIT = { name: 409, description: 7868, schema: 17_330, annotations: 539 };
 
-describe("facetSegments — the wire structure is NAMED, never scaled away", () => {
+describe("facetSegments — the unitemised remainder is NAMED, never scaled away", () => {
   test("the fifth segment is exactly the tokens the four facets do not account for", () => {
     // `barc-benchmark`, measured: 64,522 tool tokens against a 26,146 facet sum.
     const segments = facetSegments(SPLIT, 64_522);
@@ -23,7 +23,7 @@ describe("facetSegments — the wire structure is NAMED, never scaled away", () 
       "structure",
     ]);
     expect(facetSum(SPLIT)).toBe(26_146);
-    expect(segments[4]).toMatchObject({ label: "Wire structure", value: 38_376 });
+    expect(segments[4]).toMatchObject({ label: "Output schema + envelope", value: 38_376 });
   });
 
   test("the segments add up to the tool total — the whole point of the fifth one", () => {
@@ -83,7 +83,7 @@ describe("TokenDistribution", () => {
 
   test("every segment is labelled in place with its own tokens and share", () => {
     renderDistribution();
-    expect(screen.getByText("Wire structure")).toBeInTheDocument();
+    expect(screen.getByText("Output schema + envelope")).toBeInTheDocument();
     expect(screen.getByText("38,376 · 59.5%")).toBeInTheDocument();
     expect(screen.getByText("17,330 · 26.9%")).toBeInTheDocument();
   });
@@ -94,7 +94,7 @@ describe("TokenDistribution", () => {
     // The row's own headline plus every facet — what a screen reader announces on focus. The
     // tooltip is a pointer convenience; `brand-ui docs Tooltip` forbids it being the only path.
     expect(row).toHaveAccessibleName(/Name 5, Description 2,002, Schema 1,905, Annotations 7/);
-    expect(row).toHaveAccessibleName(/Wire structure 877/);
+    expect(row).toHaveAccessibleName(/Output schema \+ envelope 877/);
   });
 
   test("a zero-valued slice does not shift the colours of the slices after it", () => {
@@ -118,6 +118,18 @@ describe("TokenDistribution", () => {
     // …and the legend swatches still name all three in their own fixed slots.
     const swatches = [...container.querySelectorAll("li span[aria-hidden]")].map((s) => s.className);
     expect(swatches.slice(0, 3).map((c) => /bg-chart-(\d+)/.exec(c)?.[1])).toEqual(["1", "2", "3"]);
+  });
+
+  test("the note explains the fifth segment on the page, not in a tooltip", () => {
+    renderDistribution();
+    // The owner asked "what is wire structure ??" of an unexplained label. A tooltip cannot answer
+    // that — it is invisible until hovered and unreachable by keyboard here.
+    const note = screen.getByText(/Everything in the definition that the four parts above/);
+    expect(note).toBeInTheDocument();
+    // And it must not repeat the claim that was measured false: the remainder is mostly the tool's
+    // output schema, which IS editable.
+    expect(note.textContent).toMatch(/output schema/i);
+    expect(note.textContent).toMatch(/editable/i);
   });
 
   test("renders nothing for the tool list when there are no tools to rank", () => {

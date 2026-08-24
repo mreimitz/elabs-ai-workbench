@@ -9,9 +9,8 @@ import type {
 import { deriveSkillSecuritySurface } from "@mcp-token-footprint/shared";
 import {
   Badge,
-  BentoGrid,
-  BentoGridItem,
   Button,
+  Card,
   CardContent,
   CardHeader,
   CardTitle,
@@ -96,10 +95,12 @@ export type SkillOverviewProps = {
 };
 
 /**
- * Overview tab (WP 1.7): the rendered SKILL.md is the primary content, alongside the parsed
+ * Overview tab (WP 1.7): the rendered SKILL.md is the primary content and holds the LEFT column;
+ * everything derived about the version stacks in a right-hand rail in reading order — parsed
  * frontmatter (`Descriptions`), the three-level token-footprint `MetricCard`s + a `SegmentedBar`,
- * and a security strip (scripts / network refs / file+byte totals). The SKILL.md body is fetched
- * once per version via the read-only file route; everything else derives from props.
+ * the trigger surface, the server bindings, and the security strip (scripts / network refs /
+ * file+byte totals). The SKILL.md body is fetched once per version via the read-only file route;
+ * everything else derives from props.
  */
 export function SkillOverview({
   skillId,
@@ -176,32 +177,83 @@ export function SkillOverview({
       : fullDescription || "—";
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Overview cards as a bento grid (2026-07-12): fixed-height tiles keep sizing uniform, and
-          each tile's body scrolls (overflow-y-auto) so variable content never clips the fixed rows.
+    // SPLIT VIEW. The rendered SKILL.md is the PRIMARY content and owns the left half; every derived
+    // fact about the version (frontmatter, footprint, triggers, servers, security) stacks in the
+    // right half, in that order. It replaces the previous bento grid, which scattered five
+    // same-weight tiles above the document and buried the thing the page is actually about.
+    //
+    // Each half fills its column and SCROLLS INDEPENDENTLY: the tab panel
+    // (`SkillInspector`'s `TabsContent`, `min-h-0 flex-1 overflow-y-auto`) is already a bounded
+    // flex child, so `h-full` here gives both panes a definite height to scroll inside. Below `lg`
+    // the split collapses to one stacked column and the tab panel does the scrolling instead — two
+    // independently-scrolling panes on a narrow viewport would be unusable.
+    <div className="grid min-w-0 grid-cols-1 gap-6 lg:h-full lg:min-h-0 lg:grid-cols-2 lg:items-stretch">
+      {/* O5 — Rendered SKILL.md: the @elabs-ai/components-ai markdown renderer, a borderless SCROLLABLE box (no
+          wrapping Card border). */}
+      <section
+        aria-label="SKILL.md"
+        className="flex min-w-0 flex-col gap-2 lg:min-h-0 lg:overflow-hidden"
+      >
+        <div className="flex flex-none items-center gap-1.5">
+          <FileText className="size-3.5 text-muted-foreground" aria-hidden />
+          <Text variant="meta" tone="muted">
+            SKILL.md
+          </Text>
+        </div>
+        {bodyError ? (
+          <StatePanel
+            kind="error"
+            title="Couldn’t render SKILL.md — refresh the page to try again."
+            description={bodyError}
+          />
+        ) : renderedBody === null ? (
+          <StatePanel kind="loading" title="Rendering…" loadingLabel="Rendering SKILL.md…" />
+        ) : !skillMdPath ? (
+          <StatePanel
+            kind="empty"
+            title="No SKILL.md"
+            description="This version has no SKILL.md file."
+          />
+        ) : renderedBody === "" ? (
+          <StatePanel
+            kind="empty"
+            title="Frontmatter only"
+            description="This SKILL.md has no body content beyond its frontmatter — see the Frontmatter card."
+          />
+        ) : (
+          // Finding 9 / D-IC9 — this prose block had no measure cap and ran edge to edge, so it keeps
+          // one. The cap is `110ch` rather than the old `68ch` because the document now lives in its
+          // own half of a split view: at any ordinary window size the pane is narrower than the cap,
+          // so the document FILLS its half, and the cap only bites on a very wide monitor — which is
+          // the case D-IC9 was actually about. A skill author's own markdown table still renders at
+          // its natural width (via `[&_table]` in SKILL_MD_PROSE) and scrolls horizontally.
+          //
+          // The vertical scroll lives here, on the document itself (`lg:flex-1 lg:overflow-y-auto`),
+          // so the left pane scrolls independently of the right one.
+          <div
+            className={cn(
+              "min-w-0 max-w-[110ch] rounded-lg bg-muted/40 p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto",
+              SKILL_MD_PROSE,
+            )}
+          >
+            <MessageResponse>{renderedBody}</MessageResponse>
+          </div>
+        )}
+      </section>
 
-          NO `spotlight`, deliberately. The cursor-following glow used to be BentoGrid's default and
-          arrived here for free; since v4 it is opt-in and the grid instead rests flat and lifts on
-          hover. This is a dense operator surface (a skill's frontmatter, token footprint and
-          security surface), so the flat resting state is the better read and the glow is not
-          re-enabled. Add `spotlight` on the grid — or on a single BentoGridItem — to bring it back. */}
-      {/* P2-5 (RM-36 WP 2.2) — `items-start`. `BentoGrid` lays out on `auto-rows-[14rem]`, so a
-          `size="lg"` tile is handed a 2-row (≈28rem) grid area and, under the default
-          `align-items: stretch`, FILLS it whether or not it has 28rem of content. The Frontmatter
-          card carried ~130px of empty space below `metadata.tags` for exactly that reason — height
-          coupled to the taller Token-footprint tile beside it rather than to its own content.
-          `items-start` lets each tile size to its content; `max-h-full` on the tiles caps that at
-          the grid area it was given, so a long frontmatter still scrolls inside the card
-          (`CardContent`'s `overflow-y-auto`) instead of spilling over the row below. */}
-      <BentoGrid className="items-start">
-        <BentoGridItem size="lg" className="flex min-w-0 max-h-full flex-col">
+      {/* The right half: one card per derived fact, in the order an operator reads them — what the
+          skill declares, what it costs, how it is reached, what it binds, what it exposes. The
+          COLUMN scrolls, not the individual cards: a scrollbar inside every card was the nesting
+          that made this page hard to read in the first place. Each card sizes to its own content. */}
+      <div className="flex min-w-0 flex-col gap-4 lg:min-h-0 lg:overflow-y-auto lg:pr-1">
+        <Card className="flex min-w-0 flex-col">
           <CardHeader className="flex-none flex-row items-center justify-between gap-2">
             <CardTitle>Frontmatter</CardTitle>
             <Badge variant={version.manifestValid ? "success" : "destructive"}>
               {version.manifestValid ? "valid" : "invalid"}
             </Badge>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+          <CardContent className="flex flex-col gap-3">
             <Descriptions columns={1} layout="horizontal">
               <DescriptionsItem label="Name">{manifest.name || "—"}</DescriptionsItem>
               <DescriptionsItem label="Description">
@@ -242,35 +294,35 @@ export function SkillOverview({
               </ul>
             ) : null}
           </CardContent>
-        </BentoGridItem>
+        </Card>
 
-        <BentoGridItem size="lg" aria-label="Token footprint" className="flex min-w-0 max-h-full flex-col">
+        <Card aria-label="Token footprint" className="flex min-w-0 flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Token footprint</CardTitle>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
+          <CardContent className="flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2">
-            <MetricCard
-              label="L1 · metadata"
-              value={formatNumber(version.l1MetadataTokens)}
-              description="name + description"
-            />
-            <MetricCard
-              label="L2 · body"
-              value={formatNumber(version.l2BodyTokens)}
-              description="SKILL.md"
-            />
-            <MetricCard
-              label="L3 · resources"
-              value={formatNumber(version.l3ResourceTokens)}
-              description="other text files"
-            />
-            <MetricCard
-              label="Total"
-              value={formatNumber(version.totalTokens)}
-              description={version.tokenProfile}
-              emphasis="headline"
-            />
+              <MetricCard
+                label="L1 · metadata"
+                value={formatNumber(version.l1MetadataTokens)}
+                description="name + description"
+              />
+              <MetricCard
+                label="L2 · body"
+                value={formatNumber(version.l2BodyTokens)}
+                description="SKILL.md"
+              />
+              <MetricCard
+                label="L3 · resources"
+                value={formatNumber(version.l3ResourceTokens)}
+                description="other text files"
+              />
+              <MetricCard
+                label="Total"
+                value={formatNumber(version.totalTokens)}
+                description={version.tokenProfile}
+                emphasis="headline"
+              />
             </div>
             <SegmentedBar
               ariaLabel="Token footprint by level"
@@ -281,13 +333,13 @@ export function SkillOverview({
               ]}
             />
           </CardContent>
-        </BentoGridItem>
+        </Card>
 
-        <BentoGridItem size="lg" className="flex min-w-0 max-h-full flex-col">
+        <Card className="flex min-w-0 flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Triggers</CardTitle>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto">
+          <CardContent className="flex flex-col gap-5">
             {triggersError ? (
               <StatePanel
                 kind="error"
@@ -380,13 +432,36 @@ export function SkillOverview({
               </>
             )}
           </CardContent>
-        </BentoGridItem>
+        </Card>
 
-        <BentoGridItem size="md" className="flex min-w-0 max-h-full flex-col">
+        {/* Servers — READ-ONLY (RM-30 WP 7.3). The chips still report what the version binds and how
+            each name resolved; binding is edited in the Studio's settings panel, on the one draft. */}
+        <Card className="flex min-w-0 flex-col">
+          <CardHeader className="flex-none">
+            <CardTitle>Servers</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SkillBindingsPanel
+              skillId={skillId}
+              versionId={version.id}
+              isHeadVersion={isHeadVersion}
+              skillMdText={body}
+              blockedReason={null}
+              readOnly
+              editInStudioTo={`/skills/${skillId}/studio?rail=settings`}
+              // Required by the panel's signature but unreachable in `readOnly` mode: this tab has
+              // no save path at all any more, so a callback here would be dead wiring pretending
+              // otherwise.
+              onVersionSaved={() => {}}
+            />
+          </CardContent>
+        </Card>
+
+        <Card className="flex min-w-0 flex-col">
           <CardHeader className="flex-none">
             <CardTitle>Security surface</CardTitle>
           </CardHeader>
-          <CardContent className="min-h-0 flex-1 overflow-y-auto">
+          <CardContent>
             <Descriptions columns={1} layout="horizontal">
               <DescriptionsItem label="Scripts">
                 <span className="flex items-center gap-1.5">
@@ -424,80 +499,8 @@ export function SkillOverview({
               </DescriptionsItem>
             </Descriptions>
           </CardContent>
-        </BentoGridItem>
-
-        {/* Servers — READ-ONLY (RM-30 WP 7.3). The chips still report what the version binds and how
-            each name resolved; binding is edited in the Studio's settings panel, on the one draft.
-            `max-h-full` is RM-36 WP 2.2's P2-5 fix and is kept: with the grid on `items-start`, it
-            caps a content-sized tile at the grid area it was given so a long list scrolls inside the
-            card instead of spilling into the row below. */}
-        <BentoGridItem size="md" className="flex min-w-0 max-h-full flex-col">
-          <CardHeader className="flex-none">
-            <CardTitle>Servers</CardTitle>
-          </CardHeader>
-          <CardContent className="min-h-0 flex-1 overflow-y-auto">
-            <SkillBindingsPanel
-              skillId={skillId}
-              versionId={version.id}
-              isHeadVersion={isHeadVersion}
-              skillMdText={body}
-              blockedReason={null}
-              readOnly
-              editInStudioTo={`/skills/${skillId}/studio?rail=settings`}
-              // Required by the panel's signature but unreachable in `readOnly` mode: this tab has
-              // no save path at all any more, so a callback here would be dead wiring pretending
-              // otherwise.
-              onVersionSaved={() => {}}
-            />
-          </CardContent>
-        </BentoGridItem>
-      </BentoGrid>
-
-      {/* O5 — Rendered SKILL.md: the @elabs-ai/components-ai markdown renderer, a borderless SCROLLABLE box (no
-          wrapping Card border). Full width below the two card rows. */}
-      <section aria-label="SKILL.md" className="flex min-w-0 flex-col gap-2">
-        <div className="flex items-center gap-1.5">
-          <FileText className="size-3.5 text-muted-foreground" aria-hidden />
-          <Text variant="meta" tone="muted">
-            SKILL.md
-          </Text>
-        </div>
-        {bodyError ? (
-          <StatePanel
-            kind="error"
-            title="Couldn’t render SKILL.md — refresh the page to try again."
-            description={bodyError}
-          />
-        ) : renderedBody === null ? (
-          <StatePanel kind="loading" title="Rendering…" loadingLabel="Rendering SKILL.md…" />
-        ) : !skillMdPath ? (
-          <StatePanel
-            kind="empty"
-            title="No SKILL.md"
-            description="This version has no SKILL.md file."
-          />
-        ) : renderedBody === "" ? (
-          <StatePanel
-            kind="empty"
-            title="Frontmatter only"
-            description="This SKILL.md has no body content beyond its frontmatter — see the Frontmatter card."
-          />
-        ) : (
-          // Finding 9 / D-IC9 — this prose block had no measure cap and ran edge to edge; cap it at
-          // ~68ch for readability. A skill author's own markdown table still renders at its natural
-          // width (via `[&_table]` in SKILL_MD_PROSE) and can scroll independently of this cap —
-          // capping the reading column doesn't touch the box's own `overflow-y-auto` scroll.
-          <div
-            className={cn(
-              "max-h-[640px] min-w-0 max-w-[68ch] overflow-y-auto rounded-lg bg-muted/40 p-4",
-              SKILL_MD_PROSE,
-            )}
-          >
-            <MessageResponse>{renderedBody}</MessageResponse>
-          </div>
-        )}
-      </section>
-
+        </Card>
+      </div>
     </div>
   );
 }
