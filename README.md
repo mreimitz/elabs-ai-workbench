@@ -86,8 +86,9 @@ never silently compared.
 registered — a grid of cards grouped by type (or by source, or by whether a collection is bound to a
 git repo), switchable to a grouped table and remembered per section. Selecting one opens its
 full-width detail page, where the last breadcrumb is a searchable switcher over every other one, so
-moving between servers costs a click rather than a permanent column. (The screenshots below still
-show the previous side-list layout.)
+moving between servers costs a click rather than a permanent column.
+
+![The MCP Servers overview: ten registered servers as cards grouped by type, each with its startup tokens, tool count, security findings and last scan.](docs/screenshots/servers-overview.png)
 
 ### 2 · Server health, findings, and token advice
 
@@ -96,7 +97,13 @@ Each server has its own home with a footprint summary, a per-tool token distribu
 limits, schemas using unsupported keywords, definitions that crowd a model's context window — each
 with a concrete recovery and an estimate of the tokens you'd get back.
 
-![The barc-benchmark server: 64,522 startup tokens, findings graded blocker → low, and where every token goes per tool.](docs/screenshots/servers.png)
+![The barc-benchmark server: 72,725 startup tokens across 86 tools, findings graded exceeds-limit → advice, and where every token goes per tool.](docs/screenshots/servers.png)
+
+The **Advisor** turns the same measurements into ranked recommendations across the whole fleet —
+each one carrying the evidence it was derived from, the assumptions behind it, and an estimated
+saving in tokens per turn.
+
+![The Advisor: 19 recommendations over the fleet, the top one trimming 139 never-called tools for an estimated 136,502 tokens a turn, with its evidence and assumptions listed.](docs/screenshots/advisor.png)
 
 ### 3 · Compare — over time and across servers
 
@@ -136,6 +143,8 @@ you like — the arrangement is remembered per skill, with an **Auto-arrange** b
 it is stored beside the skill rather than inside it, so your layout never costs you tokens.
 
 ![The skill inspector: frontmatter, an L1/L2/L3 token footprint totalling 1,760, the trigger configuration, and a security surface.](docs/screenshots/skill-inspector.png)
+
+![The Skill Studio: the Designer canvas with the skill's sections, loop guards and tool references wired together, the files rail, and a problems strip along the bottom.](docs/screenshots/skill-studio.png)
 
 ### 5 · The testing console — real agent sessions
 
@@ -192,6 +201,8 @@ its call count, tokens, cost and duration; a node that failed says so in words, 
 Selecting a node filters the step log to exactly the steps behind it, and both the lens and the
 selected node live in the URL, so the view is shareable. It is a projection of runs already recorded —
 no new data is stored, and a replayed run draws the identical graph.
+
+![The Graph lens over a six-call session: the prompt, the model turn with a ×5 counter, and the tools it reached for — two of them called repeatedly, forming a real cycle.](docs/screenshots/run-graph.png)
 
 ### 6 · Automatic run rating
 
@@ -301,6 +312,8 @@ itself, one scroll above the findings that produced them. When the analyzer's ba
 reviewed against a real fleet, one constant
 (`FLEET_POSTURE_BAND_ACCEPTED`) puts them back on the list.
 
+![The Security tab on a scan: a posture score of 60 out of 100 flagged high risk over 8 findings, each naming its rule, the tool it fired on, and what was found.](docs/screenshots/security.png)
+
 Eighteen deterministic checks run over **definitions the app has already stored** — no MCP call, no
 skill execution, no network, nothing re-fetched. Eleven read a server's tool surface: injection
 phrasing and hidden instruction blocks in descriptions, invisible unicode, annotations that
@@ -357,6 +370,8 @@ A second tab shows the drawing vocabulary the entities are composed from: the pa
 platform and housing solids, the glyph frame, the construction ghost, the six connector kinds and
 the calibration cube.
 
+![The illustration catalog: 24 isometric components — agent, MCP server, model, skill, run and the rest — drawn live in the app's current theme.](docs/screenshots/illustrations.png)
+
 This is the foundation, not the finished system — but a **scene** is no longer only a plan. A
 declarative scene description now becomes an actual drawing: bands, lanes, hubs and cycle rings laid
 out deterministically, connectors routed as orthogonal paths with placed labels, and the whole thing
@@ -367,9 +382,10 @@ quietly dropped, and a scene that cannot be drawn renders a readable failure car
 rather than a blank canvas.
 
 Still to come: the acceptance scene and standalone SVG export, the step-by-step explainers, and
-describing a workflow to the assistant and getting a diagram back. Nothing here has been looked at in
-a browser yet — the markup is asserted by tests; the *picture* is unreviewed. Route only, no nav item:
-reach it by typing the address (the breadcrumb's Home is the way back out).
+describing a workflow to the assistant and getting a diagram back. The catalog above is a real
+render of the running page; the **scene renderer's** output is still asserted only by tests — that
+*picture* is unreviewed. Route only, no nav item: reach it by typing the address (the breadcrumb's
+Home is the way back out).
 
 > **Also on board:** export any scan, server, or run as **JSON or Markdown**.
 > See the [user guide](planning/user-guide/DC-01-getting-started/00-guide-map.md) for the full picture.
@@ -382,6 +398,8 @@ repository present, which is the point: someone handed the image can read how th
 
 A **Help** control in the top bar opens the page for whatever you are looking at, and falls back to
 the guide's index where a view has no page of its own yet.
+
+![The user guide inside the app: 22 subjects as cards — getting started, server connections, scans, comparison, the tool playground, reports, skills, the testing console and the rest.](docs/screenshots/docs.png)
 
 ### Two themes
 
@@ -728,6 +746,9 @@ in `apps/web/src/styles/app.css`. For the real component API use the CLI —
 
 ---
 
-<sub>Screenshots are captured from the running app against a live local instance. The helper
-`scripts/readme-screenshots.mjs` is included for reference — its entity ids are instance-specific and
-would need updating for another database.</sub>
+<sub>Screenshots are captured from the running app against a live local instance with
+`scripts/readme-screenshots.mjs`. Every registered MCP server endpoint is destroyed in the page
+before the shutter fires — the host is replaced with bullets and the element blurred on top — so a
+published image carries no reachable address. The endpoints are read from the running API rather than
+listed in the script, and the entity ids it captures are instance-specific: they are verified against
+the instance first and fall back to discovery on another database.</sub>

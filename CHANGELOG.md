@@ -5,6 +5,40 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the README has pictures again, and none of them carries a reachable address
+
+**The eleven published screenshots were deleted in August because every one was taken against a
+live fleet**, and one of them printed a tenant hostname in the page header. README kept its eleven
+image references, deliberately broken, until the shots could be retaken safely. They are retaken.
+
+The capture helper (`scripts/readme-screenshots.mjs`) now destroys every registered MCP server
+endpoint in the page **before the shutter fires**, and it does it in that order on purpose: the host
+is first REPLACED with bullets of the same character count — so nothing in the layout shifts — and
+only then is the surviving element blurred. A blur on its own is a filter over glyphs that are still
+present; replacing the text first means even a perfect de-blur recovers bullets. The endpoint list is
+read from the running API rather than written into the script, so a server registered tomorrow is
+covered without editing anything, and a `--mask-names` flag extends the same treatment to server
+names. What redaction can NOT do is unpublish: the pre-August images remain fetchable from this
+repository's history.
+
+Seven **new** shots cover the parts of the tour that had never had one — the servers overview grid
+that replaced the old side-list, the Advisor's ranked recommendations, the Skill Studio's Designer
+canvas, the agent-graph lens over a run, the Security tab on a scan, the illustration catalog, and
+the user guide inside the app. The graph shot is deliberately taken from a **different, smaller run**
+than the console shots: the 13-call session's aggregated graph is eight nodes wide, and fitting that
+to the frame makes every label unreadable.
+
+Two captions were **wrong before the recapture and are now measured**: the server page reads
+72,725 startup tokens across 86 tools, not 64,522 — a server page always shows its latest scan, and
+that server has been scanned since. The claim in the illustrations section that "nothing here has
+been looked at in a browser yet" was narrowed to the part that is still true: the catalog page is now
+a real render; the scene renderer's output is still asserted only by tests.
+
+Every redacted region was inspected at native resolution rather than trusted — the endpoint areas of
+the server page, the overview cards and the dashboard's failure line are smears. No shot has been
+looked at by a human on a real display, and no image has been committed: staging and publishing are
+the owner's call.
+
 ## Unreleased — a server’s page stopped burying what it is, and its token chart stopped hiding the biggest thing on it
 
 **The two cards that say what a server IS were five screens below the fold.** Measured on
