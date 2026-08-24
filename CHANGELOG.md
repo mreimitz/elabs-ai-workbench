@@ -5,6 +5,40 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — a bucket nobody measured is no longer drawn at the top of the chart
+
+**Every line chart in the app was plotting unmeasured points at its own maximum, and then losing
+them off the top edge.** The chart library has no way to draw a gap: when a row carries no value for
+a series it falls back to pixel row zero, which in a plot's own coordinates is the CEILING, not the
+floor. So a bucket where a server was simply not scanned, a day with no runs, or a turn a shorter
+run never reached, was drawn as the highest value on the chart. Measured on the running app: a
+server holding a constant 243 startup tokens — the smallest surface in the fleet — was plotted as a
+full-height zigzag reaching the 152,933-token fleet maximum, because it had no scan in 12 of 41
+buckets. The default curve then overshoots each of those invented spikes by another 13–18 pixels,
+and the reveal clip begins at exactly the ceiling, so the apex was cut away. That clipping is what
+made it look like a rendering glitch; it was the shape of a fabricated measurement.
+
+**The fix is that the charts are never handed a hole, and each series says what its own hole
+means.** A measure that ACCUMULATES over a bucket — a count, tokens, a cost — fills with zero,
+because nothing happening really is zero. A measure that describes a STATE — a rate, a score, a
+duration percentile, a scanned surface's size — is held flat at its nearest real reading instead,
+because the repository's own rule already says it: *"'0% of runs errored' and 'nothing ran' are
+different facts and one of them is a crisis."* The fleet-footprint chart now draws what its own
+description always claimed — each server held at its last successful scan — and a run that ended
+early holds its final context instead of appearing to explode.
+
+**Verified against the running app, not reasoned about.** Before the change the overview chart's
+lines reached 18 pixels above the clip and were cut; after it, every path on every measured route
+sits inside its frame, in both themes. The check was controlled: reverting the fix makes the same
+measurement report the overview chart, the Testing tab's server-footprint chart and the compare
+workspace's context curves as clipped again. Seven new tests feed each producer series with
+disjoint buckets and fail if any hole survives — each was watched go red before it was trusted.
+
+**Two upstream gaps are recorded, not worked around.** The design system's `Line`/`Area` still have
+no way to express a genuine gap, and their reveal clip still leaves no headroom above the plot for
+the overshoot their own default curve produces. Everything above is a fix at this app's data layer;
+neither library file was touched.
+
 ## Unreleased — publishing the pack, and proving the app works with none of it
 
 **The release notes told recipients the wrong thing about who could download a release.** The

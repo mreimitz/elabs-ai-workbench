@@ -214,8 +214,10 @@ describe("context curves", () => {
       expect(Number.isNaN(row.x.getTime())).toBe(false);
     }
     expect(rows[0]).toMatchObject({ a: 10, b: 5 });
-    // b has no third turn → absent from that row (no phantom point).
-    expect(rows[2]!.b).toBeUndefined();
+    // b ended after two turns. Leaving its third-turn key ABSENT does not break its line — the chart
+    // library plots a missing key at y=0, the TOP of the plot, so the SHORTEST run would read as the
+    // one whose context exploded. b is held flat at the 15 tokens it actually reached.
+    expect(rows[2]!.b).toBe(15);
     expect(rows[2]!.a).toBe(30);
   });
 

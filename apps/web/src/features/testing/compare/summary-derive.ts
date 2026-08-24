@@ -17,6 +17,7 @@ import type {
   TokenUsageActual,
 } from "@mcp-token-footprint/shared";
 import { CONTEXT_SEGMENTS, cacheHitRate } from "@mcp-token-footprint/shared";
+import { fillSeriesGaps } from "../../../lib/chart-series";
 import { countToolErrors, peakContextSnapshot, runDurationMs } from "../analytics-derive";
 import type { CompareVerdict, CompareVerdictReason, WorkspaceRun } from "./compare-runs";
 import { makeFocusToken } from "./flow/flow-types";
@@ -484,7 +485,14 @@ export function buildContextCurveRows(runs: SummaryRun[]): CurveRow[] {
     }
     rows.push(row);
   }
-  return rows;
+  // Runs end at different turns, so a shorter run leaves the tail of every longer run's row empty —
+  // and an empty key is drawn at the TOP of the plot (see `lib/chart-series.ts`), i.e. the shortest
+  // run reads as the one whose context exploded. Hold each curve flat at its final context instead:
+  // the run stopped there, so its context stopped growing there.
+  return fillSeriesGaps(
+    rows,
+    runs.map((run) => ({ key: run.id, fill: "hold" as const })),
+  ) as CurveRow[];
 }
 
 // ── The verdict (H3) — differences WITH reasons ─────────────────────────────────────────────────

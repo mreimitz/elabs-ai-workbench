@@ -7,6 +7,7 @@ import type {
   Test,
 } from "@mcp-token-footprint/shared";
 import { describe, expect, test } from "vitest";
+import { seriesGaps } from "../../../lib/chart-series";
 import {
   buildCacheResult,
   buildCapabilityClassSeries,
@@ -51,12 +52,39 @@ describe("pivotToRows", () => {
       "2026-07-01T00:00:00.000Z",
       "2026-07-02T00:00:00.000Z",
     ]);
-    // A bucket a series has no value for is OMITTED — never zero-filled.
-    expect(rows[0]).not.toHaveProperty("a");
+    // A bucket a series has no value for is FILLED, because the chart library cannot draw a gap: an
+    // absent key makes `Line`/`Area` fall back to y=0, which is the TOP of the plot area, so an
+    // unmeasured bucket would render as the axis MAXIMUM (see `lib/chart-series.ts`). The default is
+    // `"zero"` — the series accumulated nothing in that bucket.
+    expect(rows[0]?.a).toBe(0);
     expect(rows[0]?.b).toBe(1);
     expect(rows[1]?.a).toBe(5);
     expect(rows[1]?.b).toBe(2);
     expect(rows[0]?.x).toBeInstanceOf(Date);
+  });
+
+  test("a `hold` series carries its last reading forward, and its first reading backward", () => {
+    const rows = pivotToRows([
+      { key: "spine", label: "Spine", points: [
+        { bucketStart: "2026-07-01T00:00:00.000Z", value: 1 },
+        { bucketStart: "2026-07-02T00:00:00.000Z", value: 2 },
+        { bucketStart: "2026-07-03T00:00:00.000Z", value: 3 },
+      ] },
+      // Measured only in the middle bucket: a leading gap AND a trailing gap.
+      { key: "level", label: "Level", fill: "hold", points: [
+        { bucketStart: "2026-07-02T00:00:00.000Z", value: 42 },
+      ] },
+    ]);
+    expect(rows.map((r) => r.level)).toEqual([42, 42, 42]);
+    // The default fill is unchanged for anything that does not ask for `hold`.
+    const zeroFilled = pivotToRows([
+      { key: "spine", label: "Spine", points: [
+        { bucketStart: "2026-07-01T00:00:00.000Z", value: 1 },
+        { bucketStart: "2026-07-02T00:00:00.000Z", value: 2 },
+      ] },
+      { key: "flow", label: "Flow", points: [{ bucketStart: "2026-07-02T00:00:00.000Z", value: 9 }] },
+    ]);
+    expect(zeroFilled.map((r) => r.flow)).toEqual([0, 9]);
   });
 
   test("every emitted row's x is a VALID Date (the time-scale chart contract — never an Invalid Date)", () => {
@@ -146,7 +174,7 @@ describe("buildRunsOverTimeRows", () => {
     // Overall error rate on day 1: (2 + 2) errors / (8 + 2) runs = 0.4 → 40%.
     expect(day1?.errorRatePercent).toBeCloseTo(40);
     const day2 = result.rows.find((r) => r.bucketStart === "2026-07-02T00:00:00.000Z");
-    expect(day2?.["gpt-5"]).toBeUndefined(); // no gpt-5 runs that day — omitted, not 0
+    expect(day2?.["gpt-5"]).toBe(0); // no gpt-5 runs that day — a count, so genuinely 0
     expect(day2?.errorRatePercent).toBeCloseTo(0);
   });
 
@@ -274,7 +302,7 @@ describe("buildCapabilityClassSeries / buildTokensResult — D-OB14 no-blend gua
     expect(result.hasData).toBe(true);
   });
 
-  test("a class with no data in a bucket is OMITTED from that bucket's row, never zero-filled", () => {
+  test("a class with no data in a bucket reads 0 for that bucket — never the other class's value, and never the axis maximum", () => {
     const twoClassesDifferentBuckets: RunMetricsSeries[] = [
       series({ measure: "tokensIn", capabilityClass: "exact", points: [{ bucketStart: "2026-07-01T00:00:00.000Z", value: 100, n: 1 }] }),
       series({ measure: "tokensIn", capabilityClass: "estimated", points: [{ bucketStart: "2026-07-02T00:00:00.000Z", value: 50, n: 1 }] }),
@@ -282,10 +310,13 @@ describe("buildCapabilityClassSeries / buildTokensResult — D-OB14 no-blend gua
     const result = buildTokensResult(twoClassesDifferentBuckets);
     const b1 = result.inRows.find((r) => r.bucketStart === "2026-07-01T00:00:00.000Z") as Record<string, unknown>;
     const b2 = result.inRows.find((r) => r.bucketStart === "2026-07-02T00:00:00.000Z") as Record<string, unknown>;
+    // The two classes stay SEPARATE keys — D-OB14's no-blend guarantee is untouched. What changed is
+    // what an absent bucket renders as: tokens accumulate, so a bucket a class contributed nothing to
+    // is 0. It is emphatically not left absent, which the chart would draw at the plot ceiling.
     expect(b1?.exact).toBe(100);
-    expect(b1?.estimated).toBeUndefined(); // NOT 0
+    expect(b1?.estimated).toBe(0);
     expect(b2?.estimated).toBe(50);
-    expect(b2?.exact).toBeUndefined(); // NOT 0
+    expect(b2?.exact).toBe(0);
   });
 });
 
@@ -325,7 +356,7 @@ describe("buildCacheResult — RM-33: read and write never merge, and absence is
     expect(result.entries.some((e) => e.key === CACHE_HIT_RATE_KEY)).toBe(false);
   });
 
-  test("a bucket the API omitted from the rate series leaves the key OFF the row — the line breaks, it does not dip to 0%", () => {
+  test("a bucket the API omitted from the rate series HOLDS the last measured rate — it neither dips to 0% nor spikes to the top of the axis", () => {
     const input: RunMetricsSeries[] = [
       series({
         measure: "cacheReadTokens",
@@ -340,11 +371,13 @@ describe("buildCacheResult — RM-33: read and write never merge, and absence is
     ];
     const result = buildCacheResult(input);
     const b2 = result.rows.find((r) => r.bucketStart === B2) as Record<string, unknown>;
-    expect(b2?.[CACHE_HIT_RATE_KEY]).toBeUndefined(); // NOT 0
+    // Held at B1's 50%, NOT 0 (which would read as a cache that stopped hitting) and NOT absent
+    // (which the chart draws at the top of the right-hand axis — a fabricated perfect hit rate).
+    expect(b2?.[CACHE_HIT_RATE_KEY]).toBeCloseTo(50);
     expect(b2?.["read:exact"]).toBe(600);
   });
 
-  test("a bucket with no WRITE leaves that key off too — an unwritten cache is not a zero-token write", () => {
+  test("a bucket with no WRITE reads 0 tokens written — a token count, unlike the hit RATE beside it", () => {
     const input: RunMetricsSeries[] = [
       series({
         measure: "cacheReadTokens",
@@ -358,7 +391,7 @@ describe("buildCacheResult — RM-33: read and write never merge, and absence is
     ];
     const result = buildCacheResult(input);
     const b2 = result.rows.find((r) => r.bucketStart === B2) as Record<string, unknown>;
-    expect(b2?.["write:exact"]).toBeUndefined(); // NOT 0
+    expect(b2?.["write:exact"]).toBe(0);
   });
 
   test("two capability classes stay separate AND get their class named in the label (D-OB14)", () => {
@@ -733,5 +766,112 @@ describe("buildGenericScanSeriesRows", () => {
 
   test("no series → honest empty result", () => {
     expect(buildGenericScanSeriesRows([], ["totalTokens"]).hasData).toBe(false);
+  });
+});
+
+// ── The continuous-series guard ────────────────────────────────────────────────────────────────
+
+/**
+ * Every builder whose rows are handed to a `Line` or an `Area` must return rows in which EVERY
+ * series key is a number in EVERY row. This cannot be caught by rendering: the chart package is
+ * mocked under jsdom, and even in a real browser the failure looks like a plausible line rather than
+ * an error. It is checked on the DATA instead.
+ *
+ * What a hole actually does, measured on the running app: `line.tsx`/`area.tsx` resolve y as
+ * `typeof value === "number" ? yScale(value) : 0`, and `0` in the plot's inner space is the TOP of
+ * the chart — so an unmeasured bucket is drawn at the y-axis MAXIMUM, `curveNatural` overshoots that
+ * spike a further 13–18px, and the shell's `chart-grow-clip` (which begins at exactly y=0) cuts the
+ * apex off. That is the "lines overflow and disappear" report.
+ *
+ * Each case below feeds series with DISJOINT bucket sets — the shape that produces holes.
+ */
+describe("continuous-series guard — no builder hands a Line/Area a hole", () => {
+  const B1 = "2026-07-01T00:00:00.000Z";
+  const B2 = "2026-07-02T00:00:00.000Z";
+  const B3 = "2026-07-03T00:00:00.000Z";
+
+  test("buildDurationRows — p50/p95 measured in different buckets", () => {
+    const rows = buildDurationRows([
+      series({ measure: "p50DurationMs", points: [{ bucketStart: B1, value: 100, n: 1 }] }),
+      series({ measure: "p95DurationMs", points: [{ bucketStart: B2, value: 900, n: 1 }] }),
+    ]).rows;
+    expect(seriesGaps(rows, ["p50", "p95"])).toEqual([]);
+  });
+
+  test("buildCacheResult — the hit-rate line shares no bucket with the token bars", () => {
+    const result = buildCacheResult([
+      series({ measure: "cacheReadTokens", capabilityClass: "exact", points: [{ bucketStart: B1, value: 500, n: 1 }, { bucketStart: B3, value: 700, n: 1 }] }),
+      series({ measure: "cacheWriteTokens", capabilityClass: "exact", points: [{ bucketStart: B1, value: 40, n: 1 }] }),
+      series({ measure: "cacheHitRate", points: [{ bucketStart: B2, value: 0.5, n: 1 }] }),
+    ]);
+    expect(seriesGaps(result.rows, [...result.entries.map((e) => e.key), CACHE_HIT_RATE_KEY])).toEqual([]);
+  });
+
+  test("buildScansStripResult — servers scanned on different days", () => {
+    const scanSeries = (serverId: string, buckets: string[]): ScanMetricsSeries => ({
+      serverId,
+      serverName: serverId,
+      tokenProfile: "generic_o200k",
+      points: buckets.map((bucketStart) => scanPoint({ bucketStart, totalTokens: 1000, totalTools: 12 })),
+    });
+    const result = buildScansStripResult([scanSeries("s1", [B1]), scanSeries("s2", [B3])]);
+    expect(seriesGaps(result.rows, result.series.map((s) => s.serverId))).toEqual([]);
+  });
+
+  test("buildTokensResult / buildCostResult — capability classes present in different buckets", () => {
+    const tokens = buildTokensResult([
+      series({ measure: "tokensIn", capabilityClass: "exact", points: [{ bucketStart: B1, value: 10, n: 1 }] }),
+      series({ measure: "tokensIn", capabilityClass: "estimated", points: [{ bucketStart: B2, value: 20, n: 1 }] }),
+    ]);
+    expect(seriesGaps(tokens.inRows, tokens.inClasses.map((c) => c.cls))).toEqual([]);
+
+    const cost = buildCostResult([
+      series({ measure: "costUsd", capabilityClass: "exact", points: [{ bucketStart: B1, value: 1, n: 1 }] }),
+      series({ measure: "costUsd", capabilityClass: "estimated", points: [{ bucketStart: B3, value: 2, n: 1 }] }),
+    ]);
+    expect(seriesGaps(cost.costRows, cost.costClasses.map((c) => c.cls))).toEqual([]);
+  });
+
+  test("buildRunsOverTimeRows — the error-rate line over buckets the rate series never covered", () => {
+    const result = buildRunsOverTimeRows([
+      series({ measure: "count", group: "a", points: [{ bucketStart: B1, value: 4, n: 4 }, { bucketStart: B3, value: 6, n: 6 }] }),
+      series({ measure: "errorRate", group: "a", points: [{ bucketStart: B1, value: 0.5, n: 4 }] }),
+    ]);
+    expect(seriesGaps(result.rows, [...result.groups, "errorRatePercent"])).toEqual([]);
+  });
+
+  test("buildGuardrailStopRows — reason codes seen on different days", () => {
+    const result = buildGuardrailStopRows([
+      series({ measure: "count", group: "cost_cap", points: [{ bucketStart: B1, value: 2, n: 2 }] }),
+      series({ measure: "count", group: "max_turns", points: [{ bucketStart: B2, value: 1, n: 1 }] }),
+    ]);
+    expect(seriesGaps(result.rows, result.codes)).toEqual([]);
+  });
+
+  test("buildGenericRunSeriesRows — a mixed-unit set of composed series", () => {
+    const result = buildGenericRunSeriesRows(
+      [
+        series({ measure: "count", group: "a", points: [{ bucketStart: B1, value: 3, n: 3 }] }),
+        series({ measure: "meanScore", group: "b", points: [{ bucketStart: B2, value: 0.8, n: 1 }] }),
+        series({ measure: "errorRate", group: "c", points: [{ bucketStart: B3, value: 0.1, n: 1 }] }),
+      ],
+      3,
+    );
+    expect(seriesGaps(result.rows, result.series.map((s) => s.key))).toEqual([]);
+  });
+
+  test("buildGenericScanSeriesRows — two servers, two measures, disjoint buckets", () => {
+    const scanSeries = (serverId: string, buckets: string[]): ScanMetricsSeries => ({
+      serverId,
+      serverName: serverId,
+      tokenProfile: "generic_o200k",
+      points: buckets.map((bucketStart) => scanPoint({ bucketStart, totalTokens: 1000, totalTools: 12 })),
+    });
+    const measures: DashboardChartScanMeasure[] = ["totalTokens", "totalTools"];
+    const result = buildGenericScanSeriesRows(
+      [scanSeries("s1", [B1]), scanSeries("s2", [B2, B3])],
+      measures,
+    );
+    expect(seriesGaps(result.rows, result.series.map((s) => s.key))).toEqual([]);
   });
 });

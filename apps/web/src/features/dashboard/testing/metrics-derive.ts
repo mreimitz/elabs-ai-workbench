@@ -12,7 +12,8 @@ import type {
   SessionTokenAccounting,
   Test,
 } from "@mcp-token-footprint/shared";
-import { PROVIDER_KINDS, providerKindLabel } from "@mcp-token-footprint/shared";
+import { PROVIDER_KINDS, providerKindLabel, RUN_METRICS_MEASURE_UNITS } from "@mcp-token-footprint/shared";
+import { fillSeriesGaps, gapFillForUnit, type SeriesGapFill } from "../../../lib/chart-series";
 import type { TestingGroupBy } from "./dashboard-url-state";
 
 /**
@@ -48,8 +49,18 @@ export function datapointBucketStart(datum: unknown): string | undefined {
 }
 
 /** A named points list this module derives from a `RunMetricsSeries`/`ScanMetricsSeries` slice —
- *  the common shape every "pivot to chart rows" helper below consumes. */
-export type NamedPoints = { key: string; label: string; points: { bucketStart: string; value: number }[] };
+ *  the common shape every "pivot to chart rows" helper below consumes.
+ *
+ *  `fill` says what a bucket this series has no point for MEANS. It defaults to `"zero"` (the series
+ *  accumulated nothing there); a state-like series — a rate, a score, a duration percentile, a
+ *  scanned surface — must say `"hold"`. See {@link SeriesGapFill}: the choice is not cosmetic, it is
+ *  the difference between "nothing ran" and "0% errored". */
+export type NamedPoints = {
+  key: string;
+  label: string;
+  points: { bucketStart: string; value: number }[];
+  fill?: SeriesGapFill;
+};
 
 /** Pivot N named point-lists that share a bucket axis into wide rows keyed by `key`, ascending by
  *  bucket. A series lacking a value for a given bucket leaves that bucket's key OMITTED (never 0).
@@ -74,7 +85,13 @@ export function pivotToRows(series: NamedPoints[]): PivotedRow[] {
     }
     rows.push(row);
   }
-  return rows;
+  // Then close every hole. A key absent from a row is NOT a gap to the chart library — `Line`/`Area`
+  // fall back to y=0, which is the TOP of the plot, so an unmeasured bucket renders as the axis
+  // MAXIMUM. See `lib/chart-series.ts` for the measurement that proved it.
+  return fillSeriesGaps(
+    rows,
+    series.map((s) => ({ key: s.key, fill: s.fill ?? "zero" })),
+  );
 }
 
 /**
@@ -182,10 +199,26 @@ export function buildRunsOverTimeRows(series: RunMetricsSeries[]): RunsOverTimeR
     errorRateSeries.map((s) => ({ key: "errorRate", points: s.points })),
     (bucketStart) => bucketStart,
   );
+  // The error-rate LINE is a rate on a secondary axis, so it follows the rate doctrine rather than
+  // the count bars it sits over: a bucket with no runs has no rate to plot, and 0% would read as a
+  // recovery. Hold the last measured rate (and hold the first one backwards over a leading gap).
+  let lastRate: number | undefined;
+  const leadingRateRows: PivotedRow[] = [];
   for (const row of rows) {
     const rate = overallErrorRate.get(row.bucketStart);
-    row.errorRatePercent = (rate?.value ?? 0) * 100;
+    if (rate !== undefined) {
+      lastRate = rate.value * 100;
+      row.errorRatePercent = lastRate;
+      continue;
+    }
+    if (lastRate === undefined) {
+      leadingRateRows.push(row);
+      continue;
+    }
+    row.errorRatePercent = lastRate;
   }
+  const firstRate = rows.find((row) => typeof row.errorRatePercent === "number")?.errorRatePercent;
+  for (const row of leadingRateRows) row.errorRatePercent = typeof firstRate === "number" ? firstRate : 0;
 
   return { rows, groups, hasData: groups.length > 0 && rows.length > 0 };
 }
@@ -230,8 +263,10 @@ export function buildDurationRows(series: RunMetricsSeries[]): DurationResult {
   const p50 = series.find((s) => s.measure === "p50DurationMs");
   const p95 = series.find((s) => s.measure === "p95DurationMs");
   const named: NamedPoints[] = [];
-  if (p50) named.push({ key: "p50", label: "p50", points: p50.points });
-  if (p95) named.push({ key: "p95", label: "p95", points: p95.points });
+  // `fill: "hold"` — a percentile is a STATE. A bucket with no runs has no latency; zero-filling
+  // would draw a latency collapse that never happened.
+  if (p50) named.push({ key: "p50", label: "p50", points: p50.points, fill: "hold" });
+  if (p95) named.push({ key: "p95", label: "p95", points: p95.points, fill: "hold" });
   const rows = pivotToRows(named);
   const fallbackUsed = Boolean(p50?.durationFallback) || Boolean(p95?.durationFallback);
   const latestP95 = p95 && p95.points.length > 0 ? (p95.points[p95.points.length - 1]?.value ?? null) : null;
@@ -394,6 +429,10 @@ export function buildCacheResult(series: RunMetricsSeries[]): CacheResult {
       key: CACHE_HIT_RATE_KEY,
       label: "Cache hit rate",
       points: hitRate.points.map((p) => ({ bucketStart: p.bucketStart, value: p.value * 100 })),
+      // A rate, and on its own right-hand axis: the token bars beside it share none of its buckets,
+      // so every bucket they add is a hole in THIS series. Zero-filling would report a cache that
+      // stopped hitting; holding reports the last rate actually measured.
+      fill: "hold",
     });
   }
 
@@ -426,7 +465,7 @@ export type ScoreTrendResult = { rows: PivotedRow[]; hasData: boolean };
 export function buildScoreTrendRows(series: RunMetricsSeries[]): ScoreTrendResult {
   const scoreSeries = series.find((s) => s.measure === "meanScore");
   const rows = scoreSeries
-    ? pivotToRows([{ key: "meanScore", label: "Mean score", points: scoreSeries.points }])
+    ? pivotToRows([{ key: "meanScore", label: "Mean score", points: scoreSeries.points, fill: "hold" }])
     : [];
   return { rows, hasData: rows.length > 0 };
 }
@@ -534,7 +573,12 @@ export function buildScansStripResult(series: ScanMetricsSeries[]): ScansStripRe
       points: s.points.filter((p) => p.totalTokens !== null).map((p) => ({ bucketStart: p.bucketStart, value: p.totalTokens as number })),
     }))
     .filter((s) => s.points.length > 0);
-  const rows = pivotToRows(named.map((s) => ({ key: s.serverId, label: s.serverName, points: s.points })));
+  const rows = pivotToRows(
+    // `fill: "hold"` — a scanned surface persists until it is scanned again. A bucket with no
+    // successful scan is not "0 tokens", and it is certainly not the fleet maximum (which is what an
+    // omitted key renders as — see `lib/chart-series.ts`).
+    named.map((s) => ({ key: s.serverId, label: s.serverName, points: s.points, fill: "hold" as const })),
+  );
   return { rows, series: named, hasData: named.length > 0 };
 }
 
@@ -666,7 +710,9 @@ export function buildGenericRunSeriesRows(
     // and the chart's `dataKey`, either of which is happy with any unique string.
     const key = JSON.stringify([s.measure, s.group, s.capabilityClass]);
     const label = parts.length > 0 ? parts.join(" · ") : humanizeMeasure(s.measure);
-    return { key, label, points: s.points };
+    // The measure's UNIT decides how its holes read: `count`/`tokens`/`usd` accumulate (a quiet
+    // bucket is 0), while `rate`/`score`/`ms` describe a state (hold the last real reading).
+    return { key, label, points: s.points, fill: gapFillForUnit(RUN_METRICS_MEASURE_UNITS[s.measure]) };
   });
   const rows = pivotToRows(named);
   const uniqueSeries = new Map<string, string>();
@@ -729,7 +775,9 @@ export function buildGenericScanSeriesRows(
       const parts: string[] = [s.serverName ?? s.serverId];
       if (showMeasure) parts.push(humanizeMeasure(measure));
       const label = parts.join(" · ");
-      named.push({ key: `${s.serverId}··${measure}`, label, points });
+      // Every scan measure is a STATE of the server's surface at its last successful scan — a bucket
+      // with no scan means "not re-measured", never "zero tools".
+      named.push({ key: `${s.serverId}··${measure}`, label, points, fill: "hold" });
     }
   }
   const rows = pivotToRows(named);

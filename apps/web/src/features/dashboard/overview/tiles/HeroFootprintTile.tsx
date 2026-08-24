@@ -103,7 +103,18 @@ export function HeroFootprintTile({
   // Hooks run before any early return (a tile that self-hides must not change hook order).
   const rows = useMemo(
     () =>
-      pivotToRows(plotted.map((s) => ({ key: s.serverId, label: s.serverName, points: s.points }))),
+      pivotToRows(
+        // `fill: "hold"` is this tile's OWN standing model expressed to the chart: each server is
+        // held at its last successful scan. Without it a server with no scan in a bucket is drawn at
+        // the plot's ceiling — measured on the running app, a 243-token server was plotted as a
+        // full-height zigzag reaching the 152,933-token fleet maximum.
+        plotted.map((s) => ({
+          key: s.serverId,
+          label: s.serverName,
+          points: s.points,
+          fill: "hold" as const,
+        })),
+      ),
     [plotted],
   );
   /** serverId → display name: a `Line`'s `dataKey` here is an opaque id, useless as an accessible name. */
