@@ -3,9 +3,17 @@
  *
  * Two layers, both run in `pnpm test`:
  *
- *   A. SOURCE — the four prose containers WP 1.4 capped keep their ~68ch reading-width cap
- *      (Compatibility "Not everything is automated" callout, the assistant message body, the rendered
- *      SKILL.md block, and the `ProseCardDescription` wrapper). Delete a cap → RED.
+ *   A. SOURCE — the prose containers WP 1.4 capped keep their ~68ch reading-width cap
+ *      (Compatibility "Not everything is automated" callout, the assistant message body, and the
+ *      `ProseCardDescription` wrapper). Delete a cap → RED.
+ *
+ *      The rendered SKILL.md block left this list on 2026-08-24, by owner instruction, when the skill
+ *      Overview tab became a RESIZABLE SPLIT VIEW. A measure cap exists because a reader cannot
+ *      control the width of a prose column; in that tab the reader now controls it directly — the
+ *      pane has a drag handle and its width persists — so the cap only meant "drag the handle, watch
+ *      nothing happen". It carries the guard's own `prose-measure-allow` opt-out with that reason.
+ *      This is the narrow exception, not a general licence: a prose container that is NOT inside a
+ *      user-resizable pane still needs its cap, which is what the three entries below hold.
  *   B. HOOK — the `.claude/hooks/prose-measure.mjs` static guard actually flags an uncapped prose
  *      container and — the D-IC9 acceptance requirement — does NOT false-positive on a full-width
  *      TABLE. This layer runs the REAL hook as a subprocess (no logic is re-implemented here), so the
@@ -47,18 +55,13 @@ const CAPPED_PROSE_CONTAINERS: Array<{ file: string; anchor: RegExp; what: strin
     what: "assistant message body (flowing markdown segment)",
   },
   {
-    file: "features/skills/SkillOverview.tsx",
-    anchor: /MessageResponse/,
-    what: "rendered SKILL.md block",
-  },
-  {
     file: "components/ProseCardDescription.tsx",
     anchor: /CardDescription/,
     what: "measure-capped CardDescription wrapper",
   },
 ];
 
-describe("GUARDRAIL D-IC9 (source) — the four capped prose containers keep a measure cap", () => {
+describe("GUARDRAIL D-IC9 (source) — the capped prose containers keep a measure cap", () => {
   it.each(CAPPED_PROSE_CONTAINERS)("$what carries a max-w-[..ch]/prose cap", ({ file, anchor }) => {
     const src = readFileSync(join(webSrc, file), "utf8");
     expect(src, `${file} must render its prose container`).toMatch(anchor);

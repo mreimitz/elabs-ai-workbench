@@ -97,6 +97,26 @@ describe("TokenDistribution", () => {
     expect(row).toHaveAccessibleName(/Output schema \+ envelope 877/);
   });
 
+  test("a tool row's BAR is the same measurement as the percent printed beside it", () => {
+    // The bar used to be scaled to the largest listed tool, so the top row drew a full-width bar
+    // next to the number 6.9% — two denominators on one line, which is what made it read as broken.
+    renderDistribution();
+    const row = screen.getByRole("button", { name: /qlik_create_data_object/ });
+    const fill = row.querySelector('span[style*="width"]');
+    // 4,796 / 64,522 = 7.43%, and the row prints 7.4% — the bar and the number are one measurement.
+    const width = Number(/width:\s*([\d.]+)%/.exec(fill?.getAttribute("style") ?? "")?.[1]);
+    expect(width).toBeCloseTo((4796 / 64_522) * 100, 6);
+    expect(screen.getByText("4,796 · 7.4%")).toBeInTheDocument();
+    // Not 100%, which is what max-scaling drew for whichever tool happened to be first. (The SURFACE
+    // bar above legitimately has a 100% Tools segment — this assertion is scoped to the row.)
+    expect(row.querySelector('span[style="width: 100%;"]')).toBeNull();
+  });
+
+  test("the list states what it adds up to — a whole-server track cannot show that on its own", () => {
+    renderDistribution();
+    expect(screen.getByText(/These 1 are 7\.4% of the server’s tool tokens\./)).toBeInTheDocument();
+  });
+
   test("a zero-valued slice does not shift the colours of the slices after it", () => {
     // Resources 0 but Prompts non-zero: the bar skips Resources, the legend still lists it. Keying
     // the fill to the DRAWN index would paint Prompts in the Resources colour, so the bar and its

@@ -360,9 +360,17 @@ export function ToolFacetBar({
  * One ranked tool: a SINGLE-HUE magnitude bar, with the Name/Description/Schema/Annotations split
  * in a tooltip rather than painted into the bar.
  *
- * The ranking is the row's job, and colour encodes identity — not rank. The previous version
+ * The ranking is the row's job, and colour encodes identity — not rank. The first version
  * repeated the same four hues down eight rows, which said nothing the row order did not already
  * say, and compressed each facet into a 2.5px-tall sliver too small to compare.
+ *
+ * ## One denominator: the bar and the percent beside it are the same measurement
+ * The version after that scaled each bar to the LARGEST tool, so the top row drew a full-width bar
+ * next to the number 6.9% — two denominators on one line, and the bar read as broken. The track is
+ * the whole server now, so a bar's length IS the percent printed beside it. That costs some
+ * comparability between adjacent rows and buys back something the old scaling actively hid: on
+ * `barc-benchmark` the eight heaviest tools come to roughly 28% of the surface between them, which
+ * a chart whose top bar is always full can never show.
  *
  * ## The split is NOT tooltip-only, and that is deliberate
  * `brand-ui docs Tooltip` names it as an anti-pattern — *"Putting essential information ONLY in a
@@ -380,12 +388,13 @@ export function ToolFacetBar({
 function ToolTokenRow({
   row,
   rank,
-  scaleMax,
+  serverTotal,
   onSelect,
 }: {
   row: ContributorRow;
   rank: number;
-  scaleMax: number;
+  /** The whole server's tool tokens — the bar's track, so bar and percent share one denominator. */
+  serverTotal: number;
   onSelect?: (id: string) => void;
 }) {
   const segments = facetSegments(row.split, row.total);
@@ -403,10 +412,13 @@ function ToolTokenRow({
             {formatNumber(row.total)} · {formatPercent(row.percent)}
           </Text>
         </span>
-        <span className="block h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        {/* Taller than the max-scaled version it replaces: against a whole-server track the marks
+            are short by construction (6.9% of the row for the heaviest tool here), so height is
+            what keeps them reading as bars rather than dashes. */}
+        <span className="block h-2 w-full overflow-hidden rounded-full bg-muted">
           <span
             className="block h-full rounded-full bg-primary"
-            style={{ width: `${(row.total / (scaleMax || 1)) * 100}%` }}
+            style={{ width: `${(row.total / (serverTotal || 1)) * 100}%` }}
           />
         </span>
       </span>
@@ -469,7 +481,8 @@ export function TokenDistribution({
   onSelect?: (id: string) => void;
 }) {
   const surfaceTotal = surface.tools + surface.resources + surface.prompts;
-  const rowMax = Math.max(...rows.map((row) => row.total), 1);
+  const listedShare =
+    surface.tools > 0 ? (rows.reduce((sum, row) => sum + row.total, 0) / surface.tools) * 100 : 0;
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -483,7 +496,7 @@ export function TokenDistribution({
       {rows.length > 0 ? (
         <div className="flex min-w-0 flex-col gap-1.5">
           <Text as="span" variant="meta" tone="muted">
-            Heaviest tools — hover a row for its split
+            Heaviest tools — bar is share of this server; hover a row for its split
           </Text>
           <ul className="flex flex-col">
             {rows.map((row, index) => (
@@ -492,10 +505,16 @@ export function TokenDistribution({
                 onSelect={onSelect}
                 rank={index + 1}
                 row={row}
-                scaleMax={rowMax}
+                serverTotal={surface.tools}
               />
             ))}
           </ul>
+          {/* What the old max-scaled bars could not say: whether the heavy tools are the problem, or
+              whether the cost is spread across the whole surface. Both are actionable, and they call
+              for opposite fixes. */}
+          <Text variant="meta" tone="muted" className="text-pretty">
+            {`These ${formatNumber(rows.length)} are ${formatPercent(listedShare)} of the server’s tool tokens.`}
+          </Text>
         </div>
       ) : null}
     </div>

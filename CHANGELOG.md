@@ -52,7 +52,18 @@ it reads 149,338 tools against 3,595 resources. Every slice on both bars now sta
 count and share beside it, rather than a detached legend at the bottom of the card. The eight
 heaviest tools underneath dropped their four-colour mini-bars for a single-hue ranking: repeating
 the same four hues down eight rows encoded nothing the row order did not already say, and squeezed
-each part into a sliver too small to compare. The split moved to hover — and, because
+each part into a sliver too small to compare.
+
+**Those ranking bars then had to be fixed twice.** The first version scaled each bar to the largest
+listed tool, so the top row drew a full-width bar next to the number 6.9% — the bar and the
+percentage were measuring different things on the same line, and it read as broken. A bar's length
+is now the percentage printed beside it, both against the server's tool tokens. That makes the bars
+short, and it buys back something max-scaling actively hid: a line underneath now states that the
+eight heaviest tools are **27.7%** of the surface between them. Whether the cost is concentrated in
+a few tools or spread across all of them calls for opposite fixes, and a chart whose top bar is
+always full can never tell you which you have.
+
+The split moved to hover — and, because
 `brand-ui docs Tooltip` is explicit that essential information must not be tooltip-only, it also
 rides in each row’s accessible name. That was not a precaution: tabbing to a row was measured
 opening no tooltip at all, so a keyboard user got nothing.
@@ -73,7 +84,7 @@ no status-history table, so an issue closed in May and regressed in July reads a
 Making that faithful needs a new table, deliberately not added here.
 
 Verified against the running app in both themes, on a server that actually serves resources, and on
-the tool detail panel. Thirty-two new tests cover the derivations — the findings list had none at all
+the tool detail panel. Thirty-four new tests cover the derivations — the findings list had none at all
 before — and each guard was broken and watched go red before it was trusted. One of them caught a
 real defect during review: a zero-valued slice shifted the colours of the slices after it, so a
 server with no resources but some prompts would have painted Prompts in the Resources colour while
