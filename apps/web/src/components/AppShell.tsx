@@ -20,7 +20,9 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  Kbd,
+  CommandTrigger,
+  SideDock,
+  SkipLink,
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -66,7 +68,6 @@ import {
   PlayCircle,
   Plus,
   ScanLine,
-  Search,
   Server,
   Settings,
   Sparkles,
@@ -92,17 +93,6 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   children?: NavItem[];
 };
-
-/**
- * The command-palette shortcut hint shown on the top-bar search trigger — "⌘K" on Apple platforms,
- * "Ctrl K" elsewhere. Computed once at module load (the platform never changes within a session);
- * guarded so it degrades to the Ctrl form under SSR / a stubbed `navigator`.
- */
-const SHORTCUT_HINT: string = (() => {
-  const platform =
-    typeof navigator === "undefined" ? "" : navigator.platform || navigator.userAgent || "";
-  return /Mac|iPhone|iPad|iPod/i.test(platform) ? "⌘K" : "Ctrl K";
-})();
 
 // Dashboard alone is the primary, unlabeled menu group — the app-wide overview sits above every
 // labeled section (owner IA tweak 2026-07-17).
@@ -204,23 +194,22 @@ export function isNavItemActive(pathname: string, item: NavItem): boolean {
   return isPathActive(pathname, item.path);
 }
 
-/**
- * The active nav-item state cue (design-remediation T5, item 4). brand-ui's default active style is
- * `bg-sidebar-accent` only, which measured a 1.17:1 wash against the rail in light (1.29:1 in
- * dark) with the SAME text color as inactive items — WCAG 1.4.11 wants ≥3:1 for a non-text state
- * indicator, and a same-grey wash gives a keyboard / low-vision operator nothing to lock onto in a
- * 16-item rail. This layers a token-driven accent LEFT-BAR (`bg-primary` against `bg-sidebar` is
- * high-contrast in BOTH themes — the WCAG-satisfying non-text indicator) plus a semibold label, so
- * the current section is unmistakable WITHOUT darkening the grey wash. Applied via `data-[active=true]:`
- * so it rides the `SidebarMenuButton`/`SidebarMenuSubButton` active data-attribute; `relative` anchors
- * the `before` bar. Exported so the `active-nav-contrast` guardrail can assert the cue is an accent
- * (a `bg-primary` border), not another grey wash.
+/*
+ * RM-39 WP 2.5 — a local active-nav indicator constant used to live here: an accent left-bar plus a
+ * semibold label, added because the library's own active state was a 1.17:1 grey wash in light
+ * (1.29:1 in dark) with unchanged label ink.
+ *
+ * It is DELETED, not moved. brand-ui 4.1.0 took the repair upstream — `SidebarMenuButton` and
+ * `SidebarMenuSubButton` now carry the `before:` accent bar and `font-semibold` themselves, filed
+ * upstream as defect R1 with this app's own measurement as the stated reason. Keeping a copy would
+ * have meant two definitions of one fix, and tailwind-merge would silently pick a winner.
+ *
+ * Deleting it was gated on a measurement, not on the changelog: `--sidebar-primary` (what upstream
+ * paints) and `--primary` (what this app painted) resolve to the SAME value in BOTH themes —
+ * `oklch(87.5% .148 116.5)`, against a sidebar at 30% / 18% lightness — so the bar is
+ * pixel-identical. `active-nav-contrast.guardrail.test.tsx` now asserts the RENDERED classes, so it
+ * fails if upstream ever drops the bar as well as if this app reverts to a wash.
  */
-export const ACTIVE_NAV_INDICATOR_CLASS =
-  "relative data-[active=true]:font-semibold " +
-  "data-[active=true]:before:pointer-events-none data-[active=true]:before:absolute " +
-  "data-[active=true]:before:inset-y-1.5 data-[active=true]:before:left-0 data-[active=true]:before:w-1 " +
-  "data-[active=true]:before:rounded-full data-[active=true]:before:bg-primary";
 
 export type AppShellProps = {
   /** Route-derived breadcrumbs. Rendered only at drill depth ≥ 2; the leaf is the current page. */
@@ -282,8 +271,6 @@ const DOCK_MIN_WIDTH_PX = 300;
 const DOCK_MAX_WIDTH_PX = 720;
 /** Keep at least this much room for the main content when dragging the dock wider. */
 const DOCK_MIN_MAIN_PX = 480;
-/** Dock open/close animation duration — must match the `duration-200` utility on the aside. */
-const DOCK_ANIMATION_MS = 200;
 /**
  * Below this viewport width the Assistant dock renders as an overlay Sheet, NOT a permanent split
  * (design-remediation T5, item 8b). A permanent split at a narrow width starves the content column —
@@ -292,29 +279,6 @@ const DOCK_ANIMATION_MS = 200;
  * still leaves only ~360px of content), so the dock has its OWN, higher breakpoint here.
  */
 const DOCK_SHEET_MAX_WIDTH_PX = 1100;
-
-/**
- * True when the viewport is narrow enough (< {@link DOCK_SHEET_MAX_WIDTH_PX}) that the dock must be an
- * overlay Sheet rather than a permanent right split. matchMedia-driven; when it's unavailable (SSR /
- * the jsdom test polyfill, which reports `matches: false`) this is `false`, i.e. the desktop split
- * path — matching every existing render harness.
- */
-function useDockAsSheet(): boolean {
-  const query = `(max-width: ${DOCK_SHEET_MAX_WIDTH_PX - 1}px)`;
-  const [isNarrow, setIsNarrow] = useState<boolean>(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
-    return window.matchMedia(query).matches;
-  });
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
-    const mql = window.matchMedia(query);
-    const onChange = () => setIsNarrow(mql.matches);
-    onChange();
-    mql.addEventListener("change", onChange);
-    return () => mql.removeEventListener("change", onChange);
-  }, [query]);
-  return isNarrow;
-}
 
 function readStoredDockWidthPx(): number {
   try {
@@ -363,15 +327,17 @@ export function AppShell({
   const [breadcrumbSlot, setBreadcrumbSlot] = useState<ReactNode>(null);
 
 
-  // Assistant dock width (desktop only — the mobile Sheet is always full-width). Persisted so a
-  // chosen size survives reload; re-read lazily (not on every render) via `useState`'s initializer.
+  // Assistant dock width. Persisted so a chosen size survives reload; re-read lazily (not on every
+  // render) via `useState`'s initializer.
+  //
+  // RM-39 WP 2.3 — this used to be accompanied by a narrow-viewport hook, a "currently dragging"
+  // flag that suppressed the width transition, and a `resize`-listener effect that re-clamped the
+  // stored width so a window shrink could never squeeze the content column to nothing. `SideDock`
+  // does all three itself: it takes `minContentWidth` and re-clamps against the live viewport, and
+  // it swaps to an overlay below `overlayBreakpoint`. What stays here is the only part that is
+  // genuinely this app's business — WHERE the width is persisted.
   const [dockWidthPx, setDockWidthPx] = useState<number>(readStoredDockWidthPx);
-  // Below ~1100px the dock is an overlay Sheet, not a permanent split (see `useDockAsSheet`) — so a
-  // narrow viewport can never squeeze the content column down to nothing (item 8b).
-  const dockAsSheet = useDockAsSheet();
-  // True while the owner is dragging the resize handle — suppresses the width TRANSITION so the
-  // dock tracks the pointer 1:1 (a transition mid-drag would make it lag and rubber-band).
-  const [dockResizing, setDockResizing] = useState(false);
+  // Fired once per interaction (`onWidthCommit`), not on every pointer move.
   const handleDockResize = useCallback((widthPx: number) => {
     setDockWidthPx(widthPx);
     try {
@@ -380,51 +346,9 @@ export function AppShell({
       // localStorage unavailable — the width just won't persist across reloads.
     }
   }, []);
-  // Re-clamp the persisted dock width against the LIVE viewport (item 8a). The drag handler clamps
-  // during a drag, but a window shrink with the dock already open did not — so the split could leave
-  // the content column below `DOCK_MIN_MAIN_PX` (112px at 768px in the audit). This keeps at least
-  // that much room whenever the viewport changes. (Above ~1100px only; below that the dock is a Sheet.)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    function clampToViewport() {
-      setDockWidthPx((current) => {
-        const max = Math.max(
-          DOCK_MIN_WIDTH_PX,
-          Math.min(DOCK_MAX_WIDTH_PX, window.innerWidth - DOCK_MIN_MAIN_PX),
-        );
-        const next = Math.min(current, max);
-        if (next !== current) {
-          try {
-            window.localStorage.setItem(DOCK_WIDTH_STORAGE_KEY, String(next));
-          } catch {
-            // localStorage unavailable — the clamp still applies in-memory.
-          }
-        }
-        return next;
-      });
-    }
-    window.addEventListener("resize", clampToViewport);
-    clampToViewport();
-    return () => window.removeEventListener("resize", clampToViewport);
-  }, []);
-  const showDock = dockAvailable && dockOpen && dockContent != null;
-
-  // Dock open/close MOTION (desktop): identical mechanic to the left navigation `Sidebar` — the
-  // dock column's `width` transitions between 0 and the chosen width, so the whole app reflows
-  // smoothly in both directions, exactly like collapsing/expanding the left rail. The content is
-  // kept mounted while the close transition plays (`dockRendered` lags `showDock` by the duration)
-  // and only THEN unmounts. `motion-reduce:transition-none` keeps both directions instant for
-  // owners who ask the OS for reduced motion.
-  const [dockRendered, setDockRendered] = useState(showDock);
-  useEffect(() => {
-    if (showDock) {
-      setDockRendered(true);
-      return;
-    }
-    if (!dockRendered) return;
-    const timer = window.setTimeout(() => setDockRendered(false), DOCK_ANIMATION_MS);
-    return () => window.clearTimeout(timer);
-  }, [showDock, dockRendered]);
+  // RM-39 WP 2.3 — the open/close MOTION, the keep-mounted-through-the-close-transition timer and
+  // the reduced-motion handling all moved into `SideDock`, which owns the same width-to-zero
+  // mechanic the left rail uses. Nothing here has to track them any more.
 
   // The shell's existing content region (unchanged from before this WP) — extracted to a variable so
   // it can be reparented under the dock's `ResizablePanelGroup` when the dock is open, and rendered
@@ -482,17 +406,25 @@ export function AppShell({
               on narrow viewports it collapses to the icon alone. Default size (h-9) so it lines up
               with the icon buttons beside it. */}
           {onOpenCommandPalette ? (
-            <Button
-              variant="outline"
-              onClick={onOpenCommandPalette}
-              className="gap-2 sm:w-60 sm:justify-start"
+            /* RM-39 WP 2.2 — the imported `CommandTrigger`, replacing the hand-rolled search-shaped
+               button (another of the pieces upstream's app-shell record took from this app). It
+               computes the platform-correct hint itself, marks the visible label and the `Kbd`
+               `aria-hidden` so the shortcut glyph cannot concatenate into the accessible name, and
+               carries the shared focus ring.
+
+               Two deliberate choices at this call site. The accessible name stays the RICHER
+               "Search — open the command palette" rather than the bare visible label: `aria-label`
+               is set before the prop spread inside the component, so passing it here wins, and a
+               name that says what the control DOES beats one that just repeats its glyph. And the
+               native `title` the old button carried is gone — `.claude/rules/icon-affordances.md`
+               reserves `title` for truncated text, never as the hover affordance of a control that
+               collapses to an icon under `sm`, which this one does. */
+            <CommandTrigger
+              label="Search"
               aria-label="Search — open the command palette"
-              title={`Search (${SHORTCUT_HINT})`}
-            >
-              <Search aria-hidden />
-              <span className="hidden sm:inline">Search…</span>
-              <Kbd className="ms-auto hidden sm:inline-flex">{SHORTCUT_HINT}</Kbd>
-            </Button>
+              onClick={onOpenCommandPalette}
+              className="sm:w-60"
+            />
           ) : null}
           {/* Toolbar tweak 2026-07-11 (owner): the top-bar Refresh button is gone entirely —
               views own their data lifecycles; a manual page-scoped refresh earned no chrome. */}
@@ -559,12 +491,16 @@ export function AppShell({
           sidebar and jump straight into the single `<main>` (`#main-content`, the SidebarInset).
           Plain `<a>` for navigation (brand-ui-only allows it); styled with semantic tokens only, so
           it reads in both themes. */}
-        <a
-          href="#main-content"
-          className="sr-only rounded-md bg-primary px-4 py-2 text-body font-medium text-primary-foreground shadow-md outline-none focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          Skip to content
-        </a>
+        {/* RM-39 WP 2.1 — the imported `SkipLink`, replacing the hand-rolled anchor this app carried
+            (and which upstream's own app-shell design record cites as one of the things it took from
+            here). The wording stays "Skip to content": it is the string a keyboard user has learned
+            and two tests pin it, and the component's default is only a default.
+
+            `focus-visible:absolute` is the library's positioning, where ours used `focus:fixed`.
+            That is a real behavioural difference — an absolutely-positioned pill resolves against
+            the nearest POSITIONED ancestor — so it was checked by focusing the link in a browser
+            rather than assumed. */}
+        <SkipLink targetId="main-content">Skip to content</SkipLink>
         {/* The main navigation always renders at COMFORTABLE density, regardless of the app-wide
           `compact` setting — there's plenty of room in this rail. `data-density` resets `--spacing`
           to the identity for the whole sidebar subtree (see @elabs-ai/components-tokens density.css), which also
@@ -679,7 +615,6 @@ export function AppShell({
                                   asChild
                                   isActive={isPathActive(pathname, child.path)}
                                   tooltip={child.label}
-                                  className={ACTIVE_NAV_INDICATOR_CLASS}
                                 >
                                   <NavLink to={child.path}>
                                     <ChildIcon aria-hidden />
@@ -707,10 +642,12 @@ export function AppShell({
               </SidebarGroup>
               ) : null}
               <SidebarGroup>
-                {/* item 7: brand-ui's collapsed label is `opacity-0 -mt-8` — invisible but still
-                    boxed, leaving a run of unexplained gaps in the icon rail. `hidden` takes it out
-                    of flow entirely (display:none) so the collapsed rail has NO phantom height. */}
-                <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">MCP</SidebarGroupLabel>
+                {/* RM-39 WP 2.5 — the local `group-data-[collapsible=icon]:hidden` override is gone
+                    from every group label here. brand-ui 4.1.0 changed `SidebarGroupLabel`'s own
+                    collapsed rule from `-mt-8 opacity-0` (invisible but still BOXED, leaving a run
+                    of unexplained gaps down the icon rail) to `hidden`, which is the same fix this
+                    app was carrying. Verified by diffing the two published sources, not assumed. */}
+                <SidebarGroupLabel>MCP</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {MCP_NAV_ITEMS.map((item) => (
@@ -724,7 +661,7 @@ export function AppShell({
                 </SidebarGroupContent>
               </SidebarGroup>
               <SidebarGroup>
-                <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Skills</SidebarGroupLabel>
+                <SidebarGroupLabel>Skills</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {SKILL_NAV_ITEMS.map((item) => (
@@ -738,7 +675,7 @@ export function AppShell({
                 </SidebarGroupContent>
               </SidebarGroup>
               <SidebarGroup>
-                <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Testing</SidebarGroupLabel>
+                <SidebarGroupLabel>Testing</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {TESTING_NAV_ITEMS.map((item) => (
@@ -752,7 +689,7 @@ export function AppShell({
                 </SidebarGroupContent>
               </SidebarGroup>
               <SidebarGroup>
-                <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Setup</SidebarGroupLabel>
+                <SidebarGroupLabel>Setup</SidebarGroupLabel>
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {SETUP_NAV_ITEMS.map((item) => (
@@ -774,7 +711,6 @@ export function AppShell({
                   asChild
                   isActive={isPathActive(pathname, "/settings")}
                   tooltip="Settings"
-                  className={ACTIVE_NAV_INDICATOR_CLASS}
                 >
                   <NavLink to="/settings">
                     <Settings aria-hidden />
@@ -801,154 +737,52 @@ export function AppShell({
           `<main>` exists in the DOM). `id="main-content"` is the skip-link target; `tabIndex={-1}`
           makes it programmatically focusable so activating the skip link actually moves focus here
           (bypassing the sidebar) without adding a tab stop. */}
-        <SidebarInset id="main-content" tabIndex={-1} className="app-shell-inset min-w-0">
-          {!dockAsSheet && dockAvailable && dockContent != null ? (
-            // Wide viewport: the dock is a FULL-HEIGHT right column — the mirror image of the left
-            // navigation sidebar (same `bg-sidebar` surface, same full-height shape, and the SAME
-            // open/close mechanic: the column's `width` transitions between 0 and the chosen width,
-            // so the app reflows exactly like it does when the left rail collapses/expands) — with
-            // the one difference that it is RESIZABLE via the drag handle on its edge. The TopNav
-            // renders INSIDE the main column so the bar never spans across the dock, exactly as it
-            // never spans across the left sidebar. The aside stays mounted (at width 0) while the
-            // feature is available so both transition directions actually animate.
-            <div className="flex min-h-0 flex-1">
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-                {topNav}
-                {mainRegion}
-              </div>
-              {showDock ? (
-                <DockResizeHandle
-                  widthPx={dockWidthPx}
-                  onResize={handleDockResize}
-                  onResizingChange={setDockResizing}
-                />
-              ) : null}
-              <aside
-                aria-label="App assistant"
-                aria-hidden={!showDock}
-                style={{ width: showDock ? `${dockWidthPx}px` : 0 }}
-                className={cn(
-                  "flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground",
-                  !dockResizing &&
-                    "transition-[width] duration-200 ease-linear motion-reduce:transition-none",
-                )}
-              >
-                {/* Fixed-width inner column (like the Sheet/Sidebar pattern): the content keeps its
-                  final width while the outer column's width animates, so it slides out of/into the
-                  clipped edge instead of squishing mid-transition. */}
-                <div
-                  style={{ width: `${dockWidthPx}px` }}
-                  className="flex h-full min-h-0 min-w-0 flex-col border-l border-border"
-                >
-                  {dockRendered ? dockContent : null}
-                </div>
-              </aside>
-            </div>
-          ) : (
-            <>
-              {topNav}
-              {mainRegion}
-            </>
-          )}
+        {/* RM-39 WP 2.4 — `<main>` and the assistant dock are SIBLINGS under the provider, which is a
+            flex row (`SidebarProvider`'s root is `flex min-h-svh w-full`). They were nested until
+            now: the dock's `<aside aria-label="App assistant">` rendered INSIDE this `SidebarInset`,
+            putting a complementary landmark inside the main landmark. brand-ui 4.1.0's own flagship
+            app-shell block names that exact mistake at its dock call site — "a SIBLING of
+            `SidebarInset`, so the `aside` lands beside `<main>` rather than inside it" — and it
+            names it because that block was ported from THIS app. Purely structural: the flex row,
+            the widths, the transition and the surfaces are unchanged, so nothing moves on screen.
 
-          {/* Narrow viewports (< 1100px): the dock reuses the SAME right-`Sheet` pattern the left rail
-            uses on mobile (above) instead of a permanent split, which would starve the content column
-            (item 8b). Its own breakpoint is `dockAsSheet` (~1100px), not brand-ui's 768px. */}
-          {dockAsSheet ? (
-            <Sheet
-              open={dockAvailable && dockOpen}
-              onOpenChange={(open) => onDockOpenChange?.(open)}
-            >
-              <SheetContent side="right" className="flex w-full max-w-sm flex-col p-0">
-                <SheetHeader className="shrink-0 border-b border-border p-3 text-left">
-                  <SheetTitle>App assistant</SheetTitle>
-                  <SheetDescription className="sr-only">
-                    The embedded app assistant.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="min-h-0 flex-1 overflow-hidden">
-                  {dockAvailable ? dockContent : null}
-                </div>
-              </SheetContent>
-            </Sheet>
-          ) : null}
+            The top bar stays INSIDE the main column on purpose, so the bar never spans across the
+            dock — exactly as it never spans across the left rail. That is why `topNav` is here and
+            not above this row. */}
+        <SidebarInset id="main-content" tabIndex={-1} className="app-shell-inset min-w-0">
+          {topNav}
+          {mainRegion}
         </SidebarInset>
+
+        {/* RM-39 WP 2.3 — the imported `SideDock`. It replaces a hand-rolled right column, its own
+            drag handle, a viewport-clamping effect, a close-transition timer and a separate
+            narrow-screen `Sheet` — all of which this app wrote first and the library then shipped
+            with the SAME constants (a 480px minimum content width, a 1100px overlay breakpoint,
+            described upstream in the same terms). It adds arrow-key resizing, which the local
+            version never had.
+
+            `onWidthChange` fires continuously during a drag and `onWidthCommit` once at the end, so
+            the persisted width is written once per interaction instead of on every pointer move —
+            a better contract than the local one. */}
+        {dockAvailable && dockContent != null ? (
+          <SideDock
+            title="App assistant"
+            description="The embedded app assistant."
+            open={dockOpen}
+            onOpenChange={(next: boolean) => onDockOpenChange?.(next)}
+            width={dockWidthPx}
+            onWidthChange={setDockWidthPx}
+            onWidthCommit={handleDockResize}
+            minWidth={DOCK_MIN_WIDTH_PX}
+            maxWidth={DOCK_MAX_WIDTH_PX}
+            minContentWidth={DOCK_MIN_MAIN_PX}
+            overlayBreakpoint={DOCK_SHEET_MAX_WIDTH_PX}
+          >
+            {dockContent}
+          </SideDock>
+        ) : null}
       </SidebarProvider>
     </BreadcrumbSlotProvider>
-  );
-}
-
-/**
- * The dock's edge resize handle. Deliberately NOT `@elabs-ai/components-ui`'s `ResizableHandle`: that component
- * only works inside a `ResizablePanelGroup`, whose flex-basis sizing cannot TRANSITION — and the
- * whole point of the dock's layout is that its width animates open/closed exactly like the left
- * navigation sidebar. A thin separator with pointer-drag + arrow-key resizing (the dock sits on the
- * right, so ArrowLeft widens it) replaces the panel-group handle; visuals mirror `ResizableHandle`
- * (a 1px `bg-border` line with a wider invisible hit area and a visible focus ring).
- */
-function DockResizeHandle({
-  widthPx,
-  onResize,
-  onResizingChange,
-}: {
-  widthPx: number;
-  onResize: (widthPx: number) => void;
-  onResizingChange: (resizing: boolean) => void;
-}) {
-  const clamp = (value: number): number =>
-    Math.min(
-      Math.max(value, DOCK_MIN_WIDTH_PX),
-      Math.max(
-        DOCK_MIN_WIDTH_PX,
-        Math.min(DOCK_MAX_WIDTH_PX, window.innerWidth - DOCK_MIN_MAIN_PX),
-      ),
-    );
-  return (
-    // brand-ui-allow: ResizableHandle requires a ResizablePanelGroup, which cannot width-transition —
-    // this separator exists purely so the dock can animate like the left Sidebar AND stay resizable.
-    <div
-      role="separator"
-      aria-orientation="vertical"
-      aria-label="Resize the App assistant dock"
-      aria-valuenow={Math.round(widthPx)}
-      aria-valuemin={DOCK_MIN_WIDTH_PX}
-      aria-valuemax={DOCK_MAX_WIDTH_PX}
-      tabIndex={0}
-      onPointerDown={(event) => {
-        event.preventDefault();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        onResizingChange(true);
-      }}
-      onPointerMove={(event) => {
-        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-        onResize(clamp(window.innerWidth - event.clientX));
-      }}
-      onPointerUp={(event) => {
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }
-        onResizingChange(false);
-      }}
-      onPointerCancel={() => onResizingChange(false)}
-      onKeyDown={(event) => {
-        // The dock is the RIGHT column: moving the divider left = widening the dock.
-        if (event.key === "ArrowLeft") {
-          event.preventDefault();
-          onResize(clamp(widthPx + 16));
-        } else if (event.key === "ArrowRight") {
-          event.preventDefault();
-          onResize(clamp(widthPx - 16));
-        }
-      }}
-      className={cn(
-        // ZERO width: the visible line is the dock's own `border-l` (one gentle 1px line, exactly
-        // like the left sidebar's border) — this element only contributes the invisible hit area
-        // straddling it, plus hover/focus feedback. A visible width here doubled the border.
-        "relative z-10 w-0 shrink-0 cursor-col-resize outline-none",
-        "after:absolute after:inset-y-0 after:-left-1.5 after:w-3 after:cursor-col-resize",
-        "hover:after:bg-ring/30 focus-visible:after:bg-ring/40",
-      )}
-    />
   );
 }
 
@@ -1054,7 +888,6 @@ function NavMenuItem({
         asChild
         isActive={active}
         tooltip={item.label}
-        className={ACTIVE_NAV_INDICATOR_CLASS}
       >
         <NavLink to={item.path}>
           <Icon aria-hidden />
@@ -1085,7 +918,6 @@ function NavMenuItem({
                 <SidebarMenuSubButton
                   asChild
                   isActive={isPathActive(pathname, child.path)}
-                  className={ACTIVE_NAV_INDICATOR_CLASS}
                 >
                   <NavLink to={child.path}>
                     <ChildIcon aria-hidden />

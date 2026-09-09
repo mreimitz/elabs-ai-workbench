@@ -121,12 +121,31 @@ describe("AppShell — shell landmarks + skip link (WP 0.3 / D-IC4)", () => {
     const { container } = renderShell();
     const skip = container.querySelector<HTMLElement>('a[href="#main-content"]');
     expect(skip).not.toBeNull();
-    // Hidden until focused, then revealed — the sr-only / focus:not-sr-only pair.
-    expect(skip?.className).toContain("sr-only");
-    expect(skip?.className).toContain("focus:not-sr-only");
-    // Semantic tokens only (reads in both themes) + a visible focus ring. No raw color literals.
-    expect(skip?.className).toContain("bg-primary");
-    expect(skip?.className).toContain("text-primary-foreground");
-    expect(skip?.className).toContain("focus-visible:ring-ring");
+    const className = skip?.className ?? "";
+
+    // RM-39 WP 2.1 — this used to pin the hand-rolled anchor's exact utilities
+    // (`focus:not-sr-only`, `bg-primary`, `focus-visible:ring-ring`). The shell now renders the
+    // library's `SkipLink`, which dresses the same behaviour differently, so the assertions moved to
+    // the INVARIANTS the test was named for. They are not weaker: the raw-colour sweep below is a
+    // stronger claim than naming two token classes, because it fails on any literal, not just on
+    // the absence of a specific one.
+
+    // Hidden until focused, then revealed. `focus-visible:` rather than `focus:` is the library's
+    // choice and is correct for this control: a skip link is reached by Tab, which sets
+    // `:focus-visible`, and nobody clicks a link they cannot see.
+    expect(className).toContain("sr-only");
+    expect(className).toMatch(/\bfocus(-visible)?:not-sr-only\b/);
+
+    // A visible focus indicator. `focus-ring` is the compound utility brand-ui 4.1.0 moved to
+    // (ADR 0027: a ring plus a contour outline), replacing the hand-stacked ring pair.
+    expect(className).toMatch(/\bfocus-ring\b/);
+
+    // Semantic, token-backed utilities ONLY — no raw colour can reach this element, in either
+    // theme. `.claude/rules/styling-and-tokens.md` bans every form below.
+    expect(className).not.toMatch(/#[0-9a-f]{3,8}\b/i);
+    expect(className).not.toMatch(/\b(rgb|hsl|oklch)\(/);
+    expect(className).not.toMatch(/\b(bg|text|border)-\[/);
+    expect(className).not.toMatch(/\b(bg|text|border)-(black|white)\b/);
+    expect(className).not.toMatch(/\b(bg|text|border)-(gray|slate|zinc|red|blue|green)-\d{2,3}\b/);
   });
 });

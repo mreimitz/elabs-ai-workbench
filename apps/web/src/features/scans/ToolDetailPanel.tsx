@@ -234,6 +234,7 @@ export function ToolDetailPanel({
           serverId={serverId}
           toolName={tool.toolName}
           params={params}
+          inputSchema={tool.inputSchema}
           tokenProfile={tokenProfile}
         />
       ) : null}

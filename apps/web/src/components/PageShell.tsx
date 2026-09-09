@@ -219,8 +219,29 @@ export function PageShell({
 
   if (scroll === "body") {
     // Document-page exception (Settings): the whole column scrolls; the header sticks to the top.
+    // RM-39 WP 2.6 — `tabIndex={0}` + `focus-ring-inset` on the scroll port.
+    // A region that SCROLLS has to be keyboard-operable even when nothing inside it is focusable
+    // (WCAG 2.1.1; axe calls this `scrollable-region-focusable`). This app's ports carried neither,
+    // so a keyboard-only user could not scroll a page whose content had no focusable element — a
+    // long read-only report, for instance. brand-ui 4.1.0's own `PageShell` added the same pair when
+    // it gained `scroll="content"`, and its reasoning applies here verbatim: `focus-ring-inset`, NOT
+    // `focus-ring`, because both layers of the plain rung are drawn OUTSIDE the element's box and an
+    // ancestor here carries `overflow-hidden` — the ring would be clipped away and a deliberately
+    // focusable region would show no indicator at all.
     return (
-      <div className={cn("h-full min-h-0 w-full overflow-y-auto bg-background", className)}>
+      <div
+        /* Biome's `noNoninteractiveTabindex` guards against tab stops on inert decoration; axe's
+           `scrollable-region-focusable` (WCAG 2.1.1) REQUIRES one here, because a region that
+           scrolls and contains nothing focusable is otherwise unreachable by keyboard. The two
+           rules genuinely conflict and the more specific one wins — brand-ui's own `PageShell` and
+           `AppShell` make the same call for the same reason. */
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be focusable (WCAG 2.1.1)
+        tabIndex={0}
+        className={cn(
+          "h-full min-h-0 w-full overflow-y-auto bg-background focus-ring-inset",
+          className,
+        )}
+      >
         {header ? (
           <div
             className={cn(
@@ -246,7 +267,23 @@ export function PageShell({
           {header}
         </div>
       ) : null}
-      <div className={cn("min-h-0 flex-1 overflow-y-auto", GUTTER_X, GUTTER_TOP, GUTTER_BOTTOM)}>
+      {/* Same rule as the `scroll="body"` port above — see the note there for why `focus-ring-inset`
+          rather than `focus-ring`. */}
+      <div
+        /* Biome's `noNoninteractiveTabindex` guards against tab stops on inert decoration; axe's
+           `scrollable-region-focusable` (WCAG 2.1.1) REQUIRES one here, because a region that
+           scrolls and contains nothing focusable is otherwise unreachable by keyboard. The two
+           rules genuinely conflict and the more specific one wins — brand-ui's own `PageShell` and
+           `AppShell` make the same call for the same reason. */
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrollable region must be focusable (WCAG 2.1.1)
+        tabIndex={0}
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto focus-ring-inset",
+          GUTTER_X,
+          GUTTER_TOP,
+          GUTTER_BOTTOM,
+        )}
+      >
         {body}
       </div>
     </div>

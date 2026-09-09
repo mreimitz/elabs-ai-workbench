@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Estimator turn model — work-package status ledger · PRIORITY: MEDIUM"
 description: "Living state for the estimator turn-model calibration plan, read and updated by /next-wp RM-34."
 tags: ["roadmap", "RM-34"]
-timestamp: "2026-08-21T21:00:00Z"
+timestamp: "2026-09-09T18:15:00Z"
 status: "active"
 ---
 # Estimator turn model — work-package status ledger · **PRIORITY: MEDIUM**
@@ -389,6 +389,16 @@ The estimator's **pricing** is now correct and its **token model** is not.
 - **Hand walks not done.** A keyboard-only pass over the launcher's estimate block, and a real-value
   two-theme look at the **suite run-confirm** and **fork dialog** basis lines — only the launcher was
   re-walked with live values; WP 1.3's injected-value walk is still the only evidence for those two.
+- **The turn profile still has no picture, and the wire is what blocks one** (found 2026-09-09 by
+  [`RM-39`](../RM-39-brand-ui-4-1/STATUS.md) WP 4.2, the brand-ui 4.1.0 chart review). The design
+  system now ships a `DistributionChart` — histogram, box, violin or strip on one shared scale — and
+  it is the right picture for a measured turn profile, which today is three numbers and no visual.
+  It **cannot be fed from what this item put on the wire**: its `data` prop is documented as
+  *"RECORD-level rows — one per observation, NOT pre-aggregated buckets… handing it counts defeats
+  the point"*, while `RunPlanTurnProfile` carries only `p10`/`p50`/`p90` and a sample size. Showing
+  the shape of the sample — the thing that would make "median 6, p90 16" judgeable rather than
+  assertable — needs the sample, or a full five-number summary, added to the wire. That is an
+  additive change and belongs to this item's estimator work, not to the design-system upgrade.
 
 ## Log
 

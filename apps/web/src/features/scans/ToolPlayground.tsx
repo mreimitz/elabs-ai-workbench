@@ -15,9 +15,11 @@ export function ToolRunDialog(props: {
   serverId: string;
   toolName: string;
   params: ToolParam[];
+  /** RM-39 WP 3.1 — the tool's raw input schema, forwarded so the runner can build a typed form. */
+  inputSchema?: unknown;
   tokenProfile?: TokenProfileId;
 }) {
-  const { open, onOpenChange, serverId, toolName, params, tokenProfile } = props;
+  const { open, onOpenChange, serverId, toolName, params, inputSchema, tokenProfile } = props;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,6 +36,7 @@ export function ToolRunDialog(props: {
           serverId={serverId}
           toolName={toolName}
           params={params}
+          inputSchema={inputSchema}
           tokenProfile={tokenProfile}
         />
       </DialogContent>

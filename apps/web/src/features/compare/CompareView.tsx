@@ -35,6 +35,7 @@ import {
 import { ArrowLeftRight } from "lucide-react";
 import { PageShell } from "../../components/PageShell";
 import { TabPanel, TabPanelContent } from "../../components/TabPanel";
+import { DeltaMoversChart } from "./DeltaMoversChart";
 import { ViewToolbar } from "../../components/ViewToolbar";
 import { IconButton } from "../../components/IconButton";
 import { getErrorMessage } from "../../lib/errors";
@@ -180,7 +181,9 @@ export function CompareView(props: {
     let cancelled = false;
     void packValuesSettled().then(() => {
       if (cancelled) return;
-      setThreshold((current) => (current === seededWith.current ? defaultCompareThreshold() : current));
+      setThreshold((current) =>
+        current === seededWith.current ? defaultCompareThreshold() : current,
+      );
     });
     return () => {
       cancelled = true;
@@ -759,9 +762,7 @@ function ScanCompareBar(props: {
     // supplies the bg-card lift, bottom border and gutter (matching the runs `CompareBar` idiom);
     // the bar owns only its own row rhythm, never its own card frame.
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-      {props.typeFilterControl ? (
-        <div className="shrink-0">{props.typeFilterControl}</div>
-      ) : null}
+      {props.typeFilterControl ? <div className="shrink-0">{props.typeFilterControl}</div> : null}
       <ScanSide
         letter="A"
         heading={props.sameServerSelected ? "Earlier" : "Baseline"}
@@ -1171,6 +1172,11 @@ function DiffTable(props: {
           </>
         }
       />
+      {/* RM-39 WP 4.2b — the movers chart sits ABOVE the table and reads the tab's rows BEFORE the
+          search/filter narrowing below, on purpose: it answers "what moved most on this surface",
+          which a filtered subset cannot. It renders nothing when nothing changed size, so a
+          zero-diff comparison is unchanged. The table stays the record of every row. */}
+      <DeltaMoversChart rows={rows} entityLabel={entityLabel} />
       {/* The diff table fills the remaining height and scrolls internally (sticky header via
           `stickyScrollTableProps` — row virtualization is what gives @elabs-ai/components-data its sticky thead;
           it supersedes pagination, which is the intent under `scroll="fill"`). */}

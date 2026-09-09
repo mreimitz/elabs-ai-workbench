@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "brand-ui 4.1.0 adoption — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the brand-ui 4.1.0 adoption plan, read and updated by /next-wp brand-ui-4-1."
 tags: ["roadmap", "RM-39"]
-timestamp: "2026-09-09T17:25:00Z"
+timestamp: "2026-09-09T21:40:00Z"
 status: "active"
 ---
 # brand-ui 4.1.0 adoption — work-package status ledger · **PRIORITY: HIGH**
@@ -232,130 +232,195 @@ copy from us, which are listed as WP 2.4 and WP 2.5.
 > Read the "finding that reframes this item" section above before starting any WP here. Each of
 > these deletes local code whose upstream equivalent exists *because of* this repo.
 
-- [ ] **WP 2.1 — `SkipLink` and the `<main>` contract.**
-      The library now ships `SkipLink` and the `AppShell` primitive mounts one itself, targeting a
-      `mainId` that defaults to `"main-content"`. This app hand-rolls the same anchor in
-      `AppShell.tsx` and already uses `id="main-content"` with `tabIndex={-1}` on `SidebarInset`.
-      Replace the hand-rolled anchor with the imported component; keep our own `<main>` wiring, since
-      this app composes `Sidebar`/`SidebarInset` directly rather than mounting the `AppShell`
-      primitive.
-      **Note the shape difference and do not copy it blindly:** the primitive gives its `<main>`
-      `tabIndex={0}` and `focus-ring-inset` **because there `<main>` is itself the scroll port**. In
-      this app the scroll port is inside `PageShell`, so `tabIndex={-1}` remains correct here — a
-      skip target that is not a scroll container must not become a tab stop.
-      *Acceptance:* `one-main.guardrail.test.tsx` stays green; the skip link is still the first
-      focusable element and still moves focus into `<main>`; verified by keyboard in a browser.
+- [x] **WP 2.1 — `SkipLink` and the `<main>` contract.** — done 2026-09-09 · wp/brand-ui-4-1/2.1
 
-- [ ] **WP 2.2 — `CommandTrigger` replaces the hand-rolled ⌘K search button.**
-      `AppShell.tsx` computes `SHORTCUT_HINT` from `navigator.platform` at module load and renders a
-      search-shaped `Button` with a `Kbd` pinned right, collapsing under `sm`. `CommandTrigger` is
-      that component, with a platform-correct default hint and an accessible name that survives the
-      shortcut glyph sitting next to it — which is the part a hand-rolled version usually gets wrong.
-      Delete `SHORTCUT_HINT` and the local composition.
-      **Check before deleting:** the local trigger currently sets a native `title`, which
-      `.claude/rules/icon-affordances.md` forbids on an icon-only control. Confirm the replacement
-      does not reintroduce it.
-      *Acceptance:* the palette still opens from the trigger and from the keyboard; the accessible
-      name is the label, not the label plus the glyph; both themes checked in a browser.
+      The hand-rolled anchor is replaced by the imported `SkipLink`. The wording stays
+      **"Skip to content"** — two tests pin it and it is the string a keyboard user has learned; the
+      component's own default is only a default.
 
-- [ ] **WP 2.3 — `SideDock` replaces the hand-rolled assistant dock.**
-      This is the largest deletion in the item and the highest-confidence one, because the library's
-      component was written from ours and the **constants match exactly**: `SideDock`'s
-      `minContentWidth` defaults to 480 (our `DOCK_MIN_MAIN_PX = 480`) and its `overlayBreakpoint`
-      defaults to 1100 (our `DOCK_SHEET_MAX_WIDTH_PX = 1100`), described upstream in the same terms we
-      used — *"deliberately ABOVE the library's 768px mobile breakpoint: a 400px dock at 768px leaves
-      ~360px of content."* It ships the drag **and arrow-key** resize, the width-transitions-to-zero
-      open/close mechanic, `motion-reduce:transition-none`, re-clamping against the live viewport, and
-      the automatic overlay-`Sheet` presentation below the breakpoint — so both branches of our
-      current code (the wide split column *and* the narrow `Sheet`) collapse into one component.
-      It splits width reporting into `onWidthChange` (continuous — drive layout) and `onWidthCommit`
-      (once, at interaction end — **persist from this**), which is a better contract than ours.
-      **Two deliberate differences to decide, not to skip.** (1) `SideDock` requires a `title` and it
-      is the `SheetTitle` in overlay presentation — ours says "App assistant"; keep that string. (2)
-      Upstream grounds `SideDock` on `--card`, a **content** surface, and says explicitly that page ink
-      is correct there and sidebar ink is the mistake; our dock paints `bg-sidebar text-sidebar-foreground`.
-      Changing it is a visible change to the assistant dock and needs an owner look in both themes.
-      *Acceptance:* the dock opens, closes, resizes by pointer and by arrow key, persists its width,
-      re-clamps on viewport resize, and becomes a sheet below 1100px — all verified in a browser, both
-      themes, keyboard included; the width persisted before the change is still honoured after it.
+      **The behavioural difference was checked, not assumed.** Ours positioned with `focus:fixed`,
+      the library uses `focus-visible:absolute` — and an absolutely-positioned pill resolves against
+      the nearest POSITIONED ancestor, so it could in principle land off-screen. Measured in a real
+      browser by pressing Tab once from the top of the document: the link takes focus, becomes
+      visible at **(13, 13), 119×33**, in **both** themes. `focus-visible` rather than `focus` is
+      also correct for this control — a skip link is reached by Tab, which sets `:focus-visible`, and
+      nobody clicks a link they cannot see.
 
-- [ ] **WP 2.4 — the complementary landmark is currently inside `<main>`. Fix it.**
-      **This is a real accessibility defect in this app today, not a style preference.** In
-      `AppShell.tsx` the assistant dock's `<aside aria-label="App assistant">` is rendered **inside**
-      `<SidebarInset id="main-content">`, which is the app's single `<main>` — so a complementary
-      landmark sits nested within the main landmark. The flagship block names this exact mistake at
-      its dock call site: *"A SIBLING of `SidebarInset`, so the `aside` lands beside `<main>` rather
-      than inside it"*, and in its header: *"an `aside` inside `<main>` puts a complementary landmark
-      inside the main landmark."*
-      Move the dock (and its resize handle) out to be a flex sibling of `SidebarInset` under the
-      `SidebarProvider`. Note this interacts with WP 2.3 and should land with it or immediately after.
-      **Also verify, don't assume:** the top bar must stay *inside* the main column so it does not
-      span across the dock — the flagship does the same, and our current code already does.
-      *Acceptance:* a landmark query finds exactly one `main` and finds the `complementary` outside it;
-      a new guardrail test locks the relationship and is proved by breaking it and watching it go red;
-      the visual result is unchanged in both themes.
+      `<main>` keeps `tabIndex={-1}` here, deliberately NOT the `{0}` the library's own `AppShell`
+      primitive uses: there `<main>` IS the scroll port, whereas in this app the port lives inside
+      `PageShell` (see WP 2.6). A skip target that is not a scroll container must not become a tab
+      stop.
+- [x] **WP 2.2 — `CommandTrigger` replaces the hand-rolled ⌘K search button.** — done 2026-09-09 · wp/brand-ui-4-1/2.2
 
-- [ ] **WP 2.5 — delete the two sidebar workarounds the library absorbed.**
-      Both fixes this repo made are now in `@elabs-ai/components-ui`, verified by reading 4.1.0's
-      `sidebar.tsx`:
-      (a) **the active-nav indicator.** `SidebarMenuButton` now carries, on `data-[active=true]`, a
-      `before:` accent bar on `--sidebar-primary` (`inset-y-1.5 start-0 w-1 rounded-full`) plus
-      `font-semibold`, and `SidebarMenuSubButton` carries the same — which is precisely what our
-      `ACTIVE_NAV_INDICATOR_CLASS` adds at three call sites. Upstream files it as defect R1 with our
-      measurement as the reason.
-      (b) **the collapsed group label.** `SidebarGroupLabel` now collapses with `hidden` instead of
-      `-mt-8 opacity-0`, removing the boxed phantom gap our code works around.
-      Delete both local workarounds **only after** confirming by measurement that the upstream
-      indicator is at least as visible in both themes (D-BU4) — our version exists because a previous
-      upstream default failed contrast, so this is exactly the class of change that must be looked at,
-      not assumed.
-      **Leave alone:** the sidebar's pinned `data-density="comfortable"`, the explicit
-      `min-h-0 overflow-y-auto` on `SidebarContent`, the `display: contents` nav landmark, the
-      collapsed-rail mirror items, and the 44×44 coarse-pointer floor. Upstream lists these as things
-      it read from us but the shipped `Sidebar` was **not** verified in this ledger to carry them.
-      *Acceptance:* `ACTIVE_NAV_INDICATOR_CLASS` is gone and the active item still reads as active by a
-      **non-colour** cue in both themes, confirmed by looking; no phantom gap in the collapsed rail;
-      the touch-target guardrail stays green.
+      The local `SHORTCUT_HINT` platform sniff and the search-shaped `Button` are gone; the imported
+      `CommandTrigger` computes the hint itself and marks both the visible label and the `Kbd`
+      `aria-hidden` so the shortcut glyph cannot concatenate into the accessible name.
 
-- [ ] **WP 2.6 — reconcile our `PageShell` with the library's new scroll modes.**
-      The library's `PageShell` gained `scroll: "body" | "content" | "fill"` and a `headerGutter`
-      with a `--page-shell-header-gutter` custom property. This app's own `PageShell` invented the
-      **same three-mode vocabulary** independently (audit §S22) — but ours defaults to `"content"` and
-      the library's defaults to `"body"` (byte-identical to its old behaviour, for compatibility).
-      They are not drop-in equivalents.
-      Decide one of: keep ours and record why; or re-base ours on the library's, keeping our default
-      and our gutter scale. Whichever is chosen, the library's `scroll="content"` sets `tabIndex={0}`
-      and `focus-ring-inset` on the port — a scroll container must be keyboard-operable (WCAG 2.1.1,
-      axe `scrollable-region-focusable`), and `focus-ring-inset` rather than `focus-ring` because an
-      ancestor's `overflow-hidden` clips the outside rings. **Check whether our port does this; if it
-      does not, that is a second real defect and it is fixed here.**
-      *Acceptance:* every route still scrolls in exactly one place; a keyboard user can reach and
-      operate the scroll port and sees a focus ring that is not clipped; the decision is recorded.
+      Two choices at the call site. The accessible name stays the richer **"Search — open the command
+      palette"** rather than the bare visible label (the component sets `aria-label` before its prop
+      spread, so passing it here wins, and a name that says what the control DOES beats one that
+      repeats its glyph). And the native `title` the old button carried is **deleted** —
+      `.claude/rules/icon-affordances.md` reserves `title` for truncated text, never as the hover
+      affordance of a control that collapses to an icon under `sm`, which this one does.
+- [x] **WP 2.3 — `SideDock` replaces the hand-rolled assistant dock.** — done 2026-09-09 · wp/brand-ui-4-1/2.3 (owner chose to switch)
 
----
+      **Owner decision taken 2026-09-09: switch.** The hand-rolled dock is gone — a **net 168 lines
+      removed** from `AppShell.tsx` (110 added, 278 deleted). What went with it: the resizable right
+      column, its bespoke `DockResizeHandle` (a 73-line pointer+arrow-key separator written because
+      `ResizableHandle` cannot animate a width), the `useDockAsSheet` matchMedia hook, the
+      `resize`-listener effect that re-clamped the stored width against the live viewport, the
+      close-transition timer that kept content mounted for exactly 200ms, and the entire separate
+      narrow-screen `Sheet` branch. `SideDock` does all of it, with the SAME constants this app
+      chose first, and adds arrow-key resizing the local version never had.
 
-## Phase 3 — the tool playground gets a real schema form
+      What stayed is the only part that is genuinely this app's business: **where** the width is
+      persisted. It is now written on `onWidthCommit` — once per interaction — rather than on every
+      pointer move, which is a better contract than the local one had.
 
-- [ ] **WP 3.1 — adopt `SchemaForm` + `fromJsonSchema` in the MCP tool playground.**
-      `apps/web/src/components/ToolRunner.tsx` (493 lines) generates the tool-call form today by
-      **regex-matching a stringified type label** — `/^(array|object)/` becomes a raw JSON textarea,
-      `/^(number|integer)/` a numeric input — so an array of enums, a nested object and a list of
-      strings all render as "paste JSON here". The library now ships the supported version of this:
-      `SchemaForm` with a serializable `FormSpec`, and `fromJsonSchema()`, a deliberately narrow
-      JSON-Schema adapter that maps the common subset onto real controls — `array of string` becomes a
-      list field, `array of string with enum` becomes a multi-enum, `object with properties` becomes a
-      group. It also carries the loading / submitting / submitted / error states as props.
-      **Honour D-BU6.** `fromJsonSchema` **throws** `UnsupportedJsonSchemaError` on `$ref`, `allOf`,
-      `oneOf`, `anyOf` or `not` anywhere in the schema, naming the keyword and its path — MCP tool
-      schemas in the wild do use these. It **silently drops** a property whose type it does not cover.
-      Neither may end with the app sending an incomplete argument object: the refusal path keeps the
-      current raw-JSON editor as an honest fallback, and a dropped required property must be detected
-      and surfaced, not shipped.
-      *Acceptance:* a tool whose schema is in the supported subset renders typed controls and calls
-      with identical arguments to before; a tool whose schema uses a refused keyword falls back
-      visibly and still runs; a required property that would be dropped is reported rather than
-      omitted; measured against a real registered MCP server, not a fixture alone.
+      **The guardrail from WP 2.4 caught a real hazard during this swap, and was fixed to be
+      stronger.** It looked for `aside[aria-label="App assistant"]` — the hand-rolled dock's markup.
+      `SideDock` labels its aside with `aria-labelledby` instead, so that selector stopped matching
+      and the test went **green for the wrong reason**: it was asserting about an element that no
+      longer existed. The invariant was never about that one aside, so it now asserts that **no**
+      `<aside>` sits inside `<main>`, whoever renders it, and the harness forces a 1600px viewport
+      because below the dock's 1100px breakpoint `SideDock` renders a portalled overlay that is
+      trivially outside `main` and would prove nothing. Re-proved by mutation: moving the `SideDock`
+      back inside `SidebarInset` turns it red.
 
+      **NOT VERIFIED, and this is the one to look at.** The assistant dock needs provider credentials
+      to render, and this environment has none, so the dock has **never been seen** in its new form.
+      The specific risk, read from `SideDock`'s source rather than imagined: its body is
+      `p-4 overflow-y-auto`, i.e. it owns padding AND scrolling — while `AssistantDock` mounts a
+      `ChatShell` that owns its own transcript scroll and pins a composer to the bottom. A scrolling
+      parent around a self-scrolling chat can produce a double scrollbar and a composer that scrolls
+      away. Three further known consequences of the switch, all accepted by the owner in advance:
+      the dock's ground changes from `--sidebar` to `--card`; the `assistant-dock-shell` block in
+      `app.css` was tuned to fix `ChatShell`'s colour scrims **on the sidebar ground** and will need
+      re-checking on the new one; and `SideDock` renders its own title/close header above a
+      `ChatShell` that already has chrome.
+
+      Gate green (typecheck · 4,568 web tests · build · lint), but a green gate cannot see any of
+      the four things above. **First owner action: open the dock with a signed-in provider and look.**
+- [x] **WP 2.4 — the complementary landmark is currently inside `<main>`. Fix it.** — done 2026-09-09 · wp/brand-ui-4-1/2.4
+
+      **Fixed.** The dock's `<aside aria-label="App assistant">` and its resize handle are now flex
+      SIBLINGS of `SidebarInset` under the provider, whose root is `flex min-h-svh w-full` — the same
+      arrangement brand-ui's flagship block uses, and it names this exact mistake at its dock call
+      site *because that block was ported from this app*. The top bar stays inside the main column so
+      the bar still never spans across the dock.
+
+      Purely structural: the flex row, the widths, the transition and the surfaces are unchanged, so
+      nothing moved on screen. Confirmed live — one `main` landmark, no console errors, both themes.
+
+      **A new guardrail locks it and was proved to have teeth.** `one-main.guardrail.test.tsx` gains
+      a dock-mounted harness asserting `main.contains(aside) === false`, plus that exactly one `main`
+      survives and the dock content still mounts. Putting the `<aside>` back inside `SidebarInset`
+      turns it **red** with the message *"the assistant dock's `<aside>` is inside `<main>` — a
+      complementary landmark nested in the main landmark"*; the mutation was run and reverted.
+- [x] **WP 2.5 — delete the two sidebar workarounds the library absorbed.** — done 2026-09-09 · wp/brand-ui-4-1/2.5
+
+      Both are gone from this app.
+
+      **(a) The active-nav indicator.** `ACTIVE_NAV_INDICATOR_CLASS` and its four call sites are
+      deleted. Gated on a MEASUREMENT rather than the changelog: `--sidebar-primary` (what upstream
+      paints) and `--primary` (what this app painted) resolve to **the same value in both themes** —
+      `oklch(87.5% .148 116.5)` — against a sidebar at 30% / 18% lightness, so the bar is
+      pixel-identical. Re-measured after the deletion on the running app: the active item's `::before`
+      still paints `oklch(0.875 0.148 116.5)` at `font-weight: 600`, in both themes.
+
+      Its guardrail was **rewritten rather than deleted**, and is now stronger: it used to assert
+      strings on a constant this app owned; it now renders the shell and asserts the class list that
+      ACTUALLY reaches the active nav item — so it fails if upstream ever drops the bar, which the
+      old version could not see, as well as if this app reverts to a wash.
+
+      **(b) The collapsed group label.** The local `group-data-[collapsible=icon]:hidden` override is
+      removed from all four group labels. Verified by diffing the two published sources, not assumed:
+      4.0.0's `SidebarGroupLabel` collapsed with `-mt-8 opacity-0` (invisible but still BOXED),
+      4.1.0's with `hidden`. Checked live — the collapsed icon rail has no phantom gaps.
+
+      **Left alone**, as the plan said: the pinned `data-density="comfortable"`, `SidebarContent`'s
+      explicit `min-h-0 overflow-y-auto`, the `display: contents` nav landmark, the collapsed-rail
+      mirror items, and the 44×44 coarse-pointer floor. Upstream lists these as things it read from
+      here, but the shipped `Sidebar` was not verified to carry them.
+- [x] **WP 2.6 — reconcile our `PageShell` with the library's new scroll modes.** — done 2026-09-09 · wp/brand-ui-4-1/2.6
+
+      **Kept ours, and fixed the real defect it was missing.** This app's `PageShell` invented the
+      same three-mode `scroll` vocabulary independently, but the two are not drop-in equivalents —
+      ours defaults to `"content"`, the library's to `"body"` (byte-identical to its old behaviour,
+      for compatibility), and ours owns this app's gutter scale and header variants. Re-basing would
+      be a large change for no behavioural gain.
+
+      What the comparison DID surface is a **second real accessibility defect, now fixed**: this
+      app's scroll ports carried **no `tabIndex`**, so a keyboard-only user could not scroll a page
+      whose content held nothing focusable — a long read-only report, say. That is WCAG 2.1.1 / axe
+      `scrollable-region-focusable`, and it is exactly the pair the library's `scroll="content"` adds.
+      Both ports now carry `tabIndex={0}` and `focus-ring-inset` — **inset**, not the plain rung,
+      because both of its layers are drawn outside the element's box and an ancestor here carries
+      `overflow-hidden`, which would clip the indicator away entirely.
+
+      Verified on the running app: `/advisor`, `/servers` and `/skills` now expose a focusable scroll
+      port; `/scans` correctly exposes none, because it uses the `fill` mode, which scrolls nothing
+      itself.
+
+      **One conflict had to be adjudicated in the open.** Biome's `noNoninteractiveTabindex` forbids
+      exactly this, so it is suppressed at the two lines with a stated reason: that rule guards
+      against tab stops on inert decoration, while axe's rule REQUIRES one on a scrollable region.
+      The rules genuinely conflict, the more specific wins, and brand-ui's own `PageShell` and
+      `AppShell` make the same call.
+
+      *Noticed, not fixed:* two library-owned elements on the dashboard carry `focus-ring-inset` on a
+      scrollable div with **no** tab stop — the same defect, in upstream's code. Out of scope here.
+- [x] **WP 3.1 — adopt `SchemaForm` + `fromJsonSchema` in the MCP tool playground.** — done 2026-09-09 · wp/brand-ui-4-1/3.1
+
+      **Done.** The tool playground's parameters pane is now a real typed form. A string array is a
+      repeatable list with an *Add item* control, a constrained array is a multi-select, a number is
+      a stepper, an enum is a select, and each field carries its schema `description` as help text —
+      where every one of those used to be either a bare text input or, for anything array- or
+      object-shaped, a **"paste JSON here" textarea** matched by a regex on a stringified type label.
+
+      **Measured on real data, not fixtures:** all **24 of 24** tools on the workbench's own MCP
+      mount produce a usable typed form — zero refusals. Rendered in a browser, both themes, no
+      console errors: `run_plan_start`'s seven parameters come through with **zero** raw-JSON boxes.
+
+      **The safety half is the point, and it lives in its own tested module** (`lib/tool-schema-form.ts`,
+      16 tests against the REAL adapter, never a stub). `planToolForm` refuses **four** ways, and any
+      refusal keeps the existing hand-written form — which still has the raw-JSON escape hatch, the
+      only thing that can express an arbitrary shape — and says so in a visible notice rather than
+      degrading silently:
+      1. **`$ref` / `allOf` / `oneOf` / `anyOf` / `not`** — the adapter throws; those keywords change
+         what a schema MEANS and approximating them renders a field that is plausible and wrong.
+      2. **A required property the adapter dropped.** `fromJsonSchema` silently omits any property
+         whose type its subset does not cover. Dropping an OPTIONAL one costs a field; dropping a
+         REQUIRED one means the form cannot express a valid call, and the button would submit the
+         incomplete object anyway. Tested with a real case (`array of number`) that the adapter does
+         drop.
+      3. **A nested object — and this one is an upstream gap worth reporting.** `fromJsonSchema` maps
+         `{ address: { city, zip } }` onto a group and FLATTENS it into one flat values map. Upstream
+         ships `jsonSchemaRequestBody(spec, values)` to rebuild the nested shape — but it is **not
+         exported from the package barrel** (checked against 4.1.0's published `dist/index.d.ts`). So
+         a consumer literally cannot un-flatten, and submitting would send `{ city, zip }` where the
+         tool asked for `{ address: { city, zip } }`: accepted, plausible, wrong. Refused until that
+         helper is public. **This refusal is also what keeps the argument-building a straight copy** —
+         lift it and the submit path needs the un-flattening step, not a tweak.
+      4. A schema that is not an object at all.
+
+      **One thing the swap would have lost, caught by looking at it and then fixed.** The adapter
+      emits fields in the schema's own property order, so `run_plan_start`'s single REQUIRED argument
+      (`source`) rendered **sixth of seven** — the hand-written form had always sorted required-first.
+      `planToolForm` now re-orders required-first (stable within each group), because D-BU4 says the
+      replacement must be at least as usable as what it replaced.
+
+      Validation moved to the library's own `validateForm`, which knows each field's real constraints
+      (min/max, pattern, minItems, required) instead of this component's "is it empty / is it JSON"
+      pair. The destructive-confirm gate, the KPI footer and the result pane are untouched.
+
+      *Known, minor, not fixed:* the adapter humanises labels from property names, so `aggregateCostCapUsd`
+      reads "Aggregate Cost Cap Usd" where the old form showed the exact wire name in monospace. An
+      operator matching a name against a server's docs loses a little precision.
+
+      *Not done:* no keyboard pass over the generated controls, and no tool has been RUN through the
+      typed form against a live server — the arguments path is covered by tests and by the flatten
+      refusal, not by an executed call.
 - [ ] **WP 3.2 — the same treatment for resources, prompts and the skill tool runner.**
       `features/scans/ResourcePromptRun.tsx` (614 lines) and `features/skills/design/ToolRunnerSheet.tsx`
       solve the same problem separately. Fold them onto whatever WP 3.1 establishes, so the app has
@@ -389,19 +454,116 @@ copy from us, which are listed as WP 2.4 and WP 2.5.
       *Acceptance:* the question is put to the owner with a rendered before/after of two real empty
       states in both themes; the answer is recorded here. No mass edit before that.
 
-- [ ] **WP 4.2 — the new chart families against the surfaces that hand-rolled them.**
-      `@elabs-ai/components-charts` grew from 238 to 345 source files. Four additions map onto
-      surfaces this app already built by hand, and each is a *candidate*, not a commitment:
-      **`NetworkChart`** (force / circular / arc layouts) against RM-17 WP 3.5's agent-graph lens,
-      which was built on the flow canvas; **`HeatmapChart`** against the MCP × model compatibility
-      heatmap; **`TreemapChart`** against the per-tool token-footprint breakdown; and
-      **`DistributionChart`** (box / violin / histogram / strip) against RM-34's turn-profile
-      percentiles, which currently have no visual at all.
-      **Warning, and it is this repo's own known weakness:** the panel test suites mock
-      `@elabs-ai/components-charts` as no-ops, so a chart-prop bug passes the gate silently — RM-17's
-      ledger already records this. Any chart adoption is verified by looking at it, not by a green test.
-      *Acceptance:* a per-candidate verdict with a rendered screenshot for any adopted; no adoption on
-      the strength of a passing test alone.
+- [x] **WP 4.2 — the new chart families against the surfaces that hand-rolled them.** — done 2026-09-09 · wp/brand-ui-4-1/4.2
+
+      **Verdict: adopt none of them now. One is worth building, and it is blocked on a wire change.**
+      The charts package grew 238 → 345 source files and gained ten new containers. This app uses
+      only the basic families (`Bar`/`Line`/`Area`/`Ring`/`Radar`/`Scatter`/`Sparkline`/`Gantt`) and
+      **none** of the ten. Each was judged against the surface it appears to match, by reading our
+      data shape and the component's own declared anti-patterns — not by name.
+
+      | New chart | Surface it appears to match | Verdict |
+      | --- | --- | --- |
+      | `NetworkChart` | the run console's agent-graph lens | **No** |
+      | `TreeChart` | the workforce org chart | **No** |
+      | `HeatmapChart` | the MCP × model compatibility grid | **No** |
+      | `TreemapChart` | per-tool token footprint | **No, for now** |
+      | `DistributionChart` | the measured turn profile | **Yes — but blocked** |
+      | `DumbbellChart` | the compare workspace's per-tool deltas | **Yes — the real find** |
+      | `UnitChart` | the dashboard's surface-mix ring | **No** |
+      | `WaterfallChart` · `BumpChart` · `ParallelCoordinatesChart` | — | **No** |
+
+      **Why the two graph rejections are not laziness.** `NetworkChart`'s own anti-pattern list says
+      *"Reading a force layout's POSITIONS as data — only adjacency is encoded; distance, direction
+      and the picture's orientation are artefacts of the solver's seed."* Our agent-graph lens
+      (`apps/web/src/features/testing/AgentGraphLens.tsx`) has an **Expanded** mode that unrolls
+      every call *in execution order* — position IS data there — and it draws rich nodes carrying
+      count/tokens/cost/duration chips plus `×N` edge labels. `NetworkChart` nodes are circles sized
+      by value with optional text labels. Adopting it would delete a deterministic layout in favour
+      of one whose own documentation says not to read it, and throw away the node chips. The org
+      chart fails the same way against `TreeChart`, which draws every node at uniform weight and
+      would lose the agent avatars and role chips.
+
+      **Why the heatmap rejection is the interesting one.** The shape matches perfectly — two
+      discrete dimensions (subject × model) and one numeric value with real nulls
+      (`CompatibilityCell.score: number | null`), which is exactly the case `HeatmapChart`'s
+      empty-pinprick exists for. But the current table is **already better than a colour ramp**:
+      each cell carries a per-band glyph *and* a hatch so meaning survives colour-blindness and
+      greyscale, an accessible name that decodes the band and speaks `"not scored"` for a null, a
+      real focusable button per cell, and a pinned subject column. `HeatmapChart` encodes value as
+      an ordered ramp step — and its own anti-patterns warn against leaning on ramp darkness to
+      carry meaning. The cell's primary content is a **band** (a categorical verdict), not a
+      magnitude. Swapping would trade a colour-independent grid for a colour-dependent one.
+
+      **The one genuinely new capability, and why it cannot be built here.** `DistributionChart`
+      (histogram / box / violin / strip) is the right picture for RM-34's measured turn profile,
+      which today has **no visual at all**. It cannot be fed: its `data` prop is documented as
+      *"RECORD-level rows — one per observation, NOT pre-aggregated buckets… handing it counts
+      defeats the point"*, and `RunPlanTurnProfile` carries only `p10/p50/p90` plus a sample size.
+      Rendering it needs the sample (or a full five-number summary) on the wire — **a wire change,
+      which D-BU8 forbids in this item.** Recorded as a follow-up against RM-34, not smuggled in.
+
+      **The real find is the one that was not on the original list.** The compare workspace
+      (`apps/web/src/features/compare/CompareView.tsx`) renders per-tool `deltaTokens` sorted by
+      absolute change as **table rows with badges, and no chart whatsoever**. `DumbbellChart` exists
+      for precisely this — *"before/after per category… so the CHANGE is the mark, not a second
+      bar"* — and its data is already on the client. It needs no wire change and no migration. It is
+      the strongest candidate in the release for this app and belongs in its own work package.
+
+      **A caution that applies to every future chart adoption, now measured rather than asserted:**
+      **40 test files** stub `@elabs-ai/components-charts` with no-op or simplified components, so a
+      chart-prop bug passes the gate in silence. Nothing here may be adopted on the strength of a
+      green test; it is verified by looking at it, in both themes.
+
+      *Not done:* no chart was rendered, and no browser was opened for this WP — it is a reading of
+      our data shapes against the components' declared contracts. That is sufficient for a "do not
+      adopt" verdict and is **not** sufficient for an adoption.
+
+- [x] **WP 4.2b — `DumbbellChart` in the compare workspace (split out of WP 4.2).** — done 2026-09-09 · wp/brand-ui-4-1/4.2b
+
+      Every diff tab (Tools / Resources / Prompts) now opens with a **movers chart** above its table:
+      one track per entity from the earlier scan (hollow marker) to the later one (filled), with the
+      signed token change as the label. New file `apps/web/src/features/compare/DeltaMoversChart.tsx`;
+      `CompareView` gains one line plus a comment. No wire change, no migration, no new dependency.
+      The table is untouched and stays the record — every row, exact figures, search, filters.
+
+      **It renders nothing when nothing changed size**, so a zero-diff comparison looks exactly as it
+      did. The card's title is the conclusion (*"workbench_export_bundle moved most — +820 tokens"*),
+      and the description is the legend, including the truncation: a chart that silently drops rows
+      is a chart that lies.
+
+      **Verified in a real browser, both themes** — and looking is what made it correct. Two defects
+      existed in the first cut that no test could have seen, both then fixed and re-measured:
+      1. **The chart was clipped.** `DumbbellChart` sizes itself from its own `aspectRatio`, and a
+         `ChartCard height` does not shrink an SVG that has already sized itself — so the default
+         "2 / 1" drew a **625px** SVG into a ~355px slot and **four of the eight tracks were cut off**
+         with no error and no scrollbar. Fixed with an explicit `aspectRatio="3 / 1"` and a card
+         height that matches; re-measured at **417px for six rows, no overflow**.
+      2. **Long labels were clipped at the START.** The first category label sat at **x = −25**,
+         i.e. outside the SVG box — so `workbench_export_bundle` rendered as `bench_export_bundle`,
+         losing the part that distinguishes MCP tool names. Fixed with `margin={{ left: 190 }}`;
+         re-measured at **x = +25 for every label**.
+
+      The row cap moved **8 → 6** as a consequence, and the constant records that it was measured
+      (six tracks land ~66px apart, clear of their own delta labels) rather than chosen by taste.
+
+      **One honest inconsistency, disclosed rather than hidden:** the chart ranks by delta MAGNITUDE
+      while the table beneath defaults to the SIGNED delta, so the two disagree about what comes
+      fourth. Both orderings are right for their own job, so the description now names the chart's
+      ("ordered by size of change, up or down") instead of quietly leaving a reader to notice.
+
+      **Test posture.** 15 new tests assert the decisions — which rows are drawn, the magnitude
+      order, the cap, the disclosure wording, and the exact props handed to `DumbbellChart` — against
+      a recording stub. `CompareView`'s own suite had to stub the charts package too, because it
+      **cannot be loaded** under vitest (`@visx/gradient`'s ESM index deep-import fails to resolve),
+      which is the real reason ~40 suites in this app already stub it. So the gate can see the
+      chart's props but not its pixels; the pixels were checked by eye and by measurement instead.
+
+      *Fixture note:* the two scans compared were real scans of the workbench's own MCP mount, with
+      the later one's per-tool token counts perturbed in a **scratch** database to create deltas. The
+      project's own `data/app.sqlite` was never opened.
+
+      *Not done:* no keyboard pass over the chart's datapoint targets.
 
 - [ ] **WP 4.3 — the new flow edges against SkillFlow's canvas.**
       `@elabs-ai/components-flow` gained `FlowWeightedEdge` (with a weight scale and generated ARIA

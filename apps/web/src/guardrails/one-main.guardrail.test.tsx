@@ -62,6 +62,31 @@ function renderShell() {
   );
 }
 
+/**
+ * The shell WITH the assistant dock mounted — the arrangement the landmark rule below governs.
+ *
+ * The viewport must be WIDE. `SideDock` reads `useIsMobile(overlayBreakpoint)`, and below the dock's
+ * own 1100px breakpoint it renders as an overlay sheet in a portal instead of a column — correct
+ * behaviour, but a portal lives outside the render container and is trivially outside `main` anyway.
+ * The nesting rule only has teeth on the COLUMN branch, so the harness forces it.
+ */
+function renderShellWithDock() {
+  window.innerWidth = 1600;
+  return render(
+    <MemoryRouter initialEntries={["/dashboard"]}>
+      <AppShell
+        themePreference="light"
+        onThemePreferenceChange={() => {}}
+        dockAvailable
+        dockOpen
+        dockContent={<div data-testid="dock-content">Assistant</div>}
+      >
+        <div data-testid="page-content">Dashboard content</div>
+      </AppShell>
+    </MemoryRouter>,
+  );
+}
+
 describe("GUARDRAIL D-IC4 — the shell renders exactly one <main>", () => {
   it("has precisely ONE <main> landmark (a second nested <main> is the regression this catches)", () => {
     const { container } = renderShell();
@@ -91,5 +116,48 @@ describe("GUARDRAIL D-IC4 — the shell renders exactly one <main>", () => {
     expect(first).toHaveTextContent("Skip to content");
     expect(first).toHaveAttribute("href", "#main-content");
     expect(focusables.indexOf(first)).toBe(0);
+  });
+});
+
+describe("GUARDRAIL RM-39 WP 2.4 — the assistant dock is BESIDE <main>, never inside it", () => {
+  /**
+   * A `complementary` landmark nested inside the `main` landmark is the defect this closes. It
+   * shipped for as long as the dock existed: the `<aside aria-label="App assistant">` was rendered
+   * inside `SidebarInset`, which IS the app's single `<main>`. A screen-reader user moving by
+   * landmark then finds the assistant *within* the page content rather than alongside it, and
+   * "skip to main content" lands them in a region that contains the chat.
+   *
+   * brand-ui 4.1.0's flagship app-shell block — ported from THIS app — calls the mistake out at its
+   * own dock call site, which is how it was found.
+   */
+  it("renders NO complementary landmark inside the main landmark", () => {
+    const { container } = renderShellWithDock();
+    const main = container.querySelector("main");
+    expect(main, "the shell must still have its single <main>").not.toBeNull();
+
+    // Component-agnostic on purpose. The first version of this looked for
+    // `aside[aria-label="App assistant"]`, which was the hand-rolled dock's own markup; when the
+    // dock moved onto the library's `SideDock` that selector stopped matching (it labels its aside
+    // with `aria-labelledby`) and the guardrail went green for the wrong reason — it was asserting
+    // about an element that no longer existed. The invariant was never about THAT aside: no
+    // complementary landmark may sit inside the main landmark, whoever renders it.
+    const asides = [...container.querySelectorAll("aside")];
+    expect(asides.length, "the dock must be mounted when dockAvailable + dockContent are given")
+      .toBeGreaterThan(0);
+    const nested = asides.filter((aside) => main?.contains(aside));
+    expect(
+      nested.length,
+      "a complementary landmark (<aside>) is rendered inside <main> — it must be a sibling",
+    ).toBe(0);
+  });
+
+  it("still has exactly one <main> once the dock is mounted", () => {
+    const { container } = renderShellWithDock();
+    expect(container.querySelectorAll("main").length).toBe(1);
+  });
+
+  it("keeps the dock content reachable — moving it out must not unmount it", () => {
+    const { getByTestId } = renderShellWithDock();
+    expect(getByTestId("dock-content")).toBeTruthy();
   });
 });

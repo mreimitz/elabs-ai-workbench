@@ -38,6 +38,12 @@ import {
   Text,
   Textarea,
 } from "@elabs-ai/components-ui";
+import {
+  SchemaFormFields,
+  SchemaFormProvider,
+  validateForm,
+  type FormValues,
+} from "@elabs-ai/components-ui";
 import { CodeEditor } from "@elabs-ai/components-editor";
 import { Check, Copy, Play } from "lucide-react";
 import { AdaptivePanelGroup } from "./AdaptivePanelGroup";
@@ -48,6 +54,7 @@ import { useMcpAuth } from "../features/servers/McpAuthProvider";
 import { apiPost } from "../lib/api";
 import { getErrorMessage } from "../lib/errors";
 import { sortParams, type ToolParam } from "../lib/schema-params";
+import { describeRefusal, planToolForm } from "../lib/tool-schema-form";
 import { formatBytes, formatNumber } from "../lib/format";
 
 function isJsonField(p: ToolParam): boolean {
@@ -73,6 +80,19 @@ export type ToolRunnerProps = {
   serverId: string;
   toolName: string;
   params: ToolParam[];
+  /**
+   * RM-39 WP 3.1 — the tool's RAW `inputSchema`, additive and optional.
+   *
+   * When present and renderable, the parameters pane becomes a real typed form built by brand-ui's
+   * `fromJsonSchema` adapter: a string array is a list, a constrained array is a multi-select, a
+   * number is a number. Omit it (or hand over a schema the adapter cannot honour faithfully) and the
+   * hand-written form below renders exactly as it always has — including its raw-JSON escape hatch,
+   * which is the only thing that can express an arbitrary shape.
+   *
+   * The decision is `planToolForm`'s, not this component's; see `lib/tool-schema-form.ts` for the
+   * four cases it REFUSES and why refusing beats approximating when the output is a live tool call.
+   */
+  inputSchema?: unknown;
   tokenProfile?: TokenProfileId;
   /**
    * The tool's scan annotations (Skill IDE WP 8.5). Only consulted when `confirmDestructive` is set:
@@ -97,6 +117,7 @@ export function ToolRunner({
   serverId,
   toolName,
   params,
+  inputSchema,
   tokenProfile,
   annotations,
   confirmDestructive = false,
@@ -108,6 +129,13 @@ export function ToolRunner({
     () => sortedParams.find((p) => !p.required)?.name,
     [sortedParams],
   );
+  // Which form to render. `undefined` schema ⇒ never attempt the typed form (the caller opted out).
+  const formPlan = useMemo(
+    () => (inputSchema === undefined ? null : planToolForm(inputSchema, toolName)),
+    [inputSchema, toolName],
+  );
+  const typedSpec = formPlan?.usable ? formPlan.spec : null;
+
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -156,6 +184,17 @@ export function ToolRunner({
   }
 
   function validate(): Record<string, string> {
+    // The typed form has its own validator, which knows each field's real constraints (min/max,
+    // pattern, minItems, required) instead of this component's "is it empty / is it JSON" pair.
+    if (typedSpec) {
+      const errs: Record<string, string> = {};
+      for (const [name, message] of Object.entries(
+        validateForm(typedSpec.fields, values as never),
+      )) {
+        if (message) errs[name] = message;
+      }
+      return errs;
+    }
     const errs: Record<string, string> = {};
     for (const p of params) {
       const v = values[p.name];
@@ -179,9 +218,13 @@ export function ToolRunner({
   function requestRun() {
     const errs = validate();
     setFieldErrors(errs);
-    const firstInvalid = sortedParams.find((p) => errs[p.name]);
-    if (firstInvalid) {
-      document.getElementById(`run-${firstInvalid.name}`)?.focus();
+    if (Object.keys(errs).length > 0) {
+      // The typed form renders its own controls with its own ids and moves focus itself, so only the
+      // legacy form's fields are focused by hand here.
+      if (!typedSpec) {
+        const firstInvalid = sortedParams.find((p) => errs[p.name]);
+        if (firstInvalid) document.getElementById(`run-${firstInvalid.name}`)?.focus();
+      }
       return;
     }
     if (needsConfirm) {
@@ -194,11 +237,23 @@ export function ToolRunner({
   async function execute() {
     // The form is already validated by `requestRun` before we get here; re-derive the args.
     const args: Record<string, unknown> = {};
-    for (const p of params) {
-      const v = values[p.name];
-      if (v === undefined || v === null || v === "") continue;
-      args[p.name] = isJsonField(p) ? JSON.parse(String(v)) : v;
-    }
+    if (typedSpec) {
+      // `values` IS the argument object here, one key per property. That is only true because
+      // `planToolForm` REFUSES a nested-object schema — `fromJsonSchema` would flatten it and the
+      // helper that rebuilds the nested shape is not exported, so a nested form would send the wrong
+      // shape. Keep that refusal and this stays a straight copy; lift it and this needs the
+      // un-flattening step, not a tweak.
+      for (const [name, value] of Object.entries(values)) {
+        if (value === undefined || value === null || value === "") continue;
+        if (Array.isArray(value) && value.length === 0) continue;
+        args[name] = value;
+      }
+    } else
+      for (const p of params) {
+        const v = values[p.name];
+        if (v === undefined || v === null || v === "") continue;
+        args[p.name] = isJsonField(p) ? JSON.parse(String(v)) : v;
+      }
 
     const callUrl = `/api/servers/${serverId}/tools/${encodeURIComponent(toolName)}/call`;
     const body = { arguments: args, tokenProfile };
@@ -217,7 +272,9 @@ export function ToolRunner({
       setResult(res);
       if (res.isError) {
         setError(
-          res.errorMessage ? `${res.errorMessage} Try again.` : "The tool didn’t return a result. Try again.",
+          res.errorMessage
+            ? `${res.errorMessage} Try again.`
+            : "The tool didn’t return a result. Try again.",
         );
       }
     } catch (err) {
@@ -247,7 +304,35 @@ export function ToolRunner({
                 requestRun();
               }}
             >
-              {sortedParams.length === 0 ? (
+              {/* RM-39 WP 3.1 — when the tool's schema can be rendered faithfully, the typed form
+                  replaces the hand-written controls below. `SchemaFormProvider` + `SchemaFormFields`
+                  WITHOUT `SchemaFormRoot`: the root is itself a `<form>`, and this pane already sits
+                  in one that owns the Run action, the destructive-confirm gate and the KPI footer. */}
+              {typedSpec ? (
+                <SchemaFormProvider
+                  spec={typedSpec}
+                  // One `values` map serves both forms. The cast is at the SEAM, not inside the
+                  // state: `FormValues` is the library's narrower union of what a control can hold,
+                  // while this component's legacy form also parks raw JSON strings in the same map.
+                  // Only one of the two renders at a time, so the maps never mix.
+                  values={values as FormValues}
+                  onChange={(next) => setValues(next)}
+                >
+                  <SchemaFormFields />
+                </SchemaFormProvider>
+              ) : null}
+
+              {/* A refusal is STATED, never silent. The operator is told the raw editor is in use and
+                  why — a form that quietly degraded would leave "why is this a JSON box again?"
+                  unanswerable, and the reason is usually a real property of their schema. */}
+              {formPlan && !formPlan.usable && formPlan.refusal.kind !== "not-an-object" ? (
+                <Alert variant="warning">
+                  <AlertTitle>Showing the raw editor</AlertTitle>
+                  <AlertDescription>{describeRefusal(formPlan.refusal)}</AlertDescription>
+                </Alert>
+              ) : null}
+
+              {typedSpec ? null : sortedParams.length === 0 ? (
                 <Text tone="muted" className="text-sm">
                   This tool takes no parameters.
                 </Text>

@@ -9,6 +9,27 @@ import type {
 } from "@mcp-token-footprint/shared";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 
+// RM-39 WP 4.2b — the movers chart made this view a `@elabs-ai/components-charts` consumer, and that
+// package cannot be LOADED under vitest: its `@visx/gradient` dependency ships an ESM index whose
+// deep import vitest cannot resolve ("Cannot find module …/esm/gradients/LinearGradient"), which is
+// why ~40 suites in this app already stub it. Stubbed here for the same reason — a module-resolution
+// wall, not a preference.
+//
+// This does mean CompareView's own suite is blind to the chart's props. That is covered instead by
+// `DeltaMoversChart.test.tsx`, which asserts the exact keys, the magnitude sort and the row cap
+// handed to `DumbbellChart` against a recording stub — so the contract is pinned somewhere real
+// rather than nowhere. What is genuinely NOT covered by any test is how the chart LOOKS; that is an
+// owner walk, and it is on the RM-39 ledger as one.
+vi.mock("@elabs-ai/components-charts", () => ({
+  ChartCard: ({ title, children }: { title?: React.ReactNode; children?: React.ReactNode }) => (
+    <div>
+      <h3>{title}</h3>
+      {children}
+    </div>
+  ),
+  DumbbellChart: () => <div data-testid="dumbbell" />,
+}));
+
 // CompareView self-fetches server types via `listServerTypes` (WP 4.1) — stub it so the test never
 // makes a real request (mirrors EnvironmentEditor.test.tsx's api mock).
 vi.mock("../../lib/api", async (importOriginal) => {
@@ -130,9 +151,7 @@ describe("CompareView — type filter (WP 4.1)", () => {
       ],
       [scan("srv-a", "scan-a"), scan("srv-b", "scan-b")],
     );
-    expect(
-      screen.getByRole("combobox", { name: "Filter servers by type" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Filter servers by type" })).toBeInTheDocument();
   });
 
   test("hides the type filter when no server (with scans) has a known type", async () => {

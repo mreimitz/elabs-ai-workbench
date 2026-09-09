@@ -129,6 +129,7 @@ export function ToolRunnerSheet({ tool, onClose }: ToolRunnerSheetProps) {
             serverId={tool.serverId}
             toolName={tool.toolName}
             params={params}
+            inputSchema={toolScan?.inputSchema}
             tokenProfile={scan?.tokenProfile}
             annotations={toolScan.annotations}
             confirmDestructive
