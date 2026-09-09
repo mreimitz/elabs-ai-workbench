@@ -274,7 +274,7 @@ describe("Composer", () => {
 
     // Open the model picker (session default shown on the trigger) and switch to gpt-5.
     fireEvent.click(screen.getByRole("button", { name: /model: claude-sonnet-5/i }));
-    fireEvent.click(screen.getByRole("button", { name: /^gpt-5/ }));
+    fireEvent.click(screen.getByRole("option", { name: /^gpt-5/ }));
 
     typeAndSubmit("use the other model for this one");
     await waitFor(() =>
@@ -318,8 +318,8 @@ describe("Composer", () => {
     // model-identity WP 4.1 (D-MI7) — BOTH twins are listed now (the old palette had to exclude the
     // session's own row to avoid showing it twice); the session's metered row is simply the one
     // marked current, and the subscription twin is a separate, selectable option.
-    expect(palette.getByRole("button", { name: /^Claude Sonnet 5/ })).toBeVisible();
-    fireEvent.click(palette.getByRole("button", { name: /^Sonnet/ }));
+    expect(palette.getByRole("option", { name: /^Claude Sonnet 5/ })).toBeVisible();
+    fireEvent.click(palette.getByRole("option", { name: /^Sonnet/ }));
 
     typeAndSubmit("run this one on the subscription");
     await waitFor(() =>
@@ -371,7 +371,7 @@ describe("Composer", () => {
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: /model: claude-sonnet-5/i }));
-    fireEvent.click(screen.getByRole("button", { name: /^gpt-5/ }));
+    fireEvent.click(screen.getByRole("option", { name: /^gpt-5/ }));
 
     rerender(
       <Composer
@@ -424,7 +424,7 @@ describe("Composer — re-pin the session's model (D-MI7 / WP 3.1 carry-forward)
     renderPinned(MODELS);
 
     fireEvent.click(screen.getByRole("button", { name: /model: claude-sonnet-5/i }));
-    fireEvent.click(screen.getByRole("button", { name: /^gpt-5/ }));
+    fireEvent.click(screen.getByRole("option", { name: /^gpt-5/ }));
 
     fireEvent.click(screen.getByRole("button", { name: /pin gpt-5 as this session's model/i }));
     await waitFor(() =>
@@ -448,7 +448,7 @@ describe("Composer — re-pin the session's model (D-MI7 / WP 3.1 carry-forward)
 
     fireEvent.click(screen.getByRole("button", { name: /model: claude-sonnet-5/i }));
     fireEvent.click(
-      within(screen.getByTestId("model-selector-content")).getByRole("button", { name: /^Sonnet/ }),
+      within(screen.getByTestId("model-selector-content")).getByRole("option", { name: /^Sonnet/ }),
     );
 
     fireEvent.click(

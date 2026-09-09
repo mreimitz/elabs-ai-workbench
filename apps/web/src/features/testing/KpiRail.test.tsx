@@ -20,13 +20,16 @@ import { TooltipProvider } from "@elabs-ai/components-ui";
 vi.mock("@elabs-ai/components-ai", () => {
   const Pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
   const Transparent = ({ children }: { children?: ReactNode }) => <>{children}</>;
+  // brand-ui 4.1.0 renamed this family `Context*` → `TokenUsage*` outright, with no alias: the old
+  // name sat one line from the unrelated `ContextPanel` in every import list, so which one a reader
+  // was looking at was a coin-flip. Props, behaviour and rendered DOM are unchanged.
   return {
-    Context: Transparent,
-    ContextTrigger: Transparent,
-    ContextContent: () => null,
-    ContextContentHeader: () => null,
-    ContextContentBody: Pass,
-    ContextContentFooter: Pass,
+    TokenUsage: Transparent,
+    TokenUsageTrigger: Transparent,
+    TokenUsageContent: () => null,
+    TokenUsageContentHeader: () => null,
+    TokenUsageContentBody: Pass,
+    TokenUsageContentFooter: Pass,
   };
 });
 

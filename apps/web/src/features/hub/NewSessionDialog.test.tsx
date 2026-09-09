@@ -220,7 +220,7 @@ describe("NewSessionDialog", () => {
     const palette = within(screen.getByTestId("model-selector-content"));
     expect(palette.getByText("Anthropic")).toBeInTheDocument();
     expect(palette.getByText("Ollama")).toBeInTheDocument();
-    fireEvent.click(palette.getByRole("button", { name: /^Llama 3/ }));
+    fireEvent.click(palette.getByRole("option", { name: /^Llama 3/ }));
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
 
     // hub-fixes WP6.1 — mode left untouched ⇒ the new `auto` default.
@@ -249,11 +249,19 @@ describe("NewSessionDialog", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /^Model:/ }));
     const palette = within(screen.getByTestId("model-selector-content"));
-    fireEvent.change(palette.getByRole("textbox", { name: /search models/i }), {
+    // The palette's search box is located by ROLE alone, not by an accessible name.
+    // cmdk always sets `aria-labelledby` on its input, pointing at the label element
+    // `Command` renders only when it is given a `label` — and `CommandDialog` (brand-ui
+    // 4.1.0) does not forward one. `aria-labelledby` outranks `aria-label` in name
+    // computation, so the input computes to an EMPTY name and no `name:` filter can match
+    // it. The component still passes `aria-label`; this is an upstream gap, recorded in
+    // RM-39 (WP 1.3). There is exactly one combobox inside the palette, so this is
+    // unambiguous.
+    fireEvent.change(palette.getByRole("combobox"), {
       target: { value: "ollama" },
     });
-    expect(palette.getByRole("button", { name: /^Llama 3/ })).toBeVisible();
-    expect(palette.queryByRole("button", { name: /^Sonnet 5/ })).not.toBeInTheDocument();
+    expect(palette.getByRole("option", { name: /^Llama 3/ })).toBeVisible();
+    expect(palette.queryByRole("option", { name: /^Sonnet 5/ })).not.toBeInTheDocument();
   });
 
   // model-identity WP 3.1 (D-MI1/D-MI8) — the defect, restated as a check: an operator who picks
@@ -280,7 +288,7 @@ describe("NewSessionDialog", () => {
     expect(palette.getByText("Anthropic")).toBeInTheDocument();
     expect(palette.getByText("Anthropic CLI")).toBeInTheDocument();
 
-    fireEvent.click(palette.getByRole("button", { name: /^Sonnet claude-sonnet-5/ }));
+    fireEvent.click(palette.getByRole("option", { name: /^Sonnet claude-sonnet-5/ }));
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
     await waitFor(() =>
       expect(onCreate).toHaveBeenCalledWith({
@@ -304,7 +312,7 @@ describe("NewSessionDialog", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /^Model:/ }));
     palette = within(screen.getByTestId("model-selector-content"));
-    fireEvent.click(palette.getByRole("button", { name: /^Claude Sonnet 5/ }));
+    fireEvent.click(palette.getByRole("option", { name: /^Claude Sonnet 5/ }));
     fireEvent.click(screen.getByRole("button", { name: /start session/i }));
     await waitFor(() =>
       expect(onCreate).toHaveBeenCalledWith({

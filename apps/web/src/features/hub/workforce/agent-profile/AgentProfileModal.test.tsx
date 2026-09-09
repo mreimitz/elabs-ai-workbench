@@ -1,4 +1,8 @@
-import { buildHubAgentAnalyzePrompt, type HubAgentRole, type HubUsageSummary } from "@mcp-token-footprint/shared";
+import {
+  buildHubAgentAnalyzePrompt,
+  type HubAgentRole,
+  type HubUsageSummary,
+} from "@mcp-token-footprint/shared";
 import { fireEvent, render as rtlRender, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
@@ -235,8 +239,8 @@ describe("AgentProfileModal — Model section is a searchable, family-grouped ca
     const palette = await openModelPalette();
 
     // The live roster loads (async) and renders as rows, grouped under the OpenAI family.
-    expect(palette.getByRole("button", { name: /^GPT-4o/ })).toBeInTheDocument();
-    expect(palette.getByRole("button", { name: /^gpt-4o-mini/ })).toBeInTheDocument();
+    expect(palette.getByRole("option", { name: /^GPT-4o/ })).toBeInTheDocument();
+    expect(palette.getByRole("option", { name: /^gpt-4o-mini/ })).toBeInTheDocument();
     expect(palette.getByText("OpenAI")).toBeInTheDocument();
     // The assigned, off-roster id stays visible + selected so it is never silently dropped — and
     // says so, rather than being re-attributed to whatever credential happens to be first.
@@ -249,12 +253,20 @@ describe("AgentProfileModal — Model section is a searchable, family-grouped ca
     renderModal();
     const palette = await openModelPalette();
 
-    fireEvent.change(palette.getByRole("textbox", { name: /search models/i }), {
+    // The palette's search box is located by ROLE alone, not by an accessible name.
+    // cmdk always sets `aria-labelledby` on its input, pointing at the label element
+    // `Command` renders only when it is given a `label` — and `CommandDialog` (brand-ui
+    // 4.1.0) does not forward one. `aria-labelledby` outranks `aria-label` in name
+    // computation, so the input computes to an EMPTY name and no `name:` filter can match
+    // it. The component still passes `aria-label`; this is an upstream gap, recorded in
+    // RM-39 (WP 1.3). There is exactly one combobox inside the palette, so this is
+    // unambiguous.
+    fireEvent.change(palette.getByRole("combobox"), {
       target: { value: "mini" },
     });
 
-    expect(palette.queryByRole("button", { name: /^GPT-4o/ })).not.toBeInTheDocument();
-    expect(palette.getByRole("button", { name: /^gpt-4o-mini/ })).toBeInTheDocument();
+    expect(palette.queryByRole("option", { name: /^GPT-4o/ })).not.toBeInTheDocument();
+    expect(palette.getByRole("option", { name: /^gpt-4o-mini/ })).toBeInTheDocument();
   });
 
   // D-MI7's search fix: the palette finds a row by its PROVIDER, not only by model id.
@@ -263,10 +275,10 @@ describe("AgentProfileModal — Model section is a searchable, family-grouped ca
     renderModal();
     const palette = await openModelPalette();
 
-    fireEvent.change(palette.getByRole("textbox", { name: /search models/i }), {
+    fireEvent.change(palette.getByRole("combobox"), {
       target: { value: "openai" },
     });
-    expect(palette.getByRole("button", { name: /^GPT-4o/ })).toBeVisible();
+    expect(palette.getByRole("option", { name: /^GPT-4o/ })).toBeVisible();
   });
 
   test("picking a row sets the default model AND its credential, and both save in the PATCH", async () => {
@@ -274,7 +286,7 @@ describe("AgentProfileModal — Model section is a searchable, family-grouped ca
     renderModal();
     const palette = await openModelPalette();
 
-    fireEvent.click(palette.getByRole("button", { name: /^GPT-4o/ }));
+    fireEvent.click(palette.getByRole("option", { name: /^GPT-4o/ }));
     // Selection makes the draft dirty; the picked model persists in the PATCH.
     fireEvent.click(await screen.findByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(api.updateHubAgentRole).toHaveBeenCalledTimes(1));
@@ -352,7 +364,9 @@ describe("AgentProfileModal — dirty guard + save roundtrip (D-HUX6)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     // Routed BACK to Instructions with the inline error; no PATCH fired.
-    await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("settings=instructions"));
+    await waitFor(() =>
+      expect(screen.getByTestId("location")).toHaveTextContent("settings=instructions"),
+    );
     expect(await screen.findByText("A system prompt is required.")).toBeInTheDocument();
     expect(api.updateHubAgentRole).not.toHaveBeenCalled();
   });

@@ -76,7 +76,10 @@ function InteractiveComposer({ runId, canSend }: { runId: string | null; canSend
             : "Awaiting your input"
       }
       // Model is shown on the run-bar; turns are text-only, so no model pill / voice / attach.
-      model={null}
+      // brand-ui 4.1.0 removed `Composer`'s `model` prop and the hard-coded pill it defaulted to
+      // (that pill was a button with no click handler — a composer showing a model it could not
+      // change). The replacement is a `modelPicker` SLOT, which renders nothing when omitted — so
+      // "no pill here" is now expressed by passing nothing at all rather than by `model={null}`.
       showVoice={false}
       showAttach={false}
       sendStatus={sending ? "submitted" : "ready"}

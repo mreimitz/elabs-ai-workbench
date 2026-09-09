@@ -1,5 +1,5 @@
 import { parseHubIcon } from "@mcp-token-footprint/shared";
-import { ModelSelectorLogo } from "@elabs-ai/components-ai";
+import { ModelProviderLogo } from "@elabs-ai/components-ai";
 import { cn } from "@elabs-ai/components-ui";
 import { Bot } from "lucide-react";
 import { inferModelLogoProvider } from "../use-hub-models";
@@ -9,7 +9,7 @@ import { HUB_ICON_BY_NAME } from "./hub-icon-library";
  * Assistant Hub — the agent/crew avatar. Resolution order (owner request: "real icons for my agents"):
  *   1. `icon` is an uploaded image (`data:` URI)     → render the image (`@elabs-ai/components-ui` `Avatar`).
  *   2. `icon` is a known curated glyph (`lucide:<n>`) → render that glyph in a tinted circle.
- *   3. otherwise, if `model` maps to a provider       → the model provider logo (`ModelSelectorLogo`).
+ *   3. otherwise, if `model` maps to a provider       → the model provider logo (`ModelProviderLogo`).
  *   4. fallback                                       → a generic `Bot` glyph in a tinted circle.
  *
  * `icon`/`model` are OPTIONAL and additive. The fallback used to be `@elabs-ai/components-ai`'s animated `Persona`
@@ -98,7 +98,7 @@ export function RoleAvatar({
           className,
         )}
       >
-        <ModelSelectorLogo provider={provider} className="size-[62%]" />
+        <ModelProviderLogo provider={provider} className="size-[62%]" />
       </span>
     );
   }

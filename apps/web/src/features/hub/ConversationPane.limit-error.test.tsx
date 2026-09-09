@@ -309,7 +309,7 @@ describe("ConversationPane — the retry actually switches source (model-identit
 
     fireEvent.click(await screen.findByRole("button", { name: /retry with a different model/i }));
     const palette = within(await screen.findByTestId("model-selector-content"));
-    fireEvent.click(palette.getByRole("button", { name: /claude-sonnet-5.*Personal key/ }));
+    fireEvent.click(palette.getByRole("option", { name: /claude-sonnet-5.*Personal key/ }));
 
     await waitFor(() =>
       expect(api.sendHubMessage).toHaveBeenCalledWith("s1", {

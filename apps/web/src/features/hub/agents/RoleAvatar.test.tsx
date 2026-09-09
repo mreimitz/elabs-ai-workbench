@@ -4,7 +4,9 @@ import { describe, expect, test, vi } from "vitest";
 // `ModelSelectorLogo` is a Rive/WebGL surface jsdom can't render — stub it with an identifiable marker.
 // (RoleAvatar no longer uses `Persona`; the fallback is a plain lucide `Bot` svg.)
 vi.mock("@elabs-ai/components-ai", () => ({
-  ModelSelectorLogo: (props: { provider?: string }) => (
+  // Renamed in brand-ui 4.1.0 (`ModelSelectorLogo` → `ModelProviderLogo`) when the rest of the
+  // `ModelSelector*` family was deleted; the logo half survived under a name that says what it is.
+  ModelProviderLogo: (props: { provider?: string }) => (
     <div data-testid="model-logo" data-provider={props.provider} />
   ),
 }));

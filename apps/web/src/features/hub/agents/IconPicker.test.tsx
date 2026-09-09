@@ -6,7 +6,8 @@ import type { ReactElement } from "react";
 // RoleAvatar (the picker's live preview) reaches for `@elabs-ai/components-ai`'s Rive/WebGL `Persona` — stub it.
 vi.mock("@elabs-ai/components-ai", () => ({
   Persona: () => <div data-testid="persona" />,
-  ModelSelectorLogo: () => <div data-testid="model-logo" />,
+  // Renamed in brand-ui 4.1.0 when the rest of the `ModelSelector*` family was deleted.
+  ModelProviderLogo: () => <div data-testid="model-logo" />,
 }));
 
 import { IconPicker } from "./IconPicker";
@@ -59,11 +60,7 @@ describe("IconPicker", () => {
   test("an uploaded image opens on the Upload tab with a Remove affordance", () => {
     const onChange = vi.fn();
     render(
-      <IconPicker
-        value="data:image/png;base64,AAAA"
-        onChange={onChange}
-        previewId="agent-1"
-      />,
+      <IconPicker value="data:image/png;base64,AAAA" onChange={onChange} previewId="agent-1" />,
     );
 
     const remove = screen.getByRole("button", { name: /Remove image/ });

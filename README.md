@@ -732,9 +732,17 @@ ledger, recorded in a documentation subject, and then retired — the rule is §
 ## The design system
 
 The UI is built entirely on the upstream **`@elabs-ai/components-*`** design system (brand-ui) at
-**`^4.0.0`** — every visible element is a `@elabs-ai/components-*` component, styled with Tailwind v4
+**`4.1.0`** — every visible element is a `@elabs-ai/components-*` component, styled with Tailwind v4
 + semantic oklch tokens (no raw colors). The packages are **public on npmjs.org**, so `pnpm install`
 needs no registry configuration and no token. Every package ships in lockstep at the same version.
+
+The version is **pinned exactly, not carets**. 4.1.0 is numbered a minor but carries three breaking
+changes, which is the maintainers' stated decision — so a `^4.0.0` range would have taken it on the
+next install and broken the build on import resolution alone. Pinning makes an upgrade a deliberate
+act. Taking 4.1.0 renamed the context-window usage readout, deleted the model-selector family (the
+model picker is now composed from the command palette directly), and moved the terminal components
+into their own package, which this app does not use — see
+[`planning/Roadmap/RM-39-brand-ui-4-1/`](planning/Roadmap/RM-39-brand-ui-4-1/).
 
 Two themes are exposed, **`light`** (default) and **`dark`**; theme CSS is opt-in per theme, imported
 in `apps/web/src/styles/app.css`. For the real component API use the CLI —

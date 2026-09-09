@@ -5,7 +5,7 @@ A **pnpm workspace** (`pnpm@9.15.4`); packages are `apps/*` and `packages/*`, wi
 
 ## The `@elabs-ai/components-*` design system (public npm, ACTIVE)
 
-The app's UI is the upstream **`@elabs-ai/components-*`** design system (brand-ui) at **`^4.0.0`**,
+The app's UI is the upstream **`@elabs-ai/components-*`** design system (brand-ui) at **`4.1.0`**,
 installed from **public npmjs.org** and listed in `apps/web/package.json`:
 
 - `@elabs-ai/components-tokens` — themes + `ThemeProvider`/`useTheme` + `styles.css` (Tailwind v4 token entry).
@@ -26,6 +26,14 @@ add the dep at the same major, install its own peers (below), and add a matching
 `app.css` (owner-approved). **There is no `-blueprint` package** — it was removed in v4 with no
 replacement; for a drafting/reprographic look use the decoration dial (`data-decoration="0..10"`,
 `<DecorationProvider>`, `useDecoration()`).
+
+### Pinned exactly, not by caret
+
+Every `@elabs-ai/components-*` entry is an **exact** version, deliberately. 4.1.0 was numbered a
+minor but shipped **three breaking changes** — the maintainers said so in the release notes — so a
+`^4.0.0` range would have taken it on the next re-resolve and broken the build on import resolution
+alone. Pinning makes an upgrade a deliberate edit with a plan behind it, which is what the
+owner-gated update rule below already assumes. Do not "tidy" these back into carets.
 
 ### Registry & auth
 

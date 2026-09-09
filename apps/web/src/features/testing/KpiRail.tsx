@@ -1,21 +1,13 @@
 import { useMemo, useState } from "react";
-import type {
-  GuardrailConfig,
-  RunStep,
-  SessionCapabilities,
-} from "@mcp-token-footprint/shared";
+import type { GuardrailConfig, RunStep, SessionCapabilities } from "@mcp-token-footprint/shared";
+import { cacheHitRate, usageInputSlices, type TokenUsageActual } from "@mcp-token-footprint/shared";
 import {
-  cacheHitRate,
-  usageInputSlices,
-  type TokenUsageActual,
-} from "@mcp-token-footprint/shared";
-import {
-  Context,
-  ContextContent,
-  ContextContentBody,
-  ContextContentFooter,
-  ContextContentHeader,
-  ContextTrigger,
+  TokenUsage,
+  TokenUsageContent,
+  TokenUsageContentBody,
+  TokenUsageContentFooter,
+  TokenUsageContentHeader,
+  TokenUsageTrigger,
 } from "@elabs-ai/components-ai";
 import {
   Button,
@@ -142,7 +134,9 @@ export function KpiRail({
           inputTokens: kpis.tokensIn,
           cachedInputTokens: kpis.cachedTokens,
           ...(kpis.cacheReadTokens === undefined ? {} : { cacheReadTokens: kpis.cacheReadTokens }),
-          ...(kpis.cacheWriteTokens === undefined ? {} : { cacheWriteTokens: kpis.cacheWriteTokens }),
+          ...(kpis.cacheWriteTokens === undefined
+            ? {}
+            : { cacheWriteTokens: kpis.cacheWriteTokens }),
         }
       : undefined;
   const hitRate = tokenUsage ? cacheHitRate(tokenUsage as TokenUsageActual) : null;
@@ -178,7 +172,8 @@ export function KpiRail({
     : costLead;
 
   // High utilisation is *bad* — flip the delta-direction semantics so a rising headline reads as risk.
-  const headlineDirection: "up" | "neutral" = utilization != null && utilization >= 90 ? "up" : "neutral";
+  const headlineDirection: "up" | "neutral" =
+    utilization != null && utilization >= 90 ? "up" : "neutral";
 
   const tokenFidelityLabel = "provider-actual";
 
@@ -346,7 +341,7 @@ export function figureRelationshipNote(opts: {
       opts.cacheHitRate === null || opts.cacheHitRate === undefined
         ? "Tokens ↑/↓ are cumulative sends/receives across this run's turns so far"
         : `Tokens ↑/↓ are cumulative sends/receives across this run's turns so far, counted gross — ` +
-          `${formatPercent(opts.cacheHitRate * 100)} of what was sent was served from cache and billed at a fraction of the rate`,
+            `${formatPercent(opts.cacheHitRate * 100)} of what was sent was served from cache and billed at a fraction of the rate`,
     );
   }
   if (opts.showContext) {
@@ -447,8 +442,10 @@ function HotspotsStrip({
 }
 
 /**
- * The Context tile's usage-breakdown popover — the `@elabs-ai/components-ai` `Context` component (2026-07-12
- * brand-ui alignment): the canonical token-usage surface (`ContextContentHeader` renders the %,
+ * The Context tile's usage-breakdown popover — the `@elabs-ai/components-ai` `TokenUsage` component
+ * (renamed from `Context` in brand-ui 4.1.0, RM-39 WP 1.2, because it sat one line from the unrelated
+ * `ContextPanel` in every import list): the canonical token-usage surface (`TokenUsageContentHeader`
+ * renders the %,
  * `used / max` and a progress bar off the same `usedTokens`/`maxTokens` the tile shows, so the two
  * can never disagree). **Expandable/collapsible by owner requirement:** the hover card is CONTROLLED —
  * the description-line trigger toggles it on click (`aria-expanded` + rotating chevron) and Radix's
@@ -481,8 +478,8 @@ function ContextBreakdown({
   // place the gross number gets broken down rather than merely hinted at.
   const slices = usage ? usageInputSlices(usage as TokenUsageActual) : null;
   return (
-    <Context open={open} onOpenChange={setOpen} usedTokens={usedTokens} maxTokens={maxTokens}>
-      <ContextTrigger>
+    <TokenUsage open={open} onOpenChange={setOpen} usedTokens={usedTokens} maxTokens={maxTokens}>
+      <TokenUsageTrigger>
         <Button
           type="button"
           variant="ghost"
@@ -498,10 +495,10 @@ function ContextBreakdown({
             className={`size-3 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
           />
         </Button>
-      </ContextTrigger>
-      <ContextContent>
-        <ContextContentHeader />
-        <ContextContentBody className="space-y-2 p-3">
+      </TokenUsageTrigger>
+      <TokenUsageContent>
+        <TokenUsageContentHeader />
+        <TokenUsageContentBody className="space-y-2 p-3">
           <div className="flex items-center justify-between gap-3">
             <Text variant="caption" tone="muted" as="span">
               Tokens ↑ (sent, gross)
@@ -534,16 +531,16 @@ function ContextBreakdown({
               {formatNumber(tokensOut)}
             </Text>
           </div>
-        </ContextContentBody>
-        <ContextContentFooter>
+        </TokenUsageContentBody>
+        <TokenUsageContentFooter>
           <Text variant="caption" tone="muted" as="span">
             Est. cost
           </Text>
           <Text variant="caption" as="span" className="tabular-nums">
             {formatCostUsd(costUsd)}
           </Text>
-        </ContextContentFooter>
-      </ContextContent>
-    </Context>
+        </TokenUsageContentFooter>
+      </TokenUsageContent>
+    </TokenUsage>
   );
 }

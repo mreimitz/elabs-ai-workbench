@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@elabs-ai/components-cli": "^4.0.0",
+    "@elabs-ai/components-cli": "4.1.0",
     "@playwright/test": "1.56.0",
     "@types/node": "^22.20.0",
     "typescript": "^5.6.3"

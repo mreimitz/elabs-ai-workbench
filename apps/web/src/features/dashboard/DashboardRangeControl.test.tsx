@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, test, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, test, vi } from "vitest";
 import { TooltipProvider } from "@elabs-ai/components-ui";
 
 // jsdom omits matchMedia — `DateRangePicker`'s Radix Popover reads it (mirrors
@@ -39,6 +39,22 @@ function renderControl(selection: DashboardRangeSelection, now = new Date("2026-
   );
   return { onChange };
 }
+
+/**
+ * The calendar renders the month it is *currently* on, and `DateRangePicker` derives that from the
+ * wall clock — not from the selection these tests pass in. Every `clickDay()` below names a date in
+ * August 2026, so with a real clock the suite silently expired the moment the machine's date left
+ * that window: the August cells stopped being rendered and the lookups threw "No calendar cell for
+ * …". Freeze the clock to the same instant `renderControl`'s `now` default already uses, so the
+ * month on screen and the dates the assertions name are one decision instead of two.
+ */
+beforeAll(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true });
+  vi.setSystemTime(new Date("2026-08-20T12:00:00.000Z"));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 const control = () => screen.getByRole("group", { name: "Dashboard date range" });
 const openPicker = () => fireEvent.click(within(control()).getByRole("button"));

@@ -1,83 +1,21 @@
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@elabs-ai/components-ui";
-import { createContext, isValidElement, cloneElement, useContext } from "react";
-import type { ComponentProps, ReactElement, ReactNode } from "react";
-
 /**
- * A **faithful** `@elabs-ai/components-ai` ModelSelector stand-in for the ONE test that must exercise REAL cmdk
- * (model-identity WP 4.1 / D-MI7).
+ * A minimal `@elabs-ai/components-ai` stand-in for `HubModelPicker.cmdk.test.tsx`.
  *
- * `@elabs-ai/components-ai`'s `ModelSelector*` family is a thin wrapper over `@elabs-ai/components-ui`'s `Command*` (which is a
- * thin wrapper over cmdk) plus a Radix `Dialog` for chrome. This module keeps the cmdk half REAL —
- * `ModelSelectorItem` **is** `CommandItem` — and replaces only the Dialog with a plain conditional,
- * so jsdom never has to load the rest of the `@elabs-ai/components-ai` barrel (xterm/monaco/shiki/mermaid) just to
- * assert on keyboard navigation.
+ * WHAT THIS USED TO BE. Until brand-ui 4.1.0 this module was a ~85-line faithful `ModelSelector*`
+ * stand-in whose whole purpose was to keep the **cmdk half real** while replacing the Dialog, so one
+ * test could assert against cmdk's own selection model (two rows sharing a `value` are one row to
+ * the arrow keys) without the general-purpose `brand-ai-mock.tsx` substituting its own filtering.
  *
- * WHY IT EXISTS. The general-purpose `brand-ai-mock.tsx` re-implements filtering; it therefore
- * cannot prove anything about cmdk's OWN selection model — and that model is exactly where the
- * WP-3.1 carry-forward finding lives: cmdk resolves the highlighted item with
- * `querySelector('[cmdk-item][aria-selected="true"]')`, which matches the FIRST element whose
- * `data-value` equals `state.value`. Two items sharing a `value` are therefore one item to the
- * arrow keys and to Enter, and `keywords` cannot help (cmdk writes only `value` into `data-value`).
- * `HubModelPicker.cmdk.test.tsx` asserts against this real behaviour, not against a stub's opinion.
+ * WHY IT IS NOW FOUR LINES. 4.1.0 deleted the `ModelSelector*` family outright, and `HubModelPicker`
+ * composes `CommandDialog` + `Command*` from `@elabs-ai/components-ui` directly. That package is not
+ * mocked anywhere, so **every** picker test now runs against real cmdk and a real Radix `Dialog` —
+ * the special arrangement this file existed to create is simply the default. All that is still
+ * needed from `@elabs-ai/components-ai` is the provider logo, stubbed so jsdom never loads the rest
+ * of that barrel (monaco/shiki/mermaid) to assert on keyboard navigation.
+ *
+ * The cmdk behaviour the sibling test locks is unchanged and still worth locking: cmdk resolves the
+ * highlighted item with `querySelector('[cmdk-item][aria-selected="true"]')`, matching the FIRST
+ * element whose `data-value` equals `state.value` — so a duplicate `value` is unreachable by
+ * keyboard, and `keywords` cannot rescue it (cmdk writes only `value` into `data-value`).
  */
-
-type OpenCtx = { open: boolean; setOpen: (next: boolean) => void };
-const OpenContext = createContext<OpenCtx>({ open: false, setOpen: () => {} });
-
-export const ModelSelector = ({
-  open,
-  onOpenChange,
-  children,
-}: {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children?: ReactNode;
-}) => (
-  <OpenContext.Provider value={{ open: !!open, setOpen: (next) => onOpenChange?.(next) }}>
-    {children}
-  </OpenContext.Provider>
-);
-
-export const ModelSelectorTrigger = ({
-  children,
-  disabled,
-}: {
-  children?: ReactNode;
-  disabled?: boolean;
-  asChild?: boolean;
-}) => {
-  const ctx = useContext(OpenContext);
-  return isValidElement(children)
-    ? cloneElement(children as ReactElement<{ disabled?: boolean; onClick?: () => void }>, {
-        disabled,
-        onClick: () => {
-          if (!disabled) ctx.setOpen(true);
-        },
-      })
-    : null;
-};
-
-export const ModelSelectorContent = ({ children }: { children?: ReactNode; title?: ReactNode }) =>
-  useContext(OpenContext).open ? (
-    <div data-testid="model-selector-content">
-      <Command label="Choose a model">{children}</Command>
-    </div>
-  ) : null;
-
-export const ModelSelectorInput = (props: ComponentProps<typeof CommandInput>) => (
-  <CommandInput aria-label="Search models" {...props} />
-);
-export const ModelSelectorList = CommandList;
-export const ModelSelectorEmpty = CommandEmpty;
-export const ModelSelectorGroup = CommandGroup;
-/** The real thing — `value`, `keywords`, `disabled` and cmdk's selection model all intact. */
-export const ModelSelectorItem = CommandItem;
-export const ModelSelectorLogo = () => null;
-export const ModelSelectorName = ({ children }: { children?: ReactNode }) => <span>{children}</span>;
+export const ModelProviderLogo = () => null;

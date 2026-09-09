@@ -129,7 +129,7 @@ describe("QuickCreateAgentDialog", () => {
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Research Analyst" } });
     fireEvent.click(await screen.findByRole("button", { name: /^Default model:/ }));
     fireEvent.click(
-      within(screen.getByTestId("model-selector-content")).getByRole("button", { name: /^GPT-5/ }),
+      within(screen.getByTestId("model-selector-content")).getByRole("option", { name: /^GPT-5/ }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Create agent" }));
 

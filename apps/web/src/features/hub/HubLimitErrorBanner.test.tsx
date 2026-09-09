@@ -148,7 +148,7 @@ describe("HubLimitErrorBanner", () => {
   test("other_model offered: an inline picker lists the roster; choosing one fires onRetry with that row", async () => {
     const { onRetry } = renderBanner({ retrySources: ["other_model"] });
     fireEvent.click(screen.getByRole("button", { name: /retry with a different model/i }));
-    fireEvent.click(await screen.findByRole("button", { name: /gpt-5/ }));
+    fireEvent.click(await screen.findByRole("option", { name: /gpt-5/ }));
     expect(onRetry).toHaveBeenCalledWith("other_model", OPENAI_GPT5);
   });
 
@@ -177,8 +177,8 @@ describe("HubLimitErrorBanner", () => {
     // Two DIFFERENT rows for one model id — the `Select` this replaced showed exactly one. Both are
     // `anthropic`, so the CREDENTIAL LABEL is the only thing that tells them apart: the carry-forward
     // finding "same-kind credentials are visually indistinguishable", closed.
-    expect(palette.getByRole("button", { name: /Claude Sonnet 5.*Work key/ })).toBeVisible();
-    fireEvent.click(palette.getByRole("button", { name: /Claude Sonnet 5.*Personal key/ }));
+    expect(palette.getByRole("option", { name: /Claude Sonnet 5.*Work key/ })).toBeVisible();
+    fireEvent.click(palette.getByRole("option", { name: /Claude Sonnet 5.*Personal key/ }));
     // Two credentials of the SAME kind: the retry has to name the one the operator clicked.
     expect(onRetry).toHaveBeenCalledWith("other_model", personal);
   });

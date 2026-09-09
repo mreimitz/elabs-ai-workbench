@@ -6,7 +6,7 @@
 > enforced by the `enforce-brand-ui` hook (see `.claude/hooks/enforce-brand-ui.mjs`) and the
 > `brand-ui audit` pass.
 
-## The packages (public npm, `^4.0.0` lockstep — see `dependencies.md`)
+## The packages (public npm, pinned exactly at `4.1.0`, lockstep — see `dependencies.md`)
 
 - **`@elabs-ai/components-ui`** — all foundation + app UI: Button, Input, Select, Textarea, Checkbox, Switch,
   RadioGroup, Form*, Card*, MetricCard, Table*, Dialog/Sheet/Popover/Tooltip, Tabs, Wizard*,

@@ -1,17 +1,28 @@
-import { useId, useMemo, useState, type ReactNode } from "react";
 import {
-  ModelSelector,
-  ModelSelectorContent,
-  ModelSelectorEmpty,
-  ModelSelectorGroup,
-  ModelSelectorInput,
-  ModelSelectorItem,
-  ModelSelectorList,
-  ModelSelectorLogo,
-  ModelSelectorName,
-  ModelSelectorTrigger,
-} from "@elabs-ai/components-ai";
-import { Alert, AlertDescription, Badge, Button, Skeleton, Text, cn } from "@elabs-ai/components-ui";
+  cloneElement,
+  isValidElement,
+  useId,
+  useMemo,
+  useState,
+  type ComponentProps,
+  type ReactNode,
+} from "react";
+import { ModelProviderLogo } from "@elabs-ai/components-ai";
+import {
+  Alert,
+  AlertDescription,
+  Badge,
+  Button,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  Skeleton,
+  Text,
+  cn,
+} from "@elabs-ai/components-ui";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
   buildHubModelGroups,
@@ -104,6 +115,20 @@ export type HubModelPickerProps = {
   emptyMessage?: string;
 };
 
+/**
+ * What `ModelSelectorName` was, verbatim: `<span className="flex-1 truncate text-start">`.
+ *
+ * brand-ui 4.1.0 deleted the whole `ModelSelector*` family (RM-39 WP 1.3). Eleven of its fourteen
+ * exports were one-line pass-throughs of `@elabs-ai/components-ui` components — `ModelSelectorGroup`
+ * *was* `CommandGroup`, `ModelSelectorItem` *was* `CommandItem` — so this file now composes those
+ * directly. This one had no `-ui` equivalent to pass through to; it was three utility classes, and
+ * it is local rather than re-invented as a component because a bare styled span is not a design
+ * decision anyone else needs to share.
+ */
+function RowName({ className, ...props }: ComponentProps<"span">) {
+  return <span className={cn("flex-1 truncate text-start", className)} {...props} />;
+}
+
 export function HubModelPicker({
   models,
   loading = false,
@@ -146,184 +171,223 @@ export function HubModelPicker({
     setOpen(false);
   }
 
+  /**
+   * A caller-supplied trigger, wired to open the palette.
+   *
+   * This used to be `<DialogTrigger asChild>{trigger}</DialogTrigger>`, which let Radix inject the
+   * click handler and the ref through its Slot. `CommandDialog` owns its own `Dialog` (see the
+   * comment at the render site for why that is the shape we want), so there is no trigger slot to
+   * fill and the click is attached here instead. `isValidElement` guards it: a caller who passes
+   * something that is not a single element gets their node rendered untouched rather than a crash,
+   * and the default `Button` branch below is unaffected.
+   */
+  const customTrigger =
+    trigger !== undefined && isValidElement<{ onClick?: () => void }>(trigger)
+      ? cloneElement(trigger, { onClick: () => setOpen(true) })
+      : trigger;
+
   const hasRows = groups.length > 0;
 
   return (
-    <ModelSelector open={open} onOpenChange={setOpen}>
-      <ModelSelectorTrigger asChild disabled={disabled}>
-        {trigger ?? (
-          <Button
-            id={id}
-            type="button"
-            variant="outline"
-            disabled={disabled}
-            aria-label={`${name}: ${triggerText}`}
-            className={cn("w-full justify-between gap-2 font-normal", className)}
-          >
-            <span className="flex min-w-0 items-center gap-2">
-              {value ? (
-                <ModelSelectorLogo
-                  provider={modelSelectorLogoProvider(value.kind)}
-                  className="size-4 shrink-0"
-                />
-              ) : null}
-              <span className="min-w-0 truncate">{triggerText}</span>
-            </span>
-            <ChevronsUpDown aria-hidden className="size-4 shrink-0 opacity-50" />
-          </Button>
-        )}
-      </ModelSelectorTrigger>
-      <ModelSelectorContent title={dialogTitle ?? `Choose a model`}>
-        <ModelSelectorInput placeholder="Search models, providers, credentials…" />
-        <ModelSelectorList>
-          <ModelSelectorEmpty>
-            {loading ? "Loading models…" : "No models match your search."}
-          </ModelSelectorEmpty>
+    <>
+      {/* The trigger is a SIBLING of the palette, not a `DialogTrigger` inside it. `CommandDialog`
+          composes its own dialog surface internally, which is the point — this app's dialog-kit
+          guardrail (design-remediation T2) forbids hand-rolling that surface outside
+          `components/dialogs/`, and its allowlist may only ever shrink. So the open state is driven
+          directly, and a caller-supplied trigger is cloned to carry the click rather than being
+          handed `asChild` slot behaviour. */}
+      {customTrigger ?? (
+        <Button
+          id={id}
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+          aria-label={`${name}: ${triggerText}`}
+          className={cn("w-full justify-between gap-2 font-normal", className)}
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {value ? (
+              <ModelProviderLogo
+                provider={modelSelectorLogoProvider(value.kind)}
+                className="size-4 shrink-0"
+              />
+            ) : null}
+            <span className="min-w-0 truncate">{triggerText}</span>
+          </span>
+          <ChevronsUpDown aria-hidden className="size-4 shrink-0 opacity-50" />
+        </Button>
+      )}
+      {/* `CommandDialog` renders the `sr-only` `DialogTitle` from `title` — the same accessible name
+          `ModelSelectorContent` gave the palette before 4.1.0 removed it. */}
+      <CommandDialog open={open} onOpenChange={setOpen} title={dialogTitle ?? `Choose a model`}>
+        {/* `data-testid` is a deliberate, load-bearing test hook, not a leftover. Until 4.1.0 the
+            palette body WAS an element — `ModelSelectorContent` — and eight test files address it to
+            scope their queries to the palette rather than to the dialog that may be hosting it (a
+            model picker inside `NewSessionDialog` means two dialogs on screen, so `getByRole("dialog")`
+            is ambiguous there). `CommandDialog` composes its surface internally and gives a caller
+            nowhere to put an attribute, so the body keeps its identity here. Behavioural assertions
+            still go through roles and accessible names; this only says WHERE to look. */}
+        <div data-testid="model-selector-content" className="contents">
+          {/* An explicit accessible name. `CommandInput` renders a `combobox` whose only label was
+              its placeholder, which assistive tech is not required to expose as a name. The old test
+              mock supplied one of its own, so the gap never showed up in a test — naming it here is
+              the fix, not a test accommodation. */}
+          <CommandInput
+            aria-label="Search models"
+            className="h-auto py-3.5"
+            placeholder="Search models, providers, credentials…"
+          />
+          <CommandList>
+            <CommandEmpty>
+              {loading ? "Loading models…" : "No models match your search."}
+            </CommandEmpty>
 
-          {loading ? (
-            // `loading` = "no content yet" (loading-states rule): layout-shaped placeholders sized
-            // like the rows that will replace them, never a spinner that collapses the list.
-            <div className="flex flex-col gap-2 p-2" aria-hidden>
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-          ) : null}
+            {loading ? (
+              // `loading` = "no content yet" (loading-states rule): layout-shaped placeholders sized
+              // like the rows that will replace them, never a spinner that collapses the list.
+              <div className="flex flex-col gap-2 p-2" aria-hidden>
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+              </div>
+            ) : null}
 
-          {clearOption ? (
-            <ModelSelectorGroup heading="Default">
-              <ModelSelectorItem
-                value={clearOption.label}
-                keywords={["default", "clear", "inherit"]}
-                onSelect={() => {
-                  clearOption.onClear();
-                  setOpen(false);
-                }}
-              >
-                <span className="flex min-w-0 flex-1 flex-col text-start">
-                  <ModelSelectorName>{clearOption.label}</ModelSelectorName>
-                  {clearOption.hint ? (
-                    <Text as="span" variant="caption" tone="muted" className="truncate">
-                      {clearOption.hint}
-                    </Text>
-                  ) : null}
-                </span>
-                {value === null && offRoster === null ? (
-                  <Check aria-hidden className="size-4 shrink-0" />
-                ) : null}
-              </ModelSelectorItem>
-            </ModelSelectorGroup>
-          ) : null}
-
-          {offRoster !== null ? (
-            <ModelSelectorGroup heading="Current selection">
-              {/* Not in the live roster: no credential is known, so none is invented. Selecting it
-                  is a no-op that just closes the palette — it is already the value. */}
-              <ModelSelectorItem
-                value={offRoster}
-                keywords={["current", "not in roster"]}
-                onSelect={() => setOpen(false)}
-              >
-                <span className="flex min-w-0 flex-1 flex-col text-start">
-                  <ModelSelectorName>{offRoster}</ModelSelectorName>
-                  <Text as="span" variant="caption" tone="muted" className="truncate">
-                    Not in the live roster — no provider is pinned to it.
-                  </Text>
-                </span>
-                <Check aria-hidden className="size-4 shrink-0" />
-              </ModelSelectorItem>
-            </ModelSelectorGroup>
-          ) : null}
-
-          {groups.map((group) => (
-            <ModelSelectorGroup key={group.id} heading={group.heading}>
-              {group.rows.map((row) => (
-                <ModelSelectorItem
-                  key={row.key}
-                  // D-MI7 — human-readable and unique; the credential NANOID is in neither `value`
-                  // nor `keywords` (cmdk fuzzy-scores both). Identity rides `onSelect`'s closure.
-                  value={row.value}
-                  keywords={row.keywords}
-                  onSelect={() => pick(row.option)}
+            {clearOption ? (
+              <CommandGroup heading="Default">
+                <CommandItem
+                  value={clearOption.label}
+                  keywords={["default", "clear", "inherit"]}
+                  onSelect={() => {
+                    clearOption.onClear();
+                    setOpen(false);
+                  }}
                 >
-                  <ModelSelectorLogo
-                    provider={modelSelectorLogoProvider(row.option.kind)}
-                    className="size-4 shrink-0"
-                  />
                   <span className="flex min-w-0 flex-1 flex-col text-start">
-                    <ModelSelectorName>{row.displayName}</ModelSelectorName>
-                    {row.modelId === row.displayName ? null : (
+                    <RowName>{clearOption.label}</RowName>
+                    {clearOption.hint ? (
                       <Text as="span" variant="caption" tone="muted" className="truncate">
-                        {row.modelId}
+                        {clearOption.hint}
                       </Text>
-                    )}
+                    ) : null}
                   </span>
-                  {row.credentialLabel ? (
-                    <Badge variant="outline" className="shrink-0">
-                      {row.credentialLabel}
-                    </Badge>
-                  ) : null}
-                  <Badge variant="secondary" className="shrink-0">
-                    {row.billingLabel}
-                  </Badge>
-                  {row.key === selectedKey ? (
+                  {value === null && offRoster === null ? (
                     <Check aria-hidden className="size-4 shrink-0" />
                   ) : null}
-                </ModelSelectorItem>
-              ))}
-            </ModelSelectorGroup>
-          ))}
+                </CommandItem>
+              </CommandGroup>
+            ) : null}
 
-          {issues.length > 0 ? (
-            <ModelSelectorGroup heading="Unavailable">
-              {issues.map((issue) => {
-                const reasonId = `${reasonPrefix}-${issue.credentialId}`;
-                return (
-                  <ModelSelectorItem
-                    key={issue.credentialId}
-                    // Visible, and deliberately NOT selectable — hiding a broken credential is what
-                    // makes "why did it use the other one?" unanswerable (D-MI7).
-                    disabled
-                    value={`${issue.label} unavailable`}
-                    keywords={hubModelKeywords(
-                      { modelId: "", kind: issue.kind, credentialId: issue.credentialId },
-                      issue.label,
-                    )}
-                    aria-describedby={reasonId}
+            {offRoster !== null ? (
+              <CommandGroup heading="Current selection">
+                {/* Not in the live roster: no credential is known, so none is invented. Selecting it
+                  is a no-op that just closes the palette — it is already the value. */}
+                <CommandItem
+                  value={offRoster}
+                  keywords={["current", "not in roster"]}
+                  onSelect={() => setOpen(false)}
+                >
+                  <span className="flex min-w-0 flex-1 flex-col text-start">
+                    <RowName>{offRoster}</RowName>
+                    <Text as="span" variant="caption" tone="muted" className="truncate">
+                      Not in the live roster — no provider is pinned to it.
+                    </Text>
+                  </span>
+                  <Check aria-hidden className="size-4 shrink-0" />
+                </CommandItem>
+              </CommandGroup>
+            ) : null}
+
+            {groups.map((group) => (
+              <CommandGroup key={group.id} heading={group.heading}>
+                {group.rows.map((row) => (
+                  <CommandItem
+                    key={row.key}
+                    // D-MI7 — human-readable and unique; the credential NANOID is in neither `value`
+                    // nor `keywords` (cmdk fuzzy-scores both). Identity rides `onSelect`'s closure.
+                    value={row.value}
+                    keywords={row.keywords}
+                    onSelect={() => pick(row.option)}
                   >
-                    <ModelSelectorLogo
-                      provider={modelSelectorLogoProvider(issue.kind)}
+                    <ModelProviderLogo
+                      provider={modelSelectorLogoProvider(row.option.kind)}
                       className="size-4 shrink-0"
                     />
                     <span className="flex min-w-0 flex-1 flex-col text-start">
-                      <ModelSelectorName>{issue.label}</ModelSelectorName>
-                      {/* The reason is VISIBLE and is the `aria-describedby` target, so it reaches
-                          assistive tech without a tooltip having to be opened (D-TB5 posture). */}
-                      <Text
-                        as="span"
-                        id={reasonId}
-                        variant="caption"
-                        tone="muted"
-                        className="text-pretty"
-                      >
-                        {issue.reason}
-                      </Text>
+                      <RowName>{row.displayName}</RowName>
+                      {row.modelId === row.displayName ? null : (
+                        <Text as="span" variant="caption" tone="muted" className="truncate">
+                          {row.modelId}
+                        </Text>
+                      )}
                     </span>
-                  </ModelSelectorItem>
-                );
-              })}
-            </ModelSelectorGroup>
-          ) : null}
-        </ModelSelectorList>
+                    {row.credentialLabel ? (
+                      <Badge variant="outline" className="shrink-0">
+                        {row.credentialLabel}
+                      </Badge>
+                    ) : null}
+                    <Badge variant="secondary" className="shrink-0">
+                      {row.billingLabel}
+                    </Badge>
+                    {row.key === selectedKey ? (
+                      <Check aria-hidden className="size-4 shrink-0" />
+                    ) : null}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
 
-        {!loading && !hasRows ? (
-          <div className="p-3">
-            <Alert variant="warning">
-              <AlertDescription>{emptyMessage}</AlertDescription>
-            </Alert>
-          </div>
-        ) : null}
-      </ModelSelectorContent>
-    </ModelSelector>
+            {issues.length > 0 ? (
+              <CommandGroup heading="Unavailable">
+                {issues.map((issue) => {
+                  const reasonId = `${reasonPrefix}-${issue.credentialId}`;
+                  return (
+                    <CommandItem
+                      key={issue.credentialId}
+                      // Visible, and deliberately NOT selectable — hiding a broken credential is what
+                      // makes "why did it use the other one?" unanswerable (D-MI7).
+                      disabled
+                      value={`${issue.label} unavailable`}
+                      keywords={hubModelKeywords(
+                        { modelId: "", kind: issue.kind, credentialId: issue.credentialId },
+                        issue.label,
+                      )}
+                      aria-describedby={reasonId}
+                    >
+                      <ModelProviderLogo
+                        provider={modelSelectorLogoProvider(issue.kind)}
+                        className="size-4 shrink-0"
+                      />
+                      <span className="flex min-w-0 flex-1 flex-col text-start">
+                        <RowName>{issue.label}</RowName>
+                        {/* The reason is VISIBLE and is the `aria-describedby` target, so it reaches
+                          assistive tech without a tooltip having to be opened (D-TB5 posture). */}
+                        <Text
+                          as="span"
+                          id={reasonId}
+                          variant="caption"
+                          tone="muted"
+                          className="text-pretty"
+                        >
+                          {issue.reason}
+                        </Text>
+                      </span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            ) : null}
+          </CommandList>
+
+          {!loading && !hasRows ? (
+            <div className="p-3">
+              <Alert variant="warning">
+                <AlertDescription>{emptyMessage}</AlertDescription>
+              </Alert>
+            </div>
+          ) : null}
+        </div>
+      </CommandDialog>
+    </>
   );
 }

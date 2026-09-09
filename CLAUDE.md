@@ -208,7 +208,7 @@ Package names are scoped `@mcp-token-footprint/{api,cli,web,shared}` and wired w
   routing (deep-linkable routes + breadcrumbs; `<Routes>`/`<Route>` in `apps/web/src/App.tsx`, e.g.
   the run console at `/testing/runs/:runId`, Settings and reports as routes). Server/UI state is
   still `useState` + `localStorage` + `fetch`; no Redux/Zustand/React Query.
-- **UI / styling:** the upstream **`@elabs-ai/components-*` design system** (brand-ui `^4.0.0`, Radix +
+- **UI / styling:** the upstream **`@elabs-ai/components-*` design system** (brand-ui, pinned exactly at `4.1.0`, Radix +
   CVA), installed from **public npm** (lockstep versions, anonymous install — no registry config, no
   token). **Tailwind v4** (`@tailwindcss/vite`) with semantic **oklch tokens** from
   `@elabs-ai/components-tokens`. `cn()` from `@elabs-ai/components-ui`. Peers the app owns itself

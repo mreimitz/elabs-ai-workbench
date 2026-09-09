@@ -17,8 +17,8 @@ importers:
         specifier: ^1.9.4
         version: 1.9.4
       '@elabs-ai/components-cli':
-        specifier: ^4.0.0
-        version: 4.0.0
+        specifier: 4.1.0
+        version: 4.1.0
       '@playwright/test':
         specifier: 1.56.0
         version: 1.56.0
@@ -179,29 +179,29 @@ importers:
         version: 7.18.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
     devDependencies:
       '@elabs-ai/components-ai':
-        specifier: ^4.0.0
-        version: 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/mdast@4.0.4)(@types/react@19.2.17)(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(ai@6.0.256(zod@3.25.76))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(unified@11.0.5)
+        specifier: 4.1.0
+        version: 4.1.0(@elabs-ai/components-icons@4.1.0(react@19.2.7))(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(@rive-app/react-webgl2@4.29.1(react@19.2.7))(@types/mdast@4.0.4)(@types/react@19.2.17)(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(ai@6.0.256(zod@3.25.76))(media-chrome@4.19.2(react@19.2.7))(mermaid@11.15.0)(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(unified@11.0.5)
       '@elabs-ai/components-charts':
-        specifier: ^4.0.0
-        version: 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 4.1.0
+        version: 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@elabs-ai/components-data':
-        specifier: ^4.0.0
-        version: 4.0.0(@elabs-ai/components-icons@4.0.0(react@19.2.7))(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 4.1.0
+        version: 4.1.0(@elabs-ai/components-icons@4.1.0(react@19.2.7))(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@elabs-ai/components-editor':
-        specifier: ^4.0.0
-        version: 4.0.0(@codemirror/language@6.12.3)(@codemirror/state@6.6.0)(@codemirror/view@6.43.1)(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(monaco-editor@0.55.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
+        specifier: 4.1.0
+        version: 4.1.0(@codemirror/language@6.12.3)(@codemirror/state@6.6.0)(@codemirror/view@6.43.1)(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(monaco-editor@0.55.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
       '@elabs-ai/components-flow':
-        specifier: ^4.0.0
-        version: 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 4.1.0
+        version: 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@elabs-ai/components-icons':
-        specifier: ^4.0.0
-        version: 4.0.0(react@19.2.7)
+        specifier: 4.1.0
+        version: 4.1.0(react@19.2.7)
       '@elabs-ai/components-tokens':
-        specifier: ^4.0.0
-        version: 4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
+        specifier: 4.1.0
+        version: 4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
       '@elabs-ai/components-ui':
-        specifier: ^4.0.0
-        version: 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        specifier: 4.1.0
+        version: 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7)
       '@tailwindcss/vite':
         specifier: ^4.0.0
         version: 4.3.1(vite@6.4.3(@types/node@22.20.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)(yaml@2.9.0))
@@ -628,74 +628,116 @@ packages:
   '@date-fns/tz@1.5.0':
     resolution: {integrity: sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg==}
 
-  '@elabs-ai/components-ai@4.0.0':
-    resolution: {integrity: sha512-OcuEOvlMUngZalYjF+/j3SF2XBgJ4nNgoClvg4TK7qQxWiBCnb4F2oYAcsMjDVYLCj7R7Js62fpWZpOxb0XqZw==}
+  '@dnd-kit/accessibility@3.1.1':
+    resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
     peerDependencies:
-      '@elabs-ai/components-tokens': 4.0.0
-      '@elabs-ai/components-ui': 4.0.0
+      react: '>=16.8.0'
+
+  '@dnd-kit/core@6.3.1':
+    resolution: {integrity: sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@dnd-kit/sortable@10.0.0':
+    resolution: {integrity: sha512-+xqhmIIzvAYMGfBYYnbKuNicfSsk4RksY2XdmJhT+HAC01nix6fHCztU68jooFiMUB01Ky3F0FyOvhG/BZrWkg==}
+    peerDependencies:
+      '@dnd-kit/core': ^6.3.0
+      react: '>=16.8.0'
+
+  '@dnd-kit/utilities@3.2.2':
+    resolution: {integrity: sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==}
+    peerDependencies:
+      react: '>=16.8.0'
+
+  '@elabs-ai/components-ai@4.1.0':
+    resolution: {integrity: sha512-40cPC6cF7V/v5IbdG3fqAb8dgTTYOWzGeKnctIO0nc0yWzVVcL9RFfouk+rrin4BJF12tUqXtzeEEaivc22i3A==}
+    peerDependencies:
+      '@elabs-ai/components-icons': 4.1.0
+      '@elabs-ai/components-tokens': 4.1.0
+      '@elabs-ai/components-ui': 4.1.0
+      '@rive-app/react-webgl2': ^4.26.1
       '@xyflow/react': ^12.11.1
-      ai: ^6.0.0
+      ai: ^6.0.0 || ^7.0.0
+      media-chrome: ^4.17.2
+      mermaid: ^11.12.2
       react: ^18.2.0 || ^19.0.0
       react-dom: ^18.2.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@rive-app/react-webgl2':
+        optional: true
+      ai:
+        optional: true
+      media-chrome:
+        optional: true
+      mermaid:
+        optional: true
 
-  '@elabs-ai/components-charts@4.0.0':
-    resolution: {integrity: sha512-jaRkGJB8kdjd8bUSs4wyqHNxjm2fncJk7ze+jAYZq7NOD0giGiX4TheBOJrsZVZkpVRcohTk1fXZJOpbUOiyxA==}
+  '@elabs-ai/components-charts@4.1.0':
+    resolution: {integrity: sha512-SZ3VYR3+jpAMjyEWK+FVGF9nE+rt5dvh6g+spfP9RaXPlcERXIX6Be49GRE2xsrBbcjVINS07i6py8C02SRuDQ==}
     peerDependencies:
-      '@elabs-ai/components-tokens': 4.0.0
-      '@elabs-ai/components-ui': 4.0.0
+      '@elabs-ai/components-tokens': 4.1.0
+      '@elabs-ai/components-ui': 4.1.0
       react: ^18.2.0 || ^19.0.0
       react-dom: ^18.2.0 || ^19.0.0
 
-  '@elabs-ai/components-cli@4.0.0':
-    resolution: {integrity: sha512-ft37QobepTVuBREut35K6WFwCgNR2D9qR94MC4Dqcrb1V9sqBR8xdm0jQ6ejkSdpL3P76JxagKbC/cKoNsklEA==}
+  '@elabs-ai/components-cli@4.1.0':
+    resolution: {integrity: sha512-bk/y/qwGwyjyXZE+8UtJ2C9g7YQPlt08RVKf3coOZf6XQaDKSStu1WwAthHVOZHjfM/FTH3rvOLyqQVM+no1xA==}
     engines: {node: '>=20'}
     hasBin: true
 
-  '@elabs-ai/components-data@4.0.0':
-    resolution: {integrity: sha512-Cu4lCl77SCk+0nw+DOFEkAAX8Oc8SFAh/sy1yGb1G7sQaIGtKhLSfSLWZxBKvQqgkI+kFeaeFxohH6pS79J5mw==}
+  '@elabs-ai/components-data@4.1.0':
+    resolution: {integrity: sha512-J//o4N+Rx/D0DmL72g/gJwW/I/PFMcDuJu+tImP7vwS4rHe0leByOeNeYZxogPG4p5E+BIktiiWI4cnAvOyggA==}
     peerDependencies:
-      '@elabs-ai/components-icons': 4.0.0
-      '@elabs-ai/components-tokens': 4.0.0
-      '@elabs-ai/components-ui': 4.0.0
+      '@elabs-ai/components-icons': 4.1.0
+      '@elabs-ai/components-tokens': 4.1.0
+      '@elabs-ai/components-ui': 4.1.0
       react: ^18.2.0 || ^19.0.0
       react-dom: ^18.2.0 || ^19.0.0
 
-  '@elabs-ai/components-editor@4.0.0':
-    resolution: {integrity: sha512-OXgk8hq7YFmUG+eODYlWFneSf/5dg7bVu3paDyD55gWWCxninT1U8/aEn/ZcXHT/tXJM/3weerUkRtvHFCatRw==}
+  '@elabs-ai/components-editor@4.1.0':
+    resolution: {integrity: sha512-qxgJBOzdwfnsFo8s0IN7/EW5rABXPuvaRug67PvQrrHF4jTirrTpe6SFHyBotIfTm1U3S25KvVKiktfuUDhyLA==}
     peerDependencies:
-      '@elabs-ai/components-tokens': 4.0.0
-      '@elabs-ai/components-ui': 4.0.0
+      '@elabs-ai/components-tokens': 4.1.0
+      '@elabs-ai/components-ui': 4.1.0
       monaco-editor: ^0.55.1
       react: ^18.2.0 || ^19.0.0
       react-dom: ^18.2.0 || ^19.0.0
 
-  '@elabs-ai/components-flow@4.0.0':
-    resolution: {integrity: sha512-jKXvIBIQsckCw8hU7xyJ+zX+CMq1vIJhj4sK6WphDfalIjRrIZ3Gd/xu9IevTTIsqEZl7No499prcux9uZm1QQ==}
+  '@elabs-ai/components-flow@4.1.0':
+    resolution: {integrity: sha512-rH057tV0ezftswwmUDc0mF2xgPqXtd13wTFbfvd3HajwZg4+06PLSdSHsepSZEdYD6U9MZ0lqeiGAHpI3zpjsg==}
     peerDependencies:
-      '@elabs-ai/components-tokens': 4.0.0
-      '@elabs-ai/components-ui': 4.0.0
+      '@elabs-ai/components-tokens': 4.1.0
+      '@elabs-ai/components-ui': 4.1.0
       '@xyflow/react': ^12.11.1
       react: ^18.2.0 || ^19.0.0
       react-dom: ^18.2.0 || ^19.0.0
 
-  '@elabs-ai/components-icons@4.0.0':
-    resolution: {integrity: sha512-5U4tardwcVNJMwcQyObKxG1LqajOLcZPmPLptTxgmjAq6rSgvVq+2JHtXdvK3o5vRBJTG4O72LMEwAbD70apOA==}
+  '@elabs-ai/components-icons@4.1.0':
+    resolution: {integrity: sha512-szxilq6wK5IUE+zAmpGxx0906Ksqp6cQgJIDM/U19yVJ7Xhyf1l09WmrTtLQlWeBsMVBuZVXnwsuPZ/sVM+6ow==}
     peerDependencies:
       react: ^18.2.0 || ^19.0.0
 
-  '@elabs-ai/components-tokens@4.0.0':
-    resolution: {integrity: sha512-Er54a6FplRWY6iEug37LSNY/6VH/yMSv6rUMjgrIBIpCDyhFUGPxR7UuvfJWoG5IIkQ0WJcpzgvN1gWoB2q1Gw==}
+  '@elabs-ai/components-tokens@4.1.0':
+    resolution: {integrity: sha512-XR6Eb0IJzSygsqUqilWo/+RDi9dV3XLplTUIUN3mXc2cwNJh1zD1WA0CQ8+n+4Znjg7x8fNPibWlTpPyYvQqHw==}
     peerDependencies:
       react: ^18.2.0 || ^19.0.0
       react-dom: ^18.2.0 || ^19.0.0
       tailwindcss: ^4.0.0
 
-  '@elabs-ai/components-ui@4.0.0':
-    resolution: {integrity: sha512-FgUbWLgdUqpdYLLb2EDCIi1BdCe0W3WJC/73SVcFO64ZrOWY9MILA3uLN+3JigRsc02UbZ8tGv7EEp3gD/nRrA==}
+  '@elabs-ai/components-ui@4.1.0':
+    resolution: {integrity: sha512-QeDchDf+pZETJRc+/X+NCBM9KVUB0/q5KaZobdZ0NI4h92fMJ5ikM92A/Bpo6laJbdBjYzLRov0suSQ5M0FtiQ==}
     peerDependencies:
-      '@elabs-ai/components-tokens': 4.0.0
+      '@elabs-ai/components-tokens': 4.1.0
+      '@hookform/resolvers': ^3.9.1
       react: ^18.2.0 || ^19.0.0
       react-dom: ^18.2.0 || ^19.0.0
+      react-hook-form: ^7.54.2
+    peerDependenciesMeta:
+      '@hookform/resolvers':
+        optional: true
+      react-hook-form:
+        optional: true
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -1946,19 +1988,6 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@radix-ui/react-separator@1.1.10':
-    resolution: {integrity: sha512-Y6K6jLQCVfCnTL2MEtGxDLffkhNfEfHsEg3Wa8JU+IWdn3EWbLXd3OuOfQRN7p/W/cUce1WyTk3QeuAoDBzN9g==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
   '@radix-ui/react-separator@1.1.15':
     resolution: {integrity: sha512-jOLO4lssEzWpoDu7G+Ze4VjwMRUBt291pnZD0gmalREZipnTX3wadQo7Fy48GCTfe14/YRN6rw/rOJqrE85Wxw==}
     peerDependencies:
@@ -2029,34 +2058,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@radix-ui/react-toggle-group@1.1.13':
-    resolution: {integrity: sha512-Xb9PLtlvU66F36LiKba6dFswu6V2mDkgidO4fNSbQHQwmZ9ObxMIO17MN/LJ4aWJecVuSVLAHPZjyeMzJrgeiA==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
   '@radix-ui/react-toggle-group@1.1.19':
     resolution: {integrity: sha512-OtnwuSVjd1Ofi+AdnvhsjQdyuhCDwYs1w9RyB5BN/OavXOVQo42SYqQjwUnbPnaiPFBpQ9aX70dWeee+v2oBLA==}
-    peerDependencies:
-      '@types/react': '*'
-      '@types/react-dom': '*'
-      react: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      '@types/react-dom':
-        optional: true
-
-  '@radix-ui/react-toggle@1.1.12':
-    resolution: {integrity: sha512-AsAVsYNZIlRBsci7BhE+QyQeKd1h6TffJYt+lF0QQkd5OpQ3klfIByPsCb4G0h/Fq6PJwh1FYNluzBFYzhk4+w==}
     peerDependencies:
       '@types/react': '*'
       '@types/react-dom': '*'
@@ -2996,12 +2999,6 @@ packages:
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
     engines: {node: '>=14.6'}
 
-  '@xterm/addon-fit@0.11.0':
-    resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==}
-
-  '@xterm/xterm@6.0.0':
-    resolution: {integrity: sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg==}
-
   '@xyflow/react@12.11.2':
     resolution: {integrity: sha512-eLAlDWJfWnQEhJwGMjlWdAXO9eYllKpliUmPQlAmOLxz6mExXuzMVDUKLMquixgkrtmMFFtug3jGKmYYld12cA==}
     peerDependencies:
@@ -3062,9 +3059,6 @@ packages:
   ajv@8.20.0:
     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
 
-  anser@2.3.5:
-    resolution: {integrity: sha512-vcZjxvvVoxTeR5XBNJB38oTu/7eDCZlwdz32N1eNgpyPF7j/Z7Idf+CUwQOkKKpJ7RJyjxgLHCM7vdIK0iCNMQ==}
-
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
@@ -3084,12 +3078,6 @@ packages:
   ansi-styles@6.2.3:
     resolution: {integrity: sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==}
     engines: {node: '>=12'}
-
-  ansi-to-react@6.2.6:
-    resolution: {integrity: sha512-Eqi0iaMK5OZ3jsVFxWvU2B74UZBnGuHlkflKMX6wTOeH+luy9KE2O0gUkc2PxhIP1R4IO0xohv62UMFInQOSeg==}
-    peerDependencies:
-      react: ^16.3.2 || ^17.0.0 || ^18.0.0 || ^19.0.0
-      react-dom: ^16.3.2 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   argparse@1.0.10:
     resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
@@ -3734,9 +3722,6 @@ packages:
     resolution: {integrity: sha512-WUj2qlxaQtO4g6Pq5c29GTcWGDyd8itL8zTlipgECz3JesAiiOKotd8JU6otB3PACgG6xkJUyVhboMS+bje/jA==}
     engines: {node: '>=6'}
 
-  escape-carriage@1.3.1:
-    resolution: {integrity: sha512-GwBr6yViW3ttx1kb7/Oh+gKQ1/TrhYwxKqVmg5gS+BK+Qe2KrOa/Vh7w3HPBvgGf0LfcDGoY9I6NHKoA5Hozhw==}
-
   escape-html@1.0.3:
     resolution: {integrity: sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow==}
 
@@ -4295,9 +4280,6 @@ packages:
     peerDependenciesMeta:
       canvas:
         optional: true
-
-  linkify-it@3.0.3:
-    resolution: {integrity: sha512-ynTsyrFSdE5oZ/O9GEf00kPngmOfVwazR5GKDq6EYfhlpFug3J2zybX56a2PRRpc9P+FuSoGNAwjlbDs9jJBPQ==}
 
   lodash-es@4.18.1:
     resolution: {integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==}
@@ -5511,9 +5493,6 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  uc.micro@1.0.6:
-    resolution: {integrity: sha512-8Y75pvTYkLJW2hWQHXxoqRgV7qb9B+9vFEtidML+7koHUFapnVJAZ6cKs+Qjz5Aw3aZWHMC6u0wJE3At+nSGwA==}
-
   uhyphen@0.2.0:
     resolution: {integrity: sha512-qz3o9CHXmJJPGBdqzab7qAYuW8kQGKNEuoHFYrBwV6hWIMcpAmxDLXojcHfFr9US1Pe6zUswEIJIbLI610fuqA==}
 
@@ -6196,25 +6175,44 @@ snapshots:
 
   '@date-fns/tz@1.5.0': {}
 
-  '@elabs-ai/components-ai@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@types/mdast@4.0.4)(@types/react@19.2.17)(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(ai@6.0.256(zod@3.25.76))(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(unified@11.0.5)':
+  '@dnd-kit/accessibility@3.1.1(react@19.2.7)':
     dependencies:
-      '@elabs-ai/components-tokens': 4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
-      '@elabs-ai/components-ui': 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-use-controllable-state': 1.2.3(@types/react@19.2.17)(react@19.2.7)
-      '@rive-app/react-webgl2': 4.29.1(react@19.2.7)
+      react: 19.2.7
+      tslib: 2.8.1
+
+  '@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@dnd-kit/accessibility': 3.1.1(react@19.2.7)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.7)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      tslib: 2.8.1
+
+  '@dnd-kit/sortable@10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@dnd-kit/core': 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.7)
+      react: 19.2.7
+      tslib: 2.8.1
+
+  '@dnd-kit/utilities@3.2.2(react@19.2.7)':
+    dependencies:
+      react: 19.2.7
+      tslib: 2.8.1
+
+  '@elabs-ai/components-ai@4.1.0(@elabs-ai/components-icons@4.1.0(react@19.2.7))(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(@rive-app/react-webgl2@4.29.1(react@19.2.7))(@types/mdast@4.0.4)(@types/react@19.2.17)(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(ai@6.0.256(zod@3.25.76))(media-chrome@4.19.2(react@19.2.7))(mermaid@11.15.0)(micromark-util-types@2.0.2)(micromark@4.0.2)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(unified@11.0.5)':
+    dependencies:
+      '@elabs-ai/components-icons': 4.1.0(react@19.2.7)
+      '@elabs-ai/components-tokens': 4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
+      '@elabs-ai/components-ui': 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-use-controllable-state': 1.2.6(@types/react@19.2.17)(react@19.2.7)
       '@streamdown/cjk': 1.0.3(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.7)(unified@11.0.5)
       '@streamdown/code': 1.1.1(react@19.2.7)
       '@streamdown/math': 1.0.2(react@19.2.7)
       '@streamdown/mermaid': 1.0.2(react@19.2.7)
-      '@xterm/addon-fit': 0.11.0
-      '@xterm/xterm': 6.0.0
       '@xyflow/react': 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      ai: 6.0.256(zod@3.25.76)
-      ansi-to-react: 6.2.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       class-variance-authority: 0.7.1
       lucide-react: 0.577.0(react@19.2.7)
-      media-chrome: 4.19.2(react@19.2.7)
-      mermaid: 11.15.0
       motion: 12.42.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       nanoid: 5.1.14
       react: 19.2.7
@@ -6225,6 +6223,11 @@ snapshots:
       tokenlens: 1.3.1
       use-stick-to-bottom: 1.1.6(react@19.2.7)
       zod: 3.25.76
+    optionalDependencies:
+      '@rive-app/react-webgl2': 4.29.1(react@19.2.7)
+      ai: 6.0.256(zod@3.25.76)
+      media-chrome: 4.19.2(react@19.2.7)
+      mermaid: 11.15.0
     transitivePeerDependencies:
       - '@emotion/is-prop-valid'
       - '@types/mdast'
@@ -6234,10 +6237,10 @@ snapshots:
       - supports-color
       - unified
 
-  '@elabs-ai/components-charts@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@elabs-ai/components-charts@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@elabs-ai/components-tokens': 4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
-      '@elabs-ai/components-ui': 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@elabs-ai/components-tokens': 4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
+      '@elabs-ai/components-ui': 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7)
       '@number-flow/react': 0.5.14(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-virtual': 3.14.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@visx/brush': 3.12.0(react@19.2.7)
@@ -6255,7 +6258,9 @@ snapshots:
       '@visx/zoom': 4.0.1-alpha.0(react@19.2.7)
       class-variance-authority: 0.7.1
       d3-array: 3.2.4
+      d3-force: 3.0.0
       d3-geo: 3.1.0
+      d3-hierarchy: 3.1.2
       d3-sankey: 0.12.3
       d3-scale: 4.0.2
       d3-shape: 3.2.0
@@ -6267,23 +6272,26 @@ snapshots:
     transitivePeerDependencies:
       - '@emotion/is-prop-valid'
 
-  '@elabs-ai/components-cli@4.0.0': {}
+  '@elabs-ai/components-cli@4.1.0': {}
 
-  '@elabs-ai/components-data@4.0.0(@elabs-ai/components-icons@4.0.0(react@19.2.7))(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@elabs-ai/components-data@4.1.0(@elabs-ai/components-icons@4.1.0(react@19.2.7))(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@elabs-ai/components-icons': 4.0.0(react@19.2.7)
-      '@elabs-ai/components-tokens': 4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
-      '@elabs-ai/components-ui': 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/core': 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react@19.2.7)
+      '@dnd-kit/utilities': 3.2.2(react@19.2.7)
+      '@elabs-ai/components-icons': 4.1.0(react@19.2.7)
+      '@elabs-ai/components-tokens': 4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
+      '@elabs-ai/components-ui': 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7)
       '@tanstack/react-table': 8.21.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-virtual': 3.14.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       lucide-react: 0.577.0(react@19.2.7)
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  '@elabs-ai/components-editor@4.0.0(@codemirror/language@6.12.3)(@codemirror/state@6.6.0)(@codemirror/view@6.43.1)(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(monaco-editor@0.55.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)':
+  '@elabs-ai/components-editor@4.1.0(@codemirror/language@6.12.3)(@codemirror/state@6.6.0)(@codemirror/view@6.43.1)(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(monaco-editor@0.55.1)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)':
     dependencies:
-      '@elabs-ai/components-tokens': 4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
-      '@elabs-ai/components-ui': 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@elabs-ai/components-tokens': 4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
+      '@elabs-ai/components-ui': 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7)
       '@milkdown/kit': 7.21.2(@codemirror/language@6.12.3)(@codemirror/state@6.6.0)(@codemirror/view@6.43.1)(typescript@5.9.3)
       '@prosemirror-adapter/react': 0.5.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@streamdown/code': 1.1.1(react@19.2.7)
@@ -6311,32 +6319,31 @@ snapshots:
       - supports-color
       - typescript
 
-  '@elabs-ai/components-flow@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@elabs-ai/components-flow@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7))(@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@dagrejs/dagre': 3.0.0
-      '@elabs-ai/components-tokens': 4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
-      '@elabs-ai/components-ui': 4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@elabs-ai/components-tokens': 4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
+      '@elabs-ai/components-ui': 4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7)
       '@xyflow/react': 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       d3-force: 3.0.0
       lucide-react: 0.577.0(react@19.2.7)
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
 
-  '@elabs-ai/components-icons@4.0.0(react@19.2.7)':
+  '@elabs-ai/components-icons@4.1.0(react@19.2.7)':
     dependencies:
       react: 19.2.7
 
-  '@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)':
+  '@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)':
     dependencies:
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
       tailwindcss: 4.3.1
       tw-animate-css: 1.4.0
 
-  '@elabs-ai/components-ui@4.0.0(@elabs-ai/components-tokens@4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@elabs-ai/components-ui@4.1.0(@elabs-ai/components-tokens@4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1))(@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7)))(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-hook-form@7.79.0(react@19.2.7))(react@19.2.7)':
     dependencies:
-      '@elabs-ai/components-tokens': 4.0.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
-      '@hookform/resolvers': 3.10.0(react-hook-form@7.79.0(react@19.2.7))
+      '@elabs-ai/components-tokens': 4.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tailwindcss@4.3.1)
       '@radix-ui/react-accordion': 1.2.14(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-alert-dialog': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-aspect-ratio': 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -6345,7 +6352,7 @@ snapshots:
       '@radix-ui/react-collapsible': 1.1.14(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-context-menu': 2.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-dialog': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-direction': 1.1.2(@types/react@19.2.17)(react@19.2.7)
+      '@radix-ui/react-direction': 1.1.4(@types/react@19.2.17)(react@19.2.7)
       '@radix-ui/react-dropdown-menu': 2.1.18(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-hover-card': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-label': 2.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -6356,13 +6363,13 @@ snapshots:
       '@radix-ui/react-radio-group': 1.4.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-scroll-area': 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-select': 2.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-separator': 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-separator': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-slider': 1.4.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-slot': 1.3.0(@types/react@19.2.17)(react@19.2.7)
+      '@radix-ui/react-slot': 1.3.3(@types/react@19.2.17)(react@19.2.7)
       '@radix-ui/react-switch': 1.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-tabs': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-toggle': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-toggle-group': 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-toggle': 1.1.18(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-toggle-group': 1.1.19(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-toolbar': 1.1.19(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-tooltip': 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@tanstack/react-virtual': 3.14.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -6375,12 +6382,13 @@ snapshots:
       react: 19.2.7
       react-day-picker: 9.14.0(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
-      react-hook-form: 7.79.0(react@19.2.7)
       react-resizable-panels: 2.1.9(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       sonner: 1.7.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       tailwind-merge: 2.6.1
       vaul: 1.1.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      zod: 3.25.76
+    optionalDependencies:
+      '@hookform/resolvers': 3.10.0(react-hook-form@7.79.0(react@19.2.7))
+      react-hook-form: 7.79.0(react@19.2.7)
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
@@ -6688,6 +6696,7 @@ snapshots:
   '@hookform/resolvers@3.10.0(react-hook-form@7.79.0(react@19.2.7))':
     dependencies:
       react-hook-form: 7.79.0(react@19.2.7)
+    optional: true
 
   '@iconify/types@2.0.0': {}
 
@@ -7647,15 +7656,6 @@ snapshots:
       '@types/react': 19.2.17
       '@types/react-dom': 19.2.3(@types/react@19.2.17)
 
-  '@radix-ui/react-separator@1.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
-    dependencies:
-      '@radix-ui/react-primitive': 2.1.6(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-    optionalDependencies:
-      '@types/react': 19.2.17
-      '@types/react-dom': 19.2.3(@types/react@19.2.17)
-
   '@radix-ui/react-separator@1.1.15(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@radix-ui/react-primitive': 2.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -7729,21 +7729,6 @@ snapshots:
       '@types/react': 19.2.17
       '@types/react-dom': 19.2.3(@types/react@19.2.17)
 
-  '@radix-ui/react-toggle-group@1.1.13(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.4
-      '@radix-ui/react-context': 1.1.4(@types/react@19.2.17)(react@19.2.7)
-      '@radix-ui/react-direction': 1.1.2(@types/react@19.2.17)(react@19.2.7)
-      '@radix-ui/react-primitive': 2.1.6(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-roving-focus': 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-toggle': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-use-controllable-state': 1.2.3(@types/react@19.2.17)(react@19.2.7)
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-    optionalDependencies:
-      '@types/react': 19.2.17
-      '@types/react-dom': 19.2.3(@types/react@19.2.17)
-
   '@radix-ui/react-toggle-group@1.1.19(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@radix-ui/primitive': 1.1.7
@@ -7753,17 +7738,6 @@ snapshots:
       '@radix-ui/react-roving-focus': 1.1.19(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-toggle': 1.1.18(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@radix-ui/react-use-controllable-state': 1.2.6(@types/react@19.2.17)(react@19.2.7)
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-    optionalDependencies:
-      '@types/react': 19.2.17
-      '@types/react-dom': 19.2.3(@types/react@19.2.17)
-
-  '@radix-ui/react-toggle@1.1.12(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.4
-      '@radix-ui/react-primitive': 2.1.6(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-use-controllable-state': 1.2.3(@types/react@19.2.17)(react@19.2.7)
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
     optionalDependencies:
@@ -7925,8 +7899,10 @@ snapshots:
     dependencies:
       '@rive-app/webgl2': 2.38.1
       react: 19.2.7
+    optional: true
 
-  '@rive-app/webgl2@2.38.1': {}
+  '@rive-app/webgl2@2.38.1':
+    optional: true
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
@@ -8797,10 +8773,6 @@ snapshots:
 
   '@xmldom/xmldom@0.9.10': {}
 
-  '@xterm/addon-fit@0.11.0': {}
-
-  '@xterm/xterm@6.0.0': {}
-
   '@xyflow/react@12.11.2(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
       '@xyflow/system': 0.0.79
@@ -8867,8 +8839,6 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
-  anser@2.3.5: {}
-
   ansi-regex@5.0.1: {}
 
   ansi-regex@6.2.2: {}
@@ -8880,14 +8850,6 @@ snapshots:
   ansi-styles@5.2.0: {}
 
   ansi-styles@6.2.3: {}
-
-  ansi-to-react@6.2.6(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
-    dependencies:
-      anser: 2.3.5
-      escape-carriage: 1.3.1
-      linkify-it: 3.0.3
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
 
   argparse@1.0.10:
     dependencies:
@@ -9004,6 +8966,7 @@ snapshots:
   ce-la-react@0.3.2(react@19.2.7):
     dependencies:
       react: 19.2.7
+    optional: true
 
   chai@5.3.3:
     dependencies:
@@ -9037,10 +9000,10 @@ snapshots:
 
   cmdk@1.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
     dependencies:
-      '@radix-ui/react-compose-refs': 1.1.3(@types/react@19.2.17)(react@19.2.7)
+      '@radix-ui/react-compose-refs': 1.1.5(@types/react@19.2.17)(react@19.2.7)
       '@radix-ui/react-dialog': 1.1.17(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@radix-ui/react-id': 1.1.2(@types/react@19.2.17)(react@19.2.7)
-      '@radix-ui/react-primitive': 2.1.6(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@radix-ui/react-id': 1.1.4(@types/react@19.2.17)(react@19.2.7)
+      '@radix-ui/react-primitive': 2.1.10(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       react: 19.2.7
       react-dom: 19.2.7(react@19.2.7)
     transitivePeerDependencies:
@@ -9599,8 +9562,6 @@ snapshots:
       '@esbuild/win32-x64': 0.28.1
 
   escalade@3.2.0: {}
-
-  escape-carriage@1.3.1: {}
 
   escape-html@1.0.3: {}
 
@@ -10256,10 +10217,6 @@ snapshots:
       uhyphen: 0.2.0
     optional: true
 
-  linkify-it@3.0.3:
-    dependencies:
-      uc.micro: 1.0.6
-
   lodash-es@4.18.1: {}
 
   lodash@4.18.1: {}
@@ -10557,6 +10514,7 @@ snapshots:
       ce-la-react: 0.3.2(react@19.2.7)
     transitivePeerDependencies:
       - react
+    optional: true
 
   media-typer@1.1.0: {}
 
@@ -11229,6 +11187,7 @@ snapshots:
   react-hook-form@7.79.0(react@19.2.7):
     dependencies:
       react: 19.2.7
+    optional: true
 
   react-is@16.13.1: {}
 
@@ -11888,8 +11847,6 @@ snapshots:
       mime-types: 3.0.2
 
   typescript@5.9.3: {}
-
-  uc.micro@1.0.6: {}
 
   uhyphen@0.2.0:
     optional: true

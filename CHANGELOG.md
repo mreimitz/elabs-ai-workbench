@@ -5,6 +5,52 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the design system moved to 4.1.0, and it was built partly from this app
+
+The `@elabs-ai/components-*` packages are now at **4.1.0**, pinned exactly rather than by caret.
+That release is numbered a minor but carries **three breaking changes** — a deliberate maintainer
+decision, stated in its own notes — so the old `^4.0.0` range would have taken it on the next
+install and broken the build on import resolution alone. All three landed:
+
+- The context-window usage readout renamed `Context*` → `TokenUsage*` outright, with no alias. The
+  old name sat one line from the unrelated `ContextPanel` in every import list. One real consumer
+  here (the run console's KPI rail); props, behaviour and rendered DOM unchanged.
+- The `ModelSelector*` family was **deleted** — eleven of its fourteen exports were one-line
+  pass-throughs of components the UI package already ships. The Hub's single model picker is now
+  composed from `CommandDialog` + the command primitives directly, with the provider logo kept
+  under its new name. Its nine call sites behave as before.
+- The terminal components moved to a new package. This app never used them, so the only visible
+  effect is a **measured** one: `@xterm/xterm` and its fit addon are gone from the lockfile
+  entirely. The parallel promise for `react-hook-form` did **not** materialise — pnpm auto-installs
+  optional peers, so it is still linked in.
+
+`Composer` also lost its `model` prop upstream (it rendered a model pill that could not be changed);
+the testing composer simply stops passing it.
+
+**Three things this shook loose, all recorded rather than smoothed over.**
+
+The palette's search box has **no accessible name** — cmdk sets `aria-labelledby` at a label element
+that `CommandDialog` gives no way to populate, and `aria-labelledby` outranks the `aria-label` now
+set on it. The old test mock supplied a label of its own, which is precisely why no test ever saw
+this. It is an upstream gap and is filed as one.
+
+The picker's tests got **stronger**. Because the picker now composes the UI package directly, and
+that package is mocked nowhere, every picker test runs against real cmdk and a real modal instead of
+a stub that re-implemented filtering. That is what exposed the unnamed search box, and it retired
+about 230 lines of mock describing an API that no longer exists.
+
+Separately, a test had **expired with the wall clock**: the dashboard range control's calendar
+assertions name dates in August 2026, but the calendar renders the month taken from the system
+clock, so those cells stopped existing once the machine's date moved on. Two tests had been failing
+before any of this work began. The clock is now frozen to the instant the file's own fixtures
+already assumed — verified by moving the frozen date and watching the original failure return.
+
+The app was booted on 4.1.0 against a scratch database and looked at in a real browser: the shell
+renders in both themes, with one main landmark, the skip link present and no console errors. Not
+verified: any hand-driven keyboard pass, and the model picker against a real provider credential.
+
+Plan and per-work-package state: [`planning/Roadmap/RM-39-brand-ui-4-1/`](./planning/Roadmap/RM-39-brand-ui-4-1/).
+
 ## Unreleased — the README has pictures again, and none of them carries a reachable address
 
 **The eleven published screenshots were deleted in August because every one was taken against a

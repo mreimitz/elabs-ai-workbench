@@ -74,7 +74,9 @@ function LocationProbe() {
   );
 }
 
-function renderDirectory({ initialEntries = ["/assistant/agents"] }: { initialEntries?: string[] } = {}) {
+function renderDirectory({
+  initialEntries = ["/assistant/agents"],
+}: { initialEntries?: string[] } = {}) {
   render(
     <TooltipProvider>
       <MemoryRouter initialEntries={initialEntries}>
@@ -132,9 +134,7 @@ describe("DirectoryTab — scope filtering (?scope=)", () => {
       role({ id: "role-1", name: "In A Crew" }),
       role({ id: "role-2", name: "Free Agent" }),
     ]);
-    vi.mocked(api.listHubCrews).mockResolvedValue([
-      crew({ members: [{ agentId: "role-1" }] }),
-    ]);
+    vi.mocked(api.listHubCrews).mockResolvedValue([crew({ members: [{ agentId: "role-1" }] })]);
     renderDirectory({ initialEntries: ["/assistant/agents?scope=unassigned"] });
 
     await waitFor(() => expect(screen.getByText("Free Agent")).toBeInTheDocument());
@@ -223,7 +223,11 @@ describe("DirectoryTab — crew nesting (WP4.2 / D-CN8)", () => {
   test("a cyclic crew graph does not crash the scoped grid — bounded, honest result", async () => {
     vi.mocked(api.listHubAgentRoles).mockResolvedValue([role({ id: "role-1", name: "Agent A" })]);
     vi.mocked(api.listHubCrews).mockResolvedValue([
-      crew({ id: "crew-a", name: "Crew A", members: [{ agentId: "role-1" }, { crewId: "crew-b" }] }),
+      crew({
+        id: "crew-a",
+        name: "Crew A",
+        members: [{ agentId: "role-1" }, { crewId: "crew-b" }],
+      }),
       crew({ id: "crew-b", name: "Crew B", members: [{ crewId: "crew-a" }] }),
     ]);
     renderDirectory({ initialEntries: ["/assistant/agents?scope=crew:crew-a"] });
@@ -288,7 +292,11 @@ describe("DirectoryTab — empty states with one primary action (D-HUX14)", () =
 
     await waitFor(() => expect(screen.getByText("No agents yet")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "New agent" }));
-    expect(screen.getByText("A minimal starting identity — you'll finish setting it up (instructions, access, budgets…) in its profile next.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "A minimal starting identity — you'll finish setting it up (instructions, access, budgets…) in its profile next.",
+      ),
+    ).toBeInTheDocument();
   });
 });
 
@@ -379,9 +387,7 @@ describe("DirectoryTab — quick-create (D-HUX6 'Create, then open profile'; ui-
     fireEvent.click(screen.getByRole("button", { name: "Create agent" }));
 
     await waitFor(() =>
-      expect(screen.getByTestId("location")).toHaveTextContent(
-        "/assistant/agents/agent/role-new",
-      ),
+      expect(screen.getByTestId("location")).toHaveTextContent("/assistant/agents/agent/role-new"),
     );
   });
 });
@@ -436,7 +442,7 @@ describe("DirectoryTab — crew Instantiate", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /^Coordinating model:/ }));
     fireEvent.click(
-      within(screen.getByTestId("model-selector-content")).getByRole("button", { name: /^GPT-5/ }),
+      within(screen.getByTestId("model-selector-content")).getByRole("option", { name: /^GPT-5/ }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Instantiate" }));
 

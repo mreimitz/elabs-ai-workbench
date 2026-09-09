@@ -666,169 +666,20 @@ export const MessageBranchPage = () => {
   );
 };
 
-// ── ModelSelector (R-SES10 per-message override · D-MI7 HubModelPicker) ─────────────────────────────
+// ── Model provider logo (D-MI7 HubModelPicker) ──────────────────────────────────────────────────
 //
-// model-identity WP 4.1: this stub used to be open/close + click-to-pick ONLY — `ModelSelectorList`
-// and `ModelSelectorEmpty` were bare `Pass`es and `ModelSelectorItem` dropped `keywords`, `disabled`
-// and `aria-*`. That is why the D-MI7 search gap went unnoticed for so long: no test COULD observe
-// that `Composer.tsx` passed no `keywords`, because the mock never filtered anything.
+// This block used to carry a ~150-line `ModelSelector*` stand-in with its own substring filter,
+// because `@elabs-ai/components-ai` shipped that family and `HubModelPicker` was built on it.
+// brand-ui 4.1.0 DELETED the family (eleven of its fourteen exports were one-line pass-throughs of
+// `@elabs-ai/components-ui`'s `Command*`), so the picker now composes `CommandDialog` + `Command*`
+// from `-ui` directly — which this module does not mock. The palette in every test is therefore the
+// REAL cmdk, and a stub of a deleted API would only describe software that no longer exists.
 //
-// It now reproduces the parts of cmdk's contract the picker depends on:
-//   • a controlled search box whose query filters items on `value + keywords` (the same two inputs
-//     cmdk's default `commandScore(value + " " + keywords.join(" "), search)` consumes — substring
-//     rather than fuzzy, which is stricter and therefore a safe stand-in for an assertion),
-//   • `ModelSelectorEmpty` rendering only while nothing matches,
-//   • `disabled` items that render (visible!) but cannot be activated, with their `aria-*` intact.
-//
-// It is deliberately NOT a cmdk re-implementation: keyboard highlight/`data-value` selection is
-// cmdk's own and is locked against the REAL library in `HubModelPicker.cmdk.test.tsx`.
+// One consequence worth knowing when reading these suites: a palette row is a cmdk `option`, not a
+// `button`, and it is marked unavailable with `aria-disabled`/`data-disabled` rather than the native
+// `disabled` attribute.
 
-type ModelSelectorCtxValue = {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  query: string;
-  setQuery: (next: string) => void;
-  setMatch: (id: string, matched: boolean) => void;
-  matchCount: number;
-};
-const ModelSelectorContext = createContext<ModelSelectorCtxValue | null>(null);
-
-export const ModelSelector = ({
-  open,
-  onOpenChange,
-  children,
-}: {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children?: ReactNode;
-}) => {
-  const [query, setQuery] = useState("");
-  const [matches, setMatches] = useState<Record<string, boolean>>({});
-  const setMatch = useCallback((id: string, matched: boolean) => {
-    setMatches((current) =>
-      current[id] === matched ? current : { ...current, [id]: matched },
-    );
-  }, []);
-  const matchCount = Object.values(matches).filter(Boolean).length;
-  const value = useMemo(
-    () => ({
-      open: !!open,
-      setOpen: (next: boolean) => onOpenChange?.(next),
-      query,
-      setQuery,
-      setMatch,
-      matchCount,
-    }),
-    [open, onOpenChange, query, setMatch, matchCount],
-  );
-  return <ModelSelectorContext.Provider value={value}>{children}</ModelSelectorContext.Provider>;
-};
-export const ModelSelectorTrigger = ({
-  children,
-  disabled,
-}: {
-  children?: ReactNode;
-  disabled?: boolean;
-  asChild?: boolean;
-}) => {
-  const ctx = useContext(ModelSelectorContext);
-  if (isValidElement(children)) {
-    return cloneElement(children as ReactElement<{ onClick?: () => void; disabled?: boolean }>, {
-      onClick: () => {
-        if (!disabled) ctx?.setOpen(true);
-      },
-    });
-  }
-  return (
-    <button type="button" disabled={disabled} onClick={() => ctx?.setOpen(true)}> {/* brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx) */}
-      {children}
-    </button>
-  );
-};
-export const ModelSelectorContent = ({ children }: { children?: ReactNode; title?: ReactNode }) => {
-  const ctx = useContext(ModelSelectorContext);
-  return ctx?.open ? <div data-testid="model-selector-content">{children}</div> : null;
-};
-export const ModelSelectorInput = ({
-  placeholder,
-  ...props
-}: { placeholder?: string } & Record<string, unknown>) => {
-  const ctx = useContext(ModelSelectorContext);
-  return (
-    // brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx)
-    <input
-      {...props}
-      aria-label="Search models"
-      placeholder={placeholder}
-      value={ctx?.query ?? ""}
-      onChange={(event) => ctx?.setQuery(event.target.value)}
-    />
-  );
-};
-export const ModelSelectorList = Pass;
-/** cmdk renders `Empty` only while NOTHING matches the current query — so must the stub. */
-export const ModelSelectorEmpty = ({ children }: { children?: ReactNode }) => {
-  const ctx = useContext(ModelSelectorContext);
-  return ctx && ctx.matchCount === 0 ? <div>{children}</div> : null;
-};
-export const ModelSelectorGroup = ({
-  heading,
-  children,
-}: {
-  heading?: ReactNode;
-  children?: ReactNode;
-}) => (
-  <div>
-    <div>{heading}</div>
-    {children}
-  </div>
-);
-export const ModelSelectorItem = ({
-  children,
-  onSelect,
-  value,
-  keywords,
-  disabled,
-  ...rest
-}: {
-  children?: ReactNode;
-  onSelect?: (value: string) => void;
-  value?: string;
-  keywords?: string[];
-  disabled?: boolean;
-} & Record<string, unknown>) => {
-  const ctx = useContext(ModelSelectorContext);
-  const id = useId();
-  const needle = (ctx?.query ?? "").trim().toLowerCase();
-  // The same haystack cmdk scores: the item's `value` PLUS its keywords.
-  const haystack = [value ?? "", ...(keywords ?? [])].join(" ").toLowerCase();
-  const matched = needle === "" || haystack.includes(needle);
-  const setMatch = ctx?.setMatch;
-  useEffect(() => {
-    setMatch?.(id, matched);
-    return () => setMatch?.(id, false);
-  }, [setMatch, id, matched]);
-  if (!matched) return null;
-  return (
-    // brand-ui-allow: test-only @elabs-ai/components-ai stub (mirrors AssistantDock.test.tsx)
-    <button
-      type="button"
-      // Deliberately still a plain `button` (not cmdk's real `role="option"`): every existing hub
-      // suite queries these rows with `getByRole("button", …)`, and role fidelity is locked against
-      // the REAL library in `HubModelPicker.cmdk.test.tsx` instead.
-      aria-disabled={disabled ? true : undefined}
-      disabled={disabled}
-      onClick={() => {
-        if (!disabled) onSelect?.(value ?? "");
-      }}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-};
-export const ModelSelectorLogo = () => null;
-export const ModelSelectorName = Pass;
+export const ModelProviderLogo = () => null;
 
 // ── Artifact canvas (WP1.6, R-UX13) ─────────────────────────────────────────────────────────────────
 

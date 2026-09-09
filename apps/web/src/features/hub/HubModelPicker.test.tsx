@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
 // The repaired shared stub (model-identity WP 4.1): its `ModelSelectorItem` now filters on
@@ -45,12 +45,7 @@ const GPT: HubModelOption = {
 function openPicker(props: Partial<Parameters<typeof HubModelPicker>[0]> = {}) {
   const onChange = vi.fn();
   render(
-    <HubModelPicker
-      models={[WORK_SONNET, GPT]}
-      value={null}
-      onChange={onChange}
-      {...props}
-    />,
+    <HubModelPicker models={[WORK_SONNET, GPT]} value={null} onChange={onChange} {...props} />,
   );
   fireEvent.click(screen.getByRole("button", { name: /^Model:/ }));
   return { onChange, palette: within(screen.getByTestId("model-selector-content")) };
@@ -61,8 +56,8 @@ describe("HubModelPicker — two credentials of the same kind", () => {
     const { onChange, palette } = openPicker({ models: [WORK_SONNET, PERSONAL_SONNET] });
 
     // Two rows for ONE model id, on ONE kind — the case every previous picker collapsed.
-    const work = palette.getByRole("button", { name: /Claude Sonnet 5.*Work key/ });
-    const personal = palette.getByRole("button", { name: /Claude Sonnet 5.*Personal key/ });
+    const work = palette.getByRole("option", { name: /Claude Sonnet 5.*Work key/ });
+    const personal = palette.getByRole("option", { name: /Claude Sonnet 5.*Personal key/ });
     expect(work).not.toBe(personal);
 
     fireEvent.click(personal);
@@ -75,7 +70,7 @@ describe("HubModelPicker — two credentials of the same kind", () => {
     // D-MI5 — the subscription reads "Anthropic CLI" here exactly as it does in Settings.
     expect(palette.getByText("Anthropic CLI")).toBeInTheDocument();
 
-    fireEvent.click(palette.getByRole("button", { name: /^Sonnet claude-sonnet-5/ }));
+    fireEvent.click(palette.getByRole("option", { name: /^Sonnet claude-sonnet-5/ }));
     expect(onChange).toHaveBeenCalledWith(SUB_SONNET);
   });
 
@@ -88,7 +83,15 @@ describe("HubModelPicker — two credentials of the same kind", () => {
 
 describe("HubModelPicker — search (the D-MI7 `keywords` fix)", () => {
   function search(palette: ReturnType<typeof within>, query: string) {
-    fireEvent.change(palette.getByRole("textbox", { name: /search models/i }), {
+    // The palette's search box is located by ROLE alone, not by an accessible name.
+    // cmdk always sets `aria-labelledby` on its input, pointing at the label element
+    // `Command` renders only when it is given a `label` — and `CommandDialog` (brand-ui
+    // 4.1.0) does not forward one. `aria-labelledby` outranks `aria-label` in name
+    // computation, so the input computes to an EMPTY name and no `name:` filter can match
+    // it. The component still passes `aria-label`; this is an upstream gap, recorded in
+    // RM-39 (WP 1.3). There is exactly one combobox inside the palette, so this is
+    // unambiguous.
+    fireEvent.change(palette.getByRole("combobox"), {
       target: { value: query },
     });
   }
@@ -96,31 +99,31 @@ describe("HubModelPicker — search (the D-MI7 `keywords` fix)", () => {
   test("by PROVIDER name — the case that matched nothing before, because no keywords were passed", () => {
     const { palette } = openPicker({ models: [WORK_SONNET, GPT] });
     search(palette, "openai");
-    expect(palette.getByRole("button", { name: /^gpt-5/ })).toBeVisible();
-    expect(palette.queryByRole("button", { name: /^Claude Sonnet 5/ })).not.toBeInTheDocument();
+    expect(palette.getByRole("option", { name: /^gpt-5/ })).toBeVisible();
+    expect(palette.queryByRole("option", { name: /^Claude Sonnet 5/ })).not.toBeInTheDocument();
   });
 
   test("by CREDENTIAL label", () => {
     const { palette } = openPicker({ models: [WORK_SONNET, PERSONAL_SONNET] });
     search(palette, "personal");
-    expect(palette.getByRole("button", { name: /Personal key/ })).toBeVisible();
-    expect(palette.queryByRole("button", { name: /Work key/ })).not.toBeInTheDocument();
+    expect(palette.getByRole("option", { name: /Personal key/ })).toBeVisible();
+    expect(palette.queryByRole("option", { name: /Work key/ })).not.toBeInTheDocument();
   });
 
   test("by billing basis, and by the raw wire kind", () => {
     const { palette } = openPicker({ models: [WORK_SONNET, SUB_SONNET] });
     search(palette, "subscription");
-    expect(palette.getByRole("button", { name: /^Sonnet/ })).toBeVisible();
-    expect(palette.queryByRole("button", { name: /^Claude Sonnet 5/ })).not.toBeInTheDocument();
+    expect(palette.getByRole("option", { name: /^Sonnet/ })).toBeVisible();
+    expect(palette.queryByRole("option", { name: /^Claude Sonnet 5/ })).not.toBeInTheDocument();
 
     search(palette, "claude_subscription");
-    expect(palette.getByRole("button", { name: /^Sonnet/ })).toBeVisible();
+    expect(palette.getByRole("option", { name: /^Sonnet/ })).toBeVisible();
   });
 
   test("by model id still works", () => {
     const { palette } = openPicker({ models: [WORK_SONNET, GPT] });
     search(palette, "gpt-5");
-    expect(palette.getByRole("button", { name: /^gpt-5/ })).toBeVisible();
+    expect(palette.getByRole("option", { name: /^gpt-5/ })).toBeVisible();
   });
 
   test("no match ⇒ the empty state, not a silently blank list", () => {
@@ -141,11 +144,15 @@ describe("HubModelPicker — a broken credential is disabled-and-VISIBLE (D-MI7)
   test("it renders, cannot be selected, and its reason is wired to aria-describedby", () => {
     const { onChange, palette } = openPicker({ unavailable: [BROKEN] });
 
-    const row = palette.getByRole("button", { name: /Expired plan/ });
+    const row = palette.getByRole("option", { name: /Expired plan/ });
     // Visible: hiding it is what makes "why did it use the other one?" unanswerable.
     expect(row).toBeVisible();
-    expect(row).toBeDisabled();
+    // Real cmdk renders an option as a `div` and marks it unavailable with `aria-disabled` +
+    // `data-disabled` — there is no native `disabled` attribute for `toBeDisabled()` to read (the
+    // old `-ai` test stub rendered a `<button disabled>`, which is why that matcher used to pass).
+    // Both attributes are asserted, and the inert click below is the behavioural proof.
     expect(row).toHaveAttribute("aria-disabled", "true");
+    expect(row).toHaveAttribute("data-disabled", "true");
 
     // The reason reaches assistive tech without a tooltip having to open (icon-affordances posture).
     const describedBy = row.getAttribute("aria-describedby");
@@ -160,7 +167,7 @@ describe("HubModelPicker — a broken credential is disabled-and-VISIBLE (D-MI7)
 
   test("it is listed even when the roster itself is empty — never silently dropped", () => {
     const { palette } = openPicker({ models: [], unavailable: [BROKEN] });
-    expect(palette.getByRole("button", { name: /Expired plan/ })).toBeVisible();
+    expect(palette.getByRole("option", { name: /Expired plan/ })).toBeVisible();
   });
 });
 
@@ -173,12 +180,25 @@ describe("HubModelPicker — selection, defaults and off-roster values", () => {
   });
 
   test("an off-roster model id stays visible and says so, with NO credential invented for it", () => {
+    // The trigger claim is made on its OWN render, with the palette shut. The palette is a real
+    // modal `Dialog` now, and Radix marks everything outside an open modal `aria-hidden` — so the
+    // trigger is legitimately absent from the accessibility tree while the palette is open, and
+    // asserting it there would only pass via `hidden: true`, which would also pass if the trigger
+    // were hidden for a real reason.
+    render(
+      <HubModelPicker
+        models={[]}
+        value={null}
+        fallbackModelId="some-retired-model"
+        onChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Model: some-retired-model" })).toBeInTheDocument();
+    cleanup();
+
     const { palette } = openPicker({ fallbackModelId: "some-retired-model" });
     expect(palette.getByText("Current selection")).toBeInTheDocument();
     expect(palette.getByText(/no provider is pinned to it/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Model: some-retired-model" }),
-    ).toBeInTheDocument();
   });
 
   test("a clearOption offers an explicit 'use the default' row", () => {
@@ -186,7 +206,7 @@ describe("HubModelPicker — selection, defaults and off-roster values", () => {
     const { palette } = openPicker({
       clearOption: { label: "Use this session's default", hint: "claude-sonnet-5", onClear },
     });
-    fireEvent.click(palette.getByRole("button", { name: /Use this session's default/ }));
+    fireEvent.click(palette.getByRole("option", { name: /Use this session's default/ }));
     expect(onClear).toHaveBeenCalledTimes(1);
   });
 
@@ -208,8 +228,12 @@ describe("HubModelPicker — selection, defaults and off-roster values", () => {
       unmount();
       return order.sort((a, b) => a[1] - b[1]).map(([label]) => label);
     };
-    expect(headingsFor([SUB_SONNET, GPT, WORK_SONNET])).toEqual(headingsFor([WORK_SONNET, GPT, SUB_SONNET]));
-    expect(headingsFor([GPT, SUB_SONNET, WORK_SONNET])).toEqual(headingsFor([WORK_SONNET, GPT, SUB_SONNET]));
+    expect(headingsFor([SUB_SONNET, GPT, WORK_SONNET])).toEqual(
+      headingsFor([WORK_SONNET, GPT, SUB_SONNET]),
+    );
+    expect(headingsFor([GPT, SUB_SONNET, WORK_SONNET])).toEqual(
+      headingsFor([WORK_SONNET, GPT, SUB_SONNET]),
+    );
   });
 
   test("a disabled picker cannot be opened", () => {

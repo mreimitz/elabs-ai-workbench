@@ -65,7 +65,13 @@ describe("IconButton — the one icon affordance (D-TB5)", () => {
     await focus(btn);
     expect(btn).toHaveFocus();
     // The ring is inherited from `@elabs-ai/components-ui` Button's base variant (token-driven, both themes).
-    expect(btn.className).toContain("focus-visible:ring-ring");
+    // brand-ui 4.1.0 replaced the hand-stacked `focus-visible:ring-ring` with the `focus-ring`
+    // COMPOUND utility (ADR 0027): a `ring-2` in `--ring` plus a 1px `--ring-contour` outline, so the
+    // indicator stays visible on both a light and a dark ground. Assert the utility, and assert the
+    // old hand-stacked class is NOT also present — a file carrying both would mean the migration was
+    // half-done and this test would pass on the strength of the dead one.
+    expect(btn.className).toContain("focus-ring");
+    expect(btn.className).not.toContain("focus-visible:ring-ring");
   });
 
   test("size defaults to icon and is overridable", () => {

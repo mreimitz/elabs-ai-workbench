@@ -107,7 +107,14 @@ const USAGE_SUMMARY: HubUsageSummary = {
   totals: { sessions: 4, costUsd: 1.23, tokensIn: 1000, tokensOut: 500 },
   strip: [
     { key: "2026-06-30", label: "Jun 30", sessions: 1, costUsd: 0.5, tokensIn: 100, tokensOut: 50 },
-    { key: "2026-07-01", label: "Jul 1", sessions: 3, costUsd: 0.73, tokensIn: 900, tokensOut: 450 },
+    {
+      key: "2026-07-01",
+      label: "Jul 1",
+      sessions: 3,
+      costUsd: 0.73,
+      tokensIn: 900,
+      tokensOut: 450,
+    },
   ],
 };
 
@@ -116,7 +123,10 @@ beforeEach(() => {
   authConfigured = true;
   vi.mocked(api.getHubCrew).mockResolvedValue(crew());
   vi.mocked(api.updateHubCrew).mockResolvedValue(crew());
-  vi.mocked(api.listHubAgentRoles).mockResolvedValue([role(), role({ id: "role-2", name: "Writer" })]);
+  vi.mocked(api.listHubAgentRoles).mockResolvedValue([
+    role(),
+    role({ id: "role-2", name: "Writer" }),
+  ]);
   // Crew nesting (WP4.1) — a default snapshot including the crew being edited (crew-1) plus one
   // clean, nestable crew.
   vi.mocked(api.listHubCrews).mockResolvedValue([crew(), crew({ id: "crew-2", name: "Ops Crew" })]);
@@ -254,7 +264,10 @@ describe("CrewProfileModal — Profile section (D-HUX6/D-HUX8)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save crew" }));
 
     await waitFor(() => expect(api.updateHubCrew).toHaveBeenCalledTimes(1));
-    expect(api.updateHubCrew).toHaveBeenCalledWith("crew-1", expect.objectContaining({ color: null }));
+    expect(api.updateHubCrew).toHaveBeenCalledWith(
+      "crew-1",
+      expect.objectContaining({ color: null }),
+    );
   });
 
   test("Save works even with no changes (matches the EnvironmentEditor precedent — no dirty-gating on submit)", async () => {
@@ -481,7 +494,10 @@ describe("CrewProfileModal — Instantiate action", () => {
     ]);
     vi.mocked(api.listProviderModels).mockImplementation(async (id: string) =>
       id === "cred-1"
-        ? { models: [{ id: "claude-sonnet-4-5", displayName: "Claude Sonnet 4.5" }], source: "provider" }
+        ? {
+            models: [{ id: "claude-sonnet-4-5", displayName: "Claude Sonnet 4.5" }],
+            source: "provider",
+          }
         : { models: [{ id: "gpt-5", displayName: "GPT-5" }], source: "provider" },
     );
     renderModal();
@@ -489,7 +505,7 @@ describe("CrewProfileModal — Instantiate action", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /^Coordinating model:/ }));
     fireEvent.click(
-      within(screen.getByTestId("model-selector-content")).getByRole("button", { name: /^GPT-5/ }),
+      within(screen.getByTestId("model-selector-content")).getByRole("option", { name: /^GPT-5/ }),
     );
     fireEvent.click(screen.getByRole("button", { name: /Instantiate/ }));
 
@@ -513,7 +529,7 @@ describe("CrewProfileModal — member model override (model-identity WP 4.1)", (
     fireEvent.click(screen.getByRole("button", { name: "Research Analyst" }));
     fireEvent.click(await screen.findByRole("button", { name: /^Model override:/ }));
     fireEvent.click(
-      within(screen.getByTestId("model-selector-content")).getByRole("button", {
+      within(screen.getByTestId("model-selector-content")).getByRole("option", {
         name: /^Claude Sonnet 4\.5/,
       }),
     );
