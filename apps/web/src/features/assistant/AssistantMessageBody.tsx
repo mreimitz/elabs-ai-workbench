@@ -40,10 +40,16 @@ export function AssistantMessageBody({
           // Finding 9 / D-IC9 — cap flowing prose at a readable measure (~68ch). The MetricStrip
           // below is a dense KPI grid, not prose, and stays uncapped/full-width beside it.
           <div key={segment.key} className="min-w-0 max-w-[68ch]">
+            {/* RM-39, owner-directed 2026-09-10 — the DOCK reads one rung below the app's body
+                text. It is a ~400px column beside the page, glanced at rather than settled into,
+                and at the app's body rung the transcript carried more visual weight than anything
+                around it. The run console keeps the default rung: it gets a full-width column and
+                is read properly. A rung, not a size, so it still tracks the theme and density. */}
             <ChatMarkdown
               text={segment.text}
               streaming={streaming}
               components={ASSISTANT_MD_COMPONENTS}
+              scale="compact"
             />
           </div>
         ) : (
@@ -101,7 +107,11 @@ export function AssistantTurnActions({ parsed }: { parsed: ParsedAssistantMessag
             );
         }}
       >
-        {copied ? <Check aria-hidden className="size-3.5" /> : <Copy aria-hidden className="size-3.5" />}
+        {copied ? (
+          <Check aria-hidden className="size-3.5" />
+        ) : (
+          <Copy aria-hidden className="size-3.5" />
+        )}
       </IconButton>
     </div>
   );

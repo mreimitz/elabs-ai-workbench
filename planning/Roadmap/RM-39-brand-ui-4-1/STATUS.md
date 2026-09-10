@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "brand-ui 4.1.0 adoption — work-package status ledger · PRIORITY: HIGH"
 description: "Living state for the brand-ui 4.1.0 adoption plan, read and updated by /next-wp brand-ui-4-1."
 tags: ["roadmap", "RM-39"]
-timestamp: "2026-09-09T21:40:00Z"
+timestamp: "2026-09-10T13:10:00Z"
 status: "active"
 ---
 # brand-ui 4.1.0 adoption — work-package status ledger · **PRIORITY: HIGH**
@@ -301,6 +301,127 @@ copy from us, which are listed as WP 2.4 and WP 2.5.
 
       Gate green (typecheck · 4,568 web tests · build · lint), but a green gate cannot see any of
       the four things above. **First owner action: open the dock with a signed-in provider and look.**
+
+      **The owner did look, 2026-09-10, and reported four defects. Three were real and are fixed;
+      the fourth was not caused by this swap.** This is the entry the "not verified" note above was
+      written for.
+      1. **The header was two rows of chrome.** `SideDock` renders `description` as a second line
+         under the title in the column presentation, and the description read "The embedded app
+         assistant." — a restatement of the title, above a panel whose whole job is the transcript.
+         The prop is dropped and the header's padding tightened (layout only; the title keeps
+         `text-title`).
+      2. **The thread bar was a second tall row**, stacking title over date directly beneath that
+         header. It is one line now, date inline, title taking the remaining width.
+      3. **The conversation was padded twice and scrolled twice** — the predicted risk, confirmed.
+         `SideDock`'s body ships `p-4` and `overflow-y-auto` while `AssistantDock`'s conversation
+         already pads itself `p-4` and `ChatShell` owns its own transcript scroll. Both are overridden
+         at the call site with layout-only descendant variants that win on specificity ((0,2,0) vs
+         upstream's (0,1,0)). The doubled padding cost ~32px of measure on each side, which is the
+         real reason the transcript's type read as oversized for the column.
+      4. **The trailing suggestion chips sat underneath the composer.** app.css floats the composer
+         UP over the transcript by `--dock-fade-bottom` (3rem) and the transcript reserved a flat
+         `pb-14` (3.5rem) — 0.5rem of true clearance, against a composer that is not one row (it
+         carries a footer with the read-only notice and the auth-source chip). The reserve is now a
+         named `--dock-transcript-reserve` declared beside the pull it has to clear.
+
+      **`dock-fade.guardrail.test.ts` pinned the literal `pb-14` and was green throughout that
+      defect** — the number was never the invariant. It now reads BOTH values out of app.css and
+      requires the reserve to exceed the pull by enough for the composer itself; setting it back to
+      the old 3.5rem reproduces the failure (`expected 0.5 to be greater than or equal to 3`).
+
+      **The chat type was NOT changed by any of this** — measured: zero type-scale classes appear in
+      the diff, and `MessageContent` renders at `text-body`, the same rung the rest of the app uses.
+      Whether a 400px dock should run *denser than* the app is a real design question and an owner
+      decision, not a defect; the sanctioned lever is a `data-density` region, not a className
+      override (`.claude/rules/brand-ui-only.md`).
+
+      **On the fourth report — the type — I was wrong twice before getting it right, and the record
+      should say so.** I first answered that the transcript uses `text-body`, the same rung as the
+      rest of the app, and that the doubled padding merely made it *read* large. The owner repeated
+      that it is genuinely larger than anywhere else. Four hypotheses were then measured and all four
+      **disproved**: a `.prose` class exists in the AI bundle but no `.prose` rule is generated in
+      this app's CSS at all (the typography plugin is not installed); `--text-body` and `text-sm`
+      are both 0.875rem; `MD_PROSE` overrides heading sizes but never paragraph size; and the app
+      root already carries `data-density="compact"`, so no density region was missing. Probed live,
+      `text-sm` and `text-body` both compute to **14px** — there was no measurable difference to find.
+
+      So the size was **not** a regression, and I could not reproduce the owner's reading of it. What
+      was fixed instead is the thing actually being asked for: the dock now renders its transcript
+      **one rung below** the app's body text (`text-meta`, 12px against 14px), via a new `scale` prop
+      on `ChatMarkdown`. The run console keeps the body rung — it gets a full-width column and is
+      read properly, where the dock is a ~400px strip read in glances. The compact heading ladder is
+      **derived from the body one by substitution**, not retyped, so the two cannot drift, and `h1`
+      is put back a rung so it still sits above the prose around it.
+
+      A related correctness fix rode along: `ChatMarkdown` had been using **raw Tailwind** `text-sm`
+      / `text-base`, which bypass the semantic scale that `.claude/rules/styling-and-tokens.md`
+      requires. Those are now the token-backed rungs. **This changes nothing visually today** — the
+      measurement above is exactly why that claim can be made — it just stops the chat opting out of
+      the theme's type system.
+
+      **Two of this session's own tests were caught being green for the wrong reason, by probing
+      them.** `dock-fade.guardrail.test.ts` pinned the literal `pb-14` and passed all through the
+      defect where the suggestion chips sat under the composer, because the number was never the
+      invariant; it now reads both values out of app.css and requires the reserve to exceed the pull
+      by the composer's own height (setting it back to 3.5rem reproduces the failure). And the first
+      cut of the new scale test matched the whole class list, so it read the heading ladder's
+      `text-meta` and stayed green when the prose rung itself was reverted — it now isolates bare
+      `text-*` tokens, and the same mutation reddens it.
+
+      **Second owner round, same day: I over-corrected the header and made it too SHORT.** Fixing
+      "the header is two rows" by shrinking its padding was the wrong move — the dock sits beside the
+      page, so its chrome rows share a horizontal rule with the app's, and the target was never
+      "smaller", it was "the same". Both dock rows are now pinned to the app's own height utilities:
+      the dock header to `h-14` (what `TopNav` uses) and the thread bar to `min-h-12` (what the page
+      toolbar uses). Measured in the running app: `h-14` paints **46px** and matches the top bar's
+      measured 46px; `min-h-12` paints **39px** and matches the toolbar's measured 39px. The thread
+      bar had itself been `h-14`, which is why two header-height rows stacked.
+
+      **Third round: the second row was still short, and the reason was that I matched a utility
+      instead of a structure.** The app's toolbar is not a `min-h-12` row — it is a BAND: an outer
+      element with `border-b` + `py-2` wrapping a `min-h-12` row. Measured on the running app, the
+      band is **53px** (39px row + 13px padding) while a bare `min-h-12` bar is **39px**, so the
+      dock's rule sat **14px** above the toolbar's. The bar now mirrors the band's structure, and
+      both rows were re-measured by building them in the app's real cascade: header **46 vs 46**,
+      band **53 vs 53**.
+
+      **The guardrails for this assert RELATIONSHIPS, not pixels.** The header one reads the height
+      utility off `TopNav` as rendered and requires the dock's override to name that same one
+      (re-probed with the short header that shipped an hour earlier — it reddens). The bar one
+      requires the outer band's `border-b` + `py-2` AND the inner `min-h-12`, because matching only
+      the inner utility is exactly the mistake that produced the 14px gap.
+
+      **Three cuts, three wrong answers, all from the same error:** treating a row height as a number
+      to pick rather than a composition to copy. `h-14` made it a second header; bare `min-h-12` left
+      a gap; only the band recipe makes the two equal by arithmetic.
+
+      **The composer overlap, reported a third time, is now removed rather than tuned.** The
+      transcript's composer had always been floated UP over the transcript's faded tail by a negative
+      margin, so the last lines dissolved behind it. That is right for flowing prose and wrong for
+      the transcript's actual last element, which is usually a row of **interactive suggestion
+      chips** — they sat underneath an opaque status strip. Two attempts to out-run it by enlarging
+      the transcript's bottom reserve (`pb-14` → a named 7.5rem property) both failed in the owner's
+      app, and a faithful reproduction — ChatShell's exact DOM against the real stylesheet — showed
+      **72px of clearance**, i.e. the reserve was working where it was measurable and still not
+      solving it. Four other candidate causes were checked and disproved first: the utility class
+      does generate CSS, the custom property is declared and inherited, the `p-4`/`pb-*` shorthand
+      conflict resolves in the reserve's favour (byte offsets compared in the built stylesheet), and
+      the chips do render inside the padded content.
+
+      So the mechanism went, not the number. **The composer sits in normal flow now**; nothing is
+      drawn over the transcript, and the bottom fade is demoted to a soft scroll edge (3rem → 1.5rem).
+      Measured after the change: composer `margin-top: 0px`, and **16px of clearance both at
+      end-of-scroll and mid-scroll**, where the old pull could overlap at any scroll position. A
+      dissolve is a nicety; a covered control is a defect.
+
+      **The guardrail was inverted to match**, and this is the third time in this item that a test
+      had to stop pinning a value and start pinning a relationship: it previously *required* the
+      negative margin, and now asserts its **absence** — by that spelling and by any negative
+      top-margin on the composer wrapper. Re-probed by putting the pull back; it reddens.
+
+      *Still not verified:* none of it has been seen rendered. This environment has no provider
+      credentials, so the dock cannot be opened here — every claim above is a measurement of the
+      utilities and the DOM, not a look at the panel.
 - [x] **WP 2.4 — the complementary landmark is currently inside `<main>`. Fix it.** — done 2026-09-09 · wp/brand-ui-4-1/2.4
 
       **Fixed.** The dock's `<aside aria-label="App assistant">` and its resize handle are now flex

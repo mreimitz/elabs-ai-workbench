@@ -604,21 +604,31 @@ function AssistantDockContent() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* The dock's header bar renders OUTSIDE ChatShell (whose built-in header slot is a hardcoded
-          `h-12` row) so it can be `h-14` + `border-b` — the exact height and rule of the main
-          content's TopNav, keeping the two top bars visually level across the split. */}
-      <div className="flex h-14 shrink-0 items-center border-b border-border px-3">
-        <AssistantHeader
-          threads={threads}
-          threadsLoaded={threadsLoaded}
-          activeThread={activeThread}
-          pinnedEntity={pinnedEntity}
-          showAllThreads={showAllThreads}
-          onToggleShowAllThreads={setShowAllThreads}
-          onSelectThread={handleSelectThread}
-          onNewThread={() => void handleNewThread()}
-          onRenameThread={(title) => void handleRenameThread(title)}
-        />
+      {/* The dock's thread bar renders OUTSIDE ChatShell (whose built-in header slot is a hardcoded
+          `h-12` row) so it can carry the app's own toolbar geometry and keep the two split halves
+          level across the window.
+
+          It mirrors the page toolbar's STRUCTURE, not just one of its utilities: an outer band with
+          `border-b` + `py-2`, and a `min-h-12` row inside it. Measured on the running app, that
+          composition is what makes the toolbar band 53px — a `min-h-12` row (39px) plus 13px of
+          vertical padding. Two earlier cuts got this wrong in opposite directions: `h-14` made the
+          bar a second header-height row, then a bare `min-h-12` made it 39px and left a 14px gap
+          between this rule and the toolbar's. Copying the recipe is what makes them equal by
+          arithmetic rather than by a number someone picked. */}
+      <div className="shrink-0 border-b border-border px-3 py-2">
+        <div className="flex min-h-12 items-center">
+          <AssistantHeader
+            threads={threads}
+            threadsLoaded={threadsLoaded}
+            activeThread={activeThread}
+            pinnedEntity={pinnedEntity}
+            showAllThreads={showAllThreads}
+            onToggleShowAllThreads={setShowAllThreads}
+            onSelectThread={handleSelectThread}
+            onNewThread={() => void handleNewThread()}
+            onRenameThread={(title) => void handleRenameThread(title)}
+          />
+        </div>
       </div>
       <ChatShell
         variant="bare"
@@ -653,7 +663,14 @@ function AssistantDockContent() {
           {/* `pb-14` is the room the composer takes back: app.css pulls the composer up over the
               transcript's faded tail (`--dock-fade-bottom`), so without this the last message could
               never be scrolled clear of it. */}
-          <ConversationContent className="flex min-w-0 flex-col gap-4 p-4 pb-14">
+          {/* `pb-(--dock-transcript-reserve)` is the room the composer takes back. app.css pulls the
+              composer UP over the transcript by `--dock-fade-bottom` so the last lines dissolve
+              behind it; this reserve has to clear the composer's REAL height, which is more than one
+              row — it carries a footer with the read-only notice and the auth-source chip. At the
+              old flat `pb-14` (3.5rem) against a 3rem pull, only 0.5rem of true clearance was left
+              and the trailing suggestion chips rendered underneath the composer. Both values live in
+              the same `.assistant-dock-shell` block so the pair cannot drift apart. */}
+          <ConversationContent className="flex min-w-0 flex-col gap-4 p-4 pb-(--dock-transcript-reserve)">
             {stream.timeline.length === 0 ? (
               <PendingPanel hasThread={activeThreadId !== null} />
             ) : (
@@ -780,16 +797,19 @@ function AssistantHeader({
               className="h-auto min-w-0 flex-1 justify-start gap-1.5 px-2 py-1"
             >
               <MessageSquare aria-hidden className="size-4 shrink-0" />
-              <span className="flex min-w-0 flex-1 flex-col items-start text-start">
-                <span className="min-w-0 max-w-full truncate" title={title}>
-                  {title}
-                </span>
-                {dateLabel ? (
-                  <Text variant="caption" tone="muted" as="span" className="tabular-nums">
-                    {dateLabel}
-                  </Text>
-                ) : null}
+              {/* ONE line, not a stacked title-over-date. This row sits immediately under the dock's
+                  own header, so a two-line thread bar made the panel open with two rows of chrome
+                  before a single message. The date moves inline beside the title; the title takes
+                  the remaining width and truncates, which is the right thing to give up first —
+                  `title` keeps the full text on hover either way. */}
+              <span className="min-w-0 flex-1 truncate text-start" title={title}>
+                {title}
               </span>
+              {dateLabel ? (
+                <Text variant="caption" tone="muted" as="span" className="shrink-0 tabular-nums">
+                  {dateLabel}
+                </Text>
+              ) : null}
               <ChevronDown aria-hidden className="size-3.5 shrink-0 opacity-60" />
             </Button>
           </DropdownMenuTrigger>

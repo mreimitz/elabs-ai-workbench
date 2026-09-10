@@ -37,8 +37,10 @@ const dock = readFileSync(
 );
 
 /** The exact scrim class strings the app.css block selects on. */
-const TOP_SCRIM = "pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-background to-transparent";
-const BOTTOM_SCRIM = "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-background to-transparent";
+const TOP_SCRIM =
+  "pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-background to-transparent";
+const BOTTOM_SCRIM =
+  "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-background to-transparent";
 
 describe("GUARDRAIL — the Assistant dock's transcript edge fades", () => {
   it("upstream ChatShell still renders both bare-variant colour scrims we neutralize", () => {
@@ -54,35 +56,53 @@ describe("GUARDRAIL — the Assistant dock's transcript edge fades", () => {
     }
   });
 
-  it("upstream still renders the composer as a positioned sibling we can pull up (relative z-20)", () => {
+  it("the composer is NOT pulled up over the transcript", () => {
+    // The whole-class fix. The composer used to be floated up over the transcript's faded tail by a
+    // negative margin so the last lines dissolved behind it. The transcript's last element is often
+    // a row of INTERACTIVE suggestion chips, and they ended up underneath an opaque status strip —
+    // reported three separate times, and every attempt to out-run it by enlarging the transcript's
+    // bottom reserve failed somewhere the reserve could not reach.
+    //
+    // A dissolve is a nicety; a covered control is a defect. The absence of the rule IS the fix, so
+    // this asserts the absence: no negative margin may be reintroduced on the composer wrapper.
+    const block = appCss.slice(appCss.indexOf(".assistant-dock-shell"));
     expect(
-      chatShellDist,
-      "ChatShell's bare composer wrapper is no longer `relative z-20 px-4 pb-4`. app.css pulls it up " +
-        "by a negative margin and relies on it painting ABOVE the transcript.",
-    ).toContain("relative z-20 px-4 pb-4");
+      block,
+      "app.css must not pull the composer up over the transcript — a trailing suggestion chip ends " +
+        "up underneath it. Keep the composer in normal flow.",
+    ).not.toMatch(/margin-top:\s*calc\(var\(--dock-fade-bottom\) \* -1\)/);
+    expect(block, "no negative top margin on the composer, by any spelling").not.toMatch(
+      /\.z-20\s*\{[^}]*margin-top:\s*-/,
+    );
   });
 
   it("the dock carries the styling hook the override is scoped to", () => {
-    expect(dock, "AssistantDock must keep the `assistant-dock-shell` class on its ChatShell").toMatch(
-      /assistant-dock-shell/,
-    );
+    expect(
+      dock,
+      "AssistantDock must keep the `assistant-dock-shell` class on its ChatShell",
+    ).toMatch(/assistant-dock-shell/);
   });
 
   it("app.css neutralizes the colour scrims and masks the transcript to transparency", () => {
     const block = appCss.slice(appCss.indexOf(".assistant-dock-shell"));
     expect(block, "must stop the scrims painting").toMatch(/background:\s*none/);
-    expect(block, "must fade to real transparency, not to a colour").toMatch(/mask-image:\s*linear-gradient/);
+    expect(block, "must fade to real transparency, not to a colour").toMatch(
+      /mask-image:\s*linear-gradient/,
+    );
     expect(block, "must fade at BOTH edges").toMatch(/--dock-fade-top/);
     expect(block, "must fade at BOTH edges").toMatch(/--dock-fade-bottom/);
-    expect(block, "must pull the composer over the faded tail").toMatch(/margin-top:\s*calc\(var\(--dock-fade-bottom\) \* -1\)/);
   });
 
-  it("the transcript reserves room for the composer overlap, so the last message can clear it", () => {
-    // app.css pulls the composer up over the transcript; without matching bottom padding on the
-    // scroll content the final message would sit permanently underneath it.
-    expect(
-      dock,
-      "ConversationContent must keep its bottom padding for the composer overlap",
-    ).toMatch(/<ConversationContent className="[^"]*\bpb-14\b/);
+  it("the transcript keeps a little room under its last message", () => {
+    // Not a clearance calculation any more — the composer no longer overlaps anything (see above).
+    // This is breathing room, so the final message does not sit flush against the composer.
+    expect(dock, "ConversationContent must keep its bottom breathing room").toMatch(
+      /<ConversationContent className="[^"]*\bpb-\(--dock-transcript-reserve\)/,
+    );
+
+    const block = appCss.slice(appCss.indexOf(".assistant-dock-shell"));
+    expect(block, "the reserve must be declared beside the fades it sits with").toMatch(
+      /--dock-transcript-reserve:\s*[\d.]+rem/,
+    );
   });
 });

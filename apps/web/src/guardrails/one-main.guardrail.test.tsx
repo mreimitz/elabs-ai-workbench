@@ -13,6 +13,9 @@
  * jsdom has no layout engine, so — per conventions §2 — only DOM-settleable facts are asserted here
  * (landmark counts, nav name, focus ORDER); the visual/keyboard-traversal claims are PM live-app work.
  */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -40,6 +43,8 @@ if (typeof window.matchMedia !== "function") {
 }
 
 import { AppShell } from "../components/AppShell";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /** Standard focusable set in document order, excluding programmatic-only (`tabindex=-1`) targets
  *  such as the `<main>` skip destination and disabled controls. */
@@ -101,7 +106,7 @@ describe("GUARDRAIL D-IC4 — the shell renders exactly one <main>", () => {
     expect(main).toHaveAttribute("tabindex", "-1");
   });
 
-  it("names the primary navigation landmark <nav aria-label=\"Sections\">", () => {
+  it('names the primary navigation landmark <nav aria-label="Sections">', () => {
     const { getByRole } = renderShell();
     const nav = getByRole("navigation", { name: "Sections" });
     expect(nav.tagName).toBe("NAV");
@@ -142,8 +147,10 @@ describe("GUARDRAIL RM-39 WP 2.4 — the assistant dock is BESIDE <main>, never 
     // about an element that no longer existed. The invariant was never about THAT aside: no
     // complementary landmark may sit inside the main landmark, whoever renders it.
     const asides = [...container.querySelectorAll("aside")];
-    expect(asides.length, "the dock must be mounted when dockAvailable + dockContent are given")
-      .toBeGreaterThan(0);
+    expect(
+      asides.length,
+      "the dock must be mounted when dockAvailable + dockContent are given",
+    ).toBeGreaterThan(0);
     const nested = asides.filter((aside) => main?.contains(aside));
     expect(
       nested.length,
@@ -159,5 +166,97 @@ describe("GUARDRAIL RM-39 WP 2.4 — the assistant dock is BESIDE <main>, never 
   it("keeps the dock content reachable — moving it out must not unmount it", () => {
     const { getByTestId } = renderShellWithDock();
     expect(getByTestId("dock-content")).toBeTruthy();
+  });
+});
+
+describe("GUARDRAIL RM-39 WP 2.3 — the dock hands its content the whole column", () => {
+  /**
+   * `SideDock`'s body ships `p-4` and `overflow-y-auto`, which is right for the document-ish dock its
+   * own demo shows (details, alerts, runbooks). It is wrong for this one: `AssistantDock` mounts a
+   * `ChatShell` that already pads its conversation `p-4` and owns its own transcript scroll while
+   * floating the composer over it.
+   *
+   * Left alone the two stacked: ~32px of padding on each side the transcript paid for twice — which
+   * is what made its type look oversized for the column — and a second scroll container that could
+   * scroll the composer out of view.
+   *
+   * WHAT THIS CAN AND CANNOT SEE. The overrides are arbitrary DESCENDANT variants on the dock's own
+   * element, so they win by specificity ((0,2,0) — a class plus an attribute — against upstream's
+   * (0,1,0) utility) rather than by rewriting the body's class list. The body still carries `p-4` in
+   * its `className`; the rule simply beats it. jsdom applies no CSS, so this asserts the override is
+   * DECLARED where it has to be. Whether it actually paints is a browser question, and it is on the
+   * RM-39 ledger as one.
+   */
+  it("declares the padding and overflow overrides on the dock element", () => {
+    const { container } = renderShellWithDock();
+    const dock = container.querySelector<HTMLElement>('[data-slot="side-dock-container"]');
+    const scope = dock?.closest("[class]") as HTMLElement | null;
+    const declared = `${dock?.className ?? ""} ${scope?.className ?? ""}`;
+
+    expect(dock, "the dock must render as a column at this viewport").not.toBeNull();
+    // The conversation pads itself; the dock body must not pad it a second time.
+    expect(declared).toContain("[&_[data-slot=side-dock-body]]:p-0");
+    // ChatShell owns the transcript scroll — a second scroll port takes the composer with it.
+    expect(declared).toContain("[&_[data-slot=side-dock-body]]:overflow-hidden");
+  });
+
+  it("keeps the dock content mounted through all of it", () => {
+    const { getByTestId } = renderShellWithDock();
+    expect(getByTestId("dock-content")).toBeTruthy();
+  });
+});
+
+describe("GUARDRAIL RM-39 — the dock's top rows line up with the app's top rows", () => {
+  /**
+   * The dock sits beside the page, so its two chrome rows and the app's two chrome rows share a
+   * horizontal rule across the window. They line up only if they use the SAME height utilities:
+   * the dock header against `TopNav`, the thread bar against the page toolbar.
+   *
+   * This asserts the RELATIONSHIP, not a pixel value — it reads the utility off `TopNav` as rendered
+   * and requires the dock's override to name that same one. A previous cut of this override used a
+   * smaller ad-hoc padding, which left the dock's header a few pixels short of the bar beside it;
+   * pinning a number would not have caught that, because the number was never the point.
+   *
+   * (Measured once, for the record: `h-14` paints 46px and `min-h-12` paints 39px at this app's
+   * density. Those are consequences of the utilities, not inputs to this test.)
+   */
+  it("pins the dock header to the same height utility TopNav uses", () => {
+    const { container } = renderShellWithDock();
+
+    const header = container.querySelector("header");
+    const topNavHeight = header?.className.toString().match(/\bh-\d+\b/)?.[0];
+    expect(
+      topNavHeight,
+      "TopNav must carry an explicit height utility to match against",
+    ).toBeTruthy();
+
+    const dock = container.querySelector<HTMLElement>('[data-slot="side-dock-container"]');
+    const scope = `${dock?.className ?? ""} ${(dock?.closest("[class]") as HTMLElement | null)?.className ?? ""}`;
+    expect(
+      scope,
+      `the dock header must use TopNav's own height utility (${topNavHeight}) so the two rules align`,
+    ).toContain(`[&_[data-slot=side-dock-header]]:${topNavHeight}`);
+  });
+
+  it("pins the dock's thread bar to the page toolbar's height utility", () => {
+    // The bar lives inside the dock CONTENT, which this harness stubs, so the assertion is made
+    // against the source that renders it rather than the DOM.
+    const dockSource = readFileSync(
+      join(__dirname, "..", "features", "assistant", "AssistantDock.tsx"),
+      "utf8",
+    );
+    // The bar must mirror the page toolbar's BAND recipe, not just borrow one of its utilities:
+    // an outer band with `border-b` + `py-2`, and a `min-h-12` row inside. Measured on the running
+    // app, that is what makes the toolbar 53px — a 39px row plus 13px of padding. A bare `min-h-12`
+    // band is 39px and leaves a visible 14px gap between the two rules; `h-14` makes it a second
+    // header. Both of those shipped before this assertion existed.
+    expect(
+      dockSource,
+      "the thread bar's outer band must carry `border-b` + `py-2`, like the page toolbar's band",
+    ).toMatch(/className="shrink-0 border-b border-border px-3 py-2"/);
+    expect(
+      dockSource,
+      "…with a `min-h-12` row inside it — the toolbar's own inner row height",
+    ).toMatch(/className="flex min-h-12 items-center"/);
   });
 });

@@ -143,9 +143,7 @@ export const MCP_NAV_ITEMS: NavItem[] = [
 
 // The Skills registry views, grouped under their own "Skills" label between the analyzer and the
 // Testing groups (UI plan §1 — section order MCP analyzer → Skills → Testing).
-export const SKILL_NAV_ITEMS: NavItem[] = [
-  { path: "/skills", label: "Skills", icon: Sparkles },
-];
+export const SKILL_NAV_ITEMS: NavItem[] = [{ path: "/skills", label: "Skills", icon: Sparkles }];
 
 // The Testing run-engine views, grouped under their own "Testing" label. design-remediation T8 built
 // the nav from the real model — Collection → Test → Suite → Run, Environment as the harness — instead
@@ -325,7 +323,6 @@ export function AppShell({
   // switcher) — see `breadcrumb-slot.tsx`. Owned here so both the TopNav (which renders it) and the
   // page `children` (which set it) sit under the one provider around the whole shell subtree.
   const [breadcrumbSlot, setBreadcrumbSlot] = useState<ReactNode>(null);
-
 
   // Assistant dock width. Persisted so a chosen size survives reload; re-read lazily (not on every
   // render) via `useState`'s initializer.
@@ -578,68 +575,68 @@ export function AppShell({
               {/* Settings › Features — the whole Assistant nav group disappears while the feature is
                   switched off (the routes still exist and explain themselves; see FeatureDisabledView). */}
               {assistantEnabled ? (
-              <SidebarGroup>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {ASSISTANT_NAV_ITEMS.map((item) => {
-                      const isAssistant = item.path === "/assistant";
-                      const node = (
-                        <NavMenuItem
-                          item={item}
-                          active={isNavItemActive(pathname, item)}
-                          pathname={pathname}
-                          // Only the Assistant item grows a hover "＋ New session" action (expanded rail).
-                          action={
-                            isAssistant
-                              ? { label: "New session", to: "/assistant?new=1", icon: Plus }
-                              : undefined
-                          }
-                        />
-                      );
-                      if (!isAssistant) return <Fragment key={item.path}>{node}</Fragment>;
-                      return (
-                        <Fragment key={item.path}>
-                          {node}
-                          {/* Collapsed-icon rail only: the Sessions CHILD lives in a `SidebarMenuSub`
+                <SidebarGroup>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {ASSISTANT_NAV_ITEMS.map((item) => {
+                        const isAssistant = item.path === "/assistant";
+                        const node = (
+                          <NavMenuItem
+                            item={item}
+                            active={isNavItemActive(pathname, item)}
+                            pathname={pathname}
+                            // Only the Assistant item grows a hover "＋ New session" action (expanded rail).
+                            action={
+                              isAssistant
+                                ? { label: "New session", to: "/assistant?new=1", icon: Plus }
+                                : undefined
+                            }
+                          />
+                        );
+                        if (!isAssistant) return <Fragment key={item.path}>{node}</Fragment>;
+                        return (
+                          <Fragment key={item.path}>
+                            {node}
+                            {/* Collapsed-icon rail only: the Sessions CHILD lives in a `SidebarMenuSub`
                           that brand-ui hides when collapsed — so it would vanish from the rail
                           entirely (item 7). Mirror the "New session" pattern below: a dedicated
                           collapsed-only Sessions icon item keeps it reachable, with its active state. */}
-                          {item.children?.map((child) => {
-                            const ChildIcon = child.icon;
-                            return (
-                              <SidebarMenuItem
-                                key={child.path}
-                                className="hidden group-data-[collapsible=icon]:block"
-                              >
-                                <SidebarMenuButton
-                                  asChild
-                                  isActive={isPathActive(pathname, child.path)}
-                                  tooltip={child.label}
+                            {item.children?.map((child) => {
+                              const ChildIcon = child.icon;
+                              return (
+                                <SidebarMenuItem
+                                  key={child.path}
+                                  className="hidden group-data-[collapsible=icon]:block"
                                 >
-                                  <NavLink to={child.path}>
-                                    <ChildIcon aria-hidden />
-                                    <span>{child.label}</span>
-                                  </NavLink>
-                                </SidebarMenuButton>
-                              </SidebarMenuItem>
-                            );
-                          })}
-                          {/* Collapsed-icon rail only: the hover action above is hidden when collapsed, so
+                                  <SidebarMenuButton
+                                    asChild
+                                    isActive={isPathActive(pathname, child.path)}
+                                    tooltip={child.label}
+                                  >
+                                    <NavLink to={child.path}>
+                                      <ChildIcon aria-hidden />
+                                      <span>{child.label}</span>
+                                    </NavLink>
+                                  </SidebarMenuButton>
+                                </SidebarMenuItem>
+                              );
+                            })}
+                            {/* Collapsed-icon rail only: the hover action above is hidden when collapsed, so
                           a dedicated "New session" icon item sits directly under Assistant there. */}
-                          <SidebarMenuItem className="hidden group-data-[collapsible=icon]:block">
-                            <SidebarMenuButton asChild tooltip="New session">
-                              <Link to="/assistant?new=1">
-                                <Plus aria-hidden />
-                                <span>New session</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        </Fragment>
-                      );
-                    })}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
+                            <SidebarMenuItem className="hidden group-data-[collapsible=icon]:block">
+                              <SidebarMenuButton asChild tooltip="New session">
+                                <Link to="/assistant?new=1">
+                                  <Plus aria-hidden />
+                                  <span>New session</span>
+                                </Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          </Fragment>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
               ) : null}
               <SidebarGroup>
                 {/* RM-39 WP 2.5 — the local `group-data-[collapsible=icon]:hidden` override is gone
@@ -767,7 +764,26 @@ export function AppShell({
         {dockAvailable && dockContent != null ? (
           <SideDock
             title="App assistant"
-            description="The embedded app assistant."
+            // No `description`. `SideDock` renders one as a second line under the title in the
+            // COLUMN presentation, and "The embedded app assistant." only restated the title — a
+            // whole row of chrome for no information, above a panel whose entire job is the
+            // transcript. The title is the accessible name on its own.
+            //
+            // The three `data-slot` overrides below are LAYOUT ONLY (padding and overflow), which is
+            // what `.claude/rules/brand-ui-only.md` permits `className` to carry:
+            //   • header  — pinned to `h-14`, the SAME height utility `TopNav` uses, so the dock's
+            //     header rule lines up with the app's top bar across the whole window instead of
+            //     sitting a few pixels above it. `items-center` because upstream aligns to the top
+            //     for a two-line title+description, and this one is a single line now. A first cut
+            //     used a smaller `py-2`, which made the row shorter than everything beside it —
+            //     matching the app's own row is the point, not minimising the row.
+            //   • body    — `SideDock`'s body ships `p-4`, but `AssistantDock`'s conversation already
+            //     pads itself `p-4`. Doubling it cost ~32px of width on each side, which is why the
+            //     transcript looked cramped and its type looked oversized for the column.
+            //   • overflow — the body also ships `overflow-y-auto`, while `ChatShell` owns its own
+            //     transcript scroll and floats the composer over it. Two scroll containers meant the
+            //     composer could scroll away. `overflow-hidden` gives the scroll back to `ChatShell`.
+            className="[&_[data-slot=side-dock-body]]:overflow-hidden [&_[data-slot=side-dock-body]]:p-0 [&_[data-slot=side-dock-header]]:h-14 [&_[data-slot=side-dock-header]]:items-center [&_[data-slot=side-dock-header]]:px-3 [&_[data-slot=side-dock-header]]:py-0"
             open={dockOpen}
             onOpenChange={(next: boolean) => onDockOpenChange?.(next)}
             width={dockWidthPx}
@@ -807,13 +823,15 @@ function BreadcrumbItemFragment({ crumb, isLast }: { crumb: Crumb; isLast: boole
 /** Glyph per theme preference — the trigger shows the active one; the menu labels each choice. */
 const THEME_PREFERENCE_ICON: Record<ThemePreference, typeof Sun> = {
   system: Monitor,
-  "light": Sun,
-  "dark": Moon,
+  light: Sun,
+  dark: Moon,
 };
 
 /** Human label for a preference — "System" plus the two reference-theme labels from `@elabs-ai/components-tokens`. */
 function themePreferenceLabel(preference: ThemePreference): string {
-  return preference === "system" ? "System" : (BUILT_IN_THEME_META[preference]?.label ?? preference);
+  return preference === "system"
+    ? "System"
+    : (BUILT_IN_THEME_META[preference]?.label ?? preference);
 }
 
 /**
@@ -884,11 +902,7 @@ function NavMenuItem({
   const ActionIcon = action?.icon;
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton
-        asChild
-        isActive={active}
-        tooltip={item.label}
-      >
+      <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
         <NavLink to={item.path}>
           <Icon aria-hidden />
           <span>{item.label}</span>
@@ -915,10 +929,7 @@ function NavMenuItem({
             const ChildIcon = child.icon;
             return (
               <SidebarMenuSubItem key={child.path}>
-                <SidebarMenuSubButton
-                  asChild
-                  isActive={isPathActive(pathname, child.path)}
-                >
+                <SidebarMenuSubButton asChild isActive={isPathActive(pathname, child.path)}>
                   <NavLink to={child.path}>
                     <ChildIcon aria-hidden />
                     <span>{child.label}</span>

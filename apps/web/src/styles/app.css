@@ -270,9 +270,17 @@ body {
    scoped, token-only override re-points the gradient start at the sidebar token. Verified live
    in dark; both tokens are theme-defined so light stays correct too. */
 .assistant-dock-shell {
-  /* How far the transcript dissolves at each edge, and how far the composer is pulled up over it. */
+  /* How far the transcript dissolves at each edge.
+     The bottom fade is now a SCROLL AFFORDANCE ONLY — a soft edge where the transcript meets the
+     composer — not the depth of an overlap. Nothing is drawn over the transcript any more, so this
+     no longer has to be large enough to hide a composer behind. */
   --dock-fade-top: 1.5rem;
-  --dock-fade-bottom: 3rem;
+  --dock-fade-bottom: 1.5rem;
+  /* A little breathing room under the last message so it does not sit flush against the composer.
+     This is NO LONGER a clearance calculation. It used to have to exceed `--dock-fade-bottom` by
+     the composer's whole height, because the composer was floated up over the transcript; three
+     rounds of owner feedback on trailing suggestion chips being covered ended that approach. */
+  --dock-transcript-reserve: 1rem;
 }
 
 /* 1 — Neutralize ChatShell's two built-in COLOR scrims. They are
@@ -309,17 +317,23 @@ body {
   );
 }
 
-/* 3 — Float the composer OVER the faded zone. Upstream renders it as a `shrink-0` sibling BELOW the
-   transcript, so the transcript's box stopped dead above it and text could never pass behind it.
-   Pulling it up by the fade distance (it is already `relative z-20`, so it paints on top) means the
-   last lines scroll under the composer and dissolve there. */
-.assistant-dock-shell > div > div.z-20 {
-  margin-top: calc(var(--dock-fade-bottom) * -1);
-}
+/* 3 — The composer stays in NORMAL FLOW, below the transcript. It used to be pulled up over the
+   faded tail by a negative margin so the last lines dissolved behind it. That looked good for
+   flowing prose and was wrong for everything else: the transcript's last element is often a row of
+   INTERACTIVE suggestion chips, and they ended up underneath an opaque status strip — reported
+   three times, and each attempt to fix it by enlarging the transcript's bottom reserve failed
+   somewhere the reserve could not reach.
 
-/* 4 — Room for the overlap is added at the call site instead of here: `ConversationContent` emits
-   no stable data-slot to hook, so `AssistantDock.tsx` passes the bottom padding on its own
-   className. Keeping it there means an upstream DOM change can't silently drop it. */
+   The dissolve is a nicety; a covered control is a defect. Removing the overlap removes the whole
+   class of bug rather than tuning a number against it, and the bottom fade above now reads as a
+   soft edge where the transcript meets the composer. Deliberately no rule here — the absence IS
+   the fix, and `dock-fade.guardrail.test.ts` asserts nothing re-introduces one. */
+
+/* 4 — Room for the overlap is APPLIED at the call site but DECLARED here, as
+   `--dock-transcript-reserve` above: `ConversationContent` emits no stable data-slot to hook from
+   this stylesheet, so `AssistantDock.tsx` passes the padding on its own className — but it reads the
+   custom property rather than carrying a second, unrelated magic number. An upstream DOM change
+   still cannot silently drop it, and the reserve can no longer drift away from the pull it clears. */
 
 /* =====================================================================
    APP-SIDE TOKEN OVERRIDES (post-v4)
@@ -395,7 +409,6 @@ body {
   /* Hub composer elevation (see the light block). A LIGHT glow reads weak on a dark ground, so
      use a darker drop shadow BENEATH the card plus a hairline top inset highlight — the classic raised
      dark-mode card cue — so the composer reads as a floating card here too. */
-  --composer-elevation:
-    0 4px 16px -2px oklch(0 0 0 / 0.6), 0 24px 56px -14px oklch(0 0 0 / 0.55),
+  --composer-elevation: 0 4px 16px -2px oklch(0 0 0 / 0.6), 0 24px 56px -14px oklch(0 0 0 / 0.55),
     inset 0 1px 0 0 oklch(1 0 0 / 0.07);
 }

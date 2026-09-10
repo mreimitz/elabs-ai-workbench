@@ -28,7 +28,7 @@ import { ExpandableTable } from "./ExpandableTable";
  *  1. RESPONSIVE TABLES (no Streamdown chrome): a `components` override maps `table`/`thead`/… onto
  *     `@elabs-ai/components-ui` `Table*`, replacing Streamdown's bordered table-block + copy/download/fullscreen
  *     toolbar with a clean, token-styled, horizontally-scrolling table.
- *  2. CHAT-SCALE TYPOGRAPHY: {@link MD_PROSE} re-targets the raw tags Streamdown emits — headings
+ *  2. CHAT-SCALE TYPOGRAPHY: {@link MD_PROSE_BODY} re-targets the raw tags Streamdown emits — headings
  *     step down proportionately (`h1` a step above body, `h2+` bold body-size) with breathing room
  *     above, lists keep their padding so markers never clip, numbers stay `tabular-nums` in tables.
  *  3. CATALOG FOLD ONLY: the ONE structural intervention left. A section whose body is a genuine
@@ -44,12 +44,25 @@ export function ChatMarkdown({
   text,
   streaming,
   components,
+  scale = "body",
 }: {
   text: string;
   streaming?: boolean;
   /** ADDITIVE Streamdown component overrides, merged over the built-in table mapping — e.g. the
    *  assistant dock's internal-route `a` override. Callers must pass a STABLE reference. */
   components?: MdComponents;
+  /**
+   * Which type rung the prose sits on.
+   *
+   * `"body"` (default) matches the app's ordinary body text and is right for the run console, which
+   * gets a full-width column to read in.
+   *
+   * `"compact"` steps one rung down, for the assistant DOCK — a ~400px column beside the page, read
+   * in glances rather than settled into. Owner-directed 2026-09-10: the transcript read as heavier
+   * than the rest of the app there, and a narrow panel is exactly where a step down is warranted.
+   * It is a rung, not an arbitrary size, so it still moves with the theme and the density.
+   */
+  scale?: ChatMarkdownScale;
 }) {
   const blocks = useMemo(() => splitBlocks(text, streaming === true), [text, streaming]);
   const mergedComponents = useMemo(
@@ -58,14 +71,19 @@ export function ChatMarkdown({
   );
 
   if (blocks.length === 1 && blocks[0]?.kind === "prose") {
-    return <Prose markdown={blocks[0].markdown} components={mergedComponents} />;
+    return <Prose markdown={blocks[0].markdown} components={mergedComponents} scale={scale} />;
   }
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
       {blocks.map((block) =>
         block.kind === "prose" ? (
-          <Prose key={block.key} markdown={block.markdown} components={mergedComponents} />
+          <Prose
+            key={block.key}
+            markdown={block.markdown}
+            components={mergedComponents}
+            scale={scale}
+          />
         ) : (
           <CatalogFold key={block.key} block={block} components={mergedComponents} />
         ),
@@ -74,10 +92,17 @@ export function ChatMarkdown({
   );
 }
 
-/** The flowing-markdown block: one Streamdown render at chat scale. */
-function Prose({ markdown, components }: { markdown: string; components: MdComponents }) {
+/** Which type rung a `ChatMarkdown` renders its prose on — see the `scale` prop. */
+export type ChatMarkdownScale = "body" | "compact";
+
+/** The flowing-markdown block: one Streamdown render at the caller's chat scale. */
+function Prose({
+  markdown,
+  components,
+  scale,
+}: { markdown: string; components: MdComponents; scale: ChatMarkdownScale }) {
   return (
-    <div className={cn("flex min-w-0 flex-col text-sm", MD_PROSE)}>
+    <div className={cn("flex min-w-0 flex-col", SCALE_CLASS[scale], MD_PROSE[scale])}>
       <MessageResponse components={components}>{markdown}</MessageResponse>
     </div>
   );
@@ -92,7 +117,7 @@ function CatalogFold({ block, components }: { block: CatalogBlock; components: M
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {block.headingText ? (
-        <span className="min-w-0 text-sm font-semibold text-foreground">{block.headingText}</span>
+        <span className="min-w-0 text-body font-semibold text-foreground">{block.headingText}</span>
       ) : null}
       <Collapsible defaultOpen={false} className="min-w-0 rounded-md border border-border">
         <CollapsibleTrigger asChild>
@@ -106,7 +131,7 @@ function CatalogFold({ block, components }: { block: CatalogBlock; components: M
               className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]/disc:rotate-90"
               aria-hidden
             />
-            <span className="min-w-0 truncate text-sm text-foreground">Show catalog</span>
+            <span className="min-w-0 truncate text-body text-foreground">Show catalog</span>
             <Badge variant="secondary" className="shrink-0 font-normal tabular-nums">
               {block.count} {block.noun}
             </Badge>
@@ -115,8 +140,8 @@ function CatalogFold({ block, components }: { block: CatalogBlock; components: M
         <CollapsibleContent>
           <div
             className={cn(
-              "flex min-w-0 flex-col border-t border-border px-2.5 py-2 text-sm",
-              MD_PROSE,
+              "flex min-w-0 flex-col border-t border-border px-2.5 py-2 text-body",
+              MD_PROSE.body,
             )}
           >
             <MessageResponse components={components}>{block.markdown}</MessageResponse>
@@ -174,14 +199,23 @@ export const MD_TABLE_COMPONENTS: MdComponents = {
  * below (except when first). Lists KEEP their inline padding (`ps-5`) so `ol` markers render inside
  * the box — the old section Cards clipped them. Semantic tokens only (reads in both themes).
  */
-const MD_PROSE = [
+const MD_PROSE_BODY = [
   // Heading scale: h1 one step above body; h2–h3 bold body; h4–h6 medium body.
-  "[&_h1]:!text-base [&_h1]:!font-semibold [&_h1]:!text-foreground",
-  "[&_h2]:!text-sm [&_h2]:!font-semibold [&_h2]:!text-foreground",
-  "[&_h3]:!text-sm [&_h3]:!font-semibold [&_h3]:!text-foreground",
-  "[&_h4]:!text-sm [&_h4]:!font-medium [&_h4]:!text-foreground",
-  "[&_h5]:!text-sm [&_h5]:!font-medium [&_h5]:!text-foreground",
-  "[&_h6]:!text-sm [&_h6]:!font-medium [&_h6]:!text-foreground",
+  //
+  // RM-39 — these are the SEMANTIC rungs (`text-subtitle` / `text-body`), not Tailwind's raw
+  // `text-base` / `text-sm`, and the difference is not cosmetic. This app runs at
+  // `data-density="compact"`, and a density multiplies the semantic rungs by `--type-factor`
+  // (0.9375 at compact) while leaving a raw utility untouched. `text-sm` therefore painted a flat
+  // 14px next to a ~13.1px `text-body` everywhere else — measured on the running app, and the
+  // reason the assistant transcript read as "larger than anywhere else in the app". `--text-body`
+  // is 0.875rem, i.e. the same base as `text-sm`, so nothing changes at the default density; only
+  // compact and spacious stop being ignored.
+  "[&_h1]:!text-subtitle [&_h1]:!font-semibold [&_h1]:!text-foreground",
+  "[&_h2]:!text-body [&_h2]:!font-semibold [&_h2]:!text-foreground",
+  "[&_h3]:!text-body [&_h3]:!font-semibold [&_h3]:!text-foreground",
+  "[&_h4]:!text-body [&_h4]:!font-medium [&_h4]:!text-foreground",
+  "[&_h5]:!text-body [&_h5]:!font-medium [&_h5]:!text-foreground",
+  "[&_h6]:!text-body [&_h6]:!font-medium [&_h6]:!text-foreground",
   // Rhythm: air above a heading, a little below; none above the first block.
   "[&_h1]:mt-4 [&_h2]:mt-3 [&_h3]:mt-3 [&_h4]:mt-2 [&_h5]:mt-2 [&_h6]:mt-2",
   "[&_h1]:mb-1 [&_h2]:mb-1 [&_h3]:mb-1 [&_h4]:mb-0.5 [&_h5]:mb-0.5 [&_h6]:mb-0.5",
@@ -193,6 +227,23 @@ const MD_PROSE = [
   // Spacing only — borders/overflow/size come from @elabs-ai/components-ui Table.
   "[&_table]:my-1.5",
 ].join(" ");
+
+/**
+ * The same ladder one rung down, for `scale="compact"` (the assistant dock's narrow column).
+ *
+ * Derived from `MD_PROSE_BODY` by substitution rather than retyped, so the two can never drift: the
+ * heading rhythm, list padding and table rules are shared, and only the type rungs step down.
+ */
+const MD_PROSE_COMPACT = MD_PROSE_BODY.replaceAll("!text-subtitle", "!text-body")
+  .replaceAll("!text-body", "!text-meta")
+  // The substitution above would also demote the h1 twice (subtitle → body → meta), so put it back
+  // one rung: h1 still sits a step above the prose around it.
+  .replace(/\[&_h1\]:!text-meta/, "[&_h1]:!text-body");
+
+const MD_PROSE = { body: MD_PROSE_BODY, compact: MD_PROSE_COMPACT } as const;
+
+/** The prose rung itself, per scale. */
+const SCALE_CLASS = { body: "text-body", compact: "text-meta" } as const;
 
 /** A markdown table needs MORE than this many data rows to be treated as a genuine tool catalog. */
 const CATALOG_TABLE_ROWS = 12;
