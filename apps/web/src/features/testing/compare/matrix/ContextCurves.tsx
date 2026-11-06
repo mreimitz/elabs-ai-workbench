@@ -24,7 +24,7 @@ import { buildContextCurveRows, curveLimit, type SummaryRun } from "../summary-d
  * the axis collapses to one dead tick — the "no x-axis ticks" bug. `chartRows` below re-spaces the
  * x-values a full DAY apart for chart rendering only: the day-of-month then equals the (1-based) turn
  * number, so the ticks read as a legible, monotonic turn sequence within the one constraint the
- * library exposes. The y-axis already has real data (`formatLargeNumbers`) and needed no such fix.
+ * library exposes. The y-axis already has real data (compact `valueFormat`, the axis default) and needed no such fix.
  */
 /** Data key for the synthetic limit series (a flat line at the model window) — never a run id. */
 const LIMIT_KEY = "__limit";
@@ -77,7 +77,7 @@ export function ContextCurves({ runs }: { runs: SummaryRun[] }) {
           }.`}
         >
           <Grid horizontal />
-          <YAxis formatLargeNumbers />
+          <YAxis />
           <XAxis numTicks={Math.min(maxTurns, 6)} />
           {showLimit ? (
             <Line

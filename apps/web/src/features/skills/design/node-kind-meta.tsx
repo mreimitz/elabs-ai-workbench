@@ -8,8 +8,9 @@ import { FileText, GitBranch, Paperclip, Play, RotateCcw, ShieldCheck, Wrench } 
  * both read from, so the two views can never drift.
  *
  * Design mode never implies an execution verdict (D4 — this app never runs skill content), so the
- * canvas `tone` is restricted to `"default"`/`"accent"` only: `accent` marks gatekeepers (the
- * decision points worth a second look at a glance), everything else is `"default"`. `success` /
+ * canvas `tone` is always `"neutral"`; `emphasis: "featured"` marks gatekeepers and entry points (the
+ * decision points worth a second look at a glance — `@elabs-ai/components-flow` 6.x split the old
+ * `tone: "accent"` into this separate emphasis), everything else is `emphasis: "default"`. `success` /
  * `destructive` are reserved for Trace Mode (Phase 2), which reads real run outcomes.
  */
 export type NodeKindMeta = {
@@ -17,7 +18,8 @@ export type NodeKindMeta = {
   icon: ReactNode;
   /** Legend swatch — a token reference (`var(--chart-N)`), never a raw color literal. */
   color: string;
-  tone: "default" | "accent";
+  tone: "neutral";
+  emphasis: "default" | "featured";
 };
 
 export const NODE_KIND_META: Record<SkillGraphNodeKind, NodeKindMeta> = {
@@ -25,41 +27,47 @@ export const NODE_KIND_META: Record<SkillGraphNodeKind, NodeKindMeta> = {
     label: "Sub-routine",
     icon: <FileText />,
     color: "var(--chart-1)",
-    tone: "default",
+    tone: "neutral",
+    emphasis: "default",
   },
   gatekeeper: {
     label: "Gatekeeper",
     icon: <GitBranch />,
     color: "var(--chart-2)",
-    tone: "accent",
+    tone: "neutral",
+    emphasis: "featured",
   },
   asset: {
     label: "Asset",
     icon: <Paperclip />,
     color: "var(--chart-3)",
-    tone: "default",
+    tone: "neutral",
+    emphasis: "default",
   },
   validation_gate: {
     label: "Validation gate",
     icon: <ShieldCheck />,
     color: "var(--chart-4)",
-    tone: "default",
+    tone: "neutral",
+    emphasis: "default",
   },
   loop_guard: {
     label: "Loop guard",
     icon: <RotateCcw />,
     color: "var(--chart-5)",
-    tone: "default",
+    tone: "neutral",
+    emphasis: "default",
   },
   // Skill IDE I1 — an entry point (a /command or keyword) heads a flow. Contract landed in WP 1.1,
   // the projector emits these from WP 1.2, and WP 1.3 gives them distinct canvas styling: a play
-  // glyph, `tone="accent"`, and (in `buildFlow`) the trigger value as the node title. The accent
-  // tone reads as a "start here" affordance in both themes.
+  // glyph, `emphasis="featured"`, and (in `buildFlow`) the trigger value as the node title. The
+  // featured emphasis reads as a "start here" affordance in both themes.
   entry_point: {
     label: "Entry point",
     icon: <Play />,
     color: "var(--chart-2)",
-    tone: "accent",
+    tone: "neutral",
+    emphasis: "featured",
   },
   // Skill IDE WP 8.1 (I9.2) — a text-projected MCP tool reference (accessory leaf). A wrench glyph +
   // a MUTED swatch/tone: until the WP 5.1 validation overlay upgrades it (ok / stale / unknown /
@@ -69,7 +77,8 @@ export const NODE_KIND_META: Record<SkillGraphNodeKind, NodeKindMeta> = {
     label: "Tool reference",
     icon: <Wrench />,
     color: "var(--muted-foreground)",
-    tone: "default",
+    tone: "neutral",
+    emphasis: "default",
   },
 };
 

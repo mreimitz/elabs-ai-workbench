@@ -22,7 +22,8 @@ describe("ProseCardDescription — measure-capped CardDescription (D-IC9)", () =
     // CardDescription's own visual is untouched. (Pre-v4 this could only assert a subset:
     // `text-muted-foreground` was merged away by the package's own tailwind-merge config even with
     // no wrapper at all. That upstream quirk is fixed in v4, so the full set is asserted here.)
-    expect(el.className).toContain("text-sm");
+    // `text-body` is CardDescription's type role since design-system 5.x (it was `text-sm`).
+    expect(el.className).toContain("text-body");
     expect(el.className).toContain("text-muted-foreground");
     expect(el.className).toContain("text-balance");
   });

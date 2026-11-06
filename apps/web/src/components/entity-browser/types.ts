@@ -67,7 +67,7 @@ export type EntityBrowserState<T> = {
   groupByOptions: { id: string; label: string }[];
 };
 
-export type EntityBrowserProps<T> = {
+export type EntityBrowserProps<T extends object> = {
   state: EntityBrowserState<T>;
   items: T[];
   itemKey: (item: T) => string;

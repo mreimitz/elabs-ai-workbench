@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node '/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/guard-secrets.mjs'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/okf-pre.sh'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node '/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/check-tokens.mjs'"
+          },
+          {
+            "type": "command",
+            "command": "node '/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/enforce-brand-ui.mjs'"
+          },
+          {
+            "type": "command",
+            "command": "node '/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/no-title-on-icon-button.mjs'"
+          },
+          {
+            "type": "command",
+            "command": "node '/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/no-bare-toast-error.mjs'"
+          },
+          {
+            "type": "command",
+            "command": "node '/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/prose-measure.mjs'"
+          },
+          {
+            "type": "command",
+            "command": "node '/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/enforce-assistant-operability.mjs'"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/czq/Documents/DEV/elabs/elabs-ai-workbench/.codex/hooks/okf-post.sh'"
+          }
+        ]
+      }
+    ]
+  }
+}

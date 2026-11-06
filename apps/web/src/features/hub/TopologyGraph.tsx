@@ -102,6 +102,7 @@ function toReactFlow(
         ...(node.subtitle ? { subtitle: node.subtitle } : {}),
         ...(icon ? { icon } : {}),
         tone: node.tone,
+        emphasis: node.emphasis,
       },
     } satisfies BrandNode;
   });

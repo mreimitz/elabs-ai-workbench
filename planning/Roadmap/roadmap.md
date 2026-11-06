@@ -3,7 +3,7 @@ type: "Roadmap"
 title: "Master Roadmap"
 description: "The live list of every roadmap item, research topic and documentation subject in the workbench planning bundle."
 tags: ["roadmap", "master"]
-timestamp: "2026-09-09T14:42:10Z"
+timestamp: "2026-11-06T08:15:03Z"
 status: "active"
 ---
 
@@ -41,6 +41,7 @@ This concept is the live project-level index of roadmap items and research topic
 * [RM-37-announcement-readiness](RM-37-announcement-readiness/item.md) — Announcement readiness — multi-persona review remediation (2026-08) · `planned`
 * [RM-38-reference-data-pack](RM-38-reference-data-pack/item.md) — Reference data pack · `planned`
 * [RM-39-brand-ui-4-1](RM-39-brand-ui-4-1/item.md) — brand-ui 4.1.0 adoption — shell repairs come home · `planned`
+* [RM-40-design-system-upgrade-to](RM-40-design-system-upgrade-to/item.md) — Design system upgrade to 6.1 · `planned`
 
 ## Completed Roadmap Items
 

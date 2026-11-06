@@ -35,3 +35,4 @@
 * [Announcement readiness — multi-persona review remediation (2026-08)](RM-37-announcement-readiness/) - Browse announcement readiness — multi-persona review remediation (2026-08).
 * [Reference data pack](RM-38-reference-data-pack/) - Browse reference data pack.
 * [brand-ui 4.1.0 adoption — shell repairs come home](RM-39-brand-ui-4-1/) - Browse brand-ui 4.1.0 adoption — shell repairs come home.
+* [Design system upgrade to 6.1](RM-40-design-system-upgrade-to/) - Browse design system upgrade to 6.1.

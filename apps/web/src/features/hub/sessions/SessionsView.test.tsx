@@ -231,7 +231,7 @@ describe("SessionsView (WP1.4, D-HUX4)", () => {
     // pointerdown/keydown, not click (the established `AssistantDock.test.tsx`/`WatchRulesView.test.tsx`
     // precedent) — `fireEvent.click` alone never opens it in jsdom.
     fireEvent.keyDown(screen.getByRole("button", { name: /^status$/i }), { key: "Enter" });
-    const running = await screen.findByRole("menuitem", { name: /running/i });
+    const running = await screen.findByRole("menuitemcheckbox", { name: /running/i });
     fireEvent.click(running);
 
     await waitFor(() => expect(screen.queryByText("Done one")).not.toBeInTheDocument());
@@ -487,7 +487,7 @@ describe("SessionsView — URL-seeded filters (WP2.8; workforce Usage drill link
 
     // Radix DropdownMenuTrigger opens on keydown, not click (the established pattern above).
     fireEvent.keyDown(screen.getByRole("button", { name: /^status$/i }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: /running/i }));
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: /running/i }));
 
     await waitFor(() => expect(screen.getByTestId("location")).toHaveTextContent("status=running"));
   });

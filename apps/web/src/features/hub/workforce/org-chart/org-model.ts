@@ -306,7 +306,7 @@ function crewLane(
   const groupData: FlowGroupNodeData & { crewColor?: HubCrewColor } = {
     title: `${crew.name} · ${TOPOLOGY_LABEL[crew.topology]}`,
     childCount: crew.members.length,
-    tone: "default",
+    tone: "neutral",
     ...(crew.color ? { crewColor: crew.color } : {}),
   };
   const groupNode: Node = {
@@ -422,7 +422,7 @@ function agentGridLane(
     id: groupId,
     type: "group",
     position: { x: 0, y: 0 },
-    data: { title, childCount: roles.length, tone: "default" } satisfies FlowGroupNodeData,
+    data: { title, childCount: roles.length, tone: "neutral" } satisfies FlowGroupNodeData,
     style,
     selectable: true,
     draggable: false,

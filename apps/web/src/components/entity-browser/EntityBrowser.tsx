@@ -20,7 +20,7 @@ import type { EntityBrowserProps } from "./types";
  *   • no entities at all       → the caller's `empty` (its own copy + create action)
  *   • entities, but no matches → a zero-match line naming the query, with a Clear control
  */
-export function EntityBrowser<T>(props: EntityBrowserProps<T>) {
+export function EntityBrowser<T extends object>(props: EntityBrowserProps<T>) {
   const { state } = props;
 
   const groups = useMemo(

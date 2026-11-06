@@ -194,7 +194,8 @@ describe("deriveTopologyGraph", () => {
     expect(byId.get("b")!.tone).toBe("success");
     expect(byId.get("b")!.kind).toContain("winner");
     expect(byId.get("c")!.tone).toBe("destructive"); // did not report
-    expect(byId.get("__terminal__")!.tone).toBe("accent"); // synthesizing
+    expect(byId.get("__terminal__")!.tone).toBe("neutral"); // synthesizing
+    expect(byId.get("__terminal__")!.emphasis).toBe("featured");
   });
 
   test("an active agent's incoming edge is animated", () => {

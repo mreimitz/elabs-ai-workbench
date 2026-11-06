@@ -20,7 +20,7 @@
  *
  * It deliberately reads the shipped `dist`, not a copy of it: the point is to detect upstream drift.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,20 +29,34 @@ import { describe, expect, it } from "vitest";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
-const chatShellDist = readFileSync(require.resolve("@elabs-ai/components-ai"), "utf8");
+// Since design-system 5.0 the package builds one file per source module, so `ChatShell` no longer
+// lives in the entry file — it sits in a hashed shared chunk. Find the shipped file that DEFINES it
+// rather than naming a hash that changes every release.
+const aiDist = dirname(require.resolve("@elabs-ai/components-ai"));
+const chatShellDist =
+  readdirSync(aiDist)
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => readFileSync(join(aiDist, file), "utf8"))
+    .find((source) => source.includes("function ChatShell(")) ?? "";
 const appCss = readFileSync(join(__dirname, "..", "styles", "app.css"), "utf8");
 const dock = readFileSync(
   join(__dirname, "..", "features", "assistant", "AssistantDock.tsx"),
   "utf8",
 );
 
-/** The exact scrim class strings the app.css block selects on. */
+/** The exact scrim class strings the app.css block selects on. (5.x+ dropped the bottom scrim's
+ *  fixed `h-12` for an inline height that tracks the composer inset, and added a `from-50%` stop;
+ *  it still carries `bg-gradient-to-t from-background` and `aria-hidden`, which is all app.css needs.) */
 const TOP_SCRIM =
   "pointer-events-none absolute inset-x-0 top-0 z-10 h-8 bg-gradient-to-b from-background to-transparent";
 const BOTTOM_SCRIM =
-  "pointer-events-none absolute inset-x-0 bottom-0 z-10 h-12 bg-gradient-to-t from-background to-transparent";
+  "pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-background from-50% to-transparent";
 
 describe("GUARDRAIL — the Assistant dock's transcript edge fades", () => {
+  it("finds the shipped module that defines ChatShell", () => {
+    expect(chatShellDist, "no file in @elabs-ai/components-ai/dist defines ChatShell").not.toBe("");
+  });
+
   it("upstream ChatShell still renders both bare-variant colour scrims we neutralize", () => {
     for (const [name, scrim] of [
       ["top", TOP_SCRIM],

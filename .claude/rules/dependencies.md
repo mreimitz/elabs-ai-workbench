@@ -5,7 +5,7 @@ A **pnpm workspace** (`pnpm@9.15.4`); packages are `apps/*` and `packages/*`, wi
 
 ## The `@elabs-ai/components-*` design system (public npm, ACTIVE)
 
-The app's UI is the upstream **`@elabs-ai/components-*`** design system (brand-ui) at **`4.1.0`**,
+The app's UI is the upstream **`@elabs-ai/components-*`** design system (brand-ui) at **`6.1.0`**,
 installed from **public npmjs.org** and listed in `apps/web/package.json`:
 
 - `@elabs-ai/components-tokens` — themes + `ThemeProvider`/`useTheme` + `styles.css` (Tailwind v4 token entry).
@@ -35,6 +35,13 @@ minor but shipped **three breaking changes** — the maintainers said so in the 
 alone. Pinning makes an upgrade a deliberate edit with a plan behind it, which is what the
 owner-gated update rule below already assumes. Do not "tidy" these back into carets.
 
+The 6.1.0 upgrade (RM-40, from 4.1.0) proved the point again: the release notes announced one
+removed prop, but typecheck found a second, **unannounced** break — `@elabs-ai/components-data` moved
+to TanStack Table v9, whose `ColumnDef<TData>` now requires `TData extends RowData`
+(`Record<string, any> | any[]`). Every app generic over a table row needs `T extends object`. (Since
+5.1 the packages publish their *internal* peers as `^` ranges; that does not change this rule — the
+app's own entries stay exact.)
+
 ### Registry & auth
 
 The packages are **public**. Install is anonymous: no `.npmrc` scope line, no `_authToken`, no CI
@@ -57,7 +64,20 @@ Note `apps/api` depends on `ai@^7` for the run engine. That is a different works
 different runtime (Node process vs browser bundle), so the two never share a module instance —
 but do not "unify" them without checking both peer ranges.
 
+**Optional peers (6.x)** — not installed unless a feature needs them: `motion` (`-ui`; the app
+already depends on it directly), `elkjs` (`-flow`, only for `layoutFlowElk`; this app lays out with
+dagre/`layoutGraph`, so it is absent), `mermaid` / `@rive-app/react-webgl2` (`-ai`). `media-chrome`
+is no longer a peer of `-ai` at all (removed in 5.5).
+
 All packages are **ESM-only**. React `^18.2 || ^19`; this app is on 19.
+
+**One file per source module (since 5.0).** Each package's `dist` is now many small modules plus
+hashed shared chunks, and `-ui` / `-editor` entry points `import "./index.css"`. Two consequences:
+(1) the web vitest config inlines the whole `@elabs-ai/components-*` family
+(`server.deps.inline`), because Node cannot load a `.css` import from an externalized package;
+(2) a guardrail that reads a component's shipped source must search `dist` for the file that
+*defines* it, never assume it is in `index.js` (see `dock-fade.guardrail.test.ts`). The `@source`
+directives in `app.css` still point at each package's `dist` directory and still resolve.
 
 ### Version discipline
 
@@ -70,7 +90,8 @@ see `styling-and-tokens.md`. `app.css` also carries the `@source` directives so 
 
 `@elabs-ai/components-charts` pulls in `@visx/*`, which declare React 16–18 peer ranges; React 19
 satisfies them in practice — pnpm prints a peer warning, not an error. `@elabs-ai/components-ai` also
-pulls in `@xterm/xterm` + `@xterm/addon-fit` (for `InteractiveTerminal`) and `zod` as runtime deps.
+pulls in `zod` as a runtime dep (the terminal components, and their `@xterm/*` deps, moved to
+`@elabs-ai/components-terminal` in 4.1, which this app does not install).
 
 ## Ground truth for component APIs — never guess
 

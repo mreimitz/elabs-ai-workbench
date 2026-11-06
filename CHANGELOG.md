@@ -5,6 +5,39 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the design system moved from 4.1 to 6.1
+
+Every `@elabs-ai/components-*` package moved from 4.1.0 to 6.1.0 in one step (RM-40), still pinned
+exactly.
+
+**What you can see.** Very little, by intent. Tables run on TanStack Table v9 underneath — less
+memory and a faster first paint on long tables — and their sort buttons and pager now speak through
+the locale layer. The status / kind filter menus on the Hub's Sessions and Audit tables now announce
+each option as a checkbox, so a screen reader hears whether it is on. Code editors' line numbers
+clear AA contrast in both themes. The packages ship one file per module, so the browser downloads
+only the components it imports.
+
+**What had to change here.**
+- One removed prop: a y-axis on the compare workspace's context curves passed `formatLargeNumbers`,
+  gone in 5.0. Compact number formatting is now the axis default, so the chart reads the same.
+- One break the release notes did not announce: TanStack v9 requires a table's row type to be an
+  object or array, so the shared table helpers and the overview/detail entity browser now declare
+  `T extends object`.
+- The skill canvas, the mission topology graph and the org chart moved to the 6.x node vocabulary:
+  `tone: "accent"` became `emphasis: "featured"` and `tone: "default"` became `tone: "neutral"`. The
+  old values still rendered, with a console warning, and are removed in 7.0.
+- The section-card heading wrapper now delegates to the library's card title, which gained a
+  heading-level option upstream. The old wrapper copied the title's classes and had already drifted
+  from them; a test caught it.
+- Test harness: the web tests now let vite transform every design-system package (5.0 entry points
+  import their own CSS), and stub `matchMedia` once for all suites. Five tests that pinned upstream
+  class names or menu roles were updated to the new ones; the two guardrails among them keep their
+  teeth (the nav one now also checks that the accent-bar token is the accent in both themes, and was
+  proved by breaking it).
+
+**Not done.** No browser was opened: the both-theme look of the canvas, the dock and the tables is
+unverified.
+
 ## Unreleased — the shell repairs came home, and the tool playground stopped asking for JSON
 
 Three things followed the 4.1.0 upgrade.

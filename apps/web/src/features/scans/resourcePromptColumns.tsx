@@ -16,7 +16,7 @@ import { formatPercent } from "../../lib/format";
 
 /** Trailing, non-sortable action column (right-aligned), only appended when a handler is given.
  *  `enabled` lets a row opt out of the button (e.g. resource templates can't be read directly). */
-function actionColumn<T>(opts: {
+function actionColumn<T extends object>(opts: {
   label: string;
   icon: ReactNode;
   onClick: (row: T) => void;

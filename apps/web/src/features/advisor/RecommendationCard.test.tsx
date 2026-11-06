@@ -253,6 +253,13 @@ describe("RecommendationCard — evidence target size (P1-2)", () => {
     "8": 32,
     "9": 36,
     "10": 40,
+    // Design-system 5.x+ sizes controls from one token, `--control-size: 9` (spacing units) at the
+    // default density: `h-control` = 9, `-sm` = 9 - 1, `-lg` = 9 + 1 (the tokens package's
+    // `@utility h-control*`). A `size="sm"` Button now renders `h-control-sm` instead of `h-8` —
+    // the same 32px, named through the token.
+    control: 36,
+    "control-sm": 32,
+    "control-lg": 40,
   };
 
   /** The px a `h-*` / `gap-y-*` utility resolves to, or `null` when the class names no fixed size

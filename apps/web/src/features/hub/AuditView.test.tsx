@@ -324,7 +324,7 @@ describe("AuditView (WP3.2, D-HUX2/D-HUX8/D-HUX14)", () => {
     // FacetFilter (@elabs-ai/components-data) is a DropdownMenu of DropdownMenuItems — Radix's trigger only listens
     // for pointerdown/keydown, not click (the established SessionsView.test.tsx precedent).
     fireEvent.keyDown(screen.getByRole("button", { name: /^kind$/i }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: /tool call/i }));
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: /tool call/i }));
 
     await waitFor(() =>
       expect(api.listHubAudit).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "tool_call" })),
@@ -343,8 +343,8 @@ describe("AuditView (WP3.2, D-HUX2/D-HUX8/D-HUX14)", () => {
     await waitFor(() => expect(screen.getByText("scan_server")).toBeInTheDocument());
 
     fireEvent.keyDown(screen.getByRole("button", { name: /^kind$/i }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: /tool call/i }));
-    fireEvent.click(await screen.findByRole("menuitem", { name: /agent spawn/i }));
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: /tool call/i }));
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: /agent spawn/i }));
 
     // Two kinds selected — the server call stays unfiltered on `kind` (the hybrid rule)…
     await waitFor(() => {
@@ -368,7 +368,7 @@ describe("AuditView (WP3.2, D-HUX2/D-HUX8/D-HUX14)", () => {
     await waitFor(() => expect(screen.getByText("scan_server")).toBeInTheDocument());
 
     fireEvent.keyDown(screen.getByRole("button", { name: /^kind$/i }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: /agent spawn/i }));
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: /agent spawn/i }));
     // FacetFilter is a multi-select checklist — it stays open after a click (so several boxes can be
     // checked in one session) and keeps the rest of the page `aria-hidden` while its portal is open.
     // Close it before querying by role for anything outside the menu.

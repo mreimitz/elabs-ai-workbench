@@ -25,6 +25,8 @@
  * jsdom has no layout or contrast engine (see `AppShell.test.tsx`'s note), so this asserts the cue
  * STRUCTURALLY, on the rendered element's classes.
  */
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -45,6 +47,17 @@ if (typeof window.matchMedia !== "function") {
 }
 
 import { AppShell } from "../components/AppShell";
+
+/** The accent bar's colour utility: `bg-primary` / `bg-sidebar-primary` (≤4.x) or the 5.x+
+ *  `bg-sidebar-indicator` token, which the last test below pins to the accent. */
+const ACCENT_BAR = /data-\[active=true\]:before:bg-(sidebar-)?(primary|indicator)\b/;
+
+/** A shipped theme stylesheet from the installed tokens package. */
+function themeCss(name: "light" | "dark"): string {
+  // The same exported subpath `app.css` imports, so this reads exactly what the app ships.
+  const path = createRequire(import.meta.url).resolve(`@elabs-ai/components-tokens/themes/${name}.css`);
+  return readFileSync(path, "utf8");
+}
 
 /** The rendered class list of the nav item for the current route. */
 function activeNavClassName(): string {
@@ -68,9 +81,11 @@ describe("GUARDRAIL — active nav uses an ACCENT cue, not a grey wash (WCAG 1.4
   it("draws an accent BAR as the non-text state indicator, anchored to the button", () => {
     const className = activeNavClassName();
     // The bar itself — an accent token, never a second grey.
-    expect(className).toMatch(/data-\[active=true\]:before:bg-(sidebar-)?primary/);
+    // Design-system 5.x+ names it through its own token, `bg-sidebar-indicator`; the test below
+    // pins that token to the accent in both shipped themes, so the indirection cannot hide a grey.
+    expect(className).toMatch(ACCENT_BAR);
     // …with real geometry, so "before:" is not present but invisible.
-    expect(className).toMatch(/data-\[active=true\]:before:w-1\b/);
+    expect(className).toMatch(/data-\[active=true\]:before:w-(1\b|\(--sidebar-indicator-width\))/);
     expect(className).toMatch(/data-\[active=true\]:before:absolute\b/);
     // Anchored: an absolutely-positioned bar needs a positioned ancestor to land on.
     expect(className).toMatch(/\brelative\b/);
@@ -86,9 +101,18 @@ describe("GUARDRAIL — active nav uses an ACCENT cue, not a grey wash (WCAG 1.4
     // the ONLY thing that changes. The accent-bar assertion above is what enforces that; this pins
     // the complementary half: a wash without a bar is the regression.
     const hasWash = /data-\[active=true\]:bg-sidebar-accent/.test(className);
-    const hasBar = /data-\[active=true\]:before:bg-(sidebar-)?primary/.test(className);
+    const hasBar = ACCENT_BAR.test(className);
     expect(hasWash && !hasBar, "active state fell back to a grey wash with no accent bar").toBe(
       false,
     );
   });
+
+  it.each(["light", "dark"] as const)(
+    "the %s theme resolves the bar's indicator token to the accent, not a grey",
+    (theme) => {
+      // `--sidebar-primary` is the measured accent (see the header). If a theme ever re-points the
+      // indicator elsewhere, the class assertions above would still pass — this one would not.
+      expect(themeCss(theme)).toMatch(/--sidebar-indicator:\s*var\(--sidebar-primary\)/);
+    },
+  );
 });

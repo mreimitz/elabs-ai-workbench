@@ -1,0 +1,6 @@
+[mcp_servers.brand-ui]
+command = "node"
+args = [
+    "./node_modules/@elabs-ai/components-cli/bin/brand-ui.mjs",
+    "mcp",
+]

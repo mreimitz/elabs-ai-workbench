@@ -732,7 +732,7 @@ ledger, recorded in a documentation subject, and then retired — the rule is §
 ## The design system
 
 The UI is built entirely on the upstream **`@elabs-ai/components-*`** design system (brand-ui) at
-**`4.1.0`** — every visible element is a `@elabs-ai/components-*` component, styled with Tailwind v4
+**`6.1.0`** — every visible element is a `@elabs-ai/components-*` component, styled with Tailwind v4
 + semantic oklch tokens (no raw colors). The packages are **public on npmjs.org**, so `pnpm install`
 needs no registry configuration and no token. Every package ships in lockstep at the same version.
 
@@ -743,6 +743,13 @@ act. Taking 4.1.0 renamed the context-window usage readout, deleted the model-se
 model picker is now composed from the command palette directly), and moved the terminal components
 into their own package, which this app does not use — see
 [`planning/Roadmap/RM-39-brand-ui-4-1/`](planning/Roadmap/RM-39-brand-ui-4-1/).
+
+The move from 4.1.0 to **6.1.0** (two majors) went in one step. Tables now run on TanStack Table v9
+(less memory, faster mount, localised sort/pager text, filter-menu items exposed as checkboxes to
+screen readers); the skill canvas and the mission/org graphs use the 6.x node vocabulary (a neutral
+tone plus a separate "featured" emphasis, which renders exactly as the old accent tone did); and the
+packages now ship one file per module, so the browser downloads only the components it imports.
+See [`planning/Roadmap/RM-40-design-system-upgrade-to/`](planning/Roadmap/RM-40-design-system-upgrade-to/).
 
 Two themes are exposed, **`light`** (default) and **`dark`**; theme CSS is opt-in per theme, imported
 in `apps/web/src/styles/app.css`. For the real component API use the CLI —

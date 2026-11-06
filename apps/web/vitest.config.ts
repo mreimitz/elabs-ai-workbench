@@ -21,7 +21,12 @@ export default defineConfig({
     // import then goes through vite's resolver + the `dedupe` above, sharing ONE xyflow instance with
     // the app-src custom node (`MissionAgentNode`). Without this, `@elabs-ai/components-flow`'s `CanvasShell` store
     // and the node's `Handle` load separate xyflow copies under jsdom → "no ReactFlowProvider".
-    server: { deps: { inline: ["@elabs-ai/components-flow"] } },
+    //
+    // Since design-system 5.0 every `@elabs-ai/components-*` package builds one file per source module,
+    // and `-ui` / `-editor` entry points `import "./index.css"`. Node cannot load a `.css` file, so an
+    // externalized package fails at import time in every suite that touches it. Inlining the whole
+    // family lets vite handle the import (stubbed by `css: false` below).
+    server: { deps: { inline: [/@elabs-ai\/components-/] } },
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
     coverage: {

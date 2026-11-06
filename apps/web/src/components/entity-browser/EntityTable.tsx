@@ -16,7 +16,7 @@ const PAGE_SIZE = 25;
  * mechanisms would give every row two activation paths, and a `navCol` cell inside an `onRowClick`
  * table fires both.
  */
-export function EntityTable<T>(props: {
+export function EntityTable<T extends object>(props: {
   items: T[];
   columns: ColumnDef<T>[];
   onOpen: (item: T) => void;

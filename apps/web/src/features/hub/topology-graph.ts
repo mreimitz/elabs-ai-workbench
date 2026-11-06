@@ -10,8 +10,11 @@ import type { HubTopology } from "@mcp-token-footprint/shared";
 /** Live-state of one node (drives its tone + eyebrow). `winner` = the best_of_n judge's pick. */
 export type TopoNodeState = "idle" | "waiting" | "active" | "reported" | "missing" | "winner";
 
-/** A `@elabs-ai/components-flow` `FlowNodeData` tone (mirrors the upstream union — no runtime import needed here). */
-export type TopoTone = "default" | "accent" | "success" | "warning" | "destructive";
+/** A `@elabs-ai/components-flow` `FlowNodeData` tone (mirrors the upstream 6.x `FlowTone` union — no runtime import needed here). */
+export type TopoTone = "neutral" | "info" | "success" | "warning" | "destructive";
+
+/** A `@elabs-ai/components-flow` `FlowEmphasis`. 6.x split the old `tone: "accent"` into `emphasis: "featured"`. */
+export type TopoEmphasis = "default" | "featured";
 
 export type TopoGraphInputAgent = {
   id: string;
@@ -49,6 +52,7 @@ export type TopoGraphNode = {
   title: string;
   subtitle?: string;
   tone: TopoTone;
+  emphasis: TopoEmphasis;
   state: TopoNodeState;
   /** Crew nesting (WP4.3) — mirrors {@link TopoGraphInputAgent.isCrew}/`memberCount`, threaded through
    *  unchanged for the renderer. */
@@ -98,13 +102,18 @@ export function clampDebateRounds(rounds: number | undefined): number {
 }
 
 const TONE_BY_STATE: Record<TopoNodeState, TopoTone> = {
-  idle: "default",
-  waiting: "default",
-  active: "accent",
+  idle: "neutral",
+  waiting: "neutral",
+  active: "neutral",
   reported: "success",
   winner: "success",
   missing: "destructive",
 };
+
+/** Only the live (running) node is featured — exactly what the pre-6.x `tone: "accent"` rendered as. */
+function emphasisOf(state: TopoNodeState): TopoEmphasis {
+  return state === "active" ? "featured" : "default";
+}
 
 /** The synthesis/resolver terminal-node label per topology (best_of_n's terminal is the final answer,
  *  fed by the judge). Debate's terminal is explicitly named "Synthesis (resolver)" (RC6.1) — it is
@@ -144,6 +153,7 @@ function toNode(
     title: agent.title,
     ...(agent.subtitle ? { subtitle: agent.subtitle } : {}),
     tone: TONE_BY_STATE[agent.state],
+    emphasis: emphasisOf(agent.state),
     state: agent.state,
     ...(agent.isCrew ? { isCrew: true as const } : {}),
     ...(agent.memberCount !== undefined ? { memberCount: agent.memberCount } : {}),

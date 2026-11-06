@@ -12,7 +12,7 @@ export type PinSide = "left" | "right";
  *  numeric); `cell` overrides display. Numeric columns right-align, use tabular-nums, and
  *  auto-format integers when no `cell` is given. `pin` keeps the column stuck to the left/right
  *  edge while the rest of the table scrolls horizontally (see `pinnedCellClass`). */
-export function col<T>(opts: {
+export function col<T extends object>(opts: {
   id: string;
   header: string;
   value: (row: T) => string | number;
@@ -70,7 +70,7 @@ export function col<T>(opts: {
  *  cover (edit/delete/duplicate, a real overflow menu) on a table that has row-level actions distinct
  *  from "open"; a table whose only per-row action IS "open" needs no `actionsCol` at all — the row
  *  click + the `navCol` button already do that job. */
-export function actionsCol<T>(opts: {
+export function actionsCol<T extends object>(opts: {
   id?: string;
   header?: string;
   cell: (row: T) => ReactNode;
@@ -108,7 +108,7 @@ export function actionsCol<T>(opts: {
  *  `data-row-nav` so the row-level delegation can re-dispatch to it, and its own hover wash is
  *  suppressed — the row's single `hover:bg-accent/50` is the feedback, so the title no longer
  *  floats as a separate pill inside the hovered row. */
-export function navCol<T>(opts: {
+export function navCol<T extends object>(opts: {
   id: string;
   header: string;
   value: (row: T) => string | number;

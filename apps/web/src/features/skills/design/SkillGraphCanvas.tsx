@@ -112,7 +112,7 @@ function flowIdOf(item: { flowId?: string }): string {
 // ONE node/edge-building + canvas-rendering implementation for BOTH inspector canvases: the Design
 // tab (no overlay — exactly the WP 1.3 behavior) and the Trace tab (a per-run execution overlay).
 // The overlay is a pure input: verdict → `FlowNode` tone (`ok`→"success", `fracture`→"destructive",
-// `unvisited`→tone "default" dimmed via a layout-only opacity utility), visit-count badge on visited
+// `unvisited`→tone "neutral" dimmed via a layout-only opacity utility), visit-count badge on visited
 // nodes, the fracture reason in the node subtitle, and traversal counts on traversed edges' labels.
 // All verdict color comes from the `@elabs-ai/components-flow` tone tokens — no raw colors anywhere here.
 
@@ -460,11 +460,11 @@ function shortReason(reason: string | undefined): string | undefined {
   return reason.length > 72 ? `${reason.slice(0, 71)}…` : reason;
 }
 
-/** Verdict → `FlowNode` tone. Unvisited stays "default" (dimmed by the wrapper's opacity class). */
+/** Verdict → `FlowNode` tone. Unvisited stays "neutral" (dimmed by the wrapper's opacity class). */
 function overlayTone(status: TraceVerdictStatus): FlowNodeData["tone"] {
   if (status === "ok") return "success";
   if (status === "fracture") return "destructive";
-  return "default";
+  return "neutral";
 }
 
 /**
@@ -536,6 +536,8 @@ export function buildFlow(
     const verdict = overlay?.nodes.get(node.id);
 
     const tone = verdict ? overlayTone(verdict.status) : meta.tone;
+    // A verdict replaces the kind emphasis, exactly as it replaced the pre-6.x `tone: "accent"`.
+    const emphasis = verdict ? "default" : meta.emphasis;
     const fractureReason = verdict?.status === "fracture" ? shortReason(verdict.reason) : undefined;
     // Entry points title on their trigger value (WP 1.3, e.g. "/report"); their fuller heading text
     // (e.g. "/report daily") becomes the subtitle when it adds anything.
@@ -575,6 +577,7 @@ export function buildFlow(
         kind: meta.label,
         icon: meta.icon,
         tone,
+        emphasis,
         // WP 5.2 — carry the node's SKILL.md anchor span so the canvas can attribute line-anchored
         // tool-reference diagnostics to it (the count is injected later, by the component's fetch).
         anchorStartLine: node.anchor.startLine,

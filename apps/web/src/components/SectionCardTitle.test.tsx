@@ -27,9 +27,8 @@ describe("SectionCardTitle — section titles are semantic headings (D-IC5)", ()
   test("carries the exact `text-title` visual of @elabs-ai/components-ui CardTitle (same look, real heading)", () => {
     const { container: sectionContainer } = render(<SectionCardTitle>Findings</SectionCardTitle>);
     const heading = screen.getByRole("heading", { name: "Findings" });
-    // The visual is the CardTitle look: `text-title leading-none`.
+    // The visual is the CardTitle look (its `text-title` type role).
     expect(heading.className).toContain("text-title");
-    expect(heading.className).toContain("leading-none");
 
     // Cross-check against the real CardTitle: identical class set, only the TAG differs (div → h2).
     const { container: cardContainer } = render(<CardTitle>Findings</CardTitle>);

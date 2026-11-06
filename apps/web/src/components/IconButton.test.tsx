@@ -80,8 +80,8 @@ describe("IconButton — the one icon affordance (D-TB5)", () => {
         <RefreshCw aria-hidden />
       </IconButton>,
     );
-    // `size="icon"` → the square `size-9` utility from buttonVariants.
-    expect(screen.getByRole("button", { name: "Refresh" }).className).toContain("size-9");
+    // `size="icon"` → the square control-size utility from buttonVariants (`size-control` since 5.x).
+    expect(screen.getByRole("button", { name: "Refresh" }).className).toContain("size-control");
     rerender(
       <TooltipProvider delayDuration={0}>
         <IconButton label="Refresh" size="icon-sm">
@@ -89,7 +89,7 @@ describe("IconButton — the one icon affordance (D-TB5)", () => {
         </IconButton>
       </TooltipProvider>,
     );
-    expect(screen.getByRole("button", { name: "Refresh" }).className).toContain("size-8");
+    expect(screen.getByRole("button", { name: "Refresh" }).className).toContain("size-control-sm");
   });
 
   test("disabledReason is wired to aria-describedby and shown in the tooltip on a DISABLED button", async () => {
