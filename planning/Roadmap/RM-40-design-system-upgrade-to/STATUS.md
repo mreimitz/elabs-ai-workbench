@@ -3,7 +3,7 @@ type: "Status Ledger"
 title: "Design system upgrade to 6.1 — work-package status ledger"
 description: "Living state for the 4.1.0 → 6.1.0 @elabs-ai/components-* upgrade."
 tags: ["roadmap", "RM-40"]
-timestamp: "2026-11-06T10:05:00Z"
+timestamp: "2026-11-06T11:00:00Z"
 status: "active"
 ---
 # Design system upgrade to 6.1 — work-package status ledger
@@ -59,6 +59,17 @@ A box is ticked **only** when its acceptance is met and the gate
   1032 / cli 87 / api 3985 / web 4579 (+5 skipped), 0 failed · build · Biome 1968 files clean. Run with
   Homebrew git first on PATH: the system git is blocked by an unaccepted Xcode licence, which fails
   the data-pack provenance test for an environmental reason. — done 2026-11-06
+- [x] **9 — Docker: the host browser was locked out (found by the owner, not by this item).** Every
+  `/api/*` request from the host's browser to the container returned `401 authentication_required`:
+  Docker Desktop delivers host connections from the container network's gateway (`172.25.0.1`), and
+  the service-token guard (D-C2) admits loopback only. Present since the guard shipped (2026-08-19);
+  the container had not been opened in a browser since. Owner chose (2026-11-06) an opt-in amendment
+  to D-C2: `API_TRUST_DOCKER_HOST` (default `false`, Docker mode only, on in `docker-compose.yml`)
+  trusts exactly the default gateway read from `/proc/net/route` (`api-tokens/docker-host.ts`).
+  Sibling containers still need a token; `API_AUTH_REQUIRED` still wins. Tests:
+  `api-tokens-docker-host.test.ts`, mutation-probed (removing the trust ⇒ 2 red; trusting everyone
+  ⇒ 3 red). Also fixed: the compose healthcheck probed host port 8081 from inside the container
+  (recorded but unfixed in RM-08's ledger). — done 2026-11-06
 - [ ] **8 — Owner acceptance: both-theme browser walk** of the skill canvas (featured gatekeepers /
   entry points), the mission topology and org chart, the dock header + transcript fade, a long
   `DataTable` (sort, pager, column picker) and a facet filter, and a code editor's line numbers.

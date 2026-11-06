@@ -417,7 +417,12 @@ its shared-constant default and is enforced on both skill ingestion paths — th
 **`API_AUTH_REQUIRED`** (service tokens, D-C2; default `false` — loopback passes without a token, so
 the browser UI is unaffected; `true` requires a token on loopback too, which also makes Settings ›
 API tokens unreachable, since a token may never manage tokens. A **non-loopback** request always
-requires a token regardless — that is not configurable. `GET /api/health` is always exempt).
+requires a token regardless, with one opt-in exception: **`API_TRUST_DOCKER_HOST`** (RM-40, Docker
+mode only, default `false`, on in `docker-compose.yml`) treats the container network's **gateway**
+like loopback, because Docker Desktop delivers the host browser's connections from it — without it
+the containerized UI is refused on every request. It trusts that one address only (read from
+`/proc/net/route`); other containers still need a token; it is safe only with the port published on
+`127.0.0.1`. `GET /api/health` is always exempt).
 Keep real secrets in `.env.local` (never committed); only `.env.example` is tracked.
 
 **Service tokens** (`apps/api/src/api-tokens/`): the credential a headless caller (CI, the `mcpfp`

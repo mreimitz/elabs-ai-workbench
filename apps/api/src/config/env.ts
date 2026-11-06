@@ -279,6 +279,11 @@ export const config = {
   // Settings › API tokens unreachable, since a token may never manage tokens: mint the tokens you
   // need first, then switch this on. See apps/api/src/api-tokens/guard.ts.
   apiAuthRequired: readBoolean(process.env.API_AUTH_REQUIRED, false),
+  // RM-40 amendment to D-C2 — in Docker mode only, treat the container network's GATEWAY like
+  // loopback. Docker Desktop delivers the host browser's connections from that gateway, so without
+  // this the containerized UI is refused on every request. Default false; the repo's compose file
+  // turns it on and publishes the port on 127.0.0.1 only. See apps/api/src/api-tokens/docker-host.ts.
+  apiTrustDockerHost: readBoolean(process.env.API_TRUST_DOCKER_HOST, false),
   // Assistant (planning/Roadmap/RM-02-assistant/, WP 0.3) — the embedded Claude agent chat. All agent state
   // (SDK CLAUDE_CONFIG_DIR, HOME, materialized skill workspaces) lives under this dir so it
   // persists on the same /data volume as the DB in Docker and never touches the operator's real

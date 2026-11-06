@@ -41,14 +41,23 @@ services:
       # override. Eager loads full tool definitions for every granted server, so scope sessions to
       # ONE server (see planning/user-guide/DC-13-assistant-hub/16-assistant-hub.md, "Scoped sessions + tool loading").
       HUB_TOOL_LOADING_DEFAULT: eager
+      # RM-40 — let the HOST's browser in. Docker Desktop delivers host connections from this
+      # network's gateway, not from loopback, so the token guard refused every UI request. This
+      # trusts exactly that one gateway address (read from the container's routing table); other
+      # containers still need a token. It is safe ONLY because the port above is bound to
+      # 127.0.0.1 — publish it on 0.0.0.0 and this would admit your LAN. Turn it off if you do.
+      API_TRUST_DOCKER_HOST: "true"
     restart: unless-stopped
+    # The probe runs INSIDE the container, so it must use the container port (PORT, 8080) — not the
+    # published host port 8081, which nothing inside the container listens on. Probing 8081 marked
+    # a perfectly healthy app "unhealthy" on every check.
     healthcheck:
       test:
         [
           "CMD",
           "node",
           "-e",
-          "fetch('http://127.0.0.1:8081/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+          "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
         ]
       interval: 30s
       timeout: 5s

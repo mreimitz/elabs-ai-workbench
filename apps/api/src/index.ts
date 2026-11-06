@@ -9,6 +9,7 @@ import {
 import Fastify from "fastify";
 import { ZodError } from "zod";
 import { registerAdvisorRoutes } from "./advisor/routes.js";
+import { resolveTrustedLocalPeers } from "./api-tokens/docker-host.js";
 import { registerApiTokenGuard } from "./api-tokens/guard.js";
 import { ApiTokenRepository } from "./api-tokens/repository.js";
 import { registerApiTokenRoutes } from "./api-tokens/routes.js";
@@ -426,7 +427,27 @@ registerFeatureRoutes(server, featureFlags);
 // an off-switch on an auth check is a foot-gun.
 const apiTokenRepository = new ApiTokenRepository(db);
 const apiTokenService = new ApiTokenService(apiTokenRepository);
-registerApiTokenGuard(server, apiTokenService, { authRequired: config.apiAuthRequired });
+// RM-40 — the one widening of "loopback": the Docker network gateway, opt-in and Docker-only.
+const trustedLocalPeers = resolveTrustedLocalPeers({
+  trustDockerHost: config.apiTrustDockerHost,
+  dockerMode: config.dockerMode,
+  readRouteTable: () => fs.readFileSync("/proc/net/route", "utf8"),
+});
+if (trustedLocalPeers.size > 0) {
+  server.log.info(
+    { trustedLocalPeers: [...trustedLocalPeers] },
+    "API_TRUST_DOCKER_HOST: treating the Docker host gateway like loopback",
+  );
+} else if (config.apiTrustDockerHost) {
+  server.log.warn(
+    { dockerMode: config.dockerMode },
+    "API_TRUST_DOCKER_HOST is on but no Docker gateway was trusted (not in Docker mode, or no default route); loopback-only",
+  );
+}
+registerApiTokenGuard(server, apiTokenService, {
+  authRequired: config.apiAuthRequired,
+  trustedLocalPeers,
+});
 registerApiTokenRoutes(server, apiTokenService);
 // Auto-Rating (WP 2.3, AR2/AR3/AR16) — the ONE judge resolution chain shared by ALL FIVE LLM graders
 // (outcome/trajectory judges + the three mandatory base-rating graders): Claude CLI (subscription, if

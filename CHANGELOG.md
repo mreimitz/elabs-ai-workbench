@@ -5,6 +5,17 @@ authoritative in-flight state lives in [`CLAUDE.md`](./CLAUDE.md) and the
 `planning/Roadmap/RM-*/STATUS.md` ledgers (before 2026-08-20 these were `planning/Roadmap/*/STATUS.md`;
 entries below that date name the paths as they were at the time). Per-phase git tags are an **owner action** (not created by this remediation).
 
+## Unreleased — the Docker version works in a browser again
+
+Opening the containerized app showed an error on every panel: *"This request needs a service
+token."* Docker Desktop hands the host browser's connections to the container from Docker's own
+network gateway rather than from `127.0.0.1`, so the token guard counted your own machine as a
+remote caller. It had been that way since service tokens shipped in August. A new opt-in switch,
+`API_TRUST_DOCKER_HOST` (on in `docker-compose.yml`, ignored outside Docker), now trusts that one
+gateway address and nothing else — other containers still need a token, and it is safe only
+because the port is published on `127.0.0.1`. The compose health check also stopped reporting the
+app unhealthy: it had been probing the host-side port from inside the container.
+
 ## Unreleased — the design system moved from 4.1 to 6.1
 
 Every `@elabs-ai/components-*` package moved from 4.1.0 to 6.1.0 in one step (RM-40), still pinned

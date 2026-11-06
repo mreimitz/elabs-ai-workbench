@@ -16,6 +16,7 @@ import {
   requestPathIsUnder,
   requestPathIsUnderStrict,
 } from "../utils/request-path.js";
+import { isTrustedLocalPeer } from "./docker-host.js";
 import type { ApiTokenAuthResult, ApiTokenService, AuthenticatedApiToken } from "./service.js";
 
 /**
@@ -125,6 +126,12 @@ export type ApiTokenAccessRequest = {
   authorization: string | undefined;
   /** `API_AUTH_REQUIRED` — force token auth on loopback too. */
   authRequired: boolean;
+  /**
+   * Socket-peer addresses treated exactly like loopback (RM-40 amendment to D-C2): in practice the
+   * one Docker-network gateway, and only when `API_TRUST_DOCKER_HOST` is on in Docker mode. Absent
+   * or empty means loopback-only, the unchanged rule. See `docker-host.ts`.
+   */
+  trustedLocalPeers?: ReadonlySet<string>;
   /** Verifies a presented plaintext token. Injected so this function stays pure and testable. */
   authenticate: (plaintext: string) => ApiTokenAuthResult;
 };
@@ -140,8 +147,8 @@ export type ApiTokenAccessRequest = {
  *     ⇒ `401 invalid_token`, **including from 127.0.0.1**: a bad credential is an error, never a
  *     silent fall-through to the open local path (which would let a caller with a revoked token keep
  *     working from the same machine and never learn it was revoked).
- *  3. No token presented ⇒ loopback passes (unless `API_AUTH_REQUIRED`), remote gets
- *     `401 authentication_required`.
+ *  3. No token presented ⇒ loopback (or a trusted local peer — the Docker host, opt-in) passes
+ *     (unless `API_AUTH_REQUIRED`), remote gets `401 authentication_required`.
  *  4. A token-authenticated request is then scope-checked: `API_TOKEN_ROUTE_SCOPES` first (WP M.2 —
  *     the per-route overrides, which can only RELAX and are matched on the raw-AND-decoded
  *     intersection, D-MCP9), then the coarse method rule behind it — read methods need `read`, write
@@ -151,6 +158,7 @@ export type ApiTokenAccessRequest = {
  */
 export function decideApiTokenAccess(request: ApiTokenAccessRequest): ApiTokenAccessDecision {
   const { method, url, remoteAddress, authorization, authRequired, authenticate } = request;
+  const trustedLocalPeers = request.trustedLocalPeers ?? new Set<string>();
   const path = normalizeRequestPath(url);
 
   if (!requestPathIsUnder(path, API_PREFIX)) return { kind: "pass" };
@@ -176,7 +184,9 @@ export function decideApiTokenAccess(request: ApiTokenAccessRequest): ApiTokenAc
     return scopeCheck(method, path, result.token);
   }
 
-  if (isLoopbackAddress(remoteAddress) && !authRequired) return { kind: "pass" };
+  const local =
+    isLoopbackAddress(remoteAddress) || isTrustedLocalPeer(remoteAddress, trustedLocalPeers);
+  if (local && !authRequired) return { kind: "pass" };
 
   return {
     kind: "refused",
@@ -247,7 +257,7 @@ function scopeCheck(
 export function registerApiTokenGuard(
   app: FastifyInstance,
   service: ApiTokenService,
-  options: { authRequired: boolean },
+  options: { authRequired: boolean; trustedLocalPeers?: ReadonlySet<string> },
 ): void {
   app.addHook("onRequest", async (request) => {
     const decision = decideApiTokenAccess({
@@ -258,6 +268,7 @@ export function registerApiTokenGuard(
       remoteAddress: request.socket.remoteAddress,
       authorization: request.headers.authorization,
       authRequired: options.authRequired,
+      ...(options.trustedLocalPeers ? { trustedLocalPeers: options.trustedLocalPeers } : {}),
       authenticate: (plaintext) => service.authenticate(plaintext),
     });
 
